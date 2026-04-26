@@ -1,0 +1,563 @@
+[
+  {
+    "id": "dwarf",
+    "name": "Anão",
+    "description": "Povo robusto e resistente, conhecido por sua habilidade em combate e em trabalhar pedra e metal. Vivem em fortalezas sob as montanhas e valorizam clã, tradição e honra acima de tudo.",
+    "abilityBonuses": [{ "ability": "CON", "value": 2 }],
+    "choices": [
+      { "kind": "tool", "count": 1, "from": ["smiths-tools", "brewers-tools", "masons-tools"] }
+    ],
+    "age": "Maturidade aos 50 anos / vivem em média 350 anos",
+    "size": "Medium",
+    "speed": 25,
+    "darkvision": 60,
+    "grantedLanguages": ["Comum", "Anão"],
+    "grantedProficiencies": [
+      { "type": "weapon", "value": "battleaxe" },
+      { "type": "weapon", "value": "handaxe" },
+      { "type": "weapon", "value": "light-hammer" },
+      { "type": "weapon", "value": "warhammer" }
+    ],
+    "traits": [
+      {
+        "name": "Resiliência Anã",
+        "description": "Vantagem em testes de resistência contra veneno e resistência a dano de veneno."
+      },
+      {
+        "name": "Especialização em Rochas",
+        "description": "Dobra o bônus de proficiência em testes de Inteligência (História) sobre origens de trabalho em pedra."
+      }
+    ],
+    "subraces": [
+      {
+        "id": "hill-dwarf",
+        "name": "Anão da Colina",
+        "description": "Anões com sentidos aguçados e maior resiliência física.",
+        "abilityBonuses": [{ "ability": "WIS", "value": 1 }],
+        "choices": [],
+        "grantedProficiencies": [],
+        "traits": [
+          {
+            "name": "Tenacidade Anã",
+            "description": "Máximo de PV aumenta em 1, e ganha +1 PV adicional a cada nível."
+          }
+        ],
+        "overrides": {}
+      },
+      {
+        "id": "mountain-dwarf",
+        "name": "Anão da Montanha",
+        "description": "Anões fortes e robustos, treinados em armaduras desde cedo.",
+        "abilityBonuses": [{ "ability": "STR", "value": 2 }],
+        "choices": [],
+        "grantedProficiencies": [
+          { "type": "armor", "value": "light" },
+          { "type": "armor", "value": "medium" }
+        ],
+        "traits": [],
+        "overrides": {}
+      }
+    ]
+  },
+  {
+    "id": "elf",
+    "name": "Elfo",
+    "description": "Criaturas de graça sobrenatural e vida longa, os elfos vivem em harmonia com a magia e a natureza. São conhecidos por sua elegância, sentidos aguçados e uma perspectiva atemporal sobre o mundo.",
+    "abilityBonuses": [{ "ability": "DEX", "value": 2 }],
+    "choices": [],
+    "age": "Maturidade aos 100 anos / vivem até 750 anos",
+    "size": "Medium",
+    "speed": 30,
+    "darkvision": 60,
+    "grantedLanguages": ["Comum", "Élfico"],
+    "grantedProficiencies": [{ "type": "skill", "value": "perception" }],
+    "traits": [
+      {
+        "name": "Ancestral Feérico",
+        "description": "Vantagem em testes contra ser enfeitiçado e imunidade a magias de sono."
+      },
+      {
+        "name": "Transe",
+        "description": "Em vez de dormir, você medita por 4 horas, obtendo o descanso de uma noite completa."
+      }
+    ],
+    "subraces": [
+      {
+        "id": "high-elf",
+        "name": "Alto Elfo",
+        "description": "Possuidores de mentes afiadas e um domínio natural sobre a magia básica.",
+        "abilityBonuses": [{ "ability": "INT", "value": 1 }],
+        "choices": [
+          {
+            "kind": "cantrip",
+            "count": 1,
+            "from": "wizard-list",
+            "spellcastingAbility": "INT"
+          },
+          { "kind": "language", "count": 1, "from": "any" }
+        ],
+        "grantedProficiencies": [
+          { "type": "weapon", "value": "longsword" },
+          { "type": "weapon", "value": "shortsword" },
+          { "type": "weapon", "value": "longbow" },
+          { "type": "weapon", "value": "shortbow" }
+        ],
+        "traits": [
+          {
+            "name": "Truque",
+            "description": "Você conhece um truque da lista de magos, usando Inteligência como atributo de conjuração."
+          }
+        ],
+        "overrides": {}
+      },
+      {
+        "id": "wood-elf",
+        "name": "Elfo da Floresta",
+        "description": "Ágeis e reclusos, possuem sentidos e intuição aguçados para sobreviverem nas florestas.",
+        "abilityBonuses": [{ "ability": "WIS", "value": 1 }],
+        "choices": [],
+        "grantedProficiencies": [
+          { "type": "weapon", "value": "longsword" },
+          { "type": "weapon", "value": "shortsword" },
+          { "type": "weapon", "value": "longbow" },
+          { "type": "weapon", "value": "shortbow" }
+        ],
+        "traits": [
+          {
+            "name": "Máscara da Natureza",
+            "description": "Permite tentar se esconder mesmo se estiver apenas levemente obscurecido por fenômenos naturais."
+          }
+        ],
+        "overrides": { "speed": 35 }
+      },
+      {
+        "id": "drow",
+        "name": "Elfo Negro (Drow)",
+        "description": "Descendentes de uma linhagem banida para o Subterrâneo, dotados de magia adaptada à escuridão profunda.",
+        "abilityBonuses": [{ "ability": "CHA", "value": 1 }],
+        "choices": [],
+        "grantedProficiencies": [
+          { "type": "weapon", "value": "rapier" },
+          { "type": "weapon", "value": "shortsword" },
+          { "type": "weapon", "value": "hand-crossbow" }
+        ],
+        "traits": [
+          {
+            "name": "Sensibilidade à Luz Solar",
+            "description": "Desvantagem em ataques e em testes de Sabedoria (Percepção) baseados em visão quando você, o alvo, ou o objeto observado estiver sob luz solar direta."
+          },
+          {
+            "name": "Magia Drow",
+            "description": "Você conhece o truque globos de luz. Ao atingir o nível 3, pode conjurar fogo das fadas uma vez por descanso longo. Ao atingir o nível 5, pode conjurar escuridão uma vez por descanso longo. Carisma é o atributo de conjuração."
+          }
+        ],
+        "overrides": { "darkvision": 120 }
+      }
+    ]
+  },
+  {
+    "id": "halfling",
+    "name": "Halfling",
+    "description": "Um povo pequeno e prático, que valoriza os prazeres simples da vida. São conhecidos por sua sorte extraordinária, agilidade e por serem surpreendentemente corajosos quando necessário.",
+    "abilityBonuses": [{ "ability": "DEX", "value": 2 }],
+    "choices": [],
+    "age": "Maturidade aos 20 anos / vivem até 150 anos",
+    "size": "Small",
+    "speed": 25,
+    "darkvision": 0,
+    "grantedLanguages": ["Comum", "Halfling"],
+    "grantedProficiencies": [],
+    "traits": [
+      {
+        "name": "Sortudo",
+        "description": "Ao tirar um 1 natural em um ataque, teste de habilidade ou resistência, você pode jogar o dado novamente e usar o novo resultado."
+      },
+      {
+        "name": "Bravura",
+        "description": "Você tem vantagem em testes de resistência contra ficar amedrontado."
+      },
+      {
+        "name": "Agilidade Halfling",
+        "description": "Você pode se mover através do espaço de qualquer criatura que seja de um tamanho maior que o seu."
+      }
+    ],
+    "subraces": [
+      {
+        "id": "lightfoot-halfling",
+        "name": "Pés Leves",
+        "description": "Furtivos e amigáveis, são a variedade mais comum e costumam viajar ou viver entre outras raças.",
+        "abilityBonuses": [{ "ability": "CHA", "value": 1 }],
+        "choices": [],
+        "grantedProficiencies": [],
+        "traits": [
+          {
+            "name": "Furtividade Natural",
+            "description": "Você pode tentar se esconder mesmo quando possuir apenas a cobertura de uma criatura que for no mínimo um tamanho maior que o seu."
+          }
+        ],
+        "overrides": {}
+      },
+      {
+        "id": "stout-halfling",
+        "name": "Robusto",
+        "description": "Mais resistentes do que a média de sua raça, acredita-se que possuam algum parentesco com os anões.",
+        "abilityBonuses": [{ "ability": "CON", "value": 1 }],
+        "choices": [],
+        "grantedProficiencies": [],
+        "traits": [
+          {
+            "name": "Resiliência dos Robustos",
+            "description": "Você tem vantagem em testes de resistência contra veneno e resistência contra dano de veneno."
+          }
+        ],
+        "overrides": {}
+      }
+    ]
+  },
+  {
+    "id": "human",
+    "name": "Humano",
+    "description": "A mais versátil e ambiciosa das raças, os humanos são conhecidos por sua adaptabilidade e pelo desejo de deixar um legado duradouro. Eles se espalham por todos os cantos do mundo, fundando instituições e culturas diversas.",
+    "abilityBonuses": [
+      { "ability": "STR", "value": 1 },
+      { "ability": "DEX", "value": 1 },
+      { "ability": "CON", "value": 1 },
+      { "ability": "INT", "value": 1 },
+      { "ability": "WIS", "value": 1 },
+      { "ability": "CHA", "value": 1 }
+    ],
+    "choices": [{ "kind": "language", "count": 1, "from": "any" }],
+    "age": "Maturidade aos 18 anos / vivem menos de 100 anos",
+    "size": "Medium",
+    "speed": 30,
+    "darkvision": 0,
+    "grantedLanguages": ["Comum"],
+    "grantedProficiencies": [],
+    "traits": [
+      {
+        "name": "Versatilidade",
+        "description": "Os humanos não possuem traços físicos ou mágicos especializados, compensando com o aumento em todas as suas habilidades básicas."
+      }
+    ],
+    "subraces": [
+      {
+        "id": "variant-human",
+        "name": "Humano (Variante)",
+        "description": "Regra opcional focada em especialização. Substitui os bônus do humano padrão — o personagem se destaca em uma perícia ou técnica específica desde cedo.",
+        "abilityBonuses": [],
+        "choices": [
+          { "kind": "ability", "count": 2, "from": "any", "value": 1 },
+          { "kind": "skill", "count": 1, "from": "any" },
+          { "kind": "feat", "count": 1 }
+        ],
+        "grantedProficiencies": [],
+        "traits": [
+          {
+            "name": "Talento",
+            "description": "Você adquire um talento de sua escolha (funcionalidade completa em versão futura)."
+          }
+        ],
+        "overrides": { "replacesParentTraits": true }
+      }
+    ]
+  },
+  {
+    "id": "dragonborn",
+    "name": "Draconato",
+    "description": "Orgulhosos descendentes de dragões, os draconatos combinam o poder elemental de seus ancestrais com a forma humanoide. Valorizam a honra, o clã e a busca pela perfeição acima de tudo.",
+    "abilityBonuses": [
+      { "ability": "STR", "value": 2 },
+      { "ability": "CHA", "value": 1 }
+    ],
+    "choices": [],
+    "age": "Maturidade aos 15 anos / vivem até 80 anos",
+    "size": "Medium",
+    "speed": 30,
+    "darkvision": 0,
+    "grantedLanguages": ["Comum", "Dracônico"],
+    "grantedProficiencies": [],
+    "traits": [
+      {
+        "name": "Arma de Sopro",
+        "description": "Como ação, você exala energia elemental determinada pelo seu ancestral. CD = 8 + mod. Constituição + bônus de proficiência. Dano: 2d6 (níveis 1–5). Recarrega após descanso curto ou longo."
+      },
+      {
+        "name": "Resistência a Dano",
+        "description": "Você possui resistência ao tipo de dano associado ao seu ancestral dracônico."
+      }
+    ],
+    "subraces": [
+      {
+        "id": "red-dragonborn",
+        "name": "Draconato Vermelho",
+        "description": "Descendentes de dragões vermelhos, dominam o fogo destrutivo de seus ancestrais.",
+        "abilityBonuses": [],
+        "choices": [],
+        "grantedProficiencies": [],
+        "traits": [
+          { "name": "Tipo de Dano", "description": "Fogo." },
+          { "name": "Arma de Sopro", "description": "Cone de 15 pés. Teste de resistência de Destreza." }
+        ],
+        "overrides": {}
+      },
+      {
+        "id": "blue-dragonborn",
+        "name": "Draconato Azul",
+        "description": "Descendentes de dragões azuis, canalizam a energia elétrica das tempestades do deserto.",
+        "abilityBonuses": [],
+        "choices": [],
+        "grantedProficiencies": [],
+        "traits": [
+          { "name": "Tipo de Dano", "description": "Elétrico." },
+          { "name": "Arma de Sopro", "description": "Linha de 5 por 30 pés. Teste de resistência de Destreza." }
+        ],
+        "overrides": {}
+      },
+      {
+        "id": "green-dragonborn",
+        "name": "Draconato Verde",
+        "description": "Descendentes de dragões verdes, exalam vapores tóxicos de florestas profundas.",
+        "abilityBonuses": [],
+        "choices": [],
+        "grantedProficiencies": [],
+        "traits": [
+          { "name": "Tipo de Dano", "description": "Veneno." },
+          { "name": "Arma de Sopro", "description": "Cone de 15 pés. Teste de resistência de Constituição." }
+        ],
+        "overrides": {}
+      },
+      {
+        "id": "white-dragonborn",
+        "name": "Draconato Branco",
+        "description": "Descendentes de dragões brancos, evocam o frio cortante das tundras geladas.",
+        "abilityBonuses": [],
+        "choices": [],
+        "grantedProficiencies": [],
+        "traits": [
+          { "name": "Tipo de Dano", "description": "Frio." },
+          { "name": "Arma de Sopro", "description": "Cone de 15 pés. Teste de resistência de Constituição." }
+        ],
+        "overrides": {}
+      },
+      {
+        "id": "black-dragonborn",
+        "name": "Draconato Negro",
+        "description": "Descendentes de dragões negros, lançam ácido corrosivo dos pântanos sombrios.",
+        "abilityBonuses": [],
+        "choices": [],
+        "grantedProficiencies": [],
+        "traits": [
+          { "name": "Tipo de Dano", "description": "Ácido." },
+          { "name": "Arma de Sopro", "description": "Linha de 5 por 30 pés. Teste de resistência de Destreza." }
+        ],
+        "overrides": {}
+      },
+      {
+        "id": "gold-dragonborn",
+        "name": "Draconato Ouro",
+        "description": "Descendentes de dragões dourados, canalizam o fogo justiceiro de seus nobres ancestrais.",
+        "abilityBonuses": [],
+        "choices": [],
+        "grantedProficiencies": [],
+        "traits": [
+          { "name": "Tipo de Dano", "description": "Fogo." },
+          { "name": "Arma de Sopro", "description": "Cone de 15 pés. Teste de resistência de Destreza." }
+        ],
+        "overrides": {}
+      },
+      {
+        "id": "silver-dragonborn",
+        "name": "Draconato Prata",
+        "description": "Descendentes de dragões prateados, exalam o frio puro das altas montanhas nevadas.",
+        "abilityBonuses": [],
+        "choices": [],
+        "grantedProficiencies": [],
+        "traits": [
+          { "name": "Tipo de Dano", "description": "Frio." },
+          { "name": "Arma de Sopro", "description": "Cone de 15 pés. Teste de resistência de Constituição." }
+        ],
+        "overrides": {}
+      },
+      {
+        "id": "bronze-dragonborn",
+        "name": "Draconato Bronze",
+        "description": "Descendentes de dragões bronze, dominam a energia elétrica dos mares tempestuosos.",
+        "abilityBonuses": [],
+        "choices": [],
+        "grantedProficiencies": [],
+        "traits": [
+          { "name": "Tipo de Dano", "description": "Elétrico." },
+          { "name": "Arma de Sopro", "description": "Linha de 5 por 30 pés. Teste de resistência de Destreza." }
+        ],
+        "overrides": {}
+      },
+      {
+        "id": "copper-dragonborn",
+        "name": "Draconato Cobre",
+        "description": "Descendentes de dragões cobre, lançam ácido corrosivo com bom humor e malícia.",
+        "abilityBonuses": [],
+        "choices": [],
+        "grantedProficiencies": [],
+        "traits": [
+          { "name": "Tipo de Dano", "description": "Ácido." },
+          { "name": "Arma de Sopro", "description": "Linha de 5 por 30 pés. Teste de resistência de Destreza." }
+        ],
+        "overrides": {}
+      },
+      {
+        "id": "brass-dragonborn",
+        "name": "Draconato Latão",
+        "description": "Descendentes de dragões latão, exalam fogo dos desertos onde habitam seus ancestrais tagarelas.",
+        "abilityBonuses": [],
+        "choices": [],
+        "grantedProficiencies": [],
+        "traits": [
+          { "name": "Tipo de Dano", "description": "Fogo." },
+          { "name": "Arma de Sopro", "description": "Linha de 5 por 30 pés. Teste de resistência de Destreza." }
+        ],
+        "overrides": {}
+      }
+    ]
+  },
+  {
+    "id": "gnome",
+    "name": "Gnomo",
+    "description": "Criaturas transbordantes de energia e entusiasmo, os gnomos possuem uma curiosidade insaciável e um amor vibrante pela vida. São inventores natos, engenheiros e ilusionistas que veem o mundo como um lugar de infinitas possibilidades.",
+    "abilityBonuses": [{ "ability": "INT", "value": 2 }],
+    "choices": [],
+    "age": "Maturidade aos 40 anos / vivem entre 350 e 500 anos",
+    "size": "Small",
+    "speed": 25,
+    "darkvision": 60,
+    "grantedLanguages": ["Comum", "Gnômico"],
+    "grantedProficiencies": [],
+    "traits": [
+      {
+        "name": "Esperteza Gnômica",
+        "description": "Vantagem em todos os testes de resistência de Inteligência, Sabedoria e Carisma contra magia."
+      }
+    ],
+    "subraces": [
+      {
+        "id": "forest-gnome",
+        "name": "Gnomo da Floresta",
+        "description": "Raros e reservados, possuem um traquejo natural com ilusões e vivem em harmonia com pequenos animais em comunidades escondidas.",
+        "abilityBonuses": [{ "ability": "DEX", "value": 1 }],
+        "choices": [],
+        "grantedProficiencies": [],
+        "traits": [
+          {
+            "name": "Ilusionista Nato",
+            "description": "Você conhece o truque ilusão menor, usando Inteligência para conjurá-lo."
+          },
+          {
+            "name": "Falar com Bestas Pequenas",
+            "description": "Através de sons e gestos, você pode comunicar ideias simples para Bestas pequenas ou menores."
+          }
+        ],
+        "overrides": {}
+      },
+      {
+        "id": "rock-gnome",
+        "name": "Gnomo das Rochas",
+        "description": "Conhecidos por sua inventividade e resistência, são os engenhoqueiros por excelência entre os gnomos.",
+        "abilityBonuses": [{ "ability": "CON", "value": 1 }],
+        "choices": [],
+        "grantedProficiencies": [{ "type": "tool", "value": "tinkers-tools" }],
+        "traits": [
+          {
+            "name": "Conhecimento de Artífice",
+            "description": "Dobra seu bônus de proficiência em testes de Inteligência (História) relacionados a itens mágicos, alquímicos ou tecnológicos."
+          },
+          {
+            "name": "Engenhoqueiro",
+            "description": "Permite construir pequenos mecanismos (brinquedos, isqueiros ou caixas de música) usando ferramentas de engenhoqueiro."
+          }
+        ],
+        "overrides": {}
+      }
+    ]
+  },
+  {
+    "id": "half-elf",
+    "name": "Meio-Elfo",
+    "description": "Vagando entre dois mundos, os meio-elfos combinam a curiosidade e ambição humana com os sentidos refinados e amor à natureza dos elfos. São excelentes diplomatas, dotados de carisma natural e versatilidade ímpar.",
+    "abilityBonuses": [{ "ability": "CHA", "value": 2 }],
+    "choices": [
+      { "kind": "ability", "count": 2, "from": "any-except-charisma", "value": 1 },
+      { "kind": "skill", "count": 2, "from": "any" },
+      { "kind": "language", "count": 1, "from": "any" }
+    ],
+    "age": "Maturidade aos 20 anos / vivem até 180 anos",
+    "size": "Medium",
+    "speed": 30,
+    "darkvision": 60,
+    "grantedLanguages": ["Comum", "Élfico"],
+    "grantedProficiencies": [],
+    "traits": [
+      {
+        "name": "Ancestral Feérico",
+        "description": "Vantagem em testes de resistência contra encantamento e magia não pode colocar você para dormir."
+      },
+      {
+        "name": "Versatilidade em Perícia",
+        "description": "Você ganha proficiência em duas perícias à sua escolha."
+      }
+    ],
+    "subraces": []
+  },
+  {
+    "id": "half-orc",
+    "name": "Meio-Orc",
+    "description": "Criaturas de força imensa e emoções poderosas, os meio-orcs carregam a marca de Gruumsh e a determinação humana. São guerreiros formidáveis com uma fúria selvagem temperada por disciplina resiliente.",
+    "abilityBonuses": [
+      { "ability": "STR", "value": 2 },
+      { "ability": "CON", "value": 1 }
+    ],
+    "choices": [],
+    "age": "Maturidade aos 14 anos / raramente vivem mais de 75 anos",
+    "size": "Medium",
+    "speed": 30,
+    "darkvision": 60,
+    "grantedLanguages": ["Comum", "Orc"],
+    "grantedProficiencies": [{ "type": "skill", "value": "intimidation" }],
+    "traits": [
+      {
+        "name": "Resistência Implacável",
+        "description": "Quando reduzido a 0 PV mas não morto, você pode voltar para 1 PV (uma vez por descanso longo)."
+      },
+      {
+        "name": "Ataques Selvagens",
+        "description": "Em um acerto crítico com arma corpo-a-corpo, role um dos dados de dano da arma mais uma vez e adicione ao dano extra."
+      }
+    ],
+    "subraces": []
+  },
+  {
+    "id": "tiefling",
+    "name": "Tiefling",
+    "description": "Marcados por uma linhagem infernal ligada a Asmodeus, os tieflings carregam traços físicos como chifres e caudas que evocam desconfiança. São sobreviventes resilientes que traçam seus próprios caminhos com carisma ou astúcia.",
+    "abilityBonuses": [
+      { "ability": "CHA", "value": 2 },
+      { "ability": "INT", "value": 1 }
+    ],
+    "choices": [],
+    "age": "Maturidade aos 18 anos / vivem alguns anos a mais que os humanos",
+    "size": "Medium",
+    "speed": 30,
+    "darkvision": 60,
+    "grantedLanguages": ["Comum", "Infernal"],
+    "grantedProficiencies": [],
+    "traits": [
+      {
+        "name": "Resistência Infernal",
+        "description": "Você possui resistência a dano de fogo."
+      },
+      {
+        "name": "Legado Infernal",
+        "description": "Você conhece o truque taumaturgia. No nível 3, pode conjurar repreensão infernal uma vez por descanso longo. No nível 5, pode conjurar escuridão uma vez por descanso longo. Carisma é o atributo de conjuração."
+      }
+    ],
+    "subraces": []
+  }
+]

@@ -12,7 +12,7 @@ import {
   isRaceStepComplete,
   RACE_PRESENTATION,
 } from '../../utils/raceUtils'
-import { ABILITY_LABELS, formatBonus } from '../../utils/abilityScoreUtils'
+import { ABILITY_LABELS, formatBonus, formatSpeed } from '../../utils/abilityScoreUtils'
 import { RaceCard } from '../race/RaceCard'
 import { SubraceCard } from '../race/SubraceCard'
 import { ChoicePanel } from '../race/ChoicePanel'
@@ -116,7 +116,7 @@ export function RaceStep() {
               <div className="rounded-xl border border-parchment-900 bg-parchment-950/60 p-4">
                 <SectionTitle>Estatísticas</SectionTitle>
                 <div className="grid grid-cols-2 gap-3 text-sm mb-3">
-                  <Stat label="⚡ Velocidade" value={`${getEffectiveSpeed(selectedRace, selectedSubrace ?? null)} pés`} />
+                  <Stat label="🏃 Deslocamento" value={formatSpeed(getEffectiveSpeed(selectedRace, selectedSubrace ?? null))} />
                   <Stat
                     label="👁️ Visão no Escuro"
                     value={

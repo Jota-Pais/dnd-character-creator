@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calculateModifier, formatModifier, formatBonus } from '../abilityScoreUtils'
+import { calculateModifier, formatModifier, formatBonus, formatSpeed } from '../abilityScoreUtils'
 
 describe('calculateModifier', () => {
   it('retorna 0 para atributo 10', () => expect(calculateModifier(10)).toBe(0))
@@ -24,4 +24,11 @@ describe('formatBonus', () => {
   it('formata bônus positivo', () => expect(formatBonus(2)).toBe('+2'))
   it('formata bônus zero', () => expect(formatBonus(0)).toBe('+0'))
   it('formata bônus negativo', () => expect(formatBonus(-1)).toBe('-1'))
+})
+
+describe('formatSpeed', () => {
+  it('30 pés → 9 m (6 quad.)', () => expect(formatSpeed(30)).toBe('9 m (6 quad.)'))
+  it('25 pés → 7,5 m (5 quad.)', () => expect(formatSpeed(25)).toBe('7,5 m (5 quad.)'))
+  it('35 pés → 10,5 m (7 quad.)', () => expect(formatSpeed(35)).toBe('10,5 m (7 quad.)'))
+  it('60 pés → 18 m (12 quad.)', () => expect(formatSpeed(60)).toBe('18 m (12 quad.)'))
 })

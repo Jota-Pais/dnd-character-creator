@@ -22,3 +22,12 @@ export function formatModifier(modifier: number): string {
 export function formatBonus(value: number): string {
   return value >= 0 ? `+${value}` : `${value}`
 }
+
+export function formatSpeed(feet: number): string {
+  const meters = feet * 0.3
+  const squares = feet / 5
+  const metersStr = Number.isInteger(meters)
+    ? `${meters} m`
+    : `${meters.toFixed(1).replace('.', ',')} m`
+  return `${metersStr} (${squares} quad.)`
+}

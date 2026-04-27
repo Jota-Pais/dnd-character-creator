@@ -1,4 +1,6 @@
 import type { AbilityScore } from './race'
+import type { ClassChoiceSelections } from './class'
+export type { ClassChoiceSelections }
 
 export type WizardStep = 'name' | 'race' | 'class' | 'abilities' | 'background' | 'equipment' | 'review'
 
@@ -36,6 +38,8 @@ export type CharacterDraft = {
   race: string | null
   subrace: string | null
   raceChoices: RaceChoiceSelections
+  class: string | null
+  classChoices: ClassChoiceSelections
 }
 
 export const EMPTY_DRAFT: CharacterDraft = {
@@ -43,4 +47,13 @@ export const EMPTY_DRAFT: CharacterDraft = {
   race: null,
   subrace: null,
   raceChoices: {},
+  class: null,
+  classChoices: {
+    skills: [],
+    subclass: null,
+    fightingStyle: null,
+    expertiseItems: [],
+    tools: [],
+    subclassExtras: {},
+  },
 }

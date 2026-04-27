@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { WizardStep, CharacterDraft, RaceChoiceSelections } from '../types/character'
+import type { WizardStep, CharacterDraft, RaceChoiceSelections, ClassChoiceSelections } from '../types/character'
 import { WIZARD_STEPS, EMPTY_DRAFT } from '../types/character'
 import { saveCharacter, loadCharacter, clearCharacter } from '../utils/storage'
 
@@ -11,6 +11,8 @@ type CharacterStore = {
   setRace: (raceId: string) => void
   setSubrace: (subraceId: string) => void
   updateRaceChoices: (choices: Partial<RaceChoiceSelections>) => void
+  setClass: (classId: string) => void
+  updateClassChoices: (choices: Partial<ClassChoiceSelections>) => void
   nextStep: () => void
   prevStep: () => void
   reset: () => void
@@ -39,6 +41,23 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
       draft: {
         ...state.draft,
         raceChoices: { ...state.draft.raceChoices, ...choices },
+      },
+    })),
+
+  setClass: (classId) =>
+    set(state => ({
+      draft: {
+        ...state.draft,
+        class: classId,
+        classChoices: { ...EMPTY_DRAFT.classChoices },
+      },
+    })),
+
+  updateClassChoices: (choices) =>
+    set(state => ({
+      draft: {
+        ...state.draft,
+        classChoices: { ...state.draft.classChoices, ...choices },
       },
     })),
 

@@ -1,0 +1,561 @@
+[
+  {
+    "id": "barbarian",
+    "name": "Bárbaro",
+    "description": "Um combatente feroz que usa a fúria primitiva para devastar inimigos e resistir a quantidades massivas de dano.",
+    "primaryAbility": ["STR"],
+    "hitDie": 12,
+    "savingThrows": ["STR", "CON"],
+    "skillChoices": {
+      "count": 2,
+      "from": ["animal-handling", "athletics", "intimidation", "nature", "perception", "survival"]
+    },
+    "toolProficiencies": { "granted": [], "choices": [] },
+    "isCaster": false,
+    "spellcasting": null,
+    "features": [
+      { "name": "Fúria", "description": "Como ação bônus, entre em ferocidade primitiva por 1 minuto. Vantagem em testes de Força, bônus de dano corpo a corpo e resistência a dano de concussão, cortante e perfurante. Não funciona com armadura pesada." },
+      { "name": "Defesa sem Armadura", "description": "Quando não estiver vestindo armadura, sua CA é 10 + mod. de Destreza + mod. de Constituição. O uso de escudo não impede esse benefício." }
+    ],
+    "subclassLevel": 3,
+    "subclasses": [
+      { "id": "berserker", "name": "Caminho do Furioso", "description": "Canaliza a raiva primitiva em combate frenético implacável, atacando até entrar em exaustão.", "features": [], "extras": null },
+      { "id": "totem-warrior", "name": "Caminho do Guerreiro Totêmico", "description": "Invoca o espírito de um animal ancestral para conceder poderes místicos e proteção.", "features": [], "extras": null }
+    ],
+    "hasFightingStyle": false,
+    "hasExpertise": false
+  },
+  {
+    "id": "bard",
+    "name": "Bardo",
+    "description": "Um artista versátil e conjurador arcano que manipula a magia pela música e pelas palavras, capaz de cumprir quase qualquer papel no grupo.",
+    "primaryAbility": ["CHA"],
+    "hitDie": 8,
+    "savingThrows": ["DEX", "CHA"],
+    "skillChoices": {
+      "count": 3,
+      "from": ["any"]
+    },
+    "toolProficiencies": {
+      "granted": [],
+      "choices": [{ "count": 3, "from": "musical" }]
+    },
+    "isCaster": true,
+    "spellcasting": {
+      "ability": "CHA",
+      "cantripsKnown": 2,
+      "type": "known",
+      "spellsAtLevel1": 4,
+      "preparedFormula": null,
+      "ritualCasting": true,
+      "focus": "instrumento musical",
+      "castingStartsAtLevel": 1
+    },
+    "features": [
+      { "name": "Conjuração", "description": "Conjure magias e truques da lista do Bardo usando Carisma. Pode conjurar rituais e utilizar um instrumento musical como foco de conjuração." },
+      { "name": "Inspiração de Bardo", "description": "Como ação bônus, conceda um dado de Inspiração (1d6) a uma criatura próxima. Ela pode adicionar o resultado a uma jogada de ataque, teste ou resistência. Usos iguais ao mod. de Carisma por descanso longo." }
+    ],
+    "subclassLevel": 3,
+    "subclasses": [
+      { "id": "college-of-lore", "name": "Colégio do Conhecimento", "description": "Coleciona conhecimento de todos os cantos do mundo, desdenhando as tradições convencionais e revelando os segredos mais sombrios.", "features": [], "extras": null },
+      { "id": "college-of-valor", "name": "Colégio da Bravura", "description": "Inspira bravura em aliados narrando histórias de heróis do passado, enquanto também empunha armas com destreza.", "features": [], "extras": null }
+    ],
+    "hasFightingStyle": false,
+    "hasExpertise": false
+  },
+  {
+    "id": "warlock",
+    "name": "Bruxo",
+    "description": "Um conjurador que extrai sua magia de um pacto firmado com uma entidade extraplanar poderosa, personalizando poderes com invocações místicas.",
+    "primaryAbility": ["CHA"],
+    "hitDie": 8,
+    "savingThrows": ["WIS", "CHA"],
+    "skillChoices": {
+      "count": 2,
+      "from": ["arcana", "deception", "history", "intimidation", "investigation", "nature", "religion"]
+    },
+    "toolProficiencies": { "granted": [], "choices": [] },
+    "isCaster": true,
+    "spellcasting": {
+      "ability": "CHA",
+      "cantripsKnown": 2,
+      "type": "known",
+      "spellsAtLevel1": 2,
+      "preparedFormula": null,
+      "ritualCasting": false,
+      "focus": "foco arcano",
+      "castingStartsAtLevel": 1
+    },
+    "features": [
+      { "name": "Patrono Transcendental", "description": "Você firma um pacto com um ser transcendental. Sua escolha confere traços no 1º nível e novamente no 6º, 10º e 14º nível." },
+      { "name": "Magia de Pacto", "description": "Todos os espaços de magia são do mesmo nível e são recuperados após um descanso curto ou longo." }
+    ],
+    "subclassLevel": 1,
+    "subclasses": [
+      {
+        "id": "the-archfey",
+        "name": "A Arquifada",
+        "description": "Um pacto com uma criatura lendária das cortes feéricas, concedendo poderes de ilusão, encanto e mobilidade.",
+        "features": [
+          { "name": "Lista de Magia Expandida", "description": "Permite escolher magias de uma lista expandida da Arquifada ao aprender magias de bruxo." },
+          { "name": "Presença Feérica", "description": "Com uma ação, force criaturas num cubo de 3 m a testar Sabedoria. Falha: enfeitiçadas ou amedrontadas até seu próximo turno. Recarrega em descanso curto ou longo." }
+        ],
+        "extras": null
+      },
+      {
+        "id": "the-fiend",
+        "name": "O Corruptor",
+        "description": "Um pacto com uma criatura das profundezas infernais, focando em magias destrutivas flamejantes e resiliência mortal.",
+        "features": [
+          { "name": "Lista de Magia Expandida", "description": "Permite escolher magias de uma lista expandida do Corruptor ao aprender magias de bruxo." },
+          { "name": "Bênção do Obscuro", "description": "Ao reduzir uma criatura hostil a 0 PV, você ganha PV temporários iguais ao mod. de Carisma + nível de bruxo (mínimo 1)." }
+        ],
+        "extras": null
+      },
+      {
+        "id": "the-great-old-one",
+        "name": "O Grande Antigo",
+        "description": "Um elo com uma entidade incompreensível do Reino Distante, voltado para poderes mentais, telepatia e o desdobramento da sanidade.",
+        "features": [
+          { "name": "Lista de Magia Expandida", "description": "Permite escolher magias de uma lista expandida do Grande Antigo ao aprender magias de bruxo." },
+          { "name": "Despertar a Mente", "description": "Comunique-se telepaticamente com qualquer criatura visível até 18 m. Ela deve entender ao menos um idioma para compreendê-lo." }
+        ],
+        "extras": null
+      }
+    ],
+    "hasFightingStyle": false,
+    "hasExpertise": false
+  },
+  {
+    "id": "cleric",
+    "name": "Clérigo",
+    "description": "Um intermediário divino que conjura magias através de profunda devoção, atuando como curandeiro poderoso, suporte ou combatente.",
+    "primaryAbility": ["WIS"],
+    "hitDie": 8,
+    "savingThrows": ["WIS", "CHA"],
+    "skillChoices": {
+      "count": 2,
+      "from": ["history", "insight", "medicine", "persuasion", "religion"]
+    },
+    "toolProficiencies": { "granted": [], "choices": [] },
+    "isCaster": true,
+    "spellcasting": {
+      "ability": "WIS",
+      "cantripsKnown": 3,
+      "type": "prepared",
+      "spellsAtLevel1": 0,
+      "preparedFormula": "mod. de Sabedoria + nível de clérigo",
+      "ritualCasting": true,
+      "focus": "símbolo sagrado",
+      "castingStartsAtLevel": 1
+    },
+    "features": [
+      { "name": "Conjuração", "description": "Conjure magias divinas preparando uma lista diariamente após um descanso longo usando símbolo sagrado como foco." },
+      { "name": "Domínio Divino", "description": "Escolha um domínio relacionado à sua divindade. Concede magias de domínio sempre preparadas e características exclusivas de nível 1." }
+    ],
+    "subclassLevel": 1,
+    "subclasses": [
+      {
+        "id": "knowledge-domain",
+        "name": "Domínio do Conhecimento",
+        "description": "Focado no estudo e na desmistificação dos segredos do multiverso. Seus clérigos atuam como sábios com proficiências amplas.",
+        "features": [
+          { "name": "Bênçãos do Conhecimento", "description": "Aprenda dois idiomas à sua escolha e ganhe proficiência com bônus dobrado em duas perícias entre: Arcanismo, História, Natureza ou Religião." }
+        ],
+        "extras": {
+          "expertiseSkills": { "count": 2, "from": ["arcana", "history", "nature", "religion"] },
+          "skillChoice": null,
+          "languages": { "count": 2 },
+          "cantripChoice": null,
+          "grantedLanguages": [],
+          "grantedArmorProficiencies": [],
+          "grantedWeaponProficiencies": []
+        }
+      },
+      {
+        "id": "trickery-domain",
+        "name": "Domínio da Enganação",
+        "description": "Voltado para deuses das travessuras e ilusões. Clérigos quebram regras, ignoram tradições e enganam inimigos.",
+        "features": [
+          { "name": "Bênção do Trapaceiro", "description": "Use uma ação para tocar uma criatura voluntária (não você) e conceder-lhe vantagem em testes de Destreza (Furtividade) por 1 hora." }
+        ],
+        "extras": null
+      },
+      {
+        "id": "war-domain",
+        "name": "Domínio da Guerra",
+        "description": "Deuses guerreiros concedem capacidades de linha de frente, inspirando coragem e combates corpo a corpo.",
+        "features": [
+          { "name": "Sacerdote da Guerra", "description": "Ao usar a ação de Ataque, realize um ataque com arma como ação bônus. Usos iguais ao mod. de Sabedoria por descanso longo." }
+        ],
+        "extras": {
+          "expertiseSkills": null,
+          "skillChoice": null,
+          "languages": null,
+          "cantripChoice": null,
+          "grantedLanguages": [],
+          "grantedArmorProficiencies": ["heavy"],
+          "grantedWeaponProficiencies": ["martial"]
+        }
+      },
+      {
+        "id": "light-domain",
+        "name": "Domínio da Luz",
+        "description": "Devotos do sol e da vigilância, focados em afastar as trevas e incinerar forças inimigas com fogo radiante.",
+        "features": [
+          { "name": "Truque Adicional", "description": "Você ganha o truque luz, caso ainda não o conheça." },
+          { "name": "Labareda Protetora", "description": "Ao ser atacado por uma criatura até 9 m, use sua reação para impor desvantagem na jogada de ataque ofuscando-a com luz." }
+        ],
+        "extras": null
+      },
+      {
+        "id": "nature-domain",
+        "name": "Domínio da Natureza",
+        "description": "Elo entre os deuses e o mundo selvagem, abençoando colheitas e caçando abominações com auxílio dos elementos.",
+        "features": [
+          { "name": "Acólito da Natureza", "description": "Aprenda um truque de druida e ganhe proficiência em uma perícia relacionada à vida selvagem." }
+        ],
+        "extras": {
+          "expertiseSkills": null,
+          "skillChoice": { "count": 1, "from": ["animal-handling", "nature", "survival"] },
+          "languages": null,
+          "cantripChoice": "druid",
+          "grantedLanguages": [],
+          "grantedArmorProficiencies": ["heavy"],
+          "grantedWeaponProficiencies": []
+        }
+      },
+      {
+        "id": "tempest-domain",
+        "name": "Domínio da Tempestade",
+        "description": "Representantes da ira divina pelos céus revoltos, capazes de devastar inimigos com relâmpagos e trovões.",
+        "features": [
+          { "name": "Ira da Tormenta", "description": "Ao ser atingido em corpo a corpo, use sua reação para forçar o atacante a resistir com Destreza. Falha: 2d8 de dano elétrico ou trovejante (metade no sucesso)." }
+        ],
+        "extras": {
+          "expertiseSkills": null,
+          "skillChoice": null,
+          "languages": null,
+          "cantripChoice": null,
+          "grantedLanguages": [],
+          "grantedArmorProficiencies": ["heavy"],
+          "grantedWeaponProficiencies": ["martial"]
+        }
+      },
+      {
+        "id": "life-domain",
+        "name": "Domínio da Vida",
+        "description": "O clássico suporte divino, insuperável em magias de cura e na proteção de todos os aliados contra a morte.",
+        "features": [
+          { "name": "Discípulo da Vida", "description": "Quando curar PV de uma criatura com uma magia, ela recupera pontos adicionais iguais a 2 + o nível da magia." }
+        ],
+        "extras": {
+          "expertiseSkills": null,
+          "skillChoice": null,
+          "languages": null,
+          "cantripChoice": null,
+          "grantedLanguages": [],
+          "grantedArmorProficiencies": ["heavy"],
+          "grantedWeaponProficiencies": []
+        }
+      }
+    ],
+    "hasFightingStyle": false,
+    "hasExpertise": false
+  },
+  {
+    "id": "druid",
+    "name": "Druida",
+    "description": "Conjuradores devotados ao equilíbrio natural, capazes de assumir formas de feras selvagens e conjurar a fúria da natureza.",
+    "primaryAbility": ["WIS"],
+    "hitDie": 8,
+    "savingThrows": ["INT", "WIS"],
+    "skillChoices": {
+      "count": 2,
+      "from": ["arcana", "animal-handling", "insight", "medicine", "nature", "perception", "religion", "survival"]
+    },
+    "toolProficiencies": { "granted": ["herbalism-kit"], "choices": [] },
+    "isCaster": true,
+    "spellcasting": {
+      "ability": "WIS",
+      "cantripsKnown": 2,
+      "type": "prepared",
+      "spellsAtLevel1": 0,
+      "preparedFormula": "mod. de Sabedoria + nível de druida",
+      "ritualCasting": true,
+      "focus": "foco druídico",
+      "castingStartsAtLevel": 1
+    },
+    "features": [
+      { "name": "Druídico", "description": "Você conhece o idioma secreto dos druidas. Pode usá-lo para deixar mensagens ocultas detectáveis apenas por outros druidas ou magia." },
+      { "name": "Conjuração", "description": "Conjure magias focadas nos elementos e na natureza, alterando as magias preparadas diariamente após um descanso longo." }
+    ],
+    "subclassLevel": 2,
+    "subclasses": [
+      { "id": "circle-of-the-land", "name": "Círculo da Terra", "description": "Conectado a um tipo específico de terreno, acumula magias adicionais e habilidades de navegação selvagem.", "features": [], "extras": null },
+      { "id": "circle-of-the-moon", "name": "Círculo da Lua", "description": "Mestre da transformação em feras, podendo assumir formas mais poderosas e combativas.", "features": [], "extras": null }
+    ],
+    "hasFightingStyle": false,
+    "hasExpertise": false
+  },
+  {
+    "id": "sorcerer",
+    "name": "Feiticeiro",
+    "description": "Conjuradores inatos cuja magia flui de uma linhagem exótica, influência cósmica ou energia bruta e caótica em suas veias.",
+    "primaryAbility": ["CHA"],
+    "hitDie": 6,
+    "savingThrows": ["CON", "CHA"],
+    "skillChoices": {
+      "count": 2,
+      "from": ["arcana", "deception", "insight", "intimidation", "persuasion", "religion"]
+    },
+    "toolProficiencies": { "granted": [], "choices": [] },
+    "isCaster": true,
+    "spellcasting": {
+      "ability": "CHA",
+      "cantripsKnown": 4,
+      "type": "known",
+      "spellsAtLevel1": 2,
+      "preparedFormula": null,
+      "ritualCasting": false,
+      "focus": "foco arcano",
+      "castingStartsAtLevel": 1
+    },
+    "features": [
+      { "name": "Conjuração", "description": "Lance feitiços usando Carisma como força de vontade. Você começa conhecendo 4 truques e 2 magias de nível 1." },
+      { "name": "Origem de Feitiçaria", "description": "Sua escolha determina a fonte do seu poder mágico, conferindo características exclusivas neste e em níveis futuros." }
+    ],
+    "subclassLevel": 1,
+    "subclasses": [
+      {
+        "id": "draconic-bloodline",
+        "name": "Linhagem Dracônica",
+        "description": "A magia de poderosos dragões corre em seu sangue, dotando-o de resiliência física e afinidade elemental.",
+        "features": [
+          { "name": "Ancestral Dracônico", "description": "Escolha um tipo de dragão como ancestral. Você dobra o bônus de proficiência em Carisma ao interagir com dragões e aprende o idioma Dracônico automaticamente." },
+          { "name": "Resiliência Dracônica (PV)", "description": "Seu máximo de PV aumenta em 1 no nível 1, e mais 1 a cada nível subsequente de feiticeiro." },
+          { "name": "Resiliência Dracônica (CA)", "description": "Quando não estiver usando armadura, sua CA é 13 + mod. de Destreza, devido a escamas dracônicas minúsculas." }
+        ],
+        "extras": {
+          "expertiseSkills": null,
+          "skillChoice": null,
+          "languages": null,
+          "cantripChoice": null,
+          "grantedLanguages": ["draconic"],
+          "grantedArmorProficiencies": [],
+          "grantedWeaponProficiencies": []
+        }
+      },
+      {
+        "id": "wild-magic",
+        "name": "Magia Selvagem",
+        "description": "Um conduíte caótico de forças elementais imprevisíveis. Suas magias podem causar efeitos drásticos inesperados.",
+        "features": [
+          { "name": "Surto de Magia Selvagem", "description": "Quando conjurar uma magia de nível 1+, o Mestre pode pedir 1d20. Com resultado 1, role na tabela de Surto de Magia Selvagem para um efeito aleatório." },
+          { "name": "Marés de Caos", "description": "Ganhe vantagem em uma jogada de ataque, teste ou resistência. Após usar, só pode repetir ao terminar descanso longo ou disparar um Surto." }
+        ],
+        "extras": null
+      }
+    ],
+    "hasFightingStyle": false,
+    "hasExpertise": false
+  },
+  {
+    "id": "fighter",
+    "name": "Guerreiro",
+    "description": "Especialistas em combate que dominam armas e armaduras, combinando resistência tática e versatilidade marcial incomparável.",
+    "primaryAbility": ["STR", "DEX"],
+    "hitDie": 10,
+    "savingThrows": ["STR", "CON"],
+    "skillChoices": {
+      "count": 2,
+      "from": ["acrobatics", "animal-handling", "athletics", "history", "insight", "intimidation", "perception", "survival"]
+    },
+    "toolProficiencies": { "granted": [], "choices": [] },
+    "isCaster": false,
+    "spellcasting": null,
+    "features": [
+      { "name": "Estilo de Luta", "description": "Escolha uma especialidade: Arquearia, Combate com Armas Grandes, Combate com Duas Armas, Defesa, Duelismo ou Proteção." },
+      { "name": "Retomar o Fôlego", "description": "No seu turno, use uma ação bônus para recuperar 1d10 + nível de guerreiro em PV. Requer descanso curto ou longo para repetir." }
+    ],
+    "subclassLevel": 3,
+    "subclasses": [
+      { "id": "champion", "name": "Campeão", "description": "Maximiza o potencial físico bruto para alcançar a perfeição marcial através de treinamento intenso.", "features": [], "extras": null },
+      { "id": "battle-master", "name": "Mestre de Batalha", "description": "Aprende manobras militares para explorar as fraquezas do inimigo com precisão tática.", "features": [], "extras": null },
+      { "id": "eldritch-knight", "name": "Cavaleiro Arcano", "description": "Combina arte marcial com estudo de magia arcana de abjuração e evocação.", "features": [], "extras": null }
+    ],
+    "hasFightingStyle": true,
+    "hasExpertise": false
+  },
+  {
+    "id": "rogue",
+    "name": "Ladino",
+    "description": "Mestre da furtividade, das perícias e da precisão letal. Usa astúcia e exploração de fraquezas com ataques furtivos devastadores.",
+    "primaryAbility": ["DEX"],
+    "hitDie": 8,
+    "savingThrows": ["DEX", "INT"],
+    "skillChoices": {
+      "count": 4,
+      "from": ["acrobatics", "athletics", "performance", "deception", "stealth", "intimidation", "insight", "investigation", "perception", "persuasion", "sleight-of-hand"]
+    },
+    "toolProficiencies": { "granted": ["thieves-tools"], "choices": [] },
+    "isCaster": false,
+    "spellcasting": null,
+    "features": [
+      { "name": "Especialização", "description": "Escolha 2 das suas perícias treinadas (ou 1 perícia + ferramentas de ladrão) para dobrar o bônus de proficiência nos testes com elas." },
+      { "name": "Ataque Furtivo", "description": "Uma vez por turno, adicione 1d6 de dano com arma de acuidade ou à distância se tiver vantagem ou houver aliado adjacente ao alvo." },
+      { "name": "Gíria de Ladrão", "description": "Conheça um dialeto secreto para ocultar mensagens em conversas normais e decifrar símbolos de ladrões em locais." }
+    ],
+    "subclassLevel": 3,
+    "subclasses": [
+      { "id": "thief", "name": "Ladrão", "description": "Aprimora habilidades de escalar, esconder e roubar com versatilidade incomum.", "features": [], "extras": null },
+      { "id": "assassin", "name": "Assassino", "description": "Especializado em eliminar alvos de surpresa com letalidade máxima.", "features": [], "extras": null },
+      { "id": "arcane-trickster", "name": "Trapaceiro Arcano", "description": "Combina furtividade com truques arcanos de ilusão e encantamento.", "features": [], "extras": null }
+    ],
+    "hasFightingStyle": false,
+    "hasExpertise": true
+  },
+  {
+    "id": "wizard",
+    "name": "Mago",
+    "description": "Estudiosos devotados às artes arcanas que manipulam a realidade através do intelecto e de um vasto grimório.",
+    "primaryAbility": ["INT"],
+    "hitDie": 6,
+    "savingThrows": ["INT", "WIS"],
+    "skillChoices": {
+      "count": 2,
+      "from": ["arcana", "history", "insight", "investigation", "medicine", "religion"]
+    },
+    "toolProficiencies": { "granted": [], "choices": [] },
+    "isCaster": true,
+    "spellcasting": {
+      "ability": "INT",
+      "cantripsKnown": 3,
+      "type": "hybrid",
+      "spellsAtLevel1": 6,
+      "preparedFormula": "mod. de Inteligência + nível de mago",
+      "ritualCasting": true,
+      "focus": "foco arcano",
+      "castingStartsAtLevel": 1
+    },
+    "features": [
+      { "name": "Conjuração", "description": "Conjure magias arcanas do grimório, preparando diariamente usando Inteligência. Pode conjurar como ritual qualquer magia no grimório com o descritor ritual." },
+      { "name": "Recuperação Arcana", "description": "Uma vez por dia, ao terminar descanso curto, recupere espaços de magia cujo nível total seja ≤ metade do nível de mago (arredondado para cima). Nenhum de 6º nível ou superior." }
+    ],
+    "subclassLevel": 2,
+    "subclasses": [
+      { "id": "abjuration", "name": "Escola de Abjuração", "description": "Especialista em magias de proteção, banimento e anulação de magia.", "features": [], "extras": null },
+      { "id": "divination", "name": "Escola de Adivinhação", "description": "Desvenda segredos e manipula o destino com visões do futuro.", "features": [], "extras": null },
+      { "id": "conjuration", "name": "Escola de Conjuração", "description": "Especialista em transportar objetos, criaturas e a si mesmo.", "features": [], "extras": null },
+      { "id": "enchantment", "name": "Escola de Encantamento", "description": "Manipula mentes e emoções de outras criaturas com precisão arcana.", "features": [], "extras": null },
+      { "id": "evocation", "name": "Escola de Evocação", "description": "Controla energias elementais para criar efeitos destrutivos devastadores.", "features": [], "extras": null },
+      { "id": "illusion", "name": "Escola de Ilusão", "description": "Manipula os sentidos e a mente criando realidades alternativas enganosas.", "features": [], "extras": null },
+      { "id": "necromancy", "name": "Escola de Necromancia", "description": "Manipula as forças da vida, morte e magia negra.", "features": [], "extras": null },
+      { "id": "transmutation", "name": "Escola de Transmutação", "description": "Altera as propriedades físicas de objetos, criaturas e o próprio ambiente.", "features": [], "extras": null }
+    ],
+    "hasFightingStyle": false,
+    "hasExpertise": false
+  },
+  {
+    "id": "monk",
+    "name": "Monge",
+    "description": "Mestre em artes marciais que canaliza o chi para feitos físicos impressionantes e ataques desarmados incrivelmente rápidos sem armaduras.",
+    "primaryAbility": ["DEX", "WIS"],
+    "hitDie": 8,
+    "savingThrows": ["STR", "DEX"],
+    "skillChoices": {
+      "count": 2,
+      "from": ["acrobatics", "athletics", "stealth", "history", "insight", "religion"]
+    },
+    "toolProficiencies": {
+      "granted": [],
+      "choices": [{ "count": 1, "from": "any-tool" }]
+    },
+    "isCaster": false,
+    "spellcasting": null,
+    "features": [
+      { "name": "Defesa sem Armadura", "description": "Quando não vestir armadura nem escudo, sua CA é 10 + mod. de Destreza + mod. de Sabedoria." },
+      { "name": "Artes Marciais", "description": "Use Destreza para ataques desarmados e armas de monge. Cause 1d4 em lugar do dano normal e realize um ataque desarmado de ação bônus ao atacar com arma de monge ou desarmado." }
+    ],
+    "subclassLevel": 3,
+    "subclasses": [
+      { "id": "open-hand", "name": "Caminho da Mão Aberta", "description": "Mestre das técnicas de artes marciais, manipulando o chi do oponente para controle e destruição.", "features": [], "extras": null },
+      { "id": "shadow", "name": "Caminho da Sombra", "description": "Segue as tradições ninja especializando-se em furtividade, disfarce e magia das sombras.", "features": [], "extras": null },
+      { "id": "four-elements", "name": "Caminho dos Quatro Elementos", "description": "Canaliza o chi para controlar os quatro elementos naturais.", "features": [], "extras": null }
+    ],
+    "hasFightingStyle": false,
+    "hasExpertise": false
+  },
+  {
+    "id": "paladin",
+    "name": "Paladino",
+    "description": "Um guerreiro divino cujos juramentos sagrados concedem proezas marciais implacáveis e poder mágico para curar aliados e destruir o mal.",
+    "primaryAbility": ["STR", "CHA"],
+    "hitDie": 10,
+    "savingThrows": ["WIS", "CHA"],
+    "skillChoices": {
+      "count": 2,
+      "from": ["athletics", "insight", "intimidation", "medicine", "persuasion", "religion"]
+    },
+    "toolProficiencies": { "granted": [], "choices": [] },
+    "isCaster": true,
+    "spellcasting": {
+      "ability": "CHA",
+      "cantripsKnown": 0,
+      "type": "prepared",
+      "spellsAtLevel1": 0,
+      "preparedFormula": "mod. de Carisma + metade do nível de paladino",
+      "ritualCasting": false,
+      "focus": "símbolo sagrado",
+      "castingStartsAtLevel": 2
+    },
+    "features": [
+      { "name": "Sentido Divino", "description": "Com uma ação, expanda sua consciência por 1 turno para sentir celestiais, corruptores e mortos-vivos até 18 m. Usos: 1 + mod. de Carisma por descanso longo." },
+      { "name": "Cura pelas Mãos", "description": "Poço de cura de 5 × nível de paladino PV. Com uma ação, toque uma criatura para curar do poço, ou gaste 5 pts para remover doença ou veneno." }
+    ],
+    "subclassLevel": 3,
+    "subclasses": [
+      { "id": "oath-of-devotion", "name": "Juramento de Devoção", "description": "O paladino clássico, devotado aos ideais de honestidade, coragem, compaixão, honra e justiça.", "features": [], "extras": null },
+      { "id": "oath-of-the-ancients", "name": "Juramento dos Anciões", "description": "Defende a luz e a vida natural contra as trevas, seguindo tradições antigas da natureza.", "features": [], "extras": null },
+      { "id": "oath-of-vengeance", "name": "Juramento de Vingança", "description": "Persegue implacavelmente os grandes males do mundo, usando qualquer meio necessário.", "features": [], "extras": null }
+    ],
+    "hasFightingStyle": false,
+    "hasExpertise": false
+  },
+  {
+    "id": "ranger",
+    "name": "Patrulheiro",
+    "description": "Guerreiros da natureza que combinam sobrevivência, combate mortal e conjuração natural para rastrear e abater suas presas.",
+    "primaryAbility": ["DEX", "WIS"],
+    "hitDie": 10,
+    "savingThrows": ["STR", "DEX"],
+    "skillChoices": {
+      "count": 3,
+      "from": ["animal-handling", "athletics", "insight", "investigation", "nature", "perception", "stealth", "survival"]
+    },
+    "toolProficiencies": { "granted": [], "choices": [] },
+    "isCaster": true,
+    "spellcasting": {
+      "ability": "WIS",
+      "cantripsKnown": 0,
+      "type": "known",
+      "spellsAtLevel1": 0,
+      "preparedFormula": null,
+      "ritualCasting": false,
+      "focus": "bolsa de componentes",
+      "castingStartsAtLevel": 2
+    },
+    "features": [
+      { "name": "Inimigo Favorito", "description": "Escolha um tipo de inimigo. Ganhe +2 de bônus no dano contra eles, vantagem em rastreamento e aprenda o idioma deles." },
+      { "name": "Explorador Natural", "description": "Ignore terreno difícil, ganhe vantagem na iniciativa e em ataques no primeiro turno contra quem ainda não agiu. Bônus em viagens longas." }
+    ],
+    "subclassLevel": 3,
+    "subclasses": [
+      { "id": "beast-master", "name": "Conclave da Besta", "description": "Forma um vínculo sobrenatural com uma fera selvagem companheira de caça.", "features": [], "extras": null },
+      { "id": "hunter", "name": "Conclave do Caçador", "description": "Domina técnicas de caça para abater presas maiores e mais perigosas.", "features": [], "extras": null },
+      { "id": "gloom-stalker", "name": "Conclave do Rastreador Subterrâneo", "description": "Adaptado para combate nas trevas profundas e ambientes subterrâneos hostis.", "features": [], "extras": null }
+    ],
+    "hasFightingStyle": false,
+    "hasExpertise": false
+  }
+]

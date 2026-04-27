@@ -1,1 +1,41 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cinzel+Decorative:wght@400;700&display=swap');
+
+@theme {
+  --font-fantasy: 'Cinzel', 'Georgia', serif;
+
+  --color-parchment-100: #f5e8cc;
+  --color-parchment-200: #e8d5b7;
+  --color-parchment-300: #d4b896;
+  --color-parchment-400: #b8946f;
+  --color-parchment-500: #9a7650;
+  --color-parchment-600: #7a5a38;
+  --color-parchment-700: #5a3e24;
+  --color-parchment-800: #3a2614;
+  --color-parchment-900: #231608;
+  --color-parchment-950: #120c04;
+
+  --color-gold-300: #fcd67a;
+  --color-gold-400: #f0b429;
+  --color-gold-500: #d4900a;
+  --color-gold-600: #a36b07;
+  --color-gold-700: #7a4e05;
+  --color-gold-800: #52330a;
+  --color-gold-900: #2d1c06;
+}
+
+@layer base {
+  body {
+    background-color: #0e0a06;
+    background-image:
+      radial-gradient(ellipse at 15% 30%, rgba(80, 45, 10, 0.18) 0%, transparent 55%),
+      radial-gradient(ellipse at 85% 70%, rgba(50, 25, 5, 0.15) 0%, transparent 55%);
+    min-height: 100vh;
+    color: #e8d5b7;
+    font-family: system-ui, sans-serif;
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-fantasy);
+  }
+}

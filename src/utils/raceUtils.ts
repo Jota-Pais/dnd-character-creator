@@ -44,6 +44,23 @@ export const LANGUAGES = [
   { id: 'undercommon', name: 'Subcomum' },
 ] as const
 
+export type RacePresentation = {
+  emoji: string
+  accent: string
+}
+
+export const RACE_PRESENTATION: Record<string, RacePresentation> = {
+  dwarf:      { emoji: '⛏️',  accent: '#d97706' },
+  elf:        { emoji: '🌿',  accent: '#10b981' },
+  halfling:   { emoji: '🍀',  accent: '#84cc16' },
+  human:      { emoji: '🛡️',  accent: '#60a5fa' },
+  dragonborn: { emoji: '🐉',  accent: '#f87171' },
+  gnome:      { emoji: '⚙️',  accent: '#a78bfa' },
+  'half-elf': { emoji: '🌙',  accent: '#2dd4bf' },
+  'half-orc': { emoji: '⚔️',  accent: '#4ade80' },
+  tiefling:   { emoji: '🔮',  accent: '#c084fc' },
+}
+
 export const TOOL_NAMES: Record<string, string> = {
   'smiths-tools': 'Ferramentas de Ferreiro',
   'brewers-tools': 'Ferramentas de Cervejeiro',

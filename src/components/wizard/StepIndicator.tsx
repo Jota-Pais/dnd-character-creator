@@ -20,30 +20,35 @@ export function StepIndicator({ currentStep }: Props) {
               <div className="flex flex-col items-center">
                 <div
                   className={[
-                    'w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-colors',
+                    'w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all duration-300 font-fantasy',
                     isDone
-                      ? 'bg-amber-500 border-amber-500 text-stone-950'
+                      ? 'bg-gold-500 border-gold-400 text-parchment-950 shadow-md shadow-gold-900/40'
                       : isActive
-                        ? 'bg-stone-900 border-amber-500 text-amber-500'
-                        : 'bg-stone-900 border-stone-600 text-stone-500',
+                        ? 'bg-parchment-950 border-gold-400 text-gold-400 shadow-md shadow-gold-900/30'
+                        : 'bg-parchment-950 border-parchment-800 text-parchment-700',
                   ].join(' ')}
                 >
-                  {isDone ? '✓' : idx + 1}
+                  {isDone ? '✦' : idx + 1}
                 </div>
                 <span
                   className={[
-                    'mt-1 text-xs font-medium hidden sm:block',
-                    isActive ? 'text-amber-500' : isDone ? 'text-stone-400' : 'text-stone-600',
+                    'mt-1.5 text-xs font-medium hidden sm:block font-fantasy',
+                    isActive
+                      ? 'text-gold-400'
+                      : isDone
+                        ? 'text-parchment-500'
+                        : 'text-parchment-800',
                   ].join(' ')}
                 >
                   {STEP_LABELS[step]}
                 </span>
               </div>
+
               {idx < WIZARD_STEPS.length - 1 && (
                 <div
                   className={[
-                    'h-0.5 w-8 sm:w-12 mx-1 mb-4 transition-colors',
-                    isDone ? 'bg-amber-500' : 'bg-stone-700',
+                    'h-px w-6 sm:w-10 mx-1 mb-5 transition-colors duration-300',
+                    isDone ? 'bg-gold-600' : 'bg-parchment-800',
                   ].join(' ')}
                 />
               )}

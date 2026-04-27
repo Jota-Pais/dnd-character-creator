@@ -8,30 +8,49 @@ export default function App() {
   const name = useCharacterStore(state => state.draft.name)
 
   return (
-    <div className="min-h-screen bg-stone-950 text-stone-100">
-      <div className="max-w-6xl mx-auto px-4 pb-24 lg:pb-8">
-        <header className="py-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-amber-500">Criador de Personagem</h1>
-            <p className="text-stone-500 text-xs">D&D 5e — PHB 2014</p>
+    <div className="min-h-screen">
+      <div className="max-w-6xl mx-auto px-4 pb-28 lg:pb-10">
+
+        {/* Header */}
+        <header className="pt-8 pb-6 text-center">
+          <div className="text-5xl mb-3">🎲</div>
+          <h1 className="font-fantasy text-3xl font-bold text-gold-400 tracking-wide">
+            Criador de Personagem
+          </h1>
+          <div className="flex items-center justify-center gap-3 mt-2">
+            <div className="h-px w-20 bg-gold-800" />
+            <span className="text-parchment-500 text-xs uppercase tracking-widest font-fantasy">
+              D&D 5e · PHB 2014
+            </span>
+            <div className="h-px w-20 bg-gold-800" />
           </div>
           {name && currentStep !== 'name' && (
-            <span className="text-stone-300 text-sm">
-              <span className="text-stone-500">Personagem:</span> {name}
-            </span>
+            <p className="mt-2 text-parchment-400 text-sm">
+              <span className="text-parchment-600">Aventureiro:</span>{' '}
+              <span className="text-gold-400 font-semibold font-fantasy">{name}</span>
+            </p>
           )}
         </header>
 
-        <div className="mb-8">
+        {/* Step indicator */}
+        <div className="mb-8 flex justify-center">
           <StepIndicator currentStep={currentStep} />
+        </div>
+
+        {/* Divider ornamental */}
+        <div className="flex items-center gap-3 mb-8">
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent to-parchment-800" />
+          <span className="text-parchment-700 text-sm">✦</span>
+          <div className="h-px flex-1 bg-gradient-to-l from-transparent to-parchment-800" />
         </div>
 
         <main>
           {currentStep === 'name' && <NameStep />}
           {currentStep === 'race' && <RaceStep />}
           {currentStep !== 'name' && currentStep !== 'race' && (
-            <div className="flex items-center justify-center h-64 rounded-xl border-2 border-dashed border-stone-700">
-              <p className="text-stone-500">Etapa em construção — em breve!</p>
+            <div className="flex flex-col items-center justify-center h-64 rounded-2xl border-2 border-dashed border-parchment-800">
+              <div className="text-4xl mb-3">🏗️</div>
+              <p className="text-parchment-600 font-fantasy">Etapa em construção — em breve!</p>
             </div>
           )}
         </main>

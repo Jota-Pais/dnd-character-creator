@@ -6,14 +6,15 @@ import { SKILLS, LANGUAGES, TOOL_NAMES } from '../../utils/raceUtils'
 type Props = {
   choices: RaceChoice[]
   selections: RaceChoiceSelections
+  accent: string
   onChange: (updates: Partial<RaceChoiceSelections>) => void
 }
 
-export function ChoicePanel({ choices, selections, onChange }: Props) {
+export function ChoicePanel({ choices, selections, accent, onChange }: Props) {
   if (choices.length === 0) return null
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {choices.map((choice, idx) => {
         switch (choice.kind) {
           case 'ability':
@@ -22,6 +23,7 @@ export function ChoicePanel({ choices, selections, onChange }: Props) {
                 key={idx}
                 count={choice.count}
                 from={choice.from}
+                accent={accent}
                 selected={selections.abilityBonuses ?? []}
                 onSelect={abilities => onChange({ abilityBonuses: abilities })}
               />
@@ -32,6 +34,7 @@ export function ChoicePanel({ choices, selections, onChange }: Props) {
                 key={idx}
                 count={choice.count}
                 from={choice.from}
+                accent={accent}
                 selected={selections.skills ?? []}
                 onSelect={skills => onChange({ skills })}
               />
@@ -41,6 +44,7 @@ export function ChoicePanel({ choices, selections, onChange }: Props) {
               <LanguageChoiceField
                 key={idx}
                 count={choice.count}
+                accent={accent}
                 selected={selections.languages ?? []}
                 onSelect={languages => onChange({ languages })}
               />
@@ -49,8 +53,8 @@ export function ChoicePanel({ choices, selections, onChange }: Props) {
             return (
               <ToolChoiceField
                 key={idx}
-                count={choice.count}
                 from={choice.from}
+                accent={accent}
                 selected={selections.tools ?? []}
                 onSelect={tools => onChange({ tools })}
               />
@@ -59,6 +63,7 @@ export function ChoicePanel({ choices, selections, onChange }: Props) {
             return (
               <CantripPlaceholder
                 key={idx}
+                accent={accent}
                 value={selections.cantrip ?? ''}
                 onChange={cantrip => onChange({ cantrip })}
               />
@@ -67,6 +72,7 @@ export function ChoicePanel({ choices, selections, onChange }: Props) {
             return (
               <FeatPlaceholder
                 key={idx}
+                accent={accent}
                 value={selections.feat ?? ''}
                 onChange={feat => onChange({ feat })}
               />
@@ -77,14 +83,17 @@ export function ChoicePanel({ choices, selections, onChange }: Props) {
   )
 }
 
+// ─── Sub-componentes de escolha ──────────────────────────────────────────────
+
 type AbilityChoiceFieldProps = {
   count: number
   from: AbilityScore[] | 'any' | 'any-except-charisma'
+  accent: string
   selected: AbilityScore[]
   onSelect: (abilities: AbilityScore[]) => void
 }
 
-function AbilityChoiceField({ count, from, selected, onSelect }: AbilityChoiceFieldProps) {
+function AbilityChoiceField({ count, from, accent, selected, onSelect }: AbilityChoiceFieldProps) {
   const available =
     from === 'any'
       ? ALL_ABILITY_SCORES
@@ -102,9 +111,9 @@ function AbilityChoiceField({ count, from, selected, onSelect }: AbilityChoiceFi
 
   return (
     <div>
-      <p className="text-sm font-medium text-stone-300 mb-2">
-        Escolha {count} atributo{count > 1 ? 's' : ''} para receber +1{' '}
-        <span className="text-stone-500">({selected.length}/{count})</span>
+      <p className="text-sm font-semibold text-parchment-300 mb-2 font-fantasy">
+        Escolha {count} atributo{count > 1 ? 's' : ''} (+1 cada){' '}
+        <span className="text-parchment-600 font-normal">({selected.length}/{count})</span>
       </p>
       <div className="flex flex-wrap gap-2">
         {available.map(ability => {
@@ -115,14 +124,13 @@ function AbilityChoiceField({ count, from, selected, onSelect }: AbilityChoiceFi
               key={ability}
               onClick={() => toggle(ability)}
               disabled={isDisabled}
-              className={[
-                'px-3 py-2 rounded-lg border-2 font-bold text-sm transition-all',
-                isSelected
-                  ? 'border-amber-500 bg-amber-500/20 text-amber-400'
-                  : isDisabled
-                    ? 'border-stone-700 bg-stone-900 text-stone-600 cursor-not-allowed'
-                    : 'border-stone-600 bg-stone-800 text-stone-300 hover:border-stone-400',
-              ].join(' ')}
+              className="px-3 py-2 rounded-lg border-2 font-bold text-sm transition-all font-fantasy"
+              style={{
+                borderColor: isSelected ? accent : isDisabled ? 'rgba(58, 38, 20, 0.5)' : 'rgba(90, 62, 36, 0.7)',
+                backgroundColor: isSelected ? `${accent}20` : 'transparent',
+                color: isSelected ? accent : isDisabled ? '#5a3e24' : '#b8946f',
+                cursor: isDisabled ? 'not-allowed' : 'pointer',
+              }}
             >
               {ABILITY_LABELS[ability].short}
             </button>
@@ -136,13 +144,13 @@ function AbilityChoiceField({ count, from, selected, onSelect }: AbilityChoiceFi
 type SkillChoiceFieldProps = {
   count: number
   from: string[] | 'any'
+  accent: string
   selected: string[]
   onSelect: (skills: string[]) => void
 }
 
-function SkillChoiceField({ count, from, selected, onSelect }: SkillChoiceFieldProps) {
-  const available =
-    from === 'any' ? SKILLS : SKILLS.filter(s => (from as string[]).includes(s.id))
+function SkillChoiceField({ count, from, accent, selected, onSelect }: SkillChoiceFieldProps) {
+  const available = from === 'any' ? SKILLS : SKILLS.filter(s => (from as string[]).includes(s.id))
 
   function toggle(skillId: string) {
     if (selected.includes(skillId)) {
@@ -154,9 +162,9 @@ function SkillChoiceField({ count, from, selected, onSelect }: SkillChoiceFieldP
 
   return (
     <div>
-      <p className="text-sm font-medium text-stone-300 mb-2">
+      <p className="text-sm font-semibold text-parchment-300 mb-2 font-fantasy">
         Escolha {count} perícia{count > 1 ? 's' : ''}{' '}
-        <span className="text-stone-500">({selected.length}/{count})</span>
+        <span className="text-parchment-600 font-normal">({selected.length}/{count})</span>
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
         {available.map(skill => {
@@ -167,14 +175,13 @@ function SkillChoiceField({ count, from, selected, onSelect }: SkillChoiceFieldP
               key={skill.id}
               onClick={() => toggle(skill.id)}
               disabled={isDisabled}
-              className={[
-                'px-2 py-1.5 rounded border text-xs text-left transition-all',
-                isSelected
-                  ? 'border-amber-500 bg-amber-500/10 text-amber-400'
-                  : isDisabled
-                    ? 'border-stone-700 text-stone-600 cursor-not-allowed'
-                    : 'border-stone-700 text-stone-300 hover:border-stone-500 hover:bg-stone-800',
-              ].join(' ')}
+              className="px-2 py-1.5 rounded-lg border text-xs text-left transition-all"
+              style={{
+                borderColor: isSelected ? accent : 'rgba(58, 38, 20, 0.6)',
+                backgroundColor: isSelected ? `${accent}15` : 'transparent',
+                color: isSelected ? accent : isDisabled ? '#5a3e24' : '#9a7650',
+                cursor: isDisabled ? 'not-allowed' : 'pointer',
+              }}
             >
               {skill.name}
             </button>
@@ -187,11 +194,12 @@ function SkillChoiceField({ count, from, selected, onSelect }: SkillChoiceFieldP
 
 type LanguageChoiceFieldProps = {
   count: number
+  accent: string
   selected: string[]
   onSelect: (languages: string[]) => void
 }
 
-function LanguageChoiceField({ count, selected, onSelect }: LanguageChoiceFieldProps) {
+function LanguageChoiceField({ count, accent, selected, onSelect }: LanguageChoiceFieldProps) {
   function toggle(langId: string) {
     if (selected.includes(langId)) {
       onSelect(selected.filter(l => l !== langId))
@@ -202,9 +210,9 @@ function LanguageChoiceField({ count, selected, onSelect }: LanguageChoiceFieldP
 
   return (
     <div>
-      <p className="text-sm font-medium text-stone-300 mb-2">
+      <p className="text-sm font-semibold text-parchment-300 mb-2 font-fantasy">
         Escolha {count} idioma{count > 1 ? 's' : ''}{' '}
-        <span className="text-stone-500">({selected.length}/{count})</span>
+        <span className="text-parchment-600 font-normal">({selected.length}/{count})</span>
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
         {LANGUAGES.map(lang => {
@@ -215,14 +223,13 @@ function LanguageChoiceField({ count, selected, onSelect }: LanguageChoiceFieldP
               key={lang.id}
               onClick={() => toggle(lang.id)}
               disabled={isDisabled}
-              className={[
-                'px-2 py-1.5 rounded border text-xs text-left transition-all',
-                isSelected
-                  ? 'border-amber-500 bg-amber-500/10 text-amber-400'
-                  : isDisabled
-                    ? 'border-stone-700 text-stone-600 cursor-not-allowed'
-                    : 'border-stone-700 text-stone-300 hover:border-stone-500 hover:bg-stone-800',
-              ].join(' ')}
+              className="px-2 py-1.5 rounded-lg border text-xs text-left transition-all"
+              style={{
+                borderColor: isSelected ? accent : 'rgba(58, 38, 20, 0.6)',
+                backgroundColor: isSelected ? `${accent}15` : 'transparent',
+                color: isSelected ? accent : isDisabled ? '#5a3e24' : '#9a7650',
+                cursor: isDisabled ? 'not-allowed' : 'pointer',
+              }}
             >
               {lang.name}
             </button>
@@ -234,16 +241,18 @@ function LanguageChoiceField({ count, selected, onSelect }: LanguageChoiceFieldP
 }
 
 type ToolChoiceFieldProps = {
-  count: number
   from: string[]
+  accent: string
   selected: string[]
   onSelect: (tools: string[]) => void
 }
 
-function ToolChoiceField({ from, selected, onSelect }: ToolChoiceFieldProps) {
+function ToolChoiceField({ from, accent, selected, onSelect }: ToolChoiceFieldProps) {
   return (
     <div>
-      <p className="text-sm font-medium text-stone-300 mb-2">Escolha uma ferramenta</p>
+      <p className="text-sm font-semibold text-parchment-300 mb-2 font-fantasy">
+        Escolha uma ferramenta
+      </p>
       <div className="flex flex-col gap-1.5">
         {from.map(toolId => {
           const isSelected = selected.includes(toolId)
@@ -251,12 +260,12 @@ function ToolChoiceField({ from, selected, onSelect }: ToolChoiceFieldProps) {
             <button
               key={toolId}
               onClick={() => onSelect([toolId])}
-              className={[
-                'px-3 py-2 rounded border text-sm text-left transition-all',
-                isSelected
-                  ? 'border-amber-500 bg-amber-500/10 text-amber-400'
-                  : 'border-stone-700 text-stone-300 hover:border-stone-500 hover:bg-stone-800',
-              ].join(' ')}
+              className="px-3 py-2 rounded-lg border text-sm text-left transition-all"
+              style={{
+                borderColor: isSelected ? accent : 'rgba(58, 38, 20, 0.6)',
+                backgroundColor: isSelected ? `${accent}15` : 'transparent',
+                color: isSelected ? accent : '#9a7650',
+              }}
             >
               {TOOL_NAMES[toolId] ?? toolId}
             </button>
@@ -267,37 +276,55 @@ function ToolChoiceField({ from, selected, onSelect }: ToolChoiceFieldProps) {
   )
 }
 
-function CantripPlaceholder({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function CantripPlaceholder({
+  accent,
+  value,
+  onChange,
+}: {
+  accent: string
+  value: string
+  onChange: (v: string) => void
+}) {
   return (
     <div>
-      <p className="text-sm font-medium text-stone-300 mb-1">
-        Escolha um truque de mago{' '}
-        <span className="text-amber-600 text-xs">(lista completa em breve)</span>
+      <p className="text-sm font-semibold text-parchment-300 mb-1 font-fantasy">
+        Truque de Mago{' '}
+        <span className="text-gold-700 text-xs font-normal">(lista completa em breve)</span>
       </p>
       <input
         type="text"
         value={value}
         onChange={e => onChange(e.target.value)}
-        placeholder="Digite o nome do truque"
-        className="w-full px-3 py-2 bg-stone-800 border border-stone-600 rounded text-stone-100 placeholder-stone-500 text-sm focus:outline-none focus:border-amber-500 transition-colors"
+        placeholder="Ex: Ilusão Menor, Luz, Prestidígitação…"
+        className="w-full px-3 py-2 rounded-lg border text-parchment-200 placeholder-parchment-700 text-sm bg-parchment-950/50 focus:outline-none transition-colors"
+        style={{ borderColor: value ? accent : 'rgba(58, 38, 20, 0.6)' }}
       />
     </div>
   )
 }
 
-function FeatPlaceholder({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function FeatPlaceholder({
+  accent,
+  value,
+  onChange,
+}: {
+  accent: string
+  value: string
+  onChange: (v: string) => void
+}) {
   return (
     <div>
-      <p className="text-sm font-medium text-stone-300 mb-1">
-        Escolha um talento{' '}
-        <span className="text-amber-600 text-xs">(lista completa em breve)</span>
+      <p className="text-sm font-semibold text-parchment-300 mb-1 font-fantasy">
+        Talento{' '}
+        <span className="text-gold-700 text-xs font-normal">(lista completa em breve)</span>
       </p>
       <input
         type="text"
         value={value}
         onChange={e => onChange(e.target.value)}
-        placeholder="Digite o nome do talento"
-        className="w-full px-3 py-2 bg-stone-800 border border-stone-600 rounded text-stone-100 placeholder-stone-500 text-sm focus:outline-none focus:border-amber-500 transition-colors"
+        placeholder="Ex: Sentido Aguçado, Atirador…"
+        className="w-full px-3 py-2 rounded-lg border text-parchment-200 placeholder-parchment-700 text-sm bg-parchment-950/50 focus:outline-none transition-colors"
+        style={{ borderColor: value ? accent : 'rgba(58, 38, 20, 0.6)' }}
       />
     </div>
   )

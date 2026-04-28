@@ -4,6 +4,7 @@ import { NameStep } from './components/steps/NameStep'
 import { RaceStep } from './components/steps/RaceStep'
 import { ClassStep } from './components/steps/ClassStep'
 import { AbilitiesStep } from './components/steps/AbilitiesStep'
+import { BackgroundStep } from './components/steps/BackgroundStep'
 
 export default function App() {
   const currentStep = useCharacterStore(state => state.currentStep)
@@ -51,7 +52,8 @@ export default function App() {
           {currentStep === 'race' && <RaceStep />}
           {currentStep === 'class' && <ClassStep />}
           {currentStep === 'abilities' && <AbilitiesStep />}
-          {currentStep !== 'name' && currentStep !== 'race' && currentStep !== 'class' && currentStep !== 'abilities' && (
+          {currentStep === 'background' && <BackgroundStep />}
+          {currentStep !== 'name' && currentStep !== 'race' && currentStep !== 'class' && currentStep !== 'abilities' && currentStep !== 'background' && (
             <div className="flex flex-col items-center justify-center h-64 rounded-2xl border-2 border-dashed border-parchment-800">
               <div className="text-4xl mb-3">🏗️</div>
               <p className="text-parchment-600 font-fantasy">Etapa em construção — em breve!</p>

@@ -1,0 +1,194 @@
+[
+  {
+    "id": "acolyte",
+    "name": "Acólito",
+    "description": "Você passou a vida a serviço de um templo de uma divindade ou panteão específico, atuando como intermediário entre o reino dos mortais e o divino. Conduz orações, oferece sacrifícios e estuda textos sagrados.",
+    "skillProficiencies": ["insight", "religion"],
+    "toolProficiencies": [],
+    "choices": [
+      { "kind": "language-choice", "count": 2 }
+    ],
+    "feature": {
+      "name": "Abrigo dos Fiéis",
+      "description": "Você e seus companheiros podem receber cura e cuidados gratuitos em templos, santuários ou outros lugares de presença da sua fé. A congregação provê hospitalidade modesta (cama e comida básica), embora você precise providenciar materiais de magia se necessário. Em templos de outras fés, é tratado com civilidade se reconhecer a divindade local."
+    },
+    "variant": null
+  },
+  {
+    "id": "guild-artisan",
+    "name": "Artesão de Guilda",
+    "description": "Você é membro de uma guilda de artesãos, com habilidade especializada em algum ofício e conexões importantes na sua comunidade. Sua arte é seu sustento, sua identidade e sua porta de entrada em cidades pelo reino.",
+    "skillProficiencies": ["insight", "persuasion"],
+    "toolProficiencies": [],
+    "choices": [
+      { "kind": "tool-choice", "count": 1, "from": "artisan" },
+      { "kind": "language-choice", "count": 1 }
+    ],
+    "feature": {
+      "name": "Filiação a Guilda",
+      "description": "Como membro respeitado de uma guilda, você pode contar com auxílio de outros membros em viagens. Recebe abrigo gratuito ou alojamento básico em casas de membros, acessa redes de contatos políticos e comerciais, e a guilda paga sua fiança em casos legais menores. Em troca, paga taxas mensais de 5 po e mantém os princípios da guilda."
+    },
+    "variant": "Comerciante: substitui a proficiência em ferramentas de artesão por proficiência em ferramentas de navegação ou em um idioma adicional. A feature representa contatos comerciais em vez de filiação a guilda."
+  },
+  {
+    "id": "entertainer",
+    "name": "Artista",
+    "description": "Você prospera diante de uma plateia, sabendo como cativar, divertir e até inspirar. Sua arte pode ser poesia, música, dança, atuação ou contação de histórias, mas o palco é onde você se sente vivo.",
+    "skillProficiencies": ["acrobatics", "performance"],
+    "toolProficiencies": ["disguise-kit"],
+    "choices": [
+      { "kind": "tool-choice", "count": 1, "from": "musical" }
+    ],
+    "feature": {
+      "name": "Por Demanda Popular",
+      "description": "Você sempre encontra um lugar para se apresentar — em estalagens, tavernas, festivais, circos, teatros ou cortes nobres. Em troca da apresentação, recebe alojamento e alimentação gratuitos por padrão de vida modesto ou confortável. Tende a ser reconhecido em lugares onde já se apresentou antes."
+    },
+    "variant": "Gladiador: substitui a proficiência em instrumento musical por proficiência em uma arma incomum usada como acessório de palco, como uma rede ou tridente."
+  },
+  {
+    "id": "charlatan",
+    "name": "Charlatão",
+    "description": "Você sempre teve facilidade com pessoas e sabia como fazê-las acreditar no que quisesse. Vive de golpes, falsificações, identidades alternativas e o conhecimento profundo das fraquezas humanas.",
+    "skillProficiencies": ["deception", "sleight-of-hand"],
+    "toolProficiencies": ["disguise-kit", "forgery-kit"],
+    "choices": [],
+    "feature": {
+      "name": "Identidade Falsa",
+      "description": "Você criou uma segunda identidade que inclui documentos, conhecidos estabelecidos e disfarces que permitem assumir essa persona. Pode também forjar documentos, incluindo papéis oficiais e cartas pessoais, desde que tenha visto um exemplo do tipo de documento ou da assinatura que está reproduzindo."
+    },
+    "variant": null
+  },
+  {
+    "id": "criminal",
+    "name": "Criminoso",
+    "description": "Você é um criminoso experiente com histórico de quebrar a lei. Tem contatos no submundo, conhece como o crime opera e sabe como passar despercebido quando a situação exige.",
+    "skillProficiencies": ["deception", "stealth"],
+    "toolProficiencies": ["thieves-tools"],
+    "choices": [
+      { "kind": "tool-choice", "count": 1, "from": "gaming" }
+    ],
+    "feature": {
+      "name": "Contato Criminoso",
+      "description": "Você possui um contato confiável no submundo que serve como ligação com uma rede maior de outros criminosos. Sabe como trocar mensagens com esse contato à distância, mesmo a longas distâncias — usando intermediários locais que distribuem informações por uma rede maior."
+    },
+    "variant": "Espião: mecanicamente idêntico, mas representa um agente de inteligência a serviço de um governo, organização ou figura poderosa em vez de um criminoso de rua."
+  },
+  {
+    "id": "hermit",
+    "name": "Eremita",
+    "description": "Você viveu em reclusão por um período significativo da sua vida, isolado da sociedade. Esse período proveu acesso a uma revelação única, espiritual ou mundana, que agora compartilha com o mundo.",
+    "skillProficiencies": ["medicine", "religion"],
+    "toolProficiencies": ["herbalism-kit"],
+    "choices": [
+      { "kind": "language-choice", "count": 1 }
+    ],
+    "feature": {
+      "name": "Descoberta",
+      "description": "O isolamento da sua reclusão proveu acesso a uma descoberta única e poderosa. A natureza exata da revelação depende do tipo de eremita que você foi — pode ser uma verdade cósmica esquecida, o paradeiro de algo perdido, a localização de uma pessoa importante, ou um segredo guardado por culto. O Mestre ajuda a determinar a natureza desta descoberta."
+    },
+    "variant": null
+  },
+  {
+    "id": "outlander",
+    "name": "Forasteiro",
+    "description": "Você cresceu em terras selvagens, longe da civilização e seus confortos. Está mais à vontade em florestas, montanhas ou desertos do que em cidades, e suas habilidades de sobrevivência fazem dos ermos seu lar.",
+    "skillProficiencies": ["athletics", "survival"],
+    "toolProficiencies": [],
+    "choices": [
+      { "kind": "tool-choice", "count": 1, "from": "musical" },
+      { "kind": "language-choice", "count": 1 }
+    ],
+    "feature": {
+      "name": "Andarilho",
+      "description": "Você possui memória excelente para mapas e geografia. Sempre consegue se lembrar do layout geral de terrenos, povoados e características da região por onde já passou. Adicionalmente, consegue caçar e forragear comida fresca e água limpa para si mesmo e até cinco pessoas adicionais por dia, desde que a região tenha recursos disponíveis."
+    },
+    "variant": null
+  },
+  {
+    "id": "folk-hero",
+    "name": "Herói do Povo",
+    "description": "Você vem de origens humildes, mas o destino te marcou para mais do que uma vida comum. Já fez algo significativo pelos plebeus, e agora é visto como um defensor das pessoas simples contra as injustiças do mundo.",
+    "skillProficiencies": ["animal-handling", "survival"],
+    "toolProficiencies": ["land-vehicles"],
+    "choices": [
+      { "kind": "tool-choice", "count": 1, "from": "artisan" }
+    ],
+    "feature": {
+      "name": "Hospitalidade Rústica",
+      "description": "Como você vem do povo comum, é facilmente reconhecido como um deles. Pode encontrar abrigo entre plebeus comuns, a menos que tenha demonstrado ser um perigo. Eles te esconderão de autoridades buscando capturá-lo (sem se colocarem em risco direto), compartilharão refeições simples e cuidarão de seus ferimentos."
+    },
+    "variant": null
+  },
+  {
+    "id": "sailor",
+    "name": "Marinheiro",
+    "description": "Você passou anos navegando como tripulante de uma embarcação, conhecendo o mar, ventos e estrelas como poucos. Conhece os portos, as rotas comerciais e o tipo de gente que se encontra entre eles.",
+    "skillProficiencies": ["athletics", "perception"],
+    "toolProficiencies": ["navigators-tools", "water-vehicles"],
+    "choices": [],
+    "feature": {
+      "name": "Passagem de Navio",
+      "description": "Quando precisar, você pode garantir passagem livre em uma embarcação para si e seus companheiros de aventura. Pode estar viajando em troca de trabalho ou conhecer o capitão pessoalmente. A passagem é apenas pelo trajeto — não inclui viagens marítimas confortáveis. O capitão pode pedir um favor de sua parte em momento oportuno."
+    },
+    "variant": "Pirata: mecanicamente idêntico, mas substitui a feature por Pessoa Má — em vez de passagem livre por simpatia, você intimida estabelecimentos costeiros a fornecer comida e abrigo gratuitos por reputação como pirata."
+  },
+  {
+    "id": "noble",
+    "name": "Nobre",
+    "description": "Você nasceu em uma família de privilégio, riqueza e poder. Cresceu cercado de luxos, educação refinada e expectativas altas, com acesso a círculos políticos que a maioria das pessoas nunca verá.",
+    "skillProficiencies": ["history", "persuasion"],
+    "toolProficiencies": [],
+    "choices": [
+      { "kind": "tool-choice", "count": 1, "from": "gaming" },
+      { "kind": "language-choice", "count": 1 }
+    ],
+    "feature": {
+      "name": "Posição de Privilégio",
+      "description": "Graças ao seu nascimento nobre, as pessoas tendem a pensar o melhor de você. Você é bem-vindo em sociedade refinada, e outros assumem que tem o direito de estar onde está. Plebeus fazem o possível para acomodar você e evitar desagradá-lo. Pode garantir audiências com nobres locais, embora questões mais delicadas exijam negociação."
+    },
+    "variant": "Cavaleiro: substitui o pergaminho de linhagem por uma carta de patronato. Representa um nobre menor de classe cavaleira, com 3 plebeus leais a serviço."
+  },
+  {
+    "id": "urchin",
+    "name": "Órfão",
+    "description": "Você cresceu nas ruas, sozinho, órfão e empobrecido. Aprendeu a sobreviver com astúcia e furtividade, conhecendo cada beco, esgoto e telhado de uma grande cidade.",
+    "skillProficiencies": ["sleight-of-hand", "stealth"],
+    "toolProficiencies": ["disguise-kit", "thieves-tools"],
+    "choices": [],
+    "feature": {
+      "name": "Passagem pelas Cidades",
+      "description": "Você conhece os caminhos secretos e padrões de qualquer cidade urbana. Consegue percorrer o dobro da distância normal entre dois pontos urbanos quando viaja por conta própria, usando passagens, atalhos e becos que ninguém mais conhece."
+    },
+    "variant": null
+  },
+  {
+    "id": "sage",
+    "name": "Sábio",
+    "description": "Você passou anos estudando o multiverso. Pesquisou pergaminhos antigos, examinou tomos esquecidos e absorveu o conhecimento de mestres em academias e bibliotecas, dedicando-se à compreensão profunda de algum campo do saber.",
+    "skillProficiencies": ["arcana", "history"],
+    "toolProficiencies": [],
+    "choices": [
+      { "kind": "language-choice", "count": 2 }
+    ],
+    "feature": {
+      "name": "Pesquisador",
+      "description": "Quando você tenta lembrar de algum conhecimento mas não sabe a informação específica, frequentemente sabe onde e de quem pode obtê-la. Geralmente isso significa uma biblioteca, scriptorium, universidade ou um sábio que conhece o assunto. O Mestre pode determinar que o conhecimento simplesmente não está disponível, ou que exige extensa pesquisa."
+    },
+    "variant": null
+  },
+  {
+    "id": "soldier",
+    "name": "Soldado",
+    "description": "A guerra foi sua vida. Você serviu em alguma força militar — exército mercenário, milícia local, regimento real — e o treinamento e disciplina dessa vida moldaram quem você é. Conhece combate organizado, hierarquia e a brutalidade real do conflito.",
+    "skillProficiencies": ["athletics", "intimidation"],
+    "toolProficiencies": ["land-vehicles"],
+    "choices": [
+      { "kind": "tool-choice", "count": 1, "from": "gaming" }
+    ],
+    "feature": {
+      "name": "Patente Militar",
+      "description": "Você tem uma patente militar do seu serviço como soldado. Soldados leais à hierarquia que originalmente concedeu sua patente ainda reconhecem sua autoridade e influência. Pode invocar essa patente para influenciar outros soldados, requisitar equipamento ou cavalos simples para uso temporário, e ganhar acesso a acampamentos e fortalezas militares onde sua patente é reconhecida."
+    },
+    "variant": null
+  }
+]

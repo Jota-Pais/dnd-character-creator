@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { WizardStep, CharacterDraft, RaceChoiceSelections, ClassChoiceSelections, AbilityMethod } from '../types/character'
+import type { WizardStep, CharacterDraft, RaceChoiceSelections, ClassChoiceSelections, AbilityMethod, BackgroundChoiceSelections } from '../types/character'
 import type { AbilityScore } from '../types/race'
 import { WIZARD_STEPS, EMPTY_DRAFT } from '../types/character'
 import { saveCharacter, loadCharacter, clearCharacter } from '../utils/storage'
@@ -17,6 +17,8 @@ type CharacterStore = {
   setAbilityMethod: (method: AbilityMethod) => void
   setAbilityScore: (ability: AbilityScore, score: number | null) => void
   setRolledValues: (values: number[]) => void
+  setBackground: (backgroundId: string) => void
+  updateBackgroundChoices: (choices: Partial<BackgroundChoiceSelections>) => void
   nextStep: () => void
   prevStep: () => void
   reset: () => void
@@ -91,6 +93,19 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
         ...state.draft,
         rolledValues: values,
         abilityScores: { STR: null, DEX: null, CON: null, INT: null, WIS: null, CHA: null },
+      },
+    })),
+
+  setBackground: (backgroundId) =>
+    set(state => ({
+      draft: { ...state.draft, background: backgroundId, backgroundChoices: {} },
+    })),
+
+  updateBackgroundChoices: (choices) =>
+    set(state => ({
+      draft: {
+        ...state.draft,
+        backgroundChoices: { ...state.draft.backgroundChoices, ...choices },
       },
     })),
 

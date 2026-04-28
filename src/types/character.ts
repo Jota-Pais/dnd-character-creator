@@ -1,6 +1,7 @@
 import type { AbilityScore } from './race'
 import type { ClassChoiceSelections } from './class'
-export type { ClassChoiceSelections }
+import type { BackgroundChoiceSelections } from './background'
+export type { ClassChoiceSelections, BackgroundChoiceSelections }
 
 export type WizardStep = 'name' | 'race' | 'class' | 'abilities' | 'background' | 'equipment' | 'review'
 
@@ -47,6 +48,8 @@ export type CharacterDraft = {
   abilityMethod: AbilityMethod | null
   abilityScores: BaseAbilityScores
   rolledValues: number[]
+  background: string | null
+  backgroundChoices: BackgroundChoiceSelections
 }
 
 export const EMPTY_DRAFT: CharacterDraft = {
@@ -66,4 +69,6 @@ export const EMPTY_DRAFT: CharacterDraft = {
   abilityMethod: null,
   abilityScores: { STR: null, DEX: null, CON: null, INT: null, WIS: null, CHA: null },
   rolledValues: [],
+  background: null,
+  backgroundChoices: {},
 }

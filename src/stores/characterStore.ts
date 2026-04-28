@@ -1,7 +1,9 @@
 import { create } from 'zustand'
-import type { WizardStep, CharacterDraft, RaceChoiceSelections, ClassChoiceSelections, AbilityMethod, BackgroundChoiceSelections } from '../types/character'
+import type { WizardStep, CharacterDraft, RaceChoiceSelections, ClassChoiceSelections, AbilityMethod, BackgroundChoiceSelections, EquipmentDraft } from '../types/character'
 import type { AbilityScore } from '../types/race'
+import type { ChoiceResolution } from '../types/equipment'
 import { WIZARD_STEPS, EMPTY_DRAFT } from '../types/character'
+import { EMPTY_EQUIPMENT_DRAFT } from '../types/equipment'
 import { saveCharacter, loadCharacter, clearCharacter } from '../utils/storage'
 
 type CharacterStore = {
@@ -19,6 +21,9 @@ type CharacterStore = {
   setRolledValues: (values: number[]) => void
   setBackground: (backgroundId: string) => void
   updateBackgroundChoices: (choices: Partial<BackgroundChoiceSelections>) => void
+  setEquipmentMethod: (method: EquipmentDraft['method']) => void
+  resolveEquipmentChoice: (choiceIndex: number, resolution: ChoiceResolution) => void
+  setRolledGold: (gold: number) => void
   nextStep: () => void
   prevStep: () => void
   reset: () => void
@@ -56,6 +61,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
         ...state.draft,
         class: classId,
         classChoices: { ...EMPTY_DRAFT.classChoices },
+        equipment: { ...EMPTY_EQUIPMENT_DRAFT },
       },
     })),
 
@@ -106,6 +112,34 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
       draft: {
         ...state.draft,
         backgroundChoices: { ...state.draft.backgroundChoices, ...choices },
+      },
+    })),
+
+  setEquipmentMethod: (method) =>
+    set(state => ({
+      draft: {
+        ...state.draft,
+        equipment: { ...state.draft.equipment, method },
+      },
+    })),
+
+  resolveEquipmentChoice: (choiceIndex, resolution) =>
+    set(state => {
+      const resolutions = [...state.draft.equipment.classResolutions]
+      resolutions[choiceIndex] = resolution
+      return {
+        draft: {
+          ...state.draft,
+          equipment: { ...state.draft.equipment, classResolutions: resolutions },
+        },
+      }
+    }),
+
+  setRolledGold: (gold) =>
+    set(state => ({
+      draft: {
+        ...state.draft,
+        equipment: { ...state.draft.equipment, rolledGold: gold },
       },
     })),
 

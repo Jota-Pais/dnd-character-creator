@@ -32,8 +32,8 @@ export function getSkillName(id: string): string {
 
 export const TOOL_CHOICE_LABEL: Record<string, string> = {
   artisan: 'Ferramenta de Artesão',
-  musical: 'Instrumento Musical',
-  gaming: 'Conjunto de Jogos',
+  'musical-instrument': 'Instrumento Musical',
+  'gaming-set': 'Conjunto de Jogos',
 }
 
 export type BackgroundPresentation = {

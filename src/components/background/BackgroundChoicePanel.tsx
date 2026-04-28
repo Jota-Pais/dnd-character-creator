@@ -43,7 +43,7 @@ export function BackgroundChoicePanel({ choices, selections, accent, onChange }:
 // ─── Sub-componentes ──────────────────────────────────────────────────────────
 
 type ToolCategoryFieldProps = {
-  from: 'artisan' | 'musical' | 'gaming'
+  from: 'artisan' | 'musical-instrument' | 'gaming-set'
   accent: string
   selected: string[]
   onSelect: (tools: string[]) => void

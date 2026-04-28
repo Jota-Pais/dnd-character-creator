@@ -12,7 +12,17 @@
       "name": "Abrigo dos Fiéis",
       "description": "Você e seus companheiros podem receber cura e cuidados gratuitos em templos, santuários ou outros lugares de presença da sua fé. A congregação provê hospitalidade modesta (cama e comida básica), embora você precise providenciar materiais de magia se necessário. Em templos de outras fés, é tratado com civilidade se reconhecer a divindade local."
     },
-    "variant": null
+    "variant": null,
+    "equipment": {
+      "items": [
+        { "kind": "focus-group", "group": "holy" },
+        { "kind": "specific", "id": "prayer-book", "itemType": "general", "quantity": 1 },
+        { "kind": "specific", "id": "incense-stick", "itemType": "general", "quantity": 5 },
+        { "kind": "specific", "id": "vestments", "itemType": "general", "quantity": 1 },
+        { "kind": "specific", "id": "common-clothes", "itemType": "general", "quantity": 1 }
+      ],
+      "goldPo": 15
+    }
   },
   {
     "id": "guild-artisan",
@@ -28,7 +38,15 @@
       "name": "Filiação a Guilda",
       "description": "Como membro respeitado de uma guilda, você pode contar com auxílio de outros membros em viagens. Recebe abrigo gratuito ou alojamento básico em casas de membros, acessa redes de contatos políticos e comerciais, e a guilda paga sua fiança em casos legais menores. Em troca, paga taxas mensais de 5 po e mantém os princípios da guilda."
     },
-    "variant": "Comerciante: substitui a proficiência em ferramentas de artesão por proficiência em ferramentas de navegação ou em um idioma adicional. A feature representa contatos comerciais em vez de filiação a guilda."
+    "variant": "Comerciante: substitui a proficiência em ferramentas de artesão por proficiência em ferramentas de navegação ou em um idioma adicional. A feature representa contatos comerciais em vez de filiação a guilda.",
+    "equipment": {
+      "items": [
+        { "kind": "chosen-tool" },
+        { "kind": "specific", "id": "introduction-letter", "itemType": "general", "quantity": 1 },
+        { "kind": "specific", "id": "travelers-clothes", "itemType": "general", "quantity": 1 }
+      ],
+      "goldPo": 15
+    }
   },
   {
     "id": "entertainer",
@@ -37,13 +55,21 @@
     "skillProficiencies": ["acrobatics", "performance"],
     "toolProficiencies": ["disguise-kit"],
     "choices": [
-      { "kind": "tool-choice", "count": 1, "from": "musical" }
+      { "kind": "tool-choice", "count": 1, "from": "musical-instrument" }
     ],
     "feature": {
       "name": "Por Demanda Popular",
       "description": "Você sempre encontra um lugar para se apresentar — em estalagens, tavernas, festivais, circos, teatros ou cortes nobres. Em troca da apresentação, recebe alojamento e alimentação gratuitos por padrão de vida modesto ou confortável. Tende a ser reconhecido em lugares onde já se apresentou antes."
     },
-    "variant": "Gladiador: substitui a proficiência em instrumento musical por proficiência em uma arma incomum usada como acessório de palco, como uma rede ou tridente."
+    "variant": "Gladiador: substitui a proficiência em instrumento musical por proficiência em uma arma incomum usada como acessório de palco, como uma rede ou tridente.",
+    "equipment": {
+      "items": [
+        { "kind": "chosen-tool" },
+        { "kind": "specific", "id": "favor-from-admirer", "itemType": "general", "quantity": 1 },
+        { "kind": "specific", "id": "costume", "itemType": "general", "quantity": 1 }
+      ],
+      "goldPo": 15
+    }
   },
   {
     "id": "charlatan",
@@ -56,7 +82,15 @@
       "name": "Identidade Falsa",
       "description": "Você criou uma segunda identidade que inclui documentos, conhecidos estabelecidos e disfarces que permitem assumir essa persona. Pode também forjar documentos, incluindo papéis oficiais e cartas pessoais, desde que tenha visto um exemplo do tipo de documento ou da assinatura que está reproduzindo."
     },
-    "variant": null
+    "variant": null,
+    "equipment": {
+      "items": [
+        { "kind": "specific", "id": "fine-clothes", "itemType": "general", "quantity": 1 },
+        { "kind": "specific", "id": "disguise-kit", "itemType": "tool", "quantity": 1 },
+        { "kind": "specific", "id": "con-tools", "itemType": "general", "quantity": 1 }
+      ],
+      "goldPo": 15
+    }
   },
   {
     "id": "criminal",
@@ -65,13 +99,20 @@
     "skillProficiencies": ["deception", "stealth"],
     "toolProficiencies": ["thieves-tools"],
     "choices": [
-      { "kind": "tool-choice", "count": 1, "from": "gaming" }
+      { "kind": "tool-choice", "count": 1, "from": "gaming-set" }
     ],
     "feature": {
       "name": "Contato Criminoso",
       "description": "Você possui um contato confiável no submundo que serve como ligação com uma rede maior de outros criminosos. Sabe como trocar mensagens com esse contato à distância, mesmo a longas distâncias — usando intermediários locais que distribuem informações por uma rede maior."
     },
-    "variant": "Espião: mecanicamente idêntico, mas representa um agente de inteligência a serviço de um governo, organização ou figura poderosa em vez de um criminoso de rua."
+    "variant": "Espião: mecanicamente idêntico, mas representa um agente de inteligência a serviço de um governo, organização ou figura poderosa em vez de um criminoso de rua.",
+    "equipment": {
+      "items": [
+        { "kind": "specific", "id": "crowbar", "itemType": "general", "quantity": 1 },
+        { "kind": "specific", "id": "dark-common-clothes", "itemType": "general", "quantity": 1 }
+      ],
+      "goldPo": 15
+    }
   },
   {
     "id": "hermit",
@@ -86,7 +127,16 @@
       "name": "Descoberta",
       "description": "O isolamento da sua reclusão proveu acesso a uma descoberta única e poderosa. A natureza exata da revelação depende do tipo de eremita que você foi — pode ser uma verdade cósmica esquecida, o paradeiro de algo perdido, a localização de uma pessoa importante, ou um segredo guardado por culto. O Mestre ajuda a determinar a natureza desta descoberta."
     },
-    "variant": null
+    "variant": null,
+    "equipment": {
+      "items": [
+        { "kind": "specific", "id": "scroll-case", "itemType": "general", "quantity": 1 },
+        { "kind": "specific", "id": "winter-blanket", "itemType": "general", "quantity": 1 },
+        { "kind": "specific", "id": "common-clothes", "itemType": "general", "quantity": 1 },
+        { "kind": "specific", "id": "herbalism-kit", "itemType": "tool", "quantity": 1 }
+      ],
+      "goldPo": 5
+    }
   },
   {
     "id": "outlander",
@@ -95,14 +145,23 @@
     "skillProficiencies": ["athletics", "survival"],
     "toolProficiencies": [],
     "choices": [
-      { "kind": "tool-choice", "count": 1, "from": "musical" },
+      { "kind": "tool-choice", "count": 1, "from": "musical-instrument" },
       { "kind": "language-choice", "count": 1 }
     ],
     "feature": {
       "name": "Andarilho",
       "description": "Você possui memória excelente para mapas e geografia. Sempre consegue se lembrar do layout geral de terrenos, povoados e características da região por onde já passou. Adicionalmente, consegue caçar e forragear comida fresca e água limpa para si mesmo e até cinco pessoas adicionais por dia, desde que a região tenha recursos disponíveis."
     },
-    "variant": null
+    "variant": null,
+    "equipment": {
+      "items": [
+        { "kind": "specific", "id": "quarterstaff", "itemType": "weapon", "quantity": 1 },
+        { "kind": "specific", "id": "hunting-trap", "itemType": "general", "quantity": 1 },
+        { "kind": "specific", "id": "animal-trophy", "itemType": "general", "quantity": 1 },
+        { "kind": "specific", "id": "travelers-clothes", "itemType": "general", "quantity": 1 }
+      ],
+      "goldPo": 10
+    }
   },
   {
     "id": "folk-hero",
@@ -117,7 +176,16 @@
       "name": "Hospitalidade Rústica",
       "description": "Como você vem do povo comum, é facilmente reconhecido como um deles. Pode encontrar abrigo entre plebeus comuns, a menos que tenha demonstrado ser um perigo. Eles te esconderão de autoridades buscando capturá-lo (sem se colocarem em risco direto), compartilharão refeições simples e cuidarão de seus ferimentos."
     },
-    "variant": null
+    "variant": null,
+    "equipment": {
+      "items": [
+        { "kind": "chosen-tool" },
+        { "kind": "specific", "id": "shovel", "itemType": "general", "quantity": 1 },
+        { "kind": "specific", "id": "iron-pot", "itemType": "general", "quantity": 1 },
+        { "kind": "specific", "id": "common-clothes", "itemType": "general", "quantity": 1 }
+      ],
+      "goldPo": 10
+    }
   },
   {
     "id": "sailor",
@@ -130,7 +198,16 @@
       "name": "Passagem de Navio",
       "description": "Quando precisar, você pode garantir passagem livre em uma embarcação para si e seus companheiros de aventura. Pode estar viajando em troca de trabalho ou conhecer o capitão pessoalmente. A passagem é apenas pelo trajeto — não inclui viagens marítimas confortáveis. O capitão pode pedir um favor de sua parte em momento oportuno."
     },
-    "variant": "Pirata: mecanicamente idêntico, mas substitui a feature por Pessoa Má — em vez de passagem livre por simpatia, você intimida estabelecimentos costeiros a fornecer comida e abrigo gratuitos por reputação como pirata."
+    "variant": "Pirata: mecanicamente idêntico, mas substitui a feature por Pessoa Má — em vez de passagem livre por simpatia, você intimida estabelecimentos costeiros a fornecer comida e abrigo gratuitos por reputação como pirata.",
+    "equipment": {
+      "items": [
+        { "kind": "specific", "id": "belaying-pin", "itemType": "general", "quantity": 1 },
+        { "kind": "specific", "id": "silk-rope", "itemType": "general", "quantity": 1 },
+        { "kind": "specific", "id": "lucky-charm", "itemType": "general", "quantity": 1 },
+        { "kind": "specific", "id": "common-clothes", "itemType": "general", "quantity": 1 }
+      ],
+      "goldPo": 10
+    }
   },
   {
     "id": "noble",
@@ -139,14 +216,22 @@
     "skillProficiencies": ["history", "persuasion"],
     "toolProficiencies": [],
     "choices": [
-      { "kind": "tool-choice", "count": 1, "from": "gaming" },
+      { "kind": "tool-choice", "count": 1, "from": "gaming-set" },
       { "kind": "language-choice", "count": 1 }
     ],
     "feature": {
       "name": "Posição de Privilégio",
       "description": "Graças ao seu nascimento nobre, as pessoas tendem a pensar o melhor de você. Você é bem-vindo em sociedade refinada, e outros assumem que tem o direito de estar onde está. Plebeus fazem o possível para acomodar você e evitar desagradá-lo. Pode garantir audiências com nobres locais, embora questões mais delicadas exijam negociação."
     },
-    "variant": "Cavaleiro: substitui o pergaminho de linhagem por uma carta de patronato. Representa um nobre menor de classe cavaleira, com 3 plebeus leais a serviço."
+    "variant": "Cavaleiro: substitui o pergaminho de linhagem por uma carta de patronato. Representa um nobre menor de classe cavaleira, com 3 plebeus leais a serviço.",
+    "equipment": {
+      "items": [
+        { "kind": "specific", "id": "fine-clothes", "itemType": "general", "quantity": 1 },
+        { "kind": "specific", "id": "signet-ring", "itemType": "general", "quantity": 1 },
+        { "kind": "specific", "id": "scroll-of-pedigree", "itemType": "general", "quantity": 1 }
+      ],
+      "goldPo": 25
+    }
   },
   {
     "id": "urchin",
@@ -159,7 +244,17 @@
       "name": "Passagem pelas Cidades",
       "description": "Você conhece os caminhos secretos e padrões de qualquer cidade urbana. Consegue percorrer o dobro da distância normal entre dois pontos urbanos quando viaja por conta própria, usando passagens, atalhos e becos que ninguém mais conhece."
     },
-    "variant": null
+    "variant": null,
+    "equipment": {
+      "items": [
+        { "kind": "specific", "id": "small-knife", "itemType": "general", "quantity": 1 },
+        { "kind": "specific", "id": "city-map", "itemType": "general", "quantity": 1 },
+        { "kind": "specific", "id": "pet-mouse", "itemType": "general", "quantity": 1 },
+        { "kind": "specific", "id": "parents-token", "itemType": "general", "quantity": 1 },
+        { "kind": "specific", "id": "common-clothes", "itemType": "general", "quantity": 1 }
+      ],
+      "goldPo": 10
+    }
   },
   {
     "id": "sage",
@@ -174,7 +269,17 @@
       "name": "Pesquisador",
       "description": "Quando você tenta lembrar de algum conhecimento mas não sabe a informação específica, frequentemente sabe onde e de quem pode obtê-la. Geralmente isso significa uma biblioteca, scriptorium, universidade ou um sábio que conhece o assunto. O Mestre pode determinar que o conhecimento simplesmente não está disponível, ou que exige extensa pesquisa."
     },
-    "variant": null
+    "variant": null,
+    "equipment": {
+      "items": [
+        { "kind": "specific", "id": "ink-bottle", "itemType": "general", "quantity": 1 },
+        { "kind": "specific", "id": "quill", "itemType": "general", "quantity": 1 },
+        { "kind": "specific", "id": "small-knife", "itemType": "general", "quantity": 1 },
+        { "kind": "specific", "id": "letter-from-colleague", "itemType": "general", "quantity": 1 },
+        { "kind": "specific", "id": "common-clothes", "itemType": "general", "quantity": 1 }
+      ],
+      "goldPo": 10
+    }
   },
   {
     "id": "soldier",
@@ -183,12 +288,21 @@
     "skillProficiencies": ["athletics", "intimidation"],
     "toolProficiencies": ["land-vehicles"],
     "choices": [
-      { "kind": "tool-choice", "count": 1, "from": "gaming" }
+      { "kind": "tool-choice", "count": 1, "from": "gaming-set" }
     ],
     "feature": {
       "name": "Patente Militar",
       "description": "Você tem uma patente militar do seu serviço como soldado. Soldados leais à hierarquia que originalmente concedeu sua patente ainda reconhecem sua autoridade e influência. Pode invocar essa patente para influenciar outros soldados, requisitar equipamento ou cavalos simples para uso temporário, e ganhar acesso a acampamentos e fortalezas militares onde sua patente é reconhecida."
     },
-    "variant": null
+    "variant": null,
+    "equipment": {
+      "items": [
+        { "kind": "specific", "id": "rank-insignia", "itemType": "general", "quantity": 1 },
+        { "kind": "specific", "id": "trophy-from-fallen-enemy", "itemType": "general", "quantity": 1 },
+        { "kind": "specific", "id": "bone-dice", "itemType": "general", "quantity": 1 },
+        { "kind": "specific", "id": "common-clothes", "itemType": "general", "quantity": 1 }
+      ],
+      "goldPo": 10
+    }
   }
 ]

@@ -95,11 +95,11 @@ export function ClassChoicePanel({ cls, choices, accent, onChange }: Props) {
       {/* ── Ferramentas (Bardo/Monge) ── */}
       {cls.toolProficiencies.choices.map((toolChoice, i) => {
         const filtered =
-          toolChoice.from === 'musical' ? ALL_TOOLS.filter(t => t.category === 'musical')
+          toolChoice.from === 'musical-instrument' ? ALL_TOOLS.filter(t => t.category === 'musical-instrument')
           : toolChoice.from === 'artisan' ? ALL_TOOLS.filter(t => t.category === 'artisan')
           : ALL_TOOLS
         const label =
-          toolChoice.from === 'musical' ? 'Instrumento Musical'
+          toolChoice.from === 'musical-instrument' ? 'Instrumento Musical'
           : toolChoice.from === 'artisan' ? 'Ferramenta de Artesão'
           : 'Ferramenta'
         return (

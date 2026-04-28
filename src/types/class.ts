@@ -33,7 +33,7 @@ export type ClassSubclass = {
 
 export type ClassToolProficiencies = {
   granted: string[]
-  choices: { count: number; from: 'musical' | 'artisan' | 'any-tool' }[]
+  choices: { count: number; from: 'musical-instrument' | 'artisan' | 'any-tool' }[]
 }
 
 export type GameClass = {

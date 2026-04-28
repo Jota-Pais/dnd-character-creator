@@ -1,7 +1,9 @@
+import type { BackgroundEquipment } from './equipment'
+
 export type BackgroundToolChoice = {
   kind: 'tool-choice'
   count: number
-  from: 'artisan' | 'musical' | 'gaming'
+  from: 'artisan' | 'musical-instrument' | 'gaming-set'
 }
 
 export type BackgroundLanguageChoice = {
@@ -28,4 +30,5 @@ export type Background = {
     description: string
   }
   variant: string | null
+  equipment: BackgroundEquipment
 }

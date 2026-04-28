@@ -22,6 +22,29 @@
       { "id": "berserker", "name": "Caminho do Furioso", "description": "Canaliza a raiva primitiva em combate frenético implacável, atacando até entrar em exaustão.", "features": [], "extras": null },
       { "id": "totem-warrior", "name": "Caminho do Guerreiro Totêmico", "description": "Invoca o espírito de um animal ancestral para conceder poderes místicos e proteção.", "features": [], "extras": null }
     ],
+    "startingEquipment": {
+      "fixed": [
+        { "kind": "specific", "id": "explorers-pack", "itemType": "pack", "quantity": 1 },
+        { "kind": "specific", "id": "javelin", "itemType": "weapon", "quantity": 4 }
+      ],
+      "choices": [
+        {
+          "options": [
+            [{ "kind": "specific", "id": "greataxe", "itemType": "weapon", "quantity": 1 }],
+            [{ "kind": "weapon-filter", "filter": { "category": "martial", "weaponType": "melee" }, "picks": 1 }]
+          ]
+        },
+        {
+          "options": [
+            [{ "kind": "specific", "id": "handaxe", "itemType": "weapon", "quantity": 2 }],
+            [{ "kind": "weapon-filter", "filter": { "category": "simple" }, "picks": 1 }]
+          ]
+        }
+      ],
+      "wealthDice": "2d4",
+      "wealthMultiplier": 10,
+      "wealthUnit": "po"
+    },
     "hasFightingStyle": false,
     "hasExpertise": false
   },
@@ -38,7 +61,7 @@
     },
     "toolProficiencies": {
       "granted": [],
-      "choices": [{ "count": 3, "from": "musical" }]
+      "choices": [{ "count": 3, "from": "musical-instrument" }]
     },
     "isCaster": true,
     "spellcasting": {
@@ -60,6 +83,35 @@
       { "id": "college-of-lore", "name": "Colégio do Conhecimento", "description": "Coleciona conhecimento de todos os cantos do mundo, desdenhando as tradições convencionais e revelando os segredos mais sombrios.", "features": [], "extras": null },
       { "id": "college-of-valor", "name": "Colégio da Bravura", "description": "Inspira bravura em aliados narrando histórias de heróis do passado, enquanto também empunha armas com destreza.", "features": [], "extras": null }
     ],
+    "startingEquipment": {
+      "fixed": [
+        { "kind": "specific", "id": "leather", "itemType": "armor", "quantity": 1 }
+      ],
+      "choices": [
+        {
+          "options": [
+            [{ "kind": "specific", "id": "rapier", "itemType": "weapon", "quantity": 1 }],
+            [{ "kind": "specific", "id": "longsword", "itemType": "weapon", "quantity": 1 }],
+            [{ "kind": "weapon-filter", "filter": { "category": "simple" }, "picks": 1 }]
+          ]
+        },
+        {
+          "options": [
+            [{ "kind": "specific", "id": "diplomats-pack", "itemType": "pack", "quantity": 1 }],
+            [{ "kind": "specific", "id": "entertainers-pack", "itemType": "pack", "quantity": 1 }]
+          ]
+        },
+        {
+          "options": [
+            [{ "kind": "specific", "id": "lute", "itemType": "tool", "quantity": 1 }],
+            [{ "kind": "tool-filter", "category": "musical-instrument", "picks": 1 }]
+          ]
+        }
+      ],
+      "wealthDice": "5d4",
+      "wealthMultiplier": 10,
+      "wealthUnit": "po"
+    },
     "hasFightingStyle": false,
     "hasExpertise": false
   },
@@ -123,6 +175,43 @@
         "extras": null
       }
     ],
+    "startingEquipment": {
+      "fixed": [
+        { "kind": "specific", "id": "leather", "itemType": "armor", "quantity": 1 },
+        { "kind": "specific", "id": "dagger", "itemType": "weapon", "quantity": 2 }
+      ],
+      "choices": [
+        {
+          "options": [
+            [
+              { "kind": "specific", "id": "light-crossbow", "itemType": "weapon", "quantity": 1 },
+              { "kind": "specific", "id": "crossbow-bolts", "itemType": "general", "quantity": 1 }
+            ],
+            [{ "kind": "weapon-filter", "filter": { "category": "simple" }, "picks": 1 }]
+          ]
+        },
+        {
+          "options": [
+            [{ "kind": "specific", "id": "component-pouch", "itemType": "general", "quantity": 1 }],
+            [{ "kind": "focus-group", "group": "arcane", "picks": 1 }]
+          ]
+        },
+        {
+          "options": [
+            [{ "kind": "specific", "id": "scholars-pack", "itemType": "pack", "quantity": 1 }],
+            [{ "kind": "specific", "id": "dungeoneers-pack", "itemType": "pack", "quantity": 1 }]
+          ]
+        },
+        {
+          "options": [
+            [{ "kind": "weapon-filter", "filter": { "category": "simple" }, "picks": 1 }]
+          ]
+        }
+      ],
+      "wealthDice": "4d4",
+      "wealthMultiplier": 10,
+      "wealthUnit": "po"
+    },
     "hasFightingStyle": false,
     "hasExpertise": false
   },
@@ -260,6 +349,49 @@
         }
       }
     ],
+    "startingEquipment": {
+      "fixed": [
+        { "kind": "specific", "id": "shield", "itemType": "armor", "quantity": 1 }
+      ],
+      "choices": [
+        {
+          "options": [
+            [{ "kind": "specific", "id": "mace", "itemType": "weapon", "quantity": 1 }],
+            [{ "kind": "specific", "id": "warhammer", "itemType": "weapon", "quantity": 1 }]
+          ]
+        },
+        {
+          "options": [
+            [{ "kind": "specific", "id": "scale-mail", "itemType": "armor", "quantity": 1 }],
+            [{ "kind": "specific", "id": "leather", "itemType": "armor", "quantity": 1 }],
+            [{ "kind": "specific", "id": "chain-mail", "itemType": "armor", "quantity": 1 }]
+          ]
+        },
+        {
+          "options": [
+            [
+              { "kind": "specific", "id": "light-crossbow", "itemType": "weapon", "quantity": 1 },
+              { "kind": "specific", "id": "crossbow-bolts", "itemType": "general", "quantity": 1 }
+            ],
+            [{ "kind": "weapon-filter", "filter": { "category": "simple" }, "picks": 1 }]
+          ]
+        },
+        {
+          "options": [
+            [{ "kind": "specific", "id": "priests-pack", "itemType": "pack", "quantity": 1 }],
+            [{ "kind": "specific", "id": "explorers-pack", "itemType": "pack", "quantity": 1 }]
+          ]
+        },
+        {
+          "options": [
+            [{ "kind": "focus-group", "group": "holy", "picks": 1 }]
+          ]
+        }
+      ],
+      "wealthDice": "5d4",
+      "wealthMultiplier": 10,
+      "wealthUnit": "po"
+    },
     "hasFightingStyle": false,
     "hasExpertise": false
   },
@@ -295,6 +427,34 @@
       { "id": "circle-of-the-land", "name": "Círculo da Terra", "description": "Conectado a um tipo específico de terreno, acumula magias adicionais e habilidades de navegação selvagem.", "features": [], "extras": null },
       { "id": "circle-of-the-moon", "name": "Círculo da Lua", "description": "Mestre da transformação em feras, podendo assumir formas mais poderosas e combativas.", "features": [], "extras": null }
     ],
+    "startingEquipment": {
+      "fixed": [
+        { "kind": "specific", "id": "leather", "itemType": "armor", "quantity": 1 },
+        { "kind": "specific", "id": "explorers-pack", "itemType": "pack", "quantity": 1 }
+      ],
+      "choices": [
+        {
+          "options": [
+            [{ "kind": "specific", "id": "shield", "itemType": "armor", "quantity": 1 }],
+            [{ "kind": "weapon-filter", "filter": { "category": "simple" }, "picks": 1 }]
+          ]
+        },
+        {
+          "options": [
+            [{ "kind": "specific", "id": "scimitar", "itemType": "weapon", "quantity": 1 }],
+            [{ "kind": "weapon-filter", "filter": { "category": "simple", "weaponType": "melee" }, "picks": 1 }]
+          ]
+        },
+        {
+          "options": [
+            [{ "kind": "focus-group", "group": "druidic", "picks": 1 }]
+          ]
+        }
+      ],
+      "wealthDice": "2d4",
+      "wealthMultiplier": 10,
+      "wealthUnit": "po"
+    },
     "hasFightingStyle": false,
     "hasExpertise": false
   },
@@ -357,6 +517,37 @@
         "extras": null
       }
     ],
+    "startingEquipment": {
+      "fixed": [
+        { "kind": "specific", "id": "dagger", "itemType": "weapon", "quantity": 2 }
+      ],
+      "choices": [
+        {
+          "options": [
+            [
+              { "kind": "specific", "id": "light-crossbow", "itemType": "weapon", "quantity": 1 },
+              { "kind": "specific", "id": "crossbow-bolts", "itemType": "general", "quantity": 1 }
+            ],
+            [{ "kind": "weapon-filter", "filter": { "category": "simple" }, "picks": 1 }]
+          ]
+        },
+        {
+          "options": [
+            [{ "kind": "specific", "id": "component-pouch", "itemType": "general", "quantity": 1 }],
+            [{ "kind": "focus-group", "group": "arcane", "picks": 1 }]
+          ]
+        },
+        {
+          "options": [
+            [{ "kind": "specific", "id": "dungeoneers-pack", "itemType": "pack", "quantity": 1 }],
+            [{ "kind": "specific", "id": "explorers-pack", "itemType": "pack", "quantity": 1 }]
+          ]
+        }
+      ],
+      "wealthDice": "3d4",
+      "wealthMultiplier": 10,
+      "wealthUnit": "po"
+    },
     "hasFightingStyle": false,
     "hasExpertise": false
   },
@@ -384,6 +575,48 @@
       { "id": "battle-master", "name": "Mestre de Batalha", "description": "Aprende manobras militares para explorar as fraquezas do inimigo com precisão tática.", "features": [], "extras": null },
       { "id": "eldritch-knight", "name": "Cavaleiro Arcano", "description": "Combina arte marcial com estudo de magia arcana de abjuração e evocação.", "features": [], "extras": null }
     ],
+    "startingEquipment": {
+      "fixed": [],
+      "choices": [
+        {
+          "options": [
+            [{ "kind": "specific", "id": "chain-mail", "itemType": "armor", "quantity": 1 }],
+            [
+              { "kind": "specific", "id": "leather", "itemType": "armor", "quantity": 1 },
+              { "kind": "specific", "id": "longbow", "itemType": "weapon", "quantity": 1 },
+              { "kind": "specific", "id": "arrows", "itemType": "general", "quantity": 1 }
+            ]
+          ]
+        },
+        {
+          "options": [
+            [
+              { "kind": "weapon-filter", "filter": { "category": "martial" }, "picks": 1 },
+              { "kind": "specific", "id": "shield", "itemType": "armor", "quantity": 1 }
+            ],
+            [{ "kind": "weapon-filter", "filter": { "category": "martial" }, "picks": 2 }]
+          ]
+        },
+        {
+          "options": [
+            [
+              { "kind": "specific", "id": "light-crossbow", "itemType": "weapon", "quantity": 1 },
+              { "kind": "specific", "id": "crossbow-bolts", "itemType": "general", "quantity": 1 }
+            ],
+            [{ "kind": "specific", "id": "handaxe", "itemType": "weapon", "quantity": 2 }]
+          ]
+        },
+        {
+          "options": [
+            [{ "kind": "specific", "id": "dungeoneers-pack", "itemType": "pack", "quantity": 1 }],
+            [{ "kind": "specific", "id": "explorers-pack", "itemType": "pack", "quantity": 1 }]
+          ]
+        }
+      ],
+      "wealthDice": "5d4",
+      "wealthMultiplier": 10,
+      "wealthUnit": "po"
+    },
     "hasFightingStyle": true,
     "hasExpertise": false
   },
@@ -412,6 +645,40 @@
       { "id": "assassin", "name": "Assassino", "description": "Especializado em eliminar alvos de surpresa com letalidade máxima.", "features": [], "extras": null },
       { "id": "arcane-trickster", "name": "Trapaceiro Arcano", "description": "Combina furtividade com truques arcanos de ilusão e encantamento.", "features": [], "extras": null }
     ],
+    "startingEquipment": {
+      "fixed": [
+        { "kind": "specific", "id": "leather", "itemType": "armor", "quantity": 1 },
+        { "kind": "specific", "id": "dagger", "itemType": "weapon", "quantity": 2 },
+        { "kind": "specific", "id": "thieves-tools", "itemType": "tool", "quantity": 1 }
+      ],
+      "choices": [
+        {
+          "options": [
+            [{ "kind": "specific", "id": "rapier", "itemType": "weapon", "quantity": 1 }],
+            [{ "kind": "specific", "id": "shortsword", "itemType": "weapon", "quantity": 1 }]
+          ]
+        },
+        {
+          "options": [
+            [
+              { "kind": "specific", "id": "shortbow", "itemType": "weapon", "quantity": 1 },
+              { "kind": "specific", "id": "arrows", "itemType": "general", "quantity": 1 }
+            ],
+            [{ "kind": "specific", "id": "shortsword", "itemType": "weapon", "quantity": 1 }]
+          ]
+        },
+        {
+          "options": [
+            [{ "kind": "specific", "id": "burglars-pack", "itemType": "pack", "quantity": 1 }],
+            [{ "kind": "specific", "id": "dungeoneers-pack", "itemType": "pack", "quantity": 1 }],
+            [{ "kind": "specific", "id": "explorers-pack", "itemType": "pack", "quantity": 1 }]
+          ]
+        }
+      ],
+      "wealthDice": "4d4",
+      "wealthMultiplier": 10,
+      "wealthUnit": "po"
+    },
     "hasFightingStyle": false,
     "hasExpertise": true
   },
@@ -453,6 +720,34 @@
       { "id": "necromancy", "name": "Escola de Necromancia", "description": "Manipula as forças da vida, morte e magia negra.", "features": [], "extras": null },
       { "id": "transmutation", "name": "Escola de Transmutação", "description": "Altera as propriedades físicas de objetos, criaturas e o próprio ambiente.", "features": [], "extras": null }
     ],
+    "startingEquipment": {
+      "fixed": [
+        { "kind": "specific", "id": "spellbook", "itemType": "general", "quantity": 1 }
+      ],
+      "choices": [
+        {
+          "options": [
+            [{ "kind": "specific", "id": "quarterstaff", "itemType": "weapon", "quantity": 1 }],
+            [{ "kind": "specific", "id": "dagger", "itemType": "weapon", "quantity": 1 }]
+          ]
+        },
+        {
+          "options": [
+            [{ "kind": "specific", "id": "component-pouch", "itemType": "general", "quantity": 1 }],
+            [{ "kind": "focus-group", "group": "arcane", "picks": 1 }]
+          ]
+        },
+        {
+          "options": [
+            [{ "kind": "specific", "id": "scholars-pack", "itemType": "pack", "quantity": 1 }],
+            [{ "kind": "specific", "id": "explorers-pack", "itemType": "pack", "quantity": 1 }]
+          ]
+        }
+      ],
+      "wealthDice": "4d4",
+      "wealthMultiplier": 10,
+      "wealthUnit": "po"
+    },
     "hasFightingStyle": false,
     "hasExpertise": false
   },
@@ -483,6 +778,28 @@
       { "id": "shadow", "name": "Caminho da Sombra", "description": "Segue as tradições ninja especializando-se em furtividade, disfarce e magia das sombras.", "features": [], "extras": null },
       { "id": "four-elements", "name": "Caminho dos Quatro Elementos", "description": "Canaliza o chi para controlar os quatro elementos naturais.", "features": [], "extras": null }
     ],
+    "startingEquipment": {
+      "fixed": [
+        { "kind": "specific", "id": "dart", "itemType": "weapon", "quantity": 10 }
+      ],
+      "choices": [
+        {
+          "options": [
+            [{ "kind": "specific", "id": "shortsword", "itemType": "weapon", "quantity": 1 }],
+            [{ "kind": "weapon-filter", "filter": { "category": "simple" }, "picks": 1 }]
+          ]
+        },
+        {
+          "options": [
+            [{ "kind": "specific", "id": "dungeoneers-pack", "itemType": "pack", "quantity": 1 }],
+            [{ "kind": "specific", "id": "explorers-pack", "itemType": "pack", "quantity": 1 }]
+          ]
+        }
+      ],
+      "wealthDice": "5d4",
+      "wealthMultiplier": 1,
+      "wealthUnit": "po"
+    },
     "hasFightingStyle": false,
     "hasExpertise": false
   },
@@ -519,6 +836,42 @@
       { "id": "oath-of-the-ancients", "name": "Juramento dos Anciões", "description": "Defende a luz e a vida natural contra as trevas, seguindo tradições antigas da natureza.", "features": [], "extras": null },
       { "id": "oath-of-vengeance", "name": "Juramento de Vingança", "description": "Persegue implacavelmente os grandes males do mundo, usando qualquer meio necessário.", "features": [], "extras": null }
     ],
+    "startingEquipment": {
+      "fixed": [
+        { "kind": "specific", "id": "chain-mail", "itemType": "armor", "quantity": 1 }
+      ],
+      "choices": [
+        {
+          "options": [
+            [
+              { "kind": "weapon-filter", "filter": { "category": "martial" }, "picks": 1 },
+              { "kind": "specific", "id": "shield", "itemType": "armor", "quantity": 1 }
+            ],
+            [{ "kind": "weapon-filter", "filter": { "category": "martial" }, "picks": 2 }]
+          ]
+        },
+        {
+          "options": [
+            [{ "kind": "specific", "id": "javelin", "itemType": "weapon", "quantity": 5 }],
+            [{ "kind": "weapon-filter", "filter": { "category": "simple", "weaponType": "melee" }, "picks": 1 }]
+          ]
+        },
+        {
+          "options": [
+            [{ "kind": "specific", "id": "priests-pack", "itemType": "pack", "quantity": 1 }],
+            [{ "kind": "specific", "id": "explorers-pack", "itemType": "pack", "quantity": 1 }]
+          ]
+        },
+        {
+          "options": [
+            [{ "kind": "focus-group", "group": "holy", "picks": 1 }]
+          ]
+        }
+      ],
+      "wealthDice": "5d4",
+      "wealthMultiplier": 10,
+      "wealthUnit": "po"
+    },
     "hasFightingStyle": false,
     "hasExpertise": false
   },
@@ -555,6 +908,35 @@
       { "id": "hunter", "name": "Conclave do Caçador", "description": "Domina técnicas de caça para abater presas maiores e mais perigosas.", "features": [], "extras": null },
       { "id": "gloom-stalker", "name": "Conclave do Rastreador Subterrâneo", "description": "Adaptado para combate nas trevas profundas e ambientes subterrâneos hostis.", "features": [], "extras": null }
     ],
+    "startingEquipment": {
+      "fixed": [
+        { "kind": "specific", "id": "longbow", "itemType": "weapon", "quantity": 1 },
+        { "kind": "specific", "id": "arrows", "itemType": "general", "quantity": 1 }
+      ],
+      "choices": [
+        {
+          "options": [
+            [{ "kind": "specific", "id": "scale-mail", "itemType": "armor", "quantity": 1 }],
+            [{ "kind": "specific", "id": "leather", "itemType": "armor", "quantity": 1 }]
+          ]
+        },
+        {
+          "options": [
+            [{ "kind": "specific", "id": "shortsword", "itemType": "weapon", "quantity": 2 }],
+            [{ "kind": "weapon-filter", "filter": { "category": "simple", "weaponType": "melee" }, "picks": 2 }]
+          ]
+        },
+        {
+          "options": [
+            [{ "kind": "specific", "id": "dungeoneers-pack", "itemType": "pack", "quantity": 1 }],
+            [{ "kind": "specific", "id": "explorers-pack", "itemType": "pack", "quantity": 1 }]
+          ]
+        }
+      ],
+      "wealthDice": "5d4",
+      "wealthMultiplier": 10,
+      "wealthUnit": "po"
+    },
     "hasFightingStyle": false,
     "hasExpertise": false
   }

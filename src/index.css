@@ -1,8 +1,9 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cinzel+Decorative:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap');
 
 @theme {
   --font-fantasy: 'Cinzel', 'Georgia', serif;
+  --font-body: 'Lora', 'Merriweather', 'Georgia', serif;
 
   --color-parchment-100: #f5e8cc;
   --color-parchment-200: #e8d5b7;
@@ -32,10 +33,36 @@
       radial-gradient(ellipse at 85% 70%, rgba(50, 25, 5, 0.15) 0%, transparent 55%);
     min-height: 100vh;
     color: #e8d5b7;
-    font-family: system-ui, sans-serif;
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.6;
   }
 
   h1, h2, h3 {
     font-family: var(--font-fantasy);
+  }
+
+  /* Custom Themed Scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-parchment-900);
+    border-left: 1px solid var(--color-parchment-800);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-gold-700);
+    border-radius: 4px;
+    border: 2px solid var(--color-parchment-900);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-gold-500);
+  }
+  
+  /* Firefox Scrollbar */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-gold-700) var(--color-parchment-900);
   }
 }

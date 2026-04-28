@@ -1,75 +1,75 @@
-# React + TypeScript + Vite
+# 🎲 Criador de Personagem - D&D 5e (PHB 2014)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Um aplicativo web moderno, intuitivo e responsivo para criação de personagens de Dungeons & Dragons 5ª Edição, baseado nas regras do Player's Handbook (Livro do Jogador) de 2014.
 
-Currently, two official plugins are available:
+## ✨ Funcionalidades
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Criação Passo a Passo**: Um assistente (wizard) guiado e fluido para montar seu personagem de forma progressiva.
+  - 📝 **Nome**: Defina a identidade do seu aventureiro.
+  - 🧝 **Raça**: Escolha suas origens e receba traços raciais, aumento de atributos e proficiências.
+  - ⚔️ **Classe**: Defina seu caminho heroico, proficiências, equipamentos iniciais e habilidades de classe.
+  - 🎲 **Habilidades**: Gere e distribua seus atributos (Força, Destreza, Constituição, Inteligência, Sabedoria, Carisma).
+  - 📜 **Antecedente**: Descubra a história e origem do seu personagem antes da aventura.
+- **Validação em Tempo Real**: O sistema guia o usuário e evita que etapas fiquem incompletas.
+- **Design Temático e Imersivo**: Interface rica e responsiva, utilizando estilos e paletas de cores que remetem a pergaminhos, ouro e fantasia clássica.
 
-## React Compiler
+## 🛠️ Tecnologias Utilizadas
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+Este projeto foi construído utilizando as ferramentas mais modernas do ecossistema front-end:
 
-Note: This will impact Vite dev & build performances.
+- **[React 19](https://react.dev/)**: Biblioteca poderosa para construção da interface de usuário com componentes.
+- **[TypeScript](https://www.typescriptlang.org/)**: Superset do JavaScript que adiciona tipagem estática e maior segurança ao código.
+- **[Vite](https://vitejs.dev/)**: Build tool e bundler ultrarrápido para uma excelente experiência de desenvolvimento.
+- **[Tailwind CSS v4](https://tailwindcss.com/)**: Framework CSS utilitário para estilização rápida, consistente e responsiva.
+- **[Zustand](https://zustand-demo.pmnd.rs/)**: Gerenciamento de estado global da aplicação de forma leve e direta (sem boilerplate desnecessário).
 
-## Expanding the ESLint configuration
+## 📁 Estrutura do Projeto
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Abaixo uma visão geral da organização do código-fonte (`/src`):
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- `/components`: Componentes visuais do React, organizados em subdiretórios:
+  - `/steps`: Telas específicas de cada passo do assistente de criação.
+  - `/wizard`: Componentes de controle do assistente (ex: indicador de progresso).
+  - Componentes de UI menores (botões, cards, etc.).
+- `/stores`: Lógica de gerenciamento de estado global com Zustand (ex: `characterStore.ts`).
+- `/data`: Estruturas de dados estáticos e catálogos baseados nas regras de D&D.
+- `/types`: Definições globais de tipos e interfaces do TypeScript para garantir a integridade dos dados.
+- `/utils`: Funções utilitárias.
+- `/docs`: Documentação adicional e transcrição em Markdown das regras utilizadas no projeto.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## 🚀 Como Executar Localmente
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### Pré-requisitos
+- [Node.js](https://nodejs.org/) (versão 18 ou superior)
+- npm (ou outro gerenciador de pacotes como yarn/pnpm)
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Instalação e Execução
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+1. Clone o repositório ou faça o download dos arquivos:
+   ```bash
+   git clone <url-do-repositorio>
+   cd dnd-character-creator
+   ```
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+2. Instale as dependências do projeto:
+   ```bash
+   npm install
+   ```
+
+3. Inicie o servidor de desenvolvimento:
+   ```bash
+   npm run dev
+   ```
+
+4. O aplicativo estará disponível no navegador, geralmente no endereço `http://localhost:5173/`.
+
+## 📝 Scripts Disponíveis
+
+- `npm run dev`: Inicia o servidor local de desenvolvimento.
+- `npm run build`: Faz a checagem de tipos (`tsc`) e gera a build de produção otimizada.
+- `npm run lint`: Executa o ESLint para encontrar e reportar problemas no código.
+- `npm run test`: Executa os testes automatizados com o Vitest.
+
+## 📜 Notas Legais
+
+Este projeto foi criado para fins de estudo e uso pessoal. O conteúdo relacionado a Dungeons & Dragons, como nomes, regras e mecânicas, é de propriedade intelectual da Wizards of the Coast.

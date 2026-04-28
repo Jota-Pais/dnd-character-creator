@@ -4,6 +4,10 @@ export type { ClassChoiceSelections }
 
 export type WizardStep = 'name' | 'race' | 'class' | 'abilities' | 'background' | 'equipment' | 'review'
 
+export type AbilityMethod = 'standard-array' | 'point-buy' | 'roll'
+
+export type BaseAbilityScores = Record<AbilityScore, number | null>
+
 export const WIZARD_STEPS: WizardStep[] = [
   'name',
   'race',
@@ -40,6 +44,9 @@ export type CharacterDraft = {
   raceChoices: RaceChoiceSelections
   class: string | null
   classChoices: ClassChoiceSelections
+  abilityMethod: AbilityMethod | null
+  abilityScores: BaseAbilityScores
+  rolledValues: number[]
 }
 
 export const EMPTY_DRAFT: CharacterDraft = {
@@ -56,4 +63,7 @@ export const EMPTY_DRAFT: CharacterDraft = {
     tools: [],
     subclassExtras: {},
   },
+  abilityMethod: null,
+  abilityScores: { STR: null, DEX: null, CON: null, INT: null, WIS: null, CHA: null },
+  rolledValues: [],
 }

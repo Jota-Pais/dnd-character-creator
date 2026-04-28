@@ -1,5 +1,6 @@
 import { create } from 'zustand'
-import type { WizardStep, CharacterDraft, RaceChoiceSelections, ClassChoiceSelections } from '../types/character'
+import type { WizardStep, CharacterDraft, RaceChoiceSelections, ClassChoiceSelections, AbilityMethod } from '../types/character'
+import type { AbilityScore } from '../types/race'
 import { WIZARD_STEPS, EMPTY_DRAFT } from '../types/character'
 import { saveCharacter, loadCharacter, clearCharacter } from '../utils/storage'
 
@@ -13,6 +14,9 @@ type CharacterStore = {
   updateRaceChoices: (choices: Partial<RaceChoiceSelections>) => void
   setClass: (classId: string) => void
   updateClassChoices: (choices: Partial<ClassChoiceSelections>) => void
+  setAbilityMethod: (method: AbilityMethod) => void
+  setAbilityScore: (ability: AbilityScore, score: number | null) => void
+  setRolledValues: (values: number[]) => void
   nextStep: () => void
   prevStep: () => void
   reset: () => void
@@ -58,6 +62,35 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
       draft: {
         ...state.draft,
         classChoices: { ...state.draft.classChoices, ...choices },
+      },
+    })),
+
+  setAbilityMethod: (method) =>
+    set(state => ({
+      draft: {
+        ...state.draft,
+        abilityMethod: method,
+        abilityScores: method === 'point-buy'
+          ? { STR: 8, DEX: 8, CON: 8, INT: 8, WIS: 8, CHA: 8 }
+          : { STR: null, DEX: null, CON: null, INT: null, WIS: null, CHA: null },
+        rolledValues: [],
+      },
+    })),
+
+  setAbilityScore: (ability, score) =>
+    set(state => ({
+      draft: {
+        ...state.draft,
+        abilityScores: { ...state.draft.abilityScores, [ability]: score },
+      },
+    })),
+
+  setRolledValues: (values) =>
+    set(state => ({
+      draft: {
+        ...state.draft,
+        rolledValues: values,
+        abilityScores: { STR: null, DEX: null, CON: null, INT: null, WIS: null, CHA: null },
       },
     })),
 

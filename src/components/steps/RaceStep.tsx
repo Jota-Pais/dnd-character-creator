@@ -55,7 +55,7 @@ export function RaceStep() {
       {/* ── Grade de raças ── */}
       <div className="lg:w-1/2 xl:w-3/5">
         <h2 className="font-fantasy text-2xl font-bold text-parchment-200 mb-1">
-          De que estirpe és tu?
+          Qual é a sua Raça?
         </h2>
         <p className="text-parchment-500 text-sm mb-5">
           Sua raça molda sua origem, seus instintos e os dons que carrega desde o nascimento.

@@ -47,7 +47,7 @@ export default function App() {
           <div className="h-px flex-1 bg-gradient-to-l from-transparent to-parchment-800" />
         </div>
 
-        <main>
+        <main key={currentStep} className="animate-fade-in">
           {currentStep === 'name' && <NameStep />}
           {currentStep === 'race' && <RaceStep />}
           {currentStep === 'class' && <ClassStep />}

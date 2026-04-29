@@ -1,4 +1,5 @@
 import type { AbilityScore } from './race'
+import type { ClassStartingEquipment } from './equipment'
 
 export type SpellcastingType = 'known' | 'prepared' | 'hybrid'
 
@@ -52,6 +53,7 @@ export type GameClass = {
   subclasses: ClassSubclass[]
   hasFightingStyle: boolean
   hasExpertise: boolean
+  startingEquipment: ClassStartingEquipment
 }
 
 export type SubclassChoiceSelections = {

@@ -24,9 +24,9 @@ describe('getBackground', () => {
 
 describe('getToolsByCategory', () => {
   it('retorna instrumentos musicais', () => {
-    const musical = getToolsByCategory('musical')
+    const musical = getToolsByCategory('musical-instrument')
     expect(musical.length).toBeGreaterThan(0)
-    expect(musical.every(t => t.category === 'musical')).toBe(true)
+    expect(musical.every(t => t.category === 'musical-instrument')).toBe(true)
   })
 
   it('retorna ferramentas de artesão', () => {
@@ -36,7 +36,7 @@ describe('getToolsByCategory', () => {
   })
 
   it('retorna conjuntos de jogos', () => {
-    const gaming = getToolsByCategory('gaming')
+    const gaming = getToolsByCategory('gaming-set')
     expect(gaming).toHaveLength(4)
   })
 

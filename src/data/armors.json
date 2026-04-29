@@ -1,0 +1,15 @@
+[
+  { "id": "padded",         "name": "Acolchoada",       "category": "light",   "cost": 500,   "acBase": 11, "dexModifier": "full",  "strengthRequirement": null, "stealthDisadvantage": true,  "weight": 4    },
+  { "id": "leather",        "name": "Couro",            "category": "light",   "cost": 1000,  "acBase": 11, "dexModifier": "full",  "strengthRequirement": null, "stealthDisadvantage": false, "weight": 5    },
+  { "id": "studded-leather","name": "Couro Batido",     "category": "light",   "cost": 4500,  "acBase": 12, "dexModifier": "full",  "strengthRequirement": null, "stealthDisadvantage": false, "weight": 6.5  },
+  { "id": "hide",           "name": "Gibão de Peles",   "category": "medium",  "cost": 1000,  "acBase": 12, "dexModifier": "max-2", "strengthRequirement": null, "stealthDisadvantage": false, "weight": 6    },
+  { "id": "chain-shirt",    "name": "Camisão de Malha", "category": "medium",  "cost": 3000,  "acBase": 13, "dexModifier": "max-2", "strengthRequirement": null, "stealthDisadvantage": false, "weight": 10   },
+  { "id": "scale-mail",     "name": "Brunea",           "category": "medium",  "cost": 5000,  "acBase": 14, "dexModifier": "max-2", "strengthRequirement": null, "stealthDisadvantage": true,  "weight": 22.5 },
+  { "id": "breastplate",    "name": "Peitoral",         "category": "medium",  "cost": 40000, "acBase": 14, "dexModifier": "max-2", "strengthRequirement": null, "stealthDisadvantage": false, "weight": 10   },
+  { "id": "half-plate",     "name": "Meia-Armadura",    "category": "medium",  "cost": 75000, "acBase": 15, "dexModifier": "max-2", "strengthRequirement": null, "stealthDisadvantage": true,  "weight": 20   },
+  { "id": "ring-mail",      "name": "Cota de Anéis",    "category": "heavy",   "cost": 3000,  "acBase": 14, "dexModifier": "none",  "strengthRequirement": null, "stealthDisadvantage": true,  "weight": 20   },
+  { "id": "chain-mail",     "name": "Cota de Malha",    "category": "heavy",   "cost": 7500,  "acBase": 16, "dexModifier": "none",  "strengthRequirement": 13,   "stealthDisadvantage": true,  "weight": 27.5 },
+  { "id": "splint",         "name": "Cota de Talas",    "category": "heavy",   "cost": 20000, "acBase": 17, "dexModifier": "none",  "strengthRequirement": 15,   "stealthDisadvantage": true,  "weight": 30   },
+  { "id": "plate",          "name": "Placas",           "category": "heavy",   "cost": 150000,"acBase": 18, "dexModifier": "none",  "strengthRequirement": 15,   "stealthDisadvantage": true,  "weight": 32.5 },
+  { "id": "shield",         "name": "Escudo",           "category": "shield",  "cost": 1000,  "acBase": 2,  "dexModifier": "none",  "strengthRequirement": null, "stealthDisadvantage": false, "weight": 3    }
+]

@@ -1,0 +1,117 @@
+[
+  {
+    "id": "entertainers-pack",
+    "name": "Pacote de Artista",
+    "cost": 4000,
+    "contents": [
+      { "ref": "backpack",     "quantity": 1 },
+      { "ref": "bedroll",      "quantity": 1 },
+      { "ref": "costume",      "quantity": 2 },
+      { "ref": "candle",       "quantity": 5 },
+      { "ref": "rations",      "quantity": 5 },
+      { "ref": "waterskin",    "quantity": 1 },
+      { "ref": "disguise-kit", "quantity": 1 }
+    ]
+  },
+  {
+    "id": "burglars-pack",
+    "name": "Pacote de Assaltante",
+    "cost": 1600,
+    "contents": [
+      { "ref": "backpack",      "quantity": 1 },
+      { "ref": "ball-bearings", "quantity": 1 },
+      { "ref": "string",        "quantity": 1 },
+      { "ref": "bell",          "quantity": 1 },
+      { "ref": "candle",        "quantity": 5 },
+      { "ref": "crowbar",       "quantity": 1 },
+      { "ref": "hammer",        "quantity": 1 },
+      { "ref": "piton",         "quantity": 10 },
+      { "ref": "hooded-lantern","quantity": 1 },
+      { "ref": "oil-flask",     "quantity": 2 },
+      { "ref": "rations",       "quantity": 5 },
+      { "ref": "tinderbox",     "quantity": 1 },
+      { "ref": "waterskin",     "quantity": 1 },
+      { "ref": "hempen-rope",   "quantity": 1 }
+    ]
+  },
+  {
+    "id": "dungeoneers-pack",
+    "name": "Pacote de Aventureiro",
+    "cost": 1200,
+    "contents": [
+      { "ref": "backpack",    "quantity": 1 },
+      { "ref": "crowbar",     "quantity": 1 },
+      { "ref": "hammer",      "quantity": 1 },
+      { "ref": "piton",       "quantity": 10 },
+      { "ref": "torch",       "quantity": 10 },
+      { "ref": "tinderbox",   "quantity": 1 },
+      { "ref": "rations",     "quantity": 10 },
+      { "ref": "waterskin",   "quantity": 1 },
+      { "ref": "hempen-rope", "quantity": 1 }
+    ]
+  },
+  {
+    "id": "diplomats-pack",
+    "name": "Pacote de Diplomata",
+    "cost": 3900,
+    "contents": [
+      { "ref": "chest",       "quantity": 1 },
+      { "ref": "map-case",    "quantity": 2 },
+      { "ref": "fine-clothes","quantity": 1 },
+      { "ref": "ink-bottle",  "quantity": 1 },
+      { "ref": "ink-pen",     "quantity": 1 },
+      { "ref": "lamp",        "quantity": 1 },
+      { "ref": "oil-flask",   "quantity": 2 },
+      { "ref": "paper",       "quantity": 5 },
+      { "ref": "perfume",     "quantity": 1 },
+      { "ref": "sealing-wax", "quantity": 1 },
+      { "ref": "soap",        "quantity": 1 }
+    ]
+  },
+  {
+    "id": "scholars-pack",
+    "name": "Pacote de Estudioso",
+    "cost": 4000,
+    "contents": [
+      { "ref": "backpack",    "quantity": 1 },
+      { "ref": "book",        "quantity": 1 },
+      { "ref": "ink-bottle",  "quantity": 1 },
+      { "ref": "ink-pen",     "quantity": 1 },
+      { "ref": "parchment",   "quantity": 10 },
+      { "ref": "sand-pouch",  "quantity": 1 },
+      { "ref": "small-knife", "quantity": 1 }
+    ]
+  },
+  {
+    "id": "explorers-pack",
+    "name": "Pacote de Explorador",
+    "cost": 1000,
+    "contents": [
+      { "ref": "backpack",    "quantity": 1 },
+      { "ref": "bedroll",     "quantity": 1 },
+      { "ref": "mess-kit",    "quantity": 1 },
+      { "ref": "tinderbox",   "quantity": 1 },
+      { "ref": "torch",       "quantity": 10 },
+      { "ref": "rations",     "quantity": 10 },
+      { "ref": "waterskin",   "quantity": 1 },
+      { "ref": "hempen-rope", "quantity": 1 }
+    ]
+  },
+  {
+    "id": "priests-pack",
+    "name": "Pacote de Sacerdote",
+    "cost": 1900,
+    "contents": [
+      { "ref": "backpack",  "quantity": 1 },
+      { "ref": "blanket",   "quantity": 1 },
+      { "ref": "candle",    "quantity": 10 },
+      { "ref": "tinderbox", "quantity": 1 },
+      { "ref": "alms-box",  "quantity": 1 },
+      { "ref": "incense",   "quantity": 2 },
+      { "ref": "censer",    "quantity": 1 },
+      { "ref": "vestments", "quantity": 1 },
+      { "ref": "rations",   "quantity": 2 },
+      { "ref": "waterskin", "quantity": 1 }
+    ]
+  }
+]

@@ -5,6 +5,7 @@ import { RaceStep } from './components/steps/RaceStep'
 import { ClassStep } from './components/steps/ClassStep'
 import { AbilitiesStep } from './components/steps/AbilitiesStep'
 import { BackgroundStep } from './components/steps/BackgroundStep'
+import { EquipmentStep } from './components/steps/EquipmentStep'
 
 export default function App() {
   const currentStep = useCharacterStore(state => state.currentStep)
@@ -47,13 +48,14 @@ export default function App() {
           <div className="h-px flex-1 bg-gradient-to-l from-transparent to-parchment-800" />
         </div>
 
-        <main key={currentStep} className="animate-fade-in">
+        <main key={currentStep} className="animate-fade-in relative pb-24 lg:pb-32">
           {currentStep === 'name' && <NameStep />}
           {currentStep === 'race' && <RaceStep />}
           {currentStep === 'class' && <ClassStep />}
           {currentStep === 'abilities' && <AbilitiesStep />}
           {currentStep === 'background' && <BackgroundStep />}
-          {currentStep !== 'name' && currentStep !== 'race' && currentStep !== 'class' && currentStep !== 'abilities' && currentStep !== 'background' && (
+          {currentStep === 'equipment' && <EquipmentStep />}
+          {currentStep !== 'name' && currentStep !== 'race' && currentStep !== 'class' && currentStep !== 'abilities' && currentStep !== 'background' && currentStep !== 'equipment' && (
             <div className="flex flex-col items-center justify-center h-64 rounded-2xl border-2 border-dashed border-parchment-800">
               <div className="text-4xl mb-3">🏗️</div>
               <p className="text-parchment-600 font-fantasy">Etapa em construção — em breve!</p>

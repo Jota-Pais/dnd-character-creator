@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useCharacterStore } from './stores/characterStore'
 import { StepIndicator } from './components/wizard/StepIndicator'
 import { NameStep } from './components/steps/NameStep'
@@ -10,6 +11,22 @@ import { EquipmentStep } from './components/steps/EquipmentStep'
 export default function App() {
   const currentStep = useCharacterStore(state => state.currentStep)
   const name = useCharacterStore(state => state.draft.name)
+  const prevStep = useCharacterStore(state => state.prevStep)
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [currentStep])
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key !== 'Escape') return
+      const tag = (e.target as HTMLElement).tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return
+      prevStep()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [prevStep])
 
   return (
     <div className="min-h-screen">
@@ -63,6 +80,22 @@ export default function App() {
           )}
         </main>
       </div>
+
+      {/* Footer */}
+      <footer className="border-t border-parchment-900 mt-12 py-6 text-center">
+        <p className="text-parchment-700 text-xs font-fantasy tracking-wider">
+          Forjado por Jota{' '}
+          <span className="text-parchment-800 mx-1">·</span>{' '}
+          <a
+            href="https://github.com/Jota-Pais/dnd-character-creator"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-gold-700 hover:text-gold-500 transition-colors"
+          >
+            GitHub ↗
+          </a>
+        </p>
+      </footer>
     </div>
   )
 }

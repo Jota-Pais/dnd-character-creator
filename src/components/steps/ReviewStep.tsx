@@ -416,6 +416,61 @@ export function ReviewStep() {
         </Section>
       )}
 
+      {/* Racial Traits */}
+      {race && (
+        <Section title="Traços Raciais">
+          <div className="space-y-3">
+            {[...race.traits, ...(subrace?.traits ?? [])].map(trait => (
+              <div key={trait.name}>
+                <span className="text-sm font-semibold font-fantasy text-parchment-200">
+                  {trait.name}.{' '}
+                </span>
+                <span className="text-sm text-parchment-500 leading-relaxed">
+                  {trait.description}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {/* Class Features */}
+      {cls && (
+        <Section title="Habilidades de Classe">
+          <div className="space-y-3">
+            {cls.features.map(feat => (
+              <div key={feat.name}>
+                <span className="text-sm font-semibold font-fantasy text-parchment-200">
+                  {feat.name}.{' '}
+                </span>
+                <span className="text-sm text-parchment-500 leading-relaxed">
+                  {feat.description}
+                </span>
+              </div>
+            ))}
+            {subclassData && cls.subclassLevel <= 1 && subclassData.features.length > 0 && (
+              <>
+                <div className="pt-1 border-t border-parchment-900">
+                  <p className="text-xs text-parchment-700 font-fantasy uppercase tracking-widest mb-2">
+                    {subclassData.name}
+                  </p>
+                  {subclassData.features.map(feat => (
+                    <div key={feat.name} className="mb-3 last:mb-0">
+                      <span className="text-sm font-semibold font-fantasy text-parchment-200">
+                        {feat.name}.{' '}
+                      </span>
+                      <span className="text-sm text-parchment-500 leading-relaxed">
+                        {feat.description}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </Section>
+      )}
+
       {/* Actions */}
       <div className="space-y-2 pt-2">
         <button

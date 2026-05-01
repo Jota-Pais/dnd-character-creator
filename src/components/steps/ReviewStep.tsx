@@ -5,7 +5,7 @@ import {
   getEffectiveDarkvision, RACE_PRESENTATION, LANGUAGES,
 } from '../../utils/raceUtils'
 import { getClass, getSubclass, CLASS_PRESENTATION, getHpAtLevel1 } from '../../utils/classUtils'
-import { getBackground, BACKGROUND_PRESENTATION, getSkillName, getToolName } from '../../utils/backgroundUtils'
+import { getBackground, BACKGROUND_PRESENTATION, getSkillName, getToolName, SKILLS } from '../../utils/backgroundUtils'
 import {
   calculateModifier, formatModifier, ALL_ABILITY_SCORES, ABILITY_LABELS,
 } from '../../utils/abilityScoreUtils'
@@ -267,36 +267,35 @@ export function ReviewStep() {
         </Section>
 
         <Section title="Perícias">
-          {allSkills.length === 0 ? (
-            <p className="text-parchment-700 text-sm italic">Nenhuma perícia selecionada</p>
-          ) : (
-            <div className="space-y-1.5">
-              {[...allSkills].sort((a, b) => getSkillName(a).localeCompare(getSkillName(b))).map(skillId => {
-                const abilityId = SKILL_ABILITY[skillId]
-                const abilityMod = abilityId ? calculateModifier(finalScores[abilityId]) : 0
-                const isExpert = expertiseSet.has(skillId)
-                const bonus = abilityMod + PROF_BONUS + (isExpert ? PROF_BONUS : 0)
-                return (
-                  <div key={skillId} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs leading-none text-gold-600">
-                        {isExpert ? '◆' : '●'}
-                      </span>
-                      <span className="text-sm text-parchment-300">
-                        {getSkillName(skillId)}
-                        {isExpert && (
-                          <span className="text-xs text-gold-700 ml-1">exp.</span>
-                        )}
-                      </span>
-                    </div>
-                    <span className="text-sm font-mono font-bold text-gold-400">
-                      {formatModifier(bonus)}
+          <div className="space-y-1">
+            {[...SKILLS].sort((a, b) => a.name.localeCompare(b.name)).map(skill => {
+              const abilityId = SKILL_ABILITY[skill.id]
+              const abilityMod = abilityId ? calculateModifier(finalScores[abilityId]) : 0
+              const isProficient = allSkills.includes(skill.id)
+              const isExpert = expertiseSet.has(skill.id)
+              const bonus = abilityMod + (isProficient ? PROF_BONUS : 0) + (isExpert ? PROF_BONUS : 0)
+              return (
+                <div key={skill.id} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs leading-none ${isExpert ? 'text-gold-500' : isProficient ? 'text-gold-600' : 'text-parchment-800'}`}>
+                      {isExpert ? '◆' : isProficient ? '●' : '○'}
+                    </span>
+                    <span className={`text-xs ${isProficient ? 'text-parchment-300' : 'text-parchment-600'}`}>
+                      {skill.name}
+                      {abilityId && (
+                        <span className="text-parchment-800 ml-1">
+                          ({ABILITY_LABELS[abilityId].short})
+                        </span>
+                      )}
                     </span>
                   </div>
-                )
-              })}
-            </div>
-          )}
+                  <span className={`text-xs font-mono font-bold ${isProficient ? 'text-gold-400' : 'text-parchment-700'}`}>
+                    {formatModifier(bonus)}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
         </Section>
       </div>
 

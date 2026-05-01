@@ -208,7 +208,6 @@ export function ReviewStep() {
           {darkvisionStr && (
             <QuickStat label="Escuridão" value={darkvisionStr} accent={accent} />
           )}
-          <QuickStat label="Prof." value="+2" accent={accent} />
         </div>
         {acNote && (
           <p className="text-xs text-parchment-700 mt-2 text-center">
@@ -241,6 +240,23 @@ export function ReviewStep() {
       </Section>
 
       {/* Saving Throws + Skills */}
+      {/* Proficiency bonus card */}
+      <div
+        className="rounded-xl border border-parchment-900 bg-parchment-950/60 px-4 py-3 flex items-center justify-between"
+      >
+        <div>
+          <p className="text-xs font-fantasy text-parchment-600 uppercase tracking-widest">
+            Bônus de Proficiência
+          </p>
+          <p className="text-xs text-parchment-700 mt-0.5">
+            Adicionado a perícias, resistências e ataques treinados
+          </p>
+        </div>
+        <span className="font-fantasy font-bold text-2xl" style={{ color: accent }}>
+          +{PROF_BONUS}
+        </span>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Section title="Resistências">
           <div className="space-y-1.5">
@@ -258,16 +274,9 @@ export function ReviewStep() {
                       {ABILITY_LABELS[ab].long}
                     </span>
                   </div>
-                  <div className="text-right">
-                    <span className={`text-sm font-mono font-bold ${isProficient ? 'text-gold-400' : 'text-parchment-700'}`}>
-                      {formatModifier(bonus)}
-                    </span>
-                    {isProficient && (
-                      <p className="text-[10px] font-mono text-parchment-700 leading-none mt-0.5">
-                        {formatModifier(abilityMod)} + {PROF_BONUS}
-                      </p>
-                    )}
-                  </div>
+                  <span className={`text-sm font-mono font-bold ${isProficient ? 'text-gold-400' : 'text-parchment-700'}`}>
+                    {formatModifier(bonus)}
+                  </span>
                 </div>
               )
             })}
@@ -297,18 +306,9 @@ export function ReviewStep() {
                       )}
                     </span>
                   </div>
-                  <div className="text-right">
-                    <span className={`text-xs font-mono font-bold ${isProficient ? 'text-gold-400' : 'text-parchment-700'}`}>
-                      {formatModifier(bonus)}
-                    </span>
-                    {(isProficient || isExpert) && (
-                      <p className="text-[10px] font-mono text-parchment-700 leading-none mt-0.5">
-                        {formatModifier(abilityMod)}
-                        {' + '}{PROF_BONUS}
-                        {isExpert && <> + {PROF_BONUS}</>}
-                      </p>
-                    )}
-                  </div>
+                  <span className={`text-xs font-mono font-bold ${isProficient ? 'text-gold-400' : 'text-parchment-700'}`}>
+                    {formatModifier(bonus)}
+                  </span>
                 </div>
               )
             })}

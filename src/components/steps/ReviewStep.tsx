@@ -246,7 +246,8 @@ export function ReviewStep() {
           <div className="space-y-1.5">
             {ALL_ABILITY_SCORES.map(ab => {
               const isProficient = savingThrows.includes(ab)
-              const bonus = calculateModifier(finalScores[ab]) + (isProficient ? PROF_BONUS : 0)
+              const abilityMod = calculateModifier(finalScores[ab])
+              const bonus = abilityMod + (isProficient ? PROF_BONUS : 0)
               return (
                 <div key={ab} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -257,9 +258,16 @@ export function ReviewStep() {
                       {ABILITY_LABELS[ab].long}
                     </span>
                   </div>
-                  <span className={`text-sm font-mono font-bold ${isProficient ? 'text-gold-400' : 'text-parchment-700'}`}>
-                    {formatModifier(bonus)}
-                  </span>
+                  <div className="text-right">
+                    <span className={`text-sm font-mono font-bold ${isProficient ? 'text-gold-400' : 'text-parchment-700'}`}>
+                      {formatModifier(bonus)}
+                    </span>
+                    {isProficient && (
+                      <p className="text-[10px] font-mono text-parchment-700 leading-none mt-0.5">
+                        {formatModifier(abilityMod)} + {PROF_BONUS}
+                      </p>
+                    )}
+                  </div>
                 </div>
               )
             })}
@@ -289,9 +297,18 @@ export function ReviewStep() {
                       )}
                     </span>
                   </div>
-                  <span className={`text-xs font-mono font-bold ${isProficient ? 'text-gold-400' : 'text-parchment-700'}`}>
-                    {formatModifier(bonus)}
-                  </span>
+                  <div className="text-right">
+                    <span className={`text-xs font-mono font-bold ${isProficient ? 'text-gold-400' : 'text-parchment-700'}`}>
+                      {formatModifier(bonus)}
+                    </span>
+                    {(isProficient || isExpert) && (
+                      <p className="text-[10px] font-mono text-parchment-700 leading-none mt-0.5">
+                        {formatModifier(abilityMod)}
+                        {' + '}{PROF_BONUS}
+                        {isExpert && <> + {PROF_BONUS}</>}
+                      </p>
+                    )}
+                  </div>
                 </div>
               )
             })}

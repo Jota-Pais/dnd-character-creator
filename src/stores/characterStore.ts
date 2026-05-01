@@ -4,7 +4,9 @@ import type { AbilityScore } from '../types/race'
 import type { ChoiceResolution } from '../types/equipment'
 import { WIZARD_STEPS, EMPTY_DRAFT } from '../types/character'
 import { EMPTY_EQUIPMENT_DRAFT } from '../types/equipment'
-import { saveCharacter, loadCharacter, clearCharacter } from '../utils/storage'
+import { saveSession, loadSession, clearSession } from '../utils/storage'
+
+const persisted = loadSession()
 
 type CharacterStore = {
   currentStep: WizardStep
@@ -27,13 +29,12 @@ type CharacterStore = {
   nextStep: () => void
   prevStep: () => void
   reset: () => void
-  saveToStorage: () => void
-  loadFromStorage: () => void
+  importDraft: (draft: CharacterDraft) => void
 }
 
 export const useCharacterStore = create<CharacterStore>((set, get) => ({
-  currentStep: 'name',
-  draft: { ...EMPTY_DRAFT },
+  currentStep: persisted?.step ?? 'name',
+  draft: persisted?.draft ?? { ...EMPTY_DRAFT },
 
   setName: (name) => set(state => ({ draft: { ...state.draft, name } })),
 
@@ -148,26 +149,28 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     const idx = WIZARD_STEPS.indexOf(currentStep)
     if (idx < WIZARD_STEPS.length - 1) {
       const next = WIZARD_STEPS[idx + 1]
-      saveCharacter(draft)
+      saveSession(draft, next)
       set({ currentStep: next })
     }
   },
 
   prevStep: () => {
-    const { currentStep } = get()
+    const { currentStep, draft } = get()
     const idx = WIZARD_STEPS.indexOf(currentStep)
-    if (idx > 0) set({ currentStep: WIZARD_STEPS[idx - 1] })
+    if (idx > 0) {
+      const prev = WIZARD_STEPS[idx - 1]
+      saveSession(draft, prev)
+      set({ currentStep: prev })
+    }
   },
 
   reset: () => {
-    clearCharacter()
+    clearSession()
     set({ currentStep: 'name', draft: { ...EMPTY_DRAFT } })
   },
 
-  saveToStorage: () => saveCharacter(get().draft),
-
-  loadFromStorage: () => {
-    const saved = loadCharacter()
-    if (saved) set({ draft: saved })
+  importDraft: (draft) => {
+    saveSession(draft, 'review')
+    set({ draft, currentStep: 'review' })
   },
 }))

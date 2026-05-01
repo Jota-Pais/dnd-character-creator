@@ -1,23 +1,28 @@
-import type { CharacterDraft } from '../types/character'
+import type { CharacterDraft, WizardStep } from '../types/character'
 
-const STORAGE_KEY = 'dnd-character-draft'
+const SESSION_KEY = 'dnd-character-session'
 
-export function saveCharacter(character: CharacterDraft): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(character))
+type Session = {
+  draft: CharacterDraft
+  step: WizardStep
 }
 
-export function loadCharacter(): CharacterDraft | null {
-  const raw = localStorage.getItem(STORAGE_KEY)
+export function saveSession(draft: CharacterDraft, step: WizardStep): void {
+  localStorage.setItem(SESSION_KEY, JSON.stringify({ draft, step }))
+}
+
+export function loadSession(): Session | null {
+  const raw = localStorage.getItem(SESSION_KEY)
   if (!raw) return null
   try {
-    return JSON.parse(raw) as CharacterDraft
+    return JSON.parse(raw) as Session
   } catch {
     return null
   }
 }
 
-export function clearCharacter(): void {
-  localStorage.removeItem(STORAGE_KEY)
+export function clearSession(): void {
+  localStorage.removeItem(SESSION_KEY)
 }
 
 export function exportCharacter(character: CharacterDraft): void {
@@ -31,4 +36,29 @@ export function exportCharacter(character: CharacterDraft): void {
   link.click()
   document.body.removeChild(link)
   URL.revokeObjectURL(url)
+}
+
+export function importCharacter(file: File): Promise<CharacterDraft | null> {
+  return new Promise(resolve => {
+    const reader = new FileReader()
+    reader.onload = e => {
+      try {
+        const parsed = JSON.parse(e.target?.result as string)
+        if (
+          typeof parsed === 'object' &&
+          parsed !== null &&
+          'name' in parsed &&
+          'abilityScores' in parsed
+        ) {
+          resolve(parsed as CharacterDraft)
+        } else {
+          resolve(null)
+        }
+      } catch {
+        resolve(null)
+      }
+    }
+    reader.onerror = () => resolve(null)
+    reader.readAsText(file)
+  })
 }

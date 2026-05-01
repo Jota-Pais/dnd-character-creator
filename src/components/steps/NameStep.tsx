@@ -1,11 +1,30 @@
+import { useRef, useState } from 'react'
 import { useCharacterStore } from '../../stores/characterStore'
+import { importCharacter } from '../../utils/storage'
 
 export function NameStep() {
   const name = useCharacterStore(state => state.draft.name)
   const setName = useCharacterStore(state => state.setName)
   const nextStep = useCharacterStore(state => state.nextStep)
+  const importDraft = useCharacterStore(state => state.importDraft)
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [importError, setImportError] = useState(false)
 
   const canAdvance = name.trim().length > 0
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+    setImportError(false)
+    const draft = await importCharacter(file)
+    if (draft) {
+      importDraft(draft)
+    } else {
+      setImportError(true)
+    }
+  }
 
   return (
     <div className="max-w-lg mx-auto text-center">
@@ -39,6 +58,28 @@ export function NameStep() {
       >
         Iniciar a Aventura ✦
       </button>
+
+      <div className="mt-8 pt-8 border-t border-parchment-900">
+        <p className="text-parchment-700 text-xs mb-3 font-fantasy">Já tem uma ficha?</p>
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="px-5 py-2 rounded-lg border border-parchment-800 text-parchment-500 hover:text-parchment-300 hover:border-parchment-700 transition-all text-sm font-fantasy"
+        >
+          Importar ficha (.json)
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json,application/json"
+          className="hidden"
+          onChange={handleFileChange}
+        />
+        {importError && (
+          <p className="text-red-500 text-xs mt-2 font-fantasy">
+            Arquivo inválido — selecione um .json exportado por este criador.
+          </p>
+        )}
+      </div>
     </div>
   )
 }

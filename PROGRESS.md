@@ -4,8 +4,8 @@
 
 ## Status atual
 
-**Wizard completo.** Todas as 7 etapas estão funcionando.
-**Próximo passo:** Persistência real (restaurar rascunho no reload) → Import JSON → Deploy
+**V1 funcionalmente completa.** Wizard completo, persistência funcionando, export/import JSON implementados.
+**Próximo passo:** Deploy estático (Vercel ou Netlify)
 
 ---
 
@@ -64,23 +64,11 @@
 - Idiomas não podem ser escolhidos duas vezes: `excludedLanguages` prop propaga os idiomas já obtidos (fixos da raça + escolhas da raça) para o painel de antecedente; seleções obsoletas são limpas automaticamente por `useEffect`
 - CA na revisão calculada com a armadura detectada no equipamento padrão (fallback 10 + mod. DES)
 - Exportação de ficha como arquivo `.json` (download no browser)
-
----
-
-## O que falta para a V1 estar completa
-
-### 🔴 Bug: persistência não restaura ao recarregar
-
-O `loadFromStorage()` existe no store mas **nunca é chamado** em `App.tsx`. Além disso, o `currentStep` não é salvo no localStorage — só o `draft`. Resultado: o usuário perde toda a navegação ao dar F5.
-
-**Fix necessário:**
-1. Salvar `{ draft, currentStep }` juntos no localStorage (ou chaves separadas)
-2. Chamar `loadFromStorage()` no `useEffect` de mount em `App.tsx` — ou melhor, inicializar o store já com o estado restaurado
+- Importação de ficha via upload de `.json` na tela de nome; valida estrutura antes de aceitar
+- Persistência real: `storage.ts` salva `{ draft, currentStep }` juntos; store inicializa direto do localStorage sem `useEffect` em App; `prevStep` também persiste o step atual
 
 ### 📋 Pendente
 
-- [ ] **Import JSON** — botão "Importar ficha" na tela inicial (ou na revisão) para restaurar um `.json` exportado anteriormente; necessário para portabilidade entre dispositivos (escopo V1)
-- [ ] **Persistência real no reload** — fix do bug acima
 - [ ] **Deploy estático** — Vercel ou Netlify (configuração mínima, é SPA pura)
 
 ---
@@ -95,6 +83,7 @@ O `loadFromStorage()` existe no store mas **nunca é chamado** em `App.tsx`. Al�
 | 2026-04-29 | `storage.ts` como camada abstrata — stores e componentes nunca tocam localStorage diretamente; preparado para migrar para IndexedDB |
 | 2026-04-29 | Point buy com mínimo 8 e máximo 15 pré-racial; orçamento de 27 pontos (regra PHB 2014) |
 | 2026-05-01 | `excludedLanguages` passado como prop aos painéis de escolha — mantém a lógica de deduplicação no nível do step, não no componente genérico |
+| 2026-05-01 | Sessão salva como `{ draft, currentStep }` em chave única `dnd-character-session`; store lê do localStorage na inicialização do módulo, sem `useEffect` |
 
 ---
 

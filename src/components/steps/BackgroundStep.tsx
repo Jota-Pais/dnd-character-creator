@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useCharacterStore } from '../../stores/characterStore'
 import {
   BACKGROUNDS,
@@ -8,6 +8,7 @@ import {
   getToolName,
   isBackgroundStepComplete,
 } from '../../utils/backgroundUtils'
+import { getRace } from '../../utils/raceUtils'
 import { BackgroundCard } from '../background/BackgroundCard'
 import { BackgroundChoicePanel } from '../background/BackgroundChoicePanel'
 
@@ -26,6 +27,20 @@ export function BackgroundStep() {
     : '#d4900a'
 
   const canAdvance = isBackgroundStepComplete(selectedBg ?? null, draft.backgroundChoices)
+
+  const race = draft.race ? getRace(draft.race) : undefined
+  const langExcluded = [
+    ...(race?.grantedLanguages ?? []),
+    ...(draft.raceChoices.languages ?? []),
+  ]
+
+  useEffect(() => {
+    const current = draft.backgroundChoices.languages ?? []
+    const filtered = current.filter(id => !langExcluded.includes(id))
+    if (filtered.length !== current.length) {
+      updateBackgroundChoices({ languages: filtered })
+    }
+  }, [langExcluded.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleSelect(id: string) {
     setBackground(id)
@@ -149,6 +164,7 @@ export function BackgroundStep() {
                     selections={draft.backgroundChoices}
                     accent={accent}
                     onChange={updateBackgroundChoices}
+                    excludedLanguages={langExcluded}
                   />
                 </div>
               )}

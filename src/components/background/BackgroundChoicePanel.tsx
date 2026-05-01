@@ -7,9 +7,10 @@ type Props = {
   selections: BackgroundChoiceSelections
   accent: string
   onChange: (updates: Partial<BackgroundChoiceSelections>) => void
+  excludedLanguages?: string[]
 }
 
-export function BackgroundChoicePanel({ choices, selections, accent, onChange }: Props) {
+export function BackgroundChoicePanel({ choices, selections, accent, onChange, excludedLanguages }: Props) {
   if (choices.length === 0) return null
 
   return (
@@ -32,6 +33,7 @@ export function BackgroundChoicePanel({ choices, selections, accent, onChange }:
             count={choice.count}
             accent={accent}
             selected={selections.languages ?? []}
+            excluded={excludedLanguages}
             onSelect={languages => onChange({ languages })}
           />
         )
@@ -94,10 +96,11 @@ type LanguageFieldProps = {
   count: number
   accent: string
   selected: string[]
+  excluded?: string[]
   onSelect: (languages: string[]) => void
 }
 
-function LanguageField({ count, accent, selected, onSelect }: LanguageFieldProps) {
+function LanguageField({ count, accent, selected, excluded, onSelect }: LanguageFieldProps) {
   function toggle(langId: string) {
     if (selected.includes(langId)) {
       onSelect(selected.filter(l => l !== langId))
@@ -114,8 +117,9 @@ function LanguageField({ count, accent, selected, onSelect }: LanguageFieldProps
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
         {LANGUAGES.map(lang => {
+          const isExcluded = excluded?.includes(lang.id) ?? false
           const isSelected = selected.includes(lang.id)
-          const isDisabled = !isSelected && selected.length >= count
+          const isDisabled = isExcluded || (!isSelected && selected.length >= count)
           return (
             <button
               key={lang.id}
@@ -123,13 +127,13 @@ function LanguageField({ count, accent, selected, onSelect }: LanguageFieldProps
               disabled={isDisabled}
               className="px-2 py-1.5 rounded-lg border text-xs text-left transition-all"
               style={{
-                borderColor: isSelected ? accent : 'rgba(58, 38, 20, 0.6)',
+                borderColor: isSelected ? accent : isExcluded ? '#1e150a' : 'rgba(58, 38, 20, 0.6)',
                 backgroundColor: isSelected ? `${accent}15` : 'transparent',
-                color: isSelected ? accent : isDisabled ? '#5a3e24' : '#9a7650',
+                color: isSelected ? accent : isExcluded ? '#3a2614' : isDisabled ? '#5a3e24' : '#9a7650',
                 cursor: isDisabled ? 'not-allowed' : 'pointer',
               }}
             >
-              {lang.name}
+              {isExcluded ? '✓ ' : ''}{lang.name}
             </button>
           )
         })}

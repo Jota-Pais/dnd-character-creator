@@ -192,6 +192,7 @@ export function RaceStep() {
                     selections={draft.raceChoices}
                     accent={accent}
                     onChange={updateRaceChoices}
+                    excludedLanguages={selectedRace?.grantedLanguages}
                   />
                 </div>
               )}

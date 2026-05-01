@@ -38,6 +38,10 @@ export function formatCurrency(copper: number | null): string {
   return `${copper} pc`
 }
 
+export function getArmor(id: string): Armor | undefined {
+  return ALL_ARMORS.find(a => a.id === id)
+}
+
 export function getItemName(id: string): string {
   return (
     ALL_WEAPONS.find(w => w.id === id)?.name ??

@@ -4,12 +4,19 @@ import {
   getRace, getSubrace, getEffectiveAbilityBonuses, getEffectiveSpeed,
   getEffectiveDarkvision, RACE_PRESENTATION, LANGUAGES,
 } from '../../utils/raceUtils'
-import { getClass, getSubclass, CLASS_PRESENTATION, getHpAtLevel1 } from '../../utils/classUtils'
-import { getBackground, BACKGROUND_PRESENTATION, getSkillName, getToolName, SKILLS } from '../../utils/backgroundUtils'
+import { getClass, getSubclass, CLASS_PRESENTATION, getHpAtLevel1, isActiveCaster } from '../../utils/classUtils'
+import { getBackground, BACKGROUND_PRESENTATION, getToolName, SKILLS } from '../../utils/backgroundUtils'
 import {
   calculateModifier, formatModifier, ALL_ABILITY_SCORES, ABILITY_LABELS,
 } from '../../utils/abilityScoreUtils'
 import { getItemName, getArmor } from '../../utils/equipmentUtils'
+import {
+  getSpell,
+  getSpellSaveDC,
+  formatSpellAttackBonus,
+  getLevel1SlotCount,
+  SCHOOL_EMOJI,
+} from '../../utils/spellUtils'
 import { exportCharacter } from '../../utils/storage'
 import type { AbilityScore } from '../../types/race'
 import type { Armor, EquipmentDraft, ClassStartingEquipment, EquipmentOption } from '../../types/equipment'
@@ -488,6 +495,55 @@ export function ReviewStep() {
         </Section>
       )}
 
+      {/* Spells */}
+      {cls && isActiveCaster(cls, 1) && cls.spellcasting && (() => {
+        const sc_ = cls.spellcasting!
+        const dc = getSpellSaveDC(sc_, finalScores)
+        const attackBonus = formatSpellAttackBonus(sc_, finalScores)
+        const slots = getLevel1SlotCount(cls)
+        const cantrips = (draft.spellChoices?.cantrips ?? []).map(id => getSpell(id)).filter(Boolean)
+        const spells = (draft.spellChoices?.spells ?? []).map(id => getSpell(id)).filter(Boolean)
+        return (
+          <Section title="Magias">
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <SpellStat label="CD de Magia" value={String(dc)} accent={accent} />
+              <SpellStat label="Bônus de Ataque" value={attackBonus} accent={accent} />
+              <SpellStat label={`Espaços de 1°`} value={`${slots}×`} accent={accent} />
+            </div>
+
+            {cantrips.length > 0 && (
+              <div className="mb-3">
+                <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">
+                  Truques ({cantrips.length})
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {cantrips.map(s => s && (
+                    <SpellChip key={s.id} name={s.name} school={s.school} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {spells.length > 0 && (
+              <div>
+                <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">
+                  {sc_.type === 'prepared' ? 'Preparadas' : 'Conhecidas'} ({spells.length})
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {spells.map(s => s && (
+                    <SpellChip key={s.id} name={s.name} school={s.school} concentration={s.concentration} ritual={s.ritual} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {cantrips.length === 0 && spells.length === 0 && (
+              <p className="text-parchment-700 text-sm italic">Nenhuma magia selecionada</p>
+            )}
+          </Section>
+        )
+      })()}
+
       {/* Actions */}
       <div className="space-y-2 pt-2">
         <button
@@ -625,6 +681,35 @@ function Chip({ label }: { label: string }) {
   return (
     <span className="text-xs px-2 py-1 rounded-md border border-parchment-800 text-parchment-400 font-fantasy">
       {label}
+    </span>
+  )
+}
+
+function SpellStat({ label, value, accent }: { label: string; value: string; accent: string }) {
+  return (
+    <div className="rounded-lg border border-parchment-800/60 bg-parchment-950/60 p-2.5 text-center">
+      <p className="text-base font-bold font-fantasy leading-none" style={{ color: accent }}>{value}</p>
+      <p className="text-xs text-parchment-600 font-fantasy mt-1 leading-tight">{label}</p>
+    </div>
+  )
+}
+
+function SpellChip({
+  name, school, concentration, ritual,
+}: {
+  name: string
+  school: string
+  concentration?: boolean
+  ritual?: boolean
+}) {
+  const emoji = SCHOOL_EMOJI[school] ?? '✨'
+  const badges = [
+    concentration ? '⚡' : null,
+    ritual ? '📿' : null,
+  ].filter(Boolean).join(' ')
+  return (
+    <span className="text-xs px-2 py-1 rounded-md border border-parchment-800 text-parchment-400 font-fantasy">
+      {emoji} {name}{badges ? ` ${badges}` : ''}
     </span>
   )
 }

@@ -1,11 +1,23 @@
 # Progresso — D&D Character Creator
 
-> Atualizado: 2026-05-01
+> Atualizado: 2026-05-05
 
 ## Status atual
 
 **V1 funcionalmente completa.** Wizard completo, persistência funcionando, export/import JSON implementados.
-**Próximo passo:** Deploy estático (Vercel ou Netlify)
+
+**Em andamento:** Sistema de magias — digitalização das magias do PHB 2014 em `docs/spells/`
+
+**Próximo passo:** Continuar digitalizando magias e modelar `Spell` em código
+
+---
+
+## Roadmap pós-V1
+
+1. **Sistema de magias** — em andamento (ver seção própria)
+2. **Level up** — XP e progressão de classe (depende de magias)
+3. **Export PDF** — última feature antes de deploy
+4. **Deploy estático** — Vercel ou Netlify, depois que tudo estiver pronto
 
 ---
 
@@ -20,6 +32,36 @@
 | 5   | Antecedente | ✅ Concluído |
 | 6   | Equipamento | ✅ Concluído |
 | 7   | Revisão     | ✅ Concluído |
+
+---
+
+## Sistema de magias (em andamento)
+
+### Decisões já tomadas
+
+- Magias armazenadas como arquivos `.md` individuais em `docs/spells/<id>.md`
+- Frontmatter YAML com metadados estruturados, corpo em markdown pra descrição
+- IDs em inglês kebab-case (ex: `cure-wounds`), display em português
+- `level` é fixo (nunca muda), seção "Em níveis superiores" descreve uso com slot superior; cantrips usam seção "Escalonamento"
+- `components` em linha única no formato `V, S, M (descrição entre parênteses)`
+- Conjuração com slot superior (não confundir com nível da magia, que é imutável)
+
+### Pendente
+
+- [ ] Digitalizar magias restantes do PHB 2014 (~360 no total, ~14 feitas)
+- [ ] Definir paradigmas de conjuração por classe (preparados full caster vs. conhecidos full caster vs. half caster)
+- [ ] Modelar `Spell` em `src/types/spell.ts`
+- [ ] Build script: parsear `.md` em `docs/spells/` para `src/data/spells.json`
+- [ ] UI de seleção de cantrips e magias iniciais (passo do wizard ou pós-criação)
+- [ ] Cálculo e exibição de CD de magia + bônus de ataque na revisão
+- [ ] Slots por nível por classe (tabela de progressão)
+- [ ] Marcação de magias preparadas (Clérigo, Druida, Mago, Paladino+, Patrulheiro+)
+- [ ] Indicação de ritual e concentração na ficha
+
+### Fora de escopo (V2)
+
+- Efeitos estruturados (dano calculado pelo app) — descrição fica em texto livre
+- Aprender/trocar magias ao subir de nível (entra junto com level up)
 
 ---
 
@@ -67,30 +109,27 @@
 - Importação de ficha via upload de `.json` na tela de nome; valida estrutura antes de aceitar
 - Persistência real: `storage.ts` salva `{ draft, currentStep }` juntos; store inicializa direto do localStorage sem `useEffect` em App; `prevStep` também persiste o step atual
 
-### 📋 Pendente
-
-- [ ] **Deploy estático** — Vercel ou Netlify (configuração mínima, é SPA pura)
-
 ---
 
 ## Decisões arquiteturais registradas
 
-| Data       | Decisão |
-| ---------- | ------- |
-| 2026-04-29 | Equipamentos modelados com union discriminada por `kind`; `choices[]` aceita opção única sem caso especial |
-| 2026-04-29 | `DamageRoll` estruturado (`{ dice, sides }`) em vez de string — evita parsing em runtime |
-| 2026-04-29 | Custos armazenados em cobre (canônico); formatação (po/pp/pe) derivada nas funções de display |
-| 2026-04-29 | `storage.ts` como camada abstrata — stores e componentes nunca tocam localStorage diretamente; preparado para migrar para IndexedDB |
-| 2026-04-29 | Point buy com mínimo 8 e máximo 15 pré-racial; orçamento de 27 pontos (regra PHB 2014) |
-| 2026-05-01 | `excludedLanguages` passado como prop aos painéis de escolha — mantém a lógica de deduplicação no nível do step, não no componente genérico |
-| 2026-05-01 | Sessão salva como `{ draft, currentStep }` em chave única `dnd-character-session`; store lê do localStorage na inicialização do módulo, sem `useEffect` |
+| Data       | Decisão                                                                                                                                                                                            |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-04-29 | Equipamentos modelados com union discriminada por `kind`; `choices[]` aceita opção única sem caso especial                                                                                         |
+| 2026-04-29 | `DamageRoll` estruturado (`{ dice, sides }`) em vez de string — evita parsing em runtime                                                                                                           |
+| 2026-04-29 | Custos armazenados em cobre (canônico); formatação (po/pp/pe) derivada nas funções de display                                                                                                      |
+| 2026-04-29 | `storage.ts` como camada abstrata — stores e componentes nunca tocam localStorage diretamente; preparado para migrar para IndexedDB                                                                |
+| 2026-04-29 | Point buy com mínimo 8 e máximo 15 pré-racial; orçamento de 27 pontos (regra PHB 2014)                                                                                                             |
+| 2026-05-01 | `excludedLanguages` passado como prop aos painéis de escolha — mantém a lógica de deduplicação no nível do step, não no componente genérico                                                        |
+| 2026-05-01 | Sessão salva como `{ draft, currentStep }` em chave única `dnd-character-session`; store lê do localStorage na inicialização do módulo, sem `useEffect`                                            |
+| 2026-05-05 | Magias armazenadas como `.md` individuais em `docs/spells/` com frontmatter YAML; build script converte para JSON consumido pelo app — fonte legível pra humanos, dados estruturados pra aplicação |
+| 2026-05-05 | Descrições de magia em texto livre (markdown); efeitos não são estruturados — cálculos de dano/condição ficam com o jogador na mesa                                                                |
+| 2026-05-05 | Deploy postergado até final do roadmap (após magias, level up e export PDF) — projeto solo sem usuários esperando, evita manter URL pública estável durante refatorações grandes                   |
 
 ---
 
-## Backlog pós-V1
+## Backlog (V2 e além)
 
-- Magias detalhadas (spell slots, lista de magias por classe)
-- Level up (XP, progressão de classe)
 - IndexedDB para fichas múltiplas
 - Raças e classes homebrew
 - Suplementos: Xanathar's Guide, Tasha's Cauldron

@@ -15,7 +15,12 @@ export function loadSession(): Session | null {
   const raw = localStorage.getItem(SESSION_KEY)
   if (!raw) return null
   try {
-    return JSON.parse(raw) as Session
+    const session = JSON.parse(raw) as Session
+    // Migrate drafts that predate spellChoices
+    if (!session.draft.spellChoices) {
+      session.draft.spellChoices = { cantrips: [], spells: [] }
+    }
+    return session
   } catch {
     return null
   }

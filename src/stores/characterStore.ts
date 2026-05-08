@@ -1,9 +1,10 @@
 import { create } from 'zustand'
-import type { WizardStep, CharacterDraft, RaceChoiceSelections, ClassChoiceSelections, AbilityMethod, BackgroundChoiceSelections, EquipmentDraft } from '../types/character'
+import type { WizardStep, CharacterDraft, RaceChoiceSelections, ClassChoiceSelections, AbilityMethod, BackgroundChoiceSelections, EquipmentDraft, SpellChoices } from '../types/character'
 import type { AbilityScore } from '../types/race'
 import type { ChoiceResolution } from '../types/equipment'
 import { WIZARD_STEPS, EMPTY_DRAFT } from '../types/character'
 import { EMPTY_EQUIPMENT_DRAFT } from '../types/equipment'
+import { EMPTY_SPELL_CHOICES } from '../types/spell'
 import { saveSession, loadSession, clearSession } from '../utils/storage'
 
 const persisted = loadSession()
@@ -18,6 +19,7 @@ type CharacterStore = {
   updateRaceChoices: (choices: Partial<RaceChoiceSelections>) => void
   setClass: (classId: string) => void
   updateClassChoices: (choices: Partial<ClassChoiceSelections>) => void
+  updateSpellChoices: (choices: Partial<SpellChoices>) => void
   setAbilityMethod: (method: AbilityMethod) => void
   setAbilityScore: (ability: AbilityScore, score: number | null) => void
   setRolledValues: (values: number[]) => void
@@ -62,6 +64,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
         ...state.draft,
         class: classId,
         classChoices: { ...EMPTY_DRAFT.classChoices },
+        spellChoices: { ...EMPTY_SPELL_CHOICES },
         equipment: { ...EMPTY_EQUIPMENT_DRAFT },
       },
     })),
@@ -71,6 +74,14 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
       draft: {
         ...state.draft,
         classChoices: { ...state.draft.classChoices, ...choices },
+      },
+    })),
+
+  updateSpellChoices: (choices) =>
+    set(state => ({
+      draft: {
+        ...state.draft,
+        spellChoices: { ...state.draft.spellChoices, ...choices },
       },
     })),
 

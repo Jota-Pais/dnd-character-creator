@@ -2,9 +2,10 @@ import type { AbilityScore } from './race'
 import type { ClassChoiceSelections } from './class'
 import type { BackgroundChoiceSelections } from './background'
 import { type EquipmentDraft, EMPTY_EQUIPMENT_DRAFT } from './equipment'
-export type { ClassChoiceSelections, BackgroundChoiceSelections, EquipmentDraft }
+import { type SpellChoices, EMPTY_SPELL_CHOICES } from './spell'
+export type { ClassChoiceSelections, BackgroundChoiceSelections, EquipmentDraft, SpellChoices }
 
-export type WizardStep = 'name' | 'race' | 'class' | 'abilities' | 'background' | 'equipment' | 'review'
+export type WizardStep = 'name' | 'race' | 'class' | 'spells' | 'abilities' | 'background' | 'equipment' | 'review'
 
 export type AbilityMethod = 'standard-array' | 'point-buy' | 'roll'
 
@@ -15,6 +16,7 @@ export const WIZARD_STEPS: WizardStep[] = [
   'race',
   'class',
   'abilities',
+  'spells',
   'background',
   'equipment',
   'review',
@@ -24,6 +26,7 @@ export const STEP_LABELS: Record<WizardStep, string> = {
   name: 'Nome',
   race: 'Raça',
   class: 'Classe',
+  spells: 'Magias',
   abilities: 'Atributos',
   background: 'Antecedente',
   equipment: 'Equipamento',
@@ -46,6 +49,7 @@ export type CharacterDraft = {
   raceChoices: RaceChoiceSelections
   class: string | null
   classChoices: ClassChoiceSelections
+  spellChoices: SpellChoices
   abilityMethod: AbilityMethod | null
   abilityScores: BaseAbilityScores
   rolledValues: number[]
@@ -68,6 +72,7 @@ export const EMPTY_DRAFT: CharacterDraft = {
     tools: [],
     subclassExtras: {},
   },
+  spellChoices: { ...EMPTY_SPELL_CHOICES },
   abilityMethod: null,
   abilityScores: { STR: null, DEX: null, CON: null, INT: null, WIS: null, CHA: null },
   rolledValues: [],

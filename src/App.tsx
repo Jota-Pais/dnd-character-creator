@@ -4,6 +4,7 @@ import { StepIndicator } from './components/wizard/StepIndicator'
 import { NameStep } from './components/steps/NameStep'
 import { RaceStep } from './components/steps/RaceStep'
 import { ClassStep } from './components/steps/ClassStep'
+import { SpellStep } from './components/steps/SpellStep'
 import { AbilitiesStep } from './components/steps/AbilitiesStep'
 import { BackgroundStep } from './components/steps/BackgroundStep'
 import { EquipmentStep } from './components/steps/EquipmentStep'
@@ -70,6 +71,7 @@ export default function App() {
           {currentStep === 'name' && <NameStep />}
           {currentStep === 'race' && <RaceStep />}
           {currentStep === 'class' && <ClassStep />}
+          {currentStep === 'spells' && <SpellStep />}
           {currentStep === 'abilities' && <AbilitiesStep />}
           {currentStep === 'background' && <BackgroundStep />}
           {currentStep === 'equipment' && <EquipmentStep />}

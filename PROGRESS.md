@@ -1,14 +1,12 @@
 # Progresso — D&D Character Creator
 
-> Atualizado: 2026-05-05
+> Atualizado: 2026-05-08
 
 ## Status atual
 
-**V1 funcionalmente completa.** Wizard completo, persistência funcionando, export/import JSON implementados.
+**V1 completa com sistema de magias.** Wizard de 8 passos funcionando (incluindo seleção de magias), persistência, export/import JSON.
 
-**Em andamento:** Sistema de magias — digitalização das magias do PHB 2014 em `docs/spells/`
-
-**Próximo passo:** Continuar digitalizando magias e modelar `Spell` em código
+**Próximo passo:** Level up / progressão de classe, ou Export PDF.
 
 ---
 
@@ -31,37 +29,29 @@
 | 4   | Atributos   | ✅ Concluído |
 | 5   | Antecedente | ✅ Concluído |
 | 6   | Equipamento | ✅ Concluído |
-| 7   | Revisão     | ✅ Concluído |
+| 7   | Magias      | ✅ Concluído |
+| 8   | Revisão     | ✅ Concluído |
 
 ---
 
-## Sistema de magias (em andamento)
+## Sistema de magias (concluído)
 
-### Decisões já tomadas
+### Decisões tomadas
 
-- Magias armazenadas como arquivos `.md` individuais em `docs/spells/<id>.md`
-- Frontmatter YAML com metadados estruturados, corpo em markdown pra descrição
-- IDs em inglês kebab-case (ex: `cure-wounds`), display em português
-- `level` é fixo (nunca muda), seção "Em níveis superiores" descreve uso com slot superior; cantrips usam seção "Escalonamento"
-- `components` em linha única no formato `V, S, M (descrição entre parênteses)`
-- Conjuração com slot superior (não confundir com nível da magia, que é imutável)
+- Magias em dois arquivos `.md` em `docs/magias/`: `regras-magias.md` (descrições com frontmatter YAML) e `magias-por-classe.md` (referência humana)
+- `scripts/parse-spells.mjs` parseia `regras-magias.md` → `src/data/spells.json` (347 magias)
+- IDs em inglês kebab-case, display em português
+- Passo "Magias" inserido após "Atributos" no wizard (8 passos no total)
+- Conjuradores "known" (bardo, bruxo, feiticeiro): seleção de N magias conhecidas
+- Conjuradores "prepared" (clérigo, druida): seleção de magias preparadas, cap = mod+nível
+- Conjurador "hybrid" (mago): 6 magias no grimório
 
-### Pendente
+### Implementado
 
-- [ ] Digitalizar magias restantes do PHB 2014 (~360 no total, ~14 feitas)
-- [ ] Definir paradigmas de conjuração por classe (preparados full caster vs. conhecidos full caster vs. half caster)
-- [ ] Modelar `Spell` em `src/types/spell.ts`
-- [ ] Build script: parsear `.md` em `docs/spells/` para `src/data/spells.json`
-- [ ] UI de seleção de cantrips e magias iniciais (passo do wizard ou pós-criação)
-- [ ] Cálculo e exibição de CD de magia + bônus de ataque na revisão
-- [ ] Slots por nível por classe (tabela de progressão)
-- [ ] Marcação de magias preparadas (Clérigo, Druida, Mago, Paladino+, Patrulheiro+)
-- [ ] Indicação de ritual e concentração na ficha
-
-### Fora de escopo (V2)
-
-- Efeitos estruturados (dano calculado pelo app) — descrição fica em texto livre
-- Aprender/trocar magias ao subir de nível (entra junto com level up)
+- `src/types/spell.ts`: Spell, SpellSchool, SpellClass, SpellChoices
+- `src/utils/spellUtils.ts`: lookup, filtros, CD, bônus de ataque, slots, validação
+- `src/components/steps/SpellStep.tsx`: grid de cards, painel de detalhe, abas truques/1°nível
+- `ReviewStep`: seção de magias com CD, bônus de ataque, slots e listas
 
 ---
 
@@ -122,9 +112,10 @@
 | 2026-04-29 | Point buy com mínimo 8 e máximo 15 pré-racial; orçamento de 27 pontos (regra PHB 2014)                                                                                                             |
 | 2026-05-01 | `excludedLanguages` passado como prop aos painéis de escolha — mantém a lógica de deduplicação no nível do step, não no componente genérico                                                        |
 | 2026-05-01 | Sessão salva como `{ draft, currentStep }` em chave única `dnd-character-session`; store lê do localStorage na inicialização do módulo, sem `useEffect`                                            |
-| 2026-05-05 | Magias armazenadas como `.md` individuais em `docs/spells/` com frontmatter YAML; build script converte para JSON consumido pelo app — fonte legível pra humanos, dados estruturados pra aplicação |
 | 2026-05-05 | Descrições de magia em texto livre (markdown); efeitos não são estruturados — cálculos de dano/condição ficam com o jogador na mesa                                                                |
 | 2026-05-05 | Deploy postergado até final do roadmap (após magias, level up e export PDF) — projeto solo sem usuários esperando, evita manter URL pública estável durante refatorações grandes                   |
+| 2026-05-08 | Magias em dois arquivos consolidados em `docs/magias/` (regras-magias.md + magias-por-classe.md); `scripts/parse-spells.mjs` gera `src/data/spells.json` (347 magias)                              |
+| 2026-05-08 | Passo "Magias" inserido APÓS atributos (posição 5 de 8) para o jogador conhecer os modificadores de conjuração antes de escolher magias preparadas                                                  |
 
 ---
 

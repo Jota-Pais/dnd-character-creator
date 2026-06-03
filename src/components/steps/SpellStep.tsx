@@ -5,7 +5,11 @@ import {
   getCantrips,
   getSpellsByLevel,
   getMaxPreparedSpells,
-  getLevel1SlotCount,
+  getSpellSlots,
+  getMaxSpellLevel,
+  getCantripsKnownCount,
+  getSpellsKnownCount,
+  getWizardSpellbookSize,
   isSpellStepComplete,
   SCHOOL_COLORS,
   SCHOOL_EMOJI,
@@ -14,7 +18,9 @@ import { calculateModifier } from '../../utils/abilityScoreUtils'
 import type { Spell } from '../../types/spell'
 import type { SpellChoices } from '../../types/character'
 
-type Tab = 'cantrips' | 'spells'
+type Tab = 'cantrips' | number // number = spell level
+
+const ORDINALS = ['', '1°', '2°', '3°', '4°', '5°', '6°', '7°', '8°', '9°']
 
 export function SpellStep() {
   const draft = useCharacterStore(state => state.draft)
@@ -27,34 +33,50 @@ export function SpellStep() {
 
   const cls = draft.class ? getClass(draft.class) : undefined
   const sc = cls?.spellcasting ?? null
-  const isCaster = !!cls && isActiveCaster(cls, 1)
+  const level = draft.level ?? 1
+  const isCaster = !!cls && isActiveCaster(cls, level)
 
   const choices: SpellChoices = draft.spellChoices ?? { cantrips: [], spells: [] }
 
-  const canAdvance = isSpellStepComplete(cls ?? null, choices)
+  const canAdvance = isSpellStepComplete(cls ?? null, choices, level)
 
-  // ── non-caster or half-caster at level 1 ──────────────────────────────────
   if (!cls || !isCaster || !sc) {
     return (
       <NonCasterScreen
         hasClass={!!cls}
         className={cls?.name ?? ''}
+        level={level}
         onNext={nextStep}
         onPrev={prevStep}
       />
     )
   }
 
-  const cantrips = sc.cantripsKnown > 0 ? getCantrips(draft.class!) : []
-  const level1Spells = getSpellsByLevel(draft.class!, 1)
+  const cantripsNeeded = getCantripsKnownCount(cls.id, level) || sc.cantripsKnown
+  const maxSpellLevel = getMaxSpellLevel(cls.id, level)
+  const slots = getSpellSlots(cls.id, level)
 
   const abilityScore = draft.abilityScores[sc.ability] ?? 10
   const abilityMod = calculateModifier(typeof abilityScore === 'number' ? abilityScore : 10)
-  const maxPrepared = sc.type === 'prepared'
-    ? getMaxPreparedSpells(sc, draft.abilityScores)
-    : sc.spellsAtLevel1
+  const isPrepared = sc.type === 'prepared'
 
-  const slots = getLevel1SlotCount(cls)
+  // Max spells for the current selection mode
+  const maxSpells =
+    sc.type === 'prepared'
+      ? Infinity
+      : sc.type === 'hybrid'
+        ? getWizardSpellbookSize(level)
+        : getSpellsKnownCount(cls.id, level) || sc.spellsAtLevel1
+
+  const cantrips = cantripsNeeded > 0 ? getCantrips(draft.class!) : []
+  const hasTabs = cantripsNeeded > 0 || maxSpellLevel > 0
+  const spellLevelTabs = Array.from({ length: maxSpellLevel }, (_, i) => i + 1)
+
+  // Normalize initial tab
+  const activeTab: Tab =
+    tab === 'cantrips'
+      ? cantripsNeeded > 0 ? 'cantrips' : (spellLevelTabs[0] ?? 'cantrips')
+      : tab
 
   const accent = '#9b59b6'
 
@@ -63,7 +85,7 @@ export function SpellStep() {
     if (cur.includes(id)) {
       updateSpellChoices({ cantrips: cur.filter(c => c !== id) })
     } else {
-      if (cur.length >= sc.cantripsKnown) return
+      if (cur.length >= cantripsNeeded) return
       updateSpellChoices({ cantrips: [...cur, id] })
     }
     if (detail?.id === id) setDetail(null)
@@ -74,16 +96,18 @@ export function SpellStep() {
     if (cur.includes(id)) {
       updateSpellChoices({ spells: cur.filter(s => s !== id) })
     } else {
-      if (sc.type !== 'prepared' && maxPrepared > 0 && cur.length >= maxPrepared) return
+      if (!isPrepared && maxSpells !== Infinity && cur.length >= maxSpells) return
       updateSpellChoices({ spells: [...cur, id] })
     }
     if (detail?.id === id) setDetail(null)
   }
 
-  const typeLabel = sc.type === 'prepared' ? 'Preparar' : 'Conhecer'
-  const spellsLabel = sc.type === 'prepared'
-    ? `${choices.spells.length}/${maxPrepared} preparadas`
-    : `${choices.spells.length}/${maxPrepared} conhecidas`
+  const spellsLabel =
+    sc.type === 'prepared'
+      ? `${choices.spells.length} preparadas (máx. ${getMaxPreparedSpells(sc, draft.abilityScores, level)})`
+      : sc.type === 'hybrid'
+        ? `${choices.spells.length}/${maxSpells} no grimório`
+        : `${choices.spells.length}/${maxSpells} conhecidas`
 
   return (
     <div className="flex flex-col lg:flex-row gap-6">
@@ -96,34 +120,58 @@ export function SpellStep() {
         <p className="text-parchment-500 text-sm mb-4">
           Atributo de conjuração: <strong className="text-parchment-300">{ABILITY_LABELS[sc.ability]}</strong>
           {' '} (modificador {abilityMod >= 0 ? '+' : ''}{abilityMod})
-          {' · '} {slots} espaço{slots !== 1 ? 's' : ''} de 1° nível
+          {' · Nível '}{level}
         </p>
 
-        {/* Abas */}
-        {sc.cantripsKnown > 0 && (
-          <div className="flex gap-2 mb-4">
-            <TabButton active={tab === 'cantrips'} onClick={() => setTab('cantrips')} accent={accent}>
-              ✦ Truques
-              <Counter current={choices.cantrips.length} max={sc.cantripsKnown} />
-            </TabButton>
-            <TabButton active={tab === 'spells'} onClick={() => setTab('spells')} accent={accent}>
-              📖 1° Nível
-              <Counter current={choices.spells.length} max={maxPrepared} />
-            </TabButton>
+        {/* Slot summary */}
+        <SlotSummary slots={slots} classId={cls.id} accent={accent} />
+
+        {/* Tabs */}
+        {hasTabs && (
+          <div className="flex flex-wrap gap-2 mb-4 mt-4">
+            {cantripsNeeded > 0 && (
+              <TabButton active={activeTab === 'cantrips'} onClick={() => setTab('cantrips')} accent={accent}>
+                ✦ Truques
+                <Counter current={choices.cantrips.length} max={cantripsNeeded} />
+              </TabButton>
+            )}
+            {spellLevelTabs.map(lvl => (
+              <TabButton key={lvl} active={activeTab === lvl} onClick={() => setTab(lvl)} accent={accent}>
+                {ORDINALS[lvl]} nível
+                {lvl === 1 && sc.type !== 'prepared' && (
+                  <Counter current={choices.spells.filter(id => {
+                    const s = choices.spells.find(x => x === id)
+                    return !!s
+                  }).length} max={maxSpells} />
+                )}
+              </TabButton>
+            ))}
           </div>
         )}
 
-        {/* Grade de cards */}
-        {tab === 'cantrips' && (
+        {/* Spell count badge for non-prepared casters */}
+        {sc.type !== 'prepared' && maxSpells !== Infinity && (
+          <p className="text-parchment-600 text-xs mb-3 font-fantasy">
+            {spellsLabel}
+          </p>
+        )}
+        {sc.type === 'prepared' && (
+          <p className="text-parchment-600 text-xs mb-3 font-fantasy italic">
+            {spellsLabel}
+          </p>
+        )}
+
+        {/* Grid */}
+        {activeTab === 'cantrips' && (
           <>
             <SectionHint>
-              Escolha {sc.cantripsKnown} truque{sc.cantripsKnown !== 1 ? 's' : ''} —
+              Escolha {cantripsNeeded} truque{cantripsNeeded !== 1 ? 's' : ''} —
               disponíveis a qualquer momento, sem custo de espaço.
             </SectionHint>
             <SpellGrid
               spells={cantrips}
               selected={choices.cantrips}
-              max={sc.cantripsKnown}
+              max={cantripsNeeded}
               onToggle={toggleCantrip}
               onDetail={setDetail}
               detailId={detail?.id}
@@ -131,18 +179,20 @@ export function SpellStep() {
           </>
         )}
 
-        {tab === 'spells' && (
+        {typeof activeTab === 'number' && (
           <>
             <SectionHint>
               {sc.type === 'prepared'
-                ? `${typeLabel} até ${maxPrepared} magia${maxPrepared !== 1 ? 's' : ''} de 1° nível (modificador de ${ABILITY_LABELS[sc.ability]} + nível 1). Pode alterar após descanso longo.`
-                : `${typeLabel} ${maxPrepared} magia${maxPrepared !== 1 ? 's' : ''} de 1° nível.`
+                ? `Escolha magias de ${ORDINALS[activeTab]} nível para preparar (pode alterar após descanso longo).`
+                : sc.type === 'hybrid'
+                  ? `Adicione magias de ${ORDINALS[activeTab]} nível ao seu grimório (total: ${choices.spells.length}/${maxSpells}).`
+                  : `Escolha magias de ${ORDINALS[activeTab]} nível (total: ${choices.spells.length}/${maxSpells} conhecidas).`
               }
             </SectionHint>
             <SpellGrid
-              spells={level1Spells}
+              spells={getSpellsByLevel(draft.class!, activeTab)}
               selected={choices.spells}
-              max={sc.type === 'prepared' ? Infinity : maxPrepared}
+              max={sc.type === 'prepared' ? Infinity : maxSpells}
               onToggle={toggleSpell}
               onDetail={setDetail}
               detailId={detail?.id}
@@ -176,7 +226,7 @@ export function SpellStep() {
           ← Voltar
         </button>
         <div className="text-xs text-parchment-600 font-fantasy text-center">
-          {sc.cantripsKnown > 0 && <div>{choices.cantrips.length}/{sc.cantripsKnown} truques</div>}
+          {cantripsNeeded > 0 && <div>{choices.cantrips.length}/{cantripsNeeded} truques</div>}
           <div>{spellsLabel}</div>
         </div>
         <button
@@ -224,11 +274,47 @@ const ABILITY_LABELS: Record<string, string> = {
   INT: 'Inteligência', WIS: 'Sabedoria', CHA: 'Carisma',
 }
 
+function SlotSummary({
+  slots, classId, accent,
+}: {
+  slots: number[]
+  classId: string
+  accent: string
+}) {
+  const nonZero = slots.map((count, i) => ({ spellLevel: i + 1, count })).filter(s => s.count > 0)
+  if (nonZero.length === 0) return null
+
+  const isWarlock = classId === 'warlock'
+  return (
+    <div className="rounded-xl border border-parchment-900 bg-parchment-950/60 px-3 py-2 flex flex-wrap gap-3 items-center">
+      <p className="text-xs font-fantasy text-parchment-600 uppercase tracking-widest">
+        {isWarlock ? 'Magia de Pacto' : 'Espaços de Magia'}
+      </p>
+      {nonZero.map(({ spellLevel, count }) => (
+        <div key={spellLevel} className="text-center">
+          <span className="text-xs font-fantasy font-bold" style={{ color: accent }}>
+            {count}×
+          </span>
+          <span className="text-xs text-parchment-700 ml-1">
+            {ORDINALS[spellLevel]}
+          </span>
+        </div>
+      ))}
+      {isWarlock && (
+        <span className="text-xs text-parchment-700 ml-auto italic">
+          recupera em descanso curto
+        </span>
+      )}
+    </div>
+  )
+}
+
 function NonCasterScreen({
-  hasClass, className, onNext, onPrev,
+  hasClass, className, level, onNext, onPrev,
 }: {
   hasClass: boolean
   className: string
+  level: number
   onNext: () => void
   onPrev: () => void
 }) {
@@ -237,11 +323,13 @@ function NonCasterScreen({
       <div className="text-5xl">⚔️</div>
       <div>
         <h2 className="font-fantasy text-2xl font-bold text-parchment-200 mb-2">
-          {hasClass ? `${className} não usa magia no nível 1` : 'Nenhuma classe selecionada'}
+          {hasClass
+            ? `${className} não usa magia no nível ${level}`
+            : 'Nenhuma classe selecionada'}
         </h2>
         <p className="text-parchment-500 text-sm max-w-md">
           {hasClass
-            ? 'Esta classe não possui conjuração no nível 1. Continue para o próximo passo.'
+            ? 'Esta classe não possui conjuração neste nível. Continue para o próximo passo.'
             : 'Volte e selecione uma classe antes de continuar.'}
         </p>
       </div>
@@ -279,7 +367,7 @@ function TabButton({
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-2 px-4 py-2 rounded-xl font-fantasy text-sm font-semibold transition-all"
+      className="flex items-center gap-2 px-3 py-1.5 rounded-xl font-fantasy text-sm font-semibold transition-all"
       style={{
         backgroundColor: active ? `${accent}20` : 'transparent',
         color: active ? accent : '#7a6a52',
@@ -323,7 +411,7 @@ function SpellGrid({
   detailId?: string
 }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[50vh] lg:max-h-[65vh] overflow-y-auto pr-1">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[50vh] lg:max-h-[60vh] overflow-y-auto pr-1">
       {spells.map(spell => (
         <SpellCard
           key={spell.id}
@@ -400,7 +488,6 @@ function SpellDetail({ spell, accent }: { spell: Spell; accent: string }) {
   const color = SCHOOL_COLORS[spell.school] ?? accent
   const emoji = SCHOOL_EMOJI[spell.school] ?? '✨'
 
-  // Render markdown-like description: convert ## headers and bullet points
   function renderDescription(text: string) {
     return text.split('\n').map((line, i) => {
       if (line.startsWith('## ')) {
@@ -418,7 +505,6 @@ function SpellDetail({ spell, accent }: { spell: Spell; accent: string }) {
         )
       }
       if (line.trim() === '') return <div key={i} className="h-2" />
-      // Skip the opening `## Descrição` label itself - already shown as section header
       return (
         <p key={i} className="text-sm text-parchment-500 leading-relaxed">{line}</p>
       )

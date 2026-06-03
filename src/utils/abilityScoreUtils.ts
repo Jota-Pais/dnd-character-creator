@@ -1,5 +1,8 @@
 import type { AbilityScore } from '../types/race'
 import type { AbilityMethod, BaseAbilityScores } from '../types/character'
+import progressionData from '../data/progression.json'
+
+const PROFICIENCY_BY_LEVEL: number[] = progressionData.proficiencyBonus
 
 export const ABILITY_LABELS: Record<AbilityScore, { short: string; long: string }> = {
   STR: { short: 'FOR', long: 'Força' },
@@ -19,6 +22,10 @@ export const POINT_BUY_COSTS: Record<number, number> = {
 }
 
 export const POINT_BUY_TOTAL = 27
+
+export function getProficiencyBonus(level: number): number {
+  return PROFICIENCY_BY_LEVEL[Math.max(1, Math.min(20, level)) - 1]
+}
 
 export function calculateModifier(score: number): number {
   return Math.floor((score - 10) / 2)

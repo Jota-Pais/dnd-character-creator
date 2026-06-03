@@ -2,9 +2,16 @@ import { useRef, useState } from 'react'
 import { useCharacterStore } from '../../stores/characterStore'
 import { importCharacter } from '../../utils/storage'
 
+const ORDINALS = [
+  '', '1°', '2°', '3°', '4°', '5°', '6°', '7°', '8°', '9°', '10°',
+  '11°', '12°', '13°', '14°', '15°', '16°', '17°', '18°', '19°', '20°',
+]
+
 export function NameStep() {
   const name = useCharacterStore(state => state.draft.name)
+  const level = useCharacterStore(state => state.draft.level)
   const setName = useCharacterStore(state => state.setName)
+  const setLevel = useCharacterStore(state => state.setLevel)
   const nextStep = useCharacterStore(state => state.nextStep)
   const importDraft = useCharacterStore(state => state.importDraft)
 
@@ -26,6 +33,11 @@ export function NameStep() {
     }
   }
 
+  function handleLevelInput(e: React.ChangeEvent<HTMLInputElement>) {
+    const v = parseInt(e.target.value, 10)
+    if (!isNaN(v)) setLevel(v)
+  }
+
   return (
     <div className="max-w-lg mx-auto text-center">
       <div className="text-6xl mb-4">📜</div>
@@ -38,7 +50,7 @@ export function NameStep() {
         as tavernas, masmorras e histórias vão lembrá-lo para sempre.
       </p>
 
-      <div className="mb-8">
+      <div className="mb-6">
         <input
           type="text"
           value={name}
@@ -49,6 +61,34 @@ export function NameStep() {
           autoFocus
           className="w-full px-5 py-4 rounded-xl border-2 border-parchment-800 bg-parchment-950/60 text-parchment-200 placeholder-parchment-700 text-lg text-center font-fantasy tracking-wide focus:outline-none focus:border-gold-500 focus:shadow-lg focus:shadow-gold-900/20 transition-all"
         />
+      </div>
+
+      {/* Level selector */}
+      <div className="mb-8 rounded-xl border border-parchment-800 bg-parchment-950/60 p-4">
+        <p className="text-xs font-fantasy text-parchment-600 uppercase tracking-widest mb-3">
+          Nível do Personagem
+        </p>
+        <div className="flex items-center gap-4">
+          <input
+            type="range"
+            min={1}
+            max={20}
+            value={level}
+            onChange={e => setLevel(Number(e.target.value))}
+            className="flex-1 accent-gold-500"
+          />
+          <input
+            type="number"
+            min={1}
+            max={20}
+            value={level}
+            onChange={handleLevelInput}
+            className="w-16 px-2 py-1.5 rounded-lg border border-parchment-800 bg-parchment-900 text-parchment-200 text-center font-fantasy font-bold text-lg focus:outline-none focus:border-gold-500"
+          />
+        </div>
+        <p className="text-parchment-600 text-xs mt-2 font-fantasy">
+          {ORDINALS[level]} nível — bônus de proficiência +{level <= 4 ? 2 : level <= 8 ? 3 : level <= 12 ? 4 : level <= 16 ? 5 : 6}
+        </p>
       </div>
 
       <button

@@ -1,8 +1,9 @@
 import { create } from 'zustand'
-import type { WizardStep, CharacterDraft, RaceChoiceSelections, ClassChoiceSelections, AbilityMethod, BackgroundChoiceSelections, EquipmentDraft, SpellChoices } from '../types/character'
+import type { WizardStep, CharacterDraft, RaceChoiceSelections, ClassChoiceSelections, AbilityMethod, BackgroundChoiceSelections, EquipmentDraft, SpellChoices, HpMethod } from '../types/character'
 import type { AbilityScore } from '../types/race'
 import type { ChoiceResolution } from '../types/equipment'
 import { WIZARD_STEPS, EMPTY_DRAFT } from '../types/character'
+import { getClass } from '../utils/classUtils'
 import { EMPTY_EQUIPMENT_DRAFT } from '../types/equipment'
 import { EMPTY_SPELL_CHOICES } from '../types/spell'
 import { saveSession, loadSession, clearSession } from '../utils/storage'
@@ -14,6 +15,10 @@ type CharacterStore = {
   draft: CharacterDraft
 
   setName: (name: string) => void
+  setLevel: (level: number) => void
+  setHpMethod: (method: HpMethod) => void
+  rollHpForLevel: (charLevel: number) => void
+  setHpRoll: (charLevel: number, value: number) => void
   setRace: (raceId: string) => void
   setSubrace: (subraceId: string) => void
   updateRaceChoices: (choices: Partial<RaceChoiceSelections>) => void
@@ -39,6 +44,36 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
   draft: persisted?.draft ?? { ...EMPTY_DRAFT },
 
   setName: (name) => set(state => ({ draft: { ...state.draft, name } })),
+
+  setLevel: (level) =>
+    set(state => ({
+      draft: {
+        ...state.draft,
+        level: Math.max(1, Math.min(20, level)),
+        hpRolls: [],
+        spellChoices: { ...EMPTY_SPELL_CHOICES },
+      },
+    })),
+
+  setHpMethod: (method) =>
+    set(state => ({ draft: { ...state.draft, hpMethod: method, hpRolls: [] } })),
+
+  rollHpForLevel: (charLevel) =>
+    set(state => {
+      const cls = state.draft.class ? getClass(state.draft.class) : undefined
+      const hitDie = cls?.hitDie ?? 8
+      const roll = Math.floor(Math.random() * hitDie) + 1
+      const rolls = [...state.draft.hpRolls]
+      rolls[charLevel - 2] = roll
+      return { draft: { ...state.draft, hpRolls: rolls } }
+    }),
+
+  setHpRoll: (charLevel, value) =>
+    set(state => {
+      const rolls = [...state.draft.hpRolls]
+      rolls[charLevel - 2] = value
+      return { draft: { ...state.draft, hpRolls: rolls } }
+    }),
 
   setRace: (raceId) =>
     set(state => ({

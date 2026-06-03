@@ -73,6 +73,36 @@ export function getHpAtLevel1(cls: GameClass, conModifier: number): number {
   return cls.hitDie + conModifier
 }
 
+/** Average HP gain per level above 1 (floor(hitDie/2) + 1). */
+export function getAverageHpPerLevel(cls: GameClass): number {
+  return Math.floor(cls.hitDie / 2) + 1
+}
+
+/** Total HP using average rolls for all levels above 1. */
+export function getAverageHpAtLevel(cls: GameClass, conModifier: number, level: number): number {
+  const level1Hp = getHpAtLevel1(cls, conModifier)
+  if (level <= 1) return level1Hp
+  return level1Hp + (getAverageHpPerLevel(cls) + conModifier) * (level - 1)
+}
+
+/** Total HP using manual rolls for levels 2+. hpRolls[i] is the die roll for level i+2. */
+export function getRolledHpAtLevel(
+  cls: GameClass,
+  conModifier: number,
+  level: number,
+  hpRolls: number[],
+): number {
+  const level1Hp = getHpAtLevel1(cls, conModifier)
+  if (level <= 1) return level1Hp
+  let total = level1Hp
+  for (let lvl = 2; lvl <= level; lvl++) {
+    const roll = hpRolls[lvl - 2]
+    const gain = roll !== undefined ? roll : getAverageHpPerLevel(cls)
+    total += gain + conModifier
+  }
+  return total
+}
+
 export function getHpFormula(cls: GameClass): string {
   return `d${cls.hitDie} + mod. de CON`
 }

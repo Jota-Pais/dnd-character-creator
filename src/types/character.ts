@@ -42,8 +42,11 @@ export type RaceChoiceSelections = {
   feat?: string
 }
 
+export type HpMethod = 'average' | 'roll'
+
 export type CharacterDraft = {
   name: string
+  level: number
   race: string | null
   subrace: string | null
   raceChoices: RaceChoiceSelections
@@ -56,10 +59,13 @@ export type CharacterDraft = {
   background: string | null
   backgroundChoices: BackgroundChoiceSelections
   equipment: EquipmentDraft
+  hpMethod: HpMethod
+  hpRolls: number[]
 }
 
 export const EMPTY_DRAFT: CharacterDraft = {
   name: '',
+  level: 1,
   race: null,
   subrace: null,
   raceChoices: {},
@@ -79,4 +85,6 @@ export const EMPTY_DRAFT: CharacterDraft = {
   background: null,
   backgroundChoices: {},
   equipment: EMPTY_EQUIPMENT_DRAFT,
+  hpMethod: 'average',
+  hpRolls: [],
 }

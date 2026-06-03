@@ -9,6 +9,7 @@ import {
   getRemainingPoints,
   rollAbilityScore,
   isAbilitiesStepComplete,
+  getProficiencyBonus,
 } from '../abilityScoreUtils'
 import type { AbilityScore } from '../../types/race'
 
@@ -22,6 +23,21 @@ describe('calculateModifier', () => {
   it('retorna -1 para atributo 9', () => expect(calculateModifier(9)).toBe(-1))
   it('retorna -4 para atributo 3', () => expect(calculateModifier(3)).toBe(-4))
   it('retorna +5 para atributo 20', () => expect(calculateModifier(20)).toBe(5))
+})
+
+describe('getProficiencyBonus', () => {
+  it('nível 1 retorna +2', () => expect(getProficiencyBonus(1)).toBe(2))
+  it('nível 4 retorna +2', () => expect(getProficiencyBonus(4)).toBe(2))
+  it('nível 5 retorna +3', () => expect(getProficiencyBonus(5)).toBe(3))
+  it('nível 8 retorna +3', () => expect(getProficiencyBonus(8)).toBe(3))
+  it('nível 9 retorna +4', () => expect(getProficiencyBonus(9)).toBe(4))
+  it('nível 12 retorna +4', () => expect(getProficiencyBonus(12)).toBe(4))
+  it('nível 13 retorna +5', () => expect(getProficiencyBonus(13)).toBe(5))
+  it('nível 16 retorna +5', () => expect(getProficiencyBonus(16)).toBe(5))
+  it('nível 17 retorna +6', () => expect(getProficiencyBonus(17)).toBe(6))
+  it('nível 20 retorna +6', () => expect(getProficiencyBonus(20)).toBe(6))
+  it('clampeia nível abaixo de 1 para +2', () => expect(getProficiencyBonus(0)).toBe(2))
+  it('clampeia nível acima de 20 para +6', () => expect(getProficiencyBonus(25)).toBe(6))
 })
 
 describe('formatModifier', () => {
@@ -85,6 +101,8 @@ describe('rollAbilityScore', () => {
   it('retorna 4 dados e um resultado', () => {
     const { rolls, result } = rollAbilityScore()
     expect(rolls).toHaveLength(4)
+    expect(result).toBeGreaterThanOrEqual(3)
+    expect(result).toBeLessThanOrEqual(18)
   })
 
   it('cada dado está entre 1 e 6', () => {

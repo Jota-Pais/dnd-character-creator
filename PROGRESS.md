@@ -1,19 +1,19 @@
 # Progresso — D&D Character Creator
 
-> Atualizado: 2026-05-08
+> Atualizado: 2026-06-03
 
 ## Status atual
 
-**V1 completa com sistema de magias.** Wizard de 8 passos funcionando (incluindo seleção de magias), persistência, export/import JSON.
+**V1 completa com magias e níveis 1–20.** Wizard de 8 passos funcionando, com seleção de nível (1–20), pontos de vida por média ou rolagem, progressão de magias/slots/proficiência por nível, persistência e export/import JSON.
 
-**Próximo passo:** Level up / progressão de classe, ou Export PDF.
+**Próximo passo:** Export PDF, depois deploy estático.
 
 ---
 
 ## Roadmap pós-V1
 
-1. **Sistema de magias** — em andamento (ver seção própria)
-2. **Level up** — XP e progressão de classe (depende de magias)
+1. **Sistema de magias** — ✅ concluído (ver seção própria)
+2. **Níveis 1–20** — ✅ concluído (nível do personagem, HP por nível, progressão de magias/slots/proficiência). Resta, se desejado: features de classe específicas por nível e XP.
 3. **Export PDF** — última feature antes de deploy
 4. **Deploy estático** — Vercel ou Netlify, depois que tudo estiver pronto
 
@@ -21,16 +21,16 @@
 
 ## Fluxo do wizard
 
-| #   | Etapa       | Status       |
-| --- | ----------- | ------------ |
-| 1   | Nome        | ✅ Concluído |
-| 2   | Raça        | ✅ Concluído |
-| 3   | Classe      | ✅ Concluído |
-| 4   | Atributos   | ✅ Concluído |
-| 5   | Antecedente | ✅ Concluído |
-| 6   | Equipamento | ✅ Concluído |
-| 7   | Magias      | ✅ Concluído |
-| 8   | Revisão     | ✅ Concluído |
+| #   | Etapa         | Status       |
+| --- | ------------- | ------------ |
+| 1   | Nome (+nível) | ✅ Concluído |
+| 2   | Raça          | ✅ Concluído |
+| 3   | Classe        | ✅ Concluído |
+| 4   | Atributos     | ✅ Concluído |
+| 5   | Magias        | ✅ Concluído |
+| 6   | Antecedente   | ✅ Concluído |
+| 7   | Equipamento   | ✅ Concluído |
+| 8   | Revisão       | ✅ Concluído |
 
 ---
 
@@ -82,7 +82,7 @@
 
 ### Componentes do wizard
 
-- `StepIndicator` — barra de progresso com os 7 passos
+- `StepIndicator` — barra de progresso com os 8 passos
 - `NameStep` — campo de nome
 - `RaceStep` — cards de raça + sub-raça + choice panel (atributos, perícias, idiomas, ferramentas)
 - `ClassStep` — cards de classe + choice panel (perícias, estilos de combate, subclasse, etc.)
@@ -116,6 +116,7 @@
 | 2026-05-05 | Deploy postergado até final do roadmap (após magias, level up e export PDF) — projeto solo sem usuários esperando, evita manter URL pública estável durante refatorações grandes                   |
 | 2026-05-08 | Magias em dois arquivos consolidados em `docs/magias/` (regras-magias.md + magias-por-classe.md); `scripts/parse-spells.mjs` gera `src/data/spells.json` (347 magias)                              |
 | 2026-05-08 | Passo "Magias" inserido APÓS atributos (posição 5 de 8) para o jogador conhecer os modificadores de conjuração antes de escolher magias preparadas                                                  |
+| 2026-06-03 | Escopo ampliado para **níveis 1–20**: tabelas de progressão (proficiência, slots full/half/warlock, truques/magias conhecidas) em `src/data/progression.json`; HP por **média** ou **rolagem**; sessão versionada (`SESSION_VERSION = 3`) descarta drafts de schema antigo |
 
 ---
 

@@ -23,20 +23,23 @@
 
 ## Escopo da V1
 
-- Fichas de **nível 1** apenas
+- Fichas de **nível 1 a 20** (uma única classe; sem multiclasse)
+- Pontos de vida por dois métodos: **média** (`average`) ou **rolagem** (`roll`) dos dados de vida acima do nível 1
 - Raças e classes do livro básico (PHB 2014)
-- Fluxo de criação completo:
-  1. Nome
+- Sistema de magias (truques e magias por nível, slots, CD e bônus de ataque derivados do nível)
+- Fluxo de criação completo (8 passos):
+  1. Nome (e nível)
   2. Raça
   3. Classe
   4. Atributos
-  5. Antecedente
-  6. Equipamento
-  7. Revisão
+  5. Magias (apenas para conjuradores; após Atributos para o jogador já conhecer os modificadores)
+  6. Antecedente
+  7. Equipamento
+  8. Revisão
 - Salvar/carregar localmente
 - Exportar/importar ficha como JSON (portabilidade entre dispositivos)
 
-**Fora do escopo da V1:** magias detalhadas, multiclasse, level up, suplementos, raças/classes homebrew.
+**Fora do escopo da V1:** multiclasse, evolução de personagem em sessão (level up dinâmico / XP), suplementos, raças/classes homebrew.
 
 ## Estrutura de Pastas
 

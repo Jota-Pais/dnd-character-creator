@@ -1,27 +1,37 @@
 import type { CharacterDraft, WizardStep } from '../types/character'
+import { EMPTY_DRAFT } from '../types/character'
 
 const SESSION_KEY = 'dnd-character-session'
+// Bump this whenever CharacterDraft schema changes in a breaking way
+const SESSION_VERSION = 3
 
 type Session = {
+  version: number
   draft: CharacterDraft
   step: WizardStep
 }
 
 export function saveSession(draft: CharacterDraft, step: WizardStep): void {
-  localStorage.setItem(SESSION_KEY, JSON.stringify({ draft, step }))
+  localStorage.setItem(SESSION_KEY, JSON.stringify({ version: SESSION_VERSION, draft, step }))
 }
 
 export function loadSession(): Session | null {
   const raw = localStorage.getItem(SESSION_KEY)
   if (!raw) return null
   try {
-    const session = JSON.parse(raw) as Session
-    // Migrate drafts that predate spellChoices
-    if (!session.draft.spellChoices) {
-      session.draft.spellChoices = { cantrips: [], spells: [] }
+    const session = JSON.parse(raw) as Partial<Session>
+    if (session.version !== SESSION_VERSION) {
+      localStorage.removeItem(SESSION_KEY)
+      return null
     }
-    return session
+    const draft = { ...EMPTY_DRAFT, ...session.draft } as CharacterDraft
+    draft.spellChoices ??= { cantrips: [], spells: [] }
+    draft.level ??= 1
+    draft.hpMethod ??= 'average'
+    draft.hpRolls ??= []
+    return { version: SESSION_VERSION, draft, step: session.step ?? 'name' }
   } catch {
+    localStorage.removeItem(SESSION_KEY)
     return null
   }
 }

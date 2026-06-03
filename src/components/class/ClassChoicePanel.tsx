@@ -9,7 +9,7 @@ import { ClassSubclassCard } from './ClassSubclassCard'
 import { SKILLS, LANGUAGES } from '../../utils/raceUtils'
 import toolsData from '../../data/tools.json'
 
-type Tool = { id: string; name: string; category: 'musical' | 'artisan' }
+type Tool = { id: string; name: string; category: 'artisan' | 'musical-instrument' | 'gaming-set' | 'other' | 'vehicle' }
 const ALL_TOOLS: Tool[] = toolsData as Tool[]
 
 type Props = {

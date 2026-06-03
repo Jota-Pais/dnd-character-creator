@@ -1,5 +1,11 @@
 # D&D Character Creator — CLAUDE.md
 
+## Visão do Produto
+
+Qualquer pessoa que decida jogar D&D — mesmo pela primeira vez — deve conseguir criar uma ficha em **poucos minutos**, sem assistir a vídeos nem ler centenas de páginas de regras, mantendo **controle total das próprias escolhas** e vivendo uma experiência **gamificada e prazerosa**.
+
+Toda decisão de produto e design serve a esse objetivo: guiar o iniciante sem tirar dele o controle, esconder a complexidade das regras (mas nunca as escolhas) e tornar a criação um momento divertido — não uma lição de casa.
+
 ## Stack
 
 - **Vite** + **React 19** + **TypeScript estrito**

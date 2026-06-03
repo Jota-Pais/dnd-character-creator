@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useCharacterStore } from '../../stores/characterStore'
 import { getClass, isActiveCaster } from '../../utils/classUtils'
+import { InfoTooltip } from '../common/InfoTooltip'
 import {
   getCantrips,
   getSpellsByLevel,
@@ -165,8 +166,8 @@ export function SpellStep() {
         {activeTab === 'cantrips' && (
           <>
             <SectionHint>
-              Escolha {cantripsNeeded} truque{cantripsNeeded !== 1 ? 's' : ''} —
-              disponíveis a qualquer momento, sem custo de espaço.
+              Escolha {cantripsNeeded} truque{cantripsNeeded !== 1 ? 's' : ''}{' '}
+              <InfoTooltip term="truque" /> — disponíveis a qualquer momento, sem custo de espaço.
             </SectionHint>
             <SpellGrid
               spells={cantrips}

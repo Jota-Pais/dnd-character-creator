@@ -6,6 +6,8 @@ import {
   FIGHTING_STYLES,
 } from '../../utils/classUtils'
 import { ClassSubclassCard } from './ClassSubclassCard'
+import { InfoTooltip } from '../common/InfoTooltip'
+import type { TermId } from '../../utils/glossary'
 import { SKILLS, LANGUAGES } from '../../utils/raceUtils'
 import toolsData from '../../data/tools.json'
 
@@ -136,7 +138,7 @@ export function ClassChoicePanel({ cls, choices, accent, onChange }: Props) {
 
       {/* ── Estilo de Luta (Guerreiro) ── */}
       {cls.hasFightingStyle && (
-        <ChoiceSection title="Estilo de Luta" accent={accent}>
+        <ChoiceSection title="Estilo de Luta" accent={accent} term="estilo-de-luta">
           <div className="space-y-2">
             {FIGHTING_STYLES.map(style => {
               const selected = choices.fightingStyle === style.id
@@ -206,6 +208,7 @@ export function ClassChoicePanel({ cls, choices, accent, onChange }: Props) {
         <ChoiceSection
           title={`Especialização (${choices.expertiseItems.length}/2)`}
           accent={accent}
+          term="especializacao"
         >
           <p className="text-parchment-600 text-xs mb-2">
             Escolha 2 itens para dobrar o bônus de proficiência.
@@ -423,15 +426,20 @@ function SubclassExtrasPanel({ extras, subclassExtras, accent, onChangeExtras }:
 function ChoiceSection({
   title,
   accent,
+  term,
   children,
 }: {
   title: string
   accent: string
+  term?: TermId
   children: React.ReactNode
 }) {
   return (
     <div className="rounded-xl border border-parchment-900 bg-parchment-950/60 p-4">
-      <SectionTitle accent={accent}>{title}</SectionTitle>
+      <SectionTitle accent={accent}>
+        {title}
+        {term && <> <InfoTooltip term={term} /></>}
+      </SectionTitle>
       {children}
     </div>
   )

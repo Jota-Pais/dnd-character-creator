@@ -22,6 +22,8 @@ import {
   SCHOOL_EMOJI,
 } from '../../utils/spellUtils'
 import { exportCharacter } from '../../utils/storage'
+import { InfoTooltip } from '../common/InfoTooltip'
+import type { TermId } from '../../utils/glossary'
 import type { AbilityScore } from '../../types/race'
 import type { Armor, EquipmentDraft, ClassStartingEquipment, EquipmentOption } from '../../types/equipment'
 import type { Background } from '../../types/background'
@@ -319,7 +321,7 @@ export function ReviewStep() {
       >
         <div>
           <p className="text-xs font-fantasy text-parchment-600 uppercase tracking-widest">
-            Bônus de Proficiência
+            Bônus de Proficiência <InfoTooltip term="bonus-proficiencia" />
           </p>
           <p className="text-xs text-parchment-700 mt-0.5">
             Adicionado a perícias, resistências e ataques treinados
@@ -575,8 +577,8 @@ export function ReviewStep() {
         return (
           <Section title="Magias">
             <div className="grid grid-cols-2 gap-3 mb-4">
-              <SpellStat label="CD de Magia" value={String(dc)} accent={accent} />
-              <SpellStat label="Bônus de Ataque" value={attackBonus} accent={accent} />
+              <SpellStat label="CD de Magia" value={String(dc)} accent={accent} term="cd-de-magia" />
+              <SpellStat label="Bônus de Ataque" value={attackBonus} accent={accent} term="bonus-ataque-magia" />
             </div>
 
             {slotEntries.length > 0 && (
@@ -771,11 +773,14 @@ function Chip({ label }: { label: string }) {
   )
 }
 
-function SpellStat({ label, value, accent }: { label: string; value: string; accent: string }) {
+function SpellStat({ label, value, accent, term }: { label: string; value: string; accent: string; term?: TermId }) {
   return (
     <div className="rounded-lg border border-parchment-800/60 bg-parchment-950/60 p-2.5 text-center">
       <p className="text-base font-bold font-fantasy leading-none" style={{ color: accent }}>{value}</p>
-      <p className="text-xs text-parchment-600 font-fantasy mt-1 leading-tight">{label}</p>
+      <p className="text-xs text-parchment-600 font-fantasy mt-1 leading-tight">
+        {label}
+        {term && <> <InfoTooltip term={term} /></>}
+      </p>
     </div>
   )
 }

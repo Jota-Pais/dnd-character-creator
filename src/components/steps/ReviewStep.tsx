@@ -4,25 +4,28 @@ import {
   getRace, getSubrace, getEffectiveAbilityBonuses, getEffectiveSpeed,
   getEffectiveDarkvision, RACE_PRESENTATION, LANGUAGES,
 } from '../../utils/raceUtils'
-import { getClass, getSubclass, CLASS_PRESENTATION, getHpAtLevel1, isActiveCaster } from '../../utils/classUtils'
+import {
+  getClass, getSubclass, CLASS_PRESENTATION,
+  getHpAtLevel1, getAverageHpAtLevel, getRolledHpAtLevel, isActiveCaster,
+} from '../../utils/classUtils'
 import { getBackground, BACKGROUND_PRESENTATION, getToolName, SKILLS } from '../../utils/backgroundUtils'
 import {
   calculateModifier, formatModifier, ALL_ABILITY_SCORES, ABILITY_LABELS,
+  getProficiencyBonus,
 } from '../../utils/abilityScoreUtils'
 import { getItemName, getArmor } from '../../utils/equipmentUtils'
 import {
   getSpell,
   getSpellSaveDC,
   formatSpellAttackBonus,
-  getLevel1SlotCount,
+  getSpellSlots,
   SCHOOL_EMOJI,
 } from '../../utils/spellUtils'
 import { exportCharacter } from '../../utils/storage'
 import type { AbilityScore } from '../../types/race'
 import type { Armor, EquipmentDraft, ClassStartingEquipment, EquipmentOption } from '../../types/equipment'
 import type { Background } from '../../types/background'
-
-const PROF_BONUS = 2
+import type { HpMethod } from '../../types/character'
 
 const SKILL_ABILITY: Record<string, AbilityScore> = {
   acrobatics: 'DEX', 'animal-handling': 'WIS', arcana: 'INT', athletics: 'STR',
@@ -84,7 +87,12 @@ export function ReviewStep() {
   const draft = useCharacterStore(state => state.draft)
   const prevStep = useCharacterStore(state => state.prevStep)
   const reset = useCharacterStore(state => state.reset)
+  const setHpMethod = useCharacterStore(state => state.setHpMethod)
+  const rollHpForLevel = useCharacterStore(state => state.rollHpForLevel)
   const [confirmReset, setConfirmReset] = useState(false)
+
+  const level = draft.level ?? 1
+  const hpMethod: HpMethod = draft.hpMethod ?? 'average'
 
   const race = draft.race ? getRace(draft.race) : undefined
   const subrace = race && draft.subrace ? getSubrace(race, draft.subrace) : null
@@ -96,6 +104,8 @@ export function ReviewStep() {
 
   const classP = cls ? (CLASS_PRESENTATION[cls.id] ?? { emoji: '?', accent: '#c0961a' }) : null
   const accent = classP?.accent ?? '#c0961a'
+
+  const profBonus = getProficiencyBonus(level)
 
   // Racial bonuses per ability
   const racialBonuses: Record<AbilityScore, number> = { STR: 0, DEX: 0, CON: 0, INT: 0, WIS: 0, CHA: 0 }
@@ -113,8 +123,18 @@ export function ReviewStep() {
   const dexMod = calculateModifier(finalScores.DEX)
   const conMod = calculateModifier(finalScores.CON)
 
-  // Derived stats
-  const hp = cls ? getHpAtLevel1(cls, conMod) : null
+  // HP calculation
+  let hp: number | null = null
+  if (cls) {
+    if (level <= 1) {
+      hp = getHpAtLevel1(cls, conMod)
+    } else if (hpMethod === 'average') {
+      hp = getAverageHpAtLevel(cls, conMod, level)
+    } else {
+      hp = getRolledHpAtLevel(cls, conMod, level, draft.hpRolls)
+    }
+  }
+
   const speed = race ? getEffectiveSpeed(race, subrace ?? null) : null
   const darkvision = race ? getEffectiveDarkvision(race, subrace ?? null) : 0
   const classEquipment = cls?.startingEquipment
@@ -156,7 +176,7 @@ export function ReviewStep() {
 
   const identityParts = [
     race ? `${RACE_PRESENTATION[race.id]?.emoji ?? ''} ${subrace ? subrace.name : race.name}` : null,
-    cls ? `${classP?.emoji ?? ''} ${cls.name}${subclassData ? ` (${subclassData.name})` : ''}` : null,
+    cls ? `${classP?.emoji ?? ''} ${cls.name} ${level}°${subclassData ? ` (${subclassData.name})` : ''}` : null,
     bg ? `${BACKGROUND_PRESENTATION[bg.id]?.emoji ?? ''} ${bg.name}` : null,
   ].filter(Boolean).join(' · ')
 
@@ -221,6 +241,52 @@ export function ReviewStep() {
             * Armadura impõe desvantagem em Furtividade
           </p>
         )}
+
+        {cls && level > 1 && (
+          <div className="mt-4 pt-4 border-t border-parchment-900/60">
+            <div className="flex items-center justify-center gap-3 flex-wrap">
+              <span className="text-xs font-fantasy text-parchment-600 uppercase tracking-widest">
+                Pontos de Vida
+              </span>
+              <div className="inline-flex rounded-lg border border-parchment-800 overflow-hidden">
+                <button
+                  onClick={() => setHpMethod('average')}
+                  className="px-3 py-1.5 text-xs font-fantasy transition-colors"
+                  style={hpMethod === 'average'
+                    ? { backgroundColor: accent, color: '#0a0704' }
+                    : { color: '#c4a97a' }}
+                >
+                  Média
+                </button>
+                <button
+                  onClick={() => setHpMethod('roll')}
+                  className="px-3 py-1.5 text-xs font-fantasy transition-colors border-l border-parchment-800"
+                  style={hpMethod === 'roll'
+                    ? { backgroundColor: accent, color: '#0a0704' }
+                    : { color: '#c4a97a' }}
+                >
+                  Rolar
+                </button>
+              </div>
+              {hpMethod === 'roll' && (
+                <button
+                  onClick={() => {
+                    for (let lvl = 2; lvl <= level; lvl++) rollHpForLevel(lvl)
+                  }}
+                  className="px-3 py-1.5 text-xs font-fantasy rounded-lg border border-parchment-800 text-parchment-400 hover:text-parchment-200 hover:border-parchment-700 transition-colors"
+                >
+                  🎲 Rolar dados de vida
+                </button>
+              )}
+            </div>
+            {hpMethod === 'roll' && draft.hpRolls.some(r => r !== undefined) && (
+              <p className="text-xs text-parchment-700 text-center mt-2 font-fantasy">
+                Rolagens (níveis 2+):{' '}
+                {Array.from({ length: level - 1 }, (_, i) => draft.hpRolls[i] ?? '—').join(', ')}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Ability Scores */}
@@ -260,7 +326,7 @@ export function ReviewStep() {
           </p>
         </div>
         <span className="font-fantasy font-bold text-2xl" style={{ color: accent }}>
-          +{PROF_BONUS}
+          +{profBonus}
         </span>
       </div>
 
@@ -270,7 +336,7 @@ export function ReviewStep() {
             {ALL_ABILITY_SCORES.map(ab => {
               const isProficient = savingThrows.includes(ab)
               const abilityMod = calculateModifier(finalScores[ab])
-              const bonus = abilityMod + (isProficient ? PROF_BONUS : 0)
+              const bonus = abilityMod + (isProficient ? profBonus : 0)
               return (
                 <div key={ab} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -297,7 +363,7 @@ export function ReviewStep() {
               const abilityMod = abilityId ? calculateModifier(finalScores[abilityId]) : 0
               const isProficient = allSkills.includes(skill.id)
               const isExpert = expertiseSet.has(skill.id)
-              const bonus = abilityMod + (isProficient ? PROF_BONUS : 0) + (isExpert ? PROF_BONUS : 0)
+              const bonus = abilityMod + (isProficient ? profBonus : 0) + (isExpert ? profBonus : 0)
               return (
                 <div key={skill.id} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -496,20 +562,40 @@ export function ReviewStep() {
       )}
 
       {/* Spells */}
-      {cls && isActiveCaster(cls, 1) && cls.spellcasting && (() => {
+      {cls && isActiveCaster(cls, level) && cls.spellcasting && (() => {
         const sc_ = cls.spellcasting!
-        const dc = getSpellSaveDC(sc_, finalScores)
-        const attackBonus = formatSpellAttackBonus(sc_, finalScores)
-        const slots = getLevel1SlotCount(cls)
+        const dc = getSpellSaveDC(sc_, finalScores, level)
+        const attackBonus = formatSpellAttackBonus(sc_, finalScores, level)
+        const isWarlock = cls.id === 'warlock'
+        const slotEntries = getSpellSlots(cls.id, level)
+          .map((count, i) => ({ spellLevel: i + 1, count }))
+          .filter(s => s.count > 0)
         const cantrips = (draft.spellChoices?.cantrips ?? []).map(id => getSpell(id)).filter(Boolean)
         const spells = (draft.spellChoices?.spells ?? []).map(id => getSpell(id)).filter(Boolean)
         return (
           <Section title="Magias">
-            <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="grid grid-cols-2 gap-3 mb-4">
               <SpellStat label="CD de Magia" value={String(dc)} accent={accent} />
               <SpellStat label="Bônus de Ataque" value={attackBonus} accent={accent} />
-              <SpellStat label={`Espaços de 1°`} value={`${slots}×`} accent={accent} />
             </div>
+
+            {slotEntries.length > 0 && (
+              <div className="mb-4">
+                <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">
+                  {isWarlock ? 'Magia de Pacto' : 'Espaços de Magia'}
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {slotEntries.map(({ spellLevel, count }) => (
+                    <span
+                      key={spellLevel}
+                      className="px-2 py-1 rounded-md bg-parchment-900 border border-parchment-800 text-xs text-parchment-400 font-fantasy"
+                    >
+                      {count}× {spellLevel}°
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {cantrips.length > 0 && (
               <div className="mb-3">

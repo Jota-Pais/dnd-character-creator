@@ -4,24 +4,39 @@ import classesData from '../data/classes.json'
 
 export const CLASSES: GameClass[] = classesData as GameClass[]
 
+/** Papéis de combate, para o iniciante escolher pelo que quer fazer (não pelo jargão). */
+export type RoleId = 'tank' | 'damage' | 'ranged' | 'caster' | 'support' | 'stealth'
+
+export const ROLES: Record<RoleId, { label: string; emoji: string }> = {
+  tank:    { label: 'Tanque',    emoji: '🛡️' },
+  damage:  { label: 'Dano',      emoji: '⚔️' },
+  ranged:  { label: 'Distância', emoji: '🏹' },
+  caster:  { label: 'Mágico',    emoji: '✨' },
+  support: { label: 'Suporte',   emoji: '🎭' },
+  stealth: { label: 'Furtivo',   emoji: '🗡️' },
+}
+
 export type ClassPresentation = {
   emoji: string
   accent: string
+  roles: RoleId[]
+  beginnerFriendly?: boolean
+  beginnerNote?: string
 }
 
 export const CLASS_PRESENTATION: Record<string, ClassPresentation> = {
-  barbarian: { emoji: '🪓', accent: '#c0392b' },
-  bard:      { emoji: '🎶', accent: '#8e44ad' },
-  warlock:   { emoji: '🌑', accent: '#7d3c98' },
-  cleric:    { emoji: '⚜️', accent: '#b7770d' },
-  druid:     { emoji: '🌿', accent: '#1e8449' },
-  sorcerer:  { emoji: '✨', accent: '#2874a6' },
-  fighter:   { emoji: '🛡️', accent: '#2e86c1' },
-  rogue:     { emoji: '🗡️', accent: '#717d7e' },
-  wizard:    { emoji: '📖', accent: '#1f618d' },
-  monk:      { emoji: '👊', accent: '#d35400' },
-  paladin:   { emoji: '🌟', accent: '#d4ac0d' },
-  ranger:    { emoji: '🏹', accent: '#196f3d' },
+  barbarian: { emoji: '🪓', accent: '#c0392b', roles: ['tank', 'damage'], beginnerFriendly: true, beginnerNote: 'Simples e durável: corre pra briga, aguenta dano e bate forte.' },
+  bard:      { emoji: '🎶', accent: '#8e44ad', roles: ['support', 'caster'] },
+  warlock:   { emoji: '🌑', accent: '#7d3c98', roles: ['caster'] },
+  cleric:    { emoji: '⚜️', accent: '#b7770d', roles: ['support', 'caster'] },
+  druid:     { emoji: '🌿', accent: '#1e8449', roles: ['caster', 'support'] },
+  sorcerer:  { emoji: '✨', accent: '#2874a6', roles: ['caster'] },
+  fighter:   { emoji: '🛡️', accent: '#2e86c1', roles: ['damage', 'tank'], beginnerFriendly: true, beginnerNote: 'O mais direto: ataca bem e aguenta porrada, sem magias para gerenciar.' },
+  rogue:     { emoji: '🗡️', accent: '#717d7e', roles: ['stealth', 'damage'], beginnerFriendly: true, beginnerNote: 'Furtivo e certeiro; gira em torno de uma mecânica só (ataque furtivo).' },
+  wizard:    { emoji: '📖', accent: '#1f618d', roles: ['caster'] },
+  monk:      { emoji: '👊', accent: '#d35400', roles: ['damage'] },
+  paladin:   { emoji: '🌟', accent: '#d4ac0d', roles: ['tank', 'support'], beginnerFriendly: true, beginnerNote: 'Resistente e versátil; no nível 1 é puro combate, sem magias.' },
+  ranger:    { emoji: '🏹', accent: '#196f3d', roles: ['ranged', 'damage'] },
 }
 
 export const FIGHTING_STYLES: { id: string; name: string; description: string }[] = [

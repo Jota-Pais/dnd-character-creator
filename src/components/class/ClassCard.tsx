@@ -1,5 +1,5 @@
 import type { GameClass } from '../../types/class'
-import { CLASS_PRESENTATION, isActiveCaster, getHpFormula } from '../../utils/classUtils'
+import { CLASS_PRESENTATION, ROLES, isActiveCaster, getHpFormula } from '../../utils/classUtils'
 import { ABILITY_LABELS } from '../../utils/abilityScoreUtils'
 
 type Props = {
@@ -53,6 +53,27 @@ export function ClassCard({ cls, selected, onSelect }: Props) {
             </div>
           </div>
         </div>
+
+        {presentation && (
+          <div className="flex flex-wrap items-center gap-1.5 mb-2">
+            {presentation.roles.map(r => (
+              <span
+                key={r}
+                className="px-1.5 py-0.5 rounded text-xs font-semibold bg-parchment-900 text-parchment-400"
+              >
+                {ROLES[r].emoji} {ROLES[r].label}
+              </span>
+            ))}
+            {presentation.beginnerFriendly && (
+              <span
+                title={presentation.beginnerNote}
+                className="px-1.5 py-0.5 rounded text-xs font-semibold border bg-gold-500/10 text-gold-400 border-gold-500/40"
+              >
+                ⭐ Bom para iniciantes
+              </span>
+            )}
+          </div>
+        )}
 
         <p className="text-parchment-500 text-xs leading-relaxed mb-3 line-clamp-2">
           {cls.description}

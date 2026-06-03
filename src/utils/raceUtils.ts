@@ -47,17 +47,19 @@ export const LANGUAGES = [
 export type RacePresentation = {
   emoji: string
   accent: string
+  beginnerFriendly?: boolean
+  beginnerNote?: string
 }
 
 export const RACE_PRESENTATION: Record<string, RacePresentation> = {
-  dwarf:      { emoji: '⛏️',  accent: '#d97706' },
+  dwarf:      { emoji: '⛏️',  accent: '#d97706', beginnerFriendly: true, beginnerNote: 'Resistente e perdoa erros — ótimo pra quem está começando.' },
   elf:        { emoji: '🌿',  accent: '#10b981' },
-  halfling:   { emoji: '🍀',  accent: '#84cc16' },
-  human:      { emoji: '🛡️',  accent: '#60a5fa' },
+  halfling:   { emoji: '🍀',  accent: '#84cc16', beginnerFriendly: true, beginnerNote: 'Sortudo e difícil de derrubar; seguro pra primeira ficha.' },
+  human:      { emoji: '🛡️',  accent: '#60a5fa', beginnerFriendly: true, beginnerNote: 'Equilibrado e flexível, combina com qualquer classe.' },
   dragonborn: { emoji: '🐉',  accent: '#f87171' },
   gnome:      { emoji: '⚙️',  accent: '#a78bfa' },
   'half-elf': { emoji: '🌙',  accent: '#2dd4bf' },
-  'half-orc': { emoji: '⚔️',  accent: '#4ade80' },
+  'half-orc': { emoji: '⚔️',  accent: '#4ade80', beginnerFriendly: true, beginnerNote: 'Forte e durável, perfeito pra partir pra briga sem medo.' },
   tiefling:   { emoji: '🔮',  accent: '#c084fc' },
 }
 

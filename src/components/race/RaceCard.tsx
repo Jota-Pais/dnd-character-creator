@@ -46,6 +46,17 @@ export function RaceCard({ race, selected, onSelect }: Props) {
           )}
         </div>
 
+        {presentation?.beginnerFriendly && (
+          <div className="mb-2">
+            <span
+              title={presentation.beginnerNote}
+              className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold border bg-gold-500/10 text-gold-400 border-gold-500/40"
+            >
+              ⭐ Bom para iniciantes
+            </span>
+          </div>
+        )}
+
         <p className="text-parchment-500 text-xs leading-relaxed mb-3 line-clamp-2">
           {race.description}
         </p>

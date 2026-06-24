@@ -6,10 +6,6 @@
 
 Um aplicativo web moderno, intuitivo e responsivo para criação de personagens de Dungeons & Dragons 5ª Edição, baseado nas regras do Player's Handbook (Livro do Jogador) de 2014.
 
-<!-- 📸 Para prints das telas do app em ação, crie a pasta docs/, salve as imagens e descomente:
-![Assistente de criação](docs/wizard.png)
--->
-
 ## ✨ Funcionalidades
 
 - **Criação Passo a Passo**: Um assistente (wizard) guiado e fluido para montar seu personagem de forma progressiva.

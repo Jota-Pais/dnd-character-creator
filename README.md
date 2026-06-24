@@ -1,9 +1,5 @@
 # 🎲 Criador de Personagem - D&D 5e (PHB 2014)
 
-<p align="center">
-  <img src="src/assets/hero.png" alt="Criador de Personagem D&D 5e" width="100%">
-</p>
-
 Um aplicativo web moderno, intuitivo e responsivo para criação de personagens de Dungeons & Dragons 5ª Edição, baseado nas regras do Player's Handbook (Livro do Jogador) de 2014.
 
 ## ✨ Funcionalidades

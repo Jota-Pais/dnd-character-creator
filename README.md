@@ -70,10 +70,6 @@ Abaixo uma visão geral da organização do código-fonte (`/src`):
 - `npm run lint`: Executa o ESLint para encontrar e reportar problemas no código.
 - `npm run test`: Executa os testes automatizados com o Vitest.
 
-## 📄 Licença
-
-O **código** deste projeto está sob a licença MIT — veja [`LICENSE`](LICENSE).
-
 ## 📜 Notas Legais
 
 Este projeto foi criado para fins de estudo e uso pessoal. O conteúdo relacionado a Dungeons & Dragons, como nomes, regras e mecânicas, é de propriedade intelectual da Wizards of the Coast.

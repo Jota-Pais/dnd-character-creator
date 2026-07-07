@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { GameClass } from '../../types/class'
 import { useCharacterStore } from '../../stores/characterStore'
 import {
@@ -11,6 +11,7 @@ import {
   getHpFormula,
 } from '../../utils/classUtils'
 import { ABILITY_LABELS } from '../../utils/abilityScoreUtils'
+import { getExcludedSkills, getExcludedTools } from '../../utils/proficiencyUtils'
 import { ClassCard } from '../class/ClassCard'
 import { ClassChoicePanel } from '../class/ClassChoicePanel'
 
@@ -35,6 +36,27 @@ export function ClassStep() {
   const activeCaster = selectedClass ? isActiveCaster(selectedClass, 1) : false
 
   const canAdvance = isClassStepComplete(selectedClass ?? null, draft.classChoices)
+
+  // Perícias/ferramentas já obtidas de raça ou antecedente não podem ser re-escolhidas
+  const excludedSkills = getExcludedSkills(draft, 'class')
+  const excludedTools = getExcludedTools(draft, 'class')
+
+  useEffect(() => {
+    const skills = draft.classChoices.skills
+    const filtered = skills.filter(id => !excludedSkills.includes(id))
+    if (filtered.length !== skills.length) {
+      updateClassChoices({
+        skills: filtered,
+        expertiseItems: draft.classChoices.expertiseItems.filter(id => !excludedSkills.includes(id)),
+      })
+    }
+  }, [excludedSkills.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const tools = draft.classChoices.tools
+    const filtered = tools.filter(id => !excludedTools.includes(id))
+    if (filtered.length !== tools.length) updateClassChoices({ tools: filtered })
+  }, [excludedTools.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleClassSelect(classId: string) {
     setClass(classId)
@@ -205,6 +227,8 @@ export function ClassStep() {
                   choices={draft.classChoices}
                   accent={accent}
                   onChange={updateClassChoices}
+                  excludedSkills={excludedSkills}
+                  excludedTools={excludedTools}
                 />
               </div>
 

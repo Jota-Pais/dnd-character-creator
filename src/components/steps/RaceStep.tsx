@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { Race, Subrace } from '../../types/race'
 import { useCharacterStore } from '../../stores/characterStore'
 import {
@@ -12,6 +12,7 @@ import {
   isRaceStepComplete,
   RACE_PRESENTATION,
 } from '../../utils/raceUtils'
+import { getExcludedSkills, getExcludedTools } from '../../utils/proficiencyUtils'
 import { ABILITY_LABELS, formatBonus, formatSpeed } from '../../utils/abilityScoreUtils'
 import { RaceCard } from '../race/RaceCard'
 import { SubraceCard } from '../race/SubraceCard'
@@ -43,6 +44,22 @@ export function RaceStep() {
     selectedSubrace ?? null,
     draft.raceChoices,
   )
+
+  // Perícias/ferramentas já obtidas de classe ou antecedente não podem ser re-escolhidas
+  const excludedSkills = getExcludedSkills(draft, 'race')
+  const excludedTools = getExcludedTools(draft, 'race')
+
+  useEffect(() => {
+    const skills = draft.raceChoices.skills ?? []
+    const filtered = skills.filter(id => !excludedSkills.includes(id))
+    if (filtered.length !== skills.length) updateRaceChoices({ skills: filtered })
+  }, [excludedSkills.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const tools = draft.raceChoices.tools ?? []
+    const filtered = tools.filter(id => !excludedTools.includes(id))
+    if (filtered.length !== tools.length) updateRaceChoices({ tools: filtered })
+  }, [excludedTools.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleRaceSelect(raceId: string) {
     setRace(raceId)
@@ -193,6 +210,8 @@ export function RaceStep() {
                     accent={accent}
                     onChange={updateRaceChoices}
                     excludedLanguages={selectedRace?.grantedLanguages}
+                    excludedSkills={excludedSkills}
+                    excludedTools={excludedTools}
                   />
                 </div>
               )}

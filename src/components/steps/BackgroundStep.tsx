@@ -9,6 +9,7 @@ import {
   isBackgroundStepComplete,
 } from '../../utils/backgroundUtils'
 import { getRace } from '../../utils/raceUtils'
+import { getExcludedTools } from '../../utils/proficiencyUtils'
 import { BackgroundCard } from '../background/BackgroundCard'
 import { BackgroundChoicePanel } from '../background/BackgroundChoicePanel'
 
@@ -33,6 +34,8 @@ export function BackgroundStep() {
     ...(race?.grantedLanguages ?? []),
     ...(draft.raceChoices.languages ?? []),
   ]
+  // Ferramentas já obtidas de raça ou classe não podem ser re-escolhidas
+  const toolExcluded = getExcludedTools(draft, 'background')
 
   useEffect(() => {
     const current = draft.backgroundChoices.languages ?? []
@@ -41,6 +44,14 @@ export function BackgroundStep() {
       updateBackgroundChoices({ languages: filtered })
     }
   }, [langExcluded.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const current = draft.backgroundChoices.tools ?? []
+    const filtered = current.filter(id => !toolExcluded.includes(id))
+    if (filtered.length !== current.length) {
+      updateBackgroundChoices({ tools: filtered })
+    }
+  }, [toolExcluded.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleSelect(id: string) {
     setBackground(id)
@@ -165,6 +176,7 @@ export function BackgroundStep() {
                     accent={accent}
                     onChange={updateBackgroundChoices}
                     excludedLanguages={langExcluded}
+                    excludedTools={toolExcluded}
                   />
                 </div>
               )}

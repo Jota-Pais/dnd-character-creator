@@ -19,10 +19,14 @@ type Props = {
   choices: ClassChoiceSelections
   accent: string
   onChange: (patch: Partial<ClassChoiceSelections>) => void
+  excludedSkills?: string[]
+  excludedTools?: string[]
 }
 
-export function ClassChoicePanel({ cls, choices, accent, onChange }: Props) {
+export function ClassChoicePanel({ cls, choices, accent, onChange, excludedSkills, excludedTools }: Props) {
   const skillOptions = getSkillOptions(cls)
+  const excludedSkillSet = new Set(excludedSkills ?? [])
+  const excludedToolSet = new Set(excludedTools ?? [])
 
   function handleSkillToggle(skillId: string) {
     if (choices.skills.includes(skillId)) {
@@ -73,12 +77,14 @@ export function ClassChoicePanel({ cls, choices, accent, onChange }: Props) {
         <div className="flex flex-wrap gap-1.5">
           {skillOptions.map(skill => {
             const selected = choices.skills.includes(skill.id)
-            const disabled = !selected && choices.skills.length >= cls.skillChoices.count
+            const excluded = excludedSkillSet.has(skill.id)
+            const disabled = excluded || (!selected && choices.skills.length >= cls.skillChoices.count)
             return (
               <button
                 key={skill.id}
-                onClick={() => handleSkillToggle(skill.id)}
+                onClick={() => { if (!excluded) handleSkillToggle(skill.id) }}
                 disabled={disabled}
+                title={excluded ? 'Você já possui esta perícia de outra fonte' : undefined}
                 className="px-2.5 py-1 rounded-lg text-xs font-semibold transition-all"
                 style={{
                   backgroundColor: selected ? accent : disabled ? 'rgba(30, 20, 8, 0.4)' : 'rgba(40, 28, 12, 0.8)',
@@ -87,7 +93,7 @@ export function ClassChoicePanel({ cls, choices, accent, onChange }: Props) {
                   cursor: disabled ? 'not-allowed' : 'pointer',
                 }}
               >
-                {skill.name}
+                {excluded ? '✓ ' : ''}{skill.name}
               </button>
             )
           })}
@@ -113,12 +119,14 @@ export function ClassChoicePanel({ cls, choices, accent, onChange }: Props) {
             <div className="flex flex-wrap gap-1.5">
               {filtered.map(tool => {
                 const selected = choices.tools.includes(tool.id)
-                const disabled = !selected && choices.tools.length >= toolChoice.count
+                const excluded = excludedToolSet.has(tool.id)
+                const disabled = excluded || (!selected && choices.tools.length >= toolChoice.count)
                 return (
                   <button
                     key={tool.id}
-                    onClick={() => handleToolToggle(tool.id, toolChoice.count)}
+                    onClick={() => { if (!excluded) handleToolToggle(tool.id, toolChoice.count) }}
                     disabled={disabled}
+                    title={excluded ? 'Você já possui esta ferramenta de outra fonte' : undefined}
                     className="px-2.5 py-1 rounded-lg text-xs font-semibold transition-all"
                     style={{
                       backgroundColor: selected ? accent : disabled ? 'rgba(30, 20, 8, 0.4)' : 'rgba(40, 28, 12, 0.8)',
@@ -127,7 +135,7 @@ export function ClassChoicePanel({ cls, choices, accent, onChange }: Props) {
                       cursor: disabled ? 'not-allowed' : 'pointer',
                     }}
                   >
-                    {tool.name}
+                    {excluded ? '✓ ' : ''}{tool.name}
                   </button>
                 )
               })}

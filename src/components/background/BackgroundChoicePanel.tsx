@@ -8,9 +8,10 @@ type Props = {
   accent: string
   onChange: (updates: Partial<BackgroundChoiceSelections>) => void
   excludedLanguages?: string[]
+  excludedTools?: string[]
 }
 
-export function BackgroundChoicePanel({ choices, selections, accent, onChange, excludedLanguages }: Props) {
+export function BackgroundChoicePanel({ choices, selections, accent, onChange, excludedLanguages, excludedTools }: Props) {
   if (choices.length === 0) return null
 
   return (
@@ -23,6 +24,7 @@ export function BackgroundChoicePanel({ choices, selections, accent, onChange, e
               from={choice.from}
               accent={accent}
               selected={selections.tools ?? []}
+              excluded={excludedTools}
               onSelect={tools => onChange({ tools })}
             />
           )
@@ -48,10 +50,11 @@ type ToolCategoryFieldProps = {
   from: 'artisan' | 'musical-instrument' | 'gaming-set'
   accent: string
   selected: string[]
+  excluded?: string[]
   onSelect: (tools: string[]) => void
 }
 
-function ToolCategoryField({ from, accent, selected, onSelect }: ToolCategoryFieldProps) {
+function ToolCategoryField({ from, accent, selected, excluded, onSelect }: ToolCategoryFieldProps) {
   const tools = getToolsByCategory(from)
   const label = TOOL_CHOICE_LABEL[from]
 
@@ -71,19 +74,23 @@ function ToolCategoryField({ from, accent, selected, onSelect }: ToolCategoryFie
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
         {tools.map(tool => {
+          const isExcluded = excluded?.includes(tool.id) ?? false
           const isSelected = selected.includes(tool.id)
           return (
             <button
               key={tool.id}
-              onClick={() => handleClick(tool.id)}
+              onClick={() => { if (!isExcluded) handleClick(tool.id) }}
+              disabled={isExcluded}
+              title={isExcluded ? 'Você já possui esta ferramenta de outra fonte' : undefined}
               className="px-3 py-2 rounded-lg border text-sm text-left transition-all"
               style={{
-                borderColor: isSelected ? accent : 'rgba(58, 38, 20, 0.6)',
+                borderColor: isSelected ? accent : isExcluded ? '#1e150a' : 'rgba(58, 38, 20, 0.6)',
                 backgroundColor: isSelected ? `${accent}15` : 'transparent',
-                color: isSelected ? accent : '#9a7650',
+                color: isSelected ? accent : isExcluded ? '#3a2614' : '#9a7650',
+                cursor: isExcluded ? 'not-allowed' : 'pointer',
               }}
             >
-              {tool.name}
+              {isExcluded ? '✓ ' : ''}{tool.name}
             </button>
           )
         })}

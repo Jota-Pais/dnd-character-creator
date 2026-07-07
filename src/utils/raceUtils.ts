@@ -1,4 +1,4 @@
-import type { Race, Subrace, AbilityBonus, RaceChoice, AbilityChoice } from '../types/race'
+import type { Race, Subrace, AbilityBonus, RaceChoice, AbilityChoice, GrantedProficiency } from '../types/race'
 import type { RaceChoiceSelections } from '../types/character'
 import racesData from '../data/races.json'
 
@@ -94,6 +94,27 @@ export function getAllChoices(race: Race, subrace: Subrace | null): RaceChoice[]
   const raceChoices = replacesParentTraits(subrace) ? [] : race.choices
   const subraceChoices = subrace?.choices ?? []
   return [...raceChoices, ...subraceChoices]
+}
+
+/** Proficiências fixas concedidas pela raça + sub-raça (respeita replacesParentTraits). */
+export function getEffectiveGrantedProficiencies(race: Race, subrace: Subrace | null): GrantedProficiency[] {
+  const raceProfs = replacesParentTraits(subrace) ? [] : race.grantedProficiencies
+  const subraceProfs = subrace?.grantedProficiencies ?? []
+  return [...raceProfs, ...subraceProfs]
+}
+
+/** Perícias fixas concedidas pela raça (ex.: Percepção do elfo, Intimidação do meio-orc). */
+export function getRaceGrantedSkills(race: Race, subrace: Subrace | null): string[] {
+  return getEffectiveGrantedProficiencies(race, subrace)
+    .filter(g => g.type === 'skill')
+    .map(g => g.value)
+}
+
+/** Ferramentas fixas concedidas pela raça (ex.: ferramentas de funileiro do gnomo das rochas). */
+export function getRaceGrantedTools(race: Race, subrace: Subrace | null): string[] {
+  return getEffectiveGrantedProficiencies(race, subrace)
+    .filter(g => g.type === 'tool')
+    .map(g => g.value)
 }
 
 export function getEffectiveAbilityBonuses(

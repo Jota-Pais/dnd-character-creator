@@ -15,6 +15,7 @@ import {
 } from '../../utils/abilityScoreUtils'
 import { getItemName, getEquippedArmor } from '../../utils/equipmentUtils'
 import { calculateArmorClass, getUnarmoredDefense } from '../../utils/armorClassUtils'
+import { getAllGrantedSkills, getAllGrantedTools } from '../../utils/proficiencyUtils'
 import {
   getSpell,
   getSpellSaveDC,
@@ -133,11 +134,7 @@ export function ReviewStep() {
     .join(' ')
 
   // Proficiencies
-  const bgSkills = bg?.skillProficiencies ?? []
-  const classSkills = draft.classChoices.skills
-  const raceSkills = draft.raceChoices.skills ?? []
-  const subclassSkills = draft.classChoices.subclassExtras.skills ?? []
-  const allSkills = [...new Set([...bgSkills, ...classSkills, ...raceSkills, ...subclassSkills])]
+  const allSkills = getAllGrantedSkills(draft)
   const expertiseSet = new Set(draft.classChoices.expertiseItems.filter(id => SKILL_ABILITY[id]))
   const savingThrows = cls?.savingThrows ?? []
 
@@ -154,11 +151,7 @@ export function ReviewStep() {
   const chosenBgLanguages = draft.backgroundChoices.languages ?? []
   const allLanguages = [...new Set([...raceLanguages, ...chosenRaceLanguages, ...chosenBgLanguages])]
 
-  const grantedClassTools = cls?.toolProficiencies.granted ?? []
-  const chosenClassTools = draft.classChoices.tools
-  const bgFixedTools = bg?.toolProficiencies ?? []
-  const chosenBgTools = draft.backgroundChoices.tools ?? []
-  const allTools = [...new Set([...grantedClassTools, ...chosenClassTools, ...bgFixedTools, ...chosenBgTools])]
+  const allTools = getAllGrantedTools(draft)
 
   const identityParts = [
     race ? `${RACE_PRESENTATION[race.id]?.emoji ?? ''} ${subrace ? subrace.name : race.name}` : null,

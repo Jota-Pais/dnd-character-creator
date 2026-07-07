@@ -232,11 +232,19 @@ describe('getExpertiseOptions', () => {
 
 describe('getClassFeaturesUpToLevel', () => {
   const barbarian = getClass('barbarian')!
-  const wizard = getClass('wizard')!
+  // classe sintética que nunca estará na tabela de progressão (testa o fallback)
+  const noTableClass: GameClass = {
+    ...baseClass,
+    id: 'sem-tabela-de-progressao',
+    features: [
+      { name: 'Feature Fake 1', description: '' },
+      { name: 'Feature Fake 2', description: '' },
+    ],
+  }
 
-  it('hasFeaturesByLevel: bárbaro sim, mago ainda não', () => {
+  it('hasFeaturesByLevel: bárbaro sim, classe sem tabela não', () => {
     expect(hasFeaturesByLevel('barbarian')).toBe(true)
-    expect(hasFeaturesByLevel('wizard')).toBe(false)
+    expect(hasFeaturesByLevel('sem-tabela-de-progressao')).toBe(false)
   })
 
   it('bárbaro nv1 mostra só as features de nível 1', () => {
@@ -264,9 +272,9 @@ describe('getClassFeaturesUpToLevel', () => {
     expect(nomes).toContain('Frenesi')
   })
 
-  it('mago (sem tabela) cai no fallback: features de nível 1', () => {
-    const f = getClassFeaturesUpToLevel(wizard, null, 10)
+  it('classe sem tabela cai no fallback: features de nível 1', () => {
+    const f = getClassFeaturesUpToLevel(noTableClass, null, 10)
     expect(f.every(x => x.level === 1)).toBe(true)
-    expect(f.length).toBe(wizard.features.length)
+    expect(f.length).toBe(noTableClass.features.length)
   })
 })

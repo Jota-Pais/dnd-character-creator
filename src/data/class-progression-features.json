@@ -52,6 +52,33 @@
       { "level": 15, "name": "Corpo Atemporal", "description": "Seu chi sustenta você: não sofre os efeitos da velhice, não pode ser envelhecido magicamente e não precisa de comida ou água." },
       { "level": 18, "name": "Corpo Vazio", "description": "Gaste 4 pontos de chi para ficar invisível por 1 minuto, com resistência a todo dano exceto energético; ou 8 pontos de chi para conjurar projeção astral." },
       { "level": 20, "name": "Auto Aperfeiçoamento", "description": "Ao rolar iniciativa sem pontos de chi restantes, você recupera 4 pontos de chi." }
+    ],
+    "cleric": [
+      { "level": 1, "name": "Conjuração", "description": "Você conjura magias de clérigo usando Sabedoria; prepara um número de magias igual ao mod. de Sabedoria + seu nível de clérigo e pode conjurar rituais com um símbolo sagrado." },
+      { "level": 2, "name": "Canalizar Divindade", "description": "Você canaliza energia divina: começa com Expulsar Mortos-Vivos e um efeito do seu domínio. Recupera em descanso curto ou longo (2 usos no 6° nível, 3 no 18°)." },
+      { "level": 2, "name": "Expulsar Mortos-Vivos", "description": "Com uma ação, cada morto-vivo a até 9 m que falhar numa resistência de Sabedoria fica expulso por 1 minuto (ou até sofrer dano), fugindo de você." },
+      { "level": 5, "name": "Destruir Mortos-Vivos", "description": "Um morto-vivo que falhe no Expulsar Mortos-Vivos é destruído instantaneamente se seu nível de desafio for baixo o suficiente (aumenta com o nível de clérigo)." },
+      { "level": 10, "name": "Intervenção Divina", "description": "Com uma ação, role d100; se o resultado for menor ou igual ao seu nível de clérigo, sua divindade intervém. No 20° nível o sucesso é automático." }
+    ],
+    "druid": [
+      { "level": 1, "name": "Druídico", "description": "Você conhece o Druídico, idioma secreto dos druidas, usado para deixar mensagens ocultas." },
+      { "level": 1, "name": "Conjuração", "description": "Você conjura magias de druida usando Sabedoria; prepara um número de magias igual ao mod. de Sabedoria + seu nível de druida e pode conjurar rituais com um foco druídico." },
+      { "level": 2, "name": "Forma Selvagem", "description": "Com uma ação, assuma a forma de uma besta que já tenha visto (limites de VD e de capacidades conforme o nível). Duas vezes por descanso." },
+      { "level": 18, "name": "Corpo Atemporal", "description": "A magia primordial faz você envelhecer lentamente: para cada 10 anos que passam, seu corpo envelhece apenas 1." },
+      { "level": 18, "name": "Magias da Besta", "description": "Você pode conjurar magias de druida enquanto estiver em Forma Selvagem, fornecendo os componentes verbais e somáticos (mas não materiais)." },
+      { "level": 20, "name": "Arquidruida", "description": "Você usa Forma Selvagem um número ilimitado de vezes e pode ignorar os componentes verbais, somáticos e materiais sem custo das suas magias de druida." }
+    ],
+    "wizard": [
+      { "level": 1, "name": "Conjuração", "description": "Você conjura magias de mago usando Inteligência, a partir do seu grimório, e pode conjurar rituais que estejam nele." },
+      { "level": 1, "name": "Recuperação Arcana", "description": "Uma vez por dia, ao terminar um descanso curto, recupere espaços de magia gastos somando até metade do seu nível de mago (arredondado para cima), nenhum acima do 5° nível." },
+      { "level": 18, "name": "Dominar Magia", "description": "Escolha uma magia de 1° e uma de 2° nível do grimório: você pode conjurá-las à vontade no nível mínimo, sem gastar espaços, enquanto estiverem preparadas." },
+      { "level": 20, "name": "Assinatura Mágica", "description": "Escolha duas magias de 3° nível do grimório: ficam sempre preparadas e você pode conjurar cada uma uma vez por descanso sem gastar espaço de magia." }
+    ],
+    "sorcerer": [
+      { "level": 1, "name": "Conjuração", "description": "Você conjura magias de feiticeiro usando Carisma, a partir de uma lista de magias conhecidas." },
+      { "level": 2, "name": "Fonte de Magia", "description": "Você tem pontos de feitiçaria que pode converter em espaços de magia, ou converter espaços em pontos, como ação bônus." },
+      { "level": 3, "name": "Metamagia", "description": "Você aprende duas opções de Metamagia (mais uma no 10° e no 17° nível) para alterar suas magias gastando pontos de feitiçaria." },
+      { "level": 20, "name": "Restauração Mística", "description": "Ao terminar um descanso curto, você recupera 4 pontos de feitiçaria gastos." }
     ]
   },
   "subclasses": {}

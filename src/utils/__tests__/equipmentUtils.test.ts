@@ -1,5 +1,17 @@
 import { describe, it, expect } from 'vitest'
-import { formatCurrency, resolvePackContents, validatePackRefs, FOCUS_GROUP_IDS } from '../equipmentUtils'
+import { formatCurrency, resolvePackContents, validatePackRefs, FOCUS_GROUP_IDS, getEquippedArmor } from '../equipmentUtils'
+import { getClass } from '../classUtils'
+import type { EquipmentDraft } from '../../types/equipment'
+
+function fighterEquipment(overrides: Partial<EquipmentDraft> = {}): EquipmentDraft {
+  return {
+    method: 'standard',
+    classResolutions: [],
+    rolledGold: null,
+    purchasedItems: [],
+    ...overrides,
+  }
+}
 
 describe('formatCurrency', () => {
   it('retorna "—" para null', () => {
@@ -30,6 +42,55 @@ describe('formatCurrency', () => {
     expect(formatCurrency(1)).toBe('1 pc')
     expect(formatCurrency(5)).toBe('5 pc')
     expect(formatCurrency(45)).toBe('45 pc')
+  })
+})
+
+describe('getEquippedArmor', () => {
+  const fighter = getClass('fighter')!
+
+  it('detecta cota de malha e escudo escolhidos (guerreiro)', () => {
+    // choice[0]→opção 0 = cota de malha; choice[1]→opção 0 = arma marcial + escudo
+    const eq = fighterEquipment({
+      classResolutions: [
+        { optionIndex: 0, pickedIds: [] },
+        { optionIndex: 0, pickedIds: ['longsword'] },
+      ],
+    })
+    const { bodyArmor, hasShield } = getEquippedArmor(eq, fighter.startingEquipment)
+    expect(bodyArmor?.id).toBe('chain-mail')
+    expect(hasShield).toBe(true)
+  })
+
+  it('opção sem escudo não reporta escudo', () => {
+    // choice[1]→opção 1 = duas armas marciais, sem escudo
+    const eq = fighterEquipment({
+      classResolutions: [
+        { optionIndex: 1, pickedIds: ['longbow', 'arrows'] },
+        { optionIndex: 1, pickedIds: ['longsword', 'battleaxe'] },
+      ],
+    })
+    const { bodyArmor, hasShield } = getEquippedArmor(eq, fighter.startingEquipment)
+    expect(bodyArmor?.id).toBe('leather')
+    expect(hasShield).toBe(false)
+  })
+
+  it('escolhas não resolvidas não trazem armadura', () => {
+    const { bodyArmor, hasShield } = getEquippedArmor(fighterEquipment(), fighter.startingEquipment)
+    expect(bodyArmor).toBeUndefined()
+    expect(hasShield).toBe(false)
+  })
+
+  it('método riqueza usa itens comprados', () => {
+    const eq = fighterEquipment({
+      method: 'wealth',
+      purchasedItems: [
+        { itemId: 'plate', quantity: 1, source: 'purchased' },
+        { itemId: 'shield', quantity: 1, source: 'purchased' },
+      ],
+    })
+    const { bodyArmor, hasShield } = getEquippedArmor(eq, fighter.startingEquipment)
+    expect(bodyArmor?.id).toBe('plate')
+    expect(hasShield).toBe(true)
   })
 })
 

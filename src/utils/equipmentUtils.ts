@@ -26,6 +26,50 @@ export const FOCUS_GROUP_IDS: Record<'arcane' | 'druidic' | 'holy', string[]> = 
 }
 
 /**
+ * Localiza a armadura de corpo e o escudo efetivamente equipados a partir do
+ * equipamento resolvido. Considera itens fixos + escolhas da classe (método
+ * padrão) e itens comprados (método riqueza). Escudo é reportado à parte, pois
+ * empilha com a armadura e com a Defesa sem Armadura do bárbaro.
+ */
+export function getEquippedArmor(
+  equipment: EquipmentDraft,
+  classEquipment: ClassStartingEquipment | undefined,
+): { bodyArmor?: Armor; hasShield: boolean } {
+  const armors: Armor[] = []
+
+  if (equipment.method === 'standard' && classEquipment) {
+    for (const item of classEquipment.fixed) {
+      if (item.itemType === 'armor') {
+        const a = getArmor(item.id)
+        if (a) armors.push(a)
+      }
+    }
+    for (let i = 0; i < classEquipment.choices.length; i++) {
+      const res = equipment.classResolutions[i]
+      if (!res || res.optionIndex < 0) continue
+      const option = classEquipment.choices[i]?.options[res.optionIndex]
+      if (!option) continue
+      for (const choiceItem of option) {
+        if (choiceItem.kind === 'specific' && choiceItem.itemType === 'armor') {
+          const a = getArmor(choiceItem.id)
+          if (a) armors.push(a)
+        }
+      }
+    }
+  }
+
+  // Itens comprados (método riqueza) — vazio até a loja da fase 5, mas mantém a CA correta
+  for (const item of equipment.purchasedItems) {
+    const a = getArmor(item.itemId)
+    if (a) armors.push(a)
+  }
+
+  const bodyArmor = armors.find(a => a.category !== 'shield')
+  const hasShield = armors.some(a => a.category === 'shield')
+  return { bodyArmor, hasShield }
+}
+
+/**
  * Converte um custo canônico em peças de cobre (pc) para string legível.
  * null → '—' (item sem preço publicado no PHB)
  */

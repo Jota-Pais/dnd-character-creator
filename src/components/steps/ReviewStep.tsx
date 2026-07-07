@@ -13,7 +13,8 @@ import {
   calculateModifier, formatModifier, ALL_ABILITY_SCORES, ABILITY_LABELS,
   getProficiencyBonus,
 } from '../../utils/abilityScoreUtils'
-import { getItemName, getArmor } from '../../utils/equipmentUtils'
+import { getItemName, getEquippedArmor } from '../../utils/equipmentUtils'
+import { calculateArmorClass, getUnarmoredDefense } from '../../utils/armorClassUtils'
 import {
   getSpell,
   getSpellSaveDC,
@@ -25,7 +26,7 @@ import { exportCharacter } from '../../utils/storage'
 import { InfoTooltip } from '../common/InfoTooltip'
 import type { TermId } from '../../utils/glossary'
 import type { AbilityScore } from '../../types/race'
-import type { Armor, EquipmentDraft, ClassStartingEquipment, EquipmentOption } from '../../types/equipment'
+import type { EquipmentOption } from '../../types/equipment'
 import type { Background } from '../../types/background'
 import type { HpMethod } from '../../types/character'
 
@@ -38,35 +39,6 @@ const SKILL_ABILITY: Record<string, AbilityScore> = {
 }
 
 const LANG_NAME = Object.fromEntries(LANGUAGES.map(l => [l.id, l.name]))
-
-function findArmorInEquipment(
-  equipment: EquipmentDraft,
-  classEquipment: ClassStartingEquipment | undefined,
-): Armor | undefined {
-  if (!classEquipment || equipment.method !== 'standard') return undefined
-
-  for (const item of classEquipment.fixed) {
-    if (item.itemType === 'armor') {
-      const armor = getArmor(item.id)
-      if (armor) return armor
-    }
-  }
-
-  for (let i = 0; i < classEquipment.choices.length; i++) {
-    const res = equipment.classResolutions[i]
-    if (!res || res.optionIndex < 0) continue
-    const option = classEquipment.choices[i]?.options[res.optionIndex]
-    if (!option) continue
-    for (const choiceItem of option) {
-      if (choiceItem.kind === 'specific' && choiceItem.itemType === 'armor') {
-        const armor = getArmor(choiceItem.id)
-        if (armor) return armor
-      }
-    }
-  }
-
-  return undefined
-}
 
 function resolveOptionItems(option: EquipmentOption, pickedIds: string[]): string[] {
   const result: string[] = []
@@ -124,6 +96,7 @@ export function ReviewStep() {
   }
   const dexMod = calculateModifier(finalScores.DEX)
   const conMod = calculateModifier(finalScores.CON)
+  const wisMod = calculateModifier(finalScores.WIS)
 
   // HP calculation
   let hp: number | null = null
@@ -140,20 +113,24 @@ export function ReviewStep() {
   const speed = race ? getEffectiveSpeed(race, subrace ?? null) : null
   const darkvision = race ? getEffectiveDarkvision(race, subrace ?? null) : 0
   const classEquipment = cls?.startingEquipment
-  const armor = findArmorInEquipment(draft.equipment, classEquipment)
-
-  let ac: number
-  let acNote = ''
-  if (armor) {
-    const dexBonus =
-      armor.dexModifier === 'full' ? dexMod
-      : armor.dexModifier === 'max-2' ? Math.min(dexMod, 2)
-      : 0
-    ac = armor.acBase + dexBonus
-    if (armor.stealthDisadvantage) acNote = '*'
-  } else {
-    ac = 10 + dexMod
-  }
+  const { bodyArmor, hasShield } = getEquippedArmor(draft.equipment, classEquipment)
+  const acResult = calculateArmorClass({
+    dexMod,
+    conMod,
+    wisMod,
+    bodyArmor,
+    hasShield,
+    unarmoredDefense: getUnarmoredDefense(cls?.id),
+    hasDefenseFightingStyle: draft.classChoices.fightingStyle === 'defense',
+  })
+  const ac = acResult.value
+  const acNote = acResult.stealthDisadvantage ? '*' : ''
+  const acBreakdown = acResult.components
+    .map((c, i) => {
+      if (i === 0) return c.label === 'Base' ? `${c.value}` : `${c.value} (${c.label})`
+      return `${c.value >= 0 ? '+' : '−'} ${Math.abs(c.value)} (${c.label})`
+    })
+    .join(' ')
 
   // Proficiencies
   const bgSkills = bg?.skillProficiencies ?? []
@@ -238,8 +215,11 @@ export function ReviewStep() {
             <QuickStat label="Escuridão" value={darkvisionStr} accent={accent} />
           )}
         </div>
+        <p className="text-xs text-parchment-700 mt-2 text-center">
+          CA {ac} = {acBreakdown}
+        </p>
         {acNote && (
-          <p className="text-xs text-parchment-700 mt-2 text-center">
+          <p className="text-xs text-parchment-700 mt-1 text-center">
             * Armadura impõe desvantagem em Furtividade
           </p>
         )}

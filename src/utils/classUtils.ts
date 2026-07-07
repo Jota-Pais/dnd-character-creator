@@ -1,6 +1,15 @@
 import type { GameClass, ClassSubclass, ClassChoiceSelections, LevelFeature } from '../types/class'
 import { SKILLS } from './raceUtils'
 import classesData from '../data/classes.json'
+import progressionFeatures from '../data/class-progression-features.json'
+
+const CLASS_FEATURES_BY_LEVEL = progressionFeatures.classes as Record<string, LevelFeature[]>
+const SUBCLASS_FEATURES_BY_LEVEL = progressionFeatures.subclasses as Record<string, LevelFeature[]>
+
+/** Uma classe tem tabela de features por nível digitada (fase 3)? */
+export function hasFeaturesByLevel(classId: string): boolean {
+  return Array.isArray(CLASS_FEATURES_BY_LEVEL[classId])
+}
 
 export const CLASSES: GameClass[] = classesData as GameClass[]
 
@@ -98,8 +107,9 @@ export function getSubclass(cls: GameClass, subclassId: string): ClassSubclass |
 
 /**
  * Features de classe + subclasse disponíveis até o nível dado, agrupadas por nível.
- * Usa `featuresByLevel` quando presente (fase 3); senão cai no formato atual
- * (`features` da classe = nível 1; `features` da subclasse = nível de escolha).
+ * Usa a tabela por nível de `class-progression-features.json` quando existe (fase 3);
+ * senão cai no formato atual (`features` da classe = nível 1; `features` da subclasse
+ * = nível de escolha).
  */
 export function getClassFeaturesUpToLevel(
   cls: GameClass,
@@ -108,15 +118,17 @@ export function getClassFeaturesUpToLevel(
 ): LevelFeature[] {
   const out: LevelFeature[] = []
 
-  if (cls.featuresByLevel && cls.featuresByLevel.length > 0) {
-    out.push(...cls.featuresByLevel.filter(f => f.level <= level))
+  const clsByLevel = CLASS_FEATURES_BY_LEVEL[cls.id]
+  if (clsByLevel) {
+    out.push(...clsByLevel.filter(f => f.level <= level))
   } else {
     out.push(...cls.features.map(f => ({ ...f, level: 1 })))
   }
 
   if (subclass) {
-    if (subclass.featuresByLevel && subclass.featuresByLevel.length > 0) {
-      out.push(...subclass.featuresByLevel.filter(f => f.level <= level))
+    const subByLevel = SUBCLASS_FEATURES_BY_LEVEL[subclass.id]
+    if (subByLevel) {
+      out.push(...subByLevel.filter(f => f.level <= level))
     } else if (cls.subclassLevel <= level) {
       out.push(...subclass.features.map(f => ({ ...f, level: cls.subclassLevel })))
     }

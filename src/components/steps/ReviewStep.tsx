@@ -7,6 +7,7 @@ import {
 import {
   getClass, getSubclass, CLASS_PRESENTATION,
   getHpAtLevel1, getAverageHpAtLevel, getRolledHpAtLevel, isActiveCaster,
+  getClassFeaturesUpToLevel,
 } from '../../utils/classUtils'
 import { getClassResources } from '../../utils/classResourceUtils'
 import { getBackground, BACKGROUND_PRESENTATION, getToolName, SKILLS } from '../../utils/backgroundUtils'
@@ -546,28 +547,26 @@ export function ReviewStep() {
         )
       })()}
 
-      {/* Class Features */}
-      {cls && (
-        <Section title="Habilidades de Classe">
-          <div className="space-y-3">
-            {cls.features.map(feat => (
-              <div key={feat.name}>
-                <span className="text-sm font-semibold font-fantasy text-parchment-200">
-                  {feat.name}.{' '}
-                </span>
-                <span className="text-sm text-parchment-500 leading-relaxed">
-                  {feat.description}
-                </span>
-              </div>
-            ))}
-            {subclassData && cls.subclassLevel <= level && subclassData.features.length > 0 && (
-              <>
-                <div className="pt-1 border-t border-parchment-900">
-                  <p className="text-xs text-parchment-700 font-fantasy uppercase tracking-widest mb-2">
-                    {subclassData.name}
+      {/* Class Features (agrupadas por nível) */}
+      {cls && (() => {
+        const feats = getClassFeaturesUpToLevel(cls, subclassData ?? null, level)
+        const byLevel = new Map<number, typeof feats>()
+        for (const f of feats) {
+          const arr = byLevel.get(f.level) ?? []
+          arr.push(f)
+          byLevel.set(f.level, arr)
+        }
+        const levels = [...byLevel.keys()].sort((a, b) => a - b)
+        return (
+          <Section title="Habilidades de Classe">
+            <div className="space-y-3">
+              {levels.map(lvl => (
+                <div key={lvl}>
+                  <p className="text-xs text-parchment-700 font-fantasy uppercase tracking-widest mb-1.5">
+                    Nível {lvl}
                   </p>
-                  {subclassData.features.map(feat => (
-                    <div key={feat.name} className="mb-3 last:mb-0">
+                  {byLevel.get(lvl)!.map(feat => (
+                    <div key={feat.name} className="mb-2 last:mb-0">
                       <span className="text-sm font-semibold font-fantasy text-parchment-200">
                         {feat.name}.{' '}
                       </span>
@@ -577,11 +576,11 @@ export function ReviewStep() {
                     </div>
                   ))}
                 </div>
-              </>
-            )}
-          </div>
-        </Section>
-      )}
+              ))}
+            </div>
+          </Section>
+        )
+      })()}
 
       {/* Class Resources */}
       {cls && (() => {

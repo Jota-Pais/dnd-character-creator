@@ -1,0 +1,19 @@
+{
+  "classes": {
+    "barbarian": [
+      { "level": 1, "name": "Fúria", "description": "Como ação bônus, entre em fúria por 1 minuto: vantagem em testes e resistências de Força, bônus de dano corpo-a-corpo com Força e resistência a dano de concussão, cortante e perfurante. Não funciona vestindo armadura pesada." },
+      { "level": 1, "name": "Defesa sem Armadura", "description": "Sem armadura, sua CA é 10 + mod. de Destreza + mod. de Constituição. Você ainda pode usar escudo." },
+      { "level": 2, "name": "Ataque Descuidado", "description": "No seu primeiro ataque do turno, você pode atacar descuidadamente: ganha vantagem nos ataques corpo-a-corpo com Força no turno, mas ataques contra você têm vantagem até o seu próximo turno." },
+      { "level": 2, "name": "Sentido de Perigo", "description": "Você tem vantagem em resistências de Destreza contra efeitos que possa ver (armadilhas, magias), desde que não esteja cego, surdo ou incapacitado." },
+      { "level": 5, "name": "Ataque Extra", "description": "Você pode atacar duas vezes, em vez de uma, sempre que realizar a ação de Ataque no seu turno." },
+      { "level": 5, "name": "Movimento Rápido", "description": "Seu deslocamento aumenta em 3 metros enquanto você não estiver vestindo armadura pesada." },
+      { "level": 7, "name": "Instinto Selvagem", "description": "Você tem vantagem nas jogadas de iniciativa. Se estiver surpreso no início do combate e não incapacitado, pode agir normalmente no primeiro turno, desde que entre em fúria antes de qualquer outra ação." },
+      { "level": 9, "name": "Crítico Brutal", "description": "Você rola um dado de dano de arma adicional ao determinar o dano extra de um acerto crítico corpo-a-corpo (dois dados no 13° nível, três no 17°)." },
+      { "level": 11, "name": "Fúria Implacável", "description": "Se você cair a 0 pontos de vida em fúria e não morrer, pode fazer uma resistência de Constituição (CD 10, +5 a cada uso, reinicia após descanso) para ficar com 1 ponto de vida." },
+      { "level": 15, "name": "Fúria Persistente", "description": "Sua fúria só termina prematuramente se você cair inconsciente ou decidir terminá-la." },
+      { "level": 18, "name": "Força Indomável", "description": "Se o total de um teste de Força for menor que o seu valor de Força, você pode usar o valor de Força no lugar do resultado." },
+      { "level": 20, "name": "Campeão Primitivo", "description": "Seus valores de Força e Constituição aumentam em 4, e o máximo para eles passa a 24." }
+    ]
+  },
+  "subclasses": {}
+}

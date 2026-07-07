@@ -8,6 +8,10 @@ import {
   isActiveCaster,
   isClassStepComplete,
   getExpertiseOptions,
+  getClassFeaturesUpToLevel,
+  hasFeaturesByLevel,
+  getClass,
+  getSubclass,
 } from '../classUtils'
 import type { GameClass } from '../../types/class'
 import { EMPTY_CLASS_CHOICES } from '../../types/class'
@@ -223,5 +227,46 @@ describe('getExpertiseOptions', () => {
     expect(options.map(o => o.id)).toContain('stealth')
     expect(options.map(o => o.id)).toContain('thieves-tools')
     expect(options).toHaveLength(3)
+  })
+})
+
+describe('getClassFeaturesUpToLevel', () => {
+  const barbarian = getClass('barbarian')!
+  const fighter = getClass('fighter')!
+
+  it('hasFeaturesByLevel: bárbaro sim, guerreiro ainda não', () => {
+    expect(hasFeaturesByLevel('barbarian')).toBe(true)
+    expect(hasFeaturesByLevel('fighter')).toBe(false)
+  })
+
+  it('bárbaro nv1 mostra só as features de nível 1', () => {
+    const f = getClassFeaturesUpToLevel(barbarian, null, 1)
+    expect(f.map(x => x.name)).toEqual(['Fúria', 'Defesa sem Armadura'])
+    expect(f.every(x => x.level === 1)).toBe(true)
+  })
+
+  it('bárbaro nv4 ainda não tem Ataque Extra (nível 5)', () => {
+    const nomes = getClassFeaturesUpToLevel(barbarian, null, 4).map(x => x.name)
+    expect(nomes).toContain('Ataque Descuidado')
+    expect(nomes).not.toContain('Ataque Extra')
+  })
+
+  it('bárbaro nv20 inclui Campeão Primitivo e vem ordenado por nível', () => {
+    const f = getClassFeaturesUpToLevel(barbarian, null, 20)
+    expect(f.map(x => x.name)).toContain('Campeão Primitivo')
+    const levels = f.map(x => x.level)
+    expect(levels).toEqual([...levels].sort((a, b) => a - b))
+  })
+
+  it('bárbaro nv3 com Furioso mostra a feature de entrada da subclasse (fallback)', () => {
+    const berserker = getSubclass(barbarian, 'berserker')!
+    const nomes = getClassFeaturesUpToLevel(barbarian, berserker, 3).map(x => x.name)
+    expect(nomes).toContain('Frenesi')
+  })
+
+  it('guerreiro (sem tabela) cai no fallback: features de nível 1', () => {
+    const f = getClassFeaturesUpToLevel(fighter, null, 10)
+    expect(f.every(x => x.level === 1)).toBe(true)
+    expect(f.length).toBe(fighter.features.length)
   })
 })

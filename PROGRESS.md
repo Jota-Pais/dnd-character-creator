@@ -6,7 +6,14 @@
 
 **Fase 1 do ROADMAP concluída — núcleo de nível 1 corrigido e fiel ao PHB.** Wizard de 8 passos funcionando, com seleção de nível (1–20), PV por média ou rolagem, progressão de magias/slots/proficiência por nível, persistência e export/import JSON. 271 testes passando, build e lint limpos.
 
-**Próximo passo:** Fase 3 do ROADMAP — progressão completa 1–20 (features por nível de todas as classes/subclasses e recursos de classe como fúrias, ki, ataque furtivo).
+**Próximo passo:** Fase 3, etapa 3.2 — digitar as `featuresByLevel` (features por nível) das classes marciais (bárbaro, guerreiro, ladino, monge). A fundação (3.1) já está pronta.
+
+### Fase 3 — progressão 1–20 (em andamento)
+
+- **3.1** ✅ Fundação: `progression.json` ganhou `classResources` (fúrias, ki, ataque furtivo, inspiração, pontos de feitiçaria, invocações, canalizar divindade, forma selvagem — tabelas verificadas no PDF); `classResourceUtils` com testes; painel "Recursos de Classe" na Revisão; tipo `LevelFeature` + campo `featuresByLevel` + helper `getClassFeaturesUpToLevel` (com fallback para o formato atual).
+- **3.2–3.6** ⬜ Digitação das features por nível (marciais → conjuradores → híbridos), escolhas de progressão (inclui as escolhas de entrada de subclasse da ex-2.3) e exibição agrupada por nível.
+
+> Decisão pendente para a 3.2: as `featuresByLevel` podem ficar inline em `classes.json` (o helper já lê daí) ou num arquivo separado `class-progression-features.json` mergeado em runtime — a segunda opção mantém `classes.json` estável e os diffs limpos. Recomendação: arquivo separado.
 
 ### Fase 2 — subclasses (concluída — núcleo) (2026-07-07)
 

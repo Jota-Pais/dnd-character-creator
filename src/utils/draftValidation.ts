@@ -224,9 +224,8 @@ export function isStepComplete(draft: CharacterDraft, step: WizardStep): boolean
       return draft.name.trim().length > 0
     case 'race':
       return isRaceStepComplete(race, subrace, draft.raceChoices)
-    // Subclasse validada como nível 1 até o seletor por nível existir (fase 2 do roadmap)
     case 'class':
-      return isClassStepComplete(cls, draft.classChoices)
+      return isClassStepComplete(cls, draft.classChoices, draft.level)
     case 'abilities':
       return isAbilitiesStepComplete(draft.abilityMethod, draft.abilityScores, draft.rolledValues)
     case 'spells':

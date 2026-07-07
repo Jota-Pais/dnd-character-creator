@@ -72,6 +72,22 @@ export const FIGHTING_STYLES: { id: string; name: string; description: string }[
   },
 ]
 
+/** Nome da categoria de subclasse por classe, conforme o PHB (para o rótulo do seletor). */
+export const SUBCLASS_LABEL: Record<string, string> = {
+  barbarian: 'Caminho Primordial',
+  bard: 'Colégio de Bardo',
+  cleric: 'Domínio Divino',
+  druid: 'Círculo Druídico',
+  fighter: 'Arquétipo Marcial',
+  monk: 'Tradição Monástica',
+  paladin: 'Juramento Sagrado',
+  ranger: 'Conclave do Patrulheiro',
+  rogue: 'Arquétipo Ladino',
+  sorcerer: 'Origem de Feitiçaria',
+  warlock: 'Patrono Transcendental',
+  wizard: 'Tradição Arcana',
+}
+
 export function getClass(id: string): GameClass | undefined {
   return CLASSES.find(c => c.id === id)
 }

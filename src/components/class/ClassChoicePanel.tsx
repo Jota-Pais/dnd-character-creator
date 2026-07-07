@@ -4,6 +4,7 @@ import {
   getSkillOptions,
   getExpertiseOptions,
   FIGHTING_STYLES,
+  SUBCLASS_LABEL,
 } from '../../utils/classUtils'
 import { ClassSubclassCard } from './ClassSubclassCard'
 import { InfoTooltip } from '../common/InfoTooltip'
@@ -18,12 +19,13 @@ type Props = {
   cls: GameClass
   choices: ClassChoiceSelections
   accent: string
+  level: number
   onChange: (patch: Partial<ClassChoiceSelections>) => void
   excludedSkills?: string[]
   excludedTools?: string[]
 }
 
-export function ClassChoicePanel({ cls, choices, accent, onChange, excludedSkills, excludedTools }: Props) {
+export function ClassChoicePanel({ cls, choices, accent, level, onChange, excludedSkills, excludedTools }: Props) {
   const skillOptions = getSkillOptions(cls)
   const excludedSkillSet = new Set(excludedSkills ?? [])
   const excludedToolSet = new Set(excludedTools ?? [])
@@ -174,12 +176,12 @@ export function ClassChoicePanel({ cls, choices, accent, onChange, excludedSkill
         </ChoiceSection>
       )}
 
-      {/* ── Subclasse nível 1 ── */}
-      {cls.subclassLevel === 1 && (
+      {/* ── Subclasse (quando o personagem já atingiu o nível de escolha) ── */}
+      {cls.subclassLevel <= level && (
         <div>
           <div className="flex items-center gap-2 mb-2">
             <SectionTitle accent={accent}>
-              {cls.id === 'cleric' ? 'Domínio Divino' : 'Patrono / Origem'}
+              {SUBCLASS_LABEL[cls.id] ?? 'Subclasse'}
             </SectionTitle>
             {!choices.subclass && (
               <span className="text-red-500 text-xs">obrigatório</span>

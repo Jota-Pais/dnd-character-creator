@@ -559,7 +559,7 @@ export function ReviewStep() {
                 </span>
               </div>
             ))}
-            {subclassData && cls.subclassLevel <= 1 && subclassData.features.length > 0 && (
+            {subclassData && cls.subclassLevel <= level && subclassData.features.length > 0 && (
               <>
                 <div className="pt-1 border-t border-parchment-900">
                   <p className="text-xs text-parchment-700 font-fantasy uppercase tracking-widest mb-2">

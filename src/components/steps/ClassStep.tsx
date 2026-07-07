@@ -35,7 +35,7 @@ export function ClassStep() {
 
   const activeCaster = selectedClass ? isActiveCaster(selectedClass, draft.level) : false
 
-  const canAdvance = isClassStepComplete(selectedClass ?? null, draft.classChoices)
+  const canAdvance = isClassStepComplete(selectedClass ?? null, draft.classChoices, draft.level)
 
   // Perícias/ferramentas já obtidas de raça ou antecedente não podem ser re-escolhidas
   const excludedSkills = getExcludedSkills(draft, 'class')
@@ -199,12 +199,12 @@ export function ClassStep() {
                 </div>
               </div>
 
-              {/* Subclasses futuras (nível 2+) */}
-              {selectedClass.subclassLevel > 1 && (
+              {/* Subclasses ainda não disponíveis (nível de escolha não atingido) */}
+              {selectedClass.subclassLevel > draft.level && (
                 <div className="rounded-xl border border-parchment-900 bg-parchment-950/60 p-4">
                   <SectionTitle>Subclasses (Nível {selectedClass.subclassLevel})</SectionTitle>
                   <p className="text-parchment-600 text-xs mb-2">
-                    Sua subclasse é escolhida no nível {selectedClass.subclassLevel}. Opções disponíveis:
+                    Sua subclasse é escolhida no nível {selectedClass.subclassLevel}. Como seu personagem é nível {draft.level}, você poderá escolher ao subir de nível. Opções:
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedClass.subclasses.map(sub => (
@@ -226,6 +226,7 @@ export function ClassStep() {
                   cls={selectedClass}
                   choices={draft.classChoices}
                   accent={accent}
+                  level={draft.level}
                   onChange={updateClassChoices}
                   excludedSkills={excludedSkills}
                   excludedTools={excludedTools}

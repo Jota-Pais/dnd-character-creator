@@ -166,6 +166,28 @@ describe('isClassStepComplete', () => {
       fightingStyle: 'defense',
     })).toBe(true))
 
+  it('Guerreiro (subclassLevel 3) nível 1 NÃO exige subclasse', () =>
+    expect(isClassStepComplete(baseClass, {
+      ...EMPTY_CLASS_CHOICES,
+      skills: ['athletics', 'perception'],
+      fightingStyle: 'defense',
+    }, 1)).toBe(true))
+
+  it('Guerreiro nível 3 EXIGE subclasse', () =>
+    expect(isClassStepComplete(baseClass, {
+      ...EMPTY_CLASS_CHOICES,
+      skills: ['athletics', 'perception'],
+      fightingStyle: 'defense',
+    }, 3)).toBe(false))
+
+  it('Guerreiro nível 3 com subclasse escolhida fica completo', () =>
+    expect(isClassStepComplete(baseClass, {
+      ...EMPTY_CLASS_CHOICES,
+      skills: ['athletics', 'perception'],
+      fightingStyle: 'defense',
+      subclass: 'champion',
+    }, 3)).toBe(true))
+
   it('retorna false para Clérigo sem subclasse (subclassLevel 1)', () =>
     expect(isClassStepComplete(casterClass, {
       ...EMPTY_CLASS_CHOICES,

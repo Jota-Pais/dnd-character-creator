@@ -141,7 +141,16 @@
           { "type": "weapon", "value": "shortsword" },
           { "type": "weapon", "value": "hand-crossbow" }
         ],
+        "innateSpells": [
+          { "spellId": "dancing-lights", "minLevel": 1, "ability": "CHA" },
+          { "spellId": "faerie-fire", "minLevel": 3, "ability": "CHA" },
+          { "spellId": "darkness", "minLevel": 5, "ability": "CHA" }
+        ],
         "traits": [
+          {
+            "name": "Visão no Escuro Superior",
+            "description": "Sua visão no escuro tem alcance de 36 metros (120 pés)."
+          },
           {
             "name": "Sensibilidade à Luz Solar",
             "description": "Desvantagem em ataques e em testes de Sabedoria (Percepção) baseados em visão quando você, o alvo, ou o objeto observado estiver sob luz solar direta."
@@ -548,6 +557,11 @@
     "darkvision": 60,
     "grantedLanguages": ["Comum", "Infernal"],
     "grantedProficiencies": [],
+    "innateSpells": [
+      { "spellId": "thaumaturgy", "minLevel": 1, "ability": "CHA" },
+      { "spellId": "hellish-rebuke", "minLevel": 3, "ability": "CHA" },
+      { "spellId": "darkness", "minLevel": 5, "ability": "CHA" }
+    ],
     "traits": [
       {
         "name": "Resistência Infernal",

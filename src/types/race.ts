@@ -57,6 +57,13 @@ export type GrantedProficiency =
   | { type: 'skill'; value: string }
   | { type: 'tool'; value: string }
 
+/** Magia inata concedida pela raça (ex.: Magia Drow, Legado Infernal do tiefling). */
+export type InnateSpell = {
+  spellId: string
+  minLevel: number       // nível de personagem em que a magia passa a poder ser conjurada
+  ability: AbilityScore  // atributo de conjuração
+}
+
 export type RacialTrait = {
   name: string
   description: string
@@ -75,6 +82,7 @@ export type Subrace = {
   abilityBonuses: AbilityBonus[]
   choices: RaceChoice[]
   grantedProficiencies: GrantedProficiency[]
+  innateSpells?: InnateSpell[]
   traits: RacialTrait[]
   overrides: SubraceOverrides
 }
@@ -91,6 +99,7 @@ export type Race = {
   darkvision: number
   grantedLanguages: string[]
   grantedProficiencies: GrantedProficiency[]
+  innateSpells?: InnateSpell[]
   traits: RacialTrait[]
   subraces: Subrace[]
 }

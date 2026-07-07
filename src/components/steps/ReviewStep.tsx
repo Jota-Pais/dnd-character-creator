@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useCharacterStore } from '../../stores/characterStore'
 import {
   getRace, getSubrace, getEffectiveAbilityBonuses, getEffectiveSpeed,
-  getEffectiveDarkvision, RACE_PRESENTATION, LANGUAGES,
+  getEffectiveDarkvision, RACE_PRESENTATION, LANGUAGES, getAvailableInnateSpells,
 } from '../../utils/raceUtils'
 import {
   getClass, getSubclass, CLASS_PRESENTATION,
@@ -506,6 +506,44 @@ export function ReviewStep() {
           </div>
         </Section>
       )}
+
+      {/* Racial Spells */}
+      {race && (() => {
+        const innate = getAvailableInnateSpells(race, subrace ?? null, level)
+        const racialCantrip = draft.raceChoices.cantrip ? getSpell(draft.raceChoices.cantrip) : undefined
+        if (innate.length === 0 && !racialCantrip) return null
+        return (
+          <Section title="Magias Raciais">
+            <div className="space-y-2">
+              {racialCantrip && (
+                <div>
+                  <span className="text-sm font-semibold font-fantasy text-parchment-200">
+                    {racialCantrip.name}
+                  </span>
+                  <span className="text-sm text-parchment-500"> — truque (escolhido da raça)</span>
+                </div>
+              )}
+              {innate.map(entry => {
+                const spell = getSpell(entry.spellId)
+                if (!spell) return null
+                const usage = spell.level === 0
+                  ? 'truque, à vontade'
+                  : '1×/descanso longo'
+                return (
+                  <div key={entry.spellId}>
+                    <span className="text-sm font-semibold font-fantasy text-parchment-200">
+                      {spell.name}
+                    </span>
+                    <span className="text-sm text-parchment-500">
+                      {' '}— {usage} · atributo {ABILITY_LABELS[entry.ability].short}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </Section>
+        )
+      })()}
 
       {/* Class Features */}
       {cls && (

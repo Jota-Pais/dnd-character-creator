@@ -1,4 +1,4 @@
-import type { Race, Subrace, AbilityBonus, RaceChoice, AbilityChoice, GrantedProficiency } from '../types/race'
+import type { Race, Subrace, AbilityBonus, RaceChoice, AbilityChoice, GrantedProficiency, InnateSpell } from '../types/race'
 import type { RaceChoiceSelections } from '../types/character'
 import racesData from '../data/races.json'
 
@@ -115,6 +115,22 @@ export function getRaceGrantedTools(race: Race, subrace: Subrace | null): string
   return getEffectiveGrantedProficiencies(race, subrace)
     .filter(g => g.type === 'tool')
     .map(g => g.value)
+}
+
+/** Magias inatas da raça + sub-raça (respeita replacesParentTraits). */
+export function getEffectiveInnateSpells(race: Race, subrace: Subrace | null): InnateSpell[] {
+  const raceSpells = replacesParentTraits(subrace) ? [] : (race.innateSpells ?? [])
+  const subraceSpells = subrace?.innateSpells ?? []
+  return [...raceSpells, ...subraceSpells]
+}
+
+/** Magias inatas já disponíveis no nível informado (minLevel <= charLevel). */
+export function getAvailableInnateSpells(
+  race: Race,
+  subrace: Subrace | null,
+  charLevel: number,
+): InnateSpell[] {
+  return getEffectiveInnateSpells(race, subrace).filter(s => s.minLevel <= charLevel)
 }
 
 export function getEffectiveAbilityBonuses(

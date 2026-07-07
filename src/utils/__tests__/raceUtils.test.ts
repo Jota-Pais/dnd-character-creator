@@ -5,6 +5,8 @@ import {
   getEffectiveSpeed,
   getEffectiveDarkvision,
   getEffectiveAbilityBonuses,
+  getAvailableInnateSpells,
+  getEffectiveInnateSpells,
   isRaceStepComplete,
 } from '../raceUtils'
 
@@ -15,12 +17,14 @@ const mountainDwarf = getSubrace(dwarf, 'mountain-dwarf')!
 const elf = getRace('elf')!
 const woodElf = getSubrace(elf, 'wood-elf')!
 const drow = getSubrace(elf, 'drow')!
+const highElf = getSubrace(elf, 'high-elf')!
 
 const human = getRace('human')!
 const variantHuman = getSubrace(human, 'variant-human')!
 
 const halfOrc = getRace('half-orc')!
 const halfElf = getRace('half-elf')!
+const tiefling = getRace('tiefling')!
 
 describe('getRace', () => {
   it('retorna a raça correta pelo id', () => expect(dwarf.name).toBe('Anão'))
@@ -47,6 +51,29 @@ describe('getEffectiveDarkvision', () => {
 
   it('retorna 0 para humano sem visão no escuro', () =>
     expect(getEffectiveDarkvision(human, null)).toBe(0))
+})
+
+describe('magias inatas (Magia Drow / Legado Infernal)', () => {
+  it('drow conhece globos de luz no nível 1', () => {
+    const ids = getAvailableInnateSpells(elf, drow, 1).map(s => s.spellId)
+    expect(ids).toEqual(['dancing-lights'])
+  })
+  it('drow ganha fogo das fadas no nível 3 e escuridão no 5', () => {
+    expect(getAvailableInnateSpells(elf, drow, 3).map(s => s.spellId)).toEqual(['dancing-lights', 'faerie-fire'])
+    expect(getAvailableInnateSpells(elf, drow, 5).map(s => s.spellId)).toEqual(['dancing-lights', 'faerie-fire', 'darkness'])
+  })
+  it('tiefling conhece taumaturgia no nível 1, todas com CAR', () => {
+    const all = getEffectiveInnateSpells(tiefling, null)
+    expect(all.map(s => s.spellId)).toEqual(['thaumaturgy', 'hellish-rebuke', 'darkness'])
+    expect(all.every(s => s.ability === 'CHA')).toBe(true)
+  })
+  it('elfo comum (sem sub-raça inata) e alto elfo não têm magias inatas', () => {
+    expect(getEffectiveInnateSpells(elf, woodElf)).toEqual([])
+    expect(getEffectiveInnateSpells(elf, highElf)).toEqual([])
+  })
+  it('raça sem magia inata retorna vazio', () => {
+    expect(getAvailableInnateSpells(human, variantHuman, 20)).toEqual([])
+  })
 })
 
 describe('getEffectiveAbilityBonuses', () => {

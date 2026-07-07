@@ -2,6 +2,7 @@ import type { RaceChoice, AbilityScore } from '../../types/race'
 import type { RaceChoiceSelections } from '../../types/character'
 import { ALL_ABILITY_SCORES, ABILITY_LABELS } from '../../utils/abilityScoreUtils'
 import { SKILLS, LANGUAGES, TOOL_NAMES } from '../../utils/raceUtils'
+import { getCantrips, SPELLS } from '../../utils/spellUtils'
 
 type Props = {
   choices: RaceChoice[]
@@ -67,8 +68,9 @@ export function ChoicePanel({ choices, selections, accent, onChange, excludedLan
             )
           case 'cantrip':
             return (
-              <CantripPlaceholder
+              <CantripChoiceField
                 key={idx}
+                from={choice.from}
                 accent={accent}
                 value={selections.cantrip ?? ''}
                 onChange={cantrip => onChange({ cantrip })}
@@ -292,29 +294,44 @@ function ToolChoiceField({ from, accent, selected, excluded, onSelect }: ToolCho
   )
 }
 
-function CantripPlaceholder({
-  accent,
-  value,
-  onChange,
-}: {
+type CantripChoiceFieldProps = {
+  from: 'wizard-list' | string[]
   accent: string
   value: string
   onChange: (v: string) => void
-}) {
+}
+
+function CantripChoiceField({ from, accent, value, onChange }: CantripChoiceFieldProps) {
+  const options =
+    from === 'wizard-list'
+      ? getCantrips('wizard')
+      : SPELLS.filter(s => s.level === 0 && from.includes(s.id))
+
   return (
     <div>
-      <p className="text-sm font-semibold text-parchment-300 mb-1 font-fantasy">
-        Truque de Mago{' '}
-        <span className="text-gold-700 text-xs font-normal">(lista completa em breve)</span>
+      <p className="text-sm font-semibold text-parchment-300 mb-2 font-fantasy">
+        Escolha 1 truque de mago{' '}
+        <span className="text-parchment-600 font-normal">({value ? '1' : '0'}/1)</span>
       </p>
-      <input
-        type="text"
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        placeholder="Ex: Ilusão Menor, Luz, Prestidígitação…"
-        className="w-full px-3 py-2 rounded-lg border text-parchment-200 placeholder-parchment-700 text-sm bg-parchment-950/50 focus:outline-none transition-colors"
-        style={{ borderColor: value ? accent : 'rgba(58, 38, 20, 0.6)' }}
-      />
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+        {options.map(spell => {
+          const isSelected = value === spell.id
+          return (
+            <button
+              key={spell.id}
+              onClick={() => onChange(isSelected ? '' : spell.id)}
+              className="px-2 py-1.5 rounded-lg border text-xs text-left transition-all"
+              style={{
+                borderColor: isSelected ? accent : 'rgba(58, 38, 20, 0.6)',
+                backgroundColor: isSelected ? `${accent}15` : 'transparent',
+                color: isSelected ? accent : '#9a7650',
+              }}
+            >
+              {spell.name}
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }

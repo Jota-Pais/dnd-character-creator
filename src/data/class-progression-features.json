@@ -79,6 +79,24 @@
       { "level": 2, "name": "Fonte de Magia", "description": "Você tem pontos de feitiçaria que pode converter em espaços de magia, ou converter espaços em pontos, como ação bônus." },
       { "level": 3, "name": "Metamagia", "description": "Você aprende duas opções de Metamagia (mais uma no 10° e no 17° nível) para alterar suas magias gastando pontos de feitiçaria." },
       { "level": 20, "name": "Restauração Mística", "description": "Ao terminar um descanso curto, você recupera 4 pontos de feitiçaria gastos." }
+    ],
+    "bard": [
+      { "level": 1, "name": "Conjuração", "description": "Você conjura magias de bardo usando Carisma, a partir de magias conhecidas, e pode conjurar rituais." },
+      { "level": 1, "name": "Inspiração de Bardo", "description": "Como ação bônus, dê a uma criatura a até 18 m um dado de Inspiração de Bardo (d6) que ela pode somar a um teste, ataque ou resistência nos próximos 10 minutos. Usos iguais ao mod. de Carisma; o dado cresce com o nível." },
+      { "level": 2, "name": "Versatilidade", "description": "Você soma metade do seu bônus de proficiência (arredondado para baixo) em testes de habilidade em que ainda não seja proficiente." },
+      { "level": 2, "name": "Canção de Descanso", "description": "Aliados que ouvem sua música num descanso curto recuperam pontos de vida adicionais (1d6, crescendo com o nível)." },
+      { "level": 3, "name": "Especialização", "description": "Escolha duas perícias em que é proficiente: seu bônus de proficiência é dobrado nos testes com elas (mais duas no 10° nível)." },
+      { "level": 5, "name": "Fonte de Inspiração", "description": "Você recupera todos os usos de Inspiração de Bardo ao terminar um descanso curto ou longo." },
+      { "level": 6, "name": "Canção de Proteção", "description": "Com uma ação, inicie uma atuação: você e aliados a até 9 m têm vantagem em resistências para não ser amedrontados ou enfeitiçados." },
+      { "level": 10, "name": "Segredos Mágicos", "description": "Escolha duas magias de qualquer classe (mais duas no 14° e no 18° nível); elas passam a contar como magias de bardo para você." },
+      { "level": 20, "name": "Inspiração Superior", "description": "Ao rolar iniciativa sem usos de Inspiração de Bardo restantes, você recupera um uso." }
+    ],
+    "warlock": [
+      { "level": 1, "name": "Magia de Pacto", "description": "Você conjura magias de bruxo usando Carisma. Seus poucos espaços são sempre do nível máximo disponível e recuperam-se em descanso curto ou longo." },
+      { "level": 2, "name": "Invocações Místicas", "description": "Você aprende invocações místicas, fragmentos de conhecimento que concedem habilidades mágicas permanentes (quantidade conforme o nível)." },
+      { "level": 3, "name": "Dádiva do Pacto", "description": "Seu patrono concede um dom, à sua escolha: Pacto da Corrente (familiar), Pacto da Lâmina (arma de pacto) ou Pacto do Tomo (grimório com truques)." },
+      { "level": 11, "name": "Arcana Mística", "description": "Escolha uma magia de 6° nível da lista de bruxo para conjurar uma vez por descanso longo sem gastar espaço (7° nível no 13°, 8° no 15°, 9° no 17°)." },
+      { "level": 20, "name": "Mestre Místico", "description": "Uma vez por dia, gaste 1 minuto suplicando ao patrono para recuperar todos os espaços de Magia de Pacto gastos." }
     ]
   },
   "subclasses": {}

@@ -80,8 +80,8 @@
     ],
     "subclassLevel": 3,
     "subclasses": [
-      { "id": "college-of-lore", "name": "Colégio do Conhecimento", "description": "Coleciona conhecimento de todos os cantos do mundo, desdenhando as tradições convencionais e revelando os segredos mais sombrios.", "features": [], "extras": null },
-      { "id": "college-of-valor", "name": "Colégio da Bravura", "description": "Inspira bravura em aliados narrando histórias de heróis do passado, enquanto também empunha armas com destreza.", "features": [], "extras": null }
+      { "id": "college-of-lore", "name": "Colégio do Conhecimento", "description": "Coleciona conhecimento de todos os cantos do mundo, desdenhando as tradições convencionais e revelando os segredos mais sombrios.", "features": [{ "name": "Proficiência Adicional", "description": "Você ganha proficiência em três perícias, à sua escolha." }, { "name": "Palavras de Interrupção", "description": "Com sua reação e um uso de Inspiração de Bardo, subtraia o dado de inspiração da jogada de ataque, teste de habilidade ou jogada de dano de uma criatura a até 18 m." }], "extras": null },
+      { "id": "college-of-valor", "name": "Colégio da Bravura", "description": "Inspira bravura em aliados narrando histórias de heróis do passado, enquanto também empunha armas com destreza.", "features": [{ "name": "Proficiências Adicionais", "description": "Você ganha proficiência com armaduras médias, escudos e armas marciais." }, { "name": "Inspiração em Combate", "description": "Uma criatura com sua Inspiração de Bardo pode somar o dado a uma jogada de dano ou, com uma reação, à CA contra um ataque." }], "extras": null }
     ],
     "startingEquipment": {
       "fixed": [
@@ -424,8 +424,8 @@
     ],
     "subclassLevel": 2,
     "subclasses": [
-      { "id": "circle-of-the-land", "name": "Círculo da Terra", "description": "Conectado a um tipo específico de terreno, acumula magias adicionais e habilidades de navegação selvagem.", "features": [], "extras": null },
-      { "id": "circle-of-the-moon", "name": "Círculo da Lua", "description": "Mestre da transformação em feras, podendo assumir formas mais poderosas e combativas.", "features": [], "extras": null }
+      { "id": "circle-of-the-land", "name": "Círculo da Terra", "description": "Conectado a um tipo específico de terreno, acumula magias adicionais e habilidades de navegação selvagem.", "features": [{ "name": "Truque Adicional", "description": "Você aprende um truque de druida adicional, à sua escolha." }, { "name": "Recuperação Natural", "description": "Durante um descanso curto, você recupera espaços de magia gastos cujo total de níveis seja até metade do seu nível de druida (uma vez por dia)." }], "extras": null },
+      { "id": "circle-of-the-moon", "name": "Círculo da Lua", "description": "Mestre da transformação em feras, podendo assumir formas mais poderosas e combativas.", "features": [{ "name": "Forma Selvagem de Combate", "description": "Você pode usar Forma Selvagem como ação bônus e, transformado, gastar espaços de magia como ação bônus para recuperar pontos de vida." }, { "name": "Formas do Círculo", "description": "Você pode assumir formas de bestas mais poderosas (VD até 1, aumentando conforme sobe de nível)." }], "extras": null }
     ],
     "startingEquipment": {
       "fixed": [
@@ -711,14 +711,14 @@
     ],
     "subclassLevel": 2,
     "subclasses": [
-      { "id": "abjuration", "name": "Escola de Abjuração", "description": "Especialista em magias de proteção, banimento e anulação de magia.", "features": [], "extras": null },
-      { "id": "divination", "name": "Escola de Adivinhação", "description": "Desvenda segredos e manipula o destino com visões do futuro.", "features": [], "extras": null },
-      { "id": "conjuration", "name": "Escola de Conjuração", "description": "Especialista em transportar objetos, criaturas e a si mesmo.", "features": [], "extras": null },
-      { "id": "enchantment", "name": "Escola de Encantamento", "description": "Manipula mentes e emoções de outras criaturas com precisão arcana.", "features": [], "extras": null },
-      { "id": "evocation", "name": "Escola de Evocação", "description": "Controla energias elementais para criar efeitos destrutivos devastadores.", "features": [], "extras": null },
-      { "id": "illusion", "name": "Escola de Ilusão", "description": "Manipula os sentidos e a mente criando realidades alternativas enganosas.", "features": [], "extras": null },
-      { "id": "necromancy", "name": "Escola de Necromancia", "description": "Manipula as forças da vida, morte e magia negra.", "features": [], "extras": null },
-      { "id": "transmutation", "name": "Escola de Transmutação", "description": "Altera as propriedades físicas de objetos, criaturas e o próprio ambiente.", "features": [], "extras": null }
+      { "id": "abjuration", "name": "Escola de Abjuração", "description": "Especialista em magias de proteção, banimento e anulação de magia.", "features": [{ "name": "Abjuração Instruída", "description": "O ouro e o tempo para copiar magias de abjuração no seu grimório são reduzidos à metade." }, { "name": "Proteção Arcana", "description": "Ao conjurar uma magia de abjuração de 1° nível ou superior, você cria uma proteção mágica que absorve dano até um limite baseado no seu nível de mago." }], "extras": null },
+      { "id": "divination", "name": "Escola de Adivinhação", "description": "Desvenda segredos e manipula o destino com visões do futuro.", "features": [{ "name": "Adivinhação Instruída", "description": "O ouro e o tempo para copiar magias de adivinhação no seu grimório são reduzidos à metade." }, { "name": "Prodígio", "description": "Após um descanso longo, role dois d20 e registre os valores; você pode substituir qualquer jogada de ataque, teste ou resistência (sua ou de uma criatura visível) por um deles." }], "extras": null },
+      { "id": "conjuration", "name": "Escola de Conjuração", "description": "Especialista em transportar objetos, criaturas e a si mesmo.", "features": [{ "name": "Conjuração Instruída", "description": "O ouro e o tempo para copiar magias de conjuração no seu grimório são reduzidos à metade." }, { "name": "Conjuração Menor", "description": "Com uma ação, você conjura um objeto inanimado (até 3 kg, cabendo num cubo de 30 cm) que dura 1 hora." }], "extras": null },
+      { "id": "enchantment", "name": "Escola de Encantamento", "description": "Manipula mentes e emoções de outras criaturas com precisão arcana.", "features": [{ "name": "Encantamento Instruído", "description": "O ouro e o tempo para copiar magias de encantamento no seu grimório são reduzidos à metade." }, { "name": "Olhar Hipnotizante", "description": "Com uma ação, você deixa uma criatura a até 1,5 m atordoada enquanto a fita (resistência de Sabedoria para resistir)." }], "extras": null },
+      { "id": "evocation", "name": "Escola de Evocação", "description": "Controla energias elementais para criar efeitos destrutivos devastadores.", "features": [{ "name": "Evocação Instruída", "description": "O ouro e o tempo para copiar magias de evocação no seu grimório são reduzidos à metade." }, { "name": "Esculpir Magias", "description": "Ao conjurar uma magia de evocação que afeta outras criaturas, você protege 1 + o nível da magia delas, que passam automaticamente na resistência e não sofrem dano." }], "extras": null },
+      { "id": "illusion", "name": "Escola de Ilusão", "description": "Manipula os sentidos e a mente criando realidades alternativas enganosas.", "features": [{ "name": "Ilusão Instruída", "description": "O ouro e o tempo para copiar magias de ilusão no seu grimório são reduzidos à metade." }, { "name": "Ilusão Menor Aprimorada", "description": "Você aprende o truque ilusão menor (ou outro, se já o conhece) e pode criar som e imagem ao mesmo tempo com uma única conjuração." }], "extras": null },
+      { "id": "necromancy", "name": "Escola de Necromancia", "description": "Manipula as forças da vida, morte e magia negra.", "features": [{ "name": "Necromancia Instruída", "description": "O ouro e o tempo para copiar magias de necromancia no seu grimório são reduzidos à metade." }, { "name": "Colheita Sinistra", "description": "Quando você mata uma criatura com uma magia de 1° nível ou superior, recupera pontos de vida iguais a duas vezes o nível da magia (ou três vezes, se for morto-vivo)." }], "extras": null },
+      { "id": "transmutation", "name": "Escola de Transmutação", "description": "Altera as propriedades físicas de objetos, criaturas e o próprio ambiente.", "features": [{ "name": "Transmutação Instruída", "description": "O ouro e o tempo para copiar magias de transmutação no seu grimório são reduzidos à metade." }, { "name": "Alquimia Menor", "description": "Você pode transformar temporariamente um objeto não-mágico de madeira, pedra, ferro, cobre ou prata em outro desses materiais." }], "extras": null }
     ],
     "startingEquipment": {
       "fixed": [
@@ -774,9 +774,9 @@
     ],
     "subclassLevel": 3,
     "subclasses": [
-      { "id": "open-hand", "name": "Caminho da Mão Aberta", "description": "Mestre das técnicas de artes marciais, manipulando o chi do oponente para controle e destruição.", "features": [], "extras": null },
-      { "id": "shadow", "name": "Caminho da Sombra", "description": "Segue as tradições ninja especializando-se em furtividade, disfarce e magia das sombras.", "features": [], "extras": null },
-      { "id": "four-elements", "name": "Caminho dos Quatro Elementos", "description": "Canaliza o chi para controlar os quatro elementos naturais.", "features": [], "extras": null }
+      { "id": "open-hand", "name": "Caminho da Mão Aberta", "description": "Mestre das técnicas de artes marciais, manipulando o chi do oponente para controle e destruição.", "features": [{ "name": "Técnica da Mão Aberta", "description": "Quando você atinge com um ataque da Rajada de Golpes, pode impor um efeito ao alvo: derrubá-lo (resistência de Destreza), empurrá-lo 4,5 m (resistência de Força) ou impedir suas reações até o fim do próximo turno dele." }], "extras": null },
+      { "id": "shadow", "name": "Caminho da Sombra", "description": "Segue as tradições ninja especializando-se em furtividade, disfarce e magia das sombras.", "features": [{ "name": "Artes Sombrias", "description": "Você pode gastar 2 pontos de chi para conjurar escuridão, visão no escuro, passos sem pegadas ou silêncio, sem componentes materiais. Ganha o truque ilusão menor, se ainda não o conhecia." }], "extras": null },
+      { "id": "four-elements", "name": "Caminho dos Quatro Elementos", "description": "Canaliza o chi para controlar os quatro elementos naturais.", "features": [{ "name": "Discípulo dos Elementos", "description": "Você aprende disciplinas mágicas que gastam pontos de chi para manipular os quatro elementos. Conhece a Sintonia Elemental e mais uma disciplina, à sua escolha." }], "extras": null }
     ],
     "startingEquipment": {
       "fixed": [
@@ -832,9 +832,9 @@
     ],
     "subclassLevel": 3,
     "subclasses": [
-      { "id": "oath-of-devotion", "name": "Juramento de Devoção", "description": "O paladino clássico, devotado aos ideais de honestidade, coragem, compaixão, honra e justiça.", "features": [], "extras": null },
-      { "id": "oath-of-the-ancients", "name": "Juramento dos Anciões", "description": "Defende a luz e a vida natural contra as trevas, seguindo tradições antigas da natureza.", "features": [], "extras": null },
-      { "id": "oath-of-vengeance", "name": "Juramento de Vingança", "description": "Persegue implacavelmente os grandes males do mundo, usando qualquer meio necessário.", "features": [], "extras": null }
+      { "id": "oath-of-devotion", "name": "Juramento de Devoção", "description": "O paladino clássico, devotado aos ideais de honestidade, coragem, compaixão, honra e justiça.", "features": [{ "name": "Magias de Juramento", "description": "Você recebe magias de juramento sempre preparadas conforme sobe de nível (proteção contra o bem e mal e santuário no 3° nível)." }, { "name": "Canalizar Divindade", "description": "Duas opções: Arma Sagrada (imbui uma arma, somando seu mod. de Carisma aos ataques e emitindo luz) e Expulsar o Profano (força corruptores e mortos-vivos a fugir)." }], "extras": null },
+      { "id": "oath-of-the-ancients", "name": "Juramento dos Anciões", "description": "Defende a luz e a vida natural contra as trevas, seguindo tradições antigas da natureza.", "features": [{ "name": "Magias de Juramento", "description": "Você recebe magias de juramento sempre preparadas conforme sobe de nível (fogo das fadas e enfeitiçar pessoa no 3° nível)." }, { "name": "Canalizar Divindade", "description": "Duas opções: Fúria da Natureza (enreda inimigos com vinhas espectrais) e Expulsar os Infiéis (força fadas e corruptores a fugir)." }], "extras": null },
+      { "id": "oath-of-vengeance", "name": "Juramento de Vingança", "description": "Persegue implacavelmente os grandes males do mundo, usando qualquer meio necessário.", "features": [{ "name": "Magias de Juramento", "description": "Você recebe magias de juramento sempre preparadas conforme sobe de nível (perdição e enfeitiçar pessoa no 3° nível)." }, { "name": "Canalizar Divindade", "description": "Duas opções: Abjurar Inimigo (amedronta e reduz o deslocamento de um inimigo) e Voto de Inimizade (vantagem nas jogadas de ataque contra um alvo escolhido)." }], "extras": null }
     ],
     "startingEquipment": {
       "fixed": [
@@ -904,9 +904,9 @@
     ],
     "subclassLevel": 3,
     "subclasses": [
-      { "id": "beast-master", "name": "Conclave da Besta", "description": "Forma um vínculo sobrenatural com uma fera selvagem companheira de caça.", "features": [], "extras": null },
-      { "id": "hunter", "name": "Conclave do Caçador", "description": "Domina técnicas de caça para abater presas maiores e mais perigosas.", "features": [], "extras": null },
-      { "id": "gloom-stalker", "name": "Conclave do Rastreador Subterrâneo", "description": "Adaptado para combate nas trevas profundas e ambientes subterrâneos hostis.", "features": [], "extras": null }
+      { "id": "beast-master", "name": "Conclave da Besta", "description": "Forma um vínculo sobrenatural com uma fera selvagem companheira de caça.", "features": [{ "name": "Companheiro Animal", "description": "Você forma um vínculo mágico com uma besta de VD 1/4 ou inferior, que luta ao seu lado, obedece a seus comandos e usa seu bônus de proficiência." }], "extras": null },
+      { "id": "hunter", "name": "Conclave do Caçador", "description": "Domina técnicas de caça para abater presas maiores e mais perigosas.", "features": [{ "name": "Presa do Caçador", "description": "Escolha uma opção: Assassino de Colossos (1d8 de dano extra a alvos feridos), Matador de Gigantes (reação para atacar criaturas Grandes ou maiores) ou Destruidor de Hordas (um ataque adicional contra outra criatura próxima)." }], "extras": null },
+      { "id": "gloom-stalker", "name": "Conclave do Rastreador Subterrâneo", "description": "Adaptado para combate nas trevas profundas e ambientes subterrâneos hostis.", "features": [{ "name": "Batedor do Subterrâneo", "description": "No primeiro turno de combate, você ganha +3 m de deslocamento e um ataque adicional se usar a ação de Ataque. Criaturas com visão no escuro não têm vantagem para detectá-lo no escuro." }, { "name": "Magia do Rastreador Subterrâneo", "description": "Você ganha visão no escuro de 27 m e magias adicionais sempre preparadas conforme sobe de nível (disfarçar-se no 3° nível)." }], "extras": null }
     ],
     "startingEquipment": {
       "fixed": [

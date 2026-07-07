@@ -1263,6 +1263,39 @@
     "description": "## Descrição\n\nNomeie ou descreva uma pessoa, local ou objeto. A magia traz a sua mente um breve resumo do conhecimento significativo sobre a coisa que você nomeou. O conhecimento deve consistir em contos atuais, histórias esquecidas ou, até mesmo, conhecimento secreto que nunca foi amplamente divulgado. Se a coisa que você nomeou não for de importância lendária, você não recebe qualquer informação sobre ela. Quanto mais informação você possuir sobre a coisa, mais precisa e detalhada será a informação que você receberá.\n\n## A informação que você aprende é precisa, mas pode ser redigida em linguagem figurada. Por exemplo, se você possuir um misterioso machado mágico na mão, a magia pode proporcionar essa informação: “Ai do malfeitor cuja mão toca o machado, até mesmo seu cabo corta a mão dos malignos. Só um verdadeiro Filho da Pedra, adorador e adorado de Moradin, pode despertar os verdadeiros poderes do machado e apenas com a palavra sagrada Rudnogg nos lábios.”"
   },
   {
+    "id": "conjure-animals",
+    "name": "Conjurar Animais",
+    "level": 3,
+    "school": "conjuração",
+    "classes": [
+      "druid",
+      "ranger"
+    ],
+    "castingTime": "1 ação",
+    "range": "18 metros",
+    "components": "V, S",
+    "duration": "Concentração, até 1 hora",
+    "ritual": false,
+    "concentration": true,
+    "description": "## Descrição\n\nVocê invoca espíritos feéricos, que assumem formas de\nbestas, que aparecem em espaços desocupados, que você\npossa ver dentro do alcance. Escolha uma das opções a\nseguir para aparecer:\nUma besta de nível de desafio 2 ou inferior\nDuas bestas de nível de desafio 1 ou inferior\nQuatro bestas de nível de desafio 1/2 ou inferior\nOito bestas de nível de desafio 1/4 ou inferior\nCada besta é também considerada uma fada e\ndesaparece quando cair a 0 pontos de vida ou quando a\nmagia acabar.\nAs criaturas invocadas são amigáveis a você e a seus\ncompanheiros. Role a iniciativa para as criaturas\ninvocadas como um grupo, que age no seu próprio turno.\nEles obedecem a quaisquer comandos verbais que você\nemitir (não requer uma ação sua). Se você não emitir\nnenhum comando a elas, elas se defenderão de criaturas\nhostis, mas no mais, não realizarão nenhuma ação.\nO Mestre possui as estatísticas das criaturas.\nEm Níveis Superiores. Se você conjurar essa magia\nusando certos espaços de magia superiores, você escolhe\numa das opções de invocação acima e mais criaturas\naparecem: o dobro delas com um espaço de 5° nível, o\ntriplo delas com um espaço de 7° nível e o quadruplo delas\ncom um espaço de 9° nível."
+  },
+  {
+    "id": "conjure-celestial",
+    "name": "Conjurar Celestial",
+    "level": 7,
+    "school": "conjuração",
+    "classes": [
+      "cleric"
+    ],
+    "castingTime": "1 minuto",
+    "range": "27 metros",
+    "components": "V, S",
+    "duration": "Concentração, até 1 hora",
+    "ritual": false,
+    "concentration": true,
+    "description": "## Descrição\n\nVocê invoca um celestial de nível de desafio 4 ou inferior,\nque aparece num espaço desocupado, que você possa ver\ndentro do alcance. O celestial desaparece se cair a 0\npontos de vida ou quando a magia acabar.\nO celestial é amigável a você e a seus companheiros\npela duração. Role a iniciativa para o celestial, que age no\nseu próprio turno. Ele obedece a quaisquer comandos\nverbais que você emitir (não requer uma ação sua),\ncontanto que não violem sua tendência. Se você não\nemitir nenhum comando a ele, ele se defenderá de\ncriaturas hostis, mas no mais, não realizará nenhuma\nação.\nO Mestre possui as estatísticas do celestial.\nEm Níveis Superiores. Quando você conjurar essa\nmagia usando um espaço de magia de 9° nível, você\ninvoca um celestial de nível de desafio 5 ou inferior."
+  },
+  {
     "id": "conjure-minor-elementals",
     "name": "Conjurar Elementais Menores",
     "level": 4,
@@ -4822,7 +4855,7 @@
   },
   {
     "id": "purify-food-and-drink",
-    "name": "Purificar Animais",
+    "name": "Purificar Alimentos",
     "level": 1,
     "school": "transmutação",
     "classes": [
@@ -6016,5 +6049,221 @@
     "ritual": false,
     "concentration": true,
     "description": "## Descrição\n\nUma muralha de água aparece do nada num ponto, à sua escolha, dentro do alcance. Você pode fazer a muralha ter até 90 metros de comprimento, 90 metro de altura e 15 metros de espessura. A muralha permanece pela duração.\n\nQuando a muralha aparece, cada criatura dentro da área deve realizar um teste de resistência de Força. Se falhar na resistência, uma criatura sofrerá 6d10 de dano de concussão ou metade desse dano se passar na resistência.\n\nNo início de cada um dos seus turnos, após a muralha aparecer, ela, junto com qualquer criatura nela, se afasta 15 metros de você. Qualquer criatura Enorme ou menor dentro da muralha ou no espaço que a muralha entrar quando ela se mover, deve ser bem sucedida num teste de resistência de Força ou sofrerá 5d6 de dano de concussão. Uma criatura pode sofrer esse dano apenas uma vez por rodada. No final do turno, a altura da muralha é reduzida em 15 metros e o dano que as criaturas sofrem da magia nas rodadas subsequentes é reduzido em 1d10. Quando a muralha chegar a 0 metro de altura, a magia acaba.\n\n## Uma criatura pega pela muralha, pode se mover nadando. Devido à força da onda, no entanto, a criatura deve realizar um teste de Força (Atletismo) contra a CD da magia para conseguir se mover. Se ela falhar no teste, não conseguirá se mover. Uma criatura que se mova para fora da área, cairá no chão."
+  },
+  {
+    "id": "haste",
+    "name": "Velocidade",
+    "level": 3,
+    "school": "transmutação",
+    "classes": [
+      "sorcerer",
+      "wizard"
+    ],
+    "castingTime": "1 ação",
+    "range": "18 metros",
+    "components": "V, S, M (uma raspa de raiz de alcaçuz)",
+    "duration": "Concentração, até 1 minuto",
+    "ritual": false,
+    "concentration": true,
+    "description": "## Descrição\n\nEscolha uma criatura voluntária que você possa ver,\ndentro do alcance. Até a magia acabar, o deslocamento do\nalvo é dobrado, ele ganha +2 de bônus na CA, ele tem\nvantagem em testes de resistência de Destreza e ganha\numa ação adicional em cada um dos turnos dele. A ação\npode ser usada apenas para realizar as ações de Ataque\n(um ataque com arma, apenas), Disparada, Desengajar,\nEsconder ou Usar um Objeto.\nQuando a magia acabar, o alvo não poderá se mover\nou realizar ações até depois do seu próximo turno, à\nmedida que uma onda de letargia toma conta dele."
+  },
+  {
+    "id": "see-invisibility",
+    "name": "Ver o Invisível",
+    "level": 2,
+    "school": "adivinhação",
+    "classes": [
+      "bard",
+      "sorcerer",
+      "wizard"
+    ],
+    "castingTime": "1 ação",
+    "range": "Pessoal",
+    "components": "V, S, M (um pouco de talco e um pó de prata polvilhado)",
+    "duration": "1 hora",
+    "ritual": false,
+    "concentration": false,
+    "description": "## Descrição\n\nPela duração, você vê criaturas e objetos invisíveis como\nse eles fossem visíveis e você pode ver no Plano Etéreo.\nCriaturas e objetos etéreos parecem espectrais e\ntranslúcidos."
+  },
+  {
+    "id": "plane-shift",
+    "name": "Viagem Planar",
+    "level": 7,
+    "school": "conjuração",
+    "classes": [
+      "warlock",
+      "cleric",
+      "druid",
+      "sorcerer",
+      "wizard"
+    ],
+    "castingTime": "1 ação",
+    "range": "Toque",
+    "components": "V, S, M (uma haste metálica bifurcada valendo, no mínimo, 250 po, sintonizada com um plano de existência em particular)",
+    "duration": "Instantânea",
+    "ritual": false,
+    "concentration": false,
+    "description": "## Descrição\n\nVocê e até oito criaturas voluntárias, que estejam de mãos\ndadas em um círculo, são transportadas para um plano de\nexistência diferente. Você pode especificar o destino alvo\nem termos gerais, como a Cidade de Bronze do Plano\nElemental do Fogo ou o palácio de Dispater na segunda\ncamada dos Nove Infernos e você aparece no ou perto do\ndestino. Se você estiver tentando chegar a Cidade de\nBronze, por exemplo, você poderia chegar na Estrada de\nAço dela, em frente aos Portões de Cinzas ou\ncontemplando a cidade do outro lado do Mar de Fogo, à\ncritério do Mestre.\nAlternativamente, se você conhecer a sequência de\nselos do círculo de teletransporte em outro plano de\nexistência, essa magia pode leva-lo para esse círculo. Se o\ncírculo de teletransporte for muito pequeno para\ncomportar as criaturas que você está transportando, elas\naparecerão no espaço desocupado mais próximo do\ncírculo.\nVocê pode usar essa magia para banir uma criatura\ninvoluntária para outro plano. Escolha uma criatura ao\nseu alcance e realize um ataque corpo-a-corpo com magia\ncontra ela. Se atingir, a criatura deve realizar um teste de\nresistência de Carisma. Se a criatura falhar na\nresistência, ela é transportada para um local aleatório no\nplano de existência que você especificou. Uma criatura,\numa vez transportada, deve encontrar seu próprio meio\nde retornar para seu plano de existência atual."
+  },
+  {
+    "id": "scrying",
+    "name": "Vidência",
+    "level": 5,
+    "school": "adivinhação",
+    "classes": [
+      "bard",
+      "warlock",
+      "cleric",
+      "druid",
+      "wizard"
+    ],
+    "castingTime": "10 minutos",
+    "range": "Pessoal",
+    "components": "V, S, M (um foco valendo, no mínimo, 1.000 po, como uma bola de cristal, espelho de prata ou fonte cheia de água benta)",
+    "duration": "Concentração, até 10 minutos",
+    "ritual": false,
+    "concentration": true,
+    "description": "## Descrição\n\nVocê pode ver e ouvir uma criatura em particular, à sua\nescolha, que esteja no mesmo plano de existência que\nvocê. O alvo deve realizar um teste de resistência de\nSabedoria, que é modificador de acordo com o quão bem\nvocê conhece o alvo e o tipo de conexão física que você tem\ncom ele. Se um alvo souber que você está conjurando essa\nmagia, ele pode falhar no teste de resistência\nvoluntariamente, se ele quiser ser observado.\nCom um sucesso na resistência, o alvo não é afetado e\nvocê não pode usar essa magia contra ele novamente por\n24 horas.\nSe falhar na resistência, a magia cria um sensor\ninvisível a até 3 metros do alvo. Você pode ver e ouvir\natravés do sensor, como se você estivesse onde ele está. O\nsensor se move com o alvo, permanecendo a 3 metros dele\npela duração. Uma criatura que puder ver objetos\ninvisíveis verá o sensor como um globo luminoso do\ntamanho de um punho.\nAo invés de focar em uma criatura, você pode escolher\num local que você já tenha visto antes como alvo dessa\nmagia. Quando fizer isso, o sensor aparece no local e não\nse move.\nConhecimento\nModificador de\nResistência\nSegunda mão (você ouviu falar do alvo) +5\nPrimeira mão (você foi apresentado ao alvo) +0\nFamiliar (você conhece bem o alvo) –5\nConexão\nModificador de\nResistência\nDescrição ou foto –2\nPertences ou roupas –4\nParte do corpo, mexa de cabelo, recorte de\nunha ou simular\n–10"
+  },
+  {
+    "id": "warding-bond",
+    "name": "Vínculo Protetor",
+    "level": 2,
+    "school": "abjuração",
+    "classes": [
+      "cleric"
+    ],
+    "castingTime": "1 ação",
+    "range": "Toque",
+    "components": "V, S, M (um par de anéis de platina valendo, no mínimo, 50 po cada, que você e o alvo devem usar pela duração)",
+    "duration": "1 hora",
+    "ritual": false,
+    "concentration": false,
+    "description": "## Descrição\n\nEssa magia protege uma criatura voluntária que você\ntocar e cria uma conexão mística entre você e o alvo até a\nmagia acabar. Enquanto o alvo estiver a até 18 metros de\nvocê, ele recebe +1 de bônus na CA, nos testes de\nresistência e terá resistência a todos os danos. No\nentanto, a cada vez que ele sofrer dano, você sofrerá a\nmesma quantidade de dano.\nA magia acaba se você cair a 0 pontos de vida ou se\nvocê e o alvo ficarem separados a mais de 18 metros. Ela\ntambém termina se a magia for conjurada novamente em\nquaisquer das criaturas conectadas. Você também pode\ndissipar a magia com uma ação."
+  },
+  {
+    "id": "grasping-vine",
+    "name": "Vinha Esmagadora",
+    "level": 4,
+    "school": "conjuração",
+    "classes": [
+      "druid",
+      "ranger"
+    ],
+    "castingTime": "1 ação bônus",
+    "range": "9 metros",
+    "components": "V, S",
+    "duration": "Concentração, até 1 minuto",
+    "ritual": false,
+    "concentration": true,
+    "description": "## Descrição\n\nVocê conjura uma vinha que brota do chão em um espaço\ndesocupado, à sua escolha, que você possa ver dentro do\nalcance. Quando você conjura essa magia, você pode\ndirecionar a vinha para que ela enlace uma criatura a até\n9 metros dela que você possa ver. Essa criatura deve ser\nbem sucedida num teste de resistência de Destreza ou\nserá arrastada 6 metros na direção da vinha.\nAté o fim da magia, você pode direcionar a vinha para\nenlaçar a mesma criatura ou uma diferente, com uma\nação bônus, em cada um dos seus turnos."
+  },
+  {
+    "id": "true-seeing",
+    "name": "Visão da Verdade",
+    "level": 6,
+    "school": "adivinhação",
+    "classes": [
+      "bard",
+      "warlock",
+      "cleric",
+      "sorcerer",
+      "wizard"
+    ],
+    "castingTime": "1 ação",
+    "range": "Toque",
+    "components": "V, S, M (unguento para os olhos no valor de 25 po; ele é feito de pó de cogumelo, açafrão e gordura; e é consumido pela magia)",
+    "duration": "1 hora",
+    "ritual": false,
+    "concentration": false,
+    "description": "## Descrição\n\nEssa magia concede a uma criatura voluntária tocada a\nhabilidade de ver as coisas como elas realmente são. Pela\nduração, a criatura terá visão verdadeira, percebendo\nportas secretas escondidas por magia e podendo ver no\nPlano Etéreo, tudo num alcance de até 36 metros."
+  },
+  {
+    "id": "darkvision",
+    "name": "Visão no Escuro",
+    "level": 2,
+    "school": "transmutação",
+    "classes": [
+      "druid",
+      "sorcerer",
+      "wizard",
+      "ranger"
+    ],
+    "castingTime": "1 ação",
+    "range": "Toque",
+    "components": "V, S, M (ou um pedaço de cenoura seca ou uma ágata)",
+    "duration": "8 horas",
+    "ritual": false,
+    "concentration": false,
+    "description": "## Descrição\n\nVocê toca uma criatura voluntária para conceder a ela a\nhabilidade de ver nas trevas. Pela duração, a criatura\nterá visão no escuro com alcance de 18 metros."
+  },
+  {
+    "id": "false-life",
+    "name": "Vitalidade Falsa",
+    "level": 1,
+    "school": "necromancia",
+    "classes": [
+      "sorcerer",
+      "wizard"
+    ],
+    "castingTime": "1 ação",
+    "range": "Pessoal",
+    "components": "V, S, M (uma pequena quantidade de álcool ou bebidas destiladas)",
+    "duration": "1 hora",
+    "ritual": false,
+    "concentration": false,
+    "description": "## Descrição\n\nReforçando-se com uma vitalidade necromântica ilusória,\nvocê ganha 1d4 + 4 pontos de vida temporários pela\nduração.\nEm  Níveis  Superiores.  Quando  você  conjurar  essa\nmagia   usando   um   espaço   de   magia   de   2°   nível   ou\nsuperior,   você   ganha   5   pontos   de   vida   temporários\nadicionais  para  cada  nível  do  espaço  de  magia  acima  do\n1°."
+  },
+  {
+    "id": "fly",
+    "name": "Voo",
+    "level": 3,
+    "school": "transmutação",
+    "classes": [
+      "warlock",
+      "sorcerer",
+      "wizard"
+    ],
+    "castingTime": "1 ação",
+    "range": "Toque",
+    "components": "V, S, M (uma pena da asa de qualquer pássaro)",
+    "duration": "Concentração, até 10 minutos",
+    "ritual": false,
+    "concentration": true,
+    "description": "## Descrição\n\nVocê toca uma criatura voluntária. O alvo ganha\ndeslocamento de voo de 18 metros, pela duração. Quando\na magia acabar, o alvo cai se ainda estiver no ar, a não\nser que ele possa impedir a queda.\nEm Níveis Superiores. Quando você conjurar essa\nmagia usando um espaço de magia de 4° nível ou\nsuperior, você pode afetar uma criatura adicional para\ncada nível do espaço acima do 3°."
+  },
+  {
+    "id": "vicious-mockery",
+    "name": "Zombaria Viciosa",
+    "level": 0,
+    "school": "encantamento",
+    "classes": [
+      "bard"
+    ],
+    "castingTime": "1 ação",
+    "range": "18 metros",
+    "components": "V",
+    "duration": "Instantânea",
+    "ritual": false,
+    "concentration": false,
+    "description": "## Descrição\n\nVocê libera uma série de insultos atados com\nencantamentos sutis numa criatura que você possa ver,\ndentro do alcance. Se o alvo puder ouvir você (apesar de\nnão precisar compreende-lo), ele deve ser bem sucedido\nnum teste de resistência de Sabedoria ou sofrerá 1d4 de\ndano psíquico e terá desvantagem na próxima jogada de\nataque que ele fizer antes do final do próximo turno dele.\nO dano dessa magia aumenta em 1d4 quando você\nalcança o 5° nível (2d4), 11° nível (3d4) e 17° nível (4d4)."
+  },
+  {
+    "id": "zone-of-truth",
+    "name": "Zona da Verdade",
+    "level": 2,
+    "school": "encantamento",
+    "classes": [
+      "bard",
+      "cleric",
+      "paladin"
+    ],
+    "castingTime": "1 ação",
+    "range": "18 metros",
+    "components": "V, S",
+    "duration": "10 minutos",
+    "ritual": false,
+    "concentration": false,
+    "description": "## Descrição\n\nVocê cria uma zona mágica protegida contra enganação,\nnuma esfera com 4,5 metros de raio, centrada num ponto,\nà sua escolha, dentro do alcance. Até a magia acabar,\numa criatura que entrar na área da magia pela primeira\nvez num turno ou começar seu turno nela, deve realizar\num teste de resistência de Carisma. Se falhar na\nresistência, a criatura não poderá mentir\ndeliberadamente enquanto estiver no raio. Você saberá\ncada criatura que passou ou falhou nesse teste de\nresistência.\nUma criatura afetada está ciente da magia e pode,\nportanto, evitar responder perguntas as quais ela\nnormalmente responderia com uma mentira. Tais\ncriaturas podem ser evasivas em suas respostas, contanto\nque permaneçam dentro dos limites da verdade."
   }
 ]

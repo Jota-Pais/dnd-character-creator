@@ -9,6 +9,19 @@ beforeEach(() => {
   localStorage.clear()
 })
 
+describe('nextStep (validação defensiva)', () => {
+  it('não avança de "name" com nome vazio', () => {
+    useCharacterStore.getState().nextStep()
+    expect(useCharacterStore.getState().currentStep).toBe('name')
+  })
+
+  it('avança quando o passo atual está completo', () => {
+    useCharacterStore.getState().setName('Conan')
+    useCharacterStore.getState().nextStep()
+    expect(useCharacterStore.getState().currentStep).toBe('race')
+  })
+})
+
 describe('importDraft', () => {
   it('leva ficha completa direto à revisão e persiste a sessão', () => {
     useCharacterStore.getState().importDraft(structuredClone(COMPLETE_DRAFT))

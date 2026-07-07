@@ -212,31 +212,42 @@ export function sanitizeImportedDraft(raw: unknown): CharacterDraft | null {
   }
 }
 
+/** Completude de um passo específico do wizard, a partir do estado atual do draft. */
+export function isStepComplete(draft: CharacterDraft, step: WizardStep): boolean {
+  const race = draft.race ? (getRace(draft.race) ?? null) : null
+  const subrace = race && draft.subrace ? (getSubrace(race, draft.subrace) ?? null) : null
+  const cls = draft.class ? (getClass(draft.class) ?? null) : null
+  const background = draft.background ? (getBackground(draft.background) ?? null) : null
+
+  switch (step) {
+    case 'name':
+      return draft.name.trim().length > 0
+    case 'race':
+      return isRaceStepComplete(race, subrace, draft.raceChoices)
+    // Subclasse validada como nível 1 até o seletor por nível existir (fase 2 do roadmap)
+    case 'class':
+      return isClassStepComplete(cls, draft.classChoices)
+    case 'abilities':
+      return isAbilitiesStepComplete(draft.abilityMethod, draft.abilityScores, draft.rolledValues)
+    case 'spells':
+      return isSpellStepComplete(cls, draft.spellChoices, draft.level)
+    case 'background':
+      return isBackgroundStepComplete(background, draft.backgroundChoices)
+    case 'equipment':
+      return isEquipmentStepComplete(draft.equipment, cls?.startingEquipment)
+    case 'review':
+      return true
+  }
+}
+
 /**
  * Percorre os passos do wizard na ordem e devolve o primeiro que ainda não está
  * completo — usado para levar uma ficha importada ao ponto certo do fluxo em vez
  * de assumir que ela está pronta para a Revisão.
  */
 export function getFirstIncompleteStep(draft: CharacterDraft): WizardStep {
-  const race = draft.race ? (getRace(draft.race) ?? null) : null
-  const subrace = race && draft.subrace ? (getSubrace(race, draft.subrace) ?? null) : null
-  const cls = draft.class ? (getClass(draft.class) ?? null) : null
-  const background = draft.background ? (getBackground(draft.background) ?? null) : null
-
-  const complete: Record<WizardStep, boolean> = {
-    name: draft.name.trim().length > 0,
-    race: isRaceStepComplete(race, subrace, draft.raceChoices),
-    // Subclasse validada como nível 1 até o seletor por nível existir (fase 2 do roadmap)
-    class: isClassStepComplete(cls, draft.classChoices),
-    abilities: isAbilitiesStepComplete(draft.abilityMethod, draft.abilityScores, draft.rolledValues),
-    spells: isSpellStepComplete(cls, draft.spellChoices, draft.level),
-    background: isBackgroundStepComplete(background, draft.backgroundChoices),
-    equipment: isEquipmentStepComplete(draft.equipment, cls?.startingEquipment),
-    review: true,
-  }
-
   for (const step of WIZARD_STEPS) {
-    if (!complete[step]) return step
+    if (!isStepComplete(draft, step)) return step
   }
   return 'review'
 }

@@ -7,7 +7,7 @@ import { getClass } from '../utils/classUtils'
 import { EMPTY_EQUIPMENT_DRAFT } from '../types/equipment'
 import { EMPTY_SPELL_CHOICES } from '../types/spell'
 import { saveSession, loadSession, clearSession } from '../utils/storage'
-import { getFirstIncompleteStep } from '../utils/draftValidation'
+import { getFirstIncompleteStep, isStepComplete } from '../utils/draftValidation'
 
 const persisted = loadSession()
 
@@ -194,6 +194,9 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
   nextStep: () => {
     const { currentStep, draft } = get()
     const idx = WIZARD_STEPS.indexOf(currentStep)
+    // Defesa em profundidade: além do botão desabilitado na UI, o store não
+    // avança enquanto o passo atual estiver incompleto
+    if (!isStepComplete(draft, currentStep)) return
     if (idx < WIZARD_STEPS.length - 1) {
       const next = WIZARD_STEPS[idx + 1]
       saveSession(draft, next)

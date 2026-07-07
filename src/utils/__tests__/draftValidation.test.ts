@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sanitizeImportedDraft, getFirstIncompleteStep } from '../draftValidation'
+import { sanitizeImportedDraft, getFirstIncompleteStep, isStepComplete } from '../draftValidation'
 import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
 import { SPELLS } from '../spellUtils'
 import { COMPLETE_DRAFT } from '../../test/fixtures'
@@ -170,5 +170,19 @@ describe('getFirstIncompleteStep', () => {
       equipment: { method: null, classResolutions: [], rolledGold: null, purchasedItems: [] },
     }
     expect(getFirstIncompleteStep(draft)).toBe('equipment')
+  })
+})
+
+describe('isStepComplete', () => {
+  it('name completo com nome preenchido', () => {
+    expect(isStepComplete(COMPLETE_DRAFT, 'name')).toBe(true)
+    expect(isStepComplete({ ...COMPLETE_DRAFT, name: '  ' }, 'name')).toBe(false)
+  })
+  it('class incompleto sem perícias', () => {
+    const d = { ...COMPLETE_DRAFT, classChoices: { ...COMPLETE_DRAFT.classChoices, skills: [] } }
+    expect(isStepComplete(d, 'class')).toBe(false)
+  })
+  it('review sempre completo', () => {
+    expect(isStepComplete(structuredClone(EMPTY_DRAFT), 'review')).toBe(true)
   })
 })

@@ -33,7 +33,7 @@ export function ClassStep() {
     ? (CLASS_PRESENTATION[selectedClass.id]?.accent ?? '#d4900a')
     : '#d4900a'
 
-  const activeCaster = selectedClass ? isActiveCaster(selectedClass, 1) : false
+  const activeCaster = selectedClass ? isActiveCaster(selectedClass, draft.level) : false
 
   const canAdvance = isClassStepComplete(selectedClass ?? null, draft.classChoices)
 

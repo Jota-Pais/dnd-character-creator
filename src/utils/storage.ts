@@ -1,9 +1,10 @@
 import type { CharacterDraft, WizardStep } from '../types/character'
 import { EMPTY_DRAFT } from '../types/character'
+import { sanitizeImportedDraft } from './draftValidation'
 
 const SESSION_KEY = 'dnd-character-session'
 // Bump this whenever CharacterDraft schema changes in a breaking way
-const SESSION_VERSION = 3
+export const SESSION_VERSION = 3
 
 type Session = {
   version: number
@@ -58,17 +59,8 @@ export function importCharacter(file: File): Promise<CharacterDraft | null> {
     const reader = new FileReader()
     reader.onload = e => {
       try {
-        const parsed = JSON.parse(e.target?.result as string)
-        if (
-          typeof parsed === 'object' &&
-          parsed !== null &&
-          'name' in parsed &&
-          'abilityScores' in parsed
-        ) {
-          resolve(parsed as CharacterDraft)
-        } else {
-          resolve(null)
-        }
+        const parsed: unknown = JSON.parse(e.target?.result as string)
+        resolve(sanitizeImportedDraft(parsed))
       } catch {
         resolve(null)
       }

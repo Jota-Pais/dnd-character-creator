@@ -7,6 +7,7 @@ import { getClass } from '../utils/classUtils'
 import { EMPTY_EQUIPMENT_DRAFT } from '../types/equipment'
 import { EMPTY_SPELL_CHOICES } from '../types/spell'
 import { saveSession, loadSession, clearSession } from '../utils/storage'
+import { getFirstIncompleteStep } from '../utils/draftValidation'
 
 const persisted = loadSession()
 
@@ -216,7 +217,9 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
   },
 
   importDraft: (draft) => {
-    saveSession(draft, 'review')
-    set({ draft, currentStep: 'review' })
+    // Ficha importada pode estar incompleta — retoma o wizard no primeiro passo pendente
+    const step = getFirstIncompleteStep(draft)
+    saveSession(draft, step)
+    set({ draft, currentStep: step })
   },
 }))

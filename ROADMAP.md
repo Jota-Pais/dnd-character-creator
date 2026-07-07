@@ -34,9 +34,9 @@ Livro (PDF) → /docs/*.md (digitalização) → /src/data/*.json → tipos + ut
 
 ---
 
-## Fase 1 — Correções no núcleo de nível 1
+## Fase 1 — Correções no núcleo de nível 1 ✅ CONCLUÍDA (2026-07-07)
 
-Bugs e infidelidades ao livro que afetam qualquer personagem, inclusive nível 1.
+Bugs e infidelidades ao livro que afetam qualquer personagem, inclusive nível 1. Todas as 8 etapas entregues (ver PROGRESS.md). 271 testes, build e lint verdes.
 
 | # | Etapa | Detalhe | Referência no livro |
 | - | ----- | ------- | ------------------- |

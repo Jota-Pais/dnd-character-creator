@@ -1,12 +1,27 @@
 # Progresso — D&D Character Creator
 
-> Atualizado: 2026-06-03
+> Atualizado: 2026-07-07
 
 ## Status atual
 
-**V1 completa com magias e níveis 1–20.** Wizard de 8 passos funcionando, com seleção de nível (1–20), pontos de vida por média ou rolagem, progressão de magias/slots/proficiência por nível, persistência e export/import JSON.
+**Fase 1 do ROADMAP concluída — núcleo de nível 1 corrigido e fiel ao PHB.** Wizard de 8 passos funcionando, com seleção de nível (1–20), PV por média ou rolagem, progressão de magias/slots/proficiência por nível, persistência e export/import JSON. 271 testes passando, build e lint limpos.
 
-**Próximo passo:** Export PDF, depois deploy estático.
+**Próximo passo:** Fase 2 do ROADMAP — habilitar seleção de subclasse para as 12 classes (o hook `isClassStepComplete(..., level)` já existe).
+
+### Fase 1 — correções concluídas (2026-07-07)
+
+- **1.1** Import de ficha robusto (`sanitizeImportedDraft`) — não trava mais o app; retoma o wizard no 1º passo incompleto
+- **1.2** CA fiel ao PHB (`calculateArmorClass`): escudo, Defesa sem Armadura (bárbaro/monge), Estilo de Luta Defesa, com testes
+- **1.3** Percepção passiva na ficha
+- **1.4** Teto de magias preparadas imposto (exige ≥ 1, não mais 0)
+- **1.5** Deduplicação de perícias/ferramentas entre raça×classe×antecedente; corrige proficiências raciais fixas ausentes (elfo/Percepção etc.)
+- **1.6** Magias raciais estruturadas (drow/tiefling) e truque real do alto elfo; exibidas na Revisão
+- **1.7** 14 magias faltantes digitadas do livro → **361 magias** (total do PHB); nome de `purify-food-and-drink` corrigido
+- **1.8** Validação defensiva no `nextStep`; selo de conjurador sensível ao nível
+
+> Nota: itens apontados como "não-PHB" na auditoria (subclasse Rastreador Subterrâneo; conjuntos de jogo Xadrez do Dragão / Três Dragões) foram verificados no PDF do livro e **estão** nesta edição — mantidos.
+
+Ver `ROADMAP.md` para as fases 2–8.
 
 ---
 

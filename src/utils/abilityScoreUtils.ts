@@ -31,6 +31,18 @@ export function calculateModifier(score: number): number {
   return Math.floor((score - 10) / 2)
 }
 
+/**
+ * Percepção Passiva (PHB 2014): 10 + mod. de SAB, somando o bônus de
+ * proficiência se o personagem for proficiente na perícia Percepção.
+ */
+export function getPassivePerception(
+  wisModifier: number,
+  isProficient: boolean,
+  proficiencyBonus: number,
+): number {
+  return 10 + wisModifier + (isProficient ? proficiencyBonus : 0)
+}
+
 export function formatModifier(modifier: number): string {
   return modifier >= 0 ? `+${modifier}` : `${modifier}`
 }

@@ -11,7 +11,7 @@ import {
 import { getBackground, BACKGROUND_PRESENTATION, getToolName, SKILLS } from '../../utils/backgroundUtils'
 import {
   calculateModifier, formatModifier, ALL_ABILITY_SCORES, ABILITY_LABELS,
-  getProficiencyBonus,
+  getProficiencyBonus, getPassivePerception,
 } from '../../utils/abilityScoreUtils'
 import { getItemName, getEquippedArmor } from '../../utils/equipmentUtils'
 import { calculateArmorClass, getUnarmoredDefense } from '../../utils/armorClassUtils'
@@ -141,6 +141,13 @@ export function ReviewStep() {
   const expertiseSet = new Set(draft.classChoices.expertiseItems.filter(id => SKILL_ABILITY[id]))
   const savingThrows = cls?.savingThrows ?? []
 
+  const perceptionProficient = allSkills.includes('perception')
+  const passivePerception = getPassivePerception(
+    wisMod,
+    perceptionProficient,
+    perceptionProficient && expertiseSet.has('perception') ? profBonus * 2 : profBonus,
+  )
+
   // Languages & tools
   const raceLanguages = race?.grantedLanguages ?? []
   const chosenRaceLanguages = draft.raceChoices.languages ?? []
@@ -210,6 +217,7 @@ export function ReviewStep() {
           <QuickStat label="PV" value={hp !== null ? String(hp) : '—'} accent={accent} />
           <QuickStat label="CA" value={`${ac}${acNote}`} accent={accent} />
           <QuickStat label="Iniciativa" value={formatModifier(dexMod)} accent={accent} />
+          <QuickStat label="Percep. Passiva" value={String(passivePerception)} accent={accent} />
           <QuickStat label="Deslocamento" value={speedStr} accent={accent} />
           {darkvisionStr && (
             <QuickStat label="Escuridão" value={darkvisionStr} accent={accent} />

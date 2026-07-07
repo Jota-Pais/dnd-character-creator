@@ -202,8 +202,12 @@ describe('isSpellStepComplete', () => {
       cantrips: ['c1', 'c2', 'c3'],
       spells: ['s1', 's2', 's3', 's4', 's5', 's6'],
     }, 1)).toBe(true))
-  it('clérigo (preparado) só precisa dos truques', () =>
-    expect(isSpellStepComplete(clericClass, { cantrips: ['c1', 'c2', 'c3'], spells: [] }, 1)).toBe(true))
+  it('clérigo (preparado) incompleto sem nenhuma magia preparada', () =>
+    expect(isSpellStepComplete(clericClass, { cantrips: ['c1', 'c2', 'c3'], spells: [] }, 1)).toBe(false))
+  it('clérigo (preparado) completo com truques e ao menos 1 preparada', () =>
+    expect(isSpellStepComplete(clericClass, { cantrips: ['c1', 'c2', 'c3'], spells: ['s1'] }, 1)).toBe(true))
+  it('clérigo (preparado) ainda exige os truques mesmo com magia preparada', () =>
+    expect(isSpellStepComplete(clericClass, { cantrips: ['c1'], spells: ['s1'] }, 1)).toBe(false))
   it('bardo nível 1 precisa de 2 truques e 4 magias conhecidas', () =>
     expect(isSpellStepComplete(bardClass, {
       cantrips: ['c1', 'c2'],

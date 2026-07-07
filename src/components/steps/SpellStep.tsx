@@ -59,12 +59,11 @@ export function SpellStep() {
 
   const abilityScore = draft.abilityScores[sc.ability] ?? 10
   const abilityMod = calculateModifier(typeof abilityScore === 'number' ? abilityScore : 10)
-  const isPrepared = sc.type === 'prepared'
 
   // Max spells for the current selection mode
   const maxSpells =
     sc.type === 'prepared'
-      ? Infinity
+      ? getMaxPreparedSpells(sc, draft.abilityScores, level)
       : sc.type === 'hybrid'
         ? getWizardSpellbookSize(level)
         : getSpellsKnownCount(cls.id, level) || sc.spellsAtLevel1
@@ -97,7 +96,7 @@ export function SpellStep() {
     if (cur.includes(id)) {
       updateSpellChoices({ spells: cur.filter(s => s !== id) })
     } else {
-      if (!isPrepared && maxSpells !== Infinity && cur.length >= maxSpells) return
+      if (maxSpells !== Infinity && cur.length >= maxSpells) return
       updateSpellChoices({ spells: [...cur, id] })
     }
     if (detail?.id === id) setDetail(null)
@@ -140,10 +139,7 @@ export function SpellStep() {
               <TabButton key={lvl} active={activeTab === lvl} onClick={() => setTab(lvl)} accent={accent}>
                 {ORDINALS[lvl]} nível
                 {lvl === 1 && sc.type !== 'prepared' && (
-                  <Counter current={choices.spells.filter(id => {
-                    const s = choices.spells.find(x => x === id)
-                    return !!s
-                  }).length} max={maxSpells} />
+                  <Counter current={choices.spells.length} max={maxSpells} />
                 )}
               </TabButton>
             ))}
@@ -193,7 +189,7 @@ export function SpellStep() {
             <SpellGrid
               spells={getSpellsByLevel(draft.class!, activeTab)}
               selected={choices.spells}
-              max={sc.type === 'prepared' ? Infinity : maxSpells}
+              max={maxSpells}
               onToggle={toggleSpell}
               onDetail={setDetail}
               detailId={detail?.id}

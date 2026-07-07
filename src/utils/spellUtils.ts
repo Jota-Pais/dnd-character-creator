@@ -157,6 +157,12 @@ export function isSpellStepComplete(
     if (choices.spells.length < needed) return false
   }
 
+  // Conjuradores preparados: PHB exige preparar ao menos 1 magia (mín. da fórmula).
+  // O teto (mod + nível) é imposto na seleção; aqui garantimos que não finalize com 0.
+  if (sc.type === 'prepared') {
+    if (choices.spells.length < 1) return false
+  }
+
   return true
 }
 

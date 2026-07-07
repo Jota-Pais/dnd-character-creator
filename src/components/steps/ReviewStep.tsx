@@ -8,6 +8,7 @@ import {
   getClass, getSubclass, CLASS_PRESENTATION,
   getHpAtLevel1, getAverageHpAtLevel, getRolledHpAtLevel, isActiveCaster,
 } from '../../utils/classUtils'
+import { getClassResources } from '../../utils/classResourceUtils'
 import { getBackground, BACKGROUND_PRESENTATION, getToolName, SKILLS } from '../../utils/backgroundUtils'
 import {
   calculateModifier, formatModifier, ALL_ABILITY_SCORES, ABILITY_LABELS,
@@ -581,6 +582,26 @@ export function ReviewStep() {
           </div>
         </Section>
       )}
+
+      {/* Class Resources */}
+      {cls && (() => {
+        const resources = getClassResources(cls.id, level)
+        if (resources.length === 0) return null
+        return (
+          <Section title="Recursos de Classe">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {resources.map(r => (
+                <div key={r.key} className="rounded-lg border border-parchment-800/60 bg-parchment-950/60 p-2.5 text-center">
+                  <p className="text-base font-bold font-fantasy leading-none" style={{ color: accent }}>
+                    {r.value}
+                  </p>
+                  <p className="text-xs text-parchment-600 font-fantasy mt-1 leading-tight">{r.label}</p>
+                </div>
+              ))}
+            </div>
+          </Section>
+        )
+      })()}
 
       {/* Spells */}
       {cls && isActiveCaster(cls, level) && cls.spellcasting && (() => {

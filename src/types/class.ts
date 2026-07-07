@@ -24,11 +24,18 @@ export type SubclassExtraChoices = {
   grantedWeaponProficiencies: string[]
 }
 
+export type ClassFeature = { name: string; description: string }
+
+/** Feature ganha em um nível específico (progressão 1–20). */
+export type LevelFeature = ClassFeature & { level: number }
+
 export type ClassSubclass = {
   id: string
   name: string
   description: string
-  features: { name: string; description: string }[]
+  features: ClassFeature[]
+  /** Features da subclasse por nível (2–20). Preenchido na fase 3 do roadmap. */
+  featuresByLevel?: LevelFeature[]
   extras: SubclassExtraChoices | null
 }
 
@@ -48,7 +55,9 @@ export type GameClass = {
   toolProficiencies: ClassToolProficiencies
   isCaster: boolean
   spellcasting: ClassSpellcasting | null
-  features: { name: string; description: string }[]
+  features: ClassFeature[]
+  /** Features da classe por nível (1–20). Preenchido na fase 3 do roadmap. */
+  featuresByLevel?: LevelFeature[]
   subclassLevel: number
   subclasses: ClassSubclass[]
   hasFightingStyle: boolean

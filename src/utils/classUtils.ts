@@ -1,4 +1,4 @@
-import type { GameClass, ClassSubclass, ClassChoiceSelections } from '../types/class'
+import type { GameClass, ClassSubclass, ClassChoiceSelections, LevelFeature } from '../types/class'
 import { SKILLS } from './raceUtils'
 import classesData from '../data/classes.json'
 
@@ -94,6 +94,35 @@ export function getClass(id: string): GameClass | undefined {
 
 export function getSubclass(cls: GameClass, subclassId: string): ClassSubclass | undefined {
   return cls.subclasses.find(s => s.id === subclassId)
+}
+
+/**
+ * Features de classe + subclasse disponíveis até o nível dado, agrupadas por nível.
+ * Usa `featuresByLevel` quando presente (fase 3); senão cai no formato atual
+ * (`features` da classe = nível 1; `features` da subclasse = nível de escolha).
+ */
+export function getClassFeaturesUpToLevel(
+  cls: GameClass,
+  subclass: ClassSubclass | null | undefined,
+  level: number,
+): LevelFeature[] {
+  const out: LevelFeature[] = []
+
+  if (cls.featuresByLevel && cls.featuresByLevel.length > 0) {
+    out.push(...cls.featuresByLevel.filter(f => f.level <= level))
+  } else {
+    out.push(...cls.features.map(f => ({ ...f, level: 1 })))
+  }
+
+  if (subclass) {
+    if (subclass.featuresByLevel && subclass.featuresByLevel.length > 0) {
+      out.push(...subclass.featuresByLevel.filter(f => f.level <= level))
+    } else if (cls.subclassLevel <= level) {
+      out.push(...subclass.features.map(f => ({ ...f, level: cls.subclassLevel })))
+    }
+  }
+
+  return out.sort((a, b) => a.level - b.level)
 }
 
 export function isActiveCaster(cls: GameClass, level = 1): boolean {

@@ -6,7 +6,13 @@
 
 **Fase 1 do ROADMAP concluída — núcleo de nível 1 corrigido e fiel ao PHB.** Wizard de 8 passos funcionando, com seleção de nível (1–20), PV por média ou rolagem, progressão de magias/slots/proficiência por nível, persistência e export/import JSON. 271 testes passando, build e lint limpos.
 
-**Próximo passo:** Fase 2 do ROADMAP — habilitar seleção de subclasse para as 12 classes (o hook `isClassStepComplete(..., level)` já existe).
+**Próximo passo:** Fase 3 do ROADMAP — progressão completa 1–20 (features por nível de todas as classes/subclasses e recursos de classe como fúrias, ki, ataque furtivo).
+
+### Fase 2 — subclasses (concluída — núcleo) (2026-07-07)
+
+- **2.1** Seleção de subclasse por nível para as 12 classes (antes só 3); rótulo correto por classe; validação e Revisão sensíveis ao nível
+- **2.2** Features de entrada das 41 subclasses digitadas do PHB (as 29 que estavam vazias); `scripts/fill-subclass-features.mjs` injeta preservando o formato compacto do JSON
+- **2.3** As escolhas embutidas na entrada da subclasse (totem do bárbaro, manobras do Mestre de Batalha, disciplinas do monge, terreno do druida, Presa do Caçador) hoje aparecem como texto na feature; transformá-las em seletores reais foi **movido para a Fase 3**, pois usa a mesma infraestrutura de "escolher N de uma lista" das escolhas de progressão (invocações, metamagia, expertise adicional).
 
 ### Fase 1 — correções concluídas (2026-07-07)
 

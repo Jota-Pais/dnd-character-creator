@@ -13,6 +13,45 @@
       { "level": 15, "name": "Fúria Persistente", "description": "Sua fúria só termina prematuramente se você cair inconsciente ou decidir terminá-la." },
       { "level": 18, "name": "Força Indomável", "description": "Se o total de um teste de Força for menor que o seu valor de Força, você pode usar o valor de Força no lugar do resultado." },
       { "level": 20, "name": "Campeão Primitivo", "description": "Seus valores de Força e Constituição aumentam em 4, e o máximo para eles passa a 24." }
+    ],
+    "fighter": [
+      { "level": 1, "name": "Estilo de Luta", "description": "Você adota um estilo de combate como especialidade (escolhido nas opções da classe)." },
+      { "level": 1, "name": "Retomar o Fôlego", "description": "Como ação bônus, recupere 1d10 + seu nível de guerreiro pontos de vida. Recupera em descanso curto ou longo." },
+      { "level": 2, "name": "Surto de Ação", "description": "No seu turno, você pode realizar uma ação adicional. Uma vez por descanso (duas a partir do 17° nível, mas só uma por turno)." },
+      { "level": 5, "name": "Ataque Extra", "description": "Você ataca duas vezes ao usar a ação de Ataque (três vezes no 11° nível, quatro no 20°)." },
+      { "level": 9, "name": "Indomável", "description": "Você pode refazer um teste de resistência que falhou, usando o novo resultado. Uma vez por descanso longo (duas no 13° nível, três no 17°)." }
+    ],
+    "rogue": [
+      { "level": 1, "name": "Especialização", "description": "Escolha duas perícias em que é proficiente (ou uma perícia e ferramentas de ladrão): seu bônus de proficiência é dobrado em testes com elas." },
+      { "level": 1, "name": "Ataque Furtivo", "description": "Uma vez por turno, cause 1d6 de dano extra a um alvo que você acerte tendo vantagem no ataque (ou com um aliado adjacente ao alvo), usando arma sutil ou à distância. O dado aumenta conforme o nível." },
+      { "level": 1, "name": "Gíria de Ladrão", "description": "Você conhece as gírias de ladrão, um código secreto que permite trocar mensagens ocultas numa conversa normal." },
+      { "level": 2, "name": "Ação Ardilosa", "description": "Em cada turno, você pode usar uma ação bônus para Disparar, Desengajar ou Esconder-se." },
+      { "level": 5, "name": "Esquiva Sobrenatural", "description": "Quando um atacante que você possa ver o acerta, use sua reação para reduzir o dano à metade." },
+      { "level": 7, "name": "Evasão", "description": "Em efeitos que pedem resistência de Destreza por metade do dano, você não sofre dano se passar e sofre metade se falhar." },
+      { "level": 11, "name": "Talento Confiável", "description": "Em testes de habilidade nos quais some seu bônus de proficiência, trate qualquer resultado 9 ou menor no d20 como 10." },
+      { "level": 14, "name": "Sentido Cego", "description": "Se puder ouvir, você percebe a localização de criaturas escondidas ou invisíveis a até 3 metros de você." },
+      { "level": 15, "name": "Mente Escorregadia", "description": "Você ganha proficiência em testes de resistência de Sabedoria." },
+      { "level": 18, "name": "Elusivo", "description": "Nenhuma jogada de ataque tem vantagem contra você, desde que não esteja incapacitado." },
+      { "level": 20, "name": "Golpe de Sorte", "description": "Transforme uma falha de ataque em acerto, ou trate um teste falho como 20 natural. Uma vez por descanso." }
+    ],
+    "monk": [
+      { "level": 1, "name": "Defesa sem Armadura", "description": "Sem armadura nem escudo, sua CA é 10 + mod. de Destreza + mod. de Sabedoria." },
+      { "level": 1, "name": "Artes Marciais", "description": "Com golpes desarmados e armas de monge, você pode usar Destreza no ataque e no dano, causa dano igual ao dado de artes marciais e pode fazer um ataque desarmado como ação bônus." },
+      { "level": 2, "name": "Chi", "description": "Você tem pontos de chi (iguais ao seu nível de monge) que alimentam Rajada de Golpes, Defesa Paciente e Passo do Vento. Recuperam-se em descanso curto ou longo." },
+      { "level": 2, "name": "Movimento sem Armadura", "description": "Seu deslocamento aumenta em 3 metros enquanto você não usar armadura nem escudo (o bônus cresce em níveis superiores)." },
+      { "level": 3, "name": "Defletir Projéteis", "description": "Use sua reação para reduzir o dano de um ataque à distância; se reduzir a 0, pode apanhar o projétil e arremessá-lo gastando 1 ponto de chi." },
+      { "level": 4, "name": "Queda Lenta", "description": "Como reação ao cair, reduza o dano de queda em cinco vezes o seu nível de monge." },
+      { "level": 5, "name": "Ataque Extra", "description": "Você pode atacar duas vezes ao usar a ação de Ataque no seu turno." },
+      { "level": 5, "name": "Ataque Atordoante", "description": "Ao acertar um ataque corpo-a-corpo com arma, gaste 1 ponto de chi para tentar atordoar o alvo (resistência de Constituição)." },
+      { "level": 6, "name": "Golpes de Chi", "description": "Seus golpes desarmados contam como armas mágicas para superar resistência e imunidade a dano não-mágico." },
+      { "level": 7, "name": "Evasão", "description": "Em efeitos que pedem resistência de Destreza por metade do dano, você não sofre dano se passar e sofre metade se falhar." },
+      { "level": 7, "name": "Mente Tranquila", "description": "Com uma ação, você pode terminar um efeito que o esteja enfeitiçando ou amedrontando." },
+      { "level": 10, "name": "Pureza Corporal", "description": "Você é imune a doenças e venenos." },
+      { "level": 13, "name": "Idiomas do Sol e da Lua", "description": "Você compreende todos os idiomas falados e qualquer criatura que entenda um idioma pode entender você." },
+      { "level": 14, "name": "Alma de Diamante", "description": "Você é proficiente em todos os testes de resistência; ao falhar em um, pode gastar 1 ponto de chi para refazer e ficar com o novo resultado." },
+      { "level": 15, "name": "Corpo Atemporal", "description": "Seu chi sustenta você: não sofre os efeitos da velhice, não pode ser envelhecido magicamente e não precisa de comida ou água." },
+      { "level": 18, "name": "Corpo Vazio", "description": "Gaste 4 pontos de chi para ficar invisível por 1 minuto, com resistência a todo dano exceto energético; ou 8 pontos de chi para conjurar projeção astral." },
+      { "level": 20, "name": "Auto Aperfeiçoamento", "description": "Ao rolar iniciativa sem pontos de chi restantes, você recupera 4 pontos de chi." }
     ]
   },
   "subclasses": {}

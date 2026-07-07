@@ -232,11 +232,11 @@ describe('getExpertiseOptions', () => {
 
 describe('getClassFeaturesUpToLevel', () => {
   const barbarian = getClass('barbarian')!
-  const fighter = getClass('fighter')!
+  const wizard = getClass('wizard')!
 
-  it('hasFeaturesByLevel: bárbaro sim, guerreiro ainda não', () => {
+  it('hasFeaturesByLevel: bárbaro sim, mago ainda não', () => {
     expect(hasFeaturesByLevel('barbarian')).toBe(true)
-    expect(hasFeaturesByLevel('fighter')).toBe(false)
+    expect(hasFeaturesByLevel('wizard')).toBe(false)
   })
 
   it('bárbaro nv1 mostra só as features de nível 1', () => {
@@ -264,9 +264,9 @@ describe('getClassFeaturesUpToLevel', () => {
     expect(nomes).toContain('Frenesi')
   })
 
-  it('guerreiro (sem tabela) cai no fallback: features de nível 1', () => {
-    const f = getClassFeaturesUpToLevel(fighter, null, 10)
+  it('mago (sem tabela) cai no fallback: features de nível 1', () => {
+    const f = getClassFeaturesUpToLevel(wizard, null, 10)
     expect(f.every(x => x.level === 1)).toBe(true)
-    expect(f.length).toBe(fighter.features.length)
+    expect(f.length).toBe(wizard.features.length)
   })
 })

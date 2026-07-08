@@ -543,12 +543,13 @@ export function ReviewStep() {
         )
       })()}
 
-      {/* Talentos (dos aprimoramentos) */}
+      {/* Talentos (aprimoramentos + talento racial do Humano Variante) */}
       {(() => {
-        const feats = (draft.asiChoices ?? [])
-          .filter(c => c.kind === 'feat' && c.featId)
-          .map(c => (c.kind === 'feat' ? getFeat(c.featId) : undefined))
-          .filter(Boolean)
+        const featIds = [
+          ...(draft.raceChoices.feat ? [draft.raceChoices.feat] : []),
+          ...(draft.asiChoices ?? []).filter(c => c.kind === 'feat' && c.featId).map(c => (c as { featId: string }).featId),
+        ]
+        const feats = [...new Set(featIds)].map(id => getFeat(id)).filter(Boolean)
         if (feats.length === 0) return null
         return (
           <Section title="Talentos">

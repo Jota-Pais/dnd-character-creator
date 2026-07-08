@@ -3,6 +3,7 @@ import type { RaceChoiceSelections } from '../../types/character'
 import { ALL_ABILITY_SCORES, ABILITY_LABELS } from '../../utils/abilityScoreUtils'
 import { SKILLS, LANGUAGES, TOOL_NAMES } from '../../utils/raceUtils'
 import { getCantrips, SPELLS } from '../../utils/spellUtils'
+import { getFeat, getAllFeats } from '../../utils/featUtils'
 
 type Props = {
   choices: RaceChoice[]
@@ -78,11 +79,12 @@ export function ChoicePanel({ choices, selections, accent, onChange, excludedLan
             )
           case 'feat':
             return (
-              <FeatPlaceholder
+              <FeatChoiceField
                 key={idx}
                 accent={accent}
-                value={selections.feat ?? ''}
-                onChange={feat => onChange({ feat })}
+                featId={selections.feat ?? ''}
+                featAbility={selections.featAbility}
+                onChange={patch => onChange(patch)}
               />
             )
         }
@@ -336,29 +338,67 @@ function CantripChoiceField({ from, accent, value, onChange }: CantripChoiceFiel
   )
 }
 
-function FeatPlaceholder({
+function FeatChoiceField({
   accent,
-  value,
+  featId,
+  featAbility,
   onChange,
 }: {
   accent: string
-  value: string
-  onChange: (v: string) => void
+  featId: string
+  featAbility?: AbilityScore
+  onChange: (patch: Partial<RaceChoiceSelections>) => void
 }) {
+  const feat = featId ? getFeat(featId) : undefined
+  const halfOptions = feat?.abilityIncrease ?? []
   return (
     <div>
-      <p className="text-sm font-semibold text-parchment-300 mb-1 font-fantasy">
-        Talento{' '}
-        <span className="text-gold-700 text-xs font-normal">(lista completa em breve)</span>
-      </p>
-      <input
-        type="text"
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        placeholder="Ex: Sentido Aguçado, Atirador…"
-        className="w-full px-3 py-2 rounded-lg border text-parchment-200 placeholder-parchment-700 text-sm bg-parchment-950/50 focus:outline-none transition-colors"
-        style={{ borderColor: value ? accent : 'rgba(58, 38, 20, 0.6)' }}
-      />
+      <p className="text-sm font-semibold text-parchment-300 mb-2 font-fantasy">Talento</p>
+      <select
+        value={featId}
+        onChange={e => onChange({ feat: e.target.value, featAbility: undefined })}
+        className="w-full px-3 py-2 rounded-lg border text-parchment-200 text-sm bg-parchment-950 mb-2"
+        style={{ borderColor: featId ? accent : 'rgba(58,38,20,0.6)' }}
+      >
+        <option value="">— escolha um talento —</option>
+        {getAllFeats().map(f => (
+          <option key={f.id} value={f.id}>{f.name}</option>
+        ))}
+      </select>
+      {feat && (
+        <>
+          {feat.prerequisite && (
+            <p className="text-xs text-gold-600 mb-1">Pré-requisito: {feat.prerequisite}</p>
+          )}
+          <p className="text-xs text-parchment-500 leading-relaxed whitespace-pre-line mb-2">
+            {feat.description}
+          </p>
+          {halfOptions.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-parchment-300 mb-1">+1 no atributo (parte do talento):</p>
+              <div className="flex flex-wrap gap-1.5">
+                {halfOptions.map(ab => {
+                  const isSel = featAbility === ab
+                  return (
+                    <button
+                      key={ab}
+                      onClick={() => onChange({ featAbility: ab })}
+                      className="px-2 py-1 rounded-lg border text-xs font-semibold font-fantasy"
+                      style={{
+                        borderColor: isSel ? accent : 'rgba(58,38,20,0.6)',
+                        backgroundColor: isSel ? `${accent}20` : 'transparent',
+                        color: isSel ? accent : '#b8946f',
+                      }}
+                    >
+                      {ABILITY_LABELS[ab].short}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   )
 }

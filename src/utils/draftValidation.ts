@@ -69,6 +69,9 @@ function sanitizeRaceChoices(raw: unknown): RaceChoiceSelections {
   if (tools.length > 0) choices.tools = tools
   if (typeof raw.cantrip === 'string') choices.cantrip = raw.cantrip
   if (typeof raw.feat === 'string') choices.feat = raw.feat
+  if (typeof raw.featAbility === 'string' && (ABILITY_KEYS as string[]).includes(raw.featAbility)) {
+    choices.featAbility = raw.featAbility as AbilityScore
+  }
   return choices
 }
 

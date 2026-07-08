@@ -58,17 +58,31 @@ export function getRacialBonuses(draft: CharacterDraft): Record<AbilityScore, nu
   return bonuses
 }
 
+/** +1 do talento racial (Humano Variante) quando for um meio-talento. */
+export function getRaceFeatBonus(draft: CharacterDraft): Record<AbilityScore, number> {
+  const bonuses: Record<AbilityScore, number> = { STR: 0, DEX: 0, CON: 0, INT: 0, WIS: 0, CHA: 0 }
+  const featId = draft.raceChoices.feat
+  const featAbility = draft.raceChoices.featAbility
+  if (featId && featAbility && (getFeat(featId)?.abilityIncrease?.includes(featAbility) ?? false)) {
+    bonuses[featAbility] += 1
+  }
+  return bonuses
+}
+
 /**
- * Atributos finais = base + bônus racial + ASIs, com os ASIs limitados a um
- * teto de 20 por atributo (regra do PHB: ASI não eleva um atributo acima de 20).
+ * Atributos finais = base + bônus racial + ASIs (incl. meio-talentos e o talento
+ * racial), limitados a um teto de 20 por atributo (regra do PHB: incrementos não
+ * elevam um atributo acima de 20).
  */
 export function getFinalAbilityScores(draft: CharacterDraft): Record<AbilityScore, number> {
   const racial = getRacialBonuses(draft)
   const asi = getAsiBonuses(draft.asiChoices ?? [])
+  const raceFeat = getRaceFeatBonus(draft)
   const final = {} as Record<AbilityScore, number>
   for (const ab of ALL_ABILITY_SCORES) {
     const baseWithRacial = (draft.abilityScores[ab] ?? 10) + racial[ab]
-    const capped = Math.min(baseWithRacial + asi[ab], Math.max(20, baseWithRacial))
+    const increases = asi[ab] + raceFeat[ab]
+    const capped = Math.min(baseWithRacial + increases, Math.max(20, baseWithRacial))
     final[ab] = capped
   }
   return final

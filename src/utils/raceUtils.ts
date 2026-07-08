@@ -1,6 +1,7 @@
 import type { Race, Subrace, AbilityBonus, RaceChoice, AbilityChoice, GrantedProficiency, InnateSpell } from '../types/race'
 import type { RaceChoiceSelections } from '../types/character'
 import racesData from '../data/races.json'
+import { getFeat } from './featUtils'
 
 export const RACES: Race[] = racesData as Race[]
 
@@ -183,9 +184,14 @@ export function isRaceStepComplete(
       case 'cantrip':
         if (!choices.cantrip) return false
         break
-      case 'feat':
+      case 'feat': {
         if (!choices.feat) return false
+        const options = getFeat(choices.feat)?.abilityIncrease
+        if (options && options.length > 0) {
+          if (!choices.featAbility || !options.includes(choices.featAbility)) return false
+        }
         break
+      }
     }
   }
 

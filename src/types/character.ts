@@ -50,6 +50,8 @@ export type RaceChoiceSelections = {
   tools?: string[]
   cantrip?: string
   feat?: string
+  /** Atributo do +1 quando o talento racial (Humano Variante) é um meio-talento. */
+  featAbility?: AbilityScore
 }
 
 export type HpMethod = 'average' | 'roll'

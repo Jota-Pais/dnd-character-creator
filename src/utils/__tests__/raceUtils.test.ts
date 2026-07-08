@@ -9,6 +9,7 @@ import {
   getEffectiveInnateSpells,
   isRaceStepComplete,
 } from '../raceUtils'
+import type { RaceChoiceSelections } from '../../types/character'
 
 const dwarf = getRace('dwarf')!
 const hillDwarf = getSubrace(dwarf, 'hill-dwarf')!
@@ -140,4 +141,17 @@ describe('isRaceStepComplete', () => {
         languages: ['goblin'],
       }),
     ).toBe(true))
+
+  it('humano variante exige o talento escolhido', () => {
+    const base: RaceChoiceSelections = { abilityBonuses: ['STR', 'DEX'], skills: ['athletics'] }
+    expect(isRaceStepComplete(human, variantHuman, base)).toBe(false) // falta o talento
+    expect(isRaceStepComplete(human, variantHuman, { ...base, feat: 'alerta' })).toBe(true)
+  })
+
+  it('humano variante com meio-talento exige o atributo do +1', () => {
+    const base: RaceChoiceSelections = { abilityBonuses: ['STR', 'DEX'], skills: ['athletics'], feat: 'atleta' }
+    expect(isRaceStepComplete(human, variantHuman, base)).toBe(false) // meio-talento sem +1
+    expect(isRaceStepComplete(human, variantHuman, { ...base, featAbility: 'STR' })).toBe(true)
+    expect(isRaceStepComplete(human, variantHuman, { ...base, featAbility: 'CON' })).toBe(false) // CON não é opção do Atleta
+  })
 })

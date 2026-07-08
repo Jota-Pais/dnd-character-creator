@@ -6,7 +6,11 @@
 
 **Fase 1 do ROADMAP concluída — núcleo de nível 1 corrigido e fiel ao PHB.** Wizard de 8 passos funcionando, com seleção de nível (1–20), PV por média ou rolagem, progressão de magias/slots/proficiência por nível, persistência e export/import JSON. 271 testes passando, build e lint limpos.
 
-**Próximo passo:** Fase 7 (export PDF). Fases 1, 2, 4, 6 completas; Fase 3 com núcleo (falta cauda das subclasses + escolhas de progressão, detalhado no ROADMAP.md); Fase 5 com loja funcional (falta só itens extras da 5.1).
+**Próximo passo:** Fase 8 (gamificação, auditoria final e deploy) — ou fechar as pendências das Fases 3.5 (cauda de subclasses/escolhas) e 5.1 (itens extras da loja). Fases 1, 2, 4, 6, 7 completas; Fase 3 e 5 com núcleo.
+
+### Fase 7 — Export PDF ✅ CONCLUÍDA (2026-07-08)
+
+- Ficha imprimível própria (`PrintableSheet`) em PT, com tudo que o jogador usa na mesa; impressão/PDF pelo navegador (`window.print`), zero dependências. Botão "Imprimir / Salvar como PDF" na Revisão. Decisão de formato registrada na memória.
 
 ### Fase 6 — Biblioteca de fichas ✅ CONCLUÍDA (2026-07-08)
 

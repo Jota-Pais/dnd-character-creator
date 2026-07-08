@@ -153,12 +153,14 @@ Passo "Aprimoramentos" no wizard: por espaço de ASI, +2 num atributo, +1 em doi
 
 ---
 
-## Fase 7 — Export PDF
+## Fase 7 — Export PDF ✅ CONCLUÍDA (2026-07-08)
 
-| # | Etapa | Detalhe |
-| - | ----- | ------- |
-| 7.1 | Ficha imprimível | Rota/visão de impressão com CSS `@media print` — imprime/salva PDF pelo navegador, zero dependências |
-| 7.2 | (Opcional) PDF nativo | `pdf-lib` para gerar a ficha oficial preenchida, se a versão imprimível não bastar |
+Decisão de formato: ficha **própria** (não a oficial da WotC), em português, com tudo que o jogador usa na mesa. Ver [[pdf-export-formato]] na memória.
+
+| # | Etapa | Detalhe | Status |
+| - | ----- | ------- | ------ |
+| 7.1 | Ficha imprimível | `PrintableSheet` (documento claro) + view 'print' + CSS `@media print`; botão "Imprimir / Salvar como PDF" na Revisão. Zero dependências. Conteúdo: identidade, atributos, combate, resistências, 18 perícias, ataques, magias, recursos, proficiências/idiomas, magias raciais, traços, features por nível, talentos, inventário. | ✅ |
+| 7.2 | (Opcional) PDF nativo / folha oficial | `pdf-lib` — plano B, só se a versão imprimível não bastar. | ⬜ (não necessário) |
 
 ---
 

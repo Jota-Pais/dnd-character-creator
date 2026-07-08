@@ -67,9 +67,9 @@ A validação `isClassStepComplete(cls, choices, currentLevel)` já aceita níve
 
 ---
 
-## Fase 3 — Progressão completa 1–20 (o épico de dados) — 🔄 NÚCLEO PRONTO, FALTA A CAUDA
+## Fase 3 — Progressão completa 1–20 (o épico de dados) — 🔄 NÚCLEO + 3.5a PRONTOS, FALTA 3.5b
 
-O maior bloco de trabalho. Núcleo (recursos + features das 12 classes) concluído; falta a cauda das subclasses e os seletores de escolhas de progressão.
+O maior bloco de trabalho. Núcleo (recursos + features das 12 classes) e features de subclasse por nível concluídos; falta só os seletores de escolhas de progressão.
 
 | # | Etapa | Detalhe | Status |
 | - | ----- | ------- | ------ |
@@ -77,13 +77,18 @@ O maior bloco de trabalho. Núcleo (recursos + features das 12 classes) concluí
 | 3.2 | Lote A — marciais | Bárbaro, Guerreiro, Ladino, Monge (features de classe 1–20) | ✅ |
 | 3.3 | Lote B — conjuradores plenos | Clérigo, Druida, Mago, Feiticeiro | ✅ |
 | 3.4 | Lote C — híbridos | Bardo, Bruxo, Paladino, Patrulheiro | ✅ |
-| 3.5a | Features por nível das **subclasses** | ⚠️ **FALTA.** Só o bárbaro (Furioso, Totêmico) está feito. Faltam **39 subclasses**. Ver detalhamento abaixo. | 🔄 |
+| 3.5a | Features por nível das **subclasses** | ✅ **Concluída (2026-07-08).** As 41 subclasses das 12 classes têm features por nível completas em `class-progression-features.json`, digitalizadas do PDF (delegado a agentes por classe, conferido: JSON válido, todas as subclasses de `classes.json` presentes, build/lint/347 testes verdes, spot-check manual contra o livro sem divergência). | ✅ |
 | 3.5b | Escolhas de progressão como **seletores reais** | ⚠️ **FALTA (não iniciado).** Ver detalhamento abaixo. | ⬜ |
-| 3.6 | Revisão por nível | Features de classe agrupadas por nível ✅; painel de recursos ✅. Falta só refletir as features de subclasse de nível alto (depende de 3.5a). | ✅ (parcial) |
+| 3.6 | Revisão por nível | Features de classe agrupadas por nível ✅; painel de recursos ✅; features de subclasse de nível alto agora disponíveis nos dados (3.5a concluída) — falta só confirmar que a Revisão já exibe todas corretamente. | ✅ (quase completa) |
 
 **Pronto quando:** um personagem de nível N exibe exatamente as features/recursos que o livro dá até o nível N, com as escolhas de progressão feitas pelo jogador.
 
 ### 📌 Detalhamento do que falta na Fase 3 (para não esquecer)
+
+**3.5a — ✅ CONCLUÍDA (2026-07-08).** Ficou registrado abaixo como referência (ids/níveis por classe), mas os dados já estão todos em `class-progression-features.json`.
+
+<details>
+<summary>Registro histórico da tarefa 3.5a (já concluída)</summary>
 
 **3.5a — features por nível das 39 subclasses restantes** (trabalho mecânico, padrão já provado):
 
@@ -102,6 +107,49 @@ O maior bloco de trabalho. Núcleo (recursos + features das 12 classes) concluí
   - Paladino: Devoção, Anciões, Vingança (3/7/15/20; obs.: entrada 3 já tem magias de juramento + canalizar divindade)
   - Patrulheiro: Besta, Caçador, Rastreador Subterrâneo (3/7/11/15)
 - Fonte: o PDF do livro (ver [[phb-2014-pdf]] na memória). Extração via `pdf-parse` (scripts de sondagem no padrão já usado). **Atenção a colisões de nome entre classes** (ex.: "Corpo Atemporal" existe no monge nv15 E no druida nv18; "Golpe Divino" é feature de domínio do clérigo, não do paladino, cujo smite é "Destruição Divina"). Sempre conferir o nível/classe no PDF.
+
+#### 📋 Plano de execução para 3.5a (pensado para delegar — tarefa mecânica, baixo risco)
+
+Testado em 2026-07-08 com 2 agentes reais (bardo e bruxo) — resultado limpo, sem ambiguidade, formato correto de primeira. Confirma que é trabalho de "achar no livro e transcrever formatado", não decisão de design. Segue a receita pronta para rodar com qualquer ferramenta/agente:
+
+**1. Unidade de trabalho = 1 classe** (evita conflito de escrita concorrente se paralelizar). As 11 classes que faltam, com subclasses e níveis de feature:
+
+| Classe (`id`) | Subclasses (`id` — nome PT) | Níveis |
+| --- | --- | --- |
+| `bard` ✅ feito | `college-of-lore` — Colégio do Conhecimento; `college-of-valor` — Colégio da Bravura | 3, 6, 14 |
+| `warlock` ✅ feito | `the-archfey` — A Arquifada; `the-fiend` — O Corruptor; `the-great-old-one` — O Grande Antigo | 1, 6, 10, 14 |
+| `cleric` | `knowledge-domain`, `trickery-domain`, `war-domain`, `light-domain`, `nature-domain`, `tempest-domain`, `life-domain` (Domínio do Conhecimento/Enganação/Guerra/Luz/Natureza/Tempestade/Vida) | 1, 2, 6, 8, 17 |
+| `druid` | `circle-of-the-land` — Círculo da Terra; `circle-of-the-moon` — Círculo da Lua | 2, 6, 10, 14 |
+| `sorcerer` | `draconic-bloodline` — Linhagem Dracônica; `wild-magic` — Magia Selvagem | 1, 6, 14, 18 |
+| `fighter` | `champion` — Campeão; `battle-master` — Mestre de Batalha; `eldritch-knight` — Cavaleiro Arcano | 3, 7, 10, 15, 18 |
+| `rogue` | `thief` — Ladrão; `assassin` — Assassino; `arcane-trickster` — Trapaceiro Arcano | 3, 9, 13, 17 |
+| `wizard` | `abjuration`, `divination`, `conjuration`, `enchantment`, `evocation`, `illusion`, `necromancy`, `transmutation` (8 escolas) | 2, 6, 10, 14 |
+| `monk` | `open-hand` — Mão Aberta; `shadow` — Sombra; `four-elements` — Quatro Elementos | 3, 6, 11, 17 |
+| `paladin` | `oath-of-devotion` — Devoção; `oath-of-the-ancients` — Anciões; `oath-of-vengeance` — Vingança | 3, 7, 15, 20 |
+| `ranger` | `beast-master` — Conclave da Besta; `hunter` — Conclave do Caçador; `gloom-stalker` — Conclave do Rastreador Subterrâneo | 3, 7, 11, 15 |
+
+**2. Fontes por unidade de trabalho:**
+- Nível de entrada (o primeiro da lista): já digitalizado em `src/data/classes.json`, dentro do array `subclasses` de cada classe (buscar por `"id": "<subclass-id>"`). Só precisa condensar pro estilo do padrão (ver ponto 3), não precisa ir ao PDF pra esse nível.
+- Níveis mais altos: texto do livro. Já foi extraído uma vez para texto puro (ver ponto 4) — buscar pelo nome da subclasse/feature em MAIÚSCULAS (é como aparece no livro) e ler o contexto ao redor.
+
+**3. Formato/estilo de saída** — espelhar exatamente `src/data/class-progression-features.json`, chave `"subclasses"`, exemplos `"berserker"`/`"totem-warrior"` (já prontos): array de `{ "level": N, "name": "Nome em Português", "description": "1-3 frases, mecânico, sem floreio" }`.
+
+**4. Extração do PDF** — `pdf-parse` (o que está instalado é a v2.4.5, API por classe, NÃO a v1 baseada em função):
+```js
+const { PDFParse } = require('pdf-parse'); // require('pdf-parse') NÃO é mais uma função
+const parser = new PDFParse({ data: fs.readFileSync(pdfPath) });
+const result = await parser.getText(); // result.pages = [{ num, text }, ...]
+```
+PDF: `C:\Users\jotap\OneDrive\DnD\livros\d&d-5e-livro-do-jogador-fundo-branco-biblioteca-c3a9lfica.pdf` (314 páginas; cuidado com o `&` no nome do arquivo — atrapalha alguns shells, copiar para um caminho sem `&` se necessário). Já existe um dump completo em texto puro (314 páginas, ~1,3M caracteres, marcadores `===== PAGINA N =====` = índice do PDF, não o número impresso no rodapé) em `C:\Users\jotap\AppData\Local\Temp\claude\C--Users-jotap-Projetos-pessoais-dnd-character-creator\503e4055-24e7-4973-8cd5-100e674f7243\scratchpad\phb-full-text.txt` — é um diretório temp de sessão, pode não sobreviver; se sumir, é só re-rodar a extração acima (leva ~1-2 min).
+
+**5. Saída de cada unidade** — um fragmento JSON isolado por classe (ex.: `subclass-cleric.json`), não editar `class-progression-features.json` diretamente — evita conflito se rodar em paralelo. Já prontos (2026-07-08, revisados, sem ambiguidade reportada):
+- `subclass-bard.json` e `subclass-warlock.json` no scratchpad acima.
+
+**6. Depois de ter os fragmentos:** mesclar na chave `"subclasses"` de `class-progression-features.json`, validar JSON, rodar `npm run build`, `npm run lint`, `npm test`, atualizar ROADMAP/PROGRESS (marcar 3.5a ✅) e commitar.
+
+**Execução real:** as 9 classes restantes (clérigo, druida, feiticeiro, guerreiro, ladino, mago, monge, paladino, patrulheiro) foram feitas por outra ferramenta de agentes em paralelo, um por classe, e mescladas direto em `class-progression-features.json` (commit `feat(data): adiciona habilidades de subclasse extraídas do phb para todas as 9 classes restantes`). Bardo e bruxo tinham sido testados antes nesta sessão mas ficaram só como fragmentos no scratchpad — a outra ferramenta relatou (incorretamente) que já estavam mesclados; a auditoria estrutural pegou a divergência e os dois foram mesclados manualmente depois. Validado: todas as 41 subclasses de `classes.json` presentes em `class-progression-features.json`, JSON válido, `npm run build`/`lint`/`test` (347 testes) verdes, e spot-check manual de 5 subclasses (incluindo Mestre de Batalha, cujo upgrade de dado de superioridade pra d10/d12 nos níveis 10/18 foi confirmado linha a linha no PDF) sem nenhuma divergência.
+
+</details>
 
 **3.5b — escolhas de progressão como seletores reais** (mini-projeto: modelo + dados + UI):
 

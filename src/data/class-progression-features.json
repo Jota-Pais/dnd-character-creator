@@ -1482,6 +1482,116 @@
         "name": "Mestre Transmutador",
         "description": "Ao destruir a Pedra de Transmutador (só pode criar outra no dia seguinte) pode reviver mortos, remover doenças, alterar aparência em 3d10 anos, ou realizar grande transmutação permanente."
       }
+    ],
+    "college-of-lore": [
+      {
+        "level": 3,
+        "name": "Proficiência Adicional",
+        "description": "Você ganha proficiência em três perícias, à sua escolha."
+      },
+      {
+        "level": 3,
+        "name": "Palavras de Interrupção",
+        "description": "Com sua reação e um uso de Inspiração de Bardo, subtraia o dado de inspiração da jogada de ataque, teste de habilidade ou jogada de dano de uma criatura a até 18 m."
+      },
+      {
+        "level": 6,
+        "name": "Segredos Mágicos Adicionais",
+        "description": "Você aprende duas magias adicionais, à sua escolha, de qualquer classe (magia ou truque de nível que você possa conjurar). Elas contam como magias de bardo pra você, mas não contam no total de magias de bardo conhecidas."
+      },
+      {
+        "level": 14,
+        "name": "Perícia Inigualável",
+        "description": "Ao fazer um teste de habilidade, você pode gastar um uso de Inspiração de Bardo e somar o resultado do dado ao teste, depois de rolar mas antes de saber se foi bem ou mal sucedido."
+      }
+    ],
+    "college-of-valor": [
+      {
+        "level": 3,
+        "name": "Proficiências Adicionais",
+        "description": "Você ganha proficiência com armaduras médias, escudos e armas marciais."
+      },
+      {
+        "level": 3,
+        "name": "Inspiração em Combate",
+        "description": "Uma criatura com sua Inspiração de Bardo pode somar o dado a uma jogada de dano ou, com uma reação, à CA contra um ataque."
+      },
+      {
+        "level": 6,
+        "name": "Ataque Extra",
+        "description": "Você pode atacar duas vezes, em vez de uma, ao usar a ação de Ataque no seu turno."
+      },
+      {
+        "level": 14,
+        "name": "Magia de Batalha",
+        "description": "Ao usar sua ação para conjurar uma magia de bardo, você pode fazer um ataque com arma como ação bônus."
+      }
+    ],
+    "the-archfey": [
+      {
+        "level": 1,
+        "name": "Presença Feérica",
+        "description": "Com uma ação, force criaturas num cubo de 3 m a testar Sabedoria. Falha: enfeitiçadas ou amedrontadas até seu próximo turno. Recarrega em descanso curto ou longo."
+      },
+      {
+        "level": 6,
+        "name": "Névoa de Fuga",
+        "description": "Ao sofrer dano, use sua reação para ficar invisível e se teletransportar a até 18 m para um espaço desocupado que possa ver, permanecendo invisível até o início do seu próximo turno ou até atacar/conjurar uma magia. Recarrega em descanso curto ou longo."
+      },
+      {
+        "level": 10,
+        "name": "Defesa Sedutora",
+        "description": "Você não pode ser enfeitiçado. Quando outra criatura tentar enfeitiçá-lo, use sua reação para forçá-la a um teste de Sabedoria contra sua CD de bruxo; se falhar, ela fica enfeitiçada por você por 1 minuto ou até sofrer dano."
+      },
+      {
+        "level": 14,
+        "name": "Delírio Sombrio",
+        "description": "Com uma ação, escolha uma criatura a até 18 m; se falhar num teste de Sabedoria (CD de bruxo), ela fica enfeitiçada ou amedrontada por você (à sua escolha) por 1 minuto ou até você perder concentração, acreditando estar presa num reino enevoado onde só vê você, a si mesma e sua ilusão. Efeito termina antes se ela sofrer dano. Recarrega em descanso curto ou longo."
+      }
+    ],
+    "the-fiend": [
+      {
+        "level": 1,
+        "name": "Bênção do Obscuro",
+        "description": "Ao reduzir uma criatura hostil a 0 PV, você ganha PV temporários iguais ao mod. de Carisma + nível de bruxo (mínimo 1)."
+      },
+      {
+        "level": 6,
+        "name": "Sorte do Próprio Obscuro",
+        "description": "Ao fazer um teste de habilidade ou de resistência, você pode somar 1d10 ao resultado (decidindo após ver a jogada, mas antes de qualquer efeito). Recarrega em descanso curto ou longo."
+      },
+      {
+        "level": 10,
+        "name": "Resistência Demoníaca",
+        "description": "Ao terminar um descanso curto ou longo, escolha um tipo de dano e ganhe resistência a ele até escolher outro tipo com essa característica. Armas mágicas ou de prata ignoram essa resistência."
+      },
+      {
+        "level": 14,
+        "name": "Lançar no Inferno",
+        "description": "Ao acertar uma criatura com um ataque, transporte-a instantaneamente para os planos inferiores; ela retorna ao fim do seu turno e, se não for um corruptor, sofre 10d10 de dano psíquico. Recarrega em descanso curto ou longo."
+      }
+    ],
+    "the-great-old-one": [
+      {
+        "level": 1,
+        "name": "Despertar a Mente",
+        "description": "Comunique-se telepaticamente com qualquer criatura visível até 18 m. Ela deve entender ao menos um idioma para compreendê-lo."
+      },
+      {
+        "level": 6,
+        "name": "Proteção Entrópica",
+        "description": "Quando uma criatura fizer uma jogada de ataque contra você, use sua reação para impor desvantagem nessa jogada. Se o ataque errar, seu próximo ataque contra essa criatura recebe vantagem até o fim do seu próximo turno. Recarrega em descanso curto ou longo."
+      },
+      {
+        "level": 10,
+        "name": "Escudo de Pensamentos",
+        "description": "Seus pensamentos não podem ser lidos por telepatia ou outros meios, a menos que você permita. Você ganha resistência a dano psíquico e, sempre que uma criatura causar dano psíquico a você, ela sofre a mesma quantidade de dano."
+      },
+      {
+        "level": 14,
+        "name": "Criar Lacaio",
+        "description": "Com uma ação, toque um humanoide incapacitado para enfeitiçá-lo até que remover maldição seja conjurada nele, a condição enfeitiçado seja removida ou você use essa característica novamente. Pode se comunicar telepaticamente com a criatura enfeitiçada enquanto ambos estiverem no mesmo plano."
+      }
     ]
   }
 }

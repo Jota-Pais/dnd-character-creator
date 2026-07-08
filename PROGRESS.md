@@ -1,12 +1,19 @@
 # Progresso — D&D Character Creator
 
-> Atualizado: 2026-07-07
+> Atualizado: 2026-07-08
 
 ## Status atual
 
-**Fase 1 do ROADMAP concluída — núcleo de nível 1 corrigido e fiel ao PHB.** Wizard de 8 passos funcionando, com seleção de nível (1–20), PV por média ou rolagem, progressão de magias/slots/proficiência por nível, persistência e export/import JSON. 271 testes passando, build e lint limpos.
+**Fase 3.5a concluída — todas as 41 subclasses do PHB com features por nível.** As 12 classes agora têm progressão 1–20 completa, incluindo as habilidades de subclasse de nível alto (antes só o bárbaro tinha). Fases 1, 2, 4, 6, 7 completas; Fase 3 só falta a 3.5b (seletores de escolha); Fase 5 com núcleo (falta 5.1, baixo impacto).
 
-**Próximo passo:** Fase 8 (gamificação, auditoria final e deploy) — ou fechar as pendências das Fases 3.5 (cauda de subclasses/escolhas) e 5.1 (itens extras da loja). Fases 1, 2, 4, 6, 7 completas; Fase 3 e 5 com núcleo.
+**Próximo passo:** Fase 8 (gamificação, auditoria final e deploy) — ou fechar a 3.5b (seletores reais para invocações/metamagia/manobras/totem etc.) e/ou 5.1 (itens extras da loja) antes.
+
+### Fase 3.5a — Features de subclasse por nível ✅ CONCLUÍDA (2026-07-08)
+
+- As 41 subclasses das 12 classes (antes só berserker/totem-warrior do bárbaro) têm `LevelFeature[]` completo em `src/data/class-progression-features.json`, digitalizado do PDF do PHB.
+- Trabalho de digitalização mecânica feito por agentes em paralelo (um por classe) — 2 nesta sessão (bardo, bruxo) e 9 por outra ferramenta (clérigo, druida, feiticeiro, guerreiro, ladino, mago, monge, paladino, patrulheiro).
+- Auditoria pós-merge: script de validação estrutural (todas as subclasses de `classes.json` presentes, níveis válidos), `npm run build`/`lint`/`test` (347 testes) verdes, spot-check manual de 5 subclasses contra o PDF sem divergência. Pegou e corrigiu uma divergência real (bardo/bruxo relatados como mesclados, mas não estavam).
+- Ver detalhamento e receita de execução no `ROADMAP.md` (Fase 3, seção 3.5a).
 
 ### Fase 7 — Export PDF ✅ CONCLUÍDA (2026-07-08)
 

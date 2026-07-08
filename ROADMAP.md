@@ -218,11 +218,20 @@ Passo "Aprimoramentos" no wizard: por espaço de ASI, +2 num atributo, +1 em doi
 
 | # | Etapa | Detalhe | Status |
 | - | ----- | ------- | ------ |
-| 5.1 | Dados que faltam do cap. 5 | Montarias e veículos, selas/arreios; bens comerciais; tabela de bugigangas (d100) — ainda não no `/data`. Baixo impacto. | ⬜ |
+| 5.1 | Dados que faltam do cap. 5 | Montarias e veículos, selas/arreios; bens comerciais; tabela de bugigangas (d100) — ainda não no `/data`. Baixo impacto. | 🔄 (desenho pronto, ver abaixo) |
 | 5.2 | Loja | `getShopCatalog` + componente Shop no passo Equipamento: filtro por categoria, busca, carrinho (+/−), saldo restante ao vivo, bloqueio sem saldo. | ✅ |
 | 5.3 | Ficha considera compras | CA detecta armadura/escudo comprados (getEquippedArmor); Revisão lista itens comprados + saldo restante. | ✅ |
 
 **Pronto quando:** o jogador que rola ouro monta o equipamento inteiro dentro do app, sem ser mandado de volta ao livro. ✅ (com o catálogo atual; falta só 5.1 — itens extras)
+
+#### 📋 Desenho da 5.1 (2026-07-08 — pronto pra delegar)
+
+Decisões de escopo (o item original listava três coisas; nem todas viram mercadoria):
+- **Montarias e veículos → ENTRAM na loja.** Novo `src/data/mounts-vehicles.json` (montarias: cavalo de montaria/tração/guerra, pônei, mula, camelo, mastim, elefante; equipamento de montaria: selas de montaria/militar/exótica/carga, freio e rédea, alforje, ração animal, estábulo; veículos terrestres e aquáticos), cada item com `id`, `name`, `subcategory` (`mount`/`tack`/`vehicle`), `cost` (em **cobre**, canônico), `weight` (kg, `null` quando o PHB não dá). Integrar como nova `ShopCategory` **'Montarias'**: estender o tipo em `equipmentUtils.ts` (~linha 102), incluir os itens em `getShopCatalog` (~linha 112), e adicionar `'Montarias'` ao array `SHOP_CATEGORIES` de `src/components/steps/EquipmentStep.tsx` (~linha 411).
+- **Bugigangas (d100) → só DADOS nesta fase.** Novo `src/data/trinkets.json` (`{ "roll": 1..100, "description": "..." }`). NÃO entram na loja (são de sabor/gratuitas). O consumo — "bugiganga aleatória na criação" — é a **Fase 8.1**; 5.1 só deixa o dado pronto.
+- **Bens comerciais (trade goods) → FORA.** Decisão: são preços de commodity de referência (1 po = 1 galinha etc.), não equipamento de criação; incluir só poluiria a loja. Se um dia quiser, é referência, não mercadoria. (Reverter é trivial: adicionar um `trade-goods.json` e outra `ShopCategory`.)
+
+Fonte: PHB pt-BR, seção "Montarias e Veículos" e "Bugigangas" do cap. 5 (texto já extraído em `phb-full-text.txt` no scratchpad — ver [[phb-2014-pdf]]). Ao final: `npm run build`/`lint`/`test` verdes; se a loja ganhar um teste do catálogo, incluir montarias. Prompt de delegação completo na conversa de 2026-07-08.
 
 ---
 

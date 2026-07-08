@@ -6,7 +6,14 @@
 
 **Fase 1 do ROADMAP concluída — núcleo de nível 1 corrigido e fiel ao PHB.** Wizard de 8 passos funcionando, com seleção de nível (1–20), PV por média ou rolagem, progressão de magias/slots/proficiência por nível, persistência e export/import JSON. 271 testes passando, build e lint limpos.
 
-**Próximo passo:** Fase 6 (biblioteca de fichas) ou Fase 7 (export PDF). Fases 1, 2, 4 completas; Fase 3 com núcleo pronto (falta cauda das subclasses + escolhas de progressão, detalhado no ROADMAP.md); Fase 5 com loja funcional (falta só itens extras da 5.1: montarias, bens comerciais, bugigangas).
+**Próximo passo:** Fase 7 (export PDF). Fases 1, 2, 4, 6 completas; Fase 3 com núcleo (falta cauda das subclasses + escolhas de progressão, detalhado no ROADMAP.md); Fase 5 com loja funcional (falta só itens extras da 5.1).
+
+### Fase 6 — Biblioteca de fichas ✅ CONCLUÍDA (2026-07-08)
+
+- Múltiplos personagens: galeria inicial (abrir, duplicar, exportar, excluir, criar, importar). Antes só existia uma ficha.
+- `storage`: camada de biblioteca versionada em localStorage, com migração automática da sessão única legada.
+- Store: `view` (galeria/wizard), `library`, `currentId`; nextStep/prevStep salvam na biblioteca; "Concluir" na Revisão salva e volta à galeria.
+- IndexedDB adiado (só se o volume exigir).
 
 ### Fase 5 — Loja de equipamento ✅ NÚCLEO (2026-07-08)
 

@@ -141,15 +141,15 @@ Passo "Aprimoramentos" no wizard: por espaço de ASI, +2 num atributo, +1 em doi
 
 ---
 
-## Fase 6 — Biblioteca de fichas
+## Fase 6 — Biblioteca de fichas ✅ CONCLUÍDA (2026-07-08)
 
-| # | Etapa | Detalhe |
-| - | ----- | ------- |
-| 6.1 | Camada de biblioteca em `storage.ts` | Lista nomeada de fichas (id, nome, classe, nível, data), mantendo a abstração; localStorage na primeira versão (migração IndexedDB só se o volume exigir — registrar decisão) |
-| 6.2 | Tela inicial (galeria) | Criar novo, abrir, duplicar, excluir, exportar; import validado cai na galeria |
-| 6.3 | Re-edição guiada | Abrir ficha existente em qualquer passo do wizard, com validações reavaliadas |
+| # | Etapa | Detalhe | Status |
+| - | ----- | ------- | ------ |
+| 6.1 | Camada de biblioteca em `storage.ts` | Lista de fichas versionada em localStorage; migração automática da sessão única legada. | ✅ |
+| 6.2 | Tela inicial (galeria) | Criar, abrir, duplicar, excluir (com confirmação), exportar, importar; estado vazio. | ✅ |
+| 6.3 | Re-edição guiada | `openCharacter` reabre a ficha no passo em que parou; validações reavaliadas pelo wizard. | ✅ |
 
-**Pronto quando:** criar um segundo personagem não apaga o primeiro; qualquer ficha pode ser reaberta e editada.
+**Pronto quando:** criar um segundo personagem não apaga o primeiro; qualquer ficha pode ser reaberta e editada. ✅
 
 ---
 

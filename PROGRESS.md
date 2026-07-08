@@ -6,7 +6,12 @@
 
 **Fase 1 do ROADMAP concluída — núcleo de nível 1 corrigido e fiel ao PHB.** Wizard de 8 passos funcionando, com seleção de nível (1–20), PV por média ou rolagem, progressão de magias/slots/proficiência por nível, persistência e export/import JSON. 271 testes passando, build e lint limpos.
 
-**Próximo passo:** Fase 3, etapa 3.5 — escolhas de progressão (invocações, metamagia, manobras, expertise adicional) e as escolhas de entrada de subclasse (ex-2.3), mais as features por nível das **subclasses**. As features por nível das 12 **classes** já estão completas.
+**Próximo passo:** Fase 4, talentos — opção de Talento por espaço de ASI (dados dos ~42 talentos do PHB + efeitos), talento do Humano Variante. O ASI (metade mecânica) já está pronto. Também pendente: Fase 3.5 (subclasses restantes + seletores de escolhas de progressão).
+
+### Fase 4 — ASI e Talentos (em andamento)
+
+- **4.1/4.2** ✅ ASI: passo "Aprimoramentos" no wizard (entre Atributos e Magias). Níveis de ASI por classe, teto de 20, cálculo centralizado de atributos finais (base + racial + ASI). Corrige o bug de atributos errados em nível ≥4. `SESSION_VERSION` 4.
+- **4.1 (talentos) / 4.3 / 4.4 / 4.5** ⬜ Opção de Talento por espaço; `feats.json` digitado do cap. 6; efeitos aplicados; talento do Humano Variante (hoje campo de texto).
 
 ### Fase 3 — progressão 1–20 (em andamento)
 

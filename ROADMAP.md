@@ -180,3 +180,13 @@ Decisão de formato: ficha **própria** (não a oficial da WotC), em português,
 - Novo passo "Aprimoramentos" no wizard (9 passos).
 - Modelo `featuresByLevel` e recursos de classe em `progression.json`.
 - Biblioteca de fichas: localStorage versionado; critério de migração para IndexedDB.
+
+---
+
+## 📌 Backlog de Polimentos e Melhorias (Icebox)
+
+Pequenos detalhes, abstrações ou ideias de melhoria contínua identificados durante o desenvolvimento que não formam uma "Fase" principal do roadmap, mas ficam registrados como sugestões para evoluções futuras:
+
+- **Exportação de PDF — Detalhamento de Armas:** Pode ser interessante adicionar uma tabela individual para cada arma equipada, unindo a fórmula global de acerto com o dado de dano específico da arma (já disponível em `weapons.json`), facilitando a visualização rápida durante o combate.
+- **Exportação de PDF — Página de Magias (Grimório):** Como o banco de dados já possui a descrição completa de todas as magias (`spells.json`), uma excelente melhoria seria gerar uma segunda página (anexo) no PDF dedicada exclusivamente a imprimir os textos completos das magias conhecidas do personagem.
+- **Exportação de PDF — Traços de Antecedente:** A ficha atualmente resolve com precisão matemática as proficiências e equipamentos dos antecedentes. Seria uma boa adição considerar imprimir também a "habilidade narrativa" de cada antecedente (ex: "Contato Criminal" do Criminoso) na seção de Traços.

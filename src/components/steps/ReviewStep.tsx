@@ -67,6 +67,7 @@ export function ReviewStep() {
   const reset = useCharacterStore(state => state.reset)
   const setHpMethod = useCharacterStore(state => state.setHpMethod)
   const rollHpForLevel = useCharacterStore(state => state.rollHpForLevel)
+  const goToPrint = useCharacterStore(state => state.goToPrint)
 
   const level = draft.level ?? 1
   const hpMethod: HpMethod = draft.hpMethod ?? 'average'
@@ -716,9 +717,15 @@ export function ReviewStep() {
       {/* Actions */}
       <div className="space-y-2 pt-2">
         <button
-          onClick={handleExport}
+          onClick={goToPrint}
           className="w-full py-3 rounded-xl font-fantasy font-bold text-base tracking-wide transition-all hover:brightness-110 active:scale-[0.99]"
           style={{ backgroundColor: accent, color: '#0a0704' }}
+        >
+          🖨 Imprimir / Salvar como PDF
+        </button>
+        <button
+          onClick={handleExport}
+          className="w-full py-2.5 rounded-xl font-fantasy font-semibold text-sm border border-parchment-800 text-parchment-400 hover:text-parchment-200 transition-colors"
         >
           Exportar Ficha como JSON ↓
         </button>

@@ -11,7 +11,7 @@ import { getFirstIncompleteStep, isStepComplete } from '../utils/draftValidation
 
 const initialLibrary = loadLibrary()
 
-export type AppView = 'gallery' | 'wizard'
+export type AppView = 'gallery' | 'wizard' | 'print'
 
 type CharacterStore = {
   view: AppView
@@ -26,6 +26,8 @@ type CharacterStore = {
   duplicateCharacter: (id: string) => void
   deleteCharacter: (id: string) => void
   goToGallery: () => void
+  goToPrint: () => void
+  exitPrint: () => void
 
   setName: (name: string) => void
   setLevel: (level: number) => void
@@ -104,6 +106,9 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
       }
       return { view: 'gallery' }
     }),
+
+  goToPrint: () => set({ view: 'print' }),
+  exitPrint: () => set({ view: 'wizard' }),
 
   setName: (name) => set(state => ({ draft: { ...state.draft, name } })),
 

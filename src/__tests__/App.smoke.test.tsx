@@ -54,4 +54,14 @@ describe('App (smoke)', () => {
     expect(screen.getByText('Percep. Passiva')).toBeInTheDocument()
     expect(screen.getAllByText(/Concluir/).length).toBeGreaterThan(0)
   })
+
+  it('renderiza a ficha imprimível sem quebrar', () => {
+    useCharacterStore.getState().importDraft(structuredClone(COMPLETE_DRAFT))
+    useCharacterStore.getState().goToPrint()
+    render(<App />)
+    expect(screen.getByText('Krusk')).toBeInTheDocument()
+    expect(screen.getByText('Testes de Resistência')).toBeInTheDocument()
+    expect(screen.getByText('Perícias')).toBeInTheDocument()
+    expect(screen.getByText(/Imprimir \/ Salvar PDF/)).toBeInTheDocument()
+  })
 })

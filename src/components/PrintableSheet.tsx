@@ -1,0 +1,348 @@
+import { useCharacterStore } from '../stores/characterStore'
+import type { AbilityScore } from '../types/race'
+import {
+  getRace, getSubrace, getEffectiveSpeed, getEffectiveDarkvision, LANGUAGES, SKILLS,
+  getAvailableInnateSpells, TOOL_NAMES,
+} from '../utils/raceUtils'
+import {
+  getClass, getSubclass, getHpAtLevel1, getAverageHpAtLevel, getRolledHpAtLevel,
+  isActiveCaster, getClassFeaturesUpToLevel,
+} from '../utils/classUtils'
+import { getBackground, getToolName } from '../utils/backgroundUtils'
+import {
+  calculateModifier, formatModifier, getProficiencyBonus, getPassivePerception,
+  ALL_ABILITY_SCORES, ABILITY_LABELS,
+} from '../utils/abilityScoreUtils'
+import { getFinalAbilityScores } from '../utils/asiUtils'
+import { getAllGrantedSkills, getAllGrantedTools } from '../utils/proficiencyUtils'
+import { calculateArmorClass, getUnarmoredDefense } from '../utils/armorClassUtils'
+import { getEquippedArmor, getItemName } from '../utils/equipmentUtils'
+import { getClassResources } from '../utils/classResourceUtils'
+import { getSpell, getSpellSaveDC, formatSpellAttackBonus, getSpellSlots } from '../utils/spellUtils'
+import { getFeat } from '../utils/featUtils'
+import type { CharacterDraft } from '../types/character'
+import type { EquipmentChoiceItem } from '../types/equipment'
+
+const SKILL_ABILITY: Record<string, AbilityScore> = {
+  acrobatics: 'DEX', 'animal-handling': 'WIS', arcana: 'INT', athletics: 'STR',
+  deception: 'CHA', history: 'INT', insight: 'WIS', intimidation: 'CHA',
+  investigation: 'INT', medicine: 'WIS', nature: 'INT', perception: 'WIS',
+  performance: 'CHA', persuasion: 'CHA', religion: 'INT', 'sleight-of-hand': 'DEX',
+  stealth: 'DEX', survival: 'WIS',
+}
+const LANG_NAME = Object.fromEntries(LANGUAGES.map(l => [l.id, l.name]))
+
+function metersLabel(feet: number): string {
+  const m = feet * 0.3
+  return Number.isInteger(m) ? `${m} m` : `${m.toFixed(1).replace('.', ',')} m`
+}
+
+function resolveOptionItems(option: EquipmentChoiceItem[], pickedIds: string[]): string[] {
+  const result: string[] = []
+  let pickIdx = 0
+  for (const item of option) {
+    if (item.kind === 'specific') {
+      const name = getItemName(item.id)
+      result.push(item.quantity > 1 ? `${item.quantity}× ${name}` : name)
+    } else {
+      const picks = item.picks
+      result.push(...pickedIds.slice(pickIdx, pickIdx + picks).map(id => getItemName(id)))
+      pickIdx += picks
+    }
+  }
+  return result
+}
+
+function gatherInventory(draft: CharacterDraft): string[] {
+  const items: string[] = []
+  const cls = draft.class ? getClass(draft.class) : undefined
+  const bg = draft.background ? getBackground(draft.background) : undefined
+  const eq = draft.equipment
+
+  if (eq.method === 'standard' && cls) {
+    for (const item of cls.startingEquipment.fixed) {
+      items.push(item.quantity > 1 ? `${item.quantity}× ${getItemName(item.id)}` : getItemName(item.id))
+    }
+    cls.startingEquipment.choices.forEach((choice, i) => {
+      const res = eq.classResolutions[i]
+      if (res && res.optionIndex >= 0) {
+        const option = choice.options[res.optionIndex]
+        if (option) items.push(...resolveOptionItems(option, res.pickedIds))
+      }
+    })
+  }
+  if (eq.method === 'wealth') {
+    for (const p of eq.purchasedItems) {
+      items.push(p.quantity > 1 ? `${p.quantity}× ${getItemName(p.itemId)}` : getItemName(p.itemId))
+    }
+  }
+  if (bg) {
+    for (const item of bg.equipment.items) {
+      if (item.kind === 'specific') {
+        items.push(item.quantity > 1 ? `${item.quantity}× ${getItemName(item.id)}` : getItemName(item.id))
+      }
+    }
+  }
+  return items
+}
+
+export function PrintableSheet() {
+  const draft = useCharacterStore(state => state.draft)
+
+  const level = draft.level ?? 1
+  const race = draft.race ? getRace(draft.race) : undefined
+  const subrace = (race && draft.subrace ? getSubrace(race, draft.subrace) : null) ?? null
+  const cls = draft.class ? getClass(draft.class) : undefined
+  const subclass = cls && draft.classChoices.subclass ? getSubclass(cls, draft.classChoices.subclass) : undefined
+  const bg = draft.background ? getBackground(draft.background) : undefined
+
+  const prof = getProficiencyBonus(level)
+  const finalScores = getFinalAbilityScores(draft)
+  const mod = (ab: AbilityScore) => calculateModifier(finalScores[ab])
+  const dexMod = mod('DEX')
+  const conMod = mod('CON')
+  const wisMod = mod('WIS')
+
+  // Combate
+  const { bodyArmor, hasShield } = getEquippedArmor(draft.equipment, cls?.startingEquipment)
+  const ac = calculateArmorClass({
+    dexMod, conMod, wisMod, bodyArmor, hasShield,
+    unarmoredDefense: getUnarmoredDefense(cls?.id),
+    hasDefenseFightingStyle: draft.classChoices.fightingStyle === 'defense',
+  }).value
+  let hp: number | null = null
+  if (cls) {
+    hp = level <= 1 ? getHpAtLevel1(cls, conMod)
+      : draft.hpMethod === 'roll' ? getRolledHpAtLevel(cls, conMod, level, draft.hpRolls)
+      : getAverageHpAtLevel(cls, conMod, level)
+  }
+  const speed = race ? getEffectiveSpeed(race, subrace) : 0
+  const darkvision = race ? getEffectiveDarkvision(race, subrace) : 0
+
+  const allSkills = getAllGrantedSkills(draft)
+  const expertise = new Set(draft.classChoices.expertiseItems.filter(id => SKILL_ABILITY[id]))
+  const passivePerception = getPassivePerception(
+    wisMod, allSkills.includes('perception'),
+    expertise.has('perception') ? prof * 2 : prof,
+  )
+  const saves = cls?.savingThrows ?? []
+  const allTools = getAllGrantedTools(draft)
+
+  const languages = [...new Set([
+    ...(race?.grantedLanguages ?? []),
+    ...(draft.raceChoices.languages ?? []),
+    ...(draft.backgroundChoices.languages ?? []),
+  ])]
+
+  const identity = [
+    subrace ? subrace.name : race?.name,
+    cls ? `${cls.name}${subclass ? ` (${subclass.name})` : ''} nível ${level}` : `Nível ${level}`,
+    bg?.name,
+  ].filter(Boolean).join(' · ')
+
+  const features = cls ? getClassFeaturesUpToLevel(cls, subclass ?? null, level) : []
+  const featsFromAsi = (draft.asiChoices ?? []).filter(c => c.kind === 'feat' && c.featId).map(c => (c as { featId: string }).featId)
+  const featIds = [...new Set([...(draft.raceChoices.feat ? [draft.raceChoices.feat] : []), ...featsFromAsi])]
+  const feats = featIds.map(id => getFeat(id)).filter(Boolean)
+  const resources = cls ? getClassResources(cls.id, level) : []
+  const inventory = gatherInventory(draft)
+  const innateSpells = race ? getAvailableInnateSpells(race, subrace, level) : []
+  const racialCantrip = draft.raceChoices.cantrip ? getSpell(draft.raceChoices.cantrip) : undefined
+
+  const isCaster = !!cls && isActiveCaster(cls, level) && !!cls.spellcasting
+
+  return (
+    <div className="print-sheet mx-auto max-w-[820px] bg-white text-gray-900 p-8 rounded-lg shadow-lg" style={{ fontFamily: 'Georgia, serif' }}>
+      {/* Cabeçalho */}
+      <header className="border-b-2 border-gray-800 pb-3 mb-4">
+        <h1 className="text-2xl font-bold">{draft.name.trim() || 'Personagem sem nome'}</h1>
+        <p className="text-sm text-gray-700">{identity}</p>
+        <p className="text-xs text-gray-500 mt-1">Bônus de Proficiência {formatModifier(prof)}</p>
+      </header>
+
+      {/* Atributos */}
+      <Grid cols={6} className="mb-4">
+        {ALL_ABILITY_SCORES.map(ab => (
+          <div key={ab} className="border border-gray-400 rounded text-center py-2">
+            <div className="text-[10px] uppercase tracking-wide text-gray-600">{ABILITY_LABELS[ab].long}</div>
+            <div className="text-xl font-bold">{finalScores[ab]}</div>
+            <div className="text-sm">{formatModifier(mod(ab))}</div>
+          </div>
+        ))}
+      </Grid>
+
+      {/* Combate */}
+      <Grid cols={4} className="mb-4">
+        <Stat label="Classe de Armadura" value={String(ac)} />
+        <Stat label="Iniciativa" value={formatModifier(dexMod)} />
+        <Stat label="Pontos de Vida" value={hp !== null ? String(hp) : '—'} />
+        <Stat label="Dados de Vida" value={cls ? `${level}d${cls.hitDie}` : '—'} />
+        <Stat label="Deslocamento" value={metersLabel(speed)} />
+        <Stat label="Percepção Passiva" value={String(passivePerception)} />
+        <Stat label="Visão no Escuro" value={darkvision > 0 ? metersLabel(darkvision) : '—'} />
+        <Stat label="Nível" value={String(level)} />
+      </Grid>
+
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        {/* Resistências */}
+        <Box title="Testes de Resistência">
+          {ALL_ABILITY_SCORES.map(ab => {
+            const proficient = saves.includes(ab)
+            const val = mod(ab) + (proficient ? prof : 0)
+            return (
+              <Row key={ab} mark={proficient} label={ABILITY_LABELS[ab].long} value={formatModifier(val)} />
+            )
+          })}
+        </Box>
+
+        {/* Perícias */}
+        <Box title="Perícias">
+          {SKILLS.map(skill => {
+            const ability = SKILL_ABILITY[skill.id]
+            const proficient = allSkills.includes(skill.id)
+            const exp = expertise.has(skill.id)
+            const val = mod(ability) + (proficient ? prof : 0) + (exp ? prof : 0)
+            return (
+              <Row
+                key={skill.id}
+                mark={proficient}
+                expertise={exp}
+                label={`${skill.name} (${ABILITY_LABELS[ability].short})`}
+                value={formatModifier(val)}
+              />
+            )
+          })}
+        </Box>
+      </div>
+
+      {/* Ataques & Magia */}
+      <Box title="Ataques & Conjuração" className="mb-4">
+        <p className="text-xs text-gray-700 mb-1">
+          Ataque corpo-a-corpo (Força): <strong>{formatModifier(prof + mod('STR'))}</strong> ·
+          {' '}À distância / com acuidade (Destreza): <strong>{formatModifier(prof + dexMod)}</strong>
+          {' '}(+ o dano da arma equipada)
+        </p>
+        {isCaster && cls?.spellcasting && (
+          <p className="text-xs text-gray-700">
+            Magia — CD do teste de resistência: <strong>{getSpellSaveDC(cls.spellcasting, finalScores, level)}</strong> ·
+            {' '}Bônus de ataque: <strong>{formatSpellAttackBonus(cls.spellcasting, finalScores, level)}</strong> ·
+            {' '}Atributo: {ABILITY_LABELS[cls.spellcasting.ability].short}
+          </p>
+        )}
+      </Box>
+
+      {/* Magias */}
+      {isCaster && cls?.spellcasting && (() => {
+        const slots = getSpellSlots(cls.id, level).map((count, i) => ({ lvl: i + 1, count })).filter(s => s.count > 0)
+        const cantrips = (draft.spellChoices?.cantrips ?? []).map(id => getSpell(id)?.name).filter(Boolean)
+        const spells = (draft.spellChoices?.spells ?? []).map(id => getSpell(id)).filter(Boolean)
+        const byLevel = new Map<number, string[]>()
+        for (const s of spells) { const a = byLevel.get(s!.level) ?? []; a.push(s!.name); byLevel.set(s!.level, a) }
+        return (
+          <Box title="Magias" className="mb-4">
+            {slots.length > 0 && (
+              <p className="text-xs mb-1">
+                <span className="text-gray-600">Espaços: </span>
+                {slots.map(s => `${s.lvl}º: ${s.count}`).join(' · ')}
+                {cls.id === 'warlock' && ' (Magia de Pacto — recupera em descanso curto)'}
+              </p>
+            )}
+            {cantrips.length > 0 && <p className="text-xs mb-1"><span className="text-gray-600">Truques: </span>{cantrips.join(', ')}</p>}
+            {[...byLevel.keys()].sort((a, b) => a - b).map(lvl => (
+              <p key={lvl} className="text-xs mb-0.5"><span className="text-gray-600">{lvl}º nível: </span>{byLevel.get(lvl)!.join(', ')}</p>
+            ))}
+          </Box>
+        )
+      })()}
+
+      {/* Recursos de classe */}
+      {resources.length > 0 && (
+        <Box title="Recursos de Classe" className="mb-4">
+          <p className="text-xs">{resources.map(r => `${r.label}: ${r.value}`).join(' · ')}</p>
+        </Box>
+      )}
+
+      {/* Proficiências & Idiomas */}
+      <Box title="Proficiências & Idiomas" className="mb-4">
+        {allTools.length > 0 && <p className="text-xs mb-0.5"><span className="text-gray-600">Ferramentas: </span>{allTools.map(t => TOOL_NAMES[t] ?? getToolName(t)).join(', ')}</p>}
+        <p className="text-xs"><span className="text-gray-600">Idiomas: </span>{languages.map(l => LANG_NAME[l] ?? l).join(', ') || '—'}</p>
+      </Box>
+
+      {/* Magias raciais */}
+      {(innateSpells.length > 0 || racialCantrip) && (
+        <Box title="Magias Raciais" className="mb-4">
+          {racialCantrip && <p className="text-xs">{racialCantrip.name} (truque)</p>}
+          {innateSpells.map(s => {
+            const spell = getSpell(s.spellId)
+            return spell ? <p key={s.spellId} className="text-xs">{spell.name} — {spell.level === 0 ? 'truque' : '1×/descanso longo'} ({ABILITY_LABELS[s.ability].short})</p> : null
+          })}
+        </Box>
+      )}
+
+      {/* Traços & Features */}
+      <Box title="Traços Raciais" className="mb-4">
+        {[...(race?.traits ?? []), ...(subrace?.traits ?? [])].map(t => (
+          <p key={t.name} className="text-xs mb-1"><strong>{t.name}.</strong> {t.description}</p>
+        ))}
+      </Box>
+
+      {features.length > 0 && (
+        <Box title="Habilidades de Classe" className="mb-4">
+          {features.map((f, i) => (
+            <p key={`${f.name}-${i}`} className="text-xs mb-1"><strong>{f.name}</strong> (nv {f.level}). {f.description}</p>
+          ))}
+        </Box>
+      )}
+
+      {feats.length > 0 && (
+        <Box title="Talentos" className="mb-4">
+          {feats.map(f => (
+            <p key={f!.id} className="text-xs mb-1"><strong>{f!.name}.</strong> {f!.description}</p>
+          ))}
+        </Box>
+      )}
+
+      {/* Inventário */}
+      <Box title="Equipamento & Inventário" className="mb-2">
+        {draft.equipment.method === 'wealth' && draft.equipment.rolledGold !== null && (
+          <p className="text-xs mb-1"><span className="text-gray-600">Riqueza inicial: </span>{draft.equipment.rolledGold} po</p>
+        )}
+        <p className="text-xs">{inventory.length > 0 ? inventory.join(' · ') : '—'}</p>
+      </Box>
+    </div>
+  )
+}
+
+function Grid({ cols, className, children }: { cols: number; className?: string; children: React.ReactNode }) {
+  return <div className={`grid gap-2 ${className ?? ''}`} style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>{children}</div>
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="border border-gray-400 rounded text-center py-1.5">
+      <div className="text-base font-bold">{value}</div>
+      <div className="text-[10px] uppercase tracking-wide text-gray-600 leading-tight">{label}</div>
+    </div>
+  )
+}
+
+function Box({ title, className, children }: { title: string; className?: string; children: React.ReactNode }) {
+  return (
+    <section className={`border border-gray-300 rounded p-3 ${className ?? ''}`} style={{ breakInside: 'avoid' }}>
+      <h2 className="text-xs font-bold uppercase tracking-wider text-gray-700 border-b border-gray-300 pb-1 mb-2">{title}</h2>
+      {children}
+    </section>
+  )
+}
+
+function Row({ mark, expertise, label, value }: { mark: boolean; expertise?: boolean; label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between text-xs py-0.5">
+      <span>
+        <span className="inline-block w-3 text-center">{expertise ? '◉' : mark ? '●' : '○'}</span>{' '}
+        {label}
+      </span>
+      <span className="font-semibold tabular-nums">{value}</span>
+    </div>
+  )
+}

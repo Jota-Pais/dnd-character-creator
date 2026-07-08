@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useCharacterStore } from './stores/characterStore'
 import { Gallery } from './components/Gallery'
+import { PrintableSheet } from './components/PrintableSheet'
 import { StepIndicator } from './components/wizard/StepIndicator'
 import { NameStep } from './components/steps/NameStep'
 import { RaceStep } from './components/steps/RaceStep'
@@ -18,6 +19,7 @@ export default function App() {
   const name = useCharacterStore(state => state.draft.name)
   const prevStep = useCharacterStore(state => state.prevStep)
   const goToGallery = useCharacterStore(state => state.goToGallery)
+  const exitPrint = useCharacterStore(state => state.exitPrint)
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -34,6 +36,31 @@ export default function App() {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [prevStep, view])
+
+  if (view === 'print') {
+    return (
+      <div className="min-h-screen py-6 px-4">
+        <div className="no-print max-w-[820px] mx-auto mb-4 flex justify-between items-center">
+          <button
+            onClick={exitPrint}
+            className="px-4 py-2 text-parchment-400 hover:text-parchment-200 text-sm font-fantasy transition-colors"
+          >
+            ← Voltar
+          </button>
+          <button
+            onClick={() => window.print()}
+            className="px-5 py-2 rounded-xl font-fantasy font-bold text-sm bg-gold-500 text-parchment-950 hover:bg-gold-400 transition-colors"
+          >
+            🖨 Imprimir / Salvar PDF
+          </button>
+        </div>
+        <PrintableSheet />
+        <p className="no-print max-w-[820px] mx-auto mt-4 text-center text-parchment-700 text-xs">
+          Dica: na janela de impressão, escolha "Salvar como PDF" como destino.
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen">

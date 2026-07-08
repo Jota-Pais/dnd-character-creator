@@ -97,6 +97,33 @@
       { "level": 3, "name": "Dádiva do Pacto", "description": "Seu patrono concede um dom, à sua escolha: Pacto da Corrente (familiar), Pacto da Lâmina (arma de pacto) ou Pacto do Tomo (grimório com truques)." },
       { "level": 11, "name": "Arcana Mística", "description": "Escolha uma magia de 6° nível da lista de bruxo para conjurar uma vez por descanso longo sem gastar espaço (7° nível no 13°, 8° no 15°, 9° no 17°)." },
       { "level": 20, "name": "Mestre Místico", "description": "Uma vez por dia, gaste 1 minuto suplicando ao patrono para recuperar todos os espaços de Magia de Pacto gastos." }
+    ],
+    "paladin": [
+      { "level": 1, "name": "Sentido Divino", "description": "Com uma ação, detecte a localização de celestiais, corruptores e mortos-vivos a até 18 m (não protegidos por cobertura total). Usos iguais a 1 + mod. de Carisma por descanso longo." },
+      { "level": 1, "name": "Cura pelas Mãos", "description": "Você tem um poço de cura igual a 5 × seu nível de paladino, que restaura pontos de vida ao toque (ou 5 pontos para curar uma doença ou veneno). Renova em descanso longo." },
+      { "level": 2, "name": "Conjuração", "description": "Você conjura magias de paladino usando Carisma; prepara magias iguais ao mod. de Carisma + metade do seu nível de paladino." },
+      { "level": 2, "name": "Estilo de Luta", "description": "Você adota um estilo de combate como especialidade (escolhido nas opções da classe)." },
+      { "level": 2, "name": "Destruição Divina", "description": "Ao acertar um ataque corpo-a-corpo, gaste um espaço de magia para causar 2d8 de dano radiante (+1d8 por nível de espaço acima do 1°, até 5d8; +1d8 contra corruptores e mortos-vivos)." },
+      { "level": 3, "name": "Saúde Divina", "description": "A magia divina torna você imune a doenças." },
+      { "level": 5, "name": "Ataque Extra", "description": "Você pode atacar duas vezes ao usar a ação de Ataque no seu turno." },
+      { "level": 6, "name": "Aura de Proteção", "description": "Você e criaturas amigáveis a até 3 metros somam seu mod. de Carisma (mín. +1) aos testes de resistência (alcance aumenta para 9 m no 18° nível)." },
+      { "level": 10, "name": "Aura de Coragem", "description": "Você e criaturas amigáveis a até 3 metros não podem ser amedrontados enquanto você estiver consciente." },
+      { "level": 11, "name": "Destruição Divina Aprimorada", "description": "Seus ataques corpo-a-corpo com arma causam +1d8 de dano radiante (somado ao dano da Destruição Divina quando você a usar)." },
+      { "level": 14, "name": "Toque Purificador", "description": "Com uma ação, termine uma magia em si mesmo ou em uma criatura voluntária que tocar. Usos iguais ao mod. de Carisma por descanso longo." }
+    ],
+    "ranger": [
+      { "level": 1, "name": "Inimigo Favorito", "description": "Escolha um tipo de inimigo (bestas, fadas, humanoides, monstruosidades ou mortos-vivos): +2 no dano com armas contra ele, vantagem para rastreá-lo e recordar informações, e um idioma associado." },
+      { "level": 1, "name": "Explorador Natural", "description": "Você domina um tipo de terreno: ignora terreno difícil, tem vantagem na iniciativa e no primeiro turno contra criaturas que ainda não agiram, além de benefícios de viagem (rastrear, forragear, mover-se furtivamente)." },
+      { "level": 2, "name": "Conjuração", "description": "Você conjura magias de patrulheiro usando Sabedoria, a partir de magias conhecidas." },
+      { "level": 2, "name": "Estilo de Luta", "description": "Você adota um estilo de combate como especialidade (escolhido nas opções da classe)." },
+      { "level": 3, "name": "Consciência Primitiva", "description": "Você pode se comunicar de forma simples com bestas e, gastando 1 minuto de concentração, sentir se há inimigos favoritos nas redondezas." },
+      { "level": 5, "name": "Ataque Extra", "description": "Você pode atacar duas vezes ao usar a ação de Ataque no seu turno." },
+      { "level": 6, "name": "Inimigo Favorito Maior", "description": "Escolha um inimigo favorito adicional (com idioma); o bônus de dano contra inimigos favoritos aumenta para +4 e você resiste melhor às magias e habilidades deles." },
+      { "level": 8, "name": "Pés Rápidos", "description": "Você pode usar a ação de Disparada como ação bônus no seu turno." },
+      { "level": 10, "name": "Mimetismo", "description": "Ao tentar se esconder no seu turno, você pode ficar imóvel para preparar emboscada e permanecer escondido até ser detectado." },
+      { "level": 14, "name": "Desaparecer", "description": "Você pode usar a ação de Esconder como ação bônus e não pode ser rastreado por meios não-mágicos, a menos que queira deixar rastro." },
+      { "level": 18, "name": "Sentidos Selvagens", "description": "Atacar uma criatura que você não vê não impõe desvantagem, e você percebe a localização de criaturas invisíveis a até 9 metros." },
+      { "level": 20, "name": "Matador de Inimigos", "description": "Uma vez por turno, some seu mod. de Sabedoria a uma jogada de ataque ou de dano de um ataque seu." }
     ]
   },
   "subclasses": {}

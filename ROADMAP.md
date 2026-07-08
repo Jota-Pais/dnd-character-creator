@@ -129,15 +129,15 @@ Passo "Aprimoramentos" no wizard: por espaço de ASI, +2 num atributo, +1 em doi
 
 ---
 
-## Fase 5 — Loja de equipamento (método riqueza)
+## Fase 5 — Loja de equipamento (método riqueza) — 🔄 NÚCLEO PRONTO
 
-| # | Etapa | Detalhe |
-| - | ----- | ------- |
-| 5.1 | Dados que faltam do cap. 5 | Montarias e veículos, selas/arreios; bens comerciais; tabela de bugigangas (d100) como sabor |
-| 5.2 | Loja | Ao rolar riqueza: catálogo completo com busca/filtro por categoria, carrinho, saldo restante em po/pp/pc; adicionar item manual (nome livre) para casos fora do catálogo |
-| 5.3 | Ficha considera compras | CA detecta armadura/escudo comprados; inventário da Revisão lista os itens adquiridos |
+| # | Etapa | Detalhe | Status |
+| - | ----- | ------- | ------ |
+| 5.1 | Dados que faltam do cap. 5 | Montarias e veículos, selas/arreios; bens comerciais; tabela de bugigangas (d100) — ainda não no `/data`. Baixo impacto. | ⬜ |
+| 5.2 | Loja | `getShopCatalog` + componente Shop no passo Equipamento: filtro por categoria, busca, carrinho (+/−), saldo restante ao vivo, bloqueio sem saldo. | ✅ |
+| 5.3 | Ficha considera compras | CA detecta armadura/escudo comprados (getEquippedArmor); Revisão lista itens comprados + saldo restante. | ✅ |
 
-**Pronto quando:** o jogador que rola ouro monta o equipamento inteiro dentro do app, sem ser mandado de volta ao livro.
+**Pronto quando:** o jogador que rola ouro monta o equipamento inteiro dentro do app, sem ser mandado de volta ao livro. ✅ (com o catálogo atual; falta só 5.1 — itens extras)
 
 ---
 

@@ -6,7 +6,12 @@
 
 **Fase 1 do ROADMAP concluída — núcleo de nível 1 corrigido e fiel ao PHB.** Wizard de 8 passos funcionando, com seleção de nível (1–20), PV por média ou rolagem, progressão de magias/slots/proficiência por nível, persistência e export/import JSON. 271 testes passando, build e lint limpos.
 
-**Próximo passo:** Fase 5 (loja de equipamento). A Fase 3.5 (features das 39 subclasses + seletores de escolhas de progressão) ficou pendente por decisão de prioridade — está **detalhada no ROADMAP.md** (seção "Detalhamento do que falta na Fase 3") para retomar depois sem perder contexto. Fases 1, 2, 4 completas; Fase 3 com núcleo pronto.
+**Próximo passo:** Fase 6 (biblioteca de fichas) ou Fase 7 (export PDF). Fases 1, 2, 4 completas; Fase 3 com núcleo pronto (falta cauda das subclasses + escolhas de progressão, detalhado no ROADMAP.md); Fase 5 com loja funcional (falta só itens extras da 5.1: montarias, bens comerciais, bugigangas).
+
+### Fase 5 — Loja de equipamento ✅ NÚCLEO (2026-07-08)
+
+- **5.2/5.3** ✅ Loja no método riqueza: catálogo com filtro/busca, carrinho, saldo ao vivo, bloqueio sem saldo; Revisão lista compras + saldo; CA considera armadura/escudo comprados.
+- **5.1** ⬜ Montarias/veículos, bens comerciais e bugigangas compráveis (dados ainda não em `/data`) — baixo impacto.
 
 ### Fase 4 — ASI e Talentos ✅ CONCLUÍDA (2026-07-08)
 

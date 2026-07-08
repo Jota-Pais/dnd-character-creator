@@ -6,7 +6,7 @@
 
 **Fase 1 do ROADMAP concluída — núcleo de nível 1 corrigido e fiel ao PHB.** Wizard de 8 passos funcionando, com seleção de nível (1–20), PV por média ou rolagem, progressão de magias/slots/proficiência por nível, persistência e export/import JSON. 271 testes passando, build e lint limpos.
 
-**Próximo passo:** concluir a Fase 3.5 (features das 39 subclasses restantes + seletores de escolhas de progressão) OU avançar para a Fase 5 (loja de equipamento). Fases 1, 2, 4 completas; Fase 3 com o núcleo pronto.
+**Próximo passo:** Fase 5 (loja de equipamento). A Fase 3.5 (features das 39 subclasses + seletores de escolhas de progressão) ficou pendente por decisão de prioridade — está **detalhada no ROADMAP.md** (seção "Detalhamento do que falta na Fase 3") para retomar depois sem perder contexto. Fases 1, 2, 4 completas; Fase 3 com núcleo pronto.
 
 ### Fase 4 — ASI e Talentos ✅ CONCLUÍDA (2026-07-08)
 
@@ -20,8 +20,9 @@
 
 - **3.1** ✅ Fundação: `classResources` em `progression.json` (fúrias, ki, ataque furtivo, inspiração, pontos de feitiçaria, invocações, canalizar divindade, forma selvagem — verificado no PDF); `classResourceUtils` + testes; painel "Recursos de Classe" na Revisão; `getClassFeaturesUpToLevel`.
 - **3.2–3.4** ✅ Features por nível 1–20 das **12 classes** em `src/data/class-progression-features.json` (arquivo separado; `classes.json` estável). Marciais, conjuradores plenos e híbridos, todos digitados do PDF do livro. A Revisão agrupa as habilidades de classe por nível (só as até o nível do personagem).
-- **3.5** 🔄 (a) features por nível das **subclasses**: bárbaro ✅ (Furioso, Totêmico); faltam 39 subclasses (mesmo padrão mecânico). (b) escolhas de progressão como seletores reais (invocações, metamagia, manobras, expertise adicional, + escolhas de entrada da ex-2.3) — exige modelo + UI, ainda não iniciado.
-- **3.6** ✅ (parcial) Revisão por nível feita para as features de classe e das subclasses já digitadas; painel de recursos de classe pronto.
+- **3.5a** 🔄 Features por nível das **subclasses**: bárbaro ✅; faltam 39 subclasses. **Detalhado no ROADMAP.md** (lista de subclasses + níveis + armadilhas de nome).
+- **3.5b** ⬜ Escolhas de progressão como seletores reais (manobras, invocações, metamagia, expertise, totem, terreno, etc.). Não iniciado — **detalhado no ROADMAP.md**.
+- **3.6** ✅ (parcial) Revisão por nível das features de classe; painel de recursos pronto. Falta refletir features de subclasse de nível alto (depende de 3.5a).
 
 > **Nota de prioridade:** as features de nível alto (6/10/14) das subclasses são a "cauda" da progressão (poucos personagens as alcançam, e a de entrada já aparece). Sistemas ausentes de maior impacto — **Fase 4 (ASI/talentos)**, que afeta todo personagem nível ≥4, e a loja de equipamento (Fase 5) — podem valer mais que terminar as 39 subclasses. Decisão do produto: continuar a cauda de 3.5 ou saltar para a Fase 4.
 

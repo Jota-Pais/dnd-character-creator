@@ -67,20 +67,49 @@ A validação `isClassStepComplete(cls, choices, currentLevel)` já aceita níve
 
 ---
 
-## Fase 3 — Progressão completa 1–20 (o épico de dados)
+## Fase 3 — Progressão completa 1–20 (o épico de dados) — 🔄 NÚCLEO PRONTO, FALTA A CAUDA
 
-O maior bloco de trabalho. Divide-se em modelo de dados + 3 lotes de digitalização.
+O maior bloco de trabalho. Núcleo (recursos + features das 12 classes) concluído; falta a cauda das subclasses e os seletores de escolhas de progressão.
 
-| # | Etapa | Detalhe |
-| - | ----- | ------- |
-| 3.1 | Modelo de dados por nível | `featuresByLevel: { level, name, description, choices? }[]` em classe e subclasse; `progression.json` ganha recursos não-mágicos por classe (fúrias + dano de fúria, ki + dado de artes marciais, ataque furtivo, inspiração de bardo, canalizar divindade, forma selvagem, pontos de feitiçaria, invocações conhecidas, ataque extra etc.); bump de `SESSION_VERSION` |
-| 3.2 | Lote A — marciais | Bárbaro, Guerreiro, Ladino, Monge: docs → JSON → testes de integridade (toda classe tem feature em todo nível que o livro lista) |
-| 3.3 | Lote B — conjuradores plenos | Clérigo, Druida, Mago, Feiticeiro |
-| 3.4 | Lote C — híbridos | Bardo, Bruxo, Paladino, Patrulheiro |
-| 3.5 | Escolhas de nível alto + escolhas de entrada da subclasse (ex-2.3) | Invocações místicas, metamagia, manobras adicionais, expertise adicional (ladino 6 / bardo 3-10), segredos mágicos, estilo de luta extra, **e as escolhas de entrada de subclasse** (totem, manobras iniciais, disciplinas, terreno do druida, Presa do Caçador) — seção "Escolhas de progressão" no passo Classe, geradas das `choices` por nível ≤ nível do personagem |
-| 3.6 | Revisão por nível | Features agrupadas por nível até o nível atual; painel de recursos de classe (ki, fúrias, dados de inspiração...) na ficha |
+| # | Etapa | Detalhe | Status |
+| - | ----- | ------- | ------ |
+| 3.1 | Modelo de dados por nível | `LevelFeature`/`featuresByLevel`; `progression.json` com `classResources` (fúrias, ki, ataque furtivo, inspiração, pontos de feitiçaria, invocações, canalizar divindade, forma selvagem); `classResourceUtils`; painel de recursos na Revisão | ✅ |
+| 3.2 | Lote A — marciais | Bárbaro, Guerreiro, Ladino, Monge (features de classe 1–20) | ✅ |
+| 3.3 | Lote B — conjuradores plenos | Clérigo, Druida, Mago, Feiticeiro | ✅ |
+| 3.4 | Lote C — híbridos | Bardo, Bruxo, Paladino, Patrulheiro | ✅ |
+| 3.5a | Features por nível das **subclasses** | ⚠️ **FALTA.** Só o bárbaro (Furioso, Totêmico) está feito. Faltam **39 subclasses**. Ver detalhamento abaixo. | 🔄 |
+| 3.5b | Escolhas de progressão como **seletores reais** | ⚠️ **FALTA (não iniciado).** Ver detalhamento abaixo. | ⬜ |
+| 3.6 | Revisão por nível | Features de classe agrupadas por nível ✅; painel de recursos ✅. Falta só refletir as features de subclasse de nível alto (depende de 3.5a). | ✅ (parcial) |
 
 **Pronto quando:** um personagem de nível N exibe exatamente as features/recursos que o livro dá até o nível N, com as escolhas de progressão feitas pelo jogador.
+
+### 📌 Detalhamento do que falta na Fase 3 (para não esquecer)
+
+**3.5a — features por nível das 39 subclasses restantes** (trabalho mecânico, padrão já provado):
+
+- Onde: preencher o objeto `subclasses` de `src/data/class-progression-features.json`, keyed por `subclassId` → `LevelFeature[]` (mesmo formato do bárbaro, já lá).
+- O helper `getClassFeaturesUpToLevel` (em `classUtils.ts`) já lê esse objeto e exibe na Revisão; hoje as subclasses sem entrada nele mostram só a feature de ENTRADA (fallback). Não precisa mexer em código, só em dados.
+- Faltam (níveis de features conforme o livro):
+  - Guerreiro: Campeão, Mestre de Batalha, Cavaleiro Arcano (features em 3/7/10/15/18)
+  - Ladino: Ladrão, Assassino, Trapaceiro Arcano (3/9/13/17)
+  - Monge: Mão Aberta, Sombra, Quatro Elementos (3/6/11/17)
+  - Bardo: Conhecimento, Bravura (3/6/14)
+  - Druida: Terra, Lua (2/6/10/14)
+  - Clérigo: 7 domínios (1/2/6/8/17) — o maior lote
+  - Feiticeiro: Dracônica, Selvagem (1/6/14/18)
+  - Bruxo: Arquifada, Corruptor, Grande Antigo (1/6/10/14)
+  - Mago: 8 escolas (2/6/10/14)
+  - Paladino: Devoção, Anciões, Vingança (3/7/15/20; obs.: entrada 3 já tem magias de juramento + canalizar divindade)
+  - Patrulheiro: Besta, Caçador, Rastreador Subterrâneo (3/7/11/15)
+- Fonte: o PDF do livro (ver [[phb-2014-pdf]] na memória). Extração via `pdf-parse` (scripts de sondagem no padrão já usado). **Atenção a colisões de nome entre classes** (ex.: "Corpo Atemporal" existe no monge nv15 E no druida nv18; "Golpe Divino" é feature de domínio do clérigo, não do paladino, cujo smite é "Destruição Divina"). Sempre conferir o nível/classe no PDF.
+
+**3.5b — escolhas de progressão como seletores reais** (mini-projeto: modelo + dados + UI):
+
+- Hoje essas escolhas aparecem só como TEXTO na descrição da feature. Falta torná-las seletores que gravam a escolha do jogador (a visão do produto pede "controle total das escolhas").
+- Inclui as escolhas de ENTRADA de subclasse (ex-etapa 2.3): totem do bárbaro (Águia/Lobo/Urso), manobras iniciais do Mestre de Batalha, disciplinas do monge Quatro Elementos, terreno do druida da Terra, opção de Presa do Caçador do patrulheiro.
+- E as escolhas de nível alto: invocações místicas do bruxo (lista ~30), metamagia do feiticeiro (~8 opções), manobras adicionais do Mestre de Batalha (lista de 16), expertise adicional (ladino nv6 / bardo nv3 e 10), segredos mágicos do bardo, estilo de luta extra.
+- Trabalho: (1) digitar as listas de opções do livro (manobras, invocações, metamagia) em `src/data/`; (2) estender o modelo de escolhas (algo como `progressionChoices` no draft, ou ampliar `SubclassChoiceSelections`); (3) UI de "Escolhas de progressão" (provavelmente no passo Classe ou num painel dedicado), gerada por nível ≤ nível do personagem; (4) validação e exibição na Revisão.
+- Escopo comparável ao de ASI/Talentos (Fase 4).
 
 ---
 

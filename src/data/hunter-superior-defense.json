@@ -1,0 +1,17 @@
+[
+  {
+    "id": "evasion",
+    "name": "Evasão",
+    "description": "Você pode esquivar-se agilmente de certos efeitos em área, como o sopro de fogo de um dragão vermelho ou uma magia relâmpago. Quando você for alvo de um efeito que exige um teste de resistência de Destreza para sofrer metade do dano, você não sofre dano algum se passar, e somente metade do dano se falhar."
+  },
+  {
+    "id": "stand-against-the-tide",
+    "name": "Manter-se Contra a Maré",
+    "description": "Quando uma criatura hostil errar você com um ataque corpo-a-corpo, você pode usar sua reação para forçar a criatura a repetir o mesmo ataque contra outra criatura (que não ela mesma), à sua escolha."
+  },
+  {
+    "id": "uncanny-dodge",
+    "name": "Esquiva Sobrenatural",
+    "description": "Quando um atacante que você possa ver, atinge você com um ataque, você pode usar sua reação para reduzir o dano causado pelo ataque à metade."
+  }
+]

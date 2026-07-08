@@ -2,6 +2,7 @@ import type { GameClass, ClassSubclass, ClassChoiceSelections, LevelFeature } fr
 import { SKILLS } from './raceUtils'
 import classesData from '../data/classes.json'
 import progressionFeatures from '../data/class-progression-features.json'
+import { isProgressionChoicesComplete } from './progressionChoiceUtils'
 
 const CLASS_FEATURES_BY_LEVEL = progressionFeatures.classes as Record<string, LevelFeature[]>
 const SUBCLASS_FEATURES_BY_LEVEL = progressionFeatures.subclasses as Record<string, LevelFeature[]>
@@ -221,6 +222,8 @@ export function isClassStepComplete(
   }
 
   if (cls.hasExpertise && choices.expertiseItems.length < 2) return false
+
+  if (!isProgressionChoicesComplete(cls.id, choices.subclass, choices, currentLevel)) return false
 
   return true
 }

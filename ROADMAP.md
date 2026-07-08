@@ -67,9 +67,9 @@ A validação `isClassStepComplete(cls, choices, currentLevel)` já aceita níve
 
 ---
 
-## Fase 3 — Progressão completa 1–20 (o épico de dados) — 🔄 NÚCLEO + 3.5a PRONTOS, FALTA 3.5b
+## Fase 3 — Progressão completa 1–20 (o épico de dados) — ✅ CONCLUÍDA (2026-07-08)
 
-O maior bloco de trabalho. Núcleo (recursos + features das 12 classes) e features de subclasse por nível concluídos; falta só os seletores de escolhas de progressão.
+O maior bloco de trabalho. Núcleo (recursos + features das 12 classes), features de subclasse por nível (3.5a) e seletores de escolhas de progressão (3.5b) concluídos.
 
 | # | Etapa | Detalhe | Status |
 | - | ----- | ------- | ------ |
@@ -78,7 +78,7 @@ O maior bloco de trabalho. Núcleo (recursos + features das 12 classes) e featur
 | 3.3 | Lote B — conjuradores plenos | Clérigo, Druida, Mago, Feiticeiro | ✅ |
 | 3.4 | Lote C — híbridos | Bardo, Bruxo, Paladino, Patrulheiro | ✅ |
 | 3.5a | Features por nível das **subclasses** | ✅ **Concluída (2026-07-08).** As 41 subclasses das 12 classes têm features por nível completas em `class-progression-features.json`, digitalizadas do PDF (delegado a agentes por classe, conferido: JSON válido, todas as subclasses de `classes.json` presentes, build/lint/347 testes verdes, spot-check manual contra o livro sem divergência). | ✅ |
-| 3.5b | Escolhas de progressão como **seletores reais** | ⚠️ **FALTA (não iniciado).** Ver detalhamento abaixo. | ⬜ |
+| 3.5b | Escolhas de progressão como **seletores reais** | ✅ **Concluída (2026-07-08).** `progression-choices.json` + 10 arquivos de listas de opções (manobras, invocações, metamágica, disciplinas, totens, terrenos, presa do caçador etc.), `progressionChoiceUtils` (com testes), painel `ProgressionChoicesPanel` e seção na Revisão. Desenho da arquitetura + delegação da implementação; revisado (build/lint/354 testes verdes, fidelidade das listas conferida contra o PHB). | ✅ |
 | 3.6 | Revisão por nível | Features de classe agrupadas por nível ✅; painel de recursos ✅; features de subclasse de nível alto agora disponíveis nos dados (3.5a concluída) — falta só confirmar que a Revisão já exibe todas corretamente. | ✅ (quase completa) |
 
 **Pronto quando:** um personagem de nível N exibe exatamente as features/recursos que o livro dá até o nível N, com as escolhas de progressão feitas pelo jogador.
@@ -158,6 +158,43 @@ PDF: `C:\Users\jotap\OneDrive\DnD\livros\d&d-5e-livro-do-jogador-fundo-branco-bi
 - E as escolhas de nível alto: invocações místicas do bruxo (lista ~30), metamagia do feiticeiro (~8 opções), manobras adicionais do Mestre de Batalha (lista de 16), expertise adicional (ladino nv6 / bardo nv3 e 10), segredos mágicos do bardo, estilo de luta extra.
 - Trabalho: (1) digitar as listas de opções do livro (manobras, invocações, metamagia) em `src/data/`; (2) estender o modelo de escolhas (algo como `progressionChoices` no draft, ou ampliar `SubclassChoiceSelections`); (3) UI de "Escolhas de progressão" (provavelmente no passo Classe ou num painel dedicado), gerada por nível ≤ nível do personagem; (4) validação e exibição na Revisão.
 - Escopo comparável ao de ASI/Talentos (Fase 4).
+
+#### 📋 Desenho da arquitetura para 3.5b (2026-07-08 — pronto pra delegar a implementação inteira)
+
+Diferente da 3.5a (dado uniforme), aqui o formato varia por tipo de escolha. Decisão: reaproveitar o padrão já provado de `asiUtils.ts`/`ImprovementsStep.tsx` (slot por nível alcançado, validação por completude), generalizado o bastante pra cobrir todos os casos — em vez de inventar um mecanismo novo por tipo de escolha.
+
+**Modelo de dados:**
+- `ClassChoiceSelections` (em `src/types/class.ts`) ganha um campo novo: `progressionChoices: Record<string, string[]>` — chave = id do slot, valor = ids das opções escolhidas. Atualizar `EMPTY_CLASS_CHOICES` e `EMPTY_DRAFT.classChoices` (em `character.ts`) e `emptyClassChoices()`/`sanitizeClassChoices()` (em `draftValidation.ts`, seguindo o padrão de `subclassExtras` ali do lado).
+- Novo arquivo `src/data/progression-choices.json`: mapa de `classId` OU `subclassId` (mesmo namespace, ids já são únicos no projeto) → array de slots `{ id, level, count, cumulative, optionsListId, label }`. `cumulative: true` = escolhas de níveis anteriores continuam válidas (manobras, invocações, metamagia, disciplinas); `cumulative: false` = escolha única e substituível (totem, terreno, presa do caçador).
+- Um arquivo de dados por lista de opções, cada opção `{ id, name, description }` (+ `prerequisite?: string` pra invocações): `battle-master-maneuvers.json`, `eldritch-invocations.json`, `metamagic-options.json`, `four-elements-disciplines.json`, `totem-warrior-totems.json`, `land-circle-terrains.json`, `hunters-prey.json`, `hunter-defensive-tactics.json`, `hunter-multiattack.json`, `hunter-superior-defense.json`. Exceção: Segredos Mágicos do bardo usa `optionsListId: "any-known-spell"` (sentinela) — resolve dinamicamente contra `spells.json` em vez de um arquivo novo.
+
+**Tabela de slots conhecida** (ponto de partida — a outra ferramenta deve **confirmar cada nível/contagem no livro**, não copiar cegamente; se o livro divergir daqui, vale o livro):
+
+| Classe/subclasse | Slot | Nível | Qtd | Cumulativo | Lista |
+|---|---|---|---|---|---|
+| `battle-master` | maneuvers | 3 / 7 / 10 / 15 | 3 / 2 / 2 / 2 | sim | battle-master-maneuvers (16 manobras — texto completo já extraído do PDF, ver prompt de delegação) |
+| `warlock` (qualquer padrinho) | invocations | 2 / 5 / 7 / 9 / 12 / 15 / 18 | 2 / 1 / 1 / 1 / 1 / 1 / 1 | sim | eldritch-invocations (~30; algumas têm pré-requisito de nível/pacto — incluir como texto informativo, não travar seleção nesta fase) |
+| `sorcerer` | metamagic | 3 / 10 / 17 | 2 / 1 / 1 | sim | metamagic-options (~8) |
+| `four-elements` | disciplines | 3 / 6 / 11 / 17 | conferir no livro | sim | four-elements-disciplines |
+| `totem-warrior` | totem | 3 | 1 | **não** (escolha única; níveis 6/14 só revelam o texto do MESMO totem, sem nova UI de escolha) | totem-warrior-totems (Águia/Lobo/Urso) |
+| `circle-of-the-land` | terrain | 2 | 1 | não | land-circle-terrains (7 terrenos; cada um concede magias de círculo — **não** precisa integrar com o sistema de magias, só registrar a escolha e listar as magias concedidas como texto na Revisão, mesma simplificação já adotada pra descrições de magia) |
+| `hunter` | hunters-prey / defensive-tactics / multiattack / superior-defense | 3 / 7 / 11 / 15 | 1 cada | não | 4 listas pequenas (3, 3, 2, 3 opções) |
+| `college-of-lore` | magical-secrets | 6 / 14 | 2 / 2 | sim | `any-known-spell` (resolve contra `spells.json`, não é lista nova) |
+| `bard` (classe base, não subclasse — conferir se já não é coberto por 3.2-3.4) | magical-secrets-base | 10 / 14 | 2 / 2 | sim | `any-known-spell` |
+| `champion` | fighting-style-extra | 10 | 1 | sim (soma ao estilo já escolhido) | reaproveita `FIGHTING_STYLES` de `classUtils.ts`, excluindo o já escolhido |
+
+**Fora desse mecanismo genérico (resolver como ajuste pontual, não como slot novo):** expertise adicional de ladino (nv6) e bardo (nv3/10) — já existe campo `expertiseItems` e painel de UI em `ClassChoicePanel.tsx`; só falta tornar `hasExpertise` sensível a múltiplos níveis (ex.: `expertiseLevels: number[]` por classe) em vez da contagem fixa de 2 hoje.
+
+**Pontos de integração no código (para a outra ferramenta seguir sem inventar):**
+1. `src/utils/progressionChoiceUtils.ts` (novo) — espelhar `asiUtils.ts`: `getReachedProgressionSlots(classId, subclassId, level)`, `isProgressionChoicesComplete(...)`. Testes obrigatórios (`__tests__/progressionChoiceUtils.test.ts`), como manda o CLAUDE.md.
+2. `src/utils/classUtils.ts`, função `isClassStepComplete` (linha ~197) — adicionar a validação dos slots alcançados, no mesmo bloco onde já valida `subclassExtras`.
+3. `src/components/class/ClassChoicePanel.tsx` — novo componente `ProgressionChoicesPanel` (mesmo estilo de `SubclassExtrasPanel`, que já mora nesse arquivo), renderizado depois dela.
+4. `src/components/steps/ReviewStep.tsx` — nova seção "Escolhas de Progressão" logo depois de "Habilidades de Classe" (linha ~593), listando as opções escolhidas por slot.
+5. `src/utils/draftValidation.ts` — `sanitizeClassChoices`/`emptyClassChoices` (linhas ~42 e ~78) precisam do novo campo pro import de ficha não quebrar.
+
+Ver prompt de delegação completo na conversa de 2026-07-08 (não duplicado aqui pra não desatualizar) — cobre o texto das 16 manobras já extraído do livro, as instruções de onde buscar cada lista restante no `phb-full-text.txt`, e os requisitos de build/lint/test antes de finalizar.
+
+**Execução real (2026-07-08):** implementação delegada; a auditoria pós-entrega encontrou e corrigiu: (1) build quebrado por import não usado (`ProgressionOption`) — a ferramenta relatou verde incorretamente; (2) `any` reprovado pelo lint em `progressionOptions.ts`; (3) **bug de robustez**: `withDraftDefaults` (storage) fazia merge raso e deixava `classChoices.progressionChoices` undefined em fichas salvas antes desta fase → travaria a Revisão/validação; corrigido re-preenchendo `classChoices` com os defaults; (4) código morto (bloco de comentários de raciocínio no painel) removido; (5) Estilo de Luta Adicional do Campeão agora exclui o estilo já escolhido; (6) resíduo `scratch_find.py` removido. Fidelidade das listas conferida contra o PHB: metamágica (8), disciplinas dos 4 elementos (17), invocações (32), terrenos (8), manobras (16) — todas batem. Limitações conhecidas deixadas para depois: invocações não validam pré-requisitos (combinado nesta fase); expertise adicional de ladino nv6 / bardo nv3-10 continua fixa em 2 (ajuste pontual não feito, não é regressão).
 
 ---
 

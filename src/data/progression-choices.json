@@ -1,0 +1,51 @@
+{
+  "battle-master": [
+    { "id": "battle-master-maneuvers-3", "level": 3, "count": 3, "cumulative": true, "optionsListId": "battle-master-maneuvers", "label": "Manobras" },
+    { "id": "battle-master-maneuvers-7", "level": 7, "count": 2, "cumulative": true, "optionsListId": "battle-master-maneuvers", "label": "Manobras" },
+    { "id": "battle-master-maneuvers-10", "level": 10, "count": 2, "cumulative": true, "optionsListId": "battle-master-maneuvers", "label": "Manobras" },
+    { "id": "battle-master-maneuvers-15", "level": 15, "count": 2, "cumulative": true, "optionsListId": "battle-master-maneuvers", "label": "Manobras" }
+  ],
+  "warlock": [
+    { "id": "warlock-invocations-2", "level": 2, "count": 2, "cumulative": true, "optionsListId": "eldritch-invocations", "label": "Invocações Místicas" },
+    { "id": "warlock-invocations-5", "level": 5, "count": 1, "cumulative": true, "optionsListId": "eldritch-invocations", "label": "Invocações Místicas" },
+    { "id": "warlock-invocations-7", "level": 7, "count": 1, "cumulative": true, "optionsListId": "eldritch-invocations", "label": "Invocações Místicas" },
+    { "id": "warlock-invocations-9", "level": 9, "count": 1, "cumulative": true, "optionsListId": "eldritch-invocations", "label": "Invocações Místicas" },
+    { "id": "warlock-invocations-12", "level": 12, "count": 1, "cumulative": true, "optionsListId": "eldritch-invocations", "label": "Invocações Místicas" },
+    { "id": "warlock-invocations-15", "level": 15, "count": 1, "cumulative": true, "optionsListId": "eldritch-invocations", "label": "Invocações Místicas" },
+    { "id": "warlock-invocations-18", "level": 18, "count": 1, "cumulative": true, "optionsListId": "eldritch-invocations", "label": "Invocações Místicas" }
+  ],
+  "sorcerer": [
+    { "id": "sorcerer-metamagic-3", "level": 3, "count": 2, "cumulative": true, "optionsListId": "metamagic-options", "label": "Opções de Metamágica" },
+    { "id": "sorcerer-metamagic-10", "level": 10, "count": 1, "cumulative": true, "optionsListId": "metamagic-options", "label": "Opções de Metamágica" },
+    { "id": "sorcerer-metamagic-17", "level": 17, "count": 1, "cumulative": true, "optionsListId": "metamagic-options", "label": "Opções de Metamágica" }
+  ],
+  "four-elements": [
+    { "id": "four-elements-disciplines-3", "level": 3, "count": 2, "cumulative": true, "optionsListId": "four-elements-disciplines", "label": "Disciplinas Elementais" },
+    { "id": "four-elements-disciplines-6", "level": 6, "count": 1, "cumulative": true, "optionsListId": "four-elements-disciplines", "label": "Disciplinas Elementais" },
+    { "id": "four-elements-disciplines-11", "level": 11, "count": 1, "cumulative": true, "optionsListId": "four-elements-disciplines", "label": "Disciplinas Elementais" },
+    { "id": "four-elements-disciplines-17", "level": 17, "count": 1, "cumulative": true, "optionsListId": "four-elements-disciplines", "label": "Disciplinas Elementais" }
+  ],
+  "totem-warrior": [
+    { "id": "totem-warrior-totem-3", "level": 3, "count": 1, "cumulative": false, "optionsListId": "totem-warrior-totems", "label": "Espírito Totêmico" }
+  ],
+  "circle-of-the-land": [
+    { "id": "land-circle-terrain-2", "level": 2, "count": 1, "cumulative": false, "optionsListId": "land-circle-terrains", "label": "Terreno de Círculo" }
+  ],
+  "hunter": [
+    { "id": "hunter-prey-3", "level": 3, "count": 1, "cumulative": false, "optionsListId": "hunters-prey", "label": "Presa do Caçador" },
+    { "id": "hunter-defensive-7", "level": 7, "count": 1, "cumulative": false, "optionsListId": "hunter-defensive-tactics", "label": "Táticas Defensivas" },
+    { "id": "hunter-multiattack-11", "level": 11, "count": 1, "cumulative": false, "optionsListId": "hunter-multiattack", "label": "Ataques Múltiplos" },
+    { "id": "hunter-superior-defense-15", "level": 15, "count": 1, "cumulative": false, "optionsListId": "hunter-superior-defense", "label": "Defesa Superior" }
+  ],
+  "college-of-lore": [
+    { "id": "lore-magical-secrets-6", "level": 6, "count": 2, "cumulative": true, "optionsListId": "any-known-spell", "label": "Segredos Mágicos Adicionais" }
+  ],
+  "bard": [
+    { "id": "bard-magical-secrets-10", "level": 10, "count": 2, "cumulative": true, "optionsListId": "any-known-spell", "label": "Segredos Mágicos" },
+    { "id": "bard-magical-secrets-14", "level": 14, "count": 2, "cumulative": true, "optionsListId": "any-known-spell", "label": "Segredos Mágicos" },
+    { "id": "bard-magical-secrets-18", "level": 18, "count": 2, "cumulative": true, "optionsListId": "any-known-spell", "label": "Segredos Mágicos" }
+  ],
+  "champion": [
+    { "id": "champion-fighting-style-10", "level": 10, "count": 1, "cumulative": true, "optionsListId": "FIGHTING_STYLES", "label": "Estilo de Luta Adicional" }
+  ]
+}

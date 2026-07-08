@@ -11,6 +11,8 @@ import { InfoTooltip } from '../common/InfoTooltip'
 import type { TermId } from '../../utils/glossary'
 import { SKILLS, LANGUAGES } from '../../utils/raceUtils'
 import toolsData from '../../data/tools.json'
+import { getProgressionSlotsUpToLevel, type ProgressionSlot } from '../../utils/progressionChoiceUtils'
+import { getProgressionOptions } from '../../utils/progressionOptions'
 
 type Tool = { id: string; name: string; category: 'artisan' | 'musical-instrument' | 'gaming-set' | 'other' | 'vehicle' }
 const ALL_TOOLS: Tool[] = toolsData as Tool[]
@@ -247,6 +249,16 @@ export function ClassChoicePanel({ cls, choices, accent, level, onChange, exclud
           </div>
         </ChoiceSection>
       )}
+
+      {/* ── Escolhas de Progressão ── */}
+      <ProgressionChoicesPanel
+        classId={cls.id}
+        subclassId={choices.subclass}
+        level={level}
+        choices={choices}
+        accent={accent}
+        onChange={(patch) => onChange({ progressionChoices: { ...choices.progressionChoices, ...patch } })}
+      />
     </div>
   )
 }
@@ -463,5 +475,119 @@ function SectionTitle({ children, accent }: { children: React.ReactNode; accent:
     >
       {children}
     </h4>
+  )
+}
+
+function ProgressionChoicesPanel({
+  classId,
+  subclassId,
+  level,
+  choices,
+  accent,
+  onChange,
+}: {
+  classId: string
+  subclassId: string | null
+  level: number
+  choices: ClassChoiceSelections
+  accent: string
+  onChange: (patch: Record<string, string[]>) => void
+}) {
+  const slots = getProgressionSlotsUpToLevel(classId, subclassId, level)
+  if (slots.length === 0) return null
+
+  // Agrupa os slots por optionsListId para somar a contagem quando cumulative=true
+  const groups = new Map<string, { slots: ProgressionSlot[]; totalCount: number }>()
+
+  for (const slot of slots) {
+    if (slot.cumulative) {
+      if (!groups.has(slot.optionsListId)) {
+        groups.set(slot.optionsListId, { slots: [], totalCount: 0 })
+      }
+      const group = groups.get(slot.optionsListId)!
+      group.slots.push(slot)
+      group.totalCount += slot.count
+    } else {
+      // Se não for cumulativo, criamos um grupo único para ele baseado no ID do slot
+      groups.set(slot.id, { slots: [slot], totalCount: slot.count })
+    }
+  }
+
+  function handleOptionToggle(slotId: string, optionId: string, maxCount: number) {
+    const current = choices.progressionChoices[slotId] ?? []
+    if (current.includes(optionId)) {
+      onChange({ [slotId]: current.filter(id => id !== optionId) })
+    } else {
+      if (current.length >= maxCount) return
+      onChange({ [slotId]: [...current, optionId] })
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      {Array.from(groups.values()).map(group => {
+        const optionsListId = group.slots[0].optionsListId
+        // Estilo de Luta Adicional (Campeão nv10): não pode repetir o estilo já escolhido no passo Classe.
+        const options = getProgressionOptions(optionsListId).filter(
+          opt => !(optionsListId === 'FIGHTING_STYLES' && opt.id === choices.fightingStyle),
+        )
+
+        // Cada slot é renderizado separadamente; num grupo cumulativo, as opções já
+        // escolhidas nos slots de níveis anteriores aparecem marcadas e desabilitadas.
+        return group.slots.map((slot, index) => {
+          const currentPicked = choices.progressionChoices[slot.id] ?? []
+          
+          // Calcula opções já escolhidas em slots cumulativos anteriores para desabilitar
+          const previousPicks = new Set<string>()
+          if (slot.cumulative) {
+            for (let i = 0; i < index; i++) {
+              const prevSlot = group.slots[i]
+              const prevPicked = choices.progressionChoices[prevSlot.id] ?? []
+              prevPicked.forEach(p => previousPicks.add(p))
+            }
+          }
+
+          return (
+            <ChoiceSection
+              key={slot.id}
+              title={`${slot.label} (${currentPicked.length}/${slot.count}) ${slot.cumulative && index > 0 ? `(Nível ${slot.level})` : ''}`}
+              accent={accent}
+            >
+              <div className="flex flex-wrap gap-1.5">
+                {options.map(opt => {
+                  const isPreviouslyPicked = previousPicks.has(opt.id)
+                  const isCurrentlyPicked = currentPicked.includes(opt.id)
+                  const selected = isCurrentlyPicked || isPreviouslyPicked
+                  const disabled = isPreviouslyPicked || (!isCurrentlyPicked && currentPicked.length >= slot.count)
+
+                  return (
+                    <button
+                      key={opt.id}
+                      onClick={() => {
+                        if (!isPreviouslyPicked) {
+                          handleOptionToggle(slot.id, opt.id, slot.count)
+                        }
+                      }}
+                      disabled={disabled}
+                      title={opt.description ?? opt.prerequisite}
+                      className="px-2.5 py-1 rounded-lg text-xs font-semibold transition-all group relative"
+                      style={{
+                        backgroundColor: selected ? accent : disabled ? 'rgba(30, 20, 8, 0.4)' : 'rgba(40, 28, 12, 0.8)',
+                        color: selected ? '#0a0704' : disabled ? '#4a3520' : '#c4a97a',
+                        border: selected ? 'none' : `1px solid ${disabled ? 'rgba(60, 40, 20, 0.3)' : 'rgba(90, 62, 36, 0.5)'}`,
+                        cursor: disabled ? 'not-allowed' : 'pointer',
+                      }}
+                    >
+                      {isPreviouslyPicked ? '✓ ' : ''}{opt.name}
+                      {opt.prerequisite && <span className="ml-1 opacity-60">({opt.prerequisite})</span>}
+                    </button>
+                  )
+                })}
+              </div>
+            </ChoiceSection>
+          )
+        })
+      })}
+    </div>
   )
 }

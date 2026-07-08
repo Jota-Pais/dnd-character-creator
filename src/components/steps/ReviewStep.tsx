@@ -17,8 +17,10 @@ import {
   getProficiencyBonus, getPassivePerception,
 } from '../../utils/abilityScoreUtils'
 import { getItemName, getEquippedArmor, getPurchasesTotalCopper, formatCurrency } from '../../utils/equipmentUtils'
-import { calculateArmorClass, getUnarmoredDefense } from '../../utils/armorClassUtils'
+import { getUnarmoredDefense, calculateArmorClass } from '../../utils/armorClassUtils'
 import { getAllGrantedSkills, getAllGrantedTools } from '../../utils/proficiencyUtils'
+import { getProgressionSlotsUpToLevel } from '../../utils/progressionChoiceUtils'
+import { getProgressionOptions } from '../../utils/progressionOptions'
 import {
   getSpell,
   getSpellSaveDC,
@@ -620,6 +622,53 @@ export function ReviewStep() {
                   ))}
                 </div>
               ))}
+            </div>
+          </Section>
+        )
+      })()}
+
+      {/* Progression Choices */}
+      {cls && (() => {
+        const slots = getProgressionSlotsUpToLevel(cls.id, draft.classChoices.subclass, level)
+        if (slots.length === 0) return null
+
+        let hasAnyChoice = false
+        for (const slot of slots) {
+          const picked = draft.classChoices.progressionChoices[slot.id] ?? []
+          if (picked.length > 0) hasAnyChoice = true
+        }
+        if (!hasAnyChoice) return null
+
+        return (
+          <Section title="Escolhas de Progressão">
+            <div className="space-y-3">
+              {slots.map(slot => {
+                const picked = draft.classChoices.progressionChoices[slot.id] ?? []
+                if (picked.length === 0) return null
+                const options = getProgressionOptions(slot.optionsListId)
+                
+                return (
+                  <div key={slot.id}>
+                    <p className="text-xs text-parchment-700 font-fantasy uppercase tracking-widest mb-1.5">
+                      {slot.label} {slot.cumulative ? `(Nível ${slot.level})` : ''}
+                    </p>
+                    {picked.map(optId => {
+                      const opt = options.find(o => o.id === optId)
+                      if (!opt) return null
+                      return (
+                        <div key={opt.id} className="mb-2 last:mb-0">
+                          <span className="text-sm font-semibold font-fantasy text-parchment-200">
+                            {opt.name}.{' '}
+                          </span>
+                          <span className="text-sm text-parchment-500 leading-relaxed">
+                            {opt.description ?? (level >= 14 ? opt.tier14 : level >= 6 ? opt.tier6 : opt.tier3) ?? opt.prerequisite ?? ''}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )
+              })}
             </div>
           </Section>
         )

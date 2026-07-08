@@ -1,0 +1,17 @@
+[
+  {
+    "id": "colossus-slayer",
+    "name": "Assassino de Colossos",
+    "description": "Sua tenacidade pode derrubar os mais poderosos oponentes. Quando você atinge uma criatura com um ataque com arma, a criatura sofre 1d8 de dano extra, se ela estiver abaixo do máximo de pontos de vida dela. Você só pode causar esse dano extra uma vez por turno."
+  },
+  {
+    "id": "giant-killer",
+    "name": "Matador de Gigantes",
+    "description": "Quando uma criatura Grande ou maior a até 1,5 metro de você atingir ou errar um ataque contra você, você pode usar sua reação para atacar a criatura, imediatamente após o ataque dela, considerando que você possa ver a criatura."
+  },
+  {
+    "id": "horde-breaker",
+    "name": "Destruidor de Hordas",
+    "description": "Uma vez em cada um dos seus turnos, quando você fizer um ataque com arma, você pode realizar outro ataque com a mesma arma contra uma criatura diferente que esteja a até 1,5 metro do alvo original e esteja no alcance da sua arma."
+  }
+]

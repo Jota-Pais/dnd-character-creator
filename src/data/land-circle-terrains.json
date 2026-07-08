@@ -1,0 +1,42 @@
+[
+  {
+    "id": "artico",
+    "name": "Ártico",
+    "description": "Você ganha magias de círculo adicionais nos seguintes níveis de druida: 3º (imobilizar pessoa, crescer espinho), 5º (nevasca, lentidão), 7º (movimentação livre, tempestade de gelo) e 9º (comunhão com a natureza, cone de frio)."
+  },
+  {
+    "id": "costa",
+    "name": "Costa",
+    "description": "Você ganha magias de círculo adicionais nos seguintes níveis de druida: 3º (passo nebuloso, reflexos), 5º (andar na água, respirar água), 7º (movimentação livre, controlar água) e 9º (vidência, conjurar elemental)."
+  },
+  {
+    "id": "deserto",
+    "name": "Deserto",
+    "description": "Você ganha magias de círculo adicionais nos seguintes níveis de druida: 3º (nublar, silêncio), 5º (criar alimentos, proteção contra energia), 7º (praga, terreno alucinógeno) e 9º (muralha de pedra, praga de insetos)."
+  },
+  {
+    "id": "floresta",
+    "name": "Floresta",
+    "description": "Você ganha magias de círculo adicionais nos seguintes níveis de druida: 3º (patas de aranha, pele de árvore), 5º (convocar relâmpagos, crescer plantas), 7º (adivinhação, movimentação livre) e 9º (comunhão com a natureza, passo de árvore)."
+  },
+  {
+    "id": "montanha",
+    "name": "Montanha",
+    "description": "Você ganha magias de círculo adicionais nos seguintes níveis de druida: 3º (crescer espinho, patas de aranha), 5º (mesclar-se às rochas, relâmpago), 7º (moldar rochas, pele de pedra) e 9º (criar passagem, muralha de pedra)."
+  },
+  {
+    "id": "pantano",
+    "name": "Pântano",
+    "description": "Você ganha magias de círculo adicionais nos seguintes níveis de druida: 3º (escuridão, flecha ácida), 5º (andar na água, névoa fétida), 7º (localizar criatura, movimentação livre) e 9º (vidência, praga de insetos)."
+  },
+  {
+    "id": "planicie",
+    "name": "Planície",
+    "description": "Você ganha magias de círculo adicionais nos seguintes níveis de druida: 3º (invisibilidade, passos sem pegadas), 5º (luz do dia, velocidade), 7º (adivinhação, movimentação livre) e 9º (praga de insetos, sonho)."
+  },
+  {
+    "id": "subterraneo",
+    "name": "Subterrâneo",
+    "description": "Você ganha magias de círculo adicionais nos seguintes níveis de druida: 3º (patas de aranha, teia), 5º (forma gasosa, névoa fétida), 7º (invisibilidade maior, moldar rochas) e 9º (praga de insetos, névoa mortal)."
+  }
+]

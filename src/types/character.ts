@@ -90,6 +90,7 @@ export const EMPTY_DRAFT: CharacterDraft = {
     expertiseItems: [],
     tools: [],
     subclassExtras: {},
+    progressionChoices: {},
   },
   spellChoices: { ...EMPTY_SPELL_CHOICES },
   abilityMethod: null,

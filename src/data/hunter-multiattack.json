@@ -1,0 +1,12 @@
+[
+  {
+    "id": "volley",
+    "name": "Saraivada",
+    "description": "Você pode usar sua ação para realizar um ataque à distância contra qualquer número de criatura a até 3 metros de um ponto que você possa ver, no alcance da sua arma. Você deve ter munição para cada alvo, como normal, e você realiza uma jogada de ataque separada para cada alvo."
+  },
+  {
+    "id": "whirlwind-attack",
+    "name": "Ataque Giratório",
+    "description": "Você pode usar sua ação para realizar um ataque corpo-a-corpo contra qualquer número de criaturas a até 1,5 metro de você, realizando uma jogada de ataque separada para cada alvo."
+  }
+]

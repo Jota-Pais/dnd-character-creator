@@ -1,0 +1,87 @@
+[
+  {
+    "id": "elemental-attunement",
+    "name": "Sintonia Elemental",
+    "description": "Você pode usar sua ação para, momentaneamente, controlar as forças elementais próximas, causando um dos seguintes efeitos, à sua escolha:\n- Criar, instantaneamente, um efeito sensorial inofensivo relacionado à água, ar, fogo ou terra, como uma chuva de faíscas, um sopro de vento, uma leve rajada de névoa ou um suave estrondo de pedra.\n- Acender ou apagar, instantaneamente, uma vela, tocha ou pequena fogueira.\n- Esfriar ou esquentar 0,5 quilo de material inorgânico por até 1 hora.\n- Fazer com que terra, fogo, ar ou névoa que possa caber dentro de 30 centímetros cúbicos se molde em uma forma bruta que você esculpiu por 1 minuto."
+  },
+  {
+    "id": "ride-the-wind",
+    "name": "Cavalgar o Vento",
+    "description": "(11° nível Requerido). Você pode gastar 4 pontos de chi para conjurar voo em si mesmo."
+  },
+  {
+    "id": "flames-of-the-phoenix",
+    "name": "Chamas da Fênix",
+    "description": "(11° nível Requerido). Você pode gastar 4 pontos de chi para conjurar bola de fogo."
+  },
+  {
+    "id": "water-whip",
+    "name": "Chicote de Água",
+    "description": "Você pode gastar 2 pontos de chi, com uma ação, para criar um chicote de água que empurra e puxa uma criatura para desequilibrá-la. Uma criatura que você possa ver a até 9 metros deve realizar um teste de resistência de Destreza. Se falhar, a criatura sofre 3d10 de dano de concussão, mais 1d10 de dano de concussão extra para cada ponto de chi adicional que você gastar e você pode tanto derrubar a criatura no chão, quanto puxá-la 7,5 metros para perto de você. Em um sucesso, a criatura sofre metade do dano e você não a puxa ou derruba."
+  },
+  {
+    "id": "eternal-mountain-defense",
+    "name": "Defesa Eterna da Montanha",
+    "description": "(17° nível Requerido). Você pode gastar 5 pontos de chi para conjurar pele de pedra em si mesmo."
+  },
+  {
+    "id": "sweeping-cinder-strike",
+    "name": "Golpe de Varredura Cauterizante",
+    "description": "Você pode gastar 2 pontos de chi para conjurar mãos flamejantes."
+  },
+  {
+    "id": "gong-of-the-summit",
+    "name": "Gongo do Pico",
+    "description": "(6° nível Requerido). Você pode gastar 3 pontos de chi para conjurar despedaçar."
+  },
+  {
+    "id": "rush-of-the-gale-spirits",
+    "name": "Investida dos Espíritos da Ventania",
+    "description": "Você pode gastar 2 pontos de chi para conjurar lufada de vento."
+  },
+  {
+    "id": "shape-the-flowing-river",
+    "name": "Moldar o Rio Corrente",
+    "description": "Com uma ação, você pode gastar 1 ponto de chi para escolher uma área de gelo ou água, não maior que 9 metros quadrados a até 36 metros de você. Você pode transformar água em gelo dentro da área, e vice-versa e pode remodelar o gelo na área da maneira que desejar. Você pode levantar ou baixar a elevação do gelo, encher uma vala, erguer ou achatar uma parede ou formar um pilar. A extensão dessas mudanças não podem exceder metade da maior dimensão da área. Por exemplo, se você afetou 9 metros quadrados, você pode criar um pilar de até 4,5 metros de altura, erguer ou rebaixar a elevação do quadrado em 4,5 metros, escavar uma vala de 4,5 metros de profundidade e assim por diante. Você não pode moldar o gelo para aprisionar ou ferir uma criatura na área."
+  },
+  {
+    "id": "wave-of-rolling-earth",
+    "name": "Onda de Pedras Rolantes",
+    "description": "(17° nível Requerido). Você pode gastar 6 pontos de chi para conjurar muralha de pedra."
+  },
+  {
+    "id": "mist-stance",
+    "name": "Postura da Neblina",
+    "description": "(11° nível Requerido). Você pode gastar 4 pontos de chi para conjurar forma gasosa."
+  },
+  {
+    "id": "fangs-of-the-fire-snake",
+    "name": "Presas da Serpente de Fogo",
+    "description": "Quando você usa a ação de Ataque no seu turno, você pode gastar 1 ponto de chi para fazer com que gavinhas de chamas estiquem-se dos seus punho e pés. Seu alcance com seus ataques desarmados aumenta em 3 metros durante essa ação e também pelo resto do seu turno. Um acerto com tal ataque causa dano de fogo, ao invés de dano de concussão e, se você gastar 1 ponto de chi quando atingir o ataque, ele também causará 1d10 de fogo adicional."
+  },
+  {
+    "id": "fist-of-unbroken-air",
+    "name": "Punho do Ar Contínuo",
+    "description": "Você pode criar uma explosão de ar comprimido que atinge como um poderoso soco. Com uma ação, você pode gastar 2 pontos de chi e escolher uma criatura a até 9 metros. A criatura deve realizar um teste de resistência de Força. Se falhar, a criatura sofrerá 3d10 de dano de concussão, mais 1d10 de dano de concussão extra para cada ponto de chi adicional que você gastar e você pode empurrar a criatura para até 6 metros longe de você e derrubá-la no chão. Em um sucesso, a criatura sofre metade do dano e você não a empurra ou derruba."
+  },
+  {
+    "id": "fist-of-four-thunders",
+    "name": "Punho dos Quatro Trovões",
+    "description": "Você pode gastar 2 pontos de chi para conjurar onda trovejante."
+  },
+  {
+    "id": "river-of-hungry-flame",
+    "name": "Rio de Chamas Famintas",
+    "description": "(17° nível Requerido). Você pode gastar 5 pontos de chi para conjurar muralha de fogo."
+  },
+  {
+    "id": "clench-of-the-north-wind",
+    "name": "Serragem do Vento do Norte",
+    "description": "(6° nível Requerido). Você pode gastar 3 pontos de chi para conjurar imobilizar pessoa."
+  },
+  {
+    "id": "breath-of-winter",
+    "name": "Sopro do Inverno",
+    "description": "(17° nível Requerido). Você pode gastar 6 pontos de chi para conjurar cone de frio."
+  }
+]

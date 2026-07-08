@@ -47,6 +47,7 @@ function emptyClassChoices(): ClassChoiceSelections {
     expertiseItems: [],
     tools: [],
     subclassExtras: {},
+    progressionChoices: {},
   }
 }
 
@@ -88,6 +89,15 @@ function sanitizeClassChoices(raw: unknown, cls: GameClass | null): ClassChoiceS
 
   const subclassId = typeof raw.subclass === 'string' ? raw.subclass : null
 
+  const progressionRaw = isRecord(raw.progressionChoices) ? raw.progressionChoices : {}
+  const progressionChoices: Record<string, string[]> = {}
+  for (const [slotId, values] of Object.entries(progressionRaw)) {
+    const slotValues = toStringArray(values)
+    if (slotValues.length > 0) {
+      progressionChoices[slotId] = slotValues
+    }
+  }
+
   return {
     skills: toStringArray(raw.skills),
     subclass: subclassId !== null && getSubclass(cls, subclassId) ? subclassId : null,
@@ -95,6 +105,7 @@ function sanitizeClassChoices(raw: unknown, cls: GameClass | null): ClassChoiceS
     expertiseItems: toStringArray(raw.expertiseItems),
     tools: toStringArray(raw.tools),
     subclassExtras,
+    progressionChoices,
   }
 }
 

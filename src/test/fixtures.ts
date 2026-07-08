@@ -16,6 +16,7 @@ export const COMPLETE_DRAFT: CharacterDraft = {
     expertiseItems: [],
     tools: [],
     subclassExtras: {},
+    progressionChoices: {},
   },
   spellChoices: { cantrips: [], spells: [] },
   abilityMethod: 'standard-array',

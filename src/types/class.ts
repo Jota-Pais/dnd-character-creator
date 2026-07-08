@@ -78,6 +78,7 @@ export type ClassChoiceSelections = {
   expertiseItems: string[]
   tools: string[]
   subclassExtras: SubclassChoiceSelections
+  progressionChoices: Record<string, string[]>
 }
 
 export const EMPTY_CLASS_CHOICES: ClassChoiceSelections = {
@@ -87,4 +88,5 @@ export const EMPTY_CLASS_CHOICES: ClassChoiceSelections = {
   expertiseItems: [],
   tools: [],
   subclassExtras: {},
+  progressionChoices: {},
 }

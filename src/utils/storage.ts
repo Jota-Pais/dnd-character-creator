@@ -26,6 +26,10 @@ function withDraftDefaults(partial: Partial<CharacterDraft> | undefined): Charac
   draft.hpMethod ??= 'average'
   draft.hpRolls ??= []
   draft.asiChoices ??= []
+  // classChoices é um objeto aninhado: o spread raso acima o substitui inteiro por
+  // partial.classChoices, então precisamos re-preencher campos ausentes (ex.:
+  // progressionChoices em fichas salvas antes da fase 3.5b) para não quebrar em runtime.
+  draft.classChoices = { ...EMPTY_DRAFT.classChoices, ...draft.classChoices }
   return draft
 }
 

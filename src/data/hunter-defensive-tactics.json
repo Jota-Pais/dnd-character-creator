@@ -1,0 +1,17 @@
+[
+  {
+    "id": "escape-the-horde",
+    "name": "Escapar da Horda",
+    "description": "Ataques de oportunidade contra você são feitos com desvantagem."
+  },
+  {
+    "id": "multiattack-defense",
+    "name": "Defesa Contra Múltiplos Ataques",
+    "description": "Quando uma criatura atinge você com um ataque, você recebe +4 de bônus na CA contra todos os ataques subsequentes feitos por essa criatura no resto do turno."
+  },
+  {
+    "id": "steel-will",
+    "name": "Vontade de Aço",
+    "description": "Você tem vantagem em testes de resistência para evitar ser amedrontado."
+  }
+]

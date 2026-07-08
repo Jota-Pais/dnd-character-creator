@@ -1,0 +1,183 @@
+[
+  {
+    "id": "armadura-de-sombras",
+    "name": "Armadura de Sombras",
+    "description": "Você pode conjurar armadura arcana em si mesmo, à vontade, sem precisar gastar um espaço de magia ou componentes materiais."
+  },
+  {
+    "id": "correntes-de-carceri",
+    "name": "Correntes de Cárceri",
+    "description": "Você pode conjurar imobilizar monstro, à vontade – tendo como alvo um celestial, corruptor ou elemental – sem precisar gastar um espaço de magia ou componentes materiais. Você deve terminar um descanso longo antes de poder usar essa invocação na mesma criatura novamente.",
+    "prerequisite": "15° nível, característica Corrente de Cárceri"
+  },
+  {
+    "id": "encharcar-a-mente",
+    "name": "Encharcar a Mente",
+    "description": "Você pode conjurar lentidão, uma vez, usando um espaço de magia de bruxo. Você não pode fazer isso novamente até terminar um descanso longo.",
+    "prerequisite": "5° nível"
+  },
+  {
+    "id": "escultor-de-carne",
+    "name": "Escultor de Carne",
+    "description": "Você pode conjurar metamorfose, uma vez, usando um espaço de magia de bruxo. Você não pode fazer isso novamente até terminar um descanso longo.",
+    "prerequisite": "7° nível"
+  },
+  {
+    "id": "explosao-agonizante",
+    "name": "Explosão Agonizante",
+    "description": "Quando você conjura rajada mística, adicione seu modificador de Carisma ao dano causado quando atingir.",
+    "prerequisite": "truque rajada mística"
+  },
+  {
+    "id": "explosao-repulsiva",
+    "name": "Explosão Repulsiva",
+    "description": "Quando você atingir uma criatura com uma rajada mística, você pode empurrar a criatura até 3 metros para longe de você em linha reta.",
+    "prerequisite": "truque rajada mística"
+  },
+  {
+    "id": "idioma-bestial",
+    "name": "Idioma Bestial",
+    "description": "Você pode conjurar falar com animais, à vontade, sem precisar gastar um espaço de magia."
+  },
+  {
+    "id": "influencia-enganadora",
+    "name": "Influência Enganadora",
+    "description": "Você ganha proficiência nas perícias Enganação e Persuasão."
+  },
+  {
+    "id": "lacaios-do-caos",
+    "name": "Lacaios do Caos",
+    "description": "Você pode lançar conjurar elemental, uma vez, usando um espaço de magia de bruxo. Você não pode fazer isso novamente até terminar um descanso longo.",
+    "prerequisite": "9° nível"
+  },
+  {
+    "id": "lamina-sedenta",
+    "name": "Lâmina Sedenta",
+    "description": "Você pode atacar com sua arma do pacto duas vezes, ao invés de apenas uma, quando você usa a ação de Ataque no seu turno.",
+    "prerequisite": "5° nível, característica Pacto da Lâmina"
+  },
+  {
+    "id": "lanca-mistica",
+    "name": "Lança Mística",
+    "description": "Quando você conjura rajada mística, seu alcance será de 90 metros.",
+    "prerequisite": "truque rajada mística"
+  },
+  {
+    "id": "larapio-dos-cinco-destinos",
+    "name": "Larápio dos Cinco Destinos",
+    "description": "Você pode conjurar perdição, uma vez, usando um espaço de magia de bruxo. Você não pode fazer isso novamente até terminar um descanso longo."
+  },
+  {
+    "id": "livro-de-segredos-antigos",
+    "name": "Livro de Segredos Antigos",
+    "description": "Você pode agora, registrar rituais mágicos no seu Livro das Sombras. Escolha duas magias de 1° nível que possuam o descritor ritual da lista de magias de qualquer classe. A magia aparece no livro e não conta no número de magias que você conhece. Com o seu Livro das Sombras em mãos, você pode conjurar as magias escolhidas como rituais. Você não pode conjurar essas magias, exceto na forma de rituais, a não ser que você tenha aprendido elas através de outros meios. Você também pode conjurar uma magia de bruxo que você conheça como ritual se ela possuir o descritor ritual. Os rituais não precisam ser da mesma lista de magias. Durante suas aventuras, você pode adicionar outras magias de ritual ao seu Livro das Sombras. Quando você encontrar tais magias, você pode adicioná-la ao livro se o nível da magia for igual ou inferior à metade do seu nível de bruxo (arredondado para baixo) e se você tiver tempo para gastar transcrevendo a magia. Para cada nível da magia, o processo de transcrição levará 2 horas e custará 50 po, devido às tintas raras necessárias para inscrevê-la.",
+    "prerequisite": "Característica Pacto do Tomo"
+  },
+  {
+    "id": "mascara-das-muitas-faces",
+    "name": "Máscara das Muitas Faces",
+    "description": "Você pode conjurar disfarçar-se, à vontade, sem precisar gastar um espaço de magia."
+  },
+  {
+    "id": "mestre-das-infindaveis-formas",
+    "name": "Mestre das Infindáveis Formas",
+    "description": "Você pode conjurar alterar-se, à vontade, sem precisar gastar um espaço de magia.",
+    "prerequisite": "15° nível"
+  },
+  {
+    "id": "olhar-de-duas-mentes",
+    "name": "Olhar de Duas Mentes",
+    "description": "Você pode usar sua ação para tocar um humanoide voluntário e perceber através do seus sentidos até o final do seu próximo turno. Conquanto que a criatura esteja no mesmo plano de existência que você, você pode usar sua ação nas rodadas subsequentes para manter a conexão, estendendo a duração até o início do seu próximo turno. Enquanto estiver percebendo através dos sentidos de outra criatura, você aproveita os benefícios de todos os sentidos especiais possuídos pela criatura e você fica cego e surdo ao que está a sua volta."
+  },
+  {
+    "id": "olhos-do-guardiao-das-runas",
+    "name": "Olhos do Guardião das Runas",
+    "description": "Você pode ler todas as escritas."
+  },
+  {
+    "id": "palavra-terrivel",
+    "name": "Palavra Terrível",
+    "description": "Você pode conjurar confusão, uma vez, usando um espaço de magia de bruxo. Você não pode fazer isso novamente até terminar um descanso longo.",
+    "prerequisite": "7° nível"
+  },
+  {
+    "id": "passo-ascendente",
+    "name": "Passo Ascendente",
+    "description": "Você pode conjurar levitação em si mesmo, à vontade, sem precisar gastar um espaço de magia ou componentes materiais.",
+    "prerequisite": "9° nível"
+  },
+  {
+    "id": "salto-transcendental",
+    "name": "Salto Transcendental",
+    "description": "Você pode conjurar salto em si mesmo, à vontade, sem precisar gastar um espaço de magia ou componentes materiais.",
+    "prerequisite": "9° nível"
+  },
+  {
+    "id": "sinal-de-mau-agouro",
+    "name": "Sinal de Mau Agouro",
+    "description": "Você pode conjurar rogar maldição, uma vez, usando um espaço de magia de bruxo. Você não pode fazer isso novamente até terminar um descanso longo.",
+    "prerequisite": "5° nível"
+  },
+  {
+    "id": "sorvedor-de-vida",
+    "name": "Sorvedor de Vida",
+    "description": "Quando você atingir uma criatura com sua arma do pacto, a criatura sofre uma quantidade de dano necrótico adicional igual ao seu modificador de Carisma (mínimo 1).",
+    "prerequisite": "12° nível, característica Pacto da Lâmina"
+  },
+  {
+    "id": "sussurros-da-sepultura",
+    "name": "Sussurros da Sepultura",
+    "description": "Você pode conjurar falar com os mortos, à vontade, sem precisar gastar um espaço de magia.",
+    "prerequisite": "9° nível"
+  },
+  {
+    "id": "sussurros-sedutores",
+    "name": "Sussurros Sedutores",
+    "description": "Você pode conjurar compulsão, uma vez, usando um espaço de magia de bruxo. Você não pode fazer isso novamente até terminar um descanso longo.",
+    "prerequisite": "7° nível"
+  },
+  {
+    "id": "uno-com-as-sombras",
+    "name": "Uno com as Sombras",
+    "description": "Quando você estiver em uma área de penumbra ou escuridão, você pode usar sua ação para ficar invisível até se mover ou realizar uma ação ou reação.",
+    "prerequisite": "5° nível"
+  },
+  {
+    "id": "vigor-abissal",
+    "name": "Vigor Abissal",
+    "description": "Você pode conjurar vitalidade falsa em si mesmo, à vontade, como uma magia de 1° nível, sem precisar gastar um espaço de magia ou componentes materiais."
+  },
+  {
+    "id": "visao-da-bruxa",
+    "name": "Visão da Bruxa",
+    "description": "Você pode ver a verdadeira forma de qualquer metamorfo ou criatura oculta através de magias de ilusão ou transmutação contanto que a criatura esteja a até 9 metros de você e você tenha linha de visão.",
+    "prerequisite": "15° nível"
+  },
+  {
+    "id": "visao-diabolica",
+    "name": "Visão Diabólica",
+    "description": "Você pode ver normalmente na escuridão, tanto mágica quanto normal, com um alcance de 36 metros."
+  },
+  {
+    "id": "visao-mistica",
+    "name": "Visão Mística",
+    "description": "Você pode conjurar detectar magia, à vontade, sem precisar gastar um espaço de magia."
+  },
+  {
+    "id": "visoes-de-reinos-distantes",
+    "name": "Visões de Reinos Distantes",
+    "description": "Você pode conjurar olho arcano, à vontade, sem precisar gastar um espaço de magia.",
+    "prerequisite": "15° nível"
+  },
+  {
+    "id": "visoes-nas-brumas",
+    "name": "Visões nas Brumas",
+    "description": "Você pode conjurar imagem silenciosa, à vontade, sem precisar gastar um espaço de magia ou componentes materiais."
+  },
+  {
+    "id": "voz-do-mestre-das-correntes",
+    "name": "Voz do Mestre das Correntes",
+    "description": "Você pode se comunicar telepaticamente com seu familiar e perceber através dos sentidos do seu familiar enquanto ambos estiverem no mesmo plano de existência. Além disso, enquanto estiver percebendo através dos sentidos do seu familiar, você também poderá falar através dele com a sua voz, mesmo que seu familiar, normalmente, seja incapaz de falar.",
+    "prerequisite": "Característica Pacto da Corrente"
+  }
+]

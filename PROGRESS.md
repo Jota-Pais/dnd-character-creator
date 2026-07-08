@@ -4,9 +4,15 @@
 
 ## Status atual
 
-**Fase 3.5a concluída — todas as 41 subclasses do PHB com features por nível.** As 12 classes agora têm progressão 1–20 completa, incluindo as habilidades de subclasse de nível alto (antes só o bárbaro tinha). Fases 1, 2, 4, 6, 7 completas; Fase 3 só falta a 3.5b (seletores de escolha); Fase 5 com núcleo (falta 5.1, baixo impacto).
+**Fase 3 concluída — progressão 1–20 completa, incluindo escolhas de progressão como seletores reais.** Fases 1, 2, 3, 4, 6, 7 completas; Fase 5 com núcleo (falta 5.1, baixo impacto); falta a Fase 8.
 
-**Próximo passo:** Fase 8 (gamificação, auditoria final e deploy) — ou fechar a 3.5b (seletores reais para invocações/metamagia/manobras/totem etc.) e/ou 5.1 (itens extras da loja) antes.
+**Próximo passo:** Fase 8 (gamificação, auditoria final e deploy) — ou fechar a 5.1 (itens extras da loja) antes.
+
+### Fase 3.5b — Escolhas de progressão (seletores reais) ✅ CONCLUÍDA (2026-07-08)
+
+- Manobras (Mestre de Batalha), invocações místicas (bruxo), metamágica (feiticeiro), disciplinas elementais (monge 4 Elementos), totem (bárbaro), terreno (druida da Terra), presa/táticas/ataques/defesa do Caçador (patrulheiro), segredos mágicos (bardo) e estilo de luta adicional (Campeão) agora são seletores que gravam a escolha do jogador — antes eram só texto genérico.
+- `src/data/progression-choices.json` (mapa de slots por classe/subclasse) + 10 arquivos de listas de opções digitados do PHB; `progressionChoiceUtils` (com testes) resolve os slots por nível e valida completude; `ProgressionChoicesPanel` no passo Classe e nova seção "Escolhas de Progressão" na Revisão.
+- Implementação delegada e revisada: build/lint/354 testes verdes; contagens das listas conferidas contra o livro. Correções na revisão registradas no `ROADMAP.md` (Fase 3, "Execução real" da 3.5b), incl. um bug de robustez em `withDraftDefaults` (fichas antigas travariam).
 
 ### Fase 3.5a — Features de subclasse por nível ✅ CONCLUÍDA (2026-07-08)
 

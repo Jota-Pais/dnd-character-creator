@@ -408,7 +408,7 @@ function WealthRoller({
   )
 }
 
-const SHOP_CATEGORIES: (ShopCategory | 'Todos')[] = ['Todos', 'Armas', 'Armaduras', 'Equipamento', 'Ferramentas', 'Pacotes']
+const SHOP_CATEGORIES: (ShopCategory | 'Todos')[] = ['Todos', 'Armas', 'Armaduras', 'Equipamento', 'Ferramentas', 'Montarias', 'Pacotes']
 
 function Shop({
   budgetPo,

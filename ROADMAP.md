@@ -214,15 +214,15 @@ Passo "Aprimoramentos" no wizard: por espaço de ASI, +2 num atributo, +1 em doi
 
 ---
 
-## Fase 5 — Loja de equipamento (método riqueza) — 🔄 NÚCLEO PRONTO
+## Fase 5 — Loja de equipamento (método riqueza) — ✅ CONCLUÍDA (2026-07-08)
 
 | # | Etapa | Detalhe | Status |
 | - | ----- | ------- | ------ |
-| 5.1 | Dados que faltam do cap. 5 | Montarias e veículos, selas/arreios; bens comerciais; tabela de bugigangas (d100) — ainda não no `/data`. Baixo impacto. | 🔄 (desenho pronto, ver abaixo) |
+| 5.1 | Dados que faltam do cap. 5 | ✅ **Concluída (2026-07-08).** `mounts-vehicles.json` (26 itens: 8 montarias, 8 arreios/selas, 10 veículos) na loja sob nova categoria "Montarias"; `trinkets.json` (100 bugigangas d100, só dados — sorteio fica pra Fase 8). Bens comerciais/escambo: **fora** por decisão de produto (preços de commodity, não mercadoria de criação). Delegado e revisado: build/lint/354 testes verdes; preços/nomes conferidos linha a linha contra a tabela do PHB pt-BR (a edição pt-BR tem só 4 veículos terrestres — sem o "Wagon 35po" do PHB inglês; barding fica fora por ser preço ×4, não fixo). | ✅ |
 | 5.2 | Loja | `getShopCatalog` + componente Shop no passo Equipamento: filtro por categoria, busca, carrinho (+/−), saldo restante ao vivo, bloqueio sem saldo. | ✅ |
 | 5.3 | Ficha considera compras | CA detecta armadura/escudo comprados (getEquippedArmor); Revisão lista itens comprados + saldo restante. | ✅ |
 
-**Pronto quando:** o jogador que rola ouro monta o equipamento inteiro dentro do app, sem ser mandado de volta ao livro. ✅ (com o catálogo atual; falta só 5.1 — itens extras)
+**Pronto quando:** o jogador que rola ouro monta o equipamento inteiro dentro do app, sem ser mandado de volta ao livro. ✅
 
 #### 📋 Desenho da 5.1 (2026-07-08 — pronto pra delegar)
 

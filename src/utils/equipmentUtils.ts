@@ -8,12 +8,14 @@ import generalItemsData from '../data/general-items.json'
 import toolsData from '../data/tools.json'
 import weaponsData from '../data/weapons.json'
 import armorsData from '../data/armors.json'
+import mountsVehiclesData from '../data/mounts-vehicles.json'
 
 const ALL_PACKS = packsData as EquipmentPack[]
 const ALL_GENERAL = generalItemsData as GeneralItem[]
 const ALL_TOOLS = toolsData as Tool[]
 const ALL_WEAPONS = weaponsData as Weapon[]
 const ALL_ARMORS = armorsData as Armor[]
+const ALL_MOUNTS_VEHICLES = mountsVehiclesData as { id: string, name: string, cost: number | null, weight: number | null }[]
 
 const GENERAL_IDS = new Set(ALL_GENERAL.map(i => i.id))
 const TOOL_IDS = new Set(ALL_TOOLS.map(t => t.id))
@@ -93,13 +95,14 @@ export function getItemName(id: string): string {
     ALL_TOOLS.find(t => t.id === id)?.name ??
     ALL_GENERAL.find(g => g.id === id)?.name ??
     ALL_PACKS.find(p => p.id === id)?.name ??
+    ALL_MOUNTS_VEHICLES.find(m => m.id === id)?.name ??
     id
   )
 }
 
 // ── Loja (método riqueza) ───────────────────────────────────────────────────
 
-export type ShopCategory = 'Armas' | 'Armaduras' | 'Ferramentas' | 'Pacotes' | 'Equipamento'
+export type ShopCategory = 'Armas' | 'Armaduras' | 'Ferramentas' | 'Pacotes' | 'Equipamento' | 'Montarias'
 
 export type ShopItem = {
   id: string
@@ -120,6 +123,9 @@ export function getShopCatalog(): ShopItem[] {
     if (g.cost != null && g.cost > 0 && g.category !== 'background-item') {
       items.push({ id: g.id, name: g.name, costCopper: g.cost, category: 'Equipamento' })
     }
+  }
+  for (const m of ALL_MOUNTS_VEHICLES) {
+    if (m.cost != null) items.push({ id: m.id, name: m.name, costCopper: m.cost, category: 'Montarias' })
   }
   return items.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
 }

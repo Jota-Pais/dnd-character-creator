@@ -4,9 +4,15 @@
 
 ## Status atual
 
-**Fase 3 concluída — progressão 1–20 completa, incluindo escolhas de progressão como seletores reais.** Fases 1, 2, 3, 4, 6, 7 completas; Fase 5 com núcleo (falta 5.1, baixo impacto); falta a Fase 8.
+**Fases 1–7 concluídas.** Falta só a Fase 8 (gamificação, auditoria final e deploy).
 
-**Próximo passo:** Fase 8 (gamificação, auditoria final e deploy) — ou fechar a 5.1 (itens extras da loja) antes.
+**Próximo passo:** Fase 8 — glossário ampliado + medidor de completude + notas para iniciantes + bugiganga aleatória na criação (consome `trinkets.json`), auditoria capítulo-a-capítulo contra o livro, e deploy estático.
+
+### Fase 5.1 — Montarias/veículos + bugigangas ✅ CONCLUÍDA (2026-07-08)
+
+- `src/data/mounts-vehicles.json`: 26 itens (8 montarias, 8 arreios/selas, 10 veículos), na loja sob nova categoria "Montarias" (`getShopCatalog` + `ShopCategory` + filtro em `EquipmentStep`). Fecha a Fase 5 (loja completa no método riqueza).
+- `src/data/trinkets.json`: 100 bugigangas (d100), só dados — o sorteio na criação é da Fase 8.1.
+- Bens comerciais (escambo): fora, por decisão de produto. Delegado e revisado: dados conferidos linha a linha contra a tabela do PHB pt-BR; build/lint/354 testes verdes.
 
 ### Fase 3.5b — Escolhas de progressão (seletores reais) ✅ CONCLUÍDA (2026-07-08)
 

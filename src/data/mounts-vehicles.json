@@ -1,0 +1,30 @@
+[
+  { "id": "donkey-mule", "name": "Burro ou mula", "subcategory": "mount", "cost": 800, "weight": null },
+  { "id": "camel", "name": "Camelo", "subcategory": "mount", "cost": 5000, "weight": null },
+  { "id": "warhorse", "name": "Cavalo de guerra", "subcategory": "mount", "cost": 40000, "weight": null },
+  { "id": "riding-horse", "name": "Cavalo de montaria", "subcategory": "mount", "cost": 7500, "weight": null },
+  { "id": "draft-horse", "name": "Cavalo pesado", "subcategory": "mount", "cost": 5000, "weight": null },
+  { "id": "elephant", "name": "Elefante", "subcategory": "mount", "cost": 20000, "weight": null },
+  { "id": "mastiff", "name": "Mastim", "subcategory": "mount", "cost": 2500, "weight": null },
+  { "id": "pony", "name": "Pônei", "subcategory": "mount", "cost": 3000, "weight": null },
+
+  { "id": "saddlebags", "name": "Alforje", "subcategory": "tack", "cost": 400, "weight": 4 },
+  { "id": "chariot", "name": "Biga", "subcategory": "vehicle", "cost": 25000, "weight": 50 },
+  { "id": "cart", "name": "Carroça", "subcategory": "vehicle", "cost": 1500, "weight": 100 },
+  { "id": "carriage", "name": "Carruagem", "subcategory": "vehicle", "cost": 10000, "weight": 300 },
+  { "id": "stabling", "name": "Estábulo (por dia)", "subcategory": "tack", "cost": 50, "weight": null },
+  { "id": "bit-and-bridle", "name": "Freio e rédea", "subcategory": "tack", "cost": 200, "weight": 0.5 },
+  { "id": "feed", "name": "Ração (1 dia)", "subcategory": "tack", "cost": 5, "weight": 5 },
+  { "id": "pack-saddle", "name": "Sela Compacta", "subcategory": "tack", "cost": 500, "weight": 7.5 },
+  { "id": "exotic-saddle", "name": "Sela Exótica", "subcategory": "tack", "cost": 6000, "weight": 20 },
+  { "id": "military-saddle", "name": "Sela Militar", "subcategory": "tack", "cost": 2000, "weight": 15 },
+  { "id": "riding-saddle", "name": "Sela de Viagem", "subcategory": "tack", "cost": 1000, "weight": 12.5 },
+  { "id": "sled", "name": "Trenó", "subcategory": "vehicle", "cost": 2000, "weight": 150 },
+
+  { "id": "keelboat", "name": "Barco de quilha", "subcategory": "vehicle", "cost": 300000, "weight": null },
+  { "id": "rowboat", "name": "Barco a remo", "subcategory": "vehicle", "cost": 5000, "weight": null },
+  { "id": "longship", "name": "Dracar", "subcategory": "vehicle", "cost": 1000000, "weight": null },
+  { "id": "galley", "name": "Galera", "subcategory": "vehicle", "cost": 3000000, "weight": null },
+  { "id": "warship", "name": "Navio de guerra", "subcategory": "vehicle", "cost": 2500000, "weight": null },
+  { "id": "sailing-ship", "name": "Veleiro", "subcategory": "vehicle", "cost": 1000000, "weight": null }
+]

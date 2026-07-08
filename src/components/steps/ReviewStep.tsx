@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useCharacterStore } from '../../stores/characterStore'
 import {
   getRace, getSubrace, getEffectiveSpeed,
@@ -68,7 +67,6 @@ export function ReviewStep() {
   const reset = useCharacterStore(state => state.reset)
   const setHpMethod = useCharacterStore(state => state.setHpMethod)
   const rollHpForLevel = useCharacterStore(state => state.rollHpForLevel)
-  const [confirmReset, setConfirmReset] = useState(false)
 
   const level = draft.level ?? 1
   const hpMethod: HpMethod = draft.hpMethod ?? 'average'
@@ -737,30 +735,12 @@ export function ReviewStep() {
         >
           ← Voltar
         </button>
-        {confirmReset ? (
-          <div className="flex items-center gap-2">
-            <span className="text-parchment-600 text-xs">Tem certeza?</span>
-            <button
-              onClick={handleReset}
-              className="px-3 py-1.5 rounded-lg text-xs font-fantasy text-red-400 border border-red-900 hover:bg-red-950 transition-colors"
-            >
-              Sim
-            </button>
-            <button
-              onClick={() => setConfirmReset(false)}
-              className="px-3 py-1.5 rounded-lg text-xs font-fantasy text-parchment-500 border border-parchment-800 hover:bg-parchment-900 transition-colors"
-            >
-              Não
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => setConfirmReset(true)}
-            className="px-4 py-2 text-parchment-700 hover:text-parchment-500 transition-colors text-sm font-fantasy"
-          >
-            Recomeçar
-          </button>
-        )}
+        <button
+          onClick={handleReset}
+          className="px-5 py-2 rounded-xl font-fantasy font-bold text-sm bg-gold-500 text-parchment-950 hover:bg-gold-400 transition-colors"
+        >
+          Concluir ✓
+        </button>
       </div>
 
       {/* Desktop nav */}
@@ -771,32 +751,13 @@ export function ReviewStep() {
         >
           ← Voltar
         </button>
-        {confirmReset ? (
-          <div className="flex items-center gap-3">
-            <span className="text-parchment-600 text-sm">
-              Todos os dados serão perdidos.
-            </span>
-            <button
-              onClick={handleReset}
-              className="px-4 py-2 rounded-lg text-sm font-fantasy text-red-400 border border-red-900 hover:bg-red-950 transition-colors"
-            >
-              Sim, recomeçar
-            </button>
-            <button
-              onClick={() => setConfirmReset(false)}
-              className="px-4 py-2 rounded-lg text-sm font-fantasy text-parchment-500 border border-parchment-800 hover:bg-parchment-900 transition-colors"
-            >
-              Cancelar
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => setConfirmReset(true)}
-            className="px-4 py-2 text-parchment-700 hover:text-parchment-500 transition-colors font-fantasy text-sm"
-          >
-            Recomeçar
-          </button>
-        )}
+        <button
+          onClick={handleReset}
+          title="Salva a ficha e volta para a galeria"
+          className="px-5 py-2 rounded-xl font-fantasy font-bold text-sm bg-gold-500 text-parchment-950 hover:bg-gold-400 transition-colors"
+        >
+          Concluir ✓ (voltar à galeria)
+        </button>
       </div>
 
       {/* Bottom padding for mobile nav */}

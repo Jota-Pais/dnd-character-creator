@@ -1,8 +1,16 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { saveSession, loadSession, clearSession, importCharacter, SESSION_VERSION } from '../storage'
-import { EMPTY_DRAFT } from '../../types/character'
+import {
+  saveSession, loadSession, clearSession, importCharacter, SESSION_VERSION,
+  loadLibrary, saveCharacterEntry, deleteCharacterEntry, newId, type SavedCharacter,
+} from '../storage'
+import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
 
 const SESSION_KEY = 'dnd-character-session'
+
+function entry(name: string): SavedCharacter {
+  const draft: CharacterDraft = { ...structuredClone(EMPTY_DRAFT), name }
+  return { id: newId(), updatedAt: 1000, step: 'name', draft }
+}
 
 beforeEach(() => {
   localStorage.clear()
@@ -56,6 +64,53 @@ describe('clearSession', () => {
   it('remove a sessão salva', () => {
     saveSession(structuredClone(EMPTY_DRAFT), 'race')
     clearSession()
+    expect(loadSession()).toBeNull()
+  })
+})
+
+describe('biblioteca', () => {
+  it('começa vazia', () => {
+    expect(loadLibrary()).toEqual([])
+  })
+
+  it('salva (upsert) e carrega fichas', () => {
+    const a = entry('Krusk')
+    saveCharacterEntry(a)
+    saveCharacterEntry(entry('Conan'))
+    expect(loadLibrary().length).toBe(2)
+    // upsert: salvar com o mesmo id atualiza, não duplica
+    saveCharacterEntry({ ...a, draft: { ...a.draft, name: 'Krusk, o Forte' } })
+    const lib = loadLibrary()
+    expect(lib.length).toBe(2)
+    expect(lib.find(c => c.id === a.id)?.draft.name).toBe('Krusk, o Forte')
+  })
+
+  it('exclui uma ficha por id', () => {
+    const a = entry('Krusk')
+    saveCharacterEntry(a)
+    saveCharacterEntry(entry('Conan'))
+    const remaining = deleteCharacterEntry(a.id)
+    expect(remaining.some(c => c.id === a.id)).toBe(false)
+    expect(loadLibrary().length).toBe(1)
+  })
+
+  it('preenche campos ausentes do draft ao carregar', () => {
+    localStorage.setItem(
+      'dnd-character-library',
+      JSON.stringify({ version: 1, characters: [{ id: 'x', updatedAt: 1, step: 'race', draft: { name: 'Parcial' } }] }),
+    )
+    const lib = loadLibrary()
+    expect(lib[0].draft.asiChoices).toEqual([])
+    expect(lib[0].draft.level).toBe(1)
+  })
+
+  it('migra a sessão única legada para a biblioteca', () => {
+    saveSession({ ...structuredClone(EMPTY_DRAFT), name: 'Legado' }, 'class')
+    const lib = loadLibrary()
+    expect(lib.length).toBe(1)
+    expect(lib[0].draft.name).toBe('Legado')
+    expect(lib[0].step).toBe('class')
+    // a sessão antiga foi removida após migrar
     expect(loadSession()).toBeNull()
   })
 })

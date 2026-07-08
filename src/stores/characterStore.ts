@@ -6,14 +6,26 @@ import { WIZARD_STEPS, EMPTY_DRAFT } from '../types/character'
 import { getClass } from '../utils/classUtils'
 import { EMPTY_EQUIPMENT_DRAFT } from '../types/equipment'
 import { EMPTY_SPELL_CHOICES } from '../types/spell'
-import { saveSession, loadSession, clearSession } from '../utils/storage'
+import { loadLibrary, saveCharacterEntry, deleteCharacterEntry, newId, type SavedCharacter } from '../utils/storage'
 import { getFirstIncompleteStep, isStepComplete } from '../utils/draftValidation'
 
-const persisted = loadSession()
+const initialLibrary = loadLibrary()
+
+export type AppView = 'gallery' | 'wizard'
 
 type CharacterStore = {
+  view: AppView
+  library: SavedCharacter[]
+  currentId: string | null
   currentStep: WizardStep
   draft: CharacterDraft
+
+  // biblioteca
+  newCharacter: () => void
+  openCharacter: (id: string) => void
+  duplicateCharacter: (id: string) => void
+  deleteCharacter: (id: string) => void
+  goToGallery: () => void
 
   setName: (name: string) => void
   setLevel: (level: number) => void
@@ -43,9 +55,55 @@ type CharacterStore = {
   importDraft: (draft: CharacterDraft) => void
 }
 
+/** Persiste a ficha atual na biblioteca e devolve a lista atualizada. */
+function persistCurrent(currentId: string | null, draft: CharacterDraft, step: WizardStep): { id: string; library: SavedCharacter[] } {
+  const id = currentId ?? newId()
+  const library = saveCharacterEntry({ id, updatedAt: Date.now(), step, draft })
+  return { id, library }
+}
+
 export const useCharacterStore = create<CharacterStore>((set, get) => ({
-  currentStep: persisted?.step ?? 'name',
-  draft: persisted?.draft ?? { ...EMPTY_DRAFT },
+  view: initialLibrary.length > 0 ? 'gallery' : 'wizard',
+  library: initialLibrary,
+  currentId: initialLibrary.length > 0 ? null : newId(),
+  currentStep: 'name',
+  draft: { ...EMPTY_DRAFT },
+
+  newCharacter: () =>
+    set({ view: 'wizard', currentId: newId(), currentStep: 'name', draft: { ...EMPTY_DRAFT } }),
+
+  openCharacter: (id) =>
+    set(state => {
+      const char = state.library.find(c => c.id === id)
+      if (!char) return {}
+      return { view: 'wizard', currentId: id, currentStep: char.step, draft: char.draft }
+    }),
+
+  duplicateCharacter: (id) =>
+    set(state => {
+      const char = state.library.find(c => c.id === id)
+      if (!char) return {}
+      const copy = structuredClone(char.draft)
+      copy.name = `${copy.name} (cópia)`.trim()
+      const library = saveCharacterEntry({ id: newId(), updatedAt: Date.now(), step: char.step, draft: copy })
+      return { library }
+    }),
+
+  deleteCharacter: (id) =>
+    set(state => {
+      const library = deleteCharacterEntry(id)
+      return { library, currentId: state.currentId === id ? null : state.currentId }
+    }),
+
+  goToGallery: () =>
+    set(state => {
+      // salva a ficha atual antes de sair (se tem nome, vale a pena guardar)
+      if (state.draft.name.trim()) {
+        const { library } = persistCurrent(state.currentId, state.draft, state.currentStep)
+        return { view: 'gallery', library }
+      }
+      return { view: 'gallery' }
+    }),
 
   setName: (name) => set(state => ({ draft: { ...state.draft, name } })),
 
@@ -228,37 +286,41 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     }),
 
   nextStep: () => {
-    const { currentStep, draft } = get()
+    const { currentStep, draft, currentId } = get()
     const idx = WIZARD_STEPS.indexOf(currentStep)
     // Defesa em profundidade: além do botão desabilitado na UI, o store não
     // avança enquanto o passo atual estiver incompleto
     if (!isStepComplete(draft, currentStep)) return
     if (idx < WIZARD_STEPS.length - 1) {
       const next = WIZARD_STEPS[idx + 1]
-      saveSession(draft, next)
-      set({ currentStep: next })
+      const { id, library } = persistCurrent(currentId, draft, next)
+      set({ currentStep: next, currentId: id, library })
     }
   },
 
   prevStep: () => {
-    const { currentStep, draft } = get()
+    const { currentStep, draft, currentId } = get()
     const idx = WIZARD_STEPS.indexOf(currentStep)
     if (idx > 0) {
       const prev = WIZARD_STEPS[idx - 1]
-      saveSession(draft, prev)
-      set({ currentStep: prev })
+      const { id, library } = persistCurrent(currentId, draft, prev)
+      set({ currentStep: prev, currentId: id, library })
     }
   },
 
+  // "Recomeçar" na Revisão: mantém a ficha salva e volta para a galeria
   reset: () => {
-    clearSession()
-    set({ currentStep: 'name', draft: { ...EMPTY_DRAFT } })
+    const { currentId, draft, currentStep } = get()
+    const library = draft.name.trim()
+      ? persistCurrent(currentId, draft, currentStep).library
+      : get().library
+    set({ view: 'gallery', library, currentId: null })
   },
 
   importDraft: (draft) => {
-    // Ficha importada pode estar incompleta — retoma o wizard no primeiro passo pendente
+    // Ficha importada vira uma nova ficha da biblioteca, retomada no 1º passo pendente
     const step = getFirstIncompleteStep(draft)
-    saveSession(draft, step)
-    set({ draft, currentStep: step })
+    const { id, library } = persistCurrent(newId(), draft, step)
+    set({ view: 'wizard', draft, currentStep: step, currentId: id, library })
   },
 }))

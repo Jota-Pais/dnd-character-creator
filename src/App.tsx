@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useCharacterStore } from './stores/characterStore'
+import { Gallery } from './components/Gallery'
 import { StepIndicator } from './components/wizard/StepIndicator'
 import { NameStep } from './components/steps/NameStep'
 import { RaceStep } from './components/steps/RaceStep'
@@ -12,15 +13,18 @@ import { EquipmentStep } from './components/steps/EquipmentStep'
 import { ReviewStep } from './components/steps/ReviewStep'
 
 export default function App() {
+  const view = useCharacterStore(state => state.view)
   const currentStep = useCharacterStore(state => state.currentStep)
   const name = useCharacterStore(state => state.draft.name)
   const prevStep = useCharacterStore(state => state.prevStep)
+  const goToGallery = useCharacterStore(state => state.goToGallery)
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
-  }, [currentStep])
+  }, [currentStep, view])
 
   useEffect(() => {
+    if (view !== 'wizard') return
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key !== 'Escape') return
       const tag = (e.target as HTMLElement).tagName
@@ -29,7 +33,7 @@ export default function App() {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [prevStep])
+  }, [prevStep, view])
 
   return (
     <div className="min-h-screen">
@@ -48,37 +52,53 @@ export default function App() {
             </span>
             <div className="h-px w-20 bg-gold-800" />
           </div>
-          {name && currentStep !== 'name' && (
+          {view === 'wizard' && name && currentStep !== 'name' && (
             <p className="mt-2 text-parchment-400 text-sm">
               <span className="text-parchment-600">Aventureiro:</span>{' '}
               <span className="text-gold-400 font-semibold font-fantasy">{name}</span>
             </p>
           )}
+          {view === 'wizard' && (
+            <button
+              onClick={goToGallery}
+              className="mt-3 text-parchment-600 hover:text-parchment-300 text-xs font-fantasy transition-colors"
+            >
+              ← Meus personagens
+            </button>
+          )}
         </header>
 
-        {/* Step indicator */}
-        <div className="mb-8 flex justify-center">
-          <StepIndicator currentStep={currentStep} />
-        </div>
+        {view === 'gallery' ? (
+          <main className="animate-fade-in pb-24 lg:pb-32">
+            <Gallery />
+          </main>
+        ) : (
+          <>
+            {/* Step indicator */}
+            <div className="mb-8 flex justify-center">
+              <StepIndicator currentStep={currentStep} />
+            </div>
 
-        {/* Divider ornamental */}
-        <div className="flex items-center gap-3 mb-8">
-          <div className="h-px flex-1 bg-gradient-to-r from-transparent to-parchment-800" />
-          <span className="text-parchment-700 text-sm">✦</span>
-          <div className="h-px flex-1 bg-gradient-to-l from-transparent to-parchment-800" />
-        </div>
+            {/* Divider ornamental */}
+            <div className="flex items-center gap-3 mb-8">
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent to-parchment-800" />
+              <span className="text-parchment-700 text-sm">✦</span>
+              <div className="h-px flex-1 bg-gradient-to-l from-transparent to-parchment-800" />
+            </div>
 
-        <main key={currentStep} className="animate-fade-in relative pb-24 lg:pb-32">
-          {currentStep === 'name' && <NameStep />}
-          {currentStep === 'race' && <RaceStep />}
-          {currentStep === 'class' && <ClassStep />}
-          {currentStep === 'spells' && <SpellStep />}
-          {currentStep === 'abilities' && <AbilitiesStep />}
-          {currentStep === 'improvements' && <ImprovementsStep />}
-          {currentStep === 'background' && <BackgroundStep />}
-          {currentStep === 'equipment' && <EquipmentStep />}
-          {currentStep === 'review' && <ReviewStep />}
-        </main>
+            <main key={currentStep} className="animate-fade-in relative pb-24 lg:pb-32">
+              {currentStep === 'name' && <NameStep />}
+              {currentStep === 'race' && <RaceStep />}
+              {currentStep === 'class' && <ClassStep />}
+              {currentStep === 'spells' && <SpellStep />}
+              {currentStep === 'abilities' && <AbilitiesStep />}
+              {currentStep === 'improvements' && <ImprovementsStep />}
+              {currentStep === 'background' && <BackgroundStep />}
+              {currentStep === 'equipment' && <EquipmentStep />}
+              {currentStep === 'review' && <ReviewStep />}
+            </main>
+          </>
+        )}
       </div>
 
       {/* Footer */}

@@ -11,9 +11,10 @@ import {
   isImprovementsStepComplete,
   isAsiChoiceComplete,
 } from '../../utils/asiUtils'
+import { getAllFeats, getFeat } from '../../utils/featUtils'
 
 const ACCENT = '#c0961a'
-type Mode = 'plus2' | 'split'
+type Mode = 'plus2' | 'split' | 'feat'
 
 export function ImprovementsStep() {
   const draft = useCharacterStore(state => state.draft)
@@ -92,17 +93,21 @@ type AsiSlotProps = {
 function AsiSlot({ asiLevel, choice, baseScore, otherBonuses, racial, onChange }: AsiSlotProps) {
   const asi = choice?.kind === 'asi' ? choice : undefined
   const initialMode: Mode =
-    asi && asi.abilities.length === 2 && asi.abilities[0] === asi.abilities[1] ? 'plus2' : 'split'
+    choice?.kind === 'feat'
+      ? 'feat'
+      : asi && asi.abilities.length === 2 && asi.abilities[0] === asi.abilities[1]
+        ? 'plus2'
+        : 'split'
   const [mode, setMode] = useState<Mode>(initialMode)
 
   const selected = asi?.abilities ?? []
   const complete = isAsiChoiceComplete(choice)
-  // valor do atributo sem a contribuição deste slot (para checar o teto de 20)
   const scoreWithout = (ab: AbilityScore) => baseScore(ab) + racial[ab] + otherBonuses[ab]
 
   function changeMode(next: Mode) {
     setMode(next)
-    onChange({ kind: 'asi', abilities: [] })
+    if (next === 'feat') onChange({ kind: 'feat', featId: '' })
+    else onChange({ kind: 'asi', abilities: [] })
   }
 
   function pick(ab: AbilityScore) {
@@ -118,6 +123,10 @@ function AsiSlot({ asiLevel, choice, baseScore, otherBonuses, racial, onChange }
     onChange({ kind: 'asi', abilities: next })
   }
 
+  const featChoice = choice?.kind === 'feat' ? choice : undefined
+  const selectedFeat = featChoice?.featId ? getFeat(featChoice.featId) : undefined
+  const halfOptions = selectedFeat?.abilityIncrease ?? []
+
   return (
     <div
       className="rounded-xl border-2 p-4"
@@ -128,36 +137,93 @@ function AsiSlot({ asiLevel, choice, baseScore, otherBonuses, racial, onChange }
         {!complete && <span className="text-red-500 text-xs">pendente</span>}
       </div>
 
-      <div className="flex gap-2 mb-3">
+      <div className="flex flex-wrap gap-2 mb-3">
         <ModeButton active={mode === 'plus2'} onClick={() => changeMode('plus2')}>+2 em um atributo</ModeButton>
         <ModeButton active={mode === 'split'} onClick={() => changeMode('split')}>+1 em dois atributos</ModeButton>
+        <ModeButton active={mode === 'feat'} onClick={() => changeMode('feat')}>Talento</ModeButton>
       </div>
 
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
-        {ALL_ABILITY_SCORES.map(ab => {
-          const isSel = selected.includes(ab)
-          const projected = mode === 'plus2' ? scoreWithout(ab) + 2 : scoreWithout(ab) + 1
-          const wouldExceed = !isSel && projected > 20
-          const disabled = wouldExceed || (mode === 'split' && !isSel && new Set(selected).size >= 2)
-          return (
-            <button
-              key={ab}
-              onClick={() => { if (!disabled) pick(ab) }}
-              disabled={disabled}
-              title={wouldExceed ? 'Excederia o máximo de 20' : undefined}
-              className="px-2 py-1.5 rounded-lg border text-xs font-semibold font-fantasy transition-all"
-              style={{
-                borderColor: isSel ? ACCENT : 'rgba(58,38,20,0.6)',
-                backgroundColor: isSel ? `${ACCENT}20` : 'transparent',
-                color: isSel ? ACCENT : disabled ? '#4a3520' : '#b8946f',
-                cursor: disabled ? 'not-allowed' : 'pointer',
-              }}
-            >
-              {ABILITY_LABELS[ab].short}
-            </button>
-          )
-        })}
-      </div>
+      {mode === 'feat' ? (
+        <div>
+          <select
+            value={featChoice?.featId ?? ''}
+            onChange={e => onChange({ kind: 'feat', featId: e.target.value })}
+            className="w-full px-3 py-2 rounded-lg border text-parchment-200 text-sm bg-parchment-950 mb-2"
+            style={{ borderColor: featChoice?.featId ? ACCENT : 'rgba(90,62,36,0.6)' }}
+          >
+            <option value="">— escolha um talento —</option>
+            {getAllFeats().map(f => (
+              <option key={f.id} value={f.id}>{f.name}</option>
+            ))}
+          </select>
+          {selectedFeat && (
+            <>
+              {selectedFeat.prerequisite && (
+                <p className="text-xs text-gold-600 mb-1">Pré-requisito: {selectedFeat.prerequisite}</p>
+              )}
+              <p className="text-xs text-parchment-500 leading-relaxed whitespace-pre-line mb-2">
+                {selectedFeat.description}
+              </p>
+              {halfOptions.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-parchment-300 mb-1">
+                    +1 no atributo (parte do talento):
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {halfOptions.map(ab => {
+                      const isSel = featChoice?.abilities?.[0] === ab
+                      const wouldExceed = !isSel && scoreWithout(ab) + 1 > 20
+                      return (
+                        <button
+                          key={ab}
+                          onClick={() => { if (!wouldExceed) onChange({ kind: 'feat', featId: featChoice!.featId, abilities: [ab] }) }}
+                          disabled={wouldExceed}
+                          title={wouldExceed ? 'Excederia o máximo de 20' : undefined}
+                          className="px-2 py-1 rounded-lg border text-xs font-semibold font-fantasy"
+                          style={{
+                            borderColor: isSel ? ACCENT : 'rgba(58,38,20,0.6)',
+                            backgroundColor: isSel ? `${ACCENT}20` : 'transparent',
+                            color: isSel ? ACCENT : wouldExceed ? '#4a3520' : '#b8946f',
+                            cursor: wouldExceed ? 'not-allowed' : 'pointer',
+                          }}
+                        >
+                          {ABILITY_LABELS[ab].short}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+          {ALL_ABILITY_SCORES.map(ab => {
+            const isSel = selected.includes(ab)
+            const projected = mode === 'plus2' ? scoreWithout(ab) + 2 : scoreWithout(ab) + 1
+            const wouldExceed = !isSel && projected > 20
+            const disabled = wouldExceed || (mode === 'split' && !isSel && new Set(selected).size >= 2)
+            return (
+              <button
+                key={ab}
+                onClick={() => { if (!disabled) pick(ab) }}
+                disabled={disabled}
+                title={wouldExceed ? 'Excederia o máximo de 20' : undefined}
+                className="px-2 py-1.5 rounded-lg border text-xs font-semibold font-fantasy transition-all"
+                style={{
+                  borderColor: isSel ? ACCENT : 'rgba(58,38,20,0.6)',
+                  backgroundColor: isSel ? `${ACCENT}20` : 'transparent',
+                  color: isSel ? ACCENT : disabled ? '#4a3520' : '#b8946f',
+                  cursor: disabled ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {ABILITY_LABELS[ab].short}
+              </button>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

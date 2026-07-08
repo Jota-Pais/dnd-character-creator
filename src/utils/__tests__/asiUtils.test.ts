@@ -101,9 +101,18 @@ describe('isAsiChoiceComplete', () => {
     expect(isAsiChoiceComplete({ kind: 'asi', abilities: [] })).toBe(false)
     expect(isAsiChoiceComplete(undefined)).toBe(false)
   })
-  it('talento válido exige featId', () => {
-    expect(isAsiChoiceComplete({ kind: 'feat', featId: 'alert' })).toBe(true)
+  it('talento simples (sem +1) exige apenas o featId', () => {
+    expect(isAsiChoiceComplete({ kind: 'feat', featId: 'alerta' })).toBe(true)
     expect(isAsiChoiceComplete({ kind: 'feat', featId: '' })).toBe(false)
+  })
+  it('meio-talento exige escolher 1 atributo elegível', () => {
+    expect(isAsiChoiceComplete({ kind: 'feat', featId: 'atleta' })).toBe(false) // falta o +1
+    expect(isAsiChoiceComplete({ kind: 'feat', featId: 'atleta', abilities: ['STR'] })).toBe(true)
+    expect(isAsiChoiceComplete({ kind: 'feat', featId: 'atleta', abilities: ['CON'] })).toBe(false) // CON não é opção
+  })
+  it('o +1 do meio-talento entra nos atributos finais', () => {
+    const b = getAsiBonuses([{ kind: 'feat', featId: 'resistente', abilities: ['CON'] }])
+    expect(b.CON).toBe(1)
   })
 })
 

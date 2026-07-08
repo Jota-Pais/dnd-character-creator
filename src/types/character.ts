@@ -17,7 +17,7 @@ export type BaseAbilityScores = Record<AbilityScore, number | null>
  */
 export type AsiChoice =
   | { kind: 'asi'; abilities: AbilityScore[] }
-  | { kind: 'feat'; featId: string }
+  | { kind: 'feat'; featId: string; abilities?: AbilityScore[] }
 
 export const WIZARD_STEPS: WizardStep[] = [
   'name',

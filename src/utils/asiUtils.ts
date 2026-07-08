@@ -2,6 +2,7 @@ import type { AbilityScore } from '../types/race'
 import type { CharacterDraft, AsiChoice } from '../types/character'
 import { getRace, getSubrace, getEffectiveAbilityBonuses } from './raceUtils'
 import { ALL_ABILITY_SCORES } from './abilityScoreUtils'
+import { getFeat } from './featUtils'
 
 /**
  * Níveis em que cada classe ganha um Incremento no Valor de Habilidade (ASI),
@@ -30,12 +31,15 @@ export function getReachedAsiLevels(classId: string | null | undefined, level: n
   return getAsiLevels(classId).filter(l => l <= level)
 }
 
-/** Soma dos aumentos de atributo escolhidos nos ASIs (kind: 'asi'), por atributo. */
+/**
+ * Soma dos aumentos de atributo por atributo: +1 por entrada de um ASI e +1 pelo
+ * atributo escolhido de um meio-talento (kind: 'feat' com abilities).
+ */
 export function getAsiBonuses(asiChoices: AsiChoice[]): Record<AbilityScore, number> {
   const bonuses: Record<AbilityScore, number> = { STR: 0, DEX: 0, CON: 0, INT: 0, WIS: 0, CHA: 0 }
   for (const choice of asiChoices) {
-    if (choice.kind !== 'asi') continue
-    for (const ability of choice.abilities) {
+    const abilities = choice.kind === 'asi' ? choice.abilities : (choice.abilities ?? [])
+    for (const ability of abilities) {
       bonuses[ability] += 1
     }
   }
@@ -77,7 +81,15 @@ export function getFinalAbilityScores(draft: CharacterDraft): Record<AbilityScor
  */
 export function isAsiChoiceComplete(choice: AsiChoice | undefined): boolean {
   if (!choice) return false
-  if (choice.kind === 'feat') return !!choice.featId
+  if (choice.kind === 'feat') {
+    if (!choice.featId) return false
+    // meio-talento: exige escolher exatamente 1 atributo dentre os elegíveis
+    const options = getFeat(choice.featId)?.abilityIncrease
+    if (options && options.length > 0) {
+      return (choice.abilities?.length === 1) && options.includes(choice.abilities[0])
+    }
+    return true
+  }
   return (
     choice.abilities.length === 2 &&
     choice.abilities.every(a => (ALL_ABILITY_SCORES as AbilityScore[]).includes(a))

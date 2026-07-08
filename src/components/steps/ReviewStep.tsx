@@ -5,6 +5,7 @@ import {
   getEffectiveDarkvision, RACE_PRESENTATION, LANGUAGES, getAvailableInnateSpells,
 } from '../../utils/raceUtils'
 import { getFinalAbilityScores } from '../../utils/asiUtils'
+import { getFeat } from '../../utils/featUtils'
 import {
   getClass, getSubclass, CLASS_PRESENTATION,
   getHpAtLevel1, getAverageHpAtLevel, getRolledHpAtLevel, isActiveCaster,
@@ -537,6 +538,27 @@ export function ReviewStep() {
                   </div>
                 )
               })}
+            </div>
+          </Section>
+        )
+      })()}
+
+      {/* Talentos (dos aprimoramentos) */}
+      {(() => {
+        const feats = (draft.asiChoices ?? [])
+          .filter(c => c.kind === 'feat' && c.featId)
+          .map(c => (c.kind === 'feat' ? getFeat(c.featId) : undefined))
+          .filter(Boolean)
+        if (feats.length === 0) return null
+        return (
+          <Section title="Talentos">
+            <div className="space-y-3">
+              {feats.map(feat => (
+                <div key={feat!.id}>
+                  <span className="text-sm font-semibold font-fantasy text-parchment-200">{feat!.name}.{' '}</span>
+                  <span className="text-sm text-parchment-500 leading-relaxed whitespace-pre-line">{feat!.description}</span>
+                </div>
+              ))}
             </div>
           </Section>
         )

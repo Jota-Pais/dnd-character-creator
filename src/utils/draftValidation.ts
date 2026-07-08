@@ -119,7 +119,10 @@ function sanitizeAsiChoices(raw: unknown): AsiChoice[] {
   for (const entry of raw) {
     if (!isRecord(entry)) continue
     if (entry.kind === 'feat' && typeof entry.featId === 'string') {
-      out.push({ kind: 'feat', featId: entry.featId })
+      const abilities = toStringArray(entry.abilities).filter((a): a is AbilityScore =>
+        (ABILITY_KEYS as string[]).includes(a),
+      )
+      out.push(abilities.length > 0 ? { kind: 'feat', featId: entry.featId, abilities } : { kind: 'feat', featId: entry.featId })
     } else if (entry.kind === 'asi') {
       const abilities = toStringArray(entry.abilities).filter((a): a is AbilityScore =>
         (ABILITY_KEYS as string[]).includes(a),

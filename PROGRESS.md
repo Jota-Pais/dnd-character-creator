@@ -6,16 +6,14 @@
 
 **Fase 1 do ROADMAP concluída — núcleo de nível 1 corrigido e fiel ao PHB.** Wizard de 8 passos funcionando, com seleção de nível (1–20), PV por média ou rolagem, progressão de magias/slots/proficiência por nível, persistência e export/import JSON. 271 testes passando, build e lint limpos.
 
-**Próximo passo:** Fase 3, etapa 3.3 — features por nível dos conjuradores plenos (clérigo, druida, mago, feiticeiro), seguindo o mesmo padrão dos marciais.
+**Próximo passo:** Fase 3, etapa 3.5 — escolhas de progressão (invocações, metamagia, manobras, expertise adicional) e as escolhas de entrada de subclasse (ex-2.3), mais as features por nível das **subclasses**. As features por nível das 12 **classes** já estão completas.
 
 ### Fase 3 — progressão 1–20 (em andamento)
 
 - **3.1** ✅ Fundação: `classResources` em `progression.json` (fúrias, ki, ataque furtivo, inspiração, pontos de feitiçaria, invocações, canalizar divindade, forma selvagem — verificado no PDF); `classResourceUtils` + testes; painel "Recursos de Classe" na Revisão; `getClassFeaturesUpToLevel`.
-- **3.2** ✅ Lote A (marciais): features por nível 1–20 de **bárbaro, guerreiro, ladino e monge** em `src/data/class-progression-features.json` (arquivo separado, `classes.json` estável). Revisão agrupa habilidades de classe por nível. Digitação a partir do PDF do livro.
-- **3.3** ⬜ Lote B (conjuradores plenos): clérigo, druida, mago, feiticeiro.
-- **3.4** ⬜ Lote C (híbridos): bardo, bruxo, paladino, patrulheiro.
-- **3.5** ⬜ Escolhas de progressão + escolhas de entrada de subclasse (ex-2.3).
-- **3.6** ⬜ (parcial ✅) Revisão por nível já feita para features; falta o painel de recursos evoluir com features por nível das subclasses.
+- **3.2–3.4** ✅ Features por nível 1–20 das **12 classes** em `src/data/class-progression-features.json` (arquivo separado; `classes.json` estável). Marciais, conjuradores plenos e híbridos, todos digitados do PDF do livro. A Revisão agrupa as habilidades de classe por nível (só as até o nível do personagem).
+- **3.5** ⬜ Escolhas de progressão (invocações, metamagia, manobras, expertise adicional) + escolhas de entrada de subclasse (ex-2.3) + features por nível das **subclasses** (o objeto `subclasses` em `class-progression-features.json` ainda está vazio; hoje as subclasses mostram só a feature de entrada via fallback).
+- **3.6** ✅ (parcial) Revisão por nível feita para as features de classe; painel de recursos de classe pronto.
 
 > Arquitetura adotada: `featuresByLevel` num arquivo separado (`class-progression-features.json`), keyed por classId/subclassId, mergeado em runtime por `getClassFeaturesUpToLevel` (com fallback para o formato atual nas classes ainda não digitadas). Diffs limpos e `classes.json` intacto.
 

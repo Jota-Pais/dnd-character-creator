@@ -4,7 +4,7 @@ import { sanitizeImportedDraft } from './draftValidation'
 
 const SESSION_KEY = 'dnd-character-session'
 // Bump this whenever CharacterDraft schema changes in a breaking way
-export const SESSION_VERSION = 3
+export const SESSION_VERSION = 4
 
 type Session = {
   version: number
@@ -30,6 +30,7 @@ export function loadSession(): Session | null {
     draft.level ??= 1
     draft.hpMethod ??= 'average'
     draft.hpRolls ??= []
+    draft.asiChoices ??= []
     return { version: SESSION_VERSION, draft, step: session.step ?? 'name' }
   } catch {
     localStorage.removeItem(SESSION_KEY)

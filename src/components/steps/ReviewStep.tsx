@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useCharacterStore } from '../../stores/characterStore'
 import {
-  getRace, getSubrace, getEffectiveAbilityBonuses, getEffectiveSpeed,
+  getRace, getSubrace, getEffectiveSpeed,
   getEffectiveDarkvision, RACE_PRESENTATION, LANGUAGES, getAvailableInnateSpells,
 } from '../../utils/raceUtils'
+import { getFinalAbilityScores } from '../../utils/asiUtils'
 import {
   getClass, getSubclass, CLASS_PRESENTATION,
   getHpAtLevel1, getAverageHpAtLevel, getRolledHpAtLevel, isActiveCaster,
@@ -84,18 +85,12 @@ export function ReviewStep() {
 
   const profBonus = getProficiencyBonus(level)
 
-  // Racial bonuses per ability
-  const racialBonuses: Record<AbilityScore, number> = { STR: 0, DEX: 0, CON: 0, INT: 0, WIS: 0, CHA: 0 }
-  if (race) {
-    for (const b of getEffectiveAbilityBonuses(race, subrace ?? null, draft.raceChoices)) {
-      racialBonuses[b.ability] += b.value
-    }
-  }
-
-  // Final scores
-  const finalScores = {} as Record<AbilityScore, number>
+  // Atributos finais = base + bônus racial + ASIs (teto de 20 aplicado aos ASIs)
+  const finalScores = getFinalAbilityScores(draft)
+  // Bônus total por atributo (racial + ASI), para exibição na grade
+  const totalBonuses = {} as Record<AbilityScore, number>
   for (const ab of ALL_ABILITY_SCORES) {
-    finalScores[ab] = (draft.abilityScores[ab] ?? 10) + racialBonuses[ab]
+    totalBonuses[ab] = finalScores[ab] - (draft.abilityScores[ab] ?? 10)
   }
   const dexMod = calculateModifier(finalScores.DEX)
   const conMod = calculateModifier(finalScores.CON)
@@ -279,7 +274,7 @@ export function ReviewStep() {
         <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
           {ALL_ABILITY_SCORES.map(ab => {
             const base = draft.abilityScores[ab] ?? 10
-            const bonus = racialBonuses[ab]
+            const bonus = totalBonuses[ab]
             const final = finalScores[ab]
             const mod = calculateModifier(final)
             return (

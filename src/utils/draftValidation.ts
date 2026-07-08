@@ -19,6 +19,8 @@ import { getBackground, isBackgroundStepComplete } from './backgroundUtils'
 import { isAbilitiesStepComplete } from './abilityScoreUtils'
 import { getSpell, isSpellStepComplete } from './spellUtils'
 import { isEquipmentStepComplete } from './equipmentUtils'
+import { isImprovementsStepComplete } from './asiUtils'
+import type { AsiChoice } from '../types/character'
 
 const ABILITY_KEYS: AbilityScore[] = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA']
 const ABILITY_METHODS: string[] = ['standard-array', 'point-buy', 'roll']
@@ -111,6 +113,23 @@ function sanitizeBackgroundChoices(raw: unknown): BackgroundChoiceSelections {
   return choices
 }
 
+function sanitizeAsiChoices(raw: unknown): AsiChoice[] {
+  if (!Array.isArray(raw)) return []
+  const out: AsiChoice[] = []
+  for (const entry of raw) {
+    if (!isRecord(entry)) continue
+    if (entry.kind === 'feat' && typeof entry.featId === 'string') {
+      out.push({ kind: 'feat', featId: entry.featId })
+    } else if (entry.kind === 'asi') {
+      const abilities = toStringArray(entry.abilities).filter((a): a is AbilityScore =>
+        (ABILITY_KEYS as string[]).includes(a),
+      )
+      if (abilities.length >= 1 && abilities.length <= 2) out.push({ kind: 'asi', abilities })
+    }
+  }
+  return out
+}
+
 function sanitizeEquipment(raw: unknown): EquipmentDraft {
   if (!isRecord(raw)) return emptyEquipment()
 
@@ -192,6 +211,8 @@ export function sanitizeImportedDraft(raw: unknown): CharacterDraft | null {
     if (roll !== null) hpRolls[index] = roll
   })
 
+  const asiChoices = sanitizeAsiChoices(raw.asiChoices)
+
   return {
     name: raw.name.slice(0, 60),
     level,
@@ -204,6 +225,7 @@ export function sanitizeImportedDraft(raw: unknown): CharacterDraft | null {
     abilityMethod,
     abilityScores,
     rolledValues,
+    asiChoices,
     background: background?.id ?? null,
     backgroundChoices: background ? sanitizeBackgroundChoices(raw.backgroundChoices) : {},
     equipment: cls ? sanitizeEquipment(raw.equipment) : emptyEquipment(),
@@ -228,6 +250,8 @@ export function isStepComplete(draft: CharacterDraft, step: WizardStep): boolean
       return isClassStepComplete(cls, draft.classChoices, draft.level)
     case 'abilities':
       return isAbilitiesStepComplete(draft.abilityMethod, draft.abilityScores, draft.rolledValues)
+    case 'improvements':
+      return isImprovementsStepComplete(draft)
     case 'spells':
       return isSpellStepComplete(cls, draft.spellChoices, draft.level)
     case 'background':

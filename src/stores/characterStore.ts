@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { WizardStep, CharacterDraft, RaceChoiceSelections, ClassChoiceSelections, AbilityMethod, BackgroundChoiceSelections, EquipmentDraft, SpellChoices, HpMethod } from '../types/character'
+import type { WizardStep, CharacterDraft, RaceChoiceSelections, ClassChoiceSelections, AbilityMethod, BackgroundChoiceSelections, EquipmentDraft, SpellChoices, HpMethod, AsiChoice } from '../types/character'
 import type { AbilityScore } from '../types/race'
 import type { ChoiceResolution } from '../types/equipment'
 import { WIZARD_STEPS, EMPTY_DRAFT } from '../types/character'
@@ -29,6 +29,7 @@ type CharacterStore = {
   setAbilityMethod: (method: AbilityMethod) => void
   setAbilityScore: (ability: AbilityScore, score: number | null) => void
   setRolledValues: (values: number[]) => void
+  setAsiChoice: (index: number, choice: AsiChoice | null) => void
   setBackground: (backgroundId: string) => void
   updateBackgroundChoices: (choices: Partial<BackgroundChoiceSelections>) => void
   setEquipmentMethod: (method: EquipmentDraft['method']) => void
@@ -53,6 +54,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
         level: Math.max(1, Math.min(20, level)),
         hpRolls: [],
         spellChoices: { ...EMPTY_SPELL_CHOICES },
+        asiChoices: [],
       },
     })),
 
@@ -102,6 +104,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
         classChoices: { ...EMPTY_DRAFT.classChoices },
         spellChoices: { ...EMPTY_SPELL_CHOICES },
         equipment: { ...EMPTY_EQUIPMENT_DRAFT },
+        asiChoices: [],
       },
     })),
 
@@ -149,6 +152,17 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
         abilityScores: { STR: null, DEX: null, CON: null, INT: null, WIS: null, CHA: null },
       },
     })),
+
+  setAsiChoice: (index, choice) =>
+    set(state => {
+      const asiChoices = [...(state.draft.asiChoices ?? [])]
+      if (choice === null) {
+        asiChoices.splice(index, 1)
+      } else {
+        asiChoices[index] = choice
+      }
+      return { draft: { ...state.draft, asiChoices } }
+    }),
 
   setBackground: (backgroundId) =>
     set(state => ({

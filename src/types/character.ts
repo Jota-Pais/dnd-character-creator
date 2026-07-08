@@ -5,17 +5,26 @@ import { type EquipmentDraft, EMPTY_EQUIPMENT_DRAFT } from './equipment'
 import { type SpellChoices, EMPTY_SPELL_CHOICES } from './spell'
 export type { ClassChoiceSelections, BackgroundChoiceSelections, EquipmentDraft, SpellChoices }
 
-export type WizardStep = 'name' | 'race' | 'class' | 'spells' | 'abilities' | 'background' | 'equipment' | 'review'
+export type WizardStep = 'name' | 'race' | 'class' | 'spells' | 'abilities' | 'improvements' | 'background' | 'equipment' | 'review'
 
 export type AbilityMethod = 'standard-array' | 'point-buy' | 'roll'
 
 export type BaseAbilityScores = Record<AbilityScore, number | null>
+
+/**
+ * Escolha de um espaço de Incremento no Valor de Habilidade (ASI):
+ * aumentar um atributo em +2 ou dois atributos em +1 cada, ou pegar um talento.
+ */
+export type AsiChoice =
+  | { kind: 'asi'; abilities: AbilityScore[] }
+  | { kind: 'feat'; featId: string }
 
 export const WIZARD_STEPS: WizardStep[] = [
   'name',
   'race',
   'class',
   'abilities',
+  'improvements',
   'spells',
   'background',
   'equipment',
@@ -28,6 +37,7 @@ export const STEP_LABELS: Record<WizardStep, string> = {
   class: 'Classe',
   spells: 'Magias',
   abilities: 'Atributos',
+  improvements: 'Aprimoramentos',
   background: 'Antecedente',
   equipment: 'Equipamento',
   review: 'Revisão',
@@ -56,6 +66,7 @@ export type CharacterDraft = {
   abilityMethod: AbilityMethod | null
   abilityScores: BaseAbilityScores
   rolledValues: number[]
+  asiChoices: AsiChoice[]
   background: string | null
   backgroundChoices: BackgroundChoiceSelections
   equipment: EquipmentDraft
@@ -82,6 +93,7 @@ export const EMPTY_DRAFT: CharacterDraft = {
   abilityMethod: null,
   abilityScores: { STR: null, DEX: null, CON: null, INT: null, WIS: null, CHA: null },
   rolledValues: [],
+  asiChoices: [],
   background: null,
   backgroundChoices: {},
   equipment: EMPTY_EQUIPMENT_DRAFT,

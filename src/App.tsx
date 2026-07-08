@@ -6,6 +6,7 @@ import { RaceStep } from './components/steps/RaceStep'
 import { ClassStep } from './components/steps/ClassStep'
 import { SpellStep } from './components/steps/SpellStep'
 import { AbilitiesStep } from './components/steps/AbilitiesStep'
+import { ImprovementsStep } from './components/steps/ImprovementsStep'
 import { BackgroundStep } from './components/steps/BackgroundStep'
 import { EquipmentStep } from './components/steps/EquipmentStep'
 import { ReviewStep } from './components/steps/ReviewStep'
@@ -73,6 +74,7 @@ export default function App() {
           {currentStep === 'class' && <ClassStep />}
           {currentStep === 'spells' && <SpellStep />}
           {currentStep === 'abilities' && <AbilitiesStep />}
+          {currentStep === 'improvements' && <ImprovementsStep />}
           {currentStep === 'background' && <BackgroundStep />}
           {currentStep === 'equipment' && <EquipmentStep />}
           {currentStep === 'review' && <ReviewStep />}

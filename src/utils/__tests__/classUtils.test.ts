@@ -266,10 +266,22 @@ describe('getClassFeaturesUpToLevel', () => {
     expect(levels).toEqual([...levels].sort((a, b) => a - b))
   })
 
-  it('bárbaro nv3 com Furioso mostra a feature de entrada da subclasse (fallback)', () => {
+  it('bárbaro nv3 com Furioso mostra a feature de entrada da subclasse', () => {
     const berserker = getSubclass(barbarian, 'berserker')!
     const nomes = getClassFeaturesUpToLevel(barbarian, berserker, 3).map(x => x.name)
     expect(nomes).toContain('Frenesi')
+  })
+
+  it('bárbaro nv10 com Furioso inclui features de subclasse por nível (3/6/10)', () => {
+    const berserker = getSubclass(barbarian, 'berserker')!
+    const feats = getClassFeaturesUpToLevel(barbarian, berserker, 10)
+    const nomes = feats.map(x => x.name)
+    expect(nomes).toContain('Frenesi') // nv3
+    expect(nomes).toContain('Fúria Inconsciente') // nv6
+    expect(nomes).toContain('Presença Intimidante') // nv10
+    expect(nomes).not.toContain('Retaliação') // nv14, ainda não
+    // features de subclasse aparecem no nível certo
+    expect(feats.find(f => f.name === 'Presença Intimidante')?.level).toBe(10)
   })
 
   it('classe sem tabela cai no fallback: features de nível 1', () => {

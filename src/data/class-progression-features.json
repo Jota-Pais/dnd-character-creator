@@ -126,5 +126,19 @@
       { "level": 20, "name": "Matador de Inimigos", "description": "Uma vez por turno, some seu mod. de Sabedoria a uma jogada de ataque ou de dano de um ataque seu." }
     ]
   },
-  "subclasses": {}
+  "subclasses": {
+    "berserker": [
+      { "level": 3, "name": "Frenesi", "description": "Ao entrar em fúria, você pode entrar em frenesi: pela duração da fúria, pode fazer um ataque corpo-a-corpo com arma como ação bônus em cada turno. Ao acabar a fúria, sofre um nível de exaustão." },
+      { "level": 6, "name": "Fúria Inconsciente", "description": "Você não pode ser enfeitiçado nem amedrontado enquanto estiver em fúria; efeitos assim ficam suspensos durante ela." },
+      { "level": 10, "name": "Presença Intimidante", "description": "Com uma ação, amedronte uma criatura a até 9 m (resistência de Sabedoria); pode manter o medo gastando ações nos turnos seguintes." },
+      { "level": 14, "name": "Retaliação", "description": "Quando sofrer dano de uma criatura a até 1,5 m, use sua reação para fazer um ataque corpo-a-corpo contra ela." }
+    ],
+    "totem-warrior": [
+      { "level": 3, "name": "Conselheiro Espiritual", "description": "Você pode conjurar sentido bestial e falar com animais, mas apenas como rituais." },
+      { "level": 3, "name": "Totem Espiritual", "description": "Escolha um totem — Águia, Lobo ou Urso — e ganhe seu benefício em fúria (mobilidade, vantagem para aliados ou resistência a quase todo dano)." },
+      { "level": 6, "name": "Aspecto da Besta", "description": "Você ganha um benefício místico do totem escolhido (visão aguçada da águia, faro rastreador do lobo ou força do urso)." },
+      { "level": 10, "name": "Andarilho Espiritual", "description": "Você pode conjurar comunhão com a natureza como ritual." },
+      { "level": 14, "name": "Sintonia Totêmica", "description": "Você ganha um benefício mágico em fúria conforme o totem escolhido (voo curto da águia, investida do lobo ou provocar/resistir do urso)." }
+    ]
+  }
 }

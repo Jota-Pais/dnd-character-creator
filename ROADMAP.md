@@ -84,7 +84,9 @@ O maior bloco de trabalho. Divide-se em modelo de dados + 3 lotes de digitaliza�
 
 ---
 
-## Fase 4 — ASI e Talentos
+## Fase 4 — ASI e Talentos ✅ CONCLUÍDA (2026-07-08)
+
+Passo "Aprimoramentos" no wizard: por espaço de ASI, +2 num atributo, +1 em dois, ou um talento (42 do PHB, meio-talentos com +1). Talento do Humano Variante como seletor real. Tudo refletido nos atributos finais (teto 20) e na ficha.
 
 | # | Etapa | Detalhe |
 | - | ----- | ------- |

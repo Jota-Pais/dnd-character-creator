@@ -12,8 +12,10 @@
 
 - **3.1** ✅ Fundação: `classResources` em `progression.json` (fúrias, ki, ataque furtivo, inspiração, pontos de feitiçaria, invocações, canalizar divindade, forma selvagem — verificado no PDF); `classResourceUtils` + testes; painel "Recursos de Classe" na Revisão; `getClassFeaturesUpToLevel`.
 - **3.2–3.4** ✅ Features por nível 1–20 das **12 classes** em `src/data/class-progression-features.json` (arquivo separado; `classes.json` estável). Marciais, conjuradores plenos e híbridos, todos digitados do PDF do livro. A Revisão agrupa as habilidades de classe por nível (só as até o nível do personagem).
-- **3.5** ⬜ Escolhas de progressão (invocações, metamagia, manobras, expertise adicional) + escolhas de entrada de subclasse (ex-2.3) + features por nível das **subclasses** (o objeto `subclasses` em `class-progression-features.json` ainda está vazio; hoje as subclasses mostram só a feature de entrada via fallback).
-- **3.6** ✅ (parcial) Revisão por nível feita para as features de classe; painel de recursos de classe pronto.
+- **3.5** 🔄 (a) features por nível das **subclasses**: bárbaro ✅ (Furioso, Totêmico); faltam 39 subclasses (mesmo padrão mecânico). (b) escolhas de progressão como seletores reais (invocações, metamagia, manobras, expertise adicional, + escolhas de entrada da ex-2.3) — exige modelo + UI, ainda não iniciado.
+- **3.6** ✅ (parcial) Revisão por nível feita para as features de classe e das subclasses já digitadas; painel de recursos de classe pronto.
+
+> **Nota de prioridade:** as features de nível alto (6/10/14) das subclasses são a "cauda" da progressão (poucos personagens as alcançam, e a de entrada já aparece). Sistemas ausentes de maior impacto — **Fase 4 (ASI/talentos)**, que afeta todo personagem nível ≥4, e a loja de equipamento (Fase 5) — podem valer mais que terminar as 39 subclasses. Decisão do produto: continuar a cauda de 3.5 ou saltar para a Fase 4.
 
 > Arquitetura adotada: `featuresByLevel` num arquivo separado (`class-progression-features.json`), keyed por classId/subclassId, mergeado em runtime por `getClassFeaturesUpToLevel` (com fallback para o formato atual nas classes ainda não digitadas). Diffs limpos e `classes.json` intacto.
 

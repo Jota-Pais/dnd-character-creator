@@ -35,6 +35,8 @@ type CharacterStore = {
   setEquipmentMethod: (method: EquipmentDraft['method']) => void
   resolveEquipmentChoice: (choiceIndex: number, resolution: ChoiceResolution) => void
   setRolledGold: (gold: number | null) => void
+  addPurchasedItem: (itemId: string) => void
+  removePurchasedItem: (itemId: string) => void
   nextStep: () => void
   prevStep: () => void
   reset: () => void
@@ -204,6 +206,26 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
         equipment: { ...state.draft.equipment, rolledGold: gold },
       },
     })),
+
+  addPurchasedItem: (itemId) =>
+    set(state => {
+      const items = [...state.draft.equipment.purchasedItems]
+      const existing = items.find(i => i.itemId === itemId)
+      if (existing) {
+        existing.quantity += 1
+      } else {
+        items.push({ itemId, quantity: 1, source: 'purchased' })
+      }
+      return { draft: { ...state.draft, equipment: { ...state.draft.equipment, purchasedItems: items } } }
+    }),
+
+  removePurchasedItem: (itemId) =>
+    set(state => {
+      const items = state.draft.equipment.purchasedItems
+        .map(i => (i.itemId === itemId ? { ...i, quantity: i.quantity - 1 } : i))
+        .filter(i => i.quantity > 0)
+      return { draft: { ...state.draft, equipment: { ...state.draft.equipment, purchasedItems: items } } }
+    }),
 
   nextStep: () => {
     const { currentStep, draft } = get()

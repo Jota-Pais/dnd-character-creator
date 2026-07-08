@@ -17,7 +17,7 @@ import {
   calculateModifier, formatModifier, ALL_ABILITY_SCORES, ABILITY_LABELS,
   getProficiencyBonus, getPassivePerception,
 } from '../../utils/abilityScoreUtils'
-import { getItemName, getEquippedArmor } from '../../utils/equipmentUtils'
+import { getItemName, getEquippedArmor, getPurchasesTotalCopper, formatCurrency } from '../../utils/equipmentUtils'
 import { calculateArmorClass, getUnarmoredDefense } from '../../utils/armorClassUtils'
 import { getAllGrantedSkills, getAllGrantedTools } from '../../utils/proficiencyUtils'
 import {
@@ -408,24 +408,50 @@ export function ReviewStep() {
           <p className="text-parchment-700 text-sm italic">Equipamento não definido</p>
         )}
 
-        {draft.equipment.method === 'wealth' && (
-          <div className="space-y-4">
-            <p className="text-parchment-400 text-sm">
-              Riqueza inicial:{' '}
-              <span className="font-fantasy font-bold text-gold-500">
-                {draft.equipment.rolledGold ?? 0} po
-              </span>
-            </p>
-            {bg && (
-              <div>
-                <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">
-                  Do Antecedente
-                </p>
-                <BgEquipmentChips bg={bg} chosenToolId={draft.backgroundChoices.tools?.[0]} />
-              </div>
-            )}
-          </div>
-        )}
+        {draft.equipment.method === 'wealth' && (() => {
+          const purchased = draft.equipment.purchasedItems
+          const spentCopper = getPurchasesTotalCopper(purchased)
+          const remainingCopper = (draft.equipment.rolledGold ?? 0) * 100 - spentCopper
+          return (
+            <div className="space-y-4">
+              <p className="text-parchment-400 text-sm">
+                Riqueza inicial:{' '}
+                <span className="font-fantasy font-bold text-gold-500">
+                  {draft.equipment.rolledGold ?? 0} po
+                </span>
+                {purchased.length > 0 && (
+                  <span className="text-parchment-600">
+                    {' '}· restante:{' '}
+                    <span className="font-fantasy text-gold-600">{formatCurrency(remainingCopper)}</span>
+                  </span>
+                )}
+              </p>
+              {purchased.length > 0 && (
+                <div>
+                  <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">
+                    Comprado
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {purchased.map(item => (
+                      <Chip
+                        key={item.itemId}
+                        label={`${item.quantity > 1 ? `${item.quantity}× ` : ''}${getItemName(item.itemId)}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+              {bg && (
+                <div>
+                  <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">
+                    Do Antecedente
+                  </p>
+                  <BgEquipmentChips bg={bg} chosenToolId={draft.backgroundChoices.tools?.[0]} />
+                </div>
+              )}
+            </div>
+          )
+        })()}
 
         {draft.equipment.method === 'standard' && classEquipment && (
           <div className="space-y-4">

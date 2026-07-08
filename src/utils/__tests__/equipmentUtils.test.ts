@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { formatCurrency, resolvePackContents, validatePackRefs, FOCUS_GROUP_IDS, getEquippedArmor } from '../equipmentUtils'
+import { formatCurrency, resolvePackContents, validatePackRefs, FOCUS_GROUP_IDS, getEquippedArmor, getShopCatalog, getPurchasesTotalCopper, getItemCostCopper } from '../equipmentUtils'
+import type { InventoryItem } from '../../types/equipment'
 import { getClass } from '../classUtils'
 import type { EquipmentDraft } from '../../types/equipment'
 
@@ -42,6 +43,42 @@ describe('formatCurrency', () => {
     expect(formatCurrency(1)).toBe('1 pc')
     expect(formatCurrency(5)).toBe('5 pc')
     expect(formatCurrency(45)).toBe('45 pc')
+  })
+})
+
+describe('getShopCatalog / compras', () => {
+  const catalog = getShopCatalog()
+
+  it('inclui apenas itens com preço, de todas as categorias', () => {
+    const cats = new Set(catalog.map(i => i.category))
+    expect(cats).toContain('Armas')
+    expect(cats).toContain('Armaduras')
+    expect(cats).toContain('Ferramentas')
+    expect(cats).toContain('Pacotes')
+    expect(cats).toContain('Equipamento')
+    expect(catalog.every(i => i.costCopper > 0)).toBe(true)
+  })
+
+  it('vem ordenado por nome', () => {
+    const names = catalog.map(i => i.name)
+    expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, 'pt-BR')))
+  })
+
+  it('getItemCostCopper devolve o custo em cobre (adaga = 200)', () => {
+    expect(getItemCostCopper('dagger')).toBe(200)
+    expect(getItemCostCopper('inexistente')).toBeNull()
+  })
+
+  it('getPurchasesTotalCopper soma preço × quantidade', () => {
+    const items: InventoryItem[] = [
+      { itemId: 'dagger', quantity: 2, source: 'purchased' }, // 200 × 2 = 400
+      { itemId: 'shield', quantity: 1, source: 'purchased' }, // 1000
+    ]
+    expect(getPurchasesTotalCopper(items)).toBe(1400)
+  })
+
+  it('itens sem preço no catálogo não contam no total', () => {
+    expect(getPurchasesTotalCopper([{ itemId: 'inexistente', quantity: 5, source: 'purchased' }])).toBe(0)
   })
 })
 

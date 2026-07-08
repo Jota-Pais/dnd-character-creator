@@ -2,8 +2,11 @@ import { useEffect, useState } from 'react'
 import { useCharacterStore } from '../../stores/characterStore'
 import { getClass, CLASS_PRESENTATION } from '../../utils/classUtils'
 import { getBackground } from '../../utils/backgroundUtils'
-import { getItemName, isEquipmentStepComplete } from '../../utils/equipmentUtils'
-import type { BackgroundEquipment, BackgroundEquipmentItem, FixedItem } from '../../types/equipment'
+import {
+  getItemName, isEquipmentStepComplete, getShopCatalog, getPurchasesTotalCopper,
+  formatCurrency, type ShopCategory,
+} from '../../utils/equipmentUtils'
+import type { BackgroundEquipment, BackgroundEquipmentItem, FixedItem, InventoryItem } from '../../types/equipment'
 import { EquipmentMethodSelector } from '../equipment/EquipmentMethodSelector'
 import { EquipmentChoiceCard } from '../equipment/EquipmentChoiceCard'
 
@@ -12,6 +15,8 @@ export function EquipmentStep() {
   const setEquipmentMethod = useCharacterStore(state => state.setEquipmentMethod)
   const resolveEquipmentChoice = useCharacterStore(state => state.resolveEquipmentChoice)
   const setRolledGold = useCharacterStore(state => state.setRolledGold)
+  const addPurchasedItem = useCharacterStore(state => state.addPurchasedItem)
+  const removePurchasedItem = useCharacterStore(state => state.removePurchasedItem)
   const nextStep = useCharacterStore(state => state.nextStep)
   const prevStep = useCharacterStore(state => state.prevStep)
 
@@ -125,6 +130,16 @@ export function EquipmentStep() {
             accent={accent}
             onChange={setRolledGold}
           />
+
+          {equipment.rolledGold !== null && (
+            <Shop
+              budgetPo={equipment.rolledGold}
+              purchasedItems={equipment.purchasedItems}
+              accent={accent}
+              onAdd={addPurchasedItem}
+              onRemove={removePurchasedItem}
+            />
+          )}
         </div>
       )}
 
@@ -377,7 +392,7 @@ function WealthRoller({
             {total} {wealthUnit}
           </p>
           <p className="text-parchment-700 text-xs">
-            Use esse valor para comprar equipamento na lista do PHB.
+            Use esse valor na loja abaixo para comprar seu equipamento.
           </p>
         </div>
       )}
@@ -389,6 +404,129 @@ function WealthRoller({
           {' '}— role novamente para atualizar.
         </p>
       )}
+    </div>
+  )
+}
+
+const SHOP_CATEGORIES: (ShopCategory | 'Todos')[] = ['Todos', 'Armas', 'Armaduras', 'Equipamento', 'Ferramentas', 'Pacotes']
+
+function Shop({
+  budgetPo,
+  purchasedItems,
+  accent,
+  onAdd,
+  onRemove,
+}: {
+  budgetPo: number
+  purchasedItems: InventoryItem[]
+  accent: string
+  onAdd: (id: string) => void
+  onRemove: (id: string) => void
+}) {
+  const [category, setCategory] = useState<ShopCategory | 'Todos'>('Todos')
+  const [search, setSearch] = useState('')
+
+  const catalog = getShopCatalog()
+  const budgetCopper = budgetPo * 100
+  const spentCopper = getPurchasesTotalCopper(purchasedItems)
+  const remainingCopper = budgetCopper - spentCopper
+
+  const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  const filtered = catalog.filter(
+    i => (category === 'Todos' || i.category === category) && (!search || norm(i.name).includes(norm(search))),
+  )
+  const qtyOf = (id: string) => purchasedItems.find(p => p.itemId === id)?.quantity ?? 0
+
+  return (
+    <div className="pt-4 border-t border-parchment-900 space-y-3">
+      <div className="flex items-center justify-between">
+        <SectionTitle>Loja</SectionTitle>
+        <span
+          className="text-sm font-fantasy font-bold px-2.5 py-1 rounded-lg"
+          style={{ color: remainingCopper < 0 ? '#ef4444' : accent, backgroundColor: `${accent}12` }}
+          title="Saldo restante"
+        >
+          💰 {formatCurrency(remainingCopper)}
+        </span>
+      </div>
+
+      {/* Carrinho */}
+      {purchasedItems.length > 0 && (
+        <div className="rounded-lg border border-parchment-800 bg-parchment-950/60 p-3 space-y-1.5">
+          <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-1">Comprado</p>
+          {purchasedItems.map(item => (
+            <div key={item.itemId} className="flex items-center justify-between gap-2 text-sm">
+              <span className="text-parchment-300">{getItemName(item.itemId)}</span>
+              <div className="flex items-center gap-2">
+                <button onClick={() => onRemove(item.itemId)} className="w-6 h-6 rounded border border-parchment-700 text-parchment-400 leading-none">−</button>
+                <span className="text-parchment-400 w-6 text-center">{item.quantity}</span>
+                <button onClick={() => onAdd(item.itemId)} className="w-6 h-6 rounded border border-parchment-700 text-parchment-400 leading-none">+</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Filtros */}
+      <div className="flex flex-wrap gap-1.5">
+        {SHOP_CATEGORIES.map(cat => (
+          <button
+            key={cat}
+            onClick={() => setCategory(cat)}
+            className="px-2.5 py-1 rounded-lg text-xs font-fantasy font-semibold transition-all"
+            style={{
+              borderColor: category === cat ? accent : 'rgba(90,62,36,0.5)',
+              backgroundColor: category === cat ? `${accent}18` : 'transparent',
+              color: category === cat ? accent : '#9a7650',
+              border: '1px solid',
+            }}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+      <input
+        type="text"
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        placeholder="Buscar item…"
+        className="w-full px-3 py-2 rounded-lg border text-parchment-200 placeholder-parchment-700 text-sm bg-parchment-950/50"
+        style={{ borderColor: 'rgba(58,38,20,0.6)' }}
+      />
+
+      {/* Catálogo */}
+      <div className="max-h-72 overflow-y-auto rounded-lg border border-parchment-900 divide-y divide-parchment-900/60">
+        {filtered.map(item => {
+          const affordable = item.costCopper <= remainingCopper
+          const owned = qtyOf(item.id)
+          return (
+            <div key={item.id} className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
+              <div className="min-w-0">
+                <span className="text-parchment-300">{item.name}</span>
+                {owned > 0 && <span className="text-gold-600 text-xs ml-2">×{owned}</span>}
+                <span className="block text-xs text-parchment-600">{formatCurrency(item.costCopper)}</span>
+              </div>
+              <button
+                onClick={() => { if (affordable) onAdd(item.id) }}
+                disabled={!affordable}
+                title={affordable ? 'Comprar' : 'Saldo insuficiente'}
+                className="px-3 py-1 rounded-lg text-xs font-fantasy font-bold shrink-0"
+                style={{
+                  backgroundColor: affordable ? `${accent}18` : 'transparent',
+                  color: affordable ? accent : '#4a3520',
+                  border: `1px solid ${affordable ? accent + '40' : 'rgba(60,40,20,0.3)'}`,
+                  cursor: affordable ? 'pointer' : 'not-allowed',
+                }}
+              >
+                + Comprar
+              </button>
+            </div>
+          )
+        })}
+        {filtered.length === 0 && (
+          <p className="px-3 py-4 text-center text-parchment-600 text-sm">Nenhum item encontrado.</p>
+        )}
+      </div>
     </div>
   )
 }

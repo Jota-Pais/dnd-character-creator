@@ -97,6 +97,45 @@ export function getItemName(id: string): string {
   )
 }
 
+// ── Loja (método riqueza) ───────────────────────────────────────────────────
+
+export type ShopCategory = 'Armas' | 'Armaduras' | 'Ferramentas' | 'Pacotes' | 'Equipamento'
+
+export type ShopItem = {
+  id: string
+  name: string
+  costCopper: number
+  category: ShopCategory
+}
+
+/** Catálogo unificado de itens compráveis (só os que têm preço no PHB), ordenado por nome. */
+export function getShopCatalog(): ShopItem[] {
+  const items: ShopItem[] = []
+  for (const w of ALL_WEAPONS) if (w.cost != null) items.push({ id: w.id, name: w.name, costCopper: w.cost, category: 'Armas' })
+  for (const a of ALL_ARMORS) if (a.cost != null) items.push({ id: a.id, name: a.name, costCopper: a.cost, category: 'Armaduras' })
+  for (const t of ALL_TOOLS) if (t.cost != null) items.push({ id: t.id, name: t.name, costCopper: t.cost, category: 'Ferramentas' })
+  for (const p of ALL_PACKS) if (p.cost != null) items.push({ id: p.id, name: p.name, costCopper: p.cost, category: 'Pacotes' })
+  for (const g of ALL_GENERAL) {
+    // itens de antecedente (bugigangas de sabor, custo 0) não são mercadoria da loja
+    if (g.cost != null && g.cost > 0 && g.category !== 'background-item') {
+      items.push({ id: g.id, name: g.name, costCopper: g.cost, category: 'Equipamento' })
+    }
+  }
+  return items.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
+}
+
+const CATALOG_COST = new Map(getShopCatalog().map(i => [i.id, i.costCopper]))
+
+/** Custo em cobre de um item comprável (null se não tem preço/existe). */
+export function getItemCostCopper(id: string): number | null {
+  return CATALOG_COST.get(id) ?? null
+}
+
+/** Total gasto (em cobre) numa lista de itens comprados. */
+export function getPurchasesTotalCopper(items: InventoryItem[]): number {
+  return items.reduce((sum, it) => sum + (CATALOG_COST.get(it.itemId) ?? 0) * it.quantity, 0)
+}
+
 export function getWeaponsForFilter(filter: WeaponFilter): Weapon[] {
   return ALL_WEAPONS.filter(w => {
     if (filter.category && w.category !== filter.category) return false

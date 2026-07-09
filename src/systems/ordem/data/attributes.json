@@ -1,0 +1,27 @@
+[
+  {
+    "id": "agility",
+    "name": "Agilidade",
+    "description": "Define sua coordenação motora, velocidade de reação e destreza manual. Atributo-base de Acrobacia, Furtividade, Iniciativa, Crime, Pilotagem, Pontaria e Reflexos."
+  },
+  {
+    "id": "strength",
+    "name": "Força",
+    "description": "Determina sua potência muscular e habilidade atlética. Atributo-base de Atletismo e Luta; soma nas rolagens de dano corpo a corpo e com armas de arremesso."
+  },
+  {
+    "id": "intellect",
+    "name": "Intelecto",
+    "description": "Mede seu raciocínio, memória e educação geral. Atributo-base de Atualidades, Ciências, Investigação, Medicina, Ocultismo, Profissão, Sobrevivência, Tática e Tecnologia. Concede perícias treinadas adicionais em quantidade igual ao seu valor e define quantos rituais o personagem pode aprender."
+  },
+  {
+    "id": "presence",
+    "name": "Presença",
+    "description": "Define seus sentidos, força de vontade e habilidades sociais. Atributo-base de Diplomacia, Enganação, Intimidação, Intuição, Percepção, Religião e Vontade. Concede pontos de esforço adicionais por nível de exposição (NEX)."
+  },
+  {
+    "id": "vigor",
+    "name": "Vigor",
+    "description": "Mede sua saúde e resistência física. Atributo-base de Fortitude. Concede pontos de vida adicionais por nível de exposição (NEX)."
+  }
+]

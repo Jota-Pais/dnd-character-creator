@@ -1,0 +1,50 @@
+[
+  {
+    "id": "combatant",
+    "name": "Combatente",
+    "description": "Treinado para lutar com todo tipo de armas, e com a força e a coragem para encarar os perigos de frente. Prefere abordagens mais diretas.",
+    "hp": { "initialFlat": 20, "perNexFlat": 4 },
+    "pe": { "initialFlat": 2, "perNexFlat": 2 },
+    "sanity": { "initialFlat": 12, "perNex": 3 },
+    "skills": {
+      "fixed": [],
+      "choiceGroups": [
+        { "count": 1, "from": ["fighting", "aim"] },
+        { "count": 1, "from": ["fortitude", "reflexes"] }
+      ],
+      "freeChoiceBase": 1
+    },
+    "weaponProficiencies": ["simple", "tactical"],
+    "armorProficiencies": ["light"]
+  },
+  {
+    "id": "specialist",
+    "name": "Especialista",
+    "description": "Com conhecimento, esperteza e lábia, este agente é focado em resolver problemas diversos. Versátil e habilidoso.",
+    "hp": { "initialFlat": 16, "perNexFlat": 3 },
+    "pe": { "initialFlat": 3, "perNexFlat": 3 },
+    "sanity": { "initialFlat": 16, "perNex": 4 },
+    "skills": {
+      "fixed": [],
+      "choiceGroups": [],
+      "freeChoiceBase": 7
+    },
+    "weaponProficiencies": ["simple"],
+    "armorProficiencies": ["light"]
+  },
+  {
+    "id": "occultist",
+    "name": "Ocultista",
+    "description": "Um estudioso do paranormal, que busca entender os mistérios dos elementos e usá-los a seu favor. Domina rituais e os poderes do Outro Lado.",
+    "hp": { "initialFlat": 12, "perNexFlat": 2 },
+    "pe": { "initialFlat": 4, "perNexFlat": 4 },
+    "sanity": { "initialFlat": 20, "perNex": 5 },
+    "skills": {
+      "fixed": ["occultism", "willpower"],
+      "choiceGroups": [],
+      "freeChoiceBase": 3
+    },
+    "weaponProficiencies": ["simple"],
+    "armorProficiencies": []
+  }
+]

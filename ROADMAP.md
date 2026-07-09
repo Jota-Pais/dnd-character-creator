@@ -308,7 +308,7 @@ Mesma régua já aplicada ao D&D: fichas de jogador, não conteúdo de mestre.
 - Cada classe também tem um slot repetido de "**Poder de [Classe]**" — uma lista própria (Poderes de Combatente / de Especialista / de Ocultista) da qual você escolhe 1 em **NEX 15%**, outro em **NEX 30%** e mais um a cada **15 pontos de NEX** depois disso (45, 60, 75, 90...) — bem mais frequente que o ASI/talento do D&D (a cada 4-5 níveis). Tamanho exato de cada lista fica pra catalogar na Fase 13.
 - Em **NEX 50%** todas as classes ganham "Versatilidade": trocar o próprio poder de classe por um da trilha alternativa, ou o 2º ponto em perícia por perícia extra (varia por classe — conferir ao digitalizar).
 - **Progressão por NEX** (Nível de Exposição Paranormal), não por nível de personagem: **5% → 99%** em passos de 5% (5, 10, 15... 95) + um degrau final de 99% (não 100%) = **20 degraus**, estruturalmente paralelo aos 20 níveis do D&D. **NEX 100% não é alcançável por progressão normal** — o livro é explícito que exige um evento especial ("Desconjuração") e tem consequências narrativas graves; portanto o teto prático da progressão jogável é **99%**, não 100%. Cada degrau concede PV/PE/Sanidade (conforme Vigor/Presença) e o limite de PE gasto por turno (Tabela 1.2, 1 em NEX 5% até 20 em NEX 99%).
-- **15 origens** (equivalente a antecedentes), cada uma dá 2 perícias treinadas + 1 poder de origem; o livro também permite sortear por 2d20 numa tabela (nice-to-have, não essencial).
+- **26 origens** (equivalente a antecedentes — corrigido: leitura parcial anterior tinha registrado 15; a Tabela 1.1 completa lista 26, sorteáveis por 2d20), cada uma dá 2 perícias treinadas + 1 poder de origem.
 
 **Rituais (magia) — Cap. 5**
 - Organizados por elemento (Sangue, Morte, Conhecimento, Energia, Medo — 5 elementos, não 4 como eu havia registrado) × círculo (1º ao 4º — só 4 "níveis de magia", bem mais enxuto que os 9 do D&D). Só o Ocultista conjura por padrão; limite de rituais conhecidos depende do Intelecto.
@@ -334,8 +334,8 @@ Se começarmos o módulo Ordem por cima disso, ou duplicamos ~150 linhas de "chr
 
 | Fase | Tema | Por quê nesta ordem | Esforço |
 | - | - | - | - |
-| 9.1b | Fechar a genericização do core (AppShell + registro de sistemas) | Pré-requisito — sem isso, cada sistema novo duplica chrome | M |
-| 10 | Ordem — fundação de dados (atributos, origens, classes, perícias) | Espelha as Fases 1–2 do D&D: dados base antes de fluxo | M |
+| 9.1b | ✅ Fechar a genericização do core (registro de sistemas + `IRpgSystem.Component`) | Pré-requisito — sem isso, cada sistema novo duplica chrome | M |
+| 10 | ✅ Ordem — fundação de dados (atributos, perícias, origens, classes) | Espelha as Fases 1–2 do D&D: dados base antes de fluxo | M |
 | 11 | Ordem — fluxo de criação (passo a passo do agente) | UI do wizard sobre os dados da Fase 10 | L |
 | 12 | Ordem — progressão por NEX (5%→99%: habilidades de classe + trilhas) | Equivalente à Fase 3 do D&D (o épico de dados) | XL |
 | 13 | Ordem — Poderes e Rituais | Equivalente a Talentos (Fase 4) + Magias do D&D | L |
@@ -345,7 +345,7 @@ Se começarmos o módulo Ordem por cima disso, ou duplicamos ~150 linhas de "chr
 
 **Fase 9.1b — pronto quando:** um `AppShell` genérico no core renderiza qualquer `IRpgSystem` (steps, Gallery, PrintableSheet, alternância galeria/print) sem nenhuma referência a D&D; `Dnd5eApp` vira a implementação de `IRpgSystem` pro D&D; `Gallery`/`PrintableSheet`/`StepIndicator`/`InfoTooltip` migram pra dentro de `src/systems/dnd5e/` (ou a parte mecânica deles vira genérica de verdade, quando fizer sentido reaproveitar). D&D continua funcionando 100% igual — build/lint/testes verdes, refatoração invisível pro usuário.
 
-**Fase 10 — pronto quando:** `src/systems/ordem/data/*.json` tem os 5 atributos, as 28 perícias (atributo-base, só-treinada?, penalidade de carga?), as 15 origens (perícias + poder) e as 3 classes (PV/PE/SAN/PE-por-turno iniciais, perícias, proficiências de arma) digitalizados e conferidos linha a linha contra o livro, com tipos TS estritos — zero UI ainda.
+**Fase 10 — ✅ CONCLUÍDA (2026-07-08).** `src/systems/ordem/data/*.json` tem os 5 atributos, as 28 perícias (atributo-base, só-treinada?, penalidade de carga?), as 26 origens (perícias + poder) e as 3 classes (PV/PE/SAN iniciais e por NEX, perícias, proficiências de arma/proteção) digitalizados e conferidos linha a linha contra o livro, com tipos TS estritos — zero UI ainda. Auditoria estrutural automatizada (contagens, ids duplicados, referências cruzadas perícia↔atributo e origem/classe↔perícia, cobertura contígua 2–40 da tabela de sorteio de origem) sem divergências. Digitalização curada em `docs/ordem-paranormal/*.md`.
 
 **Fase 11 — pronto quando:** um agente NEX 5% nasce completo (conceito, atributos, origem, classe, perícias — respeitando as perícias "só treinada" e o bônus de Intelecto em perícias extras) num wizard próprio (`useOrdemStore`), salvável/exportável pela biblioteca do core.
 
@@ -357,7 +357,7 @@ Se começarmos o módulo Ordem por cima disso, ou duplicamos ~150 linhas de "chr
 
 **Fase 15 — pronto quando:** revisão completa + PDF imprimível (reaproveitando o padrão do `PrintableSheet`) + biblioteca lista personagens dos dois sistemas misturados, sem conflito de dados entre D&D e OP.
 
-**Fase 16 — pronto quando:** auditoria de contagens (28 perícias, 15 origens, 15 trilhas, N poderes por classe, N rituais por círculo/elemento) bate 1:1 com o livro; tela de seleção de sistema no `App.tsx` funcional, D&D e Ordem Paranormal lado a lado.
+**Fase 16 — pronto quando:** auditoria de contagens (28 perícias, 26 origens, 15 trilhas, N poderes por classe, N rituais por círculo/elemento) bate 1:1 com o livro; tela de seleção de sistema no `App.tsx` funcional, D&D e Ordem Paranormal lado a lado.
 
 ---
 

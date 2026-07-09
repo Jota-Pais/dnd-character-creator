@@ -1,0 +1,210 @@
+[
+  {
+    "id": "academic",
+    "name": "Acadêmico",
+    "description": "Pesquisador ou professor universitário cujos estudos tocaram em assuntos misteriosos e chamaram a atenção da Ordo Realitas.",
+    "skillProficiencies": ["science", "investigation"],
+    "power": { "name": "Saber é Poder", "description": "Quando faz um teste usando Intelecto, você pode gastar 2 PE para receber +5 nesse teste." },
+    "rollRange": [2, 8]
+  },
+  {
+    "id": "healthcare-worker",
+    "name": "Agente de Saúde",
+    "description": "Profissional da saúde (enfermeiro, farmacêutico, médico, psicólogo, socorrista), treinado no atendimento e cuidado de pessoas.",
+    "skillProficiencies": ["insight", "medicine"],
+    "power": { "name": "Técnica Medicinal", "description": "Sempre que cura um personagem, você adiciona seu Intelecto no total de PV curados." },
+    "rollRange": [9, 10]
+  },
+  {
+    "id": "amnesiac",
+    "name": "Amnésico",
+    "description": "Perdeu a maior parte da memória; sabe apenas o próprio nome, ou nem isso. Hoje a Ordem é a única família que conhece. (As 2 perícias treinadas são escolhidas pelo mestre, não pelo jogador.)",
+    "skillProficiencies": [],
+    "power": { "name": "Vislumbres do Passado", "description": "Uma vez por missão, pode fazer um teste de Intelecto (DT 10) para reconhecer pessoas ou lugares familiares de antes de perder a memória. Se passar, recebe 1d4 PE temporários e, a critério do mestre, uma informação útil." },
+    "rollRange": [11, 11]
+  },
+  {
+    "id": "artist",
+    "name": "Artista",
+    "description": "Ator, músico, escritor, dançarino, influenciador — seu trabalho pode ter sido inspirado por uma experiência paranormal do passado.",
+    "skillProficiencies": ["arts", "deception"],
+    "power": { "name": "Magnum Opus", "description": "Você é famoso por uma de suas obras. Uma vez por missão, pode determinar que um personagem envolvido em uma cena de interação o reconheça. Recebe +5 em testes de Presença e de perícias baseadas em Presença contra aquele personagem." },
+    "rollRange": [12, 13]
+  },
+  {
+    "id": "athlete",
+    "name": "Atleta",
+    "description": "Competia em um esporte individual ou por equipe, como natação ou futebol.",
+    "skillProficiencies": ["acrobatics", "athletics"],
+    "power": { "name": "110%", "description": "Quando faz um teste de perícia usando Força ou Agilidade (exceto Luta e Pontaria), você pode gastar 2 PE para receber +5 nesse teste." },
+    "rollRange": [14, 15]
+  },
+  {
+    "id": "chef",
+    "name": "Chef",
+    "description": "Cozinheiro amador ou profissional. Talvez trabalhasse em um restaurante, talvez simplesmente gostasse de cozinhar para família e amigos.",
+    "skillProficiencies": ["fortitude", "profession"],
+    "power": { "name": "Ingrediente Secreto", "description": "Em cenas de interlúdio, você pode gastar uma ação para cozinhar um prato gostoso. Cada membro do grupo (incluindo você) que gastar uma ação para se alimentar recebe o benefício de dois pratos (efeitos cumulativos se o mesmo benefício for escolhido duas vezes)." },
+    "rollRange": [16, 16]
+  },
+  {
+    "id": "criminal",
+    "name": "Criminoso",
+    "description": "Vivia uma vida fora da lei, seja como batedor de carteiras, seja como membro de uma facção criminosa.",
+    "skillProficiencies": ["crime", "stealth"],
+    "power": { "name": "O Crime Compensa", "description": "No final de uma missão, escolha um item encontrado na missão. Em sua próxima missão, você pode incluir esse item em seu inventário sem que ele conte em seu limite de itens por patente." },
+    "rollRange": [17, 17]
+  },
+  {
+    "id": "repentant-cultist",
+    "name": "Cultista Arrependido",
+    "description": "Fez parte de um culto paranormal. Algo abriu seus olhos e agora luta pelo lado certo — embora carregue traços de sua vida pregressa.",
+    "skillProficiencies": ["occultism", "religion"],
+    "power": { "name": "Traços do Outro Lado", "description": "Você possui um poder paranormal à sua escolha. Porém, começa o jogo com metade da Sanidade normal para sua classe." },
+    "rollRange": [18, 18]
+  },
+  {
+    "id": "drifter",
+    "name": "Desgarrado",
+    "description": "Não vivia de acordo com as normas da sociedade — eremita, pessoa em situação de rua, ou alguém que abandonou sua rotina após descobrir o Paranormal.",
+    "skillProficiencies": ["fortitude", "survival"],
+    "power": { "name": "Calejado", "description": "Você recebe +1 PV para cada 5% de NEX." },
+    "rollRange": [19, 19]
+  },
+  {
+    "id": "engineer",
+    "name": "Engenheiro",
+    "description": "Engenheiro profissional ou inventor de garagem. Provavelmente criou algum dispositivo paranormal que chamou a atenção da Ordem.",
+    "skillProficiencies": ["profession", "technology"],
+    "power": { "name": "Ferramentas Favoritas", "description": "Um item a sua escolha (exceto armas) conta como uma categoria abaixo (ex.: um item de categoria II conta como categoria I para você)." },
+    "rollRange": [20, 20]
+  },
+  {
+    "id": "executive",
+    "name": "Executivo",
+    "description": "Trabalho de escritório em uma grande empresa, banco ou corporação — administrador, advogado, contador ou similar.",
+    "skillProficiencies": ["diplomacy", "profession"],
+    "power": { "name": "Processo Otimizado", "description": "Sempre que faz um teste de perícia durante um teste estendido, pode pagar 2 PE para receber +5 nesse teste." },
+    "rollRange": [21, 21]
+  },
+  {
+    "id": "investigator",
+    "name": "Investigador",
+    "description": "Investigador do governo (perito forense, policial federal) ou privado (detetive particular).",
+    "skillProficiencies": ["investigation", "perception"],
+    "power": { "name": "Faro para Pistas", "description": "Uma vez por cena, quando fizer um teste para procurar pistas, você pode gastar 1 PE para receber +5 nesse teste." },
+    "rollRange": [22, 23]
+  },
+  {
+    "id": "brawler",
+    "name": "Lutador",
+    "description": "Pratica uma arte marcial ou esporte de luta, ou cresceu em um bairro perigoso onde aprendeu briga de rua.",
+    "skillProficiencies": ["fighting", "reflexes"],
+    "power": { "name": "Mão Pesada", "description": "Você recebe +2 em rolagens de dano com ataques corpo a corpo." },
+    "rollRange": [24, 24]
+  },
+  {
+    "id": "tycoon",
+    "name": "Magnata",
+    "description": "Possui muito dinheiro ou patrimônio — herdeiro de família antiga ligada ao oculto, ou empreendedor bem-sucedido.",
+    "skillProficiencies": ["diplomacy", "piloting"],
+    "power": { "name": "Patrocinador da Ordem", "description": "Seu limite de crédito é sempre considerado um acima do atual." },
+    "rollRange": [25, 25]
+  },
+  {
+    "id": "mercenary",
+    "name": "Mercenário",
+    "description": "Soldado de aluguel, que trabalha sozinho ou como parte de alguma organização que vende serviços militares.",
+    "skillProficiencies": ["initiative", "intimidation"],
+    "power": { "name": "Posição de Combate", "description": "No primeiro turno de cada cena de ação, você pode gastar 2 PE para receber uma ação de movimento adicional." },
+    "rollRange": [26, 26]
+  },
+  {
+    "id": "military",
+    "name": "Militar",
+    "description": "Serviu em uma força militar, como o exército ou a marinha. Perito no uso de armas de fogo.",
+    "skillProficiencies": ["aim", "tactics"],
+    "power": { "name": "Para Bellum", "description": "Você recebe +2 em rolagens de dano com armas de fogo." },
+    "rollRange": [27, 27]
+  },
+  {
+    "id": "laborer",
+    "name": "Operário",
+    "description": "Pedreiro, industriário, operador de máquinas em uma fábrica — trabalho braçal que deu uma visão pragmática do mundo.",
+    "skillProficiencies": ["fortitude", "profession"],
+    "power": { "name": "Ferramenta de Trabalho", "description": "Escolha uma arma simples ou tática que, a critério do mestre, poderia ser usada como ferramenta em sua profissão (como uma marreta para um pedreiro). Você sabe usar a arma escolhida e recebe +1 em testes de ataque, rolagens de dano e margem de ameaça com ela." },
+    "rollRange": [28, 28]
+  },
+  {
+    "id": "police-officer",
+    "name": "Policial",
+    "description": "Fez parte de uma força de segurança pública, civil ou militar.",
+    "skillProficiencies": ["perception", "aim"],
+    "power": { "name": "Patrulha", "description": "Você recebe +2 em Defesa." },
+    "rollRange": [29, 30]
+  },
+  {
+    "id": "religious",
+    "name": "Religioso",
+    "description": "Devoto ou sacerdote de uma fé, dedicado a auxiliar pessoas com problemas espirituais.",
+    "skillProficiencies": ["religion", "willpower"],
+    "power": { "name": "Acalentar", "description": "Você recebe +5 em testes de Religião para acalmar. Além disso, quando acalma uma pessoa, ela recebe um número de pontos de Sanidade igual a 1d6 + a sua Presença." },
+    "rollRange": [31, 31]
+  },
+  {
+    "id": "civil-servant",
+    "name": "Servidor Público",
+    "description": "Possuía carreira em um órgão do governo, lidando com burocracia e atendendo pessoas.",
+    "skillProficiencies": ["insight", "willpower"],
+    "power": { "name": "Espírito Cívico", "description": "Sempre que faz um teste para ajudar, você pode gastar 1 PE para aumentar o bônus concedido em +2." },
+    "rollRange": [32, 32]
+  },
+  {
+    "id": "conspiracy-theorist",
+    "name": "Teórico da Conspiração",
+    "description": "Investigou a fundo assuntos como reptilianos, Illuminati e a Terra plana — até sua pesquisa esbarrar no Paranormal de verdade.",
+    "skillProficiencies": ["investigation", "occultism"],
+    "power": { "name": "Eu Já Sabia", "description": "Você não se abala com entidades ou anomalias — sempre soube que isso tudo existia. Recebe resistência a dano mental igual ao seu Intelecto." },
+    "rollRange": [33, 33]
+  },
+  {
+    "id": "it-specialist",
+    "name": "T.I.",
+    "description": "Programador, engenheiro de software ou simplesmente \"o cara da T.I.\", com treinamento e experiência em sistemas informatizados.",
+    "skillProficiencies": ["investigation", "technology"],
+    "power": { "name": "Motor de Busca", "description": "A critério do mestre, sempre que tiver acesso a internet, você pode gastar 2 PE para substituir um teste de perícia qualquer por um teste de Tecnologia." },
+    "rollRange": [34, 34]
+  },
+  {
+    "id": "rural-worker",
+    "name": "Trabalhador Rural",
+    "description": "Trabalhava no campo ou em áreas isoladas — fazendeiro, pescador, biólogo, veterinário.",
+    "skillProficiencies": ["animal-handling", "survival"],
+    "power": { "name": "Desbravador", "description": "Quando faz um teste de Adestramento ou Sobrevivência, você pode gastar 2 PE para receber +5 nesse teste. Além disso, você não sofre penalidade em deslocamento por terreno difícil." },
+    "rollRange": [35, 35]
+  },
+  {
+    "id": "con-artist",
+    "name": "Trambiqueiro",
+    "description": "Vivia de pequenos golpes, jogatina ilegal e falcatruas, até enganar a pessoa errada.",
+    "skillProficiencies": ["crime", "deception"],
+    "power": { "name": "Impostor", "description": "Uma vez por cena, você pode gastar 2 PE para substituir um teste de perícia qualquer por um teste de Enganação." },
+    "rollRange": [36, 36]
+  },
+  {
+    "id": "college-student",
+    "name": "Universitário",
+    "description": "Aluno de faculdade que, em meio à rotina de estudos, provas e festas, acabou descobrindo algo que chamou a atenção da Ordem.",
+    "skillProficiencies": ["current-affairs", "investigation"],
+    "power": { "name": "Dedicação", "description": "Você recebe +1 PE, e mais 1 PE adicional a cada NEX ímpar (15%, 25%...). Além disso, seu limite de PE por turno aumenta em 1." },
+    "rollRange": [37, 38]
+  },
+  {
+    "id": "victim",
+    "name": "Vítima",
+    "description": "Em algum momento da vida, encontrou o Paranormal de forma traumática — e decidiu lutar para impedir que outros inocentes passem pelo mesmo.",
+    "skillProficiencies": ["reflexes", "willpower"],
+    "power": { "name": "Cicatrizes Psicológicas", "description": "Você recebe +1 de Sanidade para cada 5% de NEX." },
+    "rollRange": [39, 40]
+  }
+]

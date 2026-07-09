@@ -2,7 +2,10 @@ import { useOrdemStore } from '../../stores/characterStore'
 import { getOrigin } from '../../utils/originUtils'
 import { getOrdemClass } from '../../utils/classUtils'
 import { getSkillName } from '../../utils/skillUtils'
-import { deriveStats, getTrainedSkills } from '../../utils/characterUtils'
+import { getTrilha } from '../../utils/trilhaUtils'
+import { getPower } from '../../utils/powerUtils'
+import { deriveStats, getTrainedSkills, getEffectiveAttributes, getSkillGrade } from '../../utils/characterUtils'
+import { getReachedTrilhaSlots } from '../../utils/progressionUtils'
 import { exportCharacter } from '../../utils/storage'
 import { StepNav } from '../common/StepNav'
 
@@ -16,8 +19,15 @@ export function ReviewStep() {
   const cls = draft.class ? getOrdemClass(draft.class) : undefined
   if (!cls) return null
 
-  const stats = deriveStats(cls, draft.attributes)
+  const attributes = getEffectiveAttributes(draft)
+  const stats = deriveStats(cls, attributes, draft.nex)
   const trainedSkills = getTrainedSkills(draft)
+  const trilha = draft.trilha ? getTrilha(draft.trilha) : undefined
+  const reachedTrilhaFeatures = trilha
+    ? getReachedTrilhaSlots(draft.nex).map(nex => trilha.features.find(f => f.nex === nex)).filter(Boolean)
+    : []
+  const powers = draft.powerChoices.filter((p): p is string => Boolean(p)).map(getPower).filter(Boolean)
+  const upgradedSkills = trainedSkills.filter(sid => getSkillGrade(draft, sid) !== 'treinado')
 
   function handleExport() {
     exportCharacter(draft)
@@ -28,7 +38,9 @@ export function ReviewStep() {
       <div className="text-center mb-2">
         <h2 className="font-fantasy text-2xl font-bold text-gold-400">{draft.name}</h2>
         {draft.concept && <p className="text-parchment-500 text-sm italic mt-1">"{draft.concept}"</p>}
-        <p className="text-parchment-600 text-xs mt-1">{origin?.name} · {cls.name} · NEX 5%</p>
+        <p className="text-parchment-600 text-xs mt-1">
+          {origin?.name} · {cls.name}{trilha ? ` (${trilha.name})` : ''} · NEX {draft.nex}%
+        </p>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
@@ -39,11 +51,11 @@ export function ReviewStep() {
 
       <Section title="Atributos">
         <div className="grid grid-cols-5 gap-2 text-center">
-          <AttrStat label="AGI" value={draft.attributes.agility} />
-          <AttrStat label="FOR" value={draft.attributes.strength} />
-          <AttrStat label="INT" value={draft.attributes.intellect} />
-          <AttrStat label="PRE" value={draft.attributes.presence} />
-          <AttrStat label="VIG" value={draft.attributes.vigor} />
+          <AttrStat label="AGI" value={attributes.agility} />
+          <AttrStat label="FOR" value={attributes.strength} />
+          <AttrStat label="INT" value={attributes.intellect} />
+          <AttrStat label="PRE" value={attributes.presence} />
+          <AttrStat label="VIG" value={attributes.vigor} />
         </div>
       </Section>
 
@@ -59,16 +71,49 @@ export function ReviewStep() {
       <Section title="Classe">
         <p className="text-parchment-200 font-fantasy font-semibold text-sm">{cls.name}</p>
         <p className="text-parchment-500 text-xs mt-1">{cls.description}</p>
+        <p className="text-parchment-500 text-xs mt-2">
+          <span className="font-semibold text-parchment-300">{cls.classAbility.name}.</span> {cls.classAbility.description}
+        </p>
       </Section>
+
+      {trilha && reachedTrilhaFeatures.length > 0 && (
+        <Section title={`Trilha — ${trilha.name}`}>
+          <div className="space-y-2">
+            {reachedTrilhaFeatures.map(f => f && (
+              <p key={f.name} className="text-parchment-500 text-xs">
+                <span className="font-semibold text-parchment-300">NEX {f.nex}% – {f.name}.</span> {f.description}
+              </p>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {powers.length > 0 && (
+        <Section title={`Poderes de ${cls.name}`}>
+          <div className="space-y-2">
+            {powers.map(p => p && (
+              <p key={p.id} className="text-parchment-500 text-xs">
+                <span className="font-semibold text-parchment-300">{p.name}.</span> {p.description}
+              </p>
+            ))}
+          </div>
+        </Section>
+      )}
 
       <Section title={`Perícias Treinadas (${trainedSkills.length})`}>
         <div className="flex flex-wrap gap-1.5">
-          {trainedSkills.map(sid => (
-            <span key={sid} className="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-gold-900/30 text-gold-400">
-              {getSkillName(sid)}
-            </span>
-          ))}
+          {trainedSkills.map(sid => {
+            const grade = getSkillGrade(draft, sid)
+            return (
+              <span key={sid} className="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-gold-900/30 text-gold-400">
+                {getSkillName(sid)}{grade !== 'treinado' && ` (${grade})`}
+              </span>
+            )
+          })}
         </div>
+        {upgradedSkills.length === 0 && trainedSkills.length > 0 && (
+          <p className="text-parchment-700 text-[11px] mt-2">Todas treinadas — nenhuma subiu de grau ainda.</p>
+        )}
       </Section>
 
       <div className="space-y-2 pt-2">

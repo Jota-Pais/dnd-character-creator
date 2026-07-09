@@ -69,6 +69,77 @@ describe('isStepComplete — skills', () => {
   })
 })
 
+describe('isStepComplete — progression', () => {
+  it('NEX 5% está sempre completo (nenhum slot de progressão existe ainda)', () => {
+    const draft = makeDraft({ class: 'combatant', nex: 5 })
+    expect(isStepComplete(draft, 'progression')).toBe(true)
+  })
+
+  it('NEX 10% incompleto sem trilha escolhida', () => {
+    const draft = makeDraft({ class: 'combatant', nex: 10 })
+    expect(isStepComplete(draft, 'progression')).toBe(false)
+  })
+
+  it('NEX 10% completo com trilha escolhida', () => {
+    const draft = makeDraft({ class: 'combatant', nex: 10, trilha: 'annihilator' })
+    expect(isStepComplete(draft, 'progression')).toBe(true)
+  })
+
+  it('NEX 15% exige trilha (de NEX10) e 1 poder de classe', () => {
+    const semPoder = makeDraft({ class: 'combatant', nex: 15, trilha: 'annihilator' })
+    expect(isStepComplete(semPoder, 'progression')).toBe(false)
+
+    const comPoder = makeDraft({ class: 'combatant', nex: 15, trilha: 'annihilator', powerChoices: ['heavy-weapons'] })
+    expect(isStepComplete(comPoder, 'progression')).toBe(true)
+  })
+
+  it('NEX 20% exige também 1 aumento de atributo', () => {
+    const semAumento = makeDraft({
+      class: 'combatant', nex: 20, trilha: 'annihilator', powerChoices: ['heavy-weapons'],
+    })
+    expect(isStepComplete(semAumento, 'progression')).toBe(false)
+
+    const comAumento = makeDraft({
+      class: 'combatant', nex: 20, trilha: 'annihilator', powerChoices: ['heavy-weapons'],
+      attributeIncreaseChoices: ['vigor'],
+    })
+    expect(isStepComplete(comAumento, 'progression')).toBe(true)
+  })
+
+  it('NEX 35% exige grau de treinamento com a contagem certa da classe (Combatente: 1+Int)', () => {
+    // NEX 35: 2 slots de poder (15,30), 1 aumento de atributo (20), 1 slot de grau (35, tamanho 1+Int).
+    const base = {
+      class: 'combatant' as const, nex: 35,
+      trilha: 'annihilator',
+      powerChoices: ['heavy-weapons', 'heavy-blow'],
+      attributeIncreaseChoices: ['vigor' as const],
+      attributes: { agility: 1, strength: 1, intellect: 2, presence: 1, vigor: 1 }, // 1+2=3 perícias por slot
+    }
+    const semGrade = makeDraft(base)
+    expect(isStepComplete(semGrade, 'progression')).toBe(false)
+
+    const comGrade = makeDraft({ ...base, skillGradeChoices: [['fighting', 'fortitude', 'aim']] })
+    expect(isStepComplete(comGrade, 'progression')).toBe(true)
+  })
+
+  it('NEX 50% exige versatilidade além do resto', () => {
+    // NEX 50: 3 slots de poder (15,30,45), 2 aumentos de atributo (20,50), 1 slot de grau (35, tamanho 1+Int).
+    const base = {
+      class: 'combatant' as const, nex: 50,
+      trilha: 'annihilator',
+      powerChoices: ['heavy-weapons', 'heavy-blow', 'tireless'],
+      attributeIncreaseChoices: ['vigor' as const, 'vigor' as const],
+      attributes: { agility: 1, strength: 1, intellect: 0, presence: 1, vigor: 1 }, // 1+0=1 perícia por slot
+      skillGradeChoices: [['fighting']],
+    }
+    const semVersatilidade = makeDraft(base)
+    expect(isStepComplete(semVersatilidade, 'progression')).toBe(false)
+
+    const comVersatilidade = makeDraft({ ...base, versatilityChoice: { kind: 'power' as const, powerId: 'sure-shot' } })
+    expect(isStepComplete(comVersatilidade, 'progression')).toBe(true)
+  })
+})
+
 describe('getFirstIncompleteStep', () => {
   it('ficha vazia começa em name', () => expect(getFirstIncompleteStep(makeDraft({}))).toBe('name'))
   it('com nome, incompleto vai pra attributes', () => {

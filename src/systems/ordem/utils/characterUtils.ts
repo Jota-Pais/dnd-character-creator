@@ -1,7 +1,11 @@
 import type { OrdemCharacterDraft } from '../types/character'
 import type { OrdemClass } from '../types/class'
+import type { Trilha } from '../types/trilha'
 import { getOrigin } from './originUtils'
 import { getOrdemClass, getFreeSkillChoiceCount } from './classUtils'
+import { getTrilhasByClass } from './trilhaUtils'
+import { getPowersByClass } from './powerUtils'
+import { getNexIndex, getReachedPowerSlots, getReachedAttributeIncreaseSlots, getReachedSkillGradeSlots, ATTRIBUTE_INCREASE_CAP } from './progressionUtils'
 
 export type DerivedStats = {
   hp: number
@@ -9,12 +13,13 @@ export type DerivedStats = {
   sanity: number
 }
 
-/** PV/PE/Sanidade em NEX 5% (criação de personagem) — progressão por NEX é a Fase 12. */
-export function deriveStats(cls: OrdemClass, attributes: OrdemCharacterDraft['attributes']): DerivedStats {
+/** PV/PE/Sanidade no NEX do personagem — cresce a cada degrau alcançado desde NEX 5% (Tabelas 1.3/1.4/1.5). */
+export function deriveStats(cls: OrdemClass, attributes: OrdemCharacterDraft['attributes'], nex: number): DerivedStats {
+  const tiersBeyondFirst = Math.max(0, getNexIndex(nex))
   return {
-    hp: cls.hp.initialFlat + attributes.vigor,
-    pe: cls.pe.initialFlat + attributes.presence,
-    sanity: cls.sanity.initialFlat,
+    hp: cls.hp.initialFlat + attributes.vigor + tiersBeyondFirst * (cls.hp.perNexFlat + attributes.vigor),
+    pe: cls.pe.initialFlat + attributes.presence + tiersBeyondFirst * (cls.pe.perNexFlat + attributes.presence),
+    sanity: cls.sanity.initialFlat + tiersBeyondFirst * cls.sanity.perNex,
   }
 }
 
@@ -66,4 +71,65 @@ export function getAvailableFreeSkillOptions(draft: OrdemCharacterDraft, cls: Or
 
 export function getRequiredFreeSkillCount(draft: OrdemCharacterDraft, cls: OrdemClass): number {
   return getFreeSkillChoiceCount(cls, draft.attributes.intellect)
+}
+
+// ── Progressão por NEX (trilha, poderes, aumento de atributo, grau de treinamento, versatilidade) ──
+
+/** Atributos base + os aumentos de Aumento de Atributo já escolhidos (teto 5 por atributo). */
+export function getEffectiveAttributes(draft: OrdemCharacterDraft): OrdemCharacterDraft['attributes'] {
+  const effective = { ...draft.attributes }
+  for (const attr of draft.attributeIncreaseChoices) {
+    if (attr) effective[attr] = Math.min(ATTRIBUTE_INCREASE_CAP, effective[attr] + 1)
+  }
+  return effective
+}
+
+export function getRequiredPowerSlots(nex: number): number {
+  return getReachedPowerSlots(nex).length
+}
+
+export function getRequiredAttributeIncreaseSlots(nex: number): number {
+  return getReachedAttributeIncreaseSlots(nex).length
+}
+
+export function getRequiredSkillGradeSlots(nex: number): number {
+  return getReachedSkillGradeSlots(nex).length
+}
+
+/**
+ * Poderes de classe disponíveis para um slot: da lista da classe, excluindo os já escolhidos em
+ * OUTROS slots (a menos que repetíveis). Passar `slotIndex` isenta a própria escolha do slot da
+ * exclusão, senão o poder some da lista assim que é escolhido e o slot nunca aparece marcado.
+ * Sem `slotIndex` (ex.: Versatilidade, que guarda a escolha fora de `powerChoices`), exclui
+ * qualquer poder já escolhido em algum slot regular.
+ */
+export function getAvailablePowerOptions(draft: OrdemCharacterDraft, cls: OrdemClass, slotIndex?: number) {
+  const chosenElsewhere = draft.powerChoices.filter((p, i): p is string => Boolean(p) && i !== slotIndex)
+  return getPowersByClass(cls.id).filter(power => power.repeatable || !chosenElsewhere.includes(power.id))
+}
+
+/** Trilhas disponíveis pra escolher em NEX 10% (todas as 5 da classe). */
+export function getAvailableTrilhaOptions(cls: OrdemClass): Trilha[] {
+  return getTrilhasByClass(cls.id)
+}
+
+/** Trilhas alternativas pra Versatilidade (NEX 50%) — qualquer trilha da classe que não seja a escolhida. */
+export function getAvailableVersatilityTrilhaOptions(draft: OrdemCharacterDraft, cls: OrdemClass): Trilha[] {
+  return getTrilhasByClass(cls.id).filter(t => t.id !== draft.trilha)
+}
+
+/** Perícias elegíveis pra um slot de Grau de Treinamento: qualquer perícia treinada que ainda não virou expert. */
+export function getEligibleSkillGradeOptions(draft: OrdemCharacterDraft): string[] {
+  return getTrainedSkills(draft).filter(id => getSkillGrade(draft, id) !== 'expert')
+}
+
+export type SkillGrade = 'destreinado' | 'treinado' | 'veterano' | 'expert'
+const GRADES: SkillGrade[] = ['destreinado', 'treinado', 'veterano', 'expert']
+
+/** Grau efetivo de uma perícia: treinado se estiver entre as treinadas, +1 grau por vez que aparecer nas escolhas de Grau de Treinamento. */
+export function getSkillGrade(draft: OrdemCharacterDraft, skillId: string): SkillGrade {
+  const baseIndex = getTrainedSkills(draft).includes(skillId) ? 1 : 0
+  const upgrades = draft.skillGradeChoices.flat().filter(id => id === skillId).length
+  const index = Math.min(GRADES.length - 1, baseIndex + upgrades)
+  return GRADES[index]
 }

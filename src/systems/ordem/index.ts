@@ -11,6 +11,7 @@ import { AttributesStep } from './components/steps/AttributesStep'
 import { OriginStep } from './components/steps/OriginStep'
 import { ClassStep } from './components/steps/ClassStep'
 import { SkillsStep } from './components/steps/SkillsStep'
+import { ProgressionStep } from './components/steps/ProgressionStep'
 import { ReviewStep } from './components/steps/ReviewStep'
 
 export const ordemSystem: IRpgSystem = {
@@ -27,6 +28,7 @@ export const ordemSystem: IRpgSystem = {
         case 'origin': component = OriginStep; break
         case 'class': component = ClassStep; break
         case 'skills': component = SkillsStep; break
+        case 'progression': component = ProgressionStep; break
         case 'review': component = ReviewStep; break
         default: throw new Error(`Unknown step id: ${id}`)
       }

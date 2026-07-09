@@ -28,4 +28,10 @@ export type OrdemClass = {
   }
   weaponProficiencies: ('simple' | 'tactical' | 'heavy')[]
   armorProficiencies: ('light' | 'heavy')[]
+  classAbility: {
+    name: string
+    description: string
+  }
+  /** Base da fórmula do Grau de Treinamento (NEX 35%/70%): quantidade = skillGradeCount + Intelecto. */
+  skillGradeCount: number
 }

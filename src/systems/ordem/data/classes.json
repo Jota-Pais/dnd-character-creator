@@ -15,7 +15,12 @@
       "freeChoiceBase": 1
     },
     "weaponProficiencies": ["simple", "tactical"],
-    "armorProficiencies": ["light"]
+    "armorProficiencies": ["light"],
+    "classAbility": {
+      "name": "Ataque Especial",
+      "description": "Quando faz um ataque, pode gastar 2 PE para receber +5 no teste de ataque ou na rolagem de dano. Conforme avança de NEX, pode gastar mais PE para mais bônus de +5 (3 PE/+10 em NEX 25%, 4 PE/+15 em NEX 55%, 5 PE/+20 em NEX 85%)."
+    },
+    "skillGradeCount": 1
   },
   {
     "id": "specialist",
@@ -30,7 +35,12 @@
       "freeChoiceBase": 7
     },
     "weaponProficiencies": ["simple"],
-    "armorProficiencies": ["light"]
+    "armorProficiencies": ["light"],
+    "classAbility": {
+      "name": "Eclético e Perito",
+      "description": "Eclético: em teste de qualquer perícia, pode gastar 2 PE para receber os benefícios de ser treinado nela. Perito: escolhe 2 perícias treinadas (exceto Luta/Pontaria); pode gastar PE para somar +1dX no teste, dado que cresce com o NEX (2 PE/+1d6 em NEX 5%, 3 PE/+1d8 em NEX 25%, 4 PE/+1d10 em NEX 55%, 5 PE/+1d12 em NEX 85%)."
+    },
+    "skillGradeCount": 5
   },
   {
     "id": "occultist",
@@ -45,6 +55,11 @@
       "freeChoiceBase": 3
     },
     "weaponProficiencies": ["simple"],
-    "armorProficiencies": []
+    "armorProficiencies": [],
+    "classAbility": {
+      "name": "Escolhido pelo Outro Lado",
+      "description": "Começa com 3 rituais de 1º círculo conhecidos; a cada NEX ganho, aprende mais um ritual de qualquer círculo que possa lançar (não conta no limite de rituais conhecidos). Libera círculos de ritual: 1º em NEX 5%, 2º em NEX 25%, 3º em NEX 55%, 4º em NEX 85%."
+    },
+    "skillGradeCount": 3
   }
 ]

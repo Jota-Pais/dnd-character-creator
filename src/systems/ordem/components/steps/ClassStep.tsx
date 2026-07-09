@@ -23,7 +23,7 @@ export function ClassStep() {
 
   const selected: OrdemClass | undefined = draft.class ? getOrdemClass(draft.class) : undefined
   const canAdvance = isStepComplete(draft, 'class')
-  const stats = selected ? deriveStats(selected, draft.attributes) : null
+  const stats = selected ? deriveStats(selected, draft.attributes, draft.nex) : null
 
   return (
     <div className="flex flex-col lg:flex-row gap-6">
@@ -60,8 +60,8 @@ export function ClassStep() {
         {selected && stats ? (
           <div className="sticky top-4 space-y-4">
             <div className="grid grid-cols-3 gap-3">
-              <Stat label="PV (NEX 5%)" value={String(stats.hp)} />
-              <Stat label="PE (NEX 5%)" value={String(stats.pe)} />
+              <Stat label={`PV (NEX ${draft.nex}%)`} value={String(stats.hp)} />
+              <Stat label={`PE (NEX ${draft.nex}%)`} value={String(stats.pe)} />
               <Stat label="Sanidade" value={String(stats.sanity)} />
             </div>
 

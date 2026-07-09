@@ -1,13 +1,16 @@
 import { useRef, useState } from 'react'
 import { useOrdemStore } from '../../stores/characterStore'
 import { importCharacter } from '../../utils/storage'
+import { NEX_STEPS } from '../../utils/progressionUtils'
 import { StepNav } from '../common/StepNav'
 
 export function NameStep() {
   const name = useOrdemStore(state => state.draft.name)
   const concept = useOrdemStore(state => state.draft.concept)
+  const nex = useOrdemStore(state => state.draft.nex)
   const setName = useOrdemStore(state => state.setName)
   const setConcept = useOrdemStore(state => state.setConcept)
+  const setNex = useOrdemStore(state => state.setNex)
   const nextStep = useOrdemStore(state => state.nextStep)
   const importDraft = useOrdemStore(state => state.importDraft)
 
@@ -61,6 +64,25 @@ export function NameStep() {
         />
         <p className="text-parchment-700 text-xs mt-1 text-left">
           Conceito (opcional, mas ajuda a decidir origem e classe a seguir).
+        </p>
+      </div>
+
+      <div className="mb-8 rounded-xl border border-parchment-800 bg-parchment-950/60 p-4">
+        <p className="text-xs font-fantasy text-parchment-600 uppercase tracking-widest mb-3">
+          Nível de Exposição Paranormal (NEX)
+        </p>
+        <input
+          type="range"
+          min={0}
+          max={NEX_STEPS.length - 1}
+          value={NEX_STEPS.indexOf(nex)}
+          onChange={e => setNex(NEX_STEPS[Number(e.target.value)])}
+          className="w-full accent-gold-500"
+        />
+        <p className="text-parchment-200 font-fantasy font-bold text-lg mt-1">NEX {nex}%</p>
+        <p className="text-parchment-600 text-xs mt-1">
+          Todo agente novo começa em 5%. Suba a barra se quiser criar um agente já experiente
+          (com trilha, poderes e mais PV/PE/Sanidade já desenvolvidos).
         </p>
       </div>
 

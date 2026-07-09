@@ -25,12 +25,18 @@ type CharacterStore = {
 
   setName: (name: string) => void
   setConcept: (concept: string) => void
+  setNex: (nex: number) => void
   setAttribute: (attribute: keyof OrdemAttributes, value: number) => void
   setOrigin: (originId: string) => void
   setOriginGmSkillChoices: (skillIds: string[]) => void
   setClass: (classId: OrdemCharacterDraft['class']) => void
   setChoiceGroupPick: (groupIndex: number, skillId: string) => void
   setFreeSkillChoices: (skillIds: string[]) => void
+  setTrilha: (trilhaId: string) => void
+  setPowerChoice: (slotIndex: number, powerId: string) => void
+  setAttributeIncreaseChoice: (slotIndex: number, attribute: keyof OrdemAttributes) => void
+  setSkillGradeChoice: (slotIndex: number, skillIds: string[]) => void
+  setVersatilityChoice: (choice: OrdemCharacterDraft['versatilityChoice']) => void
 
   nextStep: () => void
   prevStep: () => void
@@ -92,6 +98,8 @@ export const useOrdemStore = create<CharacterStore>((set, get) => ({
   setName: (name) => set(state => ({ draft: { ...state.draft, name } })),
   setConcept: (concept) => set(state => ({ draft: { ...state.draft, concept } })),
 
+  setNex: (nex) => set(state => ({ draft: { ...state.draft, nex } })),
+
   setAttribute: (attribute, value) =>
     set(state => ({
       draft: { ...state.draft, attributes: { ...state.draft.attributes, [attribute]: value } },
@@ -107,7 +115,17 @@ export const useOrdemStore = create<CharacterStore>((set, get) => ({
 
   setClass: (classId) =>
     set(state => ({
-      draft: { ...state.draft, class: classId, classChoiceGroupPicks: [], classFreeSkillChoices: [] },
+      draft: {
+        ...state.draft,
+        class: classId,
+        classChoiceGroupPicks: [],
+        classFreeSkillChoices: [],
+        trilha: null,
+        powerChoices: [],
+        attributeIncreaseChoices: [],
+        skillGradeChoices: [],
+        versatilityChoice: null,
+      },
     })),
 
   setChoiceGroupPick: (groupIndex, skillId) =>
@@ -119,6 +137,33 @@ export const useOrdemStore = create<CharacterStore>((set, get) => ({
 
   setFreeSkillChoices: (skillIds) =>
     set(state => ({ draft: { ...state.draft, classFreeSkillChoices: skillIds } })),
+
+  setTrilha: (trilhaId) =>
+    set(state => ({ draft: { ...state.draft, trilha: trilhaId } })),
+
+  setPowerChoice: (slotIndex, powerId) =>
+    set(state => {
+      const choices = [...state.draft.powerChoices]
+      choices[slotIndex] = powerId
+      return { draft: { ...state.draft, powerChoices: choices } }
+    }),
+
+  setAttributeIncreaseChoice: (slotIndex, attribute) =>
+    set(state => {
+      const choices = [...state.draft.attributeIncreaseChoices]
+      choices[slotIndex] = attribute
+      return { draft: { ...state.draft, attributeIncreaseChoices: choices } }
+    }),
+
+  setSkillGradeChoice: (slotIndex, skillIds) =>
+    set(state => {
+      const choices = [...state.draft.skillGradeChoices]
+      choices[slotIndex] = skillIds
+      return { draft: { ...state.draft, skillGradeChoices: choices } }
+    }),
+
+  setVersatilityChoice: (choice) =>
+    set(state => ({ draft: { ...state.draft, versatilityChoice: choice } })),
 
   nextStep: () => {
     const { currentStep, draft, currentId } = get()

@@ -2,11 +2,14 @@ import { useOrdemStore } from '../stores/characterStore'
 import { getOrigin } from '../utils/originUtils'
 import { getOrdemClass } from '../utils/classUtils'
 import { getSkillName } from '../utils/skillUtils'
-import { deriveStats, getTrainedSkills } from '../utils/characterUtils'
+import { getTrilha } from '../utils/trilhaUtils'
+import { getPower } from '../utils/powerUtils'
+import { deriveStats, getTrainedSkills, getEffectiveAttributes } from '../utils/characterUtils'
+import { getReachedTrilhaSlots } from '../utils/progressionUtils'
 
 /**
- * Versão enxuta — cobre o essencial (identidade, atributos, origem, classe, perícias, PV/PE/SAN em NEX 5%).
- * Detalhamento completo (equipamento, poderes, trilhas, rituais) chega junto dessas mecânicas em fases futuras.
+ * Versão enxuta — cobre o essencial (identidade, atributos, origem, classe, trilha, poderes,
+ * perícias, PV/PE/SAN no NEX atual). Equipamento e rituais chegam em fases futuras.
  */
 export function PrintableSheet() {
   const draft = useOrdemStore(state => state.draft)
@@ -14,15 +17,19 @@ export function PrintableSheet() {
   const cls = draft.class ? getOrdemClass(draft.class) : undefined
   if (!cls) return null
 
-  const stats = deriveStats(cls, draft.attributes)
+  const attributes = getEffectiveAttributes(draft)
+  const stats = deriveStats(cls, attributes, draft.nex)
   const trainedSkills = getTrainedSkills(draft)
+  const trilha = draft.trilha ? getTrilha(draft.trilha) : undefined
+  const reachedTrilhaFeatures = trilha ? getReachedTrilhaSlots(draft.nex).map(nex => trilha.features.find(f => f.nex === nex)).filter(Boolean) : []
+  const powers = draft.powerChoices.filter((p): p is string => Boolean(p)).map(getPower).filter(Boolean)
 
   return (
     <div className="print-sheet mx-auto max-w-[820px] bg-white text-gray-900 p-8 rounded-lg shadow-lg" style={{ fontFamily: 'Georgia, serif' }}>
       <header className="text-center border-b-2 border-gray-800 pb-3 mb-4">
         <h1 className="text-3xl font-bold">{draft.name}</h1>
         {draft.concept && <p className="italic text-gray-600 mt-1">"{draft.concept}"</p>}
-        <p className="text-sm text-gray-600 mt-1">{origin?.name} · {cls.name} · NEX 5% · Patente: Recruta</p>
+        <p className="text-sm text-gray-600 mt-1">{origin?.name} · {cls.name}{trilha ? ` (${trilha.name})` : ''} · NEX {draft.nex}% · Patente: Recruta</p>
       </header>
 
       <section className="grid grid-cols-3 gap-3 mb-4 text-center">
@@ -34,11 +41,11 @@ export function PrintableSheet() {
       <section className="mb-4">
         <h2 className="font-bold uppercase text-sm tracking-wide border-b border-gray-400 mb-2">Atributos</h2>
         <div className="grid grid-cols-5 gap-2 text-center">
-          <AttrBox label="Agilidade" value={draft.attributes.agility} />
-          <AttrBox label="Força" value={draft.attributes.strength} />
-          <AttrBox label="Intelecto" value={draft.attributes.intellect} />
-          <AttrBox label="Presença" value={draft.attributes.presence} />
-          <AttrBox label="Vigor" value={draft.attributes.vigor} />
+          <AttrBox label="Agilidade" value={attributes.agility} />
+          <AttrBox label="Força" value={attributes.strength} />
+          <AttrBox label="Intelecto" value={attributes.intellect} />
+          <AttrBox label="Presença" value={attributes.presence} />
+          <AttrBox label="Vigor" value={attributes.vigor} />
         </div>
       </section>
 
@@ -51,8 +58,35 @@ export function PrintableSheet() {
 
       <section className="mb-4">
         <h2 className="font-bold uppercase text-sm tracking-wide border-b border-gray-400 mb-2">Classe — {cls.name}</h2>
-        <p className="text-sm text-gray-700">{cls.description}</p>
+        <p className="text-sm text-gray-700 mb-1">{cls.description}</p>
+        <p className="text-sm"><span className="font-semibold">{cls.classAbility.name}.</span> {cls.classAbility.description}</p>
       </section>
+
+      {trilha && reachedTrilhaFeatures.length > 0 && (
+        <section className="mb-4">
+          <h2 className="font-bold uppercase text-sm tracking-wide border-b border-gray-400 mb-2">Trilha — {trilha.name}</h2>
+          <div className="space-y-1">
+            {reachedTrilhaFeatures.map(f => f && (
+              <p key={f.name} className="text-sm">
+                <span className="font-semibold">NEX {f.nex}% – {f.name}.</span> {f.description}
+              </p>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {powers.length > 0 && (
+        <section className="mb-4">
+          <h2 className="font-bold uppercase text-sm tracking-wide border-b border-gray-400 mb-2">Poderes de {cls.name}</h2>
+          <div className="space-y-1">
+            {powers.map(p => p && (
+              <p key={p.id} className="text-sm">
+                <span className="font-semibold">{p.name}.</span> {p.description}
+              </p>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="mb-4">
         <h2 className="font-bold uppercase text-sm tracking-wide border-b border-gray-400 mb-2">

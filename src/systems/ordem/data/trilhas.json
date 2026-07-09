@@ -1,0 +1,197 @@
+[
+  {
+    "id": "annihilator",
+    "name": "Aniquilador",
+    "classId": "combatant",
+    "description": "Treinado para abater alvos com eficiência e velocidade. Suas armas são suas melhores amigas.",
+    "requirement": null,
+    "features": [
+      { "nex": 10, "name": "A Favorita", "description": "Escolha uma arma para ser sua favorita, como katana ou fuzil de assalto. A categoria da arma escolhida é reduzida em I." },
+      { "nex": 40, "name": "Técnica Secreta", "description": "A categoria da arma favorita passa a ser reduzida em II. Quando faz um ataque com ela, pode gastar 2 PE para executar um dos efeitos: Amplo (atinge um alvo adicional em seu alcance e adjacente ao original) ou Destruidor (aumenta o multiplicador de crítico da arma em +1). +2 PE por efeito adicional." },
+      { "nex": 65, "name": "Técnica Sublime", "description": "A categoria da arma favorita passa a ser reduzida em III. Adiciona à lista de efeitos: Letal (aumenta a margem de ameaça em +2, pode escolher 2x para +5) e Perfurante (ignora até 5 pontos de resistência a dano do alvo)." },
+      { "nex": 99, "name": "Máquina de Matar", "description": "A categoria da arma favorita passa a ser reduzida em IV, ela recebe +2 na margem de ameaça e seu dano aumenta em um passo." }
+    ]
+  },
+  {
+    "id": "field-commander",
+    "name": "Comandante de Campo",
+    "classId": "combatant",
+    "description": "Treinado para coordenar e auxiliar seus companheiros em combate, tomando decisões rápidas e tirando melhor proveito da situação e do talento de seus aliados.",
+    "requirement": null,
+    "features": [
+      { "nex": 10, "name": "Inspirar Confiança", "description": "Gaste uma reação e 2 PE para fazer um aliado em alcance curto rolar novamente um teste recém realizado." },
+      { "nex": 40, "name": "Estrategista", "description": "Gaste uma ação padrão e 1 PE por aliado que quiser direcionar em alcance curto (limitado pelo seu Intelecto). No próximo turno, eles ganham uma ação de movimento adicional." },
+      { "nex": 65, "name": "Brecha na Guarda", "description": "Uma vez por rodada, quando um aliado em alcance curto causa dano em um inimigo, gaste uma reação e 2 PE para que você ou outro aliado em alcance curto faça um ataque adicional contra o mesmo inimigo. O alcance de Inspirar Confiança e Estrategista aumenta para médio." },
+      { "nex": 99, "name": "Oficial Comandante", "description": "Gaste uma ação padrão e 5 PE para que cada aliado que você possa ver em alcance médio receba uma ação padrão adicional no próximo turno dele." }
+    ]
+  },
+  {
+    "id": "warrior",
+    "name": "Guerreiro",
+    "classId": "combatant",
+    "description": "Treinou sua musculatura e movimentos a ponto de transformar seu corpo em uma verdadeira arma. Com golpes corpo a corpo tão poderosos quanto uma bala, encara os perigos de frente.",
+    "requirement": null,
+    "features": [
+      { "nex": 10, "name": "Técnica Letal", "description": "Você recebe um aumento de +2 na margem de ameaça com todos os seus ataques corpo a corpo." },
+      { "nex": 40, "name": "Revidar", "description": "Sempre que bloquear um ataque, gaste uma reação e 2 PE para fazer um ataque corpo a corpo no inimigo que o atacou." },
+      { "nex": 65, "name": "Força Opressora", "description": "Ao acertar um ataque corpo a corpo, gaste 1 PE para realizar uma manobra derrubar ou empurrar como ação livre. Empurrar: +5 para cada 10 pontos de dano causado. Derrubar (vencendo o teste oposto): gaste 1 PE para um ataque adicional contra o alvo caído." },
+      { "nex": 99, "name": "Potência Máxima", "description": "Quando usa seu Ataque Especial com armas corpo a corpo, todos os bônus numéricos são dobrados." }
+    ]
+  },
+  {
+    "id": "special-operations",
+    "name": "Operações Especiais",
+    "classId": "combatant",
+    "description": "Combatente eficaz, com ações calculadas e otimizadas, sempre antevendo os movimentos inimigos e se posicionando da maneira mais inteligente no campo de batalha.",
+    "requirement": null,
+    "features": [
+      { "nex": 10, "name": "Iniciativa Aprimorada", "description": "Você recebe +5 em Iniciativa e uma ação de movimento adicional na primeira rodada." },
+      { "nex": 40, "name": "Ataque Extra", "description": "Uma vez por rodada, quando faz um ataque, pode gastar 2 PE para fazer um ataque adicional." },
+      { "nex": 65, "name": "Surto de Adrenalina", "description": "Uma vez por rodada, pode gastar 5 PE para realizar uma ação padrão ou de movimento adicional." },
+      { "nex": 99, "name": "Sempre Alerta", "description": "Você recebe uma ação padrão adicional no início de cada cena de combate." }
+    ]
+  },
+  {
+    "id": "shock-trooper",
+    "name": "Tropa de Choque",
+    "classId": "combatant",
+    "description": "Duro na queda. Treinou o corpo para resistir a traumas físicos, tornando-se praticamente inquebrável, por isso não teme se colocar entre seus aliados e o perigo.",
+    "requirement": null,
+    "features": [
+      { "nex": 10, "name": "Casca Grossa", "description": "Você recebe +1 PV para cada 5% de NEX e, quando faz um bloqueio, soma seu Vigor na resistência a dano recebida." },
+      { "nex": 40, "name": "Cai Dentro", "description": "Sempre que um oponente em alcance curto ataca um de seus aliados, gaste uma reação e 1 PE para que esse oponente faça um teste de Vontade (DT Vig); se falhar, deve atacar você em vez de seu aliado." },
+      { "nex": 65, "name": "Duro de Matar", "description": "Ao sofrer dano não paranormal, gaste uma reação e 2 PE para reduzir esse dano à metade. Em NEX 85%, também funciona contra dano paranormal." },
+      { "nex": 99, "name": "Inquebrável", "description": "Enquanto estiver machucado, recebe +10 na Defesa e resistência a dano 5. Enquanto estiver morrendo, não fica indefeso e ainda pode realizar ações (segue as regras de morte normalmente)." }
+    ]
+  },
+  {
+    "id": "elite-marksman",
+    "name": "Atirador de Elite",
+    "classId": "specialist",
+    "description": "Um tiro, uma morte. Perito em neutralizar ameaças de longe, terminando uma briga antes mesmo que ela comece.",
+    "requirement": null,
+    "features": [
+      { "nex": 10, "name": "Mira de Elite", "description": "Você recebe proficiência com armas de fogo que usam balas longas e soma seu Intelecto em rolagens de dano com essas armas." },
+      { "nex": 40, "name": "Disparo Letal", "description": "Quando faz a ação mirar, pode gastar 1 PE para aumentar em +2 a margem de ameaça do próximo ataque que fizer até o final de seu próximo turno." },
+      { "nex": 65, "name": "Disparo Impactante", "description": "Se estiver usando uma arma de fogo de calibre grosso, pode gastar 2 PE para fazer as manobras derrubar, desarmar, empurrar e quebrar usando um ataque a distância." },
+      { "nex": 99, "name": "Atirar para Matar", "description": "Quando faz um acerto crítico com uma arma de fogo, você causa dano máximo, sem precisar rolar dados." }
+    ]
+  },
+  {
+    "id": "infiltrator",
+    "name": "Infiltrador",
+    "classId": "specialist",
+    "description": "Perito em infiltração, sabe neutralizar alvos desprevenidos sem causar alarde. Combina talento acrobático, destreza manual e conhecimento técnico.",
+    "requirement": null,
+    "features": [
+      { "nex": 10, "name": "Ataque Furtivo", "description": "Uma vez por rodada, quando atinge um alvo desprevenido com um ataque corpo a corpo ou em alcance curto, ou um alvo que esteja flanqueando, pode gastar 1 PE para causar +1d6 pontos de dano do mesmo tipo da arma. +2d6 em NEX 40%, +3d6 em NEX 65%, +4d6 em NEX 99%." },
+      { "nex": 40, "name": "Gatuno", "description": "Você recebe +5 em Atletismo e Crime e pode percorrer seu deslocamento normal ao se esconder, sem penalidade." },
+      { "nex": 65, "name": "Assassinar", "description": "Gaste uma ação de movimento e 3 PE para analisar um alvo em alcance curto: até o fim de seu próximo turno, seu primeiro Ataque Furtivo que causar dano a ele tem os dados de dano extras dobrados; se causar dano, o alvo fica inconsciente ou morrendo, à sua escolha (Fortitude DT Agi evita)." },
+      { "nex": 99, "name": "Sombra Fugaz", "description": "Quando faz um teste de Furtividade após atacar ou fazer outra ação chamativa, pode gastar 3 PE para não sofrer a penalidade de −15 no teste." }
+    ]
+  },
+  {
+    "id": "field-medic",
+    "name": "Médico de Campo",
+    "classId": "specialist",
+    "description": "Treinado em técnicas de primeiros socorros e tratamento de emergência, acostumado com o campo de batalha e a tomar decisões rápidas no meio do caos.",
+    "requirement": "Treinado em Medicina",
+    "features": [
+      { "nex": 10, "name": "Paramédico", "description": "Use uma ação padrão e 2 PE para curar 2d10 pontos de vida de um aliado adjacente. Cura +1d10 PV adicionais em NEX 40%, 65% e 99%, gastando +1 PE por dado adicional." },
+      { "nex": 40, "name": "Equipe de Trauma", "description": "Use uma ação padrão e 2 PE para remover uma condição negativa (exceto morrendo) de um aliado adjacente." },
+      { "nex": 65, "name": "Resgate", "description": "Uma vez por rodada, se estiver em alcance curto de um aliado machucado ou morrendo, pode se aproximar dele com uma ação livre; ao curar PV ou remover condições, você e o aliado recebem +5 na Defesa até o início do próximo turno. O espaço ocupado ao carregar um personagem é reduzido pela metade." },
+      { "nex": 99, "name": "Reanimação", "description": "Uma vez por cena, gaste uma ação completa e 10 PE para trazer de volta à vida um personagem que tenha morrido na mesma cena (exceto morte por dano massivo)." }
+    ]
+  },
+  {
+    "id": "negotiator",
+    "name": "Negociador",
+    "classId": "specialist",
+    "description": "Diplomata habilidoso, consegue influenciar outras pessoas por lábia ou intimidação, avaliando situações com rapidez e eficiência.",
+    "requirement": null,
+    "features": [
+      { "nex": 10, "name": "Eloquência", "description": "Use uma ação completa e 1 PE por alvo em alcance curto para afetá-los com sua fala. Teste de Diplomacia, Enganação ou Intimidação contra a Vontade dos alvos; vencendo, os alvos ficam fascinados enquanto se concentrar." },
+      { "nex": 40, "name": "Discurso Motivador", "description": "Gaste uma ação padrão e 4 PE para inspirar seus aliados: você e todos os aliados em alcance curto ganham +O em testes de perícia até o fim da cena. A partir de NEX 65%, pode gastar 8 PE para +OO." },
+      { "nex": 65, "name": "Eu Conheço um Cara", "description": "Uma vez por missão, ative sua rede de contatos para pedir um favor (trocar equipamento, conseguir um local de descanso, ser resgatado de uma cena etc.), a critério do mestre." },
+      { "nex": 99, "name": "Truque de Mestre", "description": "Gaste 5 PE para simular o efeito de qualquer habilidade que você tenha visto um de seus aliados usar durante a cena, ignorando os pré-requisitos mas pagando todos os custos normalmente." }
+    ]
+  },
+  {
+    "id": "technician",
+    "name": "Técnico",
+    "classId": "specialist",
+    "description": "Especialista em manutenção e reparo de equipamento, capaz de improvisar ferramentas com o que tiver à disposição e sabotar itens de inimigos.",
+    "requirement": null,
+    "features": [
+      { "nex": 10, "name": "Inventário Otimizado", "description": "Você soma seu Intelecto à sua Força para calcular seu valor de inventário." },
+      { "nex": 40, "name": "Remendão", "description": "Gaste uma ação completa e 1 PE para remover a condição quebrado de um equipamento adjacente até o final da cena. Equipamentos de investigação têm categoria reduzida em I para você." },
+      { "nex": 65, "name": "Improvisar", "description": "Escolha um equipamento de investigação e gaste uma ação completa e 2 PE (mais 2 PE por categoria do item) para criar uma versão funcional dele, que segue as regras de espaço e categoria normalmente. Torna-se inútil ao final da cena." },
+      { "nex": 99, "name": "Preparado para Tudo", "description": "Sempre que precisar de um item qualquer (exceto armas), gaste uma ação de movimento e 3 PE por categoria do item para tê-lo à mão." }
+    ]
+  },
+  {
+    "id": "conduit",
+    "name": "Conduíte",
+    "classId": "occultist",
+    "description": "Domina os aspectos fundamentais da conjuração de rituais, capaz de aumentar o alcance e velocidade de suas conjurações e, mais tarde, interferir nos rituais de outros ocultistas.",
+    "requirement": null,
+    "features": [
+      { "nex": 10, "name": "Ampliar Ritual", "description": "Quando lança um ritual, pode gastar +2 PE para aumentar seu alcance em um passo (de curto para médio, de médio para longo ou de longo para extremo) ou dobrar sua área de efeito." },
+      { "nex": 40, "name": "Acelerar Ritual", "description": "Uma vez por rodada, pode aumentar o custo de um ritual em 4 PE para conjurá-lo como uma ação livre." },
+      { "nex": 65, "name": "Anular Ritual", "description": "Quando for alvo de um ritual, pode gastar uma quantidade de PE igual ao custo pago por esse ritual e fazer um teste oposto de Ocultismo contra o conjurador; se vencer, anula o ritual." },
+      { "nex": 99, "name": "Canalizar o Medo", "description": "Você aprende o ritual Canalizar o Medo." }
+    ]
+  },
+  {
+    "id": "flagellant",
+    "name": "Flagelador",
+    "classId": "occultist",
+    "description": "Aprendeu a transformar dor em poder para seus rituais, e quando especialmente poderoso, usa a dor e o sofrimento de seus inimigos como instrumento.",
+    "requirement": null,
+    "features": [
+      { "nex": 10, "name": "Poder do Flagelo", "description": "Ao conjurar um ritual, pode gastar seus próprios pontos de vida para pagar o custo em pontos de esforço, à taxa de 2 PV por PE pago. PV gastos assim só podem ser recuperados com descanso." },
+      { "nex": 40, "name": "Abraçar a Dor", "description": "Sempre que sofrer dano não paranormal, pode gastar uma reação e 2 PE para reduzir esse dano à metade." },
+      { "nex": 65, "name": "Absorver Agonia", "description": "Sempre que reduz um ou mais inimigos a 0 PV com um ritual, recebe uma quantidade de PE temporários igual ao círculo do ritual utilizado." },
+      { "nex": 99, "name": "Medo Tangível", "description": "Você aprende o ritual Medo Tangível." }
+    ]
+  },
+  {
+    "id": "scholar",
+    "name": "Graduado",
+    "classId": "occultist",
+    "description": "Foca seus estudos em se tornar um conjurador versátil e poderoso, conhecendo mais rituais que os outros ocultistas e sendo capaz de torná-los mais difíceis de resistir.",
+    "requirement": null,
+    "features": [
+      { "nex": 10, "name": "Saber Ampliado", "description": "Você aprende um ritual de 1º círculo. Toda vez que ganha acesso a um novo círculo, aprende um ritual adicional daquele círculo. Esses rituais não contam no seu limite de rituais conhecidos." },
+      { "nex": 40, "name": "Grimório Ritualístico", "description": "Cria um grimório especial que armazena rituais: aprende uma quantidade de rituais de 1º ou 2º círculo igual ao seu Intelecto (não contam no limite). Ao ganhar acesso a um novo círculo, pode incluir um novo ritual desse círculo. Precisa de uma ação completa para relembrar um ritual do grimório antes de conjurá-lo; o grimório ocupa 1 espaço (pode ser replicado com uma semana de trabalho se perdido)." },
+      { "nex": 65, "name": "Rituais Eficientes", "description": "A DT para resistir a todos os seus rituais aumenta em +5." },
+      { "nex": 99, "name": "Conhecendo o Medo", "description": "Você aprende o ritual Conhecendo o Medo." }
+    ]
+  },
+  {
+    "id": "intuitive",
+    "name": "Intuitivo",
+    "classId": "occultist",
+    "description": "Preparou a mente para resistir aos efeitos do Outro Lado. Seu foco e força de vontade expandem os limites de suas capacidades paranormais.",
+    "requirement": null,
+    "features": [
+      { "nex": 10, "name": "Mente Sã", "description": "Você recebe resistência paranormal +5 (+5 em testes de resistência contra efeitos paranormais)." },
+      { "nex": 40, "name": "Presença Poderosa", "description": "Você adiciona sua Presença ao seu limite de PE por turno, mas apenas para conjurar rituais." },
+      { "nex": 65, "name": "Inabalável", "description": "Você recebe resistência a dano mental e paranormal 10. Quando é alvo de um efeito paranormal que permite um teste de Vontade para reduzir o dano à metade, não sofre dano algum se passar." },
+      { "nex": 99, "name": "Presença do Medo", "description": "Você aprende o ritual Presença do Medo." }
+    ]
+  },
+  {
+    "id": "paranormal-blade",
+    "name": "Lâmina Paranormal",
+    "classId": "occultist",
+    "description": "Prefere usar o paranormal como uma arma, mesclando habilidades de conjuração com capacidades de combate — corpo a corpo ou à distância.",
+    "requirement": null,
+    "features": [
+      { "nex": 10, "name": "Lâmina Maldita", "description": "Você aprende o ritual Amaldiçoar Arma (custo reduzido em −1 PE se já o conhece). Ao conjurá-lo, pode usar Ocultismo em vez de Luta ou Pontaria para testes de ataque com a arma amaldiçoada." },
+      { "nex": 40, "name": "Gladiador Paranormal", "description": "Sempre que acerta um ataque corpo a corpo em um inimigo, recebe 2 PE temporários (máximo por cena igual ao seu limite de PE). Desaparecem no final da cena." },
+      { "nex": 65, "name": "Conjuração Marcial", "description": "Uma vez por rodada, quando lança um ritual com execução de uma ação padrão, pode gastar 2 PE para fazer um ataque corpo a corpo como uma ação livre." },
+      { "nex": 99, "name": "Lâmina do Medo", "description": "Você aprende o ritual Lâmina do Medo." }
+    ]
+  }
+]

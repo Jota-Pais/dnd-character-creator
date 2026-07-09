@@ -6,6 +6,11 @@ import {
   getAvailableChoiceGroupOptions,
   getAvailableFreeSkillOptions,
   getRequiredFreeSkillCount,
+  getEffectiveAttributes,
+  getSkillGrade,
+  getAvailablePowerOptions,
+  getAvailableTrilhaOptions,
+  getAvailableVersatilityTrilhaOptions,
 } from '../characterUtils'
 import { getOrdemClass } from '../classUtils'
 import { SKILLS } from '../skillUtils'
@@ -17,22 +22,36 @@ function makeDraft(overrides: Partial<OrdemCharacterDraft>): OrdemCharacterDraft
 }
 
 describe('deriveStats', () => {
-  it('combatente: PV = 20+Vig, PE = 2+Pre, Sanidade = 12 (flat)', () => {
+  it('combatente em NEX 5%: PV = 20+Vig, PE = 2+Pre, Sanidade = 12 (flat)', () => {
     const combatant = getOrdemClass('combatant')!
-    const stats = deriveStats(combatant, { agility: 1, strength: 1, intellect: 1, presence: 2, vigor: 3 })
+    const stats = deriveStats(combatant, { agility: 1, strength: 1, intellect: 1, presence: 2, vigor: 3 }, 5)
     expect(stats).toEqual({ hp: 23, pe: 4, sanity: 12 })
   })
 
-  it('ocultista: PV = 12+Vig, PE = 4+Pre, Sanidade = 20 (a maior das 3 classes)', () => {
+  it('ocultista em NEX 5%: PV = 12+Vig, PE = 4+Pre, Sanidade = 20 (a maior das 3 classes)', () => {
     const occultist = getOrdemClass('occultist')!
-    const stats = deriveStats(occultist, { agility: 1, strength: 1, intellect: 1, presence: 3, vigor: 0 })
+    const stats = deriveStats(occultist, { agility: 1, strength: 1, intellect: 1, presence: 3, vigor: 0 }, 5)
     expect(stats).toEqual({ hp: 12, pe: 7, sanity: 20 })
   })
 
-  it('especialista: PV = 16+Vig, PE = 3+Pre, Sanidade = 16', () => {
+  it('especialista em NEX 5%: PV = 16+Vig, PE = 3+Pre, Sanidade = 16', () => {
     const specialist = getOrdemClass('specialist')!
-    const stats = deriveStats(specialist, { agility: 1, strength: 1, intellect: 1, presence: 1, vigor: 1 })
+    const stats = deriveStats(specialist, { agility: 1, strength: 1, intellect: 1, presence: 1, vigor: 1 }, 5)
     expect(stats).toEqual({ hp: 17, pe: 4, sanity: 16 })
+  })
+
+  it('combatente em NEX 10% (1 degrau além do inicial): soma +4+Vig de PV e +2+Pre de PE', () => {
+    const combatant = getOrdemClass('combatant')!
+    const stats = deriveStats(combatant, { agility: 1, strength: 1, intellect: 1, presence: 1, vigor: 1 }, 10)
+    // NEX5%: 20+1=21 PV, 2+1=3 PE, 12 SAN. +1 degrau: +4+1=5 PV, +2+1=3 PE, +3 SAN.
+    expect(stats).toEqual({ hp: 26, pe: 6, sanity: 15 })
+  })
+
+  it('ocultista em NEX 99% (19 degraus além do inicial)', () => {
+    const occultist = getOrdemClass('occultist')!
+    const stats = deriveStats(occultist, { agility: 1, strength: 1, intellect: 1, presence: 1, vigor: 1 }, 99)
+    // NEX5%: 12+1=13 PV, 4+1=5 PE, 20 SAN. +19 degraus: +2+1=3 PV/degrau, +4+1=5 PE/degrau, +5 SAN/degrau.
+    expect(stats).toEqual({ hp: 13 + 19 * 3, pe: 5 + 19 * 5, sanity: 20 + 19 * 5 })
   })
 })
 
@@ -126,5 +145,115 @@ describe('getRequiredFreeSkillCount', () => {
     const occultist = getOrdemClass('occultist')!
     const draft = makeDraft({ attributes: { agility: 1, strength: 1, intellect: 3, presence: 1, vigor: 1 } })
     expect(getRequiredFreeSkillCount(draft, occultist)).toBe(6)
+  })
+})
+
+describe('getEffectiveAttributes', () => {
+  it('sem aumentos, devolve os atributos base', () => {
+    const draft = makeDraft({ attributes: { agility: 2, strength: 0, intellect: 3, presence: 3, vigor: 1 } })
+    expect(getEffectiveAttributes(draft)).toEqual({ agility: 2, strength: 0, intellect: 3, presence: 3, vigor: 1 })
+  })
+
+  it('aplica os aumentos de atributo escolhidos', () => {
+    const draft = makeDraft({
+      attributes: { agility: 2, strength: 0, intellect: 3, presence: 3, vigor: 1 },
+      attributeIncreaseChoices: ['strength', 'strength', 'vigor'],
+    })
+    expect(getEffectiveAttributes(draft)).toEqual({ agility: 2, strength: 2, intellect: 3, presence: 3, vigor: 2 })
+  })
+
+  it('nunca ultrapassa o teto 5', () => {
+    const draft = makeDraft({
+      attributes: { agility: 1, strength: 1, intellect: 1, presence: 1, vigor: 1 },
+      attributeIncreaseChoices: ['vigor', 'vigor', 'vigor', 'vigor', 'vigor', 'vigor'],
+    })
+    expect(getEffectiveAttributes(draft).vigor).toBe(5)
+  })
+})
+
+describe('getSkillGrade', () => {
+  it('perícia não treinada é destreinado', () => {
+    const draft = makeDraft({ origin: 'academic' }) // science, investigation
+    expect(getSkillGrade(draft, 'occultism')).toBe('destreinado')
+  })
+
+  it('perícia treinada (origem/classe) começa em treinado', () => {
+    const draft = makeDraft({ origin: 'academic' })
+    expect(getSkillGrade(draft, 'science')).toBe('treinado')
+  })
+
+  it('cada escolha de Grau de Treinamento sobe um grau (treinado → veterano → expert)', () => {
+    const draft = makeDraft({ origin: 'academic', skillGradeChoices: [['science']] })
+    expect(getSkillGrade(draft, 'science')).toBe('veterano')
+
+    const draft2 = makeDraft({ origin: 'academic', skillGradeChoices: [['science'], ['science']] })
+    expect(getSkillGrade(draft2, 'science')).toBe('expert')
+  })
+
+  it('não passa de expert mesmo com escolhas demais', () => {
+    const draft = makeDraft({ origin: 'academic', skillGradeChoices: [['science'], ['science'], ['science']] })
+    expect(getSkillGrade(draft, 'science')).toBe('expert')
+  })
+})
+
+describe('getAvailablePowerOptions', () => {
+  it('exclui poderes já escolhidos que não são repetíveis', () => {
+    const combatant = getOrdemClass('combatant')!
+    const draft = makeDraft({ class: 'combatant', powerChoices: ['heavy-weapons'] })
+    const options = getAvailablePowerOptions(draft, combatant)
+    expect(options.find(p => p.id === 'heavy-weapons')).toBeUndefined()
+  })
+
+  it('mantém poderes repetíveis (Transcender, Treinamento em Perícia) mesmo já escolhidos', () => {
+    const combatant = getOrdemClass('combatant')!
+    const draft = makeDraft({ class: 'combatant', powerChoices: ['transcend'] })
+    const options = getAvailablePowerOptions(draft, combatant)
+    expect(options.find(p => p.id === 'transcend')).toBeDefined()
+  })
+
+  it('só lista poderes da classe (Ocultista não vê poderes de Combatente)', () => {
+    const occultist = getOrdemClass('occultist')!
+    const draft = makeDraft({ class: 'occultist' })
+    const options = getAvailablePowerOptions(draft, occultist)
+    expect(options.find(p => p.id === 'heavy-weapons')).toBeUndefined()
+    expect(options.find(p => p.id === 'create-seal')).toBeDefined()
+  })
+
+  it('com slotIndex, isenta a própria escolha do slot da exclusão (senão o slot nunca aparece marcado)', () => {
+    const combatant = getOrdemClass('combatant')!
+    const draft = makeDraft({ class: 'combatant', powerChoices: ['heavy-weapons', 'heavy-blow'] })
+
+    // Slot 0 (escolheu heavy-weapons): a própria escolha continua na lista dele.
+    const slot0Options = getAvailablePowerOptions(draft, combatant, 0)
+    expect(slot0Options.find(p => p.id === 'heavy-weapons')).toBeDefined()
+    // ...mas o que o slot 1 escolheu não aparece pro slot 0.
+    expect(slot0Options.find(p => p.id === 'heavy-blow')).toBeUndefined()
+
+    // Slot 1 (escolheu heavy-blow): idem, ao contrário.
+    const slot1Options = getAvailablePowerOptions(draft, combatant, 1)
+    expect(slot1Options.find(p => p.id === 'heavy-blow')).toBeDefined()
+    expect(slot1Options.find(p => p.id === 'heavy-weapons')).toBeUndefined()
+  })
+
+  it('sem slotIndex (uso da Versatilidade), exclui qualquer poder já escolhido em algum slot regular', () => {
+    const combatant = getOrdemClass('combatant')!
+    const draft = makeDraft({ class: 'combatant', powerChoices: ['heavy-weapons'] })
+    const options = getAvailablePowerOptions(draft, combatant)
+    expect(options.find(p => p.id === 'heavy-weapons')).toBeUndefined()
+  })
+})
+
+describe('getAvailableTrilhaOptions / getAvailableVersatilityTrilhaOptions', () => {
+  it('lista as 5 trilhas da classe', () => {
+    const combatant = getOrdemClass('combatant')!
+    expect(getAvailableTrilhaOptions(combatant)).toHaveLength(5)
+  })
+
+  it('versatilidade exclui a trilha já escolhida', () => {
+    const combatant = getOrdemClass('combatant')!
+    const draft = makeDraft({ class: 'combatant', trilha: 'annihilator' })
+    const options = getAvailableVersatilityTrilhaOptions(draft, combatant)
+    expect(options).toHaveLength(4)
+    expect(options.find(t => t.id === 'annihilator')).toBeUndefined()
   })
 })

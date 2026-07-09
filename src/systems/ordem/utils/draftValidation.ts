@@ -3,7 +3,17 @@ import { EMPTY_DRAFT, WIZARD_STEPS } from '../types/character'
 import { isValidAttributes } from './attributeUtils'
 import { getOrigin } from './originUtils'
 import { getOrdemClass } from './classUtils'
-import { getRequiredFreeSkillCount } from './characterUtils'
+import {
+  getRequiredFreeSkillCount,
+  getRequiredPowerSlots,
+  getRequiredAttributeIncreaseSlots,
+  getRequiredSkillGradeSlots,
+} from './characterUtils'
+import { hasTrilha, hasVersatility } from './progressionUtils'
+
+function countFilled(arr: (string | null)[], required: number): boolean {
+  return arr.slice(0, required).filter(Boolean).length === required
+}
 
 export function isStepComplete(draft: OrdemCharacterDraft, step: WizardStep): boolean {
   switch (step) {
@@ -35,6 +45,29 @@ export function isStepComplete(draft: OrdemCharacterDraft, step: WizardStep): bo
       return groupsFilled && draft.classFreeSkillChoices.length === freeCount
     }
 
+    case 'progression': {
+      if (!draft.class) return false
+      const cls = getOrdemClass(draft.class)
+      if (!cls) return false
+
+      if (hasTrilha(draft.nex) && !draft.trilha) return false
+
+      const requiredPowers = getRequiredPowerSlots(draft.nex)
+      if (!countFilled(draft.powerChoices, requiredPowers)) return false
+
+      const requiredAttrIncreases = getRequiredAttributeIncreaseSlots(draft.nex)
+      if (!countFilled(draft.attributeIncreaseChoices, requiredAttrIncreases)) return false
+
+      const requiredGradeSlots = getRequiredSkillGradeSlots(draft.nex)
+      const gradeSlotsFilled = draft.skillGradeChoices.slice(0, requiredGradeSlots)
+        .filter(slot => Array.isArray(slot) && slot.length === cls.skillGradeCount + draft.attributes.intellect).length
+      if (gradeSlotsFilled !== requiredGradeSlots) return false
+
+      if (hasVersatility(draft.nex) && !draft.versatilityChoice) return false
+
+      return true
+    }
+
     case 'review':
       return WIZARD_STEPS.filter(s => s !== 'review').every(s => isStepComplete(draft, s))
 
@@ -58,11 +91,17 @@ export function sanitizeImportedDraft(parsed: unknown): OrdemCharacterDraft | nu
     ...EMPTY_DRAFT,
     name: p.name,
     concept: typeof p.concept === 'string' ? p.concept : '',
+    nex: typeof p.nex === 'number' ? p.nex : EMPTY_DRAFT.nex,
     attributes: { ...EMPTY_DRAFT.attributes, ...p.attributes },
     origin: typeof p.origin === 'string' ? p.origin : null,
     originGmSkillChoices: Array.isArray(p.originGmSkillChoices) ? p.originGmSkillChoices : [],
     class: p.class === 'combatant' || p.class === 'specialist' || p.class === 'occultist' ? p.class : null,
     classChoiceGroupPicks: Array.isArray(p.classChoiceGroupPicks) ? p.classChoiceGroupPicks : [],
     classFreeSkillChoices: Array.isArray(p.classFreeSkillChoices) ? p.classFreeSkillChoices : [],
+    trilha: typeof p.trilha === 'string' ? p.trilha : null,
+    powerChoices: Array.isArray(p.powerChoices) ? p.powerChoices : [],
+    attributeIncreaseChoices: Array.isArray(p.attributeIncreaseChoices) ? p.attributeIncreaseChoices : [],
+    skillGradeChoices: Array.isArray(p.skillGradeChoices) ? p.skillGradeChoices : [],
+    versatilityChoice: p.versatilityChoice ?? null,
   }
 }

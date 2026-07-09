@@ -357,7 +357,11 @@ Se começarmos o módulo Ordem por cima disso, ou duplicamos ~150 linhas de "chr
 
 **Fase 15 — ✅ CONCLUÍDA (2026-07-09; revisada 2026-07-09).** Galeria global unificada (`GlobalGallery`, no topo do `App.tsx`) lista personagens de D&D e Ordem misturados e ordenados por atualização, com as duas bibliotecas de localStorage isoladas mas lidas juntas; cada ação (abrir/duplicar/excluir/exportar/criar/importar) é roteada pelo sistema do card. Import discriminado por chave (`abilityScores` = D&D, `attributes` = Ordem — chaves disjuntas, sem risco de misrouting entre sistemas). Ficha imprimível (`PrintableSheet`) com rituais e equipamento detalhados. **Revisão:** import cross-system, roteamento de ações e derivação de rituais/equipamento (Força efetiva na capacidade) conferidos; as correções de rituais entraram junto com a Fase 13.
 
-**Fase 16 — pronto quando:** auditoria de contagens (28 perícias, 26 origens, 15 trilhas, N poderes por classe, N rituais por círculo/elemento) bate 1:1 com o livro; tela de seleção de sistema no `App.tsx` funcional, D&D e Ordem Paranormal lado a lado.
+**Fase 16 — ✅ CONCLUÍDA (2026-07-09).** Auditoria completa do módulo Ordem contra o livro (Caps. 1–5), estrutural (scripts) + fidelidade de regras linha a linha:
+- **Contagens/estrutura batem 1:1:** 5 atributos, 28 perícias, 26 origens (tabela de sorteio 2d20 contígua 2–40), 3 classes, 15 trilhas (5/classe, NEX 10/40/65/99), 45 poderes (19/15/16, 3 compartilhados), 81 rituais (26/22/16/17); todas as referências cruzadas válidas, sem IDs duplicados.
+- **Regras conferidas contra o livro:** Tabela 2.1 (atributo-base/só-treinada/carga das 28 perícias — zero divergência), PV/PE/Sanidade iniciais e por NEX das 3 classes, perícias/proficiências/grau de treinamento (1/5/3 + Int), cadências de NEX (Tabela 1.3), point-buy (soma 9, teto 3, 1 zerável), limite de PE/turno (Tabela 1.2).
+- **Correções aplicadas:** (A1) **Defesa** (10 + Agilidade + proteção, livro pág. 43) passou a ser derivada e exibida na Revisão e na ficha — antes não existia; (A2) descrições de atributo corrigidas (Intuição é de Intelecto, não Presença; Adestramento/Artes são de Presença) — só o texto estava errado, os cálculos usam `skills.json`, que já estava certo; (A3) limite de PE por turno e (A4) deslocamento (9m) agora aparecem na ficha.
+- **Seleção de sistema:** já entregue pela `GlobalGallery` (criar/abrir personagem de D&D ou Ordem lado a lado no "Multiverso").
 
 ---
 

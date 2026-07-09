@@ -112,6 +112,12 @@ Ver `ROADMAP.md` para as fases 2–8.
 - As bibliotecas das duas storage são mantidas isoladas mas lidas ao mesmo tempo na galeria inicial.
 - Import discriminado por chave (`abilityScores` = D&D, `attributes` = Ordem), sem misrouting entre sistemas.
 
+### Fase 16 — Ordem Paranormal: Auditoria final contra o livro ✅ CONCLUÍDA (2026-07-09)
+Auditoria estrutural (scripts) + fidelidade de regras linha a linha contra o livro (Caps. 1–5).
+- **Bate 1:1:** 5 atributos, 28 perícias (Tabela 2.1 — atributo/treino/carga sem divergência), 26 origens (sorteio 2d20 contíguo), 3 classes (PV/PE/Sanidade, perícias, proficiências, grau de treino), 15 trilhas, 45 poderes (19/15/16), 81 rituais; cadências de NEX, point-buy e limite de PE/turno conferidos.
+- **Correções:** Defesa (10 + Agilidade + proteção) passou a ser calculada e exibida (não existia); textos de atributo corrigidos (Intuição→Intelecto, Adestramento/Artes→Presença — só o texto, cálculos já certos); limite de PE/turno e deslocamento (9m) exibidos na ficha. +2 testes.
+- Seleção de sistema já coberta pela `GlobalGallery`.
+
 ### Revisão das Fases 13–15 ✅ (2026-07-09)
 Auditoria do trabalho entregue pelo agente externo (foco em erros de lógica). Corrigidos 6 bugs + 4 testes de regressão; 477 testes, build e lint verdes. Detalhes no `ROADMAP.md` (Fase 13). Resumo:
 - Rituais vazavam em ficha de não-conjurador (`setClass` não limpava `ritualChoices`; Revisão/ficha sem guarda de classe).

@@ -11,15 +11,26 @@ export type DerivedStats = {
   hp: number
   pe: number
   sanity: number
+  defense: number
 }
 
-/** PV/PE/Sanidade no NEX do personagem — cresce a cada degrau alcançado desde NEX 5% (Tabelas 1.3/1.4/1.5). */
-export function deriveStats(cls: OrdemClass, attributes: OrdemCharacterDraft['attributes'], nex: number): DerivedStats {
+/**
+ * PV/PE/Sanidade no NEX do personagem — cresce a cada degrau alcançado desde NEX 5% (Tabelas 1.3/1.4/1.5).
+ * Defesa = 10 + Agilidade + bônus de proteção equipada (livro pág. 43); `protectionBonus` vem da(s)
+ * proteção(ões) do loadout (ver `getEquippedDefenseBonus`). `attributes` deve ser o efetivo (com aumentos de NEX).
+ */
+export function deriveStats(
+  cls: OrdemClass,
+  attributes: OrdemCharacterDraft['attributes'],
+  nex: number,
+  protectionBonus = 0,
+): DerivedStats {
   const tiersBeyondFirst = Math.max(0, getNexIndex(nex))
   return {
     hp: cls.hp.initialFlat + attributes.vigor + tiersBeyondFirst * (cls.hp.perNexFlat + attributes.vigor),
     pe: cls.pe.initialFlat + attributes.presence + tiersBeyondFirst * (cls.pe.perNexFlat + attributes.presence),
     sanity: cls.sanity.initialFlat + tiersBeyondFirst * cls.sanity.perNex,
+    defense: 10 + attributes.agility + protectionBonus,
   }
 }
 

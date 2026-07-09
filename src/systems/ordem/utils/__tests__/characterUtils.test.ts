@@ -25,33 +25,41 @@ describe('deriveStats', () => {
   it('combatente em NEX 5%: PV = 20+Vig, PE = 2+Pre, Sanidade = 12 (flat)', () => {
     const combatant = getOrdemClass('combatant')!
     const stats = deriveStats(combatant, { agility: 1, strength: 1, intellect: 1, presence: 2, vigor: 3 }, 5)
-    expect(stats).toEqual({ hp: 23, pe: 4, sanity: 12 })
+    expect(stats).toEqual({ hp: 23, pe: 4, sanity: 12, defense: 11 })
   })
 
   it('ocultista em NEX 5%: PV = 12+Vig, PE = 4+Pre, Sanidade = 20 (a maior das 3 classes)', () => {
     const occultist = getOrdemClass('occultist')!
     const stats = deriveStats(occultist, { agility: 1, strength: 1, intellect: 1, presence: 3, vigor: 0 }, 5)
-    expect(stats).toEqual({ hp: 12, pe: 7, sanity: 20 })
+    expect(stats).toEqual({ hp: 12, pe: 7, sanity: 20, defense: 11 })
   })
 
   it('especialista em NEX 5%: PV = 16+Vig, PE = 3+Pre, Sanidade = 16', () => {
     const specialist = getOrdemClass('specialist')!
     const stats = deriveStats(specialist, { agility: 1, strength: 1, intellect: 1, presence: 1, vigor: 1 }, 5)
-    expect(stats).toEqual({ hp: 17, pe: 4, sanity: 16 })
+    expect(stats).toEqual({ hp: 17, pe: 4, sanity: 16, defense: 11 })
   })
 
   it('combatente em NEX 10% (1 degrau além do inicial): soma +4+Vig de PV e +2+Pre de PE', () => {
     const combatant = getOrdemClass('combatant')!
     const stats = deriveStats(combatant, { agility: 1, strength: 1, intellect: 1, presence: 1, vigor: 1 }, 10)
     // NEX5%: 20+1=21 PV, 2+1=3 PE, 12 SAN. +1 degrau: +4+1=5 PV, +2+1=3 PE, +3 SAN.
-    expect(stats).toEqual({ hp: 26, pe: 6, sanity: 15 })
+    expect(stats).toEqual({ hp: 26, pe: 6, sanity: 15, defense: 11 })
   })
 
   it('ocultista em NEX 99% (19 degraus além do inicial)', () => {
     const occultist = getOrdemClass('occultist')!
     const stats = deriveStats(occultist, { agility: 1, strength: 1, intellect: 1, presence: 1, vigor: 1 }, 99)
     // NEX5%: 12+1=13 PV, 4+1=5 PE, 20 SAN. +19 degraus: +2+1=3 PV/degrau, +4+1=5 PE/degrau, +5 SAN/degrau.
-    expect(stats).toEqual({ hp: 13 + 19 * 3, pe: 5 + 19 * 5, sanity: 20 + 19 * 5 })
+    expect(stats).toEqual({ hp: 13 + 19 * 3, pe: 5 + 19 * 5, sanity: 20 + 19 * 5, defense: 11 })
+  })
+
+  it('Defesa = 10 + Agilidade + bônus de proteção (livro pág. 43)', () => {
+    const combatant = getOrdemClass('combatant')!
+    // Agilidade 3, sem proteção → 13
+    expect(deriveStats(combatant, { agility: 3, strength: 1, intellect: 1, presence: 1, vigor: 1 }, 5).defense).toBe(13)
+    // Agilidade 2 + proteção +2 → 14
+    expect(deriveStats(combatant, { agility: 2, strength: 1, intellect: 1, presence: 1, vigor: 1 }, 5, 2).defense).toBe(14)
   })
 })
 

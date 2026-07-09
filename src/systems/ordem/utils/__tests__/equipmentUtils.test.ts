@@ -5,6 +5,7 @@ import {
   getMaxCapacity,
   getCurrentSpaces,
   getCategoryICount,
+  getEquippedDefenseBonus,
   isEquipmentStepComplete,
 } from '../equipmentUtils'
 
@@ -67,6 +68,13 @@ describe('equipmentUtils', () => {
     // machadinha é arma Tática: combatente é proficiente, ocultista não
     expect(isEquipmentStepComplete(makeDraft({ class: 'occultist', equipmentChoices: ['machadinha'] }))).toBe(false)
     expect(isEquipmentStepComplete(makeDraft({ class: 'combatant', equipmentChoices: ['machadinha'] }))).toBe(true)
+  })
+
+  it('getEquippedDefenseBonus soma o bônus das proteções (proteção-leve +5, escudo +2)', () => {
+    expect(getEquippedDefenseBonus([])).toBe(0)
+    expect(getEquippedDefenseBonus(['faca'])).toBe(0) // arma não conta
+    expect(getEquippedDefenseBonus(['protecao-leve'])).toBe(5)
+    expect(getEquippedDefenseBonus(['protecao-leve', 'escudo'])).toBe(7)
   })
 
   it('bloqueia itens de Categoria II+ (fora do loadout Recruta, defesa contra import)', () => {

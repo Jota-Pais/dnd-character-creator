@@ -99,6 +99,7 @@ describe('App (smoke) — Ordem Paranormal', () => {
     useOrdemStore.setState({ draft: seedOrdemAgent(), view: 'wizard', currentStep: 'review' })
     render(<App />)
     expect(screen.getAllByText('Bianca').length).toBeGreaterThan(0) // cabeçalho + título da revisão
+    expect(screen.getByText('Defesa')).toBeInTheDocument() // Defesa = 10 + Agilidade (+ proteção)
     expect(screen.getByText(/Rituais Conhecidos/)).toBeInTheDocument()
     expect(screen.getByText(RITUALS[0].name)).toBeInTheDocument()
     expect(screen.getByText(/Equipamento \(/)).toBeInTheDocument()

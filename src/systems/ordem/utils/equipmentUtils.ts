@@ -28,6 +28,14 @@ export function getCategoryICount(choices: string[]): number {
   }, 0)
 }
 
+/** Soma o bônus de Defesa das proteções escolhidas (Defesa = 10 + Agilidade + este bônus; livro pág. 43). */
+export function getEquippedDefenseBonus(choices: string[]): number {
+  return choices.reduce((acc, id) => {
+    const item = getEquipmentById(id)
+    return acc + (item && item.type === 'protection' ? item.defenseBonus : 0)
+  }, 0)
+}
+
 export function isEquipmentStepComplete(draft: OrdemCharacterDraft): boolean {
   // Loadout Recruta: carga limitada pela capacidade (5×Força efetiva), no máximo 2 itens
   // de Categoria I e nenhum item de Categoria II+; armas exigem proficiência da classe.

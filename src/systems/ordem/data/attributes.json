@@ -12,12 +12,12 @@
   {
     "id": "intellect",
     "name": "Intelecto",
-    "description": "Mede seu raciocínio, memória e educação geral. Atributo-base de Atualidades, Ciências, Investigação, Medicina, Ocultismo, Profissão, Sobrevivência, Tática e Tecnologia. Concede perícias treinadas adicionais em quantidade igual ao seu valor e define quantos rituais o personagem pode aprender."
+    "description": "Mede seu raciocínio, memória e educação geral. Atributo-base de Atualidades, Ciências, Intuição, Investigação, Medicina, Ocultismo, Profissão, Sobrevivência, Tática e Tecnologia. Concede perícias treinadas adicionais em quantidade igual ao seu valor e define quantos rituais o personagem pode aprender."
   },
   {
     "id": "presence",
     "name": "Presença",
-    "description": "Define seus sentidos, força de vontade e habilidades sociais. Atributo-base de Diplomacia, Enganação, Intimidação, Intuição, Percepção, Religião e Vontade. Concede pontos de esforço adicionais por nível de exposição (NEX)."
+    "description": "Define seus sentidos, força de vontade e habilidades sociais. Atributo-base de Adestramento, Artes, Diplomacia, Enganação, Intimidação, Percepção, Religião e Vontade. Concede pontos de esforço adicionais por nível de exposição (NEX)."
   },
   {
     "id": "vigor",

@@ -5,9 +5,9 @@ import { getSkillName } from '../utils/skillUtils'
 import { getTrilha } from '../utils/trilhaUtils'
 import { getPower } from '../utils/powerUtils'
 import { deriveStats, getTrainedSkills, getEffectiveAttributes, getSkillGrade } from '../utils/characterUtils'
-import { getReachedTrilhaSlots } from '../utils/progressionUtils'
+import { getReachedTrilhaSlots, getPeLimit } from '../utils/progressionUtils'
 import { getRitualById, formatElements, getRitualSlotsCount } from '../utils/ritualUtils'
-import { getEquipmentById, getMaxCapacity, getCurrentSpaces } from '../utils/equipmentUtils'
+import { getEquipmentById, getMaxCapacity, getCurrentSpaces, getEquippedDefenseBonus } from '../utils/equipmentUtils'
 
 /**
  * Versão imprimível com layout compacto de ficha cobrindo atributos,
@@ -20,7 +20,7 @@ export function PrintableSheet() {
   if (!cls) return null
 
   const attributes = getEffectiveAttributes(draft)
-  const stats = deriveStats(cls, attributes, draft.nex)
+  const stats = deriveStats(cls, attributes, draft.nex, getEquippedDefenseBonus(draft.equipmentChoices))
   const trainedSkills = getTrainedSkills(draft)
   const trilha = draft.trilha ? getTrilha(draft.trilha) : undefined
   const reachedTrilhaFeatures = trilha ? getReachedTrilhaSlots(draft.nex).map(nex => trilha.features.find(f => f.nex === nex)).filter(Boolean) : []
@@ -38,11 +38,15 @@ export function PrintableSheet() {
         <p className="text-sm text-gray-600 mt-1">{origin?.name} · {cls.name}{trilha ? ` (${trilha.name})` : ''} · NEX {draft.nex}% · Patente: Recruta</p>
       </header>
 
-      <section className="grid grid-cols-3 gap-3 mb-4 text-center">
+      <section className="grid grid-cols-4 gap-3 mb-2 text-center">
         <StatBox label="Pontos de Vida" value={stats.hp} />
         <StatBox label="Pontos de Esforço" value={stats.pe} />
         <StatBox label="Sanidade" value={stats.sanity} />
+        <StatBox label="Defesa" value={stats.defense} />
       </section>
+      <p className="text-center text-xs text-gray-600 mb-4">
+        Limite de PE por turno: <strong>{getPeLimit(draft.nex)}</strong> · Deslocamento: <strong>9m</strong>
+      </p>
 
       <section className="mb-4">
         <h2 className="font-bold uppercase text-sm tracking-wide border-b border-gray-400 mb-2">Atributos</h2>

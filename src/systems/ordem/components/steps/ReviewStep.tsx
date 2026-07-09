@@ -6,8 +6,8 @@ import { getTrilha } from '../../utils/trilhaUtils'
 import { getPower } from '../../utils/powerUtils'
 import { deriveStats, getTrainedSkills, getEffectiveAttributes, getSkillGrade } from '../../utils/characterUtils'
 import { getRitualById, formatElements, getRitualSlotsCount } from '../../utils/ritualUtils'
-import { getEquipmentById, getMaxCapacity, getCurrentSpaces } from '../../utils/equipmentUtils'
-import { getReachedTrilhaSlots } from '../../utils/progressionUtils'
+import { getEquipmentById, getMaxCapacity, getCurrentSpaces, getEquippedDefenseBonus } from '../../utils/equipmentUtils'
+import { getReachedTrilhaSlots, getPeLimit } from '../../utils/progressionUtils'
 import { exportCharacter } from '../../utils/storage'
 import { StepNav } from '../common/StepNav'
 
@@ -22,7 +22,7 @@ export function ReviewStep() {
   if (!cls) return null
 
   const attributes = getEffectiveAttributes(draft)
-  const stats = deriveStats(cls, attributes, draft.nex)
+  const stats = deriveStats(cls, attributes, draft.nex, getEquippedDefenseBonus(draft.equipmentChoices))
   const trainedSkills = getTrainedSkills(draft)
   const trilha = draft.trilha ? getTrilha(draft.trilha) : undefined
   const reachedTrilhaFeatures = trilha
@@ -50,11 +50,16 @@ export function ReviewStep() {
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         <Stat label="Pontos de Vida" value={String(stats.hp)} />
         <Stat label="Pontos de Esforço" value={String(stats.pe)} />
         <Stat label="Sanidade" value={String(stats.sanity)} />
+        <Stat label="Defesa" value={String(stats.defense)} />
       </div>
+      <p className="text-center text-parchment-600 text-xs">
+        Limite de PE por turno: <span className="text-parchment-400 font-semibold">{getPeLimit(draft.nex)}</span>
+        {' · '}Deslocamento: <span className="text-parchment-400 font-semibold">9m</span>
+      </p>
 
       <Section title="Atributos">
         <div className="grid grid-cols-5 gap-2 text-center">

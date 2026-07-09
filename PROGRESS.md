@@ -95,6 +95,11 @@ Ver `ROADMAP.md` para as fases 2–8.
 
 ---
 
+### Fase 13 — Ordem Paranormal: Rituais ✅ CONCLUÍDA (2026-07-09)
+- 81 rituais do Cap. 5 (26/22/16/17 por círculo) com stat block completo e multi-elemento (`rituals.json` + `regras-rituais.md`, gerados pelo `extract-rituais-ordem.mjs`).
+- Ocultista escolhe rituais em slots reais: 3 iniciais de 1º círculo + 1 a cada NEX; círculo máximo por NEX (2º@25%/3º@55%/4º@85%) e círculo por slot conforme o NEX de aquisição.
+- Rituais do Ocultista NÃO contam no limite de Intelecto (esse limite é só do poder "Aprender Ritual") — a implementação já usava NEX.
+
 ### Fase 14 — Ordem Paranormal: Equipamento Inicial ✅ CONCLUÍDA (2026-07-09)
 - Loadout padrão Recruta com categorias e slots baseados em atributo (Força).
 - Lista de equipamentos parseada do livro e estruturada em JSON (weapons, protections, general items).
@@ -105,6 +110,16 @@ Ver `ROADMAP.md` para as fases 2–8.
 - `PrintableSheet.tsx` finalizado com rituais e lista de equipamentos detalhada.
 - Refatoração para a `GlobalGallery` rodar diretamente em `App.tsx` para misturar perfeitamente personagens de D&D e Ordem em um "Multiverso".
 - As bibliotecas das duas storage são mantidas isoladas mas lidas ao mesmo tempo na galeria inicial.
+- Import discriminado por chave (`abilityScores` = D&D, `attributes` = Ordem), sem misrouting entre sistemas.
+
+### Revisão das Fases 13–15 ✅ (2026-07-09)
+Auditoria do trabalho entregue pelo agente externo (foco em erros de lógica). Corrigidos 6 bugs + 4 testes de regressão; 477 testes, build e lint verdes. Detalhes no `ROADMAP.md` (Fase 13). Resumo:
+- Rituais vazavam em ficha de não-conjurador (`setClass` não limpava `ritualChoices`; Revisão/ficha sem guarda de classe).
+- Rituais duplicáveis entre slots (seletor não excluía os já escolhidos; validação não rejeitava repetição).
+- Revisão/ficha não cortavam rituais pelos slots do NEX atual (baixar o NEX deixava resíduo).
+- Rótulo do último slot mostrava "NEX 100%" (inexistente) → corrigido para 99% via helper `getRitualSlotNex`.
+- Equipamento não barrava Categoria II+ em import (a UI já filtrava) → validação defensiva.
+- Nota de regra do ROADMAP ("rituais limitados pelo Intelecto") corrigida.
 
 ## Fluxo do wizard
 

@@ -2,9 +2,42 @@ import { describe, it, expect } from 'vitest'
 import {
   getMaxRitualCircle,
   getRitualSlotsCount,
+  getRitualSlotNex,
   getAvailableRituals,
   isRitualStepComplete,
+  RITUALS,
 } from '../ritualUtils'
+
+const VALID_ELEMENTS = ['blood', 'death', 'energy', 'knowledge', 'fear']
+
+describe('rituals.json — integridade dos dados extraídos do livro', () => {
+  it('tem os 81 rituais do livro', () => {
+    expect(RITUALS.length).toBe(81)
+  })
+
+  it('todo ritual tem campos válidos e não vazios', () => {
+    for (const r of RITUALS) {
+      expect(r.id, r.name).toBeTruthy()
+      expect(r.name.trim(), r.id).toBe(r.name)
+      expect(r.circle, r.name).toBeGreaterThanOrEqual(1)
+      expect(r.circle, r.name).toBeLessThanOrEqual(4)
+      expect(r.elements.length, r.name).toBeGreaterThan(0)
+      expect(r.elements.every(e => VALID_ELEMENTS.includes(e)), r.name).toBe(true)
+      expect(r.description.length, r.name).toBeGreaterThan(20)
+      expect(r.execution, r.name).toBeTruthy()
+    }
+  })
+
+  it('não tem ids duplicados', () => {
+    const ids = RITUALS.map(r => r.id)
+    expect(new Set(ids).size).toBe(ids.length)
+  })
+
+  it('Amaldiçoar Arma é multi-elemento (Conhecimento/Energia/Morte/Sangue)', () => {
+    const r = RITUALS.find(x => x.id === 'amaldicoar-arma')
+    expect(r?.elements.sort()).toEqual(['blood', 'death', 'energy', 'knowledge'])
+  })
+})
 
 describe('ritualUtils', () => {
   it('getMaxRitualCircle correctly maps NEX to max circle', () => {
@@ -25,6 +58,17 @@ describe('ritualUtils', () => {
     expect(getRitualSlotsCount(99)).toBe(22)
   })
 
+  it('getRitualSlotNex mapeia slot → NEX ganho (último slot é 99%, não 100%)', () => {
+    // 3 slots iniciais são de NEX 5%
+    expect(getRitualSlotNex(0)).toBe(5)
+    expect(getRitualSlotNex(2)).toBe(5)
+    // slots seguintes seguem os degraus de NEX
+    expect(getRitualSlotNex(3)).toBe(10)
+    expect(getRitualSlotNex(4)).toBe(15)
+    // regressão: o último slot (i=21 em NEX 99%) era rotulado como 100% pela fórmula linear
+    expect(getRitualSlotNex(getRitualSlotsCount(99) - 1)).toBe(99)
+  })
+
   it('getAvailableRituals returns only rituals up to max circle', () => {
     const all = getAvailableRituals(4)
     expect(all.length).toBeGreaterThan(0)
@@ -43,13 +87,18 @@ describe('ritualUtils', () => {
   })
 
   it('isRitualStepComplete checks slots for occultist', () => {
-    // using real ritual ids from the json is not necessary because the function just checks truthiness of choices
-    const choices = ['ritual-1', 'ritual-1', 'ritual-1']
-    expect(isRitualStepComplete(5, 'occultist', choices)).toBe(true)
-    expect(isRitualStepComplete(5, 'occultist', ['ritual-1', 'ritual-1', null])).toBe(false)
-    
-    const nex10Choices = [...choices, 'ritual-1']
-    expect(isRitualStepComplete(10, 'occultist', nex10Choices)).toBe(true)
-    expect(isRitualStepComplete(10, 'occultist', choices)).toBe(false)
+    // ids fictícios distintos: a função só exige que os slots estejam preenchidos e sem repetição
+    expect(isRitualStepComplete(5, 'occultist', ['r1', 'r2', 'r3'])).toBe(true)
+    expect(isRitualStepComplete(5, 'occultist', ['r1', 'r2', null])).toBe(false)
+
+    expect(isRitualStepComplete(10, 'occultist', ['r1', 'r2', 'r3', 'r4'])).toBe(true)
+    expect(isRitualStepComplete(10, 'occultist', ['r1', 'r2', 'r3'])).toBe(false)
+  })
+
+  it('isRitualStepComplete rejeita rituais repetidos (não se conhece o mesmo ritual 2×)', () => {
+    expect(isRitualStepComplete(5, 'occultist', ['r1', 'r1', 'r3'])).toBe(false)
+    expect(isRitualStepComplete(10, 'occultist', ['r1', 'r2', 'r3', 'r1'])).toBe(false)
+    // slots além do necessário (ex.: NEX foi reduzido) são ignorados na validação
+    expect(isRitualStepComplete(5, 'occultist', ['r1', 'r2', 'r3', 'r3'])).toBe(true)
   })
 })

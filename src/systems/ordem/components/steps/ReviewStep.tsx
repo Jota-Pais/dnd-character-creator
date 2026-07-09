@@ -5,7 +5,7 @@ import { getSkillName } from '../../utils/skillUtils'
 import { getTrilha } from '../../utils/trilhaUtils'
 import { getPower } from '../../utils/powerUtils'
 import { deriveStats, getTrainedSkills, getEffectiveAttributes, getSkillGrade } from '../../utils/characterUtils'
-import { getRitualById } from '../../utils/ritualUtils'
+import { getRitualById, formatElements, getRitualSlotsCount } from '../../utils/ritualUtils'
 import { getEquipmentById, getMaxCapacity, getCurrentSpaces } from '../../utils/equipmentUtils'
 import { getReachedTrilhaSlots } from '../../utils/progressionUtils'
 import { exportCharacter } from '../../utils/storage'
@@ -29,7 +29,10 @@ export function ReviewStep() {
     ? getReachedTrilhaSlots(draft.nex).map(nex => trilha.features.find(f => f.nex === nex)).filter(Boolean)
     : []
   const powers = draft.powerChoices.filter((p): p is string => Boolean(p)).map(getPower).filter(Boolean)
-  const rituals = draft.ritualChoices.filter((r): r is string => Boolean(r)).map(getRitualById).filter(Boolean)
+  // Só o Ocultista conhece rituais; limita aos slots realmente abertos pelo NEX (baixar o NEX
+  // depois de escolher não deve deixar rituais obsoletos de círculos inacessíveis na ficha).
+  const ritualSlots = draft.class === 'occultist' ? getRitualSlotsCount(draft.nex) : 0
+  const rituals = draft.ritualChoices.slice(0, ritualSlots).filter((r): r is string => Boolean(r)).map(getRitualById).filter(Boolean)
   const equipment = draft.equipmentChoices.map(getEquipmentById).filter(Boolean)
   const upgradedSkills = trainedSkills.filter(sid => getSkillGrade(draft, sid) !== 'treinado')
 
@@ -107,9 +110,10 @@ export function ReviewStep() {
       {rituals.length > 0 && (
         <Section title={`Rituais Conhecidos (${rituals.length})`}>
           <div className="space-y-2">
-            {rituals.map(r => r && (
-              <p key={r.id} className="text-parchment-500 text-xs">
-                <span className="font-semibold text-parchment-300">{r.name}</span> <span className="text-parchment-700">({r.circle}º Círculo)</span>. {r.description}
+            {rituals.map((r, i) => r && (
+              <p key={`${r.id}-${i}`} className="text-parchment-500 text-xs">
+                <span className="font-semibold text-parchment-300">{r.name}</span>{' '}
+                <span className="text-parchment-700">({formatElements(r.elements)}, {r.circle}º Círculo)</span>
               </p>
             ))}
           </div>

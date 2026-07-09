@@ -2,6 +2,7 @@ import type { OrdemCharacterDraft } from '../types/character'
 import type { OrdemEquipment } from '../types/equipment'
 import equipmentsJson from '../data/equipments.json'
 import { getOrdemClass } from './classUtils'
+import { getEffectiveAttributes } from './characterUtils'
 
 export const EQUIPMENTS = equipmentsJson as OrdemEquipment[]
 
@@ -28,27 +29,28 @@ export function getCategoryICount(choices: string[]): number {
 }
 
 export function isEquipmentStepComplete(draft: OrdemCharacterDraft): boolean {
-  const capacity = getMaxCapacity(draft.attributes.strength)
-  const currentSpaces = getCurrentSpaces(draft.equipmentChoices)
-  if (currentSpaces > capacity * 2) { // Cannot exceed double capacity, actually the limit is capacity for creating? The roadmap says "restrito por carga = 5×Força". Let's restrict to capacity.
-    return false
+  // Loadout Recruta: carga limitada pela capacidade (5×Força efetiva), no máximo 2 itens
+  // de Categoria I e nenhum item de Categoria II+; armas exigem proficiência da classe.
+  // Um loadout vazio é válido.
+  const capacity = getMaxCapacity(getEffectiveAttributes(draft).strength)
+  if (getCurrentSpaces(draft.equipmentChoices) > capacity) return false
+
+  if (getCategoryICount(draft.equipmentChoices) > 2) return false
+
+  // Recruta só acessa Categoria 0 e I — a UI já filtra, mas uma ficha importada/editada
+  // à mão poderia trazer um item de categoria superior; rejeita defensivamente.
+  for (const id of draft.equipmentChoices) {
+    const item = getEquipmentById(id)
+    if (item && item.category > 1) return false
   }
 
-  const cat1Count = getCategoryICount(draft.equipmentChoices)
-  if (cat1Count > 2) {
-    return false
-  }
-
-  // Check proficiency (this is tricky because we only check weapons)
   if (draft.class) {
     const cls = getOrdemClass(draft.class)
     if (cls) {
       for (const id of draft.equipmentChoices) {
         const item = getEquipmentById(id)
-        if (item && item.type === 'weapon') {
-          if (!cls.weaponProficiencies.includes(item.proficiency)) {
-            return false
-          }
+        if (item?.type === 'weapon' && !cls.weaponProficiencies.includes(item.proficiency)) {
+          return false
         }
       }
     }

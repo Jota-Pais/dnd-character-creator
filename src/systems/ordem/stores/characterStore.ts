@@ -37,6 +37,7 @@ type CharacterStore = {
   setAttributeIncreaseChoice: (slotIndex: number, attribute: keyof OrdemAttributes) => void
   setSkillGradeChoice: (slotIndex: number, skillIds: string[]) => void
   setVersatilityChoice: (choice: OrdemCharacterDraft['versatilityChoice']) => void
+  updateDraft: (partial: Partial<OrdemCharacterDraft>) => void
 
   nextStep: () => void
   prevStep: () => void
@@ -125,6 +126,9 @@ export const useOrdemStore = create<CharacterStore>((set, get) => ({
         attributeIncreaseChoices: [],
         skillGradeChoices: [],
         versatilityChoice: null,
+        // Rituais são exclusivos do Ocultista — trocar de classe descarta escolhas
+        // anteriores para não vazar rituais numa ficha de não-conjurador.
+        ritualChoices: [],
       },
     })),
 
@@ -164,6 +168,9 @@ export const useOrdemStore = create<CharacterStore>((set, get) => ({
 
   setVersatilityChoice: (choice) =>
     set(state => ({ draft: { ...state.draft, versatilityChoice: choice } })),
+
+  updateDraft: (partial) =>
+    set(state => ({ draft: { ...state.draft, ...partial } })),
 
   nextStep: () => {
     const { currentStep, draft, currentId } = get()

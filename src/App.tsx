@@ -3,8 +3,8 @@ import { SYSTEMS } from './core/systems/registry'
 import { GlobalGallery } from './GlobalGallery'
 
 export default function App() {
-  const { activeSystemId, setActiveSystem } = useAppStore()
-  
+  const activeSystemId = useAppStore(state => state.activeSystemId)
+
   const System = activeSystemId ? SYSTEMS[activeSystemId] : null
 
   if (System) {

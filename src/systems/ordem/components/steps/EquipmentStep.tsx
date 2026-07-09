@@ -1,14 +1,17 @@
-import React, from 'react'
 import { useOrdemStore } from '../../stores/characterStore'
 import { STEP_LABELS } from '../../types/character'
 import type { OrdemEquipment } from '../../types/equipment'
 import { EQUIPMENTS, getMaxCapacity, getCurrentSpaces, getCategoryICount } from '../../utils/equipmentUtils'
 import { getOrdemClass } from '../../utils/classUtils'
+import { getEffectiveAttributes } from '../../utils/characterUtils'
+import { isStepComplete } from '../../utils/draftValidation'
+import { StepNav } from '../common/StepNav'
 
 export function EquipmentStep() {
-  const { draft, updateDraft } = useOrdemStore()
-  
-  const capacity = getMaxCapacity(draft.attributes.strength)
+  const { draft, updateDraft, nextStep, prevStep } = useOrdemStore()
+
+  const strength = getEffectiveAttributes(draft).strength
+  const capacity = getMaxCapacity(strength)
   const currentSpaces = getCurrentSpaces(draft.equipmentChoices)
   const cat1Count = getCategoryICount(draft.equipmentChoices)
   const isOverCapacity = currentSpaces > capacity
@@ -125,7 +128,7 @@ export function EquipmentStep() {
         <p className="text-parchment-400 text-sm mb-4">
           Como um agente da Ordem nível <strong className="text-red-400">Recruta (NEX {draft.nex}%)</strong>, 
           você tem acesso ilimitado a itens de Categoria 0, mas pode pegar apenas 
-          <strong className="text-red-400"> até 2 itens de Categoria I</strong>. Seu limite de peso depende da sua Força ({draft.attributes.strength}).
+          <strong className="text-red-400"> até 2 itens de Categoria I</strong>. Seu limite de peso depende da sua Força ({strength}).
         </p>
         
         <div className="flex flex-wrap gap-4">
@@ -163,6 +166,8 @@ export function EquipmentStep() {
           </div>
         </div>
       </div>
+
+      <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={isStepComplete(draft, 'equipment')} />
     </div>
   )
 }

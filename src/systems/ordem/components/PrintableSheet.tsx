@@ -6,7 +6,7 @@ import { getTrilha } from '../utils/trilhaUtils'
 import { getPower } from '../utils/powerUtils'
 import { deriveStats, getTrainedSkills, getEffectiveAttributes, getSkillGrade } from '../utils/characterUtils'
 import { getReachedTrilhaSlots } from '../utils/progressionUtils'
-import { getRitualById } from '../utils/ritualUtils'
+import { getRitualById, formatElements, getRitualSlotsCount } from '../utils/ritualUtils'
 import { getEquipmentById, getMaxCapacity, getCurrentSpaces } from '../utils/equipmentUtils'
 
 /**
@@ -25,7 +25,9 @@ export function PrintableSheet() {
   const trilha = draft.trilha ? getTrilha(draft.trilha) : undefined
   const reachedTrilhaFeatures = trilha ? getReachedTrilhaSlots(draft.nex).map(nex => trilha.features.find(f => f.nex === nex)).filter(Boolean) : []
   const powers = draft.powerChoices.filter((p): p is string => Boolean(p)).map(getPower).filter(Boolean)
-  const rituals = draft.ritualChoices.filter((r): r is string => Boolean(r)).map(getRitualById).filter(Boolean)
+  // Só o Ocultista conhece rituais; limita aos slots abertos pelo NEX (ver ReviewStep).
+  const ritualSlots = draft.class === 'occultist' ? getRitualSlotsCount(draft.nex) : 0
+  const rituals = draft.ritualChoices.slice(0, ritualSlots).filter((r): r is string => Boolean(r)).map(getRitualById).filter(Boolean)
   const equipment = draft.equipmentChoices.map(getEquipmentById).filter(Boolean)
 
   return (
@@ -109,10 +111,13 @@ export function PrintableSheet() {
         <section className="mb-4">
           <h2 className="font-bold uppercase text-sm tracking-wide border-b border-gray-400 mb-2">Rituais Conhecidos</h2>
           <div className="space-y-1">
-            {rituals.map(r => r && (
-              <p key={r.id} className="text-sm">
-                <span className="font-semibold">{r.name}</span> ({r.circle}º Círculo). {r.description}
-              </p>
+            {rituals.map((r, i) => r && (
+              <div key={`${r.id}-${i}`} className="text-sm">
+                <span className="font-semibold">{r.name}</span>
+                <span className="text-gray-600"> ({formatElements(r.elements)}, {r.circle}º Círculo)</span>
+                <span className="text-gray-500 text-xs"> — {r.execution}, {r.range}, {r.target}, {r.duration}{r.resistance ? `, ${r.resistance}` : ''}</span>
+                <p className="text-gray-700">{r.description}</p>
+              </div>
             ))}
           </div>
         </section>

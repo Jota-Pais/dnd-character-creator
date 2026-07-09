@@ -1,5 +1,5 @@
 import { useOrdemStore } from '../../stores/characterStore'
-import { getRitualSlotsCount, getMaxRitualCircle, getAvailableRituals } from '../../utils/ritualUtils'
+import { getRitualSlotsCount, getMaxRitualCircle, getAvailableRituals, getRitualSlotNex, isRitualStepComplete, ELEMENT_NAMES } from '../../utils/ritualUtils'
 import { STEP_LABELS } from '../../types/character'
 
 const ELEMENT_COLORS: Record<string, string> = {
@@ -8,14 +8,6 @@ const ELEMENT_COLORS: Record<string, string> = {
   energy: 'text-purple-400 bg-purple-950/30 border-purple-900',
   knowledge: 'text-amber-500 bg-amber-950/30 border-amber-900',
   fear: 'text-white bg-slate-900/50 border-slate-700',
-}
-
-const ELEMENT_NAMES: Record<string, string> = {
-  blood: 'Sangue',
-  death: 'Morte',
-  energy: 'Energia',
-  knowledge: 'Conhecimento',
-  fear: 'Medo',
 }
 
 export function RitualsStep() {
@@ -53,7 +45,9 @@ export function RitualsStep() {
     updateDraft({ ritualChoices: newChoices })
   }
 
-  const isComplete = ritualChoices.slice(0, slotCount).every(Boolean)
+  // Usa o mesmo validador do store (exige todos os slots preenchidos e sem repetição),
+  // para o botão "Avançar" não divergir do gate de nextStep.
+  const isComplete = isRitualStepComplete(nex, charClass, ritualChoices)
 
   return (
     <div className="max-w-3xl mx-auto space-y-8 animate-fade-in">
@@ -67,20 +61,28 @@ export function RitualsStep() {
       </div>
       
       <p className="text-parchment-400 text-sm mb-6 leading-relaxed bg-parchment-950/30 p-4 rounded-xl border border-parchment-900">
-        Como <strong className="text-gold-500 font-fantasy">Ocultista (Escolhido pelo Outro Lado)</strong>, 
-        você aprende 3 rituais iniciais, e ganha +1 ritual a cada NEX alcançado. 
-        Os círculos que você pode escolher são limitados pelo seu nível.
+        Como <strong className="text-gold-500 font-fantasy">Ocultista (Escolhido pelo Outro Lado)</strong>,
+        você aprende 3 rituais iniciais, e ganha +1 ritual a cada NEX alcançado.
+        Os círculos que você pode escolher são limitados pelo seu NEX.
       </p>
 
       <div className="space-y-6">
         {Array.from({ length: slotCount }).map((_, i) => {
           const selectedId = ritualChoices[i]
           const isInitial = i < 3
-          const label = isInitial ? `Ritual Inicial ${i + 1}` : `Ritual NEX ${5 + (i - 2) * 5}%`
-          
-          // Ocultista começa com 3 de 1º círculo. Outros são limitados pelo círculo do nível onde foi ganho.
-          const slotMaxCircle = isInitial ? 1 : getMaxRitualCircle(5 + (i - 2) * 5)
+          const slotNex = getRitualSlotNex(i)
+          const label = isInitial ? `Ritual Inicial ${i + 1}` : `Ritual NEX ${slotNex}%`
+
+          // Ocultista começa com 3 de 1º círculo. Os demais são limitados pelo círculo conjurável
+          // no NEX em que o ritual foi ganho.
+          const slotMaxCircle = isInitial ? 1 : getMaxRitualCircle(slotNex)
+          // Não é possível conhecer o mesmo ritual duas vezes: exclui os já escolhidos em
+          // outros slots (mantendo sempre a escolha do próprio slot).
+          const chosenElsewhere = new Set(
+            ritualChoices.slice(0, slotCount).filter((id, idx): id is string => Boolean(id) && idx !== i)
+          )
           const options = getAvailableRituals(slotMaxCircle as 1|2|3|4)
+            .filter(r => r.id === selectedId || !chosenElsewhere.has(r.id))
 
           return (
             <div key={i} className="bg-parchment-950/50 border border-parchment-900 rounded-xl p-5 shadow-sm">
@@ -104,7 +106,7 @@ export function RitualsStep() {
                       <optgroup key={circle} label={`${circle}º Círculo`} className="text-gold-600 bg-parchment-950 font-fantasy">
                         {rits.map(r => (
                           <option key={r.id} value={r.id} className="text-parchment-300 font-sans">
-                            {r.name} ({ELEMENT_NAMES[r.element]})
+                            {r.name} ({r.elements.map(e => ELEMENT_NAMES[e]).join('/')})
                           </option>
                         ))}
                       </optgroup>
@@ -123,12 +125,18 @@ export function RitualsStep() {
                     if (!r) return null
                     return (
                       <div className="text-sm">
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center flex-wrap gap-2 mb-2">
                           <span className="font-bold text-parchment-200">{r.name}</span>
-                          <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded border ${ELEMENT_COLORS[r.element]}`}>
-                            {ELEMENT_NAMES[r.element]}
-                          </span>
+                          {r.elements.map(e => (
+                            <span key={e} className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded border ${ELEMENT_COLORS[e]}`}>
+                              {ELEMENT_NAMES[e]}
+                            </span>
+                          ))}
                         </div>
+                        <p className="text-parchment-600 text-xs mb-2">
+                          Execução: {r.execution} · Alcance: {r.range} · Alvo: {r.target} · Duração: {r.duration}
+                          {r.resistance && ` · Resistência: ${r.resistance}`}
+                        </p>
                         <p className="text-parchment-500 leading-relaxed">{r.description}</p>
                       </div>
                     )

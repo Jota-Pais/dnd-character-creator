@@ -1,39 +1,44 @@
-import { useRef, useState, useEffect } from 'react'
-import { loadLibrary as loadDndLibrary, exportCharacter as exportDnd, importCharacter as importDnd, deleteCharacterEntry as deleteDnd, newId as newDndId, saveCharacterEntry as saveDndEntry } from './systems/dnd5e/utils/storage'
-import { loadLibrary as loadOrdemLibrary, exportCharacter as exportOrdem, importCharacter as importOrdem, deleteCharacterEntry as deleteOrdem, newId as newOrdemId, saveCharacterEntry as saveOrdemEntry } from './systems/ordem/utils/storage'
+import { useMemo, useRef, useState } from 'react'
+import { exportCharacter as exportDnd, importCharacter as importDnd, type SavedCharacter as DndSaved } from './systems/dnd5e/utils/storage'
+import { exportCharacter as exportOrdem, importCharacter as importOrdem, type SavedCharacter as OrdemSaved } from './systems/ordem/utils/storage'
 import { useAppStore } from './core/stores/appStore'
 import { useCharacterStore as useDndStore } from './systems/dnd5e/stores/characterStore'
 import { useOrdemStore } from './systems/ordem/stores/characterStore'
 import { dnd5eSystem } from './systems/dnd5e'
 import { ordemSystem } from './systems/ordem'
 
-type UnifiedCharacter = {
-  system: 'dnd5e' | 'ordem'
-  id: string
-  updatedAt: number
-  draft: any
-}
+type UnifiedCharacter =
+  | (DndSaved & { system: 'dnd5e' })
+  | (OrdemSaved & { system: 'ordem' })
 
 export function GlobalGallery() {
-  const { setActiveSystem } = useAppStore()
-  const dndStore = useDndStore()
-  const ordemStore = useOrdemStore()
+  const setActiveSystem = useAppStore(s => s.setActiveSystem)
 
-  const [characters, setCharacters] = useState<UnifiedCharacter[]>([])
+  // Assina as bibliotecas dos dois sistemas: qualquer ação (criar/duplicar/excluir/importar)
+  // atualiza o `library` do store e re-renderiza a galeria — sem estado local nem useEffect.
+  const dndLibrary = useDndStore(s => s.library)
+  const dndNew = useDndStore(s => s.newCharacter)
+  const dndOpen = useDndStore(s => s.openCharacter)
+  const dndDuplicate = useDndStore(s => s.duplicateCharacter)
+  const dndDelete = useDndStore(s => s.deleteCharacter)
+  const dndImport = useDndStore(s => s.importDraft)
+
+  const ordemLibrary = useOrdemStore(s => s.library)
+  const ordemNew = useOrdemStore(s => s.newCharacter)
+  const ordemOpen = useOrdemStore(s => s.openCharacter)
+  const ordemDuplicate = useOrdemStore(s => s.duplicateCharacter)
+  const ordemDelete = useOrdemStore(s => s.deleteCharacter)
+  const ordemImport = useOrdemStore(s => s.importDraft)
+
   const [importError, setImportError] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [showSystemSelect, setShowSystemSelect] = useState(false)
 
-  function loadAll() {
-    const dndLib = loadDndLibrary().map(c => ({ ...c, system: 'dnd5e' as const }))
-    const ordemLib = loadOrdemLibrary().map(c => ({ ...c, system: 'ordem' as const }))
-    const all = [...dndLib, ...ordemLib].sort((a, b) => b.updatedAt - a.updatedAt)
-    setCharacters(all)
-  }
-
-  useEffect(() => {
-    loadAll()
-  }, [])
+  const characters = useMemo<UnifiedCharacter[]>(() => {
+    const dnd = dndLibrary.map(c => ({ ...c, system: 'dnd5e' as const }))
+    const ordem = ordemLibrary.map(c => ({ ...c, system: 'ordem' as const }))
+    return [...dnd, ...ordem].sort((a, b) => b.updatedAt - a.updatedAt)
+  }, [dndLibrary, ordemLibrary])
 
   async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -41,17 +46,16 @@ export function GlobalGallery() {
     e.target.value = ''
     setImportError(false)
 
-    // Try both imports
     const dndDraft = await importDnd(file)
     if (dndDraft) {
-      dndStore.importDraft(dndDraft)
+      dndImport(dndDraft)
       setActiveSystem('dnd5e')
       return
     }
-    
+
     const ordemDraft = await importOrdem(file)
     if (ordemDraft) {
-      ordemStore.importDraft(ordemDraft)
+      ordemImport(ordemDraft)
       setActiveSystem('ordem')
       return
     }
@@ -60,30 +64,19 @@ export function GlobalGallery() {
   }
 
   function handleOpen(char: UnifiedCharacter) {
-    if (char.system === 'dnd5e') {
-      dndStore.openCharacter(char.id)
-      setActiveSystem('dnd5e')
-    } else {
-      ordemStore.openCharacter(char.id)
-      setActiveSystem('ordem')
-    }
+    if (char.system === 'dnd5e') dndOpen(char.id)
+    else ordemOpen(char.id)
+    setActiveSystem(char.system)
   }
 
   function handleDuplicate(char: UnifiedCharacter) {
-    if (char.system === 'dnd5e') {
-      const newChar = { id: newDndId(), updatedAt: Date.now(), step: 'name' as const, draft: { ...char.draft, name: char.draft.name + ' (Cópia)' } }
-      saveDndEntry(newChar)
-    } else {
-      const newChar = { id: newOrdemId(), updatedAt: Date.now(), step: 'name' as const, draft: { ...char.draft, name: char.draft.name + ' (Cópia)' } }
-      saveOrdemEntry(newChar)
-    }
-    loadAll()
+    if (char.system === 'dnd5e') dndDuplicate(char.id)
+    else ordemDuplicate(char.id)
   }
 
   function handleDelete(char: UnifiedCharacter) {
-    if (char.system === 'dnd5e') deleteDnd(char.id)
-    else deleteOrdem(char.id)
-    loadAll()
+    if (char.system === 'dnd5e') dndDelete(char.id)
+    else ordemDelete(char.id)
   }
 
   function handleExport(char: UnifiedCharacter) {
@@ -92,13 +85,9 @@ export function GlobalGallery() {
   }
 
   function handleCreate(system: 'dnd5e' | 'ordem') {
-    if (system === 'dnd5e') {
-      dndStore.newCharacter()
-      setActiveSystem('dnd5e')
-    } else {
-      ordemStore.newCharacter()
-      setActiveSystem('ordem')
-    }
+    if (system === 'dnd5e') dndNew()
+    else ordemNew()
+    setActiveSystem(system)
   }
 
   return (

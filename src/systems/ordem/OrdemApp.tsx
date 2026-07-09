@@ -1,21 +1,21 @@
 import { useEffect } from 'react'
 import { useAppStore } from '../../core/stores/appStore'
-import { useCharacterStore } from './stores/characterStore'
+import { useOrdemStore } from './stores/characterStore'
 import { Gallery } from './components/Gallery'
 import { StepIndicator } from '../../components/wizard/StepIndicator'
-import { dnd5eSystem } from './index'
+import { ordemSystem } from './index'
 
-export function Dnd5eApp() {
+export function OrdemApp() {
   const setActiveSystem = useAppStore(state => state.setActiveSystem)
-  const view = useCharacterStore(state => state.view)
-  const currentStep = useCharacterStore(state => state.currentStep)
-  const name = useCharacterStore(state => state.draft.name)
-  const prevStep = useCharacterStore(state => state.prevStep)
-  const goToGallery = useCharacterStore(state => state.goToGallery)
-  const exitPrint = useCharacterStore(state => state.exitPrint)
-  
-  const PrintableSheet = dnd5eSystem.PrintableSheet
-  const steps = dnd5eSystem.getSteps()
+  const view = useOrdemStore(state => state.view)
+  const currentStep = useOrdemStore(state => state.currentStep)
+  const name = useOrdemStore(state => state.draft.name)
+  const prevStep = useOrdemStore(state => state.prevStep)
+  const goToGallery = useOrdemStore(state => state.goToGallery)
+  const exitPrint = useOrdemStore(state => state.exitPrint)
+
+  const PrintableSheet = ordemSystem.PrintableSheet
+  const steps = ordemSystem.getSteps()
   const CurrentStepComponent = steps.find(s => s.id === currentStep)?.component
   const stepIndicatorProps = steps.map(s => ({ id: s.id, label: s.title }))
 
@@ -64,22 +64,21 @@ export function Dnd5eApp() {
     <div className="min-h-screen">
       <div className="max-w-6xl mx-auto px-4 pb-28 lg:pb-10">
 
-        {/* Header */}
         <header className="pt-8 pb-6 text-center">
-          <div className="text-5xl mb-3">🎲</div>
+          <div className="text-5xl mb-3">🕯️</div>
           <h1 className="font-fantasy text-3xl font-bold text-gold-400 tracking-wide">
-            Criador de Personagem
+            Criador de Agente
           </h1>
           <div className="flex items-center justify-center gap-3 mt-2">
             <div className="h-px w-20 bg-gold-800" />
             <span className="text-parchment-500 text-xs uppercase tracking-widest font-fantasy">
-              D&D 5e · PHB 2014
+              {ordemSystem.name} · {ordemSystem.subtitle}
             </span>
             <div className="h-px w-20 bg-gold-800" />
           </div>
           {view === 'wizard' && name && currentStep !== 'name' && (
             <p className="mt-2 text-parchment-400 text-sm">
-              <span className="text-parchment-600">Aventureiro:</span>{' '}
+              <span className="text-parchment-600">Agente:</span>{' '}
               <span className="text-gold-400 font-semibold font-fantasy">{name}</span>
             </p>
           )}
@@ -88,7 +87,7 @@ export function Dnd5eApp() {
               onClick={goToGallery}
               className="mt-3 text-parchment-600 hover:text-parchment-300 text-xs font-fantasy transition-colors"
             >
-              ← Meus personagens
+              ← Meus agentes
             </button>
           )}
         </header>
@@ -99,12 +98,10 @@ export function Dnd5eApp() {
           </main>
         ) : (
           <>
-            {/* Step indicator */}
             <div className="mb-8 flex justify-center">
               <StepIndicator steps={stepIndicatorProps} currentStepId={currentStep} />
             </div>
 
-            {/* Divider ornamental */}
             <div className="flex items-center gap-3 mb-8">
               <div className="h-px flex-1 bg-gradient-to-r from-transparent to-parchment-800" />
               <span className="text-parchment-700 text-sm">✦</span>
@@ -118,7 +115,6 @@ export function Dnd5eApp() {
         )}
       </div>
 
-      {/* Footer */}
       <footer className="border-t border-parchment-900 mt-12 py-6 text-center">
         <p className="text-parchment-700 text-xs font-fantasy tracking-wider">
           Forjado por Jota{' '}

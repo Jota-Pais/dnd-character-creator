@@ -23,11 +23,11 @@ export default function App() {
           >
             D&D 5e
           </button>
-          <button 
-            disabled
-            className="px-6 py-3 bg-parchment-900 text-parchment-600 rounded opacity-50 cursor-not-allowed"
+          <button
+            onClick={() => setActiveSystem('ordem')}
+            className="px-6 py-3 bg-parchment-800 text-parchment-200 rounded hover:bg-parchment-700 transition"
           >
-            Ordem Paranormal (Em breve)
+            Ordem Paranormal
           </button>
         </div>
       </div>

@@ -5,6 +5,8 @@ import { getSkillName } from '../../utils/skillUtils'
 import { getTrilha } from '../../utils/trilhaUtils'
 import { getPower } from '../../utils/powerUtils'
 import { deriveStats, getTrainedSkills, getEffectiveAttributes, getSkillGrade } from '../../utils/characterUtils'
+import { getRitualById } from '../../utils/ritualUtils'
+import { getEquipmentById, getMaxCapacity, getCurrentSpaces } from '../../utils/equipmentUtils'
 import { getReachedTrilhaSlots } from '../../utils/progressionUtils'
 import { exportCharacter } from '../../utils/storage'
 import { StepNav } from '../common/StepNav'
@@ -27,6 +29,8 @@ export function ReviewStep() {
     ? getReachedTrilhaSlots(draft.nex).map(nex => trilha.features.find(f => f.nex === nex)).filter(Boolean)
     : []
   const powers = draft.powerChoices.filter((p): p is string => Boolean(p)).map(getPower).filter(Boolean)
+  const rituals = draft.ritualChoices.filter((r): r is string => Boolean(r)).map(getRitualById).filter(Boolean)
+  const equipment = draft.equipmentChoices.map(getEquipmentById).filter(Boolean)
   const upgradedSkills = trainedSkills.filter(sid => getSkillGrade(draft, sid) !== 'treinado')
 
   function handleExport() {
@@ -94,6 +98,32 @@ export function ReviewStep() {
             {powers.map(p => p && (
               <p key={p.id} className="text-parchment-500 text-xs">
                 <span className="font-semibold text-parchment-300">{p.name}.</span> {p.description}
+              </p>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {rituals.length > 0 && (
+        <Section title={`Rituais Conhecidos (${rituals.length})`}>
+          <div className="space-y-2">
+            {rituals.map(r => r && (
+              <p key={r.id} className="text-parchment-500 text-xs">
+                <span className="font-semibold text-parchment-300">{r.name}</span> <span className="text-parchment-700">({r.circle}º Círculo)</span>. {r.description}
+              </p>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {equipment.length > 0 && (
+        <Section title={`Equipamento (${getCurrentSpaces(draft.equipmentChoices)}/${getMaxCapacity(attributes.strength)} espaços)`}>
+          <div className="space-y-2">
+            {equipment.map(item => item && (
+              <p key={item.id} className="text-parchment-500 text-xs">
+                <span className="font-semibold text-parchment-300">{item.name}</span> <span className="text-parchment-700">(Cat {item.category === 0 ? '0' : 'I'}, {item.spaces} esp.)</span>
+                {item.type === 'weapon' && ` — ${item.damage} ${item.damageType} (Crítico: ${item.critical})`}
+                {item.type === 'protection' && ` — Defesa +${item.defenseBonus}`}
               </p>
             ))}
           </div>

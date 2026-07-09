@@ -4,12 +4,14 @@ import { getOrdemClass } from '../utils/classUtils'
 import { getSkillName } from '../utils/skillUtils'
 import { getTrilha } from '../utils/trilhaUtils'
 import { getPower } from '../utils/powerUtils'
-import { deriveStats, getTrainedSkills, getEffectiveAttributes } from '../utils/characterUtils'
+import { deriveStats, getTrainedSkills, getEffectiveAttributes, getSkillGrade } from '../utils/characterUtils'
 import { getReachedTrilhaSlots } from '../utils/progressionUtils'
+import { getRitualById } from '../utils/ritualUtils'
+import { getEquipmentById, getMaxCapacity, getCurrentSpaces } from '../utils/equipmentUtils'
 
 /**
- * Versão enxuta — cobre o essencial (identidade, atributos, origem, classe, trilha, poderes,
- * perícias, PV/PE/SAN no NEX atual). Equipamento e rituais chegam em fases futuras.
+ * Versão imprimível com layout compacto de ficha cobrindo atributos,
+ * origem, classe, trilha, poderes, perícias, rituais, equipamento.
  */
 export function PrintableSheet() {
   const draft = useOrdemStore(state => state.draft)
@@ -23,6 +25,8 @@ export function PrintableSheet() {
   const trilha = draft.trilha ? getTrilha(draft.trilha) : undefined
   const reachedTrilhaFeatures = trilha ? getReachedTrilhaSlots(draft.nex).map(nex => trilha.features.find(f => f.nex === nex)).filter(Boolean) : []
   const powers = draft.powerChoices.filter((p): p is string => Boolean(p)).map(getPower).filter(Boolean)
+  const rituals = draft.ritualChoices.filter((r): r is string => Boolean(r)).map(getRitualById).filter(Boolean)
+  const equipment = draft.equipmentChoices.map(getEquipmentById).filter(Boolean)
 
   return (
     <div className="print-sheet mx-auto max-w-[820px] bg-white text-gray-900 p-8 rounded-lg shadow-lg" style={{ fontFamily: 'Georgia, serif' }}>
@@ -92,8 +96,44 @@ export function PrintableSheet() {
         <h2 className="font-bold uppercase text-sm tracking-wide border-b border-gray-400 mb-2">
           Perícias Treinadas ({trainedSkills.length})
         </h2>
-        <p className="text-sm">{trainedSkills.map(getSkillName).join(', ')}</p>
+        <p className="text-sm">
+          {trainedSkills.map(sid => {
+            const grade = getSkillGrade(draft, sid)
+            const name = getSkillName(sid)
+            return grade !== 'treinado' ? `${name} (${grade})` : name
+          }).join(', ')}
+        </p>
       </section>
+
+      {rituals.length > 0 && (
+        <section className="mb-4">
+          <h2 className="font-bold uppercase text-sm tracking-wide border-b border-gray-400 mb-2">Rituais Conhecidos</h2>
+          <div className="space-y-1">
+            {rituals.map(r => r && (
+              <p key={r.id} className="text-sm">
+                <span className="font-semibold">{r.name}</span> ({r.circle}º Círculo). {r.description}
+              </p>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {equipment.length > 0 && (
+        <section className="mb-4">
+          <h2 className="font-bold uppercase text-sm tracking-wide border-b border-gray-400 mb-2">
+            Equipamento ({getCurrentSpaces(draft.equipmentChoices)}/{getMaxCapacity(attributes.strength)} espaços)
+          </h2>
+          <div className="space-y-1">
+            {equipment.map(item => item && (
+              <p key={item.id} className="text-sm">
+                <span className="font-semibold">{item.name}</span> (Cat {item.category === 0 ? '0' : 'I'}, {item.spaces} esp.)
+                {item.type === 'weapon' && ` — ${item.damage} ${item.damageType} (Crítico: ${item.critical})`}
+                {item.type === 'protection' && ` — Defesa +${item.defenseBonus}`}
+              </p>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   )
 }

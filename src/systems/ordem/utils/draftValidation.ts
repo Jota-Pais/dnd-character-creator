@@ -10,6 +10,8 @@ import {
   getRequiredSkillGradeSlots,
 } from './characterUtils'
 import { hasTrilha, hasVersatility } from './progressionUtils'
+import { isRitualStepComplete } from './ritualUtils'
+import { isEquipmentStepComplete } from './equipmentUtils'
 
 function countFilled(arr: (string | null)[], required: number): boolean {
   return arr.slice(0, required).filter(Boolean).length === required
@@ -68,6 +70,14 @@ export function isStepComplete(draft: OrdemCharacterDraft, step: WizardStep): bo
       return true
     }
 
+    case 'rituals': {
+      if (draft.class !== 'occultist') return true
+      return isRitualStepComplete(draft.nex, draft.class, draft.ritualChoices)
+    }
+
+    case 'equipment':
+      return isEquipmentStepComplete(draft)
+
     case 'review':
       return WIZARD_STEPS.filter(s => s !== 'review').every(s => isStepComplete(draft, s))
 
@@ -103,5 +113,7 @@ export function sanitizeImportedDraft(parsed: unknown): OrdemCharacterDraft | nu
     attributeIncreaseChoices: Array.isArray(p.attributeIncreaseChoices) ? p.attributeIncreaseChoices : [],
     skillGradeChoices: Array.isArray(p.skillGradeChoices) ? p.skillGradeChoices : [],
     versatilityChoice: p.versatilityChoice ?? null,
+    ritualChoices: Array.isArray(p.ritualChoices) ? p.ritualChoices : [],
+    equipmentChoices: Array.isArray(p.equipmentChoices) ? p.equipmentChoices : [],
   }
 }

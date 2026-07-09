@@ -6,6 +6,6 @@ export type AppState = {
 }
 
 export const useAppStore = create<AppState>((set) => ({
-  activeSystemId: 'dnd5e', // By default, show D&D until we build the menu
+  activeSystemId: null, // By default, show the global gallery
   setActiveSystem: (id) => set({ activeSystemId: id })
 }))

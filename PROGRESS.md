@@ -95,6 +95,17 @@ Ver `ROADMAP.md` para as fases 2–8.
 
 ---
 
+### Fase 14 — Ordem Paranormal: Equipamento Inicial ✅ CONCLUÍDA (2026-07-09)
+- Loadout padrão Recruta com categorias e slots baseados em atributo (Força).
+- Lista de equipamentos parseada do livro e estruturada em JSON (weapons, protections, general items).
+- Restrições de proficiência de armas de classe e limite de categoria I aplicados.
+- EquipmentStep.tsx implementado para selecionar equipamento.
+
+### Fase 15 — Ordem Paranormal: Export & Biblioteca ✅ CONCLUÍDA (2026-07-09)
+- `PrintableSheet.tsx` finalizado com rituais e lista de equipamentos detalhada.
+- Refatoração para a `GlobalGallery` rodar diretamente em `App.tsx` para misturar perfeitamente personagens de D&D e Ordem em um "Multiverso".
+- As bibliotecas das duas storage são mantidas isoladas mas lidas ao mesmo tempo na galeria inicial.
+
 ## Fluxo do wizard
 
 | #   | Etapa         | Status       |

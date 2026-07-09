@@ -1,0 +1,611 @@
+[
+  {
+    "id": "amaldicoar-arma",
+    "name": "Amaldiçoar Arma",
+    "circle": 1,
+    "element": "knowledge",
+    "description": "Arma causa mais dano."
+  },
+  {
+    "id": "compreensao-paranormal",
+    "name": "Compreensão Paranormal",
+    "circle": 1,
+    "element": "knowledge",
+    "description": "Você entende qualquer linguagem escrita ou falada."
+  },
+  {
+    "id": "enfeiticar",
+    "name": "Enfeitiçar",
+    "circle": 1,
+    "element": "knowledge",
+    "description": "Alvo se torna prestativo."
+  },
+  {
+    "id": "perturbacao",
+    "name": "Perturbação",
+    "circle": 1,
+    "element": "knowledge",
+    "description": "Força o alvo a obedecer a uma ordem."
+  },
+  {
+    "id": "ouvir-os-sussurros",
+    "name": "Ouvir os Sussurros",
+    "circle": 1,
+    "element": "knowledge",
+    "description": "Você se comunica com vozes do Outro Lado para receber informações."
+  },
+  {
+    "id": "terceiro-olho",
+    "name": "Terceiro Olho",
+    "circle": 1,
+    "element": "knowledge",
+    "description": "Você vê manifestações paranormais."
+  },
+  {
+    "id": "tecer-ilusao",
+    "name": "Tecer Ilusão",
+    "circle": 1,
+    "element": "knowledge",
+    "description": "Cria uma ilusão visual ou sonora."
+  },
+  {
+    "id": "amaldicoar-arma",
+    "name": "Amaldiçoar Arma",
+    "circle": 1,
+    "element": "energy",
+    "description": "Arma causa mais dano."
+  },
+  {
+    "id": "amaldicoar-tecnologia",
+    "name": "Amaldiçoar Tecnologia",
+    "circle": 1,
+    "element": "energy",
+    "description": "Aprimora um item."
+  },
+  {
+    "id": "coincidencia-forcada",
+    "name": "Coincidência Forçada",
+    "circle": 1,
+    "element": "energy",
+    "description": "Recebe bônus em um teste."
+  },
+  {
+    "id": "eletrocussao",
+    "name": "Eletrocussão",
+    "circle": 1,
+    "element": "energy",
+    "description": "Corrente voltaica eletrocuta o alvo."
+  },
+  {
+    "id": "embaralhar",
+    "name": "Embaralhar",
+    "circle": 1,
+    "element": "energy",
+    "description": "Cria duplicatas para confundir os inimigos, oferecendo bônus na Defesa."
+  },
+  {
+    "id": "luz",
+    "name": "Luz",
+    "circle": 1,
+    "element": "energy",
+    "description": "Objeto brilha como uma lâmpada."
+  },
+  {
+    "id": "polarizacao-caotica",
+    "name": "Polarização Caótica",
+    "circle": 1,
+    "element": "energy",
+    "description": "Objetos metálicos são atraídos ou repelidos conforme sua vontade."
+  },
+  {
+    "id": "amaldicoar-arma",
+    "name": "Amaldiçoar Arma",
+    "circle": 1,
+    "element": "death",
+    "description": "Arma causa mais dano."
+  },
+  {
+    "id": "cicatrizacao",
+    "name": "Cicatrização",
+    "circle": 1,
+    "element": "death",
+    "description": "Acelera a regeneração de um ferimento."
+  },
+  {
+    "id": "consumir-manancial",
+    "name": "Consumir Manancial",
+    "circle": 1,
+    "element": "death",
+    "description": "Suga o tempo de vida de seres próximos, recebendo PV temporários."
+  },
+  {
+    "id": "decadencia",
+    "name": "Decadência",
+    "circle": 1,
+    "element": "death",
+    "description": "Acelera o envelhecimento dos órgãos internos do alvo, fazendo seu corpo definhar."
+  },
+  {
+    "id": "definhar",
+    "name": "Definhar",
+    "circle": 1,
+    "element": "death",
+    "description": "Alvo fica fatigado ou vulnerável."
+  },
+  {
+    "id": "nuvem-de-cinzas",
+    "name": "Nuvem de Cinzas",
+    "circle": 1,
+    "element": "death",
+    "description": "Nuvem fornece camuflagem."
+  },
+  {
+    "id": "espirais-da-perdicao",
+    "name": "Espirais da Perdição",
+    "circle": 1,
+    "element": "death",
+    "description": "Inimigos sofrem penalidade em ataque e dano."
+  },
+  {
+    "id": "amaldicoar-arma",
+    "name": "Amaldiçoar Arma",
+    "circle": 1,
+    "element": "blood",
+    "description": "Arma causa mais dano."
+  },
+  {
+    "id": "armadura-de-sangue",
+    "name": "Armadura de Sangue",
+    "circle": 1,
+    "element": "blood",
+    "description": "Recobre o corpo com placas de sangue endurecido."
+  },
+  {
+    "id": "arma-atroz",
+    "name": "Arma Atroz",
+    "circle": 1,
+    "element": "blood",
+    "description": "Arma corpo a corpo causa dano adi- cional de Sangue."
+  },
+  {
+    "id": "fortalecimento-sensorial",
+    "name": "Fortalecimento Sensorial",
+    "circle": 1,
+    "element": "blood",
+    "description": "Melhora seus sentidos e sua percepção."
+  },
+  {
+    "id": "odio-incontrolavel",
+    "name": "Ódio Incontrolável",
+    "circle": 1,
+    "element": "blood",
+    "description": "Aumenta dano corpo a corpo e perícias f ísicas, mas piora perícias mentais."
+  },
+  {
+    "id": "distorcer-aparencia",
+    "name": "Distorcer Aparência",
+    "circle": 1,
+    "element": "blood",
+    "description": "Muda a aparência de um ou mais alvos."
+  },
+  {
+    "id": "corpo-adaptado",
+    "name": "Corpo Adaptado",
+    "circle": 1,
+    "element": "blood",
+    "description": "Ignora frio e calor, pode respirar debaixo d’água."
+  },
+  {
+    "id": "cineraria",
+    "name": "Cinerária",
+    "circle": 1,
+    "element": "fear",
+    "description": "Névoa fortalece rituais na área."
+  },
+  {
+    "id": "aprimorar-mente",
+    "name": "Aprimorar Mente",
+    "circle": 2,
+    "element": "knowledge",
+    "description": "Fornece bônus em Intelecto ou."
+  },
+  {
+    "id": "presenca",
+    "name": "Presença",
+    "circle": 2,
+    "element": "knowledge",
+    "description": "."
+  },
+  {
+    "id": "deteccao-de-ameacas",
+    "name": "Detecção de Ameaças",
+    "circle": 2,
+    "element": "knowledge",
+    "description": "Detecta personagens hostis e armadilhas na área."
+  },
+  {
+    "id": "esconder-dos-olhos",
+    "name": "Esconder dos Olhos",
+    "circle": 2,
+    "element": "knowledge",
+    "description": "Torna o usuário invisível aos olhos comuns por determinado tempo."
+  },
+  {
+    "id": "ligacao-telepatica",
+    "name": "Ligação Telepática",
+    "circle": 2,
+    "element": "knowledge",
+    "description": "Se comunicar telepaticamente e livremente com quem for marcado por uma hora."
+  },
+  {
+    "id": "localizacao",
+    "name": "Localização",
+    "circle": 2,
+    "element": "knowledge",
+    "description": "Determina em que direção está um objeto ou ser a sua escolha."
+  },
+  {
+    "id": "chamas-do-caos",
+    "name": "Chamas do Caos",
+    "circle": 2,
+    "element": "energy",
+    "description": "Controla o fogo."
+  },
+  {
+    "id": "contencao-fantasmagorica",
+    "name": "Contenção Fantasmagórica",
+    "circle": 2,
+    "element": "energy",
+    "description": "Laços de energia pren- dem o alvo."
+  },
+  {
+    "id": "dissonancia-acustica",
+    "name": "Dissonância Acústica",
+    "circle": 2,
+    "element": "energy",
+    "description": "Cria uma área em que é impossível ouvir sons."
+  },
+  {
+    "id": "sopro-do-caos",
+    "name": "Sopro do Caos",
+    "circle": 2,
+    "element": "energy",
+    "description": "Mova o ar de formas impossíveis."
+  },
+  {
+    "id": "tela-de-ruido",
+    "name": "Tela de Ruído",
+    "circle": 2,
+    "element": "energy",
+    "description": "Cria uma película protetora que absorve dano."
+  },
+  {
+    "id": "eco-espiral",
+    "name": "Eco Espiral",
+    "circle": 2,
+    "element": "death",
+    "description": "Repete o dano que o alvo sofreu ao longo das rodadas concentrando."
+  },
+  {
+    "id": "desacelerar-impacto",
+    "name": "Desacelerar Impacto",
+    "circle": 2,
+    "element": "death",
+    "description": "Recebendo resistência contra ataques f ísicos e balísticos."
+  },
+  {
+    "id": "paradoxo",
+    "name": "Paradoxo",
+    "circle": 2,
+    "element": "death",
+    "description": "Cria uma área de tempo paradoxal, capaz de envelhecer corpo e alma."
+  },
+  {
+    "id": "miasma-entropico",
+    "name": "Miasma Entrópico",
+    "circle": 2,
+    "element": "death",
+    "description": "Nuvem tóxica enjoa e sufoca os alvos."
+  },
+  {
+    "id": "velocidade-mortal",
+    "name": "Velocidade Mortal",
+    "circle": 2,
+    "element": "death",
+    "description": "Alvo acelera no tempo, reali- zando ações adicionais."
+  },
+  {
+    "id": "aprimorar-fisico",
+    "name": "Aprimorar Físico",
+    "circle": 2,
+    "element": "blood",
+    "description": "Fornece bônus em Agilidade ou."
+  },
+  {
+    "id": "forca",
+    "name": "Força",
+    "circle": 2,
+    "element": "blood",
+    "description": "."
+  },
+  {
+    "id": "descarnar",
+    "name": "Descarnar",
+    "circle": 2,
+    "element": "blood",
+    "description": "A pele do alvo é dilacerada, abrindo cortes profundos."
+  },
+  {
+    "id": "transfusao-vital",
+    "name": "Transfusão Vital",
+    "circle": 2,
+    "element": "blood",
+    "description": "Transferir vida do usuário para vários alvos, os curando instantaneamente."
+  },
+  {
+    "id": "hemofagia",
+    "name": "Hemofagia",
+    "circle": 2,
+    "element": "blood",
+    "description": "Absorve o sangue do alvo, causando dano e recuperando seus pontos de vida."
+  },
+  {
+    "id": "protecao-contra-rituais",
+    "name": "Proteção contra Rituais",
+    "circle": 2,
+    "element": "fear",
+    "description": "Alvo recebe +2 em testes de resistência contra rituais e habilidades de criaturas."
+  },
+  {
+    "id": "rejeitar-nevoa",
+    "name": "Rejeitar Névoa",
+    "circle": 2,
+    "element": "fear",
+    "description": "Concede bônus em testes de resis- tência contra rituais."
+  },
+  {
+    "id": "alterar-memoria",
+    "name": "Alterar Memória",
+    "circle": 3,
+    "element": "knowledge",
+    "description": "Pode apagar ou modificar a me- mória recente do alvo."
+  },
+  {
+    "id": "contato-paranormal",
+    "name": "Contato Paranormal",
+    "circle": 3,
+    "element": "knowledge",
+    "description": "Você barganha com o Outro."
+  },
+  {
+    "id": "lado-para-obter-ajuda",
+    "name": "Lado para obter ajuda",
+    "circle": 3,
+    "element": "knowledge",
+    "description": "."
+  },
+  {
+    "id": "mergulho-mental",
+    "name": "Mergulho Mental",
+    "circle": 3,
+    "element": "knowledge",
+    "description": "Infiltra-se na mente do alvo para vasculhar seus pensamentos."
+  },
+  {
+    "id": "videncia",
+    "name": "Vidência",
+    "circle": 3,
+    "element": "knowledge",
+    "description": "Pode observar e ouvir um alvo à distância."
+  },
+  {
+    "id": "convocacao-instantanea",
+    "name": "Convocação Instantânea",
+    "circle": 3,
+    "element": "energy",
+    "description": "Teletransporta um objeto marcado para suas mãos."
+  },
+  {
+    "id": "salto-fantasma",
+    "name": "Salto Fantasma",
+    "circle": 3,
+    "element": "energy",
+    "description": "Teletransporta você e outros seres para um ponto dentro do alcance."
+  },
+  {
+    "id": "transfigurar-agua",
+    "name": "Transfigurar Água",
+    "circle": 3,
+    "element": "energy",
+    "description": "Água e gelo se comportam de forma caótica."
+  },
+  {
+    "id": "transfigurar-terra",
+    "name": "Transfigurar Terra",
+    "circle": 3,
+    "element": "energy",
+    "description": "Rochas, lama e areia se com- portam de forma caótica."
+  },
+  {
+    "id": "ancora-temporal",
+    "name": "Âncora Temporal",
+    "circle": 3,
+    "element": "death",
+    "description": "Impede o alvo de se afastar de um ponto."
+  },
+  {
+    "id": "poeira-da-podridao",
+    "name": "Poeira da Podridão",
+    "circle": 3,
+    "element": "death",
+    "description": "Nuvem de poeira apodrece tudo que toca."
+  },
+  {
+    "id": "tentaculos-de-lodo",
+    "name": "Tentáculos de Lodo",
+    "circle": 3,
+    "element": "death",
+    "description": "Tentáculos pretos atacam e agarram seres na área."
+  },
+  {
+    "id": "zerar-entropia",
+    "name": "Zerar Entropia",
+    "circle": 3,
+    "element": "death",
+    "description": "O alvo fica lento ou paralisado."
+  },
+  {
+    "id": "ferver-sangue",
+    "name": "Ferver Sangue",
+    "circle": 3,
+    "element": "blood",
+    "description": "Faz o sangue do alvo entrar em ebu- lição, causando dano e deixando-o fraco."
+  },
+  {
+    "id": "forma-monstruosa",
+    "name": "Forma Monstruosa",
+    "circle": 3,
+    "element": "blood",
+    "description": "Você assume a aparência e forma de uma criatura monstruosa."
+  },
+  {
+    "id": "purgatorio",
+    "name": "Purgatório",
+    "circle": 3,
+    "element": "blood",
+    "description": "Área de sangue deixa alvos vulneráveis a dano e causa dor a quem tentar sair."
+  },
+  {
+    "id": "vomitar-pestes",
+    "name": "Vomitar Pestes",
+    "circle": 3,
+    "element": "blood",
+    "description": "Vomita um enxame de pequenas criaturas de Sangue."
+  },
+  {
+    "id": "dissipar-ritual",
+    "name": "Dissipar Ritual",
+    "circle": 3,
+    "element": "fear",
+    "description": "Cancela os efeitos de rituais em um alvo ou área."
+  },
+  {
+    "id": "controle-mental",
+    "name": "Controle Mental",
+    "circle": 4,
+    "element": "knowledge",
+    "description": "Faz com que a mente da vítima seja controlada por outra pessoa."
+  },
+  {
+    "id": "inexistir",
+    "name": "Inexistir",
+    "circle": 4,
+    "element": "knowledge",
+    "description": "Você toca um alvo e o apaga completamente da existência."
+  },
+  {
+    "id": "possessao",
+    "name": "Possessão",
+    "circle": 4,
+    "element": "knowledge",
+    "description": "Transfere sua consciência para o corpo do alvo."
+  },
+  {
+    "id": "alterar-destino",
+    "name": "Alterar Destino",
+    "circle": 4,
+    "element": "energy",
+    "description": "Enxerga o futuro próximo, podendo alterar o resultado de um teste."
+  },
+  {
+    "id": "deflagracao-de-energia",
+    "name": "Deflagração de Energia",
+    "circle": 4,
+    "element": "energy",
+    "description": "Explosão de energia bruta causa dano e afeta rituais e itens amaldiçoados."
+  },
+  {
+    "id": "teletransporte",
+    "name": "Teletransporte",
+    "circle": 4,
+    "element": "energy",
+    "description": "Teletransporta você e outros seres."
+  },
+  {
+    "id": "convocar-o-algoz",
+    "name": "Convocar o Algoz",
+    "circle": 4,
+    "element": "death",
+    "description": "Conjura um ser cadavérico que persegue e tenta matar o alvo."
+  },
+  {
+    "id": "distorcao-temporal",
+    "name": "Distorção Temporal",
+    "circle": 4,
+    "element": "death",
+    "description": "Você age livremente por um curto período de tempo."
+  },
+  {
+    "id": "fim-inevitavel",
+    "name": "Fim Inevitável",
+    "circle": 4,
+    "element": "death",
+    "description": "Abre uma ruptura no espaço que suga tudo ao redor."
+  },
+  {
+    "id": "capturar-o-coracao",
+    "name": "Capturar o Coração",
+    "circle": 4,
+    "element": "blood",
+    "description": "Manipula as emoções e von - tades do alvo, fazendo dele seu aliado."
+  },
+  {
+    "id": "involucro-de-carne",
+    "name": "Invólucro de Carne",
+    "circle": 4,
+    "element": "blood",
+    "description": "Criar um clone de carne e sangue com as mesmas estatísticas do alvo."
+  },
+  {
+    "id": "vinculo-de-sangue",
+    "name": "Vínculo de Sangue",
+    "circle": 4,
+    "element": "blood",
+    "description": "Alvo sofre todo dano e efeitos negativos que você sofrer."
+  },
+  {
+    "id": "canalizar-o-medo",
+    "name": "Canalizar o Medo",
+    "circle": 4,
+    "element": "fear",
+    "description": "Transfere parte de seu poder paranormal para um alvo."
+  },
+  {
+    "id": "conhecendo-o-medo",
+    "name": "Conhecendo o Medo",
+    "circle": 4,
+    "element": "fear",
+    "description": "Manifesta o Medo absoluto na mente do alvo."
+  },
+  {
+    "id": "lamina-do-medo",
+    "name": "Lâmina do Medo",
+    "circle": 4,
+    "element": "fear",
+    "description": "Golpeia o alvo com uma lâmina de medo puro."
+  },
+  {
+    "id": "medo-tangivel",
+    "name": "Medo Tangível",
+    "circle": 4,
+    "element": "fear",
+    "description": "Recebe uma série de imunidades."
+  },
+  {
+    "id": "presenca-do-medo",
+    "name": "Presença do Medo",
+    "circle": 4,
+    "element": "fear",
+    "description": "Você assume uma forma impos- sível dentro da Realidade."
+  }
+]

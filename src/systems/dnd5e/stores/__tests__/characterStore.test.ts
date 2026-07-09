@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { useCharacterStore } from '../characterStore'
 import { EMPTY_DRAFT } from '../../types/character'
 import { loadLibrary } from '../../utils/storage'
-import { COMPLETE_DRAFT } from '../../test/fixtures'
+import { COMPLETE_DRAFT } from '../../../../test/fixtures'
 
 beforeEach(() => {
   localStorage.clear()

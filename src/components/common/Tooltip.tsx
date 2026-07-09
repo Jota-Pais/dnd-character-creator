@@ -1,19 +1,18 @@
-import { useState, useRef, useEffect } from 'react'
-import { GLOSSARY, type TermId } from '../../utils/glossary'
+import { useState, useRef, useEffect, type ReactNode } from 'react'
 
 type Props = {
-  term: TermId
+  term: string
+  definition: ReactNode
 }
 
 /**
- * Ícone "?" que revela, sob demanda, uma explicação de uma frase de um termo
- * de D&D. Click-to-toggle (funciona no mobile); fecha ao clicar fora.
+ * Ícone "?" que revela, sob demanda, uma explicação de um termo.
+ * Click-to-toggle (funciona no mobile); fecha ao clicar fora.
  * Mantém a tela limpa — o texto só aparece quando o jogador pede.
  */
-export function InfoTooltip({ term }: Props) {
+export function Tooltip({ term, definition }: Props) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLSpanElement>(null)
-  const entry = GLOSSARY[term]
 
   useEffect(() => {
     if (!open) return
@@ -24,13 +23,11 @@ export function InfoTooltip({ term }: Props) {
     return () => document.removeEventListener('mousedown', handleOutside)
   }, [open])
 
-  if (!entry) return null
-
   return (
     <span ref={ref} className="relative inline-flex align-middle">
       <button
         type="button"
-        aria-label={`O que é ${entry.term}?`}
+        aria-label={`O que é ${term}?`}
         aria-expanded={open}
         onClick={e => {
           e.preventDefault()
@@ -46,8 +43,8 @@ export function InfoTooltip({ term }: Props) {
           role="tooltip"
           className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 z-50 w-56 rounded-lg border border-parchment-700 bg-parchment-950 px-3 py-2 text-left text-xs leading-relaxed text-parchment-300 normal-case tracking-normal shadow-xl"
         >
-          <span className="mb-0.5 block font-bold text-gold-400">{entry.term}</span>
-          {entry.definition}
+          <span className="mb-0.5 block font-bold text-gold-400">{term}</span>
+          {definition}
         </span>
       )}
     </span>

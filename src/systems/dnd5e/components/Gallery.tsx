@@ -4,6 +4,7 @@ import { getClass, CLASS_PRESENTATION } from '../utils/classUtils'
 import { getRace, RACE_PRESENTATION } from '../utils/raceUtils'
 import { exportCharacter, importCharacter, type SavedCharacter } from '../utils/storage'
 import type { CharacterDraft } from '../types/character'
+import { dnd5eSystem } from '../index'
 
 export function Gallery() {
   const library = useCharacterStore(state => state.library)
@@ -86,8 +87,7 @@ function describe(draft: CharacterDraft): { emoji: string; subtitle: string } {
   const race = draft.race ? getRace(draft.race) : undefined
   const cls = draft.class ? getClass(draft.class) : undefined
   const emoji = cls ? (CLASS_PRESENTATION[cls.id]?.emoji ?? '🎲') : race ? (RACE_PRESENTATION[race.id]?.emoji ?? '🎲') : '🎲'
-  const parts = [race?.name, cls?.name].filter(Boolean)
-  const subtitle = parts.length > 0 ? `${parts.join(' · ')} — nível ${draft.level ?? 1}` : `Nível ${draft.level ?? 1}`
+  const subtitle = dnd5eSystem.formatDraftName(draft)
   return { emoji, subtitle }
 }
 

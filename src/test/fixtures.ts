@@ -1,4 +1,4 @@
-import type { CharacterDraft } from '../types/character'
+import type { CharacterDraft } from '../systems/dnd5e/types/character'
 
 // Ficha completa sem escolhas pendentes além das perícias de classe:
 // meio-orc (sem sub-raça/choices) + bárbaro (só 2 perícias) + marinheiro (sem choices)

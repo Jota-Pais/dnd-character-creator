@@ -18,6 +18,7 @@ Toda decisão de produto e design serve a esse objetivo: guiar o iniciante sem t
 
 - **SPA front-end pura**, sem backend
 - Persistência local no navegador (localStorage na V1, possivelmente IndexedDB no futuro)
+- **Sistemas Multi-RPG (Arquitetura Modular):** O núcleo da aplicação (`src/core`) é completamente agnóstico de regras de negócio. Todos os dados, regras e telas específicas ficam isolados nos seus respectivos módulos de sistema (ex: `src/systems/dnd5e`).
 - Deploy estático (Vercel/Netlify) quando chegar a hora
 - Não sugerir API routes, server actions ou qualquer arquitetura com servidor próprio
 
@@ -50,12 +51,12 @@ Toda decisão de produto e design serve a esse objetivo: guiar o iniciante sem t
 ## Estrutura de Pastas
 
 src/
-components/ # Componentes React (PascalCase)
-stores/ # Stores Zustand
-data/ # JSONs com as regras (raças, classes, antecedentes, etc.)
-types/ # Tipos TypeScript
-utils/ # Funções utilitárias (camelCase)
-docs/ # Regras digitalizadas em markdown
+ ├─ core/       # Motor agnóstico, tipos base, gerenciamento de estado global (AppStore)
+ ├─ components/ # Design System / UI Genérica (Componentes sem regras de negócios)
+ └─ systems/    # Módulos de RPG (Plugins)
+     ├─ dnd5e/  # Todo o universo do D&D (data, utils, types, stores e components específicos)
+     └─ ordem/  # (Futuro) Arquivos do Ordem Paranormal
+ docs/          # Regras digitalizadas em markdown
 
 ## Convenções de Código
 

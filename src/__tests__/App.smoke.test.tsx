@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, cleanup } from '@testing-library/react'
 import App from '../App'
-import { useCharacterStore } from '../stores/characterStore'
+import { useCharacterStore } from '../systems/dnd5e/stores/characterStore'
 import { COMPLETE_DRAFT } from '../test/fixtures'
 
 // Teste de fumaça: renderiza o App real e exercita o fluxo galeria <-> wizard.

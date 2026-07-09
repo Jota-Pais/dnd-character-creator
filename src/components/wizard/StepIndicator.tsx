@@ -1,22 +1,20 @@
-import type { WizardStep } from '../../types/character'
-import { WIZARD_STEPS, STEP_LABELS } from '../../types/character'
-
 type Props = {
-  currentStep: WizardStep
+  steps: { id: string; label: string }[]
+  currentStepId: string
 }
 
-export function StepIndicator({ currentStep }: Props) {
-  const currentIdx = WIZARD_STEPS.indexOf(currentStep)
+export function StepIndicator({ steps, currentStepId }: Props) {
+  const currentIdx = steps.findIndex(s => s.id === currentStepId)
 
   return (
     <nav aria-label="Etapas de criação">
       <ol className="flex items-center gap-0">
-        {WIZARD_STEPS.map((step, idx) => {
+        {steps.map((step, idx) => {
           const isDone = idx < currentIdx
           const isActive = idx === currentIdx
 
           return (
-            <li key={step} className="flex items-center">
+            <li key={step.id} className="flex items-center">
               <div className="flex flex-col items-center">
                 <div
                   className={[
@@ -40,11 +38,11 @@ export function StepIndicator({ currentStep }: Props) {
                         : 'text-parchment-800',
                   ].join(' ')}
                 >
-                  {STEP_LABELS[step]}
+                  {step.label}
                 </span>
               </div>
 
-              {idx < WIZARD_STEPS.length - 1 && (
+              {idx < steps.length - 1 && (
                 <div
                   className={[
                     'h-px w-6 sm:w-10 mx-1 mb-5 transition-colors duration-300',

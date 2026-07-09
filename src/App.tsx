@@ -1,148 +1,36 @@
-import { useEffect } from 'react'
-import { useCharacterStore } from './stores/characterStore'
-import { Gallery } from './components/Gallery'
-import { PrintableSheet } from './components/PrintableSheet'
-import { StepIndicator } from './components/wizard/StepIndicator'
-import { NameStep } from './components/steps/NameStep'
-import { RaceStep } from './components/steps/RaceStep'
-import { ClassStep } from './components/steps/ClassStep'
-import { SpellStep } from './components/steps/SpellStep'
-import { AbilitiesStep } from './components/steps/AbilitiesStep'
-import { ImprovementsStep } from './components/steps/ImprovementsStep'
-import { BackgroundStep } from './components/steps/BackgroundStep'
-import { EquipmentStep } from './components/steps/EquipmentStep'
-import { ReviewStep } from './components/steps/ReviewStep'
+import { useAppStore } from './core/stores/appStore'
+import { SYSTEMS } from './core/systems/registry'
 
 export default function App() {
-  const view = useCharacterStore(state => state.view)
-  const currentStep = useCharacterStore(state => state.currentStep)
-  const name = useCharacterStore(state => state.draft.name)
-  const prevStep = useCharacterStore(state => state.prevStep)
-  const goToGallery = useCharacterStore(state => state.goToGallery)
-  const exitPrint = useCharacterStore(state => state.exitPrint)
+  const { activeSystemId, setActiveSystem } = useAppStore()
+  
+  const System = activeSystemId ? SYSTEMS[activeSystemId] : null
 
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }, [currentStep, view])
-
-  useEffect(() => {
-    if (view !== 'wizard') return
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key !== 'Escape') return
-      const tag = (e.target as HTMLElement).tagName
-      if (tag === 'INPUT' || tag === 'TEXTAREA') return
-      prevStep()
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [prevStep, view])
-
-  if (view === 'print') {
-    return (
-      <div className="min-h-screen py-6 px-4">
-        <div className="no-print max-w-[820px] mx-auto mb-4 flex justify-between items-center">
-          <button
-            onClick={exitPrint}
-            className="px-4 py-2 text-parchment-400 hover:text-parchment-200 text-sm font-fantasy transition-colors"
-          >
-            ← Voltar
-          </button>
-          <button
-            onClick={() => window.print()}
-            className="px-5 py-2 rounded-xl font-fantasy font-bold text-sm bg-gold-500 text-parchment-950 hover:bg-gold-400 transition-colors"
-          >
-            🖨 Imprimir / Salvar PDF
-          </button>
-        </div>
-        <PrintableSheet />
-        <p className="no-print max-w-[820px] mx-auto mt-4 text-center text-parchment-700 text-xs">
-          Dica: na janela de impressão, escolha "Salvar como PDF" como destino.
-        </p>
-      </div>
-    )
+  if (System) {
+    const Component = System.Component
+    return <Component />
   }
 
+  // Futura tela de seleção de sistemas
   return (
-    <div className="min-h-screen">
-      <div className="max-w-6xl mx-auto px-4 pb-28 lg:pb-10">
-
-        {/* Header */}
-        <header className="pt-8 pb-6 text-center">
-          <div className="text-5xl mb-3">🎲</div>
-          <h1 className="font-fantasy text-3xl font-bold text-gold-400 tracking-wide">
-            Criador de Personagem
-          </h1>
-          <div className="flex items-center justify-center gap-3 mt-2">
-            <div className="h-px w-20 bg-gold-800" />
-            <span className="text-parchment-500 text-xs uppercase tracking-widest font-fantasy">
-              D&D 5e · PHB 2014
-            </span>
-            <div className="h-px w-20 bg-gold-800" />
-          </div>
-          {view === 'wizard' && name && currentStep !== 'name' && (
-            <p className="mt-2 text-parchment-400 text-sm">
-              <span className="text-parchment-600">Aventureiro:</span>{' '}
-              <span className="text-gold-400 font-semibold font-fantasy">{name}</span>
-            </p>
-          )}
-          {view === 'wizard' && (
-            <button
-              onClick={goToGallery}
-              className="mt-3 text-parchment-600 hover:text-parchment-300 text-xs font-fantasy transition-colors"
-            >
-              ← Meus personagens
-            </button>
-          )}
-        </header>
-
-        {view === 'gallery' ? (
-          <main className="animate-fade-in pb-24 lg:pb-32">
-            <Gallery />
-          </main>
-        ) : (
-          <>
-            {/* Step indicator */}
-            <div className="mb-8 flex justify-center">
-              <StepIndicator currentStep={currentStep} />
-            </div>
-
-            {/* Divider ornamental */}
-            <div className="flex items-center gap-3 mb-8">
-              <div className="h-px flex-1 bg-gradient-to-r from-transparent to-parchment-800" />
-              <span className="text-parchment-700 text-sm">✦</span>
-              <div className="h-px flex-1 bg-gradient-to-l from-transparent to-parchment-800" />
-            </div>
-
-            <main key={currentStep} className="animate-fade-in relative pb-24 lg:pb-32">
-              {currentStep === 'name' && <NameStep />}
-              {currentStep === 'race' && <RaceStep />}
-              {currentStep === 'class' && <ClassStep />}
-              {currentStep === 'spells' && <SpellStep />}
-              {currentStep === 'abilities' && <AbilitiesStep />}
-              {currentStep === 'improvements' && <ImprovementsStep />}
-              {currentStep === 'background' && <BackgroundStep />}
-              {currentStep === 'equipment' && <EquipmentStep />}
-              {currentStep === 'review' && <ReviewStep />}
-            </main>
-          </>
-        )}
-      </div>
-
-      {/* Footer */}
-      <footer className="border-t border-parchment-900 mt-12 py-6 text-center">
-        <p className="text-parchment-700 text-xs font-fantasy tracking-wider">
-          Forjado por Jota{' '}
-          <span className="text-parchment-800 mx-1">·</span>{' '}
-          <a
-            href="https://github.com/Jota-Pais/dnd-character-creator"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-gold-700 hover:text-gold-500 transition-colors"
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-3xl font-fantasy text-gold-400 mb-6">Escolha o seu Sistema</h1>
+        <div className="flex gap-4">
+          <button 
+            onClick={() => setActiveSystem('dnd5e')}
+            className="px-6 py-3 bg-parchment-800 text-parchment-200 rounded hover:bg-parchment-700 transition"
           >
-            GitHub ↗
-          </a>
-        </p>
-      </footer>
+            D&D 5e
+          </button>
+          <button 
+            disabled
+            className="px-6 py-3 bg-parchment-900 text-parchment-600 rounded opacity-50 cursor-not-allowed"
+          >
+            Ordem Paranormal (Em breve)
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

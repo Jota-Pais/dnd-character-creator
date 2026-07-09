@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { sanitizeImportedDraft, getFirstIncompleteStep, isStepComplete } from '../draftValidation'
 import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
 import { SPELLS } from '../spellUtils'
-import { COMPLETE_DRAFT } from '../../test/fixtures'
+import { COMPLETE_DRAFT } from '../../../../test/fixtures'
 
 describe('sanitizeImportedDraft', () => {
   it('rejeita valores que não são objetos', () => {

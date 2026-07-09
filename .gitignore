@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Extrações brutas de livros (cache local — texto de PDF, não editar/commitar; regenerar com pdf-parse se sumir)
+docs/_book-extracts/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

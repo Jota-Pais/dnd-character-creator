@@ -258,13 +258,106 @@ Decisão de formato: ficha **própria** (não a oficial da WotC), em português,
 
 ---
 
-## Fase 8 — Gamificação, auditoria final e deploy
+## Fase 8 — Auditoria final e Deploy
 
 | # | Etapa | Detalhe |
 | - | ----- | ------- |
-| 8.1 | Gamificação | Glossário ampliado (hoje 10 termos), medidor de completude da ficha, notas "para iniciantes" visíveis nos cards de classe, bugiganga aleatória na criação (momento divertido) |
-| 8.2 | Auditoria final contra o livro | Checklist por capítulo (raças, classes, equipamento, magias, talentos) conferindo dados × livro |
-| 8.3 | Deploy estático | Vercel/Netlify + smoke test do fluxo completo |
+| 8.1 | Gamificação & Usabilidade | ⏩ **Adiada para o Pós-Testes.** (Glossário ampliado, medidor de completude, notas para iniciantes e sorteio de bugigangas movidos para o Backlog de Polimentos) |
+| 8.2 | Auditoria final contra o livro | ✅ **Concluída (2026-07-08).** Script de auditoria confirmou estatísticas exatas do PHB pt-BR: 9 raças (20 variantes), 12 classes (40 subclasses - removido "Gloom Stalker" extraído por engano), 13 antecedentes, 42 talentos, 361 magias, loja 100% PHB. Tudo verificado. |
+| 8.3 | Deploy estático | ⏩ **Adiado para o Pós-Testes.** (Vercel/Netlify + smoke test do fluxo completo aguardando homologação local com usuários reais) |
+
+---
+
+## Fase 9 — Arquitetura de Multi-Sistemas & Integração Ordem Paranormal
+
+> **Fonte da verdade (Ordem Paranormal):** `C:\Users\jotap\OneDrive\DnD\livros\jamboeditora-ordem-paranormal-v10-1_6303ef296f48a_240220_145308.pdf` (pt-BR, 322 páginas, texto extraível via `pdf-parse` — verificado 2026-07-08, mesmo padrão usado no D&D). Pipeline idêntico ao do CLAUDE.md: `Livro → docs/ordem-paranormal/*.md → src/systems/ordem/data/*.json → tipos + utils + testes → UI`.
+>
+> **Cache do texto extraído:** `docs/_book-extracts/ordem-paranormal.txt` (322 páginas, texto puro com marcadores `===== PAGINA N =====`, ~816 KB). Gerado uma vez via `pdf-parse` (`PDFParse` API v2.4.5+, `new PDFParse({ data }).getText()`) e versionado **fora do git** (`.gitignore`) — evita re-extrair o PDF a cada sessão nova; se o arquivo sumir, é só re-rodar a extração (leva menos de 1 min). Todas as citações de regra abaixo foram conferidas neste arquivo, não de memória.
+
+### Recorte do livro — o que entra na ficha, o que fica de fora
+
+O livro básico do OP mistura conteúdo de **jogador** e de **mestre** no mesmo volume (diferente do D&D, que separa PHB/DMG/MM em livros distintos). Sumário conferido linha a linha no PDF:
+
+| Capítulo | Conteúdo | Entra na V1? |
+| - | - | - |
+| 1. Criação de Personagem | Conceito, atributos, origem, classe, perícias, toques finais | ✅ núcleo do wizard |
+| 2. Perícias | 28 perícias, cada uma com atributo-base e bônus fixo por treinamento | ✅ |
+| 3. Equipamento | Patente, capacidade de carga, armas, proteções, itens gerais | ✅ com ressalva — ver decisão abaixo |
+| 4. Regras | Fórmulas derivadas (PV, PE, Sanidade, Defesa, iniciativa) | ✅ só o necessário pra derivar a ficha — não as regras de mesa (investigação, combate tático) |
+| 5. O Outro Lado | Exposição Paranormal (NEX), Poderes Paranormais, **Rituais** | ✅ parcial — NEX, poderes e rituais (o "sistema de magia" do OP); ❌ Entidades do Outro Lado e Itens Amaldiçoados (conteúdo de mestre/tesouro, não de criação) |
+| 6. O Mestre | Preparação de sessão, gerador de missões, arbitragem | ❌ fora — 100% conteúdo de mestre |
+| 7. Ameaças | Bestiário completo (criaturas de Sangue/Morte/Conhecimento/Energia) | ❌ fora — equivalente ao Monster Manual |
+| 8. O Mundo de Ordem Paranormal | Organizações, lore | ❌ fora — worldbuilding, não afeta a ficha |
+
+Mesma régua já aplicada ao D&D: fichas de jogador, não conteúdo de mestre.
+
+### Estrutura de regras do OP (leitura profunda dos Caps. 1–3 e das seções relevantes do Cap. 5 — registrada pra não regredir no meio do trabalho, e pra não desenhar o módulo "no estilo do D&D" por preguiça de reler o livro)
+
+**Atributos e testes**
+- **5 atributos** (Agilidade, Força, Intelecto, Presença, Vigor) — sem "modificador" como D&D: um teste rola **N d20 e usa o melhor** (N = valor do atributo); atributo 0 rola 2d20 e usa o **pior**. Criação: todos começam em 1, +4 pontos pra distribuir, teto inicial 3, pode zerar um atributo pra ganhar +1 ponto extra (mesmo *formato* de decisão que o point buy do D&D — cogitar reaproveitamento de UI na Fase 11, não do zero).
+- Intelecto tem efeito colateral direto na ficha: concede **perícias treinadas adicionais em quantidade igual ao seu valor** (não é só "atributo-chave de Ciências/Investigação/etc.").
+
+**Perícias (Cap. 2) — bem diferente do "proficiente ou não" do D&D**
+- **28 perícias** (não é a contagem genérica do sumário — conferidas 1 a 1 na Tabela 2.1): Acrobacia, Adestramento, Artes, Atletismo, Atualidades, Ciências, Crime, Diplomacia, Enganação, Fortitude, Furtividade, Iniciativa, Intimidação, Intuição, Investigação, Luta, Medicina, Ocultismo, Percepção, Pilotagem, Pontaria, Profissão, Reflexos, Religião, Sobrevivência, Tática, Tecnologia, Vontade.
+- Bônus por grau de treinamento — **fixo, não escala com nível**: Destreinado +0, Treinado +5, Veterano +10, Expert +15.
+- Um subconjunto é "**só treinada**" (Adestramento, Artes, Ciências, Crime, Ocultismo, Pilotagem, Profissão, Religião, Tática, Tecnologia) — sem treinamento, a perícia **não pode ser usada de jeito nenhum** (diferente do D&D, onde qualquer perícia é testável, treinada ou não). Isso importa pro validador de "ficha completa": escolher perícias erradas pode deixar o personagem sem conseguir usar rituais (exige Ocultismo) ou pilotar (exige Pilotagem), por exemplo.
+- Um subconjunto sofre "**penalidade de carga**" (Acrobacia, Crime, Furtividade) — liga direto com a capacidade de carga do Cap. 3.
+
+**Classes, trilhas e NEX (Caps. 1 e 5)**
+- **3 classes fixas** (Combatente, Especialista, Ocultista), cada uma com **5 trilhas** (= 15 trilhas, equivalente a subclasses). Cadência **igual nas 3 classes** (conferida nos exemplos de trilha de cada uma — Aniquilador/combatente, Atirador de Elite/especialista, Conduíte/ocultista): trilha escolhida em **NEX 10%**, novo poder da trilha em **NEX 40%, 65% e 99%** — 4 entregas fixas, não variável por trilha como eu tinha registrado antes (estava errado).
+- Cada classe também tem um slot repetido de "**Poder de [Classe]**" — uma lista própria (Poderes de Combatente / de Especialista / de Ocultista) da qual você escolhe 1 em **NEX 15%**, outro em **NEX 30%** e mais um a cada **15 pontos de NEX** depois disso (45, 60, 75, 90...) — bem mais frequente que o ASI/talento do D&D (a cada 4-5 níveis). Tamanho exato de cada lista fica pra catalogar na Fase 13.
+- Em **NEX 50%** todas as classes ganham "Versatilidade": trocar o próprio poder de classe por um da trilha alternativa, ou o 2º ponto em perícia por perícia extra (varia por classe — conferir ao digitalizar).
+- **Progressão por NEX** (Nível de Exposição Paranormal), não por nível de personagem: **5% → 99%** em passos de 5% (5, 10, 15... 95) + um degrau final de 99% (não 100%) = **20 degraus**, estruturalmente paralelo aos 20 níveis do D&D. **NEX 100% não é alcançável por progressão normal** — o livro é explícito que exige um evento especial ("Desconjuração") e tem consequências narrativas graves; portanto o teto prático da progressão jogável é **99%**, não 100%. Cada degrau concede PV/PE/Sanidade (conforme Vigor/Presença) e o limite de PE gasto por turno (Tabela 1.2, 1 em NEX 5% até 20 em NEX 99%).
+- **15 origens** (equivalente a antecedentes), cada uma dá 2 perícias treinadas + 1 poder de origem; o livro também permite sortear por 2d20 numa tabela (nice-to-have, não essencial).
+
+**Rituais (magia) — Cap. 5**
+- Organizados por elemento (Sangue, Morte, Conhecimento, Energia, Medo — 5 elementos, não 4 como eu havia registrado) × círculo (1º ao 4º — só 4 "níveis de magia", bem mais enxuto que os 9 do D&D). Só o Ocultista conjura por padrão; limite de rituais conhecidos depende do Intelecto.
+
+**Equipamento e Patente (Cap. 3) — sistema completamente diferente do "comprar com ouro" do D&D**
+- **Patente ≠ NEX.** NEX mede poder individual do agente; Patente mede posição hierárquica *dentro da Ordem* e é ganha com **Pontos de Prestígio (PP)**, concedidos pelo mestre ao fim de cada missão (+10 resolver o caso, +2 por pista, −2/−5 por mortes) — **não existe forma de "criar" um personagem já em patente alta**; todo agente novo começa **Recruta (0 PP)**. Isso é fundamentalmente incompatível com um criador de fichas estático: Patente é um recurso de campanha, não de criação.
+- O que a Patente concede: um **limite de crédito** (Baixo/Médio/Alto/Ilimitado, pra compras gerais durante uma missão) e um **limite de itens por categoria** requisitáveis a cada missão (a Ordem "empresta" equipamento, não é posse permanente): Recruta = itens de Categoria 0 ilimitados (só limitados pela carga) + até 2 de Categoria I; nada de II/III/IV. Os limites sobem com a patente (Tabela 3.1).
+- **Capacidade de carga**: 5 espaços por ponto de Força (2 se Força 0); passar do limite dá sobrecarga (−5 Defesa/perícias de carga, −3m deslocamento); nunca pode passar do dobro do limite.
+- O próprio livro resolve a tensão "personagem novo não tem Patente pra comprar nada" com uma saída oficial: *"Equipamento Inicial. Para acelerar o início da primeira sessão, escolha um equipamento padrão para seu personagem e anote-o em sua ficha."* — ou seja, o livro já prevê um **loadout inicial simplificado**, não o sistema de Patente completo, pra character creation.
+- Armas são categorizadas por proficiência (Simples — todos sabem; Táticas — só combatentes começam sabendo; Pesadas — ninguém começa sabendo) × tipo (corpo a corpo / à distância: arremesso, disparo, fogo) × empunhadura (leve/uma mão/duas mãos), com categoria (0/I/II/III), dano, crítico, alcance, tipo de dano e espaço — tabela de complexidade parecida com a de armas do D&D, boa candidata a JSON direto.
+
+### ✅ Decisão de escopo pro equipamento (confirmada com você em 2026-07-08)
+
+Fechado: **não seguimos a Patente completa** (é sistema de campanha, não de criação — nem faria sentido pedir "quantos PP você tem" na criação de um personagem novo, que sempre começa Recruta). A Fase 14 implementa o que o próprio livro sugere pra criação — um **loadout inicial no padrão Recruta**: escolher livremente itens de Categoria 0 e até 2 de Categoria I, restrito por capacidade de carga (5 × Força, 2 se Força 0) e por proficiência de arma da classe. **Não é "por nível" como o D&D** (lá quem define é o nível do personagem e a riqueza rolada); aqui quem define é a **Patente** (fixa em Recruta na criação) e a **carga que o personagem aguenta carregar**, dois eixos que não têm equivalente direto no modelo do D&D — não dá pra copiar o componente da loja de lá.
+
+### 🔧 Achado: o status da Fase 9.1 estava incorreto — reaberta como 9.1b
+
+A tabela antiga marcava "9.1 Refatoração de Isolamento" como ✅ concluída, mas a árvore de trabalho atual (ainda não commitada) mostra que a divisão foi só **física**: os arquivos do D&D foram movidos pra `src/systems/dnd5e/`, mas a interface `IRpgSystem` (`src/core/types/system.ts`) e o `AppStore` (`src/core/stores/appStore.ts`) são só esqueleto — nada os consome de fato. `App.tsx` decide o sistema ativo com um `if` fixo pra `'dnd5e'`; `Dnd5eApp.tsx` não implementa `IRpgSystem` — hardcoda os próprios steps, `Gallery`, `PrintableSheet` e `StepIndicator`. E `Gallery.tsx`, `PrintableSheet.tsx`, `StepIndicator.tsx` e `InfoTooltip.tsx` continuam fisicamente em `src/components/` mas importam direto de `systems/dnd5e/*` (`characterStore`, `WIZARD_STEPS`, `GLOSSARY`...) — ou seja, hoje **são** componentes do D&D, só não estão na pasta certa.
+
+Se começarmos o módulo Ordem por cima disso, ou duplicamos ~150 linhas de "chrome" (header/footer/step indicator/alternância print) por sistema, ou fechamos a genericização primeiro. Terminar isso é **pré-requisito**, não trabalho paralelo — por isso vira fase própria abaixo, antes de qualquer linha de dado do OP.
+
+### Visão geral das fases
+
+| Fase | Tema | Por quê nesta ordem | Esforço |
+| - | - | - | - |
+| 9.1b | Fechar a genericização do core (AppShell + registro de sistemas) | Pré-requisito — sem isso, cada sistema novo duplica chrome | M |
+| 10 | Ordem — fundação de dados (atributos, origens, classes, perícias) | Espelha as Fases 1–2 do D&D: dados base antes de fluxo | M |
+| 11 | Ordem — fluxo de criação (passo a passo do agente) | UI do wizard sobre os dados da Fase 10 | L |
+| 12 | Ordem — progressão por NEX (5%→99%: habilidades de classe + trilhas) | Equivalente à Fase 3 do D&D (o épico de dados) | XL |
+| 13 | Ordem — Poderes e Rituais | Equivalente a Talentos (Fase 4) + Magias do D&D | L |
+| 14 | Ordem — Equipamento inicial (loadout padrão Recruta) | Escopo fechado — ver decisão acima | M |
+| 15 | Ordem — ficha, revisão, export PDF, biblioteca | Reuso máximo do core (armazenamento/galeria já genéricos após 9.1b) | S–M |
+| 16 | Auditoria final contra o livro + seleção de sistema no App | Paralelo à Fase 8 do D&D | S |
+
+**Fase 9.1b — pronto quando:** um `AppShell` genérico no core renderiza qualquer `IRpgSystem` (steps, Gallery, PrintableSheet, alternância galeria/print) sem nenhuma referência a D&D; `Dnd5eApp` vira a implementação de `IRpgSystem` pro D&D; `Gallery`/`PrintableSheet`/`StepIndicator`/`InfoTooltip` migram pra dentro de `src/systems/dnd5e/` (ou a parte mecânica deles vira genérica de verdade, quando fizer sentido reaproveitar). D&D continua funcionando 100% igual — build/lint/testes verdes, refatoração invisível pro usuário.
+
+**Fase 10 — pronto quando:** `src/systems/ordem/data/*.json` tem os 5 atributos, as 28 perícias (atributo-base, só-treinada?, penalidade de carga?), as 15 origens (perícias + poder) e as 3 classes (PV/PE/SAN/PE-por-turno iniciais, perícias, proficiências de arma) digitalizados e conferidos linha a linha contra o livro, com tipos TS estritos — zero UI ainda.
+
+**Fase 11 — pronto quando:** um agente NEX 5% nasce completo (conceito, atributos, origem, classe, perícias — respeitando as perícias "só treinada" e o bônus de Intelecto em perícias extras) num wizard próprio (`useOrdemStore`), salvável/exportável pela biblioteca do core.
+
+**Fase 12 — pronto quando:** um agente de NEX N (5 a 99, nunca 100) exibe exatamente as habilidades de classe (Ataque Especial/Perícia de Especialista/Ritual do ocultista — nome varia por classe, conferir) e de trilha que o livro dá até aquele NEX, com a trilha escolhida em NEX 10% e os degraus fixos de trilha (40/65/99) e de Poder de Classe (15/30/+15 cada) implementados como slots reais, não texto solto — e a "Versatilidade" de NEX 50% contemplada.
+
+**Fase 13 — pronto quando:** Ocultistas escolhem rituais (por círculo 1º–4º e elemento, limitados pelo Intelecto) e qualquer classe escolhe Poderes da sua lista própria (Combatente/Especialista/Ocultista, respeitando pré-requisitos) nos slots abertos pela Fase 12 — mesmo padrão de "slot real" já usado nas escolhas de progressão do D&D (Fase 3.5b), mas com cadência e listas do OP, não copiadas do D&D.
+
+**Fase 14 — pronto quando:** a ficha nasce com um loadout inicial padrão Recruta (Categoria 0 ilimitada + até 2 de Categoria I, restrito por carga = 5×Força e por proficiência de arma da classe), conforme a decisão de escopo acima — sem simular Patente/PP de campanha.
+
+**Fase 15 — pronto quando:** revisão completa + PDF imprimível (reaproveitando o padrão do `PrintableSheet`) + biblioteca lista personagens dos dois sistemas misturados, sem conflito de dados entre D&D e OP.
+
+**Fase 16 — pronto quando:** auditoria de contagens (28 perícias, 15 origens, 15 trilhas, N poderes por classe, N rituais por círculo/elemento) bate 1:1 com o livro; tela de seleção de sistema no `App.tsx` funcional, D&D e Ordem Paranormal lado a lado.
 
 ---
 
@@ -277,10 +370,15 @@ Decisão de formato: ficha **própria** (não a oficial da WotC), em português,
 
 ---
 
-## 📌 Backlog de Polimentos e Melhorias (Icebox)
+## 📌 Backlog de Polimentos e Melhorias (Icebox / Pós-Testes)
 
-Pequenos detalhes, abstrações ou ideias de melhoria contínua identificados durante o desenvolvimento que não formam uma "Fase" principal do roadmap, mas ficam registrados como sugestões para evoluções futuras:
+Pequenos detalhes, abstrações, gamificação ou ideias de melhoria contínua identificados durante o desenvolvimento (aguardando feedback de playtest para priorização):
 
+- **Gamificação & UX:**
+  - Glossário ampliado (adicionar mais além dos 10 termos iniciais).
+  - Medidor de completude da ficha ("Falta escolher X atributos").
+  - Notas "para iniciantes" visíveis nos cards de classe (ex: "Focado em dano mágico" vs "Complexo").
+  - Sorteio de bugiganga aleatória na criação do personagem (momento de diversão / alívio).
 - **Exportação de PDF — Detalhamento de Armas:** Pode ser interessante adicionar uma tabela individual para cada arma equipada, unindo a fórmula global de acerto com o dado de dano específico da arma (já disponível em `weapons.json`), facilitando a visualização rápida durante o combate.
 - **Exportação de PDF — Página de Magias (Grimório):** Como o banco de dados já possui a descrição completa de todas as magias (`spells.json`), uma excelente melhoria seria gerar uma segunda página (anexo) no PDF dedicada exclusivamente a imprimir os textos completos das magias conhecidas do personagem.
 - **Exportação de PDF — Traços de Antecedente:** A ficha atualmente resolve com precisão matemática as proficiências e equipamentos dos antecedentes. Seria uma boa adição considerar imprimir também a "habilidade narrativa" de cada antecedente (ex: "Contato Criminal" do Criminoso) na seção de Traços.

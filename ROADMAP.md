@@ -336,7 +336,7 @@ Se começarmos o módulo Ordem por cima disso, ou duplicamos ~150 linhas de "chr
 | - | - | - | - |
 | 9.1b | ✅ Fechar a genericização do core (registro de sistemas + `IRpgSystem.Component`) | Pré-requisito — sem isso, cada sistema novo duplica chrome | M |
 | 10 | ✅ Ordem — fundação de dados (atributos, perícias, origens, classes) | Espelha as Fases 1–2 do D&D: dados base antes de fluxo | M |
-| 11 | Ordem — fluxo de criação (passo a passo do agente) | UI do wizard sobre os dados da Fase 10 | L |
+| 11 | ✅ Ordem — fluxo de criação (passo a passo do agente) | UI do wizard sobre os dados da Fase 10 | L |
 | 12 | Ordem — progressão por NEX (5%→99%: habilidades de classe + trilhas) | Equivalente à Fase 3 do D&D (o épico de dados) | XL |
 | 13 | Ordem — Poderes e Rituais | Equivalente a Talentos (Fase 4) + Magias do D&D | L |
 | 14 | Ordem — Equipamento inicial (loadout padrão Recruta) | Escopo fechado — ver decisão acima | M |
@@ -347,7 +347,7 @@ Se começarmos o módulo Ordem por cima disso, ou duplicamos ~150 linhas de "chr
 
 **Fase 10 — ✅ CONCLUÍDA (2026-07-08).** `src/systems/ordem/data/*.json` tem os 5 atributos, as 28 perícias (atributo-base, só-treinada?, penalidade de carga?), as 26 origens (perícias + poder) e as 3 classes (PV/PE/SAN iniciais e por NEX, perícias, proficiências de arma/proteção) digitalizados e conferidos linha a linha contra o livro, com tipos TS estritos — zero UI ainda. Auditoria estrutural automatizada (contagens, ids duplicados, referências cruzadas perícia↔atributo e origem/classe↔perícia, cobertura contígua 2–40 da tabela de sorteio de origem) sem divergências. Digitalização curada em `docs/ordem-paranormal/*.md`.
 
-**Fase 11 — pronto quando:** um agente NEX 5% nasce completo (conceito, atributos, origem, classe, perícias — respeitando as perícias "só treinada" e o bônus de Intelecto em perícias extras) num wizard próprio (`useOrdemStore`), salvável/exportável pela biblioteca do core.
+**Fase 11 — ✅ CONCLUÍDA (2026-07-09).** Wizard de 6 passos (Nome+Conceito, Atributos, Origem, Classe, Perícias, Revisão) em `useOrdemStore` próprio, com biblioteca/storage isolados do D&D (chave de localStorage separada). `ordemSystem` implementa `IRpgSystem` de verdade — `App.tsx` já lista os dois sistemas lado a lado. Regras aplicadas: point-buy validado (soma sempre 9, no máx. 1 atributo zerado), a regra do livro "perícia já recebida pela origem exclui a opção" nos grupos de escolha da classe, e o caso do Amnésico (perícias "à escolha do mestre" viram escolha do jogador, já que não há mestre no app). 44 testes novos + fluxo completo validado manualmente num browser real (Playwright temporário), zero erros de console. Achado durante o teste: o app não tinha nenhum jeito de sair do D&D pra escolher outro sistema — adicionado link "Trocar de sistema" no rodapé de ambos os apps.
 
 **Fase 12 — pronto quando:** um agente de NEX N (5 a 99, nunca 100) exibe exatamente as habilidades de classe (Ataque Especial/Perícia de Especialista/Ritual do ocultista — nome varia por classe, conferir) e de trilha que o livro dá até aquele NEX, com a trilha escolhida em NEX 10% e os degraus fixos de trilha (40/65/99) e de Poder de Classe (15/30/+15 cada) implementados como slots reais, não texto solto — e a "Versatilidade" de NEX 50% contemplada.
 

@@ -67,7 +67,7 @@
 - **Triagem:** 🎨 UX/polish (usabilidade na mesa)
 - **Nota:** este item **já estava no backlog do ROADMAP.md** ("Exportação de PDF — Espaços de Controle de Sessão / Tracking", linha ~389): espaços em branco pra PV Atual, PV Temporário, bolinhas de Teste contra a Morte, checkboxes de slots de magia e recursos de classe (Fúria, Ki etc.) gastos. O usuário confirma que isso é real necessidade de uso, não só ideia interna — vira prioridade real, não mais icebox.
 - **A decidir na execução:** layout dos espaços (caixa de texto em branco vs. checkboxes/bolinhas), quais contadores entram na v1 desse item (PV atual é o pedido explícito; os demais — PV temp, testes contra morte, slots/recursos — podem entrar junto ou ficar pra uma 2ª leva).
-- **Status:** registrado (sem ação)
+- **Status:** ✅ CORRIGIDO — box "Controle de Sessão (preencha a lápis)" na ficha impressa. **D&D:** PV Atual (/máx), PV Temporário (linhas em branco), Testes contra a Morte (○○○/○○○), círculos ○ marcáveis nos espaços de magia e nos recursos de pool (Fúria/Ki etc. — os que são dado, como Ataque Furtivo, ficam sem círculo). **Ordem:** PV/PE/Sanidade atuais (linhas em branco / máx). Feito nos dois sistemas.
 
 ### F8 — Seleção de Trilha (Ordem) não explica a trilha nem mostra as habilidades futuras
 - **Sistema:** Ordem Paranormal

@@ -44,9 +44,19 @@ export function PrintableSheet() {
         <StatBox label="Sanidade" value={stats.sanity} />
         <StatBox label="Defesa" value={stats.defense} />
       </section>
-      <p className="text-center text-xs text-gray-600 mb-4">
+      <p className="text-center text-xs text-gray-600 mb-2">
         Limite de PE por turno: <strong>{getPeLimit(draft.nex)}</strong> · Deslocamento: <strong>9m</strong>
       </p>
+
+      {/* Controle de sessão — espaços pra preencher a lápis na mesa */}
+      <section className="border border-gray-400 rounded p-2 mb-4">
+        <p className="text-[10px] uppercase text-gray-600 mb-1">Controle de Sessão (preencha a lápis)</p>
+        <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-gray-700 items-baseline">
+          <span>PV Atual: <span className="inline-block border-b border-gray-500 w-12" /> / {stats.hp}</span>
+          <span>PE Atuais: <span className="inline-block border-b border-gray-500 w-12" /> / {stats.pe}</span>
+          <span>Sanidade Atual: <span className="inline-block border-b border-gray-500 w-12" /> / {stats.sanity}</span>
+        </div>
+      </section>
 
       <section className="mb-4">
         <h2 className="font-bold uppercase text-sm tracking-wide border-b border-gray-400 mb-2">Atributos</h2>

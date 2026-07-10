@@ -127,6 +127,12 @@ function gatherInventory(draft: CharacterDraft): string[] {
   return items
 }
 
+/** Círculos vazios (○) pra marcar usos a lápis na mesa. Acima de 12, vazio (o número já indica). */
+function trackCircles(count: number): string {
+  if (count <= 0 || count > 12) return ''
+  return Array(count).fill('○').join(' ')
+}
+
 export function PrintableSheet() {
   const draft = useCharacterStore(state => state.draft)
 
@@ -229,6 +235,15 @@ export function PrintableSheet() {
         <Stat label="Nível" value={String(level)} />
       </Grid>
 
+      {/* Controle de sessão — espaços em branco pra preencher a lápis na mesa */}
+      <Box title="Controle de Sessão (preencha a lápis)" className="mb-4">
+        <div className="flex flex-wrap gap-x-6 gap-y-1.5 text-xs text-gray-700 items-baseline">
+          <span>PV Atual: <span className="inline-block border-b border-gray-500 w-14" />{hp !== null ? ` / ${hp}` : ''}</span>
+          <span>PV Temporário: <span className="inline-block border-b border-gray-500 w-14" /></span>
+          <span>Testes contra a Morte — Sucessos: ○ ○ ○ · Falhas: ○ ○ ○</span>
+        </div>
+      </Box>
+
       <div className="grid grid-cols-2 gap-4 mb-4">
         {/* Resistências */}
         <Box title="Testes de Resistência">
@@ -322,8 +337,8 @@ export function PrintableSheet() {
           <Box title="Magias" className="mb-4">
             {slots.length > 0 && (
               <p className="text-xs mb-1">
-                <span className="text-gray-600">Espaços: </span>
-                {slots.map(s => `${s.lvl}º: ${s.count}`).join(' · ')}
+                <span className="text-gray-600">Espaços (marque os gastos): </span>
+                {slots.map(s => `${s.lvl}º: ${trackCircles(s.count) || s.count}`).join(' · ')}
                 {cls.id === 'warlock' && ' (Magia de Pacto — recupera em descanso curto)'}
               </p>
             )}
@@ -338,7 +353,15 @@ export function PrintableSheet() {
       {/* Recursos de classe */}
       {resources.length > 0 && (
         <Box title="Recursos de Classe" className="mb-4">
-          <p className="text-xs">{resources.map(r => `${r.label}: ${r.value}`).join(' · ')}</p>
+          <p className="text-xs">
+            {resources.map(r => {
+              // Recursos que são um número de usos (Fúrias, Ki...) ganham círculos pra marcar;
+              // os que são dado (Ataque Furtivo 2d6, Artes Marciais d6) ficam só com o valor.
+              const isPool = /^\d+$/.test(String(r.value))
+              const circles = isPool ? trackCircles(Number(r.value)) : ''
+              return `${r.label}: ${r.value}${circles ? ` ${circles}` : ''}`
+            }).join(' · ')}
+          </p>
         </Box>
       )}
 

@@ -88,7 +88,7 @@
 - **Confirmado no código:** `amaldicoar-arma` é o **único** ritual do jogo com `elements.length > 1` (`["knowledge","energy","death","blood"]` — os outros 80 rituais têm elemento único). Hoje o `RitualsStep` só lista os 4 elementos juntos (`Conhecimento/Energia/Morte/Sangue`) tanto no `<option>` do dropdown quanto no painel de detalhe — não existe nenhum campo no draft pra registrar qual dos 4 o jogador escolheu para aquela instância do ritual.
 - **Triagem:** 📖 fidelidade ao livro / gap de modelagem (é uma escolha de regra real faltando, não só clareza de texto — mais parecido com as "escolhas de progressão" que viraram seletor real no D&D, Fase 3.5b, do que com um ajuste de UX puro)
 - **A decidir na execução:** provavelmente precisa de um campo novo no draft (algo como `ritualElementChoices: Record<string, OrdemElement>`, chaveado pelo id do ritual) pra guardar a escolha quando o ritual selecionado for `amaldicoar-arma`; UI mostra um seletor de elemento extra só quando esse ritual específico é escolhido; Revisão/ficha impressa devem exibir o elemento escolhido, não os 4.
-- **Status:** registrado (sem ação)
+- **Status:** ✅ CORRIGIDO — novo campo `ritualElementChoices: Record<string, OrdemElement>` no draft (reset no `setClass`, coberto no import); `RitualsStep` mostra um seletor de elemento quando o ritual escolhido é multi-elemento e bloqueia o avanço até escolher (`isRitualStepComplete` exige o elemento); Revisão e ficha exibem só o elemento escolhido via `formatRitualElementLabel`. +2 testes unitários + asserção no smoke test.
 
 ### F10 — Patente não é perguntada/explicada na criação (Ordem)
 - **Sistema:** Ordem Paranormal

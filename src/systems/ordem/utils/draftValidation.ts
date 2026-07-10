@@ -72,7 +72,7 @@ export function isStepComplete(draft: OrdemCharacterDraft, step: WizardStep): bo
 
     case 'rituals': {
       if (draft.class !== 'occultist') return true
-      return isRitualStepComplete(draft.nex, draft.class, draft.ritualChoices)
+      return isRitualStepComplete(draft.nex, draft.class, draft.ritualChoices, draft.ritualElementChoices)
     }
 
     case 'equipment':
@@ -114,6 +114,9 @@ export function sanitizeImportedDraft(parsed: unknown): OrdemCharacterDraft | nu
     skillGradeChoices: Array.isArray(p.skillGradeChoices) ? p.skillGradeChoices : [],
     versatilityChoice: p.versatilityChoice ?? null,
     ritualChoices: Array.isArray(p.ritualChoices) ? p.ritualChoices : [],
+    ritualElementChoices: p.ritualElementChoices && typeof p.ritualElementChoices === 'object' && !Array.isArray(p.ritualElementChoices)
+      ? p.ritualElementChoices
+      : {},
     equipmentChoices: Array.isArray(p.equipmentChoices) ? p.equipmentChoices : [],
   }
 }

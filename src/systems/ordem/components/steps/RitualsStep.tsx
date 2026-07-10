@@ -1,6 +1,7 @@
 import { useOrdemStore } from '../../stores/characterStore'
-import { getRitualSlotsCount, getMaxRitualCircle, getAvailableRituals, getRitualSlotNex, isRitualStepComplete, ELEMENT_NAMES } from '../../utils/ritualUtils'
+import { getRitualSlotsCount, getMaxRitualCircle, getAvailableRituals, getRitualSlotNex, isRitualStepComplete, ritualNeedsElementChoice, ELEMENT_NAMES } from '../../utils/ritualUtils'
 import { STEP_LABELS } from '../../types/character'
+import type { OrdemElement } from '../../types/ritual'
 
 const ELEMENT_COLORS: Record<string, string> = {
   blood: 'text-red-500 bg-red-950/30 border-red-900',
@@ -14,6 +15,7 @@ export function RitualsStep() {
   const nex = useOrdemStore(state => state.draft.nex)
   const charClass = useOrdemStore(state => state.draft.class)
   const ritualChoices = useOrdemStore(state => state.draft.ritualChoices)
+  const ritualElementChoices = useOrdemStore(state => state.draft.ritualElementChoices)
   const updateDraft = useOrdemStore(state => state.updateDraft)
   const nextStep = useOrdemStore(state => state.nextStep)
   const prevStep = useOrdemStore(state => state.prevStep)
@@ -45,9 +47,13 @@ export function RitualsStep() {
     updateDraft({ ritualChoices: newChoices })
   }
 
-  // Usa o mesmo validador do store (exige todos os slots preenchidos e sem repetição),
-  // para o botão "Avançar" não divergir do gate de nextStep.
-  const isComplete = isRitualStepComplete(nex, charClass, ritualChoices)
+  const handleElement = (ritualId: string, element: OrdemElement) => {
+    updateDraft({ ritualElementChoices: { ...ritualElementChoices, [ritualId]: element } })
+  }
+
+  // Usa o mesmo validador do store (exige slots preenchidos, sem repetição e com o elemento
+  // escolhido para rituais multi-elemento), para o botão "Avançar" não divergir do gate de nextStep.
+  const isComplete = isRitualStepComplete(nex, charClass, ritualChoices, ritualElementChoices)
 
   return (
     <div className="max-w-3xl mx-auto space-y-8 animate-fade-in">
@@ -138,6 +144,31 @@ export function RitualsStep() {
                           {r.resistance && ` · Resistência: ${r.resistance}`}
                         </p>
                         <p className="text-parchment-500 leading-relaxed">{r.description}</p>
+                        {ritualNeedsElementChoice(r) && (
+                          <div className="mt-3 pt-3 border-t border-parchment-900/50">
+                            <label className="block text-xs font-bold text-gold-500 mb-1.5">
+                              Escolha o elemento deste ritual
+                              <span className="font-normal text-parchment-600"> — ele passa a ser só desse elemento (define o tipo do dano)</span>
+                            </label>
+                            <div className="flex flex-wrap gap-1.5">
+                              {r.elements.map(e => {
+                                const active = ritualElementChoices[r.id] === e
+                                return (
+                                  <button
+                                    key={e}
+                                    onClick={() => handleElement(r.id, e)}
+                                    className={`text-xs uppercase tracking-wider font-bold px-2.5 py-1 rounded border transition-all ${active ? ELEMENT_COLORS[e] : 'text-parchment-600 border-parchment-800 hover:border-parchment-600'}`}
+                                  >
+                                    {ELEMENT_NAMES[e]}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                            {!ritualElementChoices[r.id] && (
+                              <p className="text-red-400/80 text-[11px] mt-1.5">Escolha um elemento para poder avançar.</p>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )
                   })()}

@@ -5,6 +5,9 @@ import {
   getRitualSlotNex,
   getAvailableRituals,
   isRitualStepComplete,
+  ritualNeedsElementChoice,
+  formatRitualElementLabel,
+  getRitualById,
   RITUALS,
 } from '../ritualUtils'
 
@@ -100,5 +103,35 @@ describe('ritualUtils', () => {
     expect(isRitualStepComplete(10, 'occultist', ['r1', 'r2', 'r3', 'r1'])).toBe(false)
     // slots além do necessário (ex.: NEX foi reduzido) são ignorados na validação
     expect(isRitualStepComplete(5, 'occultist', ['r1', 'r2', 'r3', 'r3'])).toBe(true)
+  })
+})
+
+describe('escolha de elemento em rituais multi-elemento (F9 — Amaldiçoar Arma)', () => {
+  const amaldicoar = getRitualById('amaldicoar-arma')!
+  const singleElement = RITUALS.find(r => r.elements.length === 1)!
+
+  it('ritualNeedsElementChoice: só rituais com mais de um elemento exigem escolha', () => {
+    expect(ritualNeedsElementChoice(amaldicoar)).toBe(true)
+    expect(ritualNeedsElementChoice(singleElement)).toBe(false)
+  })
+
+  it('isRitualStepComplete exige o elemento escolhido para Amaldiçoar Arma', () => {
+    const choices = ['amaldicoar-arma', 'r2', 'r3'] // 3 slots (NEX 5%)
+    // sem elemento escolhido → incompleto
+    expect(isRitualStepComplete(5, 'occultist', choices)).toBe(false)
+    expect(isRitualStepComplete(5, 'occultist', choices, {})).toBe(false)
+    // com elemento escolhido → completo
+    expect(isRitualStepComplete(5, 'occultist', choices, { 'amaldicoar-arma': 'blood' })).toBe(true)
+  })
+
+  it('formatRitualElementLabel: multi-elemento mostra só o escolhido; sem escolha, mostra todos', () => {
+    // com escolha → só o elemento escolhido
+    expect(formatRitualElementLabel(amaldicoar, { 'amaldicoar-arma': 'blood' })).toBe('Sangue')
+    // sem escolha → todos os 4 elementos (independente da ordem no dado)
+    const allLabel = formatRitualElementLabel(amaldicoar, {})
+    expect(allLabel.split('/').sort()).toEqual(['Conhecimento', 'Energia', 'Morte', 'Sangue'])
+    // ritual de elemento único → sempre o próprio elemento (a escolha não se aplica)
+    const soloLabel = formatRitualElementLabel(singleElement)
+    expect(soloLabel.includes('/')).toBe(false)
   })
 })

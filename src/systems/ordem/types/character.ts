@@ -1,3 +1,5 @@
+import type { OrdemElement } from './ritual'
+
 export type OrdemAttributes = {
   agility: number
   strength: number
@@ -46,6 +48,11 @@ export type OrdemCharacterDraft = {
   powerChoices: (string | null)[]
   /** Rituais aprendidos (Escolhido pelo Outro Lado): 3 iniciais + 1 a cada aumento de NEX. */
   ritualChoices: (string | null)[]
+  /**
+   * Elemento escolhido para rituais multi-elemento (ex.: Amaldiçoar Arma), keyed pelo id do ritual.
+   * O livro: "Quando aprender este ritual, escolha um elemento... o ritual passa a ser do elemento escolhido."
+   */
+  ritualElementChoices: Record<string, OrdemElement>
   /** Atributo aumentado em cada slot alcançado (NEX 20/50/80/95), teto 5. */
   attributeIncreaseChoices: (keyof OrdemAttributes | null)[]
   /** Um array de perícias por slot de Grau de Treinamento alcançado (NEX 35/70). */
@@ -77,6 +84,7 @@ export const EMPTY_DRAFT: OrdemCharacterDraft = {
   trilha: null,
   powerChoices: [],
   ritualChoices: [],
+  ritualElementChoices: {},
   attributeIncreaseChoices: [],
   skillGradeChoices: [],
   versatilityChoice: null,

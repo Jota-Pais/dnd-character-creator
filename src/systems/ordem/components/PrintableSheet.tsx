@@ -6,7 +6,7 @@ import { getTrilha } from '../utils/trilhaUtils'
 import { getPower } from '../utils/powerUtils'
 import { deriveStats, getTrainedSkills, getEffectiveAttributes, getSkillGrade } from '../utils/characterUtils'
 import { getReachedTrilhaSlots, getPeLimit } from '../utils/progressionUtils'
-import { getRitualById, formatElements, getRitualSlotsCount } from '../utils/ritualUtils'
+import { getRitualById, formatRitualElementLabel, getRitualSlotsCount } from '../utils/ritualUtils'
 import { getEquipmentById, getTotalCarryCapacity, getCurrentSpaces, getEquippedDefenseBonus } from '../utils/equipmentUtils'
 
 /**
@@ -118,7 +118,7 @@ export function PrintableSheet() {
             {rituals.map((r, i) => r && (
               <div key={`${r.id}-${i}`} className="text-sm">
                 <span className="font-semibold">{r.name}</span>
-                <span className="text-gray-600"> ({formatElements(r.elements)}, {r.circle}º Círculo)</span>
+                <span className="text-gray-600"> ({formatRitualElementLabel(r, draft.ritualElementChoices)}, {r.circle}º Círculo)</span>
                 <span className="text-gray-500 text-xs"> — {r.execution}, {r.range}, {r.target}, {r.duration}{r.resistance ? `, ${r.resistance}` : ''}</span>
                 <p className="text-gray-700">{r.description}</p>
               </div>

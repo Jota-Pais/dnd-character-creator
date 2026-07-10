@@ -5,7 +5,7 @@ import { getSkillName } from '../../utils/skillUtils'
 import { getTrilha } from '../../utils/trilhaUtils'
 import { getPower } from '../../utils/powerUtils'
 import { deriveStats, getTrainedSkills, getEffectiveAttributes, getSkillGrade } from '../../utils/characterUtils'
-import { getRitualById, formatElements, getRitualSlotsCount } from '../../utils/ritualUtils'
+import { getRitualById, formatRitualElementLabel, getRitualSlotsCount } from '../../utils/ritualUtils'
 import { getEquipmentById, getTotalCarryCapacity, getCurrentSpaces, getEquippedDefenseBonus } from '../../utils/equipmentUtils'
 import { getReachedTrilhaSlots, getPeLimit } from '../../utils/progressionUtils'
 import { exportCharacter } from '../../utils/storage'
@@ -118,7 +118,7 @@ export function ReviewStep() {
             {rituals.map((r, i) => r && (
               <p key={`${r.id}-${i}`} className="text-parchment-500 text-xs">
                 <span className="font-semibold text-parchment-300">{r.name}</span>{' '}
-                <span className="text-parchment-700">({formatElements(r.elements)}, {r.circle}º Círculo)</span>
+                <span className="text-parchment-700">({formatRitualElementLabel(r, draft.ritualElementChoices)}, {r.circle}º Círculo)</span>
               </p>
             ))}
           </div>

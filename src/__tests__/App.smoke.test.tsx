@@ -90,6 +90,8 @@ describe('App (smoke) — Ordem Paranormal', () => {
       class: 'occultist' as const,
       nex: 5,
       ritualChoices: [RITUALS[0].id, RITUALS[1].id, RITUALS[2].id],
+      // RITUALS[2] = amaldicoar-arma (multi-elemento): exige escolha de elemento (F9).
+      ritualElementChoices: { [RITUALS[2].id]: 'blood' as const },
       equipmentChoices: ['faca'],
     }
   }
@@ -102,6 +104,8 @@ describe('App (smoke) — Ordem Paranormal', () => {
     expect(screen.getByText('Defesa')).toBeInTheDocument() // Defesa = 10 + Agilidade (+ proteção)
     expect(screen.getByText(/Rituais Conhecidos/)).toBeInTheDocument()
     expect(screen.getByText(RITUALS[0].name)).toBeInTheDocument()
+    // Amaldiçoar Arma exibe só o elemento escolhido (Sangue), não os 4 (F9)
+    expect(screen.getByText(/\(Sangue, 1º Círculo\)/)).toBeInTheDocument()
     expect(screen.getByText(/Equipamento \(/)).toBeInTheDocument()
   })
 

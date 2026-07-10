@@ -133,6 +133,7 @@ export const useOrdemStore = create<CharacterStore>((set, get) => ({
         // Rituais são exclusivos do Ocultista — trocar de classe descarta escolhas
         // anteriores para não vazar rituais numa ficha de não-conjurador.
         ritualChoices: [],
+        ritualElementChoices: {},
       },
     })),
 

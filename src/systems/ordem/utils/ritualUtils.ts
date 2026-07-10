@@ -16,6 +16,19 @@ export function formatElements(elements: OrdemElement[]): string {
   return elements.map(e => ELEMENT_NAMES[e]).join('/')
 }
 
+/**
+ * Rótulo de elemento(s) de um ritual para exibição: se for multi-elemento (ex.: Amaldiçoar Arma)
+ * e o jogador já escolheu um elemento, mostra só o escolhido; senão, lista todos.
+ */
+export function formatRitualElementLabel(
+  ritual: OrdemRitual,
+  ritualElementChoices: Record<string, OrdemElement> = {}
+): string {
+  const chosen = ritualElementChoices[ritual.id]
+  if (ritual.elements.length > 1 && chosen) return ELEMENT_NAMES[chosen]
+  return formatElements(ritual.elements)
+}
+
 export function getRitualById(id: string): OrdemRitual | undefined {
   return RITUALS.find(r => r.id === id)
 }
@@ -46,10 +59,16 @@ export function getAvailableRituals(maxCircle: OrdemRitualCircle): OrdemRitual[]
   return RITUALS.filter(r => r.circle <= maxCircle)
 }
 
+/** Rituais com mais de um elemento exigem que o jogador escolha um ao aprendê-los (ex.: Amaldiçoar Arma). */
+export function ritualNeedsElementChoice(ritual: OrdemRitual): boolean {
+  return ritual.elements.length > 1
+}
+
 export function isRitualStepComplete(
   nex: number,
   charClass: string | null,
-  ritualChoices: (string | null)[]
+  ritualChoices: (string | null)[],
+  ritualElementChoices: Record<string, OrdemElement> = {}
 ): boolean {
   if (charClass !== 'occultist') return true
 
@@ -58,5 +77,11 @@ export function isRitualStepComplete(
   // Todos os slots preenchidos...
   if (active.length !== expectedCount || active.some(id => !id)) return false
   // ...e sem rituais repetidos (não se conhece o mesmo ritual duas vezes).
-  return new Set(active as string[]).size === expectedCount
+  if (new Set(active as string[]).size !== expectedCount) return false
+  // ...e todo ritual multi-elemento (ex.: Amaldiçoar Arma) precisa ter um elemento escolhido.
+  for (const id of active as string[]) {
+    const ritual = getRitualById(id)
+    if (ritual && ritualNeedsElementChoice(ritual) && !ritualElementChoices[id]) return false
+  }
+  return true
 }

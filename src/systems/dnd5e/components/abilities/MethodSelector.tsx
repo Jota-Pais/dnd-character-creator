@@ -33,6 +33,13 @@ const METHODS: {
     description: 'Role 4d6 (descartando o menor) seis vezes e distribua os resultados.',
     tag: 'Emocionante e imprevisível',
   },
+  {
+    id: 'custom',
+    name: 'Personalizado',
+    emoji: '✏️',
+    description: 'Digite o valor que quiser em cada atributo, de 3 a 18 (a faixa dos dados).',
+    tag: 'Controle total (ou mesa própria)',
+  },
 ]
 
 export function MethodSelector({ selected, onSelect }: Props) {
@@ -41,7 +48,7 @@ export function MethodSelector({ selected, onSelect }: Props) {
       <p className="text-xs font-fantasy text-parchment-600 uppercase tracking-widest mb-3">
         Método de geração
       </p>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {METHODS.map(method => {
           const isSelected = selected === method.id
           return (

@@ -11,6 +11,7 @@ import {
   isAbilitiesStepComplete,
   getProficiencyBonus,
   getPassivePerception,
+  clampCustomScore,
 } from '../abilityScoreUtils'
 import type { AbilityScore } from '../../types/race'
 
@@ -209,5 +210,30 @@ describe('isAbilitiesStepComplete', () => {
       const scores = { STR: 15, DEX: 14, CON: 13, INT: 12, WIS: 11, CHA: 8 }
       expect(isAbilitiesStepComplete('roll', scores, rolled)).toBe(false)
     })
+  })
+
+  describe('custom', () => {
+    it('completo com qualquer combinação dentro de 3 a 18 (sem limite de soma)', () => {
+      expect(isAbilitiesStepComplete('custom', { STR: 18, DEX: 18, CON: 18, INT: 18, WIS: 18, CHA: 18 }, [])).toBe(true)
+      expect(isAbilitiesStepComplete('custom', { STR: 3, DEX: 10, CON: 14, INT: 8, WIS: 16, CHA: 12 }, [])).toBe(true)
+    })
+
+    it('incompleto se algum atributo passa de 18 ou é menor que 3', () => {
+      expect(isAbilitiesStepComplete('custom', { STR: 19, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 }, [])).toBe(false)
+      expect(isAbilitiesStepComplete('custom', { STR: 2, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 }, [])).toBe(false)
+    })
+
+    it('incompleto se algum atributo não foi definido', () => {
+      expect(isAbilitiesStepComplete('custom', { STR: 15, DEX: 14, CON: 13, INT: 12, WIS: 10, CHA: null }, [])).toBe(false)
+    })
+  })
+})
+
+describe('clampCustomScore', () => {
+  it('limita à faixa 3–18 e arredonda', () => {
+    expect(clampCustomScore(20)).toBe(18)
+    expect(clampCustomScore(1)).toBe(3)
+    expect(clampCustomScore(13)).toBe(13)
+    expect(clampCustomScore(12.6)).toBe(13)
   })
 })

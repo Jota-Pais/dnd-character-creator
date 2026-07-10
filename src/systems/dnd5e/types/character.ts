@@ -7,7 +7,7 @@ export type { ClassChoiceSelections, BackgroundChoiceSelections, EquipmentDraft,
 
 export type WizardStep = 'name' | 'race' | 'class' | 'spells' | 'abilities' | 'improvements' | 'background' | 'equipment' | 'review'
 
-export type AbilityMethod = 'standard-array' | 'point-buy' | 'roll'
+export type AbilityMethod = 'standard-array' | 'point-buy' | 'roll' | 'custom'
 
 export type BaseAbilityScores = Record<AbilityScore, number | null>
 

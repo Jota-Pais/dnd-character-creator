@@ -147,3 +147,11 @@
 - **Por que o refresh "conserta":** `useAppStore` (`activeSystemId`) não usa persistência (`create` puro, sem `persist`/localStorage) — todo reload de página reinicializa `activeSystemId` para `null`, e `App.tsx` cai no `else` que renderiza `GlobalGallery`, mostrando os dois sistemas juntos corretamente.
 - **A decidir na execução:** provavelmente a correção certa é fazer `goToGallery()`/"Concluir"/"Meus personagens" chamarem `setActiveSystem(null)` (saindo pra `GlobalGallery` de verdade) em vez de setar o `view` interno do sistema — e então **remover** as galerias internas legadas (`Gallery.tsx` de cada sistema) e o estado `view: 'gallery'` de cada store, já que a `GlobalGallery` os substituiu na Fase 15 mas ficaram como código morto/duplicado ainda em uso.
 - **Status:** ✅ CORRIGIDO — `goToGallery`/`reset` dos dois stores agora chamam `setActiveSystem(null)` (voltam à `GlobalGallery` unificada); branch `view === 'gallery'` e os dois `Gallery.tsx` internos (código morto) removidos; +4 testes de regressão (D&D e Ordem).
+
+### F15 — Método "Personalizado" de atributos no D&D (feature nova)
+- **Sistema:** D&D 5e
+- **Onde:** passo Atributos (`AbilitiesStep` + `MethodSelector`)
+- **Relato:** além dos métodos existentes (Array Padrão, Compra de Pontos, Rolagem), queria uma opção **custom** onde a pessoa digita o número que quiser em cada atributo, sem passar do máximo (18 — a faixa dos dados, já que é o equivalente a três 6).
+- **Triagem:** ✨ feature nova
+- **Regra:** método manual/homebrew — cada atributo livre na faixa dos dados de criação (3 a 18, do 4d6 descartando o menor), sem limite de soma. Os bônus de raça entram por cima (18 + racial pode chegar ao teto 20).
+- **Status:** ✅ FEITO (2026-07-10) — novo método `'custom'`: card no seletor, `CustomPanel` com input editável por atributo (+/− e digitação, clamp 3–18 no blur), validação `isAbilitiesStepComplete` (todos em 3–18) e `clampCustomScore`. Import robusto (ABILITY_METHODS aceita 'custom'). +8 testes (validação, clamp, render do painel).

@@ -201,7 +201,9 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
         abilityMethod: method,
         abilityScores: method === 'point-buy'
           ? { STR: 8, DEX: 8, CON: 8, INT: 8, WIS: 8, CHA: 8 }
-          : { STR: null, DEX: null, CON: null, INT: null, WIS: null, CHA: null },
+          : method === 'custom'
+            ? { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 }
+            : { STR: null, DEX: null, CON: null, INT: null, WIS: null, CHA: null },
         rolledValues: [],
       },
     })),

@@ -6,6 +6,7 @@ import { MethodSelector } from '../abilities/MethodSelector'
 import { StandardArrayPanel } from '../abilities/StandardArrayPanel'
 import { PointBuyPanel } from '../abilities/PointBuyPanel'
 import { RollPanel } from '../abilities/RollPanel'
+import { CustomPanel } from '../abilities/CustomPanel'
 
 const ACCENT = '#d4900a'
 
@@ -75,6 +76,13 @@ export function AbilitiesStep() {
               scores={draft.abilityScores}
               racialBonuses={racialBonuses}
               onRolledValues={setRolledValues}
+              onScoreChange={setAbilityScore}
+            />
+          )}
+          {draft.abilityMethod === 'custom' && (
+            <CustomPanel
+              scores={draft.abilityScores}
+              racialBonuses={racialBonuses}
               onScoreChange={setAbilityScore}
             />
           )}

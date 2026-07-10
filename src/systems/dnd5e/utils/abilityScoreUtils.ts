@@ -23,6 +23,18 @@ export const POINT_BUY_COSTS: Record<number, number> = {
 
 export const POINT_BUY_TOTAL = 27
 
+/**
+ * Método "Personalizado": o jogador digita cada atributo livremente, dentro da faixa
+ * que os dados permitem na criação (3 a 18 — 4d6 descartando o menor). Sem limite de soma.
+ */
+export const CUSTOM_MIN = 3
+export const CUSTOM_MAX = 18
+
+/** Restringe um valor à faixa do método Personalizado (3 a 18). */
+export function clampCustomScore(value: number): number {
+  return Math.max(CUSTOM_MIN, Math.min(CUSTOM_MAX, Math.round(value)))
+}
+
 export function getProficiencyBonus(level: number): number {
   return PROFICIENCY_BY_LEVEL[Math.max(1, Math.min(20, level)) - 1]
 }
@@ -105,6 +117,11 @@ export function isAbilitiesStepComplete(
     const sortedRolled = [...rolledValues].sort((a, b) => a - b)
     const sortedAssigned = [...nums].sort((a, b) => a - b)
     return JSON.stringify(sortedRolled) === JSON.stringify(sortedAssigned)
+  }
+
+  if (method === 'custom') {
+    // Cada atributo é um valor livre dentro da faixa dos dados (3 a 18); sem limite de soma.
+    return nums.every(s => s >= CUSTOM_MIN && s <= CUSTOM_MAX)
   }
 
   return false

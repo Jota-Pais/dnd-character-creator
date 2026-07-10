@@ -23,7 +23,7 @@ import { isImprovementsStepComplete } from './asiUtils'
 import type { AsiChoice } from '../types/character'
 
 const ABILITY_KEYS: AbilityScore[] = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA']
-const ABILITY_METHODS: string[] = ['standard-array', 'point-buy', 'roll']
+const ABILITY_METHODS: string[] = ['standard-array', 'point-buy', 'roll', 'custom']
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)

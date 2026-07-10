@@ -88,6 +88,11 @@ export function getArmor(id: string): Armor | undefined {
   return ALL_ARMORS.find(a => a.id === id)
 }
 
+/** Arma pelo id, ou undefined se o id não for de uma arma. */
+export function getWeaponById(id: string): Weapon | undefined {
+  return ALL_WEAPONS.find(w => w.id === id)
+}
+
 export function getItemName(id: string): string {
   return (
     ALL_WEAPONS.find(w => w.id === id)?.name ??

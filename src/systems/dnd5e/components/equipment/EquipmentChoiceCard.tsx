@@ -4,8 +4,17 @@ import type {
 } from '../../types/equipment'
 import {
   describeEquipmentOption, isChoiceResolved,
-  getWeaponsForFilter, getToolsForCategory, getFocusGroupItems,
+  getWeaponsForFilter, getToolsForCategory, getFocusGroupItems, getWeaponById,
 } from '../../utils/equipmentUtils'
+import { formatWeaponSummary } from '../../utils/weaponFormat'
+
+/** Armas específicas de uma opção de equipamento (pra mostrar dano/propriedades ao escolher). */
+function optionWeapons(option: EquipmentChoiceItem[]): Weapon[] {
+  return option
+    .filter((it): it is Extract<EquipmentChoiceItem, { kind: 'specific' }> => it.kind === 'specific')
+    .map(it => getWeaponById(it.id))
+    .filter((w): w is Weapon => Boolean(w))
+}
 
 type FilterItem = Extract<EquipmentChoiceItem, { kind: 'weapon-filter' | 'tool-filter' | 'focus-group' }>
 
@@ -67,6 +76,7 @@ export function EquipmentChoiceCard({ choiceIndex, choice, resolution, onResolve
         <div className="flex flex-col gap-2 mb-3">
           {choice.options.map((option, optIdx) => {
             const isSelected = effectiveResolution.optionIndex === optIdx
+            const weapons = optionWeapons(option)
             return (
               <button
                 key={optIdx}
@@ -85,6 +95,11 @@ export function EquipmentChoiceCard({ choiceIndex, choice, resolution, onResolve
                   {optIdx + 1}.
                 </span>
                 {describeEquipmentOption(option)}
+                {weapons.map(w => (
+                  <span key={w.id} className="block text-[10px] opacity-75 mt-0.5 ml-5">
+                    {w.name}: {formatWeaponSummary(w)}
+                  </span>
+                ))}
               </button>
             )
           })}
@@ -155,12 +170,14 @@ function ItemGrid({
       {items.map(item => {
         const picked = pickedIds.includes(item.id)
         const disabled = !picked && pickedIds.length >= max && max > 1
+        // Armas mostram dano + propriedades pra decidir sem abrir o livro (F1); ferramentas/focos só o nome.
+        const isWeapon = 'weaponType' in item
         return (
           <button
             key={item.id}
             onClick={() => onToggle(item.id, max)}
             disabled={disabled}
-            className="text-xs px-2 py-1 rounded-lg border transition-all"
+            className={`text-xs rounded-lg border transition-all text-left ${isWeapon ? 'px-2.5 py-1.5' : 'px-2 py-1'}`}
             style={{
               borderColor: picked ? '#c0961a' : '#2a1e0f',
               backgroundColor: picked ? '#c0961a18' : 'transparent',
@@ -168,7 +185,10 @@ function ItemGrid({
               cursor: disabled ? 'not-allowed' : 'pointer',
             }}
           >
-            {item.name}
+            <span className={isWeapon ? 'font-semibold' : ''}>{item.name}</span>
+            {isWeapon && (
+              <span className="block text-[10px] opacity-80 mt-0.5">{formatWeaponSummary(item as Weapon)}</span>
+            )}
           </button>
         )
       })}

@@ -636,7 +636,7 @@
     "spellcasting": null,
     "features": [
       { "name": "Especialização", "description": "Escolha 2 das suas perícias treinadas (ou 1 perícia + ferramentas de ladrão) para dobrar o bônus de proficiência nos testes com elas." },
-      { "name": "Ataque Furtivo", "description": "Uma vez por turno, adicione 1d6 de dano com arma de acuidade ou à distância se tiver vantagem ou houver aliado adjacente ao alvo." },
+      { "name": "Ataque Furtivo", "description": "Uma vez por turno, adicione dano extra (o dado aumenta com o nível — veja Recursos de Classe para o valor atual) com arma de acuidade ou à distância, se tiver vantagem ou houver um aliado adjacente ao alvo." },
       { "name": "Gíria de Ladrão", "description": "Conheça um dialeto secreto para ocultar mensagens em conversas normais e decifrar símbolos de ladrões em locais." }
     ],
     "subclassLevel": 3,
@@ -770,7 +770,7 @@
     "spellcasting": null,
     "features": [
       { "name": "Defesa sem Armadura", "description": "Quando não vestir armadura nem escudo, sua CA é 10 + mod. de Destreza + mod. de Sabedoria." },
-      { "name": "Artes Marciais", "description": "Use Destreza para ataques desarmados e armas de monge. Cause 1d4 em lugar do dano normal e realize um ataque desarmado de ação bônus ao atacar com arma de monge ou desarmado." }
+      { "name": "Artes Marciais", "description": "Use Destreza para ataques desarmados e armas de monge. Cause o dado de artes marciais (aumenta com o nível — veja Recursos de Classe) em lugar do dano normal e realize um ataque desarmado de ação bônus ao atacar com arma de monge ou desarmado." }
     ],
     "subclassLevel": 3,
     "subclasses": [

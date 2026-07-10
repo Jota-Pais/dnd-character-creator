@@ -52,3 +52,33 @@ export function formatWeaponSummary(weapon: Weapon): string {
   const damage = formatWeaponDamage(weapon)
   return props ? `${damage} · ${props}` : damage
 }
+
+function signed(n: number): string {
+  return n >= 0 ? `+${n}` : `${n}`
+}
+
+export type WeaponAttack = {
+  name: string
+  /** Atributo usado no ataque: "Força" ou "Destreza". */
+  ability: string
+  /** Bônus de ataque já com sinal (ex.: "+5"). */
+  attackBonus: string
+  /** Dano com o modificador e o tipo (ex.: "1d8+3 perfurante"). */
+  damage: string
+}
+
+/**
+ * Ataque de uma arma: escolhe o atributo (Destreza para armas à distância ou de acuidade quando
+ * a Destreza é melhor; Força caso contrário), soma proficiência no ataque e o modificador no dano.
+ */
+export function getWeaponAttack(weapon: Weapon, strMod: number, dexMod: number, proficiency: number): WeaponAttack {
+  const hasFinesse = weapon.properties.some(p => p.kind === 'finesse')
+  const useDex = weapon.weaponType === 'ranged' || (hasFinesse && dexMod >= strMod)
+  const ability = useDex ? 'Destreza' : 'Força'
+  const mod = useDex ? dexMod : strMod
+  const type = weapon.damageType ? ` ${DAMAGE_TYPE_PT[weapon.damageType]}` : ''
+  const damage = weapon.damage
+    ? `${formatDamageRoll(weapon.damage)}${mod !== 0 ? signed(mod) : ''}${type}`
+    : '—'
+  return { name: weapon.name, ability, attackBonus: signed(proficiency + mod), damage }
+}

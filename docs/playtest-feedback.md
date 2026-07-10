@@ -50,7 +50,7 @@
 - **Triagem:** 🎨 UX/polish (clareza de uso na mesa — vai direto à proposta do produto)
 - **Nota técnica:** o texto atual é uma fórmula fixa que nem lista as armas do personagem — não usa `weapons.json`/equipamento equipado pra nada. Essa melhoria **já estava anotada no backlog do ROADMAP.md** ("Exportação de PDF — Detalhamento de Armas"), mas nunca foi feita; este feedback a confirma como prioridade real de usuário, não só ideia interna.
 - **A decidir na execução:** de onde vem "qual atributo usar" por arma (acuidade → melhor de FOR/DES; à distância → DES; corpo a corpo comum → FOR) e como detectar "múltiplos ataques" (feature Ataque Extra da classe, não a arma em si) pro indicador "2x".
-- **Status:** registrado (sem ação)
+- **Status:** ✅ CORRIGIDO — a seção "Ataques & Conjuração" do PDF virou uma **tabela por arma equipada** (Arma · Ataque · Dano · Atributo), ex.: "Rapieira · +5 · 1d8+3 perfurante · Destreza". Atributo escolhido pela regra (acuidade → melhor de FOR/DES; à distância → DES; senão FOR). Prefixo "N×" nas armas quando o personagem tem "Ataque Extra" (conta as ocorrências da feature: 2× no nv5, 3× no nv11...), com nota explicativa. `getWeaponAttack` no `weaponFormat.ts` (+4 testes) e `gatherEquippedWeapons` na ficha.
 
 ### F6 — Texto do Ataque Furtivo sempre diz "1d6", mas o personagem tem 2d6 (nv3)
 - **Sistema:** D&D 5e

@@ -16,12 +16,13 @@ import {
 import { getFinalAbilityScores } from '../utils/asiUtils'
 import { getAllGrantedSkills, getAllGrantedTools } from '../utils/proficiencyUtils'
 import { calculateArmorClass, getUnarmoredDefense } from '../utils/armorClassUtils'
-import { getEquippedArmor, getItemName } from '../utils/equipmentUtils'
+import { getEquippedArmor, getItemName, getWeaponById } from '../utils/equipmentUtils'
 import { getClassResources } from '../utils/classResourceUtils'
 import { getSpell, getSpellSaveDC, formatSpellAttackBonus, getSpellSlots } from '../utils/spellUtils'
 import { getFeat } from '../utils/featUtils'
+import { getWeaponAttack } from '../utils/weaponFormat'
 import type { CharacterDraft } from '../types/character'
-import type { EquipmentChoiceItem } from '../types/equipment'
+import type { EquipmentChoiceItem, Weapon } from '../types/equipment'
 
 const SKILL_ABILITY: Record<string, AbilityScore> = {
   acrobatics: 'DEX', 'animal-handling': 'WIS', arcana: 'INT', athletics: 'STR',
@@ -51,6 +52,46 @@ function resolveOptionItems(option: EquipmentChoiceItem[], pickedIds: string[]):
     }
   }
   return result
+}
+
+/** Armas efetivamente equipadas (do equipamento inicial / compradas / antecedente), sem repetir. */
+function gatherEquippedWeapons(draft: CharacterDraft): Weapon[] {
+  const ids: string[] = []
+  const cls = draft.class ? getClass(draft.class) : undefined
+  const bg = draft.background ? getBackground(draft.background) : undefined
+  const eq = draft.equipment
+
+  if (eq.method === 'standard' && cls) {
+    for (const item of cls.startingEquipment.fixed) ids.push(item.id)
+    cls.startingEquipment.choices.forEach((choice, i) => {
+      const res = eq.classResolutions[i]
+      if (res && res.optionIndex >= 0) {
+        const option = choice.options[res.optionIndex]
+        if (!option) return
+        let pickIdx = 0
+        for (const item of option) {
+          if (item.kind === 'specific') {
+            ids.push(item.id)
+          } else if (item.kind === 'weapon-filter' || item.kind === 'tool-filter' || item.kind === 'focus-group') {
+            ids.push(...res.pickedIds.slice(pickIdx, pickIdx + item.picks))
+            pickIdx += item.picks
+          }
+        }
+      }
+    })
+  }
+  if (eq.method === 'wealth') for (const p of eq.purchasedItems) ids.push(p.itemId)
+  if (bg) for (const item of bg.equipment.items) if (item.kind === 'specific') ids.push(item.id)
+
+  const seen = new Set<string>()
+  const weapons: Weapon[] = []
+  for (const id of ids) {
+    if (seen.has(id)) continue
+    seen.add(id)
+    const w = getWeaponById(id)
+    if (w) weapons.push(w)
+  }
+  return weapons
 }
 
 function gatherInventory(draft: CharacterDraft): string[] {
@@ -146,6 +187,11 @@ export function PrintableSheet() {
   const feats = featIds.map(id => getFeat(id)).filter(Boolean)
   const resources = cls ? getClassResources(cls.id, level) : []
   const inventory = gatherInventory(draft)
+
+  // Ataques por arma equipada (F5). "Ataque Extra" (nv5+ de várias classes) multiplica os ataques.
+  const weapons = gatherEquippedWeapons(draft)
+  const strMod = mod('STR')
+  const attacksPerAction = 1 + features.filter(f => f.name === 'Ataque Extra').length
   const innateSpells = race ? getAvailableInnateSpells(race, subrace, level) : []
   const racialCantrip = draft.raceChoices.cantrip ? getSpell(draft.raceChoices.cantrip) : undefined
 
@@ -217,11 +263,45 @@ export function PrintableSheet() {
 
       {/* Ataques & Magia */}
       <Box title="Ataques & Conjuração" className="mb-4">
-        <p className="text-xs text-gray-700 mb-1">
-          Ataque corpo-a-corpo (Força): <strong>{formatModifier(prof + mod('STR'))}</strong> ·
-          {' '}À distância / com acuidade (Destreza): <strong>{formatModifier(prof + dexMod)}</strong>
-          {' '}(+ o dano da arma equipada)
-        </p>
+        {weapons.length > 0 ? (
+          <table className="w-full text-xs mb-1">
+            <thead>
+              <tr className="text-gray-500 text-left">
+                <th className="font-semibold pr-2">Arma</th>
+                <th className="font-semibold pr-2">Ataque</th>
+                <th className="font-semibold pr-2">Dano</th>
+                <th className="font-semibold">Atributo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {weapons.map(w => {
+                const atk = getWeaponAttack(w, strMod, dexMod, prof)
+                return (
+                  <tr key={w.id} className="text-gray-800">
+                    <td className="pr-2 py-0.5">
+                      {attacksPerAction > 1 && <span className="font-bold text-gray-500">{attacksPerAction}× </span>}
+                      {atk.name}
+                    </td>
+                    <td className="pr-2 py-0.5"><strong>{atk.attackBonus}</strong></td>
+                    <td className="pr-2 py-0.5">{atk.damage}</td>
+                    <td className="py-0.5 text-gray-600">{atk.ability}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        ) : (
+          <p className="text-xs text-gray-700 mb-1">
+            Ataque corpo-a-corpo (Força): <strong>{formatModifier(prof + strMod)}</strong> ·
+            {' '}À distância / com acuidade (Destreza): <strong>{formatModifier(prof + dexMod)}</strong>
+            {' '}(+ o dano da arma)
+          </p>
+        )}
+        {attacksPerAction > 1 && weapons.length > 0 && (
+          <p className="text-[10px] text-gray-500 mb-1">
+            Ataque Extra: você faz {attacksPerAction} ataques ao usar a ação de Atacar.
+          </p>
+        )}
         {isCaster && cls?.spellcasting && (
           <p className="text-xs text-gray-700">
             Magia — CD do teste de resistência: <strong>{getSpellSaveDC(cls.spellcasting, finalScores, level)}</strong> ·

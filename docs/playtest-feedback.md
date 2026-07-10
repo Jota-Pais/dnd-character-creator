@@ -22,7 +22,7 @@
 - **Triagem:** 📖 fidelidade ao livro (regra esclarecida; falta só confirmar o valor de CON do caso)
 - **Regra (confirmada no código, conferido contra o PHB na Fase 1):** nível 1 usa o **máximo** do dado de vida (não a média) + mod CON; níveis 2+ usam a média (`floor(dado/2)+1`) + mod CON. Ladino = d8 → nv1 = 8+CON, cada nível seguinte = 5+CON. A dúvida do usuário ("no nv1 seria 8+5") não procede: o "+5" só entra a partir do 2º nível; somar no nv1 contaria o 1º nível duas vezes. Código bate: `getHpAtLevel1 = hitDie + con`, `getAverageHpPerLevel = floor(hitDie/2)+1`, total = `nv1 + (média+con)×(nível−1)`.
 - **Veredito:** 18 = `8 + 5 + 5` está **correto para CON 10–11 (mod 0)**. **Ponto real a confirmar:** qual a CON do ladino? Se for >11 e o total continuar 18, aí sim é bug (mod de CON não somado por nível). Ex.: CON 14 (+2) deveria dar `10+7+7 = 24`. **Aguardando o valor de CON do usuário.**
-- **Status:** registrado (sem ação) — regra esclarecida; pendente confirmar CON
+- **Status:** ✅ FECHADO (2026-07-10) — o usuário confirmou que a análise estava correta; não é bug (18 PV é o esperado para CON 10–11). Sem alteração de código.
 
 ### F3 — Ficha mostrando "2d8" de Dados de Vida no ladino nv3 (D&D)
 - **Sistema:** D&D 5e
@@ -32,7 +32,7 @@
 - **Regra:** Dados de Vida = nível do personagem. Ladino nv3 → **3d8** (não 2d8).
 - **Análise (código):** único display de "Dados de Vida" é `PrintableSheet` linha ~179: `${level}d${hitDie}` → 3d8 pra nv3. Usa o **mesmo** `level` que produz "Pontos de Vida" 18 e "Nível" 3, então a ficha impressa **não pode** mostrar 2d8 com nível 3. O único "2" no app é a linha "Rolagens (níveis 2+)" na Revisão (mostra `nível−1` = 2 dados rolados acima do 1º nível, só no método Rolar) — é a rolagem, não o total.
 - **Hipótese:** provavelmente **não é bug** (misread da linha de rolagem, ou personagem na verdade nv2). **A confirmar com o usuário:** onde exatamente viu "2d8" e se o campo "Nível" está 3. Se for a ficha impressa com Nível 3 → investigar a fundo (seria contradição com o código).
-- **Status:** registrado (sem ação) — aguardando o usuário localizar onde viu o "2d8"
+- **Status:** ✅ FECHADO (2026-07-10) — o usuário confirmou que a análise estava correta; o código mostra 3d8 (correto). Não é bug. Sem alteração de código.
 
 ### F4 — Emoji 🎲 do D&D é genérico demais
 - **Sistema:** D&D 5e

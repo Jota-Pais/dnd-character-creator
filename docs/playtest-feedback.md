@@ -18,7 +18,7 @@
 - **Triagem:** 🎨 UX/polish (alto valor — vai direto à proposta do produto)
 - **Nota técnica:** os dados já existem estruturados em `weapons.json` (dano, tipo, propriedades) — é **exibir**, não digitalizar. Estender também a armaduras/escudos (CA, propriedades) e itens.
 - **Obs.:** o próprio exemplo do usuário confunde as propriedades da rapieira (ele achou que era "duas mãos"; na verdade é acuidade + uma mão) — o que reforça a necessidade de mostrar os dados corretos.
-- **Status:** ✅ CORRIGIDO (armas) — novo util `weaponFormat.ts` (dano + tipo + propriedades em PT: acuidade/leve/versátil/arremesso etc.). O passo Equipamento mostra o resumo da arma tanto nas opções fixas ("Rapieira: 1d8 perfurante · acuidade" vs "Espada Curta: 1d6 perfurante · acuidade, leve") quanto no grid de escolha por filtro. +4 testes. **Pendente (fica pra depois):** estender descrições a armaduras/escudos (CA) e itens gerais — este item cobriu as armas, que eram o exemplo do usuário; abrir sub-item se quiser cobrir o resto.
+- **Status:** ✅ CORRIGIDO — **armas** (`weaponFormat.ts`: dano + tipo + propriedades em PT — acuidade/leve/versátil/arremesso etc.), no resumo das opções fixas e no grid por filtro. **Armaduras/escudos** (2026-07-10): `formatArmorSummary` mostra CA (leve = CA+Des, média = +Des máx 2, pesada = fixa, escudo = +2) + propriedades (Força mínima, desvantagem em Furtividade). **Pacotes**: `formatPackContents` lista o conteúdo (ex.: "Mochila, Saco de Dormir, 2× Fantasia..."). Itens triviais (corda, tocha) ficam só com o nome. +6 testes no total.
 
 ### F2 — Conferir cálculo de PV total (D&D, método média)
 - **Sistema:** D&D 5e

@@ -1,4 +1,4 @@
-import type { DamageRoll, DamageType, Weapon, WeaponProperty } from '../types/equipment'
+import type { Armor, DamageRoll, DamageType, Weapon, WeaponProperty } from '../types/equipment'
 
 /** Nomes em português dos tipos de dano (padrão do PHB pt-BR, como usado em classes.json). */
 export const DAMAGE_TYPE_PT: Record<DamageType, string> = {
@@ -51,6 +51,19 @@ export function formatWeaponSummary(weapon: Weapon): string {
   const props = formatWeaponProperties(weapon.properties)
   const damage = formatWeaponDamage(weapon)
   return props ? `${damage} · ${props}` : damage
+}
+
+/** Resumo compacto de uma armadura/escudo: "CA 14 + Des (máx. +2) · Força 13, desv. em Furtividade". */
+export function formatArmorSummary(armor: Armor): string {
+  let ac: string
+  if (armor.category === 'shield') ac = 'CA +2 (escudo)'
+  else if (armor.dexModifier === 'full') ac = `CA ${armor.acBase} + Des`
+  else if (armor.dexModifier === 'max-2') ac = `CA ${armor.acBase} + Des (máx. +2)`
+  else ac = `CA ${armor.acBase}`
+  const props: string[] = []
+  if (armor.strengthRequirement) props.push(`Força ${armor.strengthRequirement}`)
+  if (armor.stealthDisadvantage) props.push('desv. em Furtividade')
+  return props.length ? `${ac} · ${props.join(', ')}` : ac
 }
 
 function signed(n: number): string {

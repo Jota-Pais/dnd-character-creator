@@ -4,9 +4,10 @@ import {
   formatWeaponDamage,
   formatWeaponProperty,
   formatWeaponSummary,
+  formatArmorSummary,
   getWeaponAttack,
 } from '../weaponFormat'
-import { getWeaponById } from '../equipmentUtils'
+import { getWeaponById, getArmorById, getPackById, formatPackContents } from '../equipmentUtils'
 
 describe('weaponFormat', () => {
   it('formatDamageRoll cobre dados, dano fixo e ausência de dano', () => {
@@ -34,6 +35,25 @@ describe('weaponFormat', () => {
     expect(formatWeaponSummary(getWeaponById('rapier')!)).toBe('1d8 perfurante · acuidade')
     // Espada Curta: 1d6 perfurante, acuidade + leve
     expect(formatWeaponSummary(getWeaponById('shortsword')!)).toBe('1d6 perfurante · acuidade, leve')
+  })
+
+  describe('formatArmorSummary (F1 — armaduras/escudos)', () => {
+    it('leve mostra CA + Des; média limita a +2; pesada é fixa', () => {
+      expect(formatArmorSummary(getArmorById('leather')!)).toBe('CA 11 + Des')
+      expect(formatArmorSummary(getArmorById('hide')!)).toBe('CA 12 + Des (máx. +2)')
+      expect(formatArmorSummary(getArmorById('ring-mail')!)).toBe('CA 14 · desv. em Furtividade')
+    })
+    it('escudo mostra +2', () => {
+      expect(formatArmorSummary(getArmorById('shield')!)).toBe('CA +2 (escudo)')
+    })
+  })
+
+  describe('formatPackContents (F1 — pacotes)', () => {
+    it('lista o conteúdo do pacote com quantidades', () => {
+      const contents = formatPackContents(getPackById('entertainers-pack')!)
+      expect(contents).toContain('Mochila')
+      expect(contents).toMatch(/\d+×/) // tem itens com quantidade > 1
+    })
   })
 
   describe('getWeaponAttack (F5 — linha de ataque por arma)', () => {

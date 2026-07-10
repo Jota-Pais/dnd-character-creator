@@ -93,6 +93,23 @@ export function getWeaponById(id: string): Weapon | undefined {
   return ALL_WEAPONS.find(w => w.id === id)
 }
 
+/** Armadura/escudo pelo id, ou undefined. */
+export function getArmorById(id: string): Armor | undefined {
+  return ALL_ARMORS.find(a => a.id === id)
+}
+
+/** Pacote de equipamento pelo id, ou undefined. */
+export function getPackById(id: string): EquipmentPack | undefined {
+  return ALL_PACKS.find(p => p.id === id)
+}
+
+/** Conteúdo de um pacote como texto: "Mochila, Saco de Dormir, 2× Fantasia, 5× Vela...". */
+export function formatPackContents(pack: EquipmentPack): string {
+  return pack.contents
+    .map(i => (i.quantity > 1 ? `${i.quantity}× ${getItemName(i.ref)}` : getItemName(i.ref)))
+    .join(', ')
+}
+
 export function getItemName(id: string): string {
   return (
     ALL_WEAPONS.find(w => w.id === id)?.name ??

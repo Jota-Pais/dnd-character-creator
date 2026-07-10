@@ -4,16 +4,28 @@ import type {
 } from '../../types/equipment'
 import {
   describeEquipmentOption, isChoiceResolved,
-  getWeaponsForFilter, getToolsForCategory, getFocusGroupItems, getWeaponById,
+  getWeaponsForFilter, getToolsForCategory, getFocusGroupItems,
+  getWeaponById, getArmorById, getPackById, formatPackContents,
 } from '../../utils/equipmentUtils'
-import { formatWeaponSummary } from '../../utils/weaponFormat'
+import { formatWeaponSummary, formatArmorSummary } from '../../utils/weaponFormat'
 
-/** Armas específicas de uma opção de equipamento (pra mostrar dano/propriedades ao escolher). */
-function optionWeapons(option: EquipmentChoiceItem[]): Weapon[] {
-  return option
-    .filter((it): it is Extract<EquipmentChoiceItem, { kind: 'specific' }> => it.kind === 'specific')
-    .map(it => getWeaponById(it.id))
-    .filter((w): w is Weapon => Boolean(w))
+/**
+ * Detalhes dos itens específicos de uma opção, pra decidir sem abrir o livro:
+ * armas (dano/propriedades), armaduras/escudos (CA/propriedades) e pacotes (conteúdo).
+ * Itens triviais (corda, tocha...) não geram linha — o nome já basta.
+ */
+function optionItemDetails(option: EquipmentChoiceItem[]): { name: string; detail: string }[] {
+  const out: { name: string; detail: string }[] = []
+  for (const it of option) {
+    if (it.kind !== 'specific') continue
+    const w = getWeaponById(it.id)
+    if (w) { out.push({ name: w.name, detail: formatWeaponSummary(w) }); continue }
+    const a = getArmorById(it.id)
+    if (a) { out.push({ name: a.name, detail: formatArmorSummary(a) }); continue }
+    const p = getPackById(it.id)
+    if (p) { out.push({ name: p.name, detail: formatPackContents(p) }); continue }
+  }
+  return out
 }
 
 type FilterItem = Extract<EquipmentChoiceItem, { kind: 'weapon-filter' | 'tool-filter' | 'focus-group' }>
@@ -76,7 +88,7 @@ export function EquipmentChoiceCard({ choiceIndex, choice, resolution, onResolve
         <div className="flex flex-col gap-2 mb-3">
           {choice.options.map((option, optIdx) => {
             const isSelected = effectiveResolution.optionIndex === optIdx
-            const weapons = optionWeapons(option)
+            const details = optionItemDetails(option)
             return (
               <button
                 key={optIdx}
@@ -95,9 +107,9 @@ export function EquipmentChoiceCard({ choiceIndex, choice, resolution, onResolve
                   {optIdx + 1}.
                 </span>
                 {describeEquipmentOption(option)}
-                {weapons.map(w => (
-                  <span key={w.id} className="block text-[10px] opacity-75 mt-0.5 ml-5">
-                    {w.name}: {formatWeaponSummary(w)}
+                {details.map(d => (
+                  <span key={d.name} className="block text-[10px] opacity-75 mt-0.5 ml-5">
+                    {d.name}: {d.detail}
                   </span>
                 ))}
               </button>

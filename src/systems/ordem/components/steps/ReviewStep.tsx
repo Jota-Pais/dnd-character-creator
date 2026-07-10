@@ -6,7 +6,7 @@ import { getTrilha } from '../../utils/trilhaUtils'
 import { getPower } from '../../utils/powerUtils'
 import { deriveStats, getTrainedSkills, getEffectiveAttributes, getSkillGrade } from '../../utils/characterUtils'
 import { getRitualById, formatElements, getRitualSlotsCount } from '../../utils/ritualUtils'
-import { getEquipmentById, getMaxCapacity, getCurrentSpaces, getEquippedDefenseBonus } from '../../utils/equipmentUtils'
+import { getEquipmentById, getTotalCarryCapacity, getCurrentSpaces, getEquippedDefenseBonus } from '../../utils/equipmentUtils'
 import { getReachedTrilhaSlots, getPeLimit } from '../../utils/progressionUtils'
 import { exportCharacter } from '../../utils/storage'
 import { StepNav } from '../common/StepNav'
@@ -126,7 +126,7 @@ export function ReviewStep() {
       )}
 
       {equipment.length > 0 && (
-        <Section title={`Equipamento (${getCurrentSpaces(draft.equipmentChoices)}/${getMaxCapacity(attributes.strength)} espaços)`}>
+        <Section title={`Equipamento (${getCurrentSpaces(draft.equipmentChoices)}/${getTotalCarryCapacity(draft)} espaços)`}>
           <div className="space-y-2">
             {equipment.map(item => item && (
               <p key={item.id} className="text-parchment-500 text-xs">

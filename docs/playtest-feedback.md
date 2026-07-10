@@ -128,7 +128,7 @@
 - **Triagem:** 🐛 bug (regra do livro com efeito mecânico definido, simplesmente não aplicado)
 - **Suspeita a investigar (confirma a preocupação do usuário):** o tipo `OrdemGeneralItem` não tem **nenhum campo mecânico** além de `id/name/category/spaces/type` — então qualquer item "geral"/"acessório" do livro com efeito de jogo (ex.: máscara de gás +10 Fortitude vs. respiração, óculos de visão térmica anula penalidade de camuflagem, corda, algemas etc.) **certamente também não está implementado**. Provável padrão sistêmico, não só a mochila.
 - **A decidir na execução:** levantar quais itens gerais/acessórios do Cap. 3 têm efeito mecânico definido no livro (não só flavor text) e decidir quais entram no escopo do criador de fichas (mochila militar/carga parece claramente dentro do escopo, por afetar a validação já existente de equipamento).
-- **Status:** registrado (sem ação)
+- **Status:** ✅ CORRIGIDO — campo `carryBonus` no tipo de equipamento; Mochila Militar = `carryBonus: 2`; novo `getTotalCarryCapacity(draft)` (base 5×Força + bônus dos itens) usado na validação e nos displays (passo Equipamento, Revisão, ficha). Varredura do livro confirmou que **só a Mochila Militar** afeta capacidade de carga — os demais itens têm efeitos de jogo (não de criação), cobertos pelas descrições do F11. +3 testes.
 
 ### F14 — Galeria não unifica os sistemas depois de "Concluir"; só unifica com refresh (D&D + Ordem)
 - **Sistema:** ambos (D&D 5e e Ordem Paranormal)

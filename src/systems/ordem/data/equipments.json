@@ -673,7 +673,8 @@
     "name": "Mochila Militar",
     "category": 1,
     "spaces": 0,
-    "type": "general"
+    "type": "general",
+    "carryBonus": 2
   },
   {
     "id": "oculos-visao-termica",

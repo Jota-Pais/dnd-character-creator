@@ -1,7 +1,7 @@
 import { useOrdemStore } from '../../stores/characterStore'
 import { STEP_LABELS } from '../../types/character'
 import type { OrdemEquipment } from '../../types/equipment'
-import { EQUIPMENTS, getMaxCapacity, getCurrentSpaces, getCategoryICount } from '../../utils/equipmentUtils'
+import { EQUIPMENTS, getTotalCarryCapacity, getCurrentSpaces, getCategoryICount } from '../../utils/equipmentUtils'
 import { getOrdemClass } from '../../utils/classUtils'
 import { getEffectiveAttributes } from '../../utils/characterUtils'
 import { isStepComplete } from '../../utils/draftValidation'
@@ -11,7 +11,7 @@ export function EquipmentStep() {
   const { draft, updateDraft, nextStep, prevStep } = useOrdemStore()
 
   const strength = getEffectiveAttributes(draft).strength
-  const capacity = getMaxCapacity(strength)
+  const capacity = getTotalCarryCapacity(draft)
   const currentSpaces = getCurrentSpaces(draft.equipmentChoices)
   const cat1Count = getCategoryICount(draft.equipmentChoices)
   const isOverCapacity = currentSpaces > capacity

@@ -7,7 +7,7 @@ import { getPower } from '../utils/powerUtils'
 import { deriveStats, getTrainedSkills, getEffectiveAttributes, getSkillGrade } from '../utils/characterUtils'
 import { getReachedTrilhaSlots, getPeLimit } from '../utils/progressionUtils'
 import { getRitualById, formatElements, getRitualSlotsCount } from '../utils/ritualUtils'
-import { getEquipmentById, getMaxCapacity, getCurrentSpaces, getEquippedDefenseBonus } from '../utils/equipmentUtils'
+import { getEquipmentById, getTotalCarryCapacity, getCurrentSpaces, getEquippedDefenseBonus } from '../utils/equipmentUtils'
 
 /**
  * Versão imprimível com layout compacto de ficha cobrindo atributos,
@@ -130,7 +130,7 @@ export function PrintableSheet() {
       {equipment.length > 0 && (
         <section className="mb-4">
           <h2 className="font-bold uppercase text-sm tracking-wide border-b border-gray-400 mb-2">
-            Equipamento ({getCurrentSpaces(draft.equipmentChoices)}/{getMaxCapacity(attributes.strength)} espaços)
+            Equipamento ({getCurrentSpaces(draft.equipmentChoices)}/{getTotalCarryCapacity(draft)} espaços)
           </h2>
           <div className="space-y-1">
             {equipment.map(item => item && (

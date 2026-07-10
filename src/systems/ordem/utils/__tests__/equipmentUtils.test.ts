@@ -6,6 +6,8 @@ import {
   getCurrentSpaces,
   getCategoryICount,
   getEquippedDefenseBonus,
+  getEquipmentCarryBonus,
+  getTotalCarryCapacity,
   isEquipmentStepComplete,
 } from '../equipmentUtils'
 
@@ -82,5 +84,37 @@ describe('equipmentUtils', () => {
     expect(isEquipmentStepComplete(makeDraft({ class: 'combatant', equipmentChoices: ['protecao-pesada'] }))).toBe(false)
     // fuzil-assalto é Cat II e arma Tática: mesmo com proficiência do combatente, a categoria barra
     expect(isEquipmentStepComplete(makeDraft({ class: 'combatant', equipmentChoices: ['fuzil-assalto'] }))).toBe(false)
+  })
+
+  it('Mochila Militar dá +2 de capacidade de carga (livro pág. 66)', () => {
+    expect(getEquipmentCarryBonus([])).toBe(0)
+    expect(getEquipmentCarryBonus(['faca'])).toBe(0) // item comum não dá bônus
+    expect(getEquipmentCarryBonus(['mochila-militar'])).toBe(2)
+    // a própria mochila não ocupa espaço
+    expect(getCurrentSpaces(['mochila-militar'])).toBe(0)
+  })
+
+  it('getTotalCarryCapacity soma a base (5×Força) com o bônus dos itens', () => {
+    const semMochila = makeDraft({ attributes: { ...EMPTY_ATTRIBUTES, strength: 1 } }) // base 5
+    expect(getTotalCarryCapacity(semMochila)).toBe(5)
+    const comMochila = makeDraft({ attributes: { ...EMPTY_ATTRIBUTES, strength: 1 }, equipmentChoices: ['mochila-militar'] })
+    expect(getTotalCarryCapacity(comMochila)).toBe(7) // 5 + 2
+  })
+
+  it('a Mochila Militar permite carregar além do limite base de Força', () => {
+    // Força 0 → base 2. 3 itens de 1 espaço estouram o limite base...
+    const semMochila = makeDraft({
+      class: 'combatant',
+      attributes: { ...EMPTY_ATTRIBUTES, strength: 0 },
+      equipmentChoices: ['faca', 'martelo', 'punhal'], // 3 espaços > 2
+    })
+    expect(isEquipmentStepComplete(semMochila)).toBe(false)
+    // ...mas com a Mochila Militar (+2 → capacidade 4, e ela mesma ocupa 0 espaço) passam a caber.
+    const comMochila = makeDraft({
+      class: 'combatant',
+      attributes: { ...EMPTY_ATTRIBUTES, strength: 0 },
+      equipmentChoices: ['mochila-militar', 'faca', 'martelo', 'punhal'], // 3 espaços ≤ 4
+    })
+    expect(isEquipmentStepComplete(comMochila)).toBe(true)
   })
 })

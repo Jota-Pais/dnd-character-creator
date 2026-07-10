@@ -9,6 +9,8 @@ export interface OrdemEquipmentBase {
   spaces: number;
   type: OrdemEquipmentType;
   description?: string;
+  /** Bônus à capacidade de carga concedido pelo item (ex.: Mochila Militar = +2 espaços). */
+  carryBonus?: number;
 }
 
 export type OrdemWeaponProficiency = 'simple' | 'tactical' | 'heavy';

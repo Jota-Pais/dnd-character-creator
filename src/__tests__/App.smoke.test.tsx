@@ -41,7 +41,7 @@ describe('App (smoke) — galeria global', () => {
   it('cria um novo personagem D&D pelo seletor de sistema', () => {
     render(<App />)
     fireEvent.click(screen.getByText('＋ Novo personagem')) // abre o seletor
-    fireEvent.click(screen.getByText('🎲 D&D 5e'))
+    fireEvent.click(screen.getByText('🐉 D&D 5e'))
     expect(useAppStore.getState().activeSystemId).toBe('dnd5e')
     expect(useCharacterStore.getState().view).toBe('wizard')
     expect(useCharacterStore.getState().draft.name).toBe('')

@@ -65,7 +65,7 @@ export function Dnd5eApp() {
 
         {/* Header */}
         <header className="pt-8 pb-6 text-center">
-          <div className="text-5xl mb-3">🎲</div>
+          <div className="text-5xl mb-3">🐉</div>
           <h1 className="font-fantasy text-3xl font-bold text-gold-400 tracking-wide">
             Criador de Personagem
           </h1>

@@ -41,7 +41,7 @@
 - **Triagem:** 🎨 UX/polish (identidade visual)
 - **Nota técnica:** hoje só 2 lugares usam esse emoji como ícone-de-sistema (fácil trocar); há mais ocorrências de 🎲 no app (botão "Rolar", método de equipamento etc.) que são sobre **rolar dados**, não sobre identidade do D&D — não confundir os dois usos na hora de corrigir.
 - **A decidir na execução:** emoji substituto (ex.: 🐉 dragão, 🛡️ escudo, ⚔️ espadas — algo mais associado a fantasia medieval / D&D especificamente).
-- **Status:** registrado (sem ação)
+- **Status:** ✅ CORRIGIDO — 🎲 → 🐉 (dragão, o símbolo mais icônico do D&D; combina com o 👁️ do Ordem) nos 3 pontos de identidade (card e seletor da galeria global + header do app D&D). Os 🎲 dos botões de "rolar dados/ouro" foram mantidos (são sobre rolagem, não identidade).
 
 ### F5 — Descrição de ataque na ficha (PDF) confusa; deveria ser por arma
 - **Sistema:** D&D 5e

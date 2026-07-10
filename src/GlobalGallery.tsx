@@ -120,7 +120,7 @@ export function GlobalGallery() {
               {showSystemSelect && (
                 <div className="absolute right-0 top-full mt-2 w-48 bg-parchment-900 border border-parchment-800 rounded-xl shadow-xl z-50 overflow-hidden">
                   <button onClick={() => handleCreate('dnd5e')} className="w-full text-left px-4 py-3 hover:bg-parchment-800 font-fantasy text-parchment-200 text-sm border-b border-parchment-800/50">
-                    🎲 D&D 5e
+                    🐉 D&D 5e
                   </button>
                   <button onClick={() => handleCreate('ordem')} className="w-full text-left px-4 py-3 hover:bg-parchment-800 font-fantasy text-parchment-200 text-sm">
                     👁️ Ordem Paranormal
@@ -176,7 +176,7 @@ function CharacterCard({
   const [confirmDelete, setConfirmDelete] = useState(false)
   const name = char.draft.name?.trim() || '(sem nome)'
   const subtitle = char.system === 'dnd5e' ? dnd5eSystem.formatDraftName(char.draft) : ordemSystem.formatDraftName(char.draft)
-  const emoji = char.system === 'dnd5e' ? '🎲' : '👁️'
+  const emoji = char.system === 'dnd5e' ? '🐉' : '👁️'
   const systemName = char.system === 'dnd5e' ? 'D&D 5e' : 'Ordem Paranormal'
 
   return (

@@ -98,7 +98,7 @@
 - **Triagem:** 🎨 UX/polish (a decisão está certa; falta só **comunicá-la**) — não é 📖 nem 🐛, já que a regra foi seguida corretamente
 - **Gap real encontrado:** o app nunca explica essa decisão pro jogador em nenhum ponto do fluxo (nem no passo de Equipamento, onde a Patente Recruta é o que define os limites de categoria/carga) — só aparece de relance na ficha final, sem contexto. Por isso pareceu "esquecimento" e não "decisão".
 - **A decidir na execução:** adicionar uma nota breve no passo Equipamento (algo como "Todo agente novo começa como Recruta — a Patente sobe em jogo, com Pontos de Prestígio ganhos em missões") pra fechar essa lacuna de comunicação, sem mudar a mecânica.
-- **Status:** registrado (sem ação)
+- **Status:** ✅ CORRIGIDO — nota no passo Equipamento explicando que todo agente novo começa Recruta e que a Patente sobe em jogo (via Pontos de Prestígio do mestre), por isso não é escolhida na criação. Sem mudança de mecânica.
 
 ### F11 — Nenhum item de equipamento (Ordem) tem descrição
 - **Sistema:** Ordem Paranormal

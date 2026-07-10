@@ -125,10 +125,15 @@ export function EquipmentStep() {
       </div>
 
       <div className="bg-parchment-950/40 p-4 rounded-xl border border-parchment-900 mb-8 sticky top-0 z-10 backdrop-blur-sm shadow-lg">
-        <p className="text-parchment-400 text-sm mb-4">
-          Como um agente da Ordem nível <strong className="text-red-400">Recruta (NEX {draft.nex}%)</strong>, 
-          você tem acesso ilimitado a itens de Categoria 0, mas pode pegar apenas 
+        <p className="text-parchment-400 text-sm mb-2">
+          Como um agente da Ordem nível <strong className="text-red-400">Recruta (NEX {draft.nex}%)</strong>,
+          você tem acesso ilimitado a itens de Categoria 0, mas pode pegar apenas
           <strong className="text-red-400"> até 2 itens de Categoria I</strong>. Seu limite de peso depende da sua Força ({strength}).
+        </p>
+        <p className="text-parchment-600 text-xs mb-4">
+          Todo agente novo começa como <strong className="text-parchment-500">Recruta</strong> — a Patente (e o acesso
+          a equipamento melhor) sobe durante as missões, com os Pontos de Prestígio que o mestre concede. Por isso ela
+          não é escolhida aqui na criação.
         </p>
         
         <div className="flex flex-wrap gap-4">

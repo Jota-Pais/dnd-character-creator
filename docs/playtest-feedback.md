@@ -78,7 +78,7 @@
   1. O botão de cada trilha (linha ~133-134) só mostra `name` + `requirement` — a `description` da trilha (já existe em `trilhas.json`, ex.: "Treinado para abater alvos com eficiência e velocidade. Suas armas são suas melhores amigas.") **nunca é exibida** na seleção.
   2. Depois de escolhida, a lista de features (linha ~140) filtra `f.nex <= draft.nex` — em NEX 10% só aparece a feature de NEX 10, escondendo as de NEX 40/65/99 (o resto da progressão da trilha) — exatamente o que o usuário descreveu.
 - **A decidir na execução:** exibir a `description` no card/botão de cada trilha (mesmo antes de selecionar, pra ajudar a decidir entre as 5 opções) e, ao selecionar, listar **todas** as features (10/40/65/99), sinalizando visualmente quais já foram alcançadas (NEX atual) vs. quais ainda são futuras (ex.: opacidade menor, ícone de cadeado, ou "🔒 ainda não alcançado").
-- **Status:** registrado (sem ação)
+- **Status:** ✅ CORRIGIDO — cada trilha mostra sua `description` no card (antes de escolher); ao selecionar, lista **todos** os 4 poderes (NEX 10/40/65/99), com os futuros esmaecidos + "🔒" + "(ainda não alcançado)".
 
 ### F9 — Amaldiçoar Arma precisa de escolha de elemento ao ser aprendido (Ordem)
 - **Sistema:** Ordem Paranormal

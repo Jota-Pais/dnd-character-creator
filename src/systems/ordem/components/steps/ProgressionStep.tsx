@@ -119,6 +119,10 @@ function TrilhaSection({ draft, cls, onSelect }: { draft: import('../../types/ch
 
   return (
     <Section title="Trilha (NEX 10%)">
+      <p className="text-parchment-600 text-[11px] mb-2">
+        A trilha define o foco do seu agente e concede um poder em NEX 10%, 40%, 65% e 99%. Você já vê aqui
+        tudo que cada trilha entrega ao longo da progressão, mesmo o que só ganha mais pra frente.
+      </p>
       <div className="grid grid-cols-1 gap-1.5 mb-3">
         {options.map(t => (
           <button
@@ -131,17 +135,28 @@ function TrilhaSection({ draft, cls, onSelect }: { draft: import('../../types/ch
             }}
           >
             <p className="font-fantasy font-semibold text-sm text-parchment-200">{t.name}</p>
-            {t.requirement && <p className="text-parchment-600 text-[11px]">Requisito: {t.requirement}</p>}
+            <p className="text-parchment-500 text-[11px] mt-0.5 leading-snug">{t.description}</p>
+            {t.requirement && <p className="text-parchment-600 text-[11px] mt-0.5">Requisito: {t.requirement}</p>}
           </button>
         ))}
       </div>
       {selected && (
         <div className="space-y-1.5 pt-2 border-t border-parchment-900">
-          {selected.features.filter(f => f.nex <= draft.nex).map(f => (
-            <p key={f.name} className="text-parchment-500 text-xs">
-              <span className="font-semibold text-parchment-300">NEX {f.nex}% – {f.name}.</span> {f.description}
-            </p>
-          ))}
+          <p className="text-[11px] font-fantasy text-parchment-600 uppercase tracking-widest mb-1">
+            Poderes de {selected.name}
+          </p>
+          {selected.features.map(f => {
+            const reached = f.nex <= draft.nex
+            return (
+              <p key={f.name} className={`text-xs ${reached ? 'text-parchment-500' : 'text-parchment-700 opacity-70'}`}>
+                <span className={`font-semibold ${reached ? 'text-parchment-300' : 'text-parchment-500'}`}>
+                  {reached ? '' : '🔒 '}NEX {f.nex}% – {f.name}.
+                </span>{' '}
+                {f.description}
+                {!reached && <span className="text-parchment-700 italic"> (ainda não alcançado)</span>}
+              </p>
+            )
+          })}
         </div>
       )}
     </Section>

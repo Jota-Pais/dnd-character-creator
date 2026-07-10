@@ -8,7 +8,9 @@ import { deriveStats, getTrainedSkills, getEffectiveAttributes, getSkillGrade } 
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount } from '../../utils/ritualUtils'
 import { getEquipmentById, getTotalCarryCapacity, getModifiedSpaces, getModifiedDefenseBonus, getEffectiveCategory } from '../../utils/equipmentUtils'
 import { getModification } from '../../utils/modificationUtils'
+import { getOrdemWeaponAttack } from '../../utils/ordemWeaponUtils'
 import { getPatente } from '../../utils/patenteUtils'
+import type { OrdemWeapon } from '../../types/equipment'
 
 const CAT_ROMAN = ['0', 'I', 'II', 'III', 'IV']
 import { getReachedTrilhaSlots, getPeLimit } from '../../utils/progressionUtils'
@@ -38,6 +40,10 @@ export function ReviewStep() {
   const ritualSlots = draft.class === 'occultist' ? getRitualSlotsCount(draft.nex) : 0
   const rituals = draft.ritualChoices.slice(0, ritualSlots).filter((r): r is string => Boolean(r)).map(getRitualById).filter(Boolean)
   const equipment = draft.equipmentChoices.map(getEquipmentById).filter(Boolean)
+  const weaponAttacks = draft.equipmentChoices
+    .map(getEquipmentById)
+    .filter((w): w is OrdemWeapon => w?.type === 'weapon')
+    .map(w => getOrdemWeaponAttack(w, draft, draft.equipmentModifications[w.id] ?? []))
   const upgradedSkills = trainedSkills.filter(sid => getSkillGrade(draft, sid) !== 'treinado')
 
   function handleExport() {
@@ -123,6 +129,23 @@ export function ReviewStep() {
               <p key={`${r.id}-${i}`} className="text-parchment-500 text-xs">
                 <span className="font-semibold text-parchment-300">{r.name}</span>{' '}
                 <span className="text-parchment-700">({formatRitualElementLabel(r, draft.ritualElementChoices)}, {r.circle}º Círculo)</span>
+              </p>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {weaponAttacks.length > 0 && (
+        <Section title="Ataques">
+          <p className="text-parchment-700 text-[11px] mb-2">Role a quantidade de d20 indicada e use o melhor + o bônus.</p>
+          <div className="space-y-1">
+            {weaponAttacks.map((a, i) => (
+              <p key={`${a.name}-${i}`} className="text-parchment-500 text-xs">
+                <span className="font-semibold text-parchment-300">{a.name}</span>{' '}
+                <span className="text-parchment-700">
+                  {a.skill} {a.rollDice}d20 <span className="text-gold-500">{a.attackBonus >= 0 ? `+${a.attackBonus}` : a.attackBonus}</span>
+                  {' · '}{a.damage} · Crít. {a.critical}{a.range && a.range !== '-' ? ` · ${a.range}` : ''}
+                </span>
               </p>
             ))}
           </div>

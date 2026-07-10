@@ -4,6 +4,11 @@
 > Fase de **intake**: itens registrados sem ação. Execução/correção só depois do "pode executar".
 > Legenda de triagem: 🐛 bug · 📖 fidelidade ao livro · 🎨 UX/polish · ✨ feature nova
 
+## Refinamentos pós-execução (2026-07-10)
+
+- **R1 — Ataques por arma na ficha do Ordem** (paridade com o F5 do D&D): ✅ a Revisão e a ficha impressa do Ordem ganharam uma seção **Ataques** por arma equipada — perícia (Luta/Pontaria), quantos d20 rolar (Força/Agilidade, pegando o melhor) + bônus de treino, dano (com Força no corpo a corpo), crítico e alcance. `ordemWeaponUtils.getOrdemWeaponAttack`.
+- **R2 — Efeitos de combate das modificações aplicados aos números** (não só texto): ✅ Certeira/Alongada entram no bônus de ataque, Cruel no dano, Calibre Grosso adiciona +1 dado, Perigosa/Mira Laser ampliam a margem de ameaça do crítico. Campos de combate adicionados às modificações; dobrados no `getOrdemWeaponAttack`. (Dum dum/Explosiva são de munição — ficam na lista de mods do item de munição.)
+
 ---
 
 ### F1 — Descrições de equipamento no passo de Equipamento (D&D)

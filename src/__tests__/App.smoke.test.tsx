@@ -115,7 +115,9 @@ describe('App (smoke) — Ordem Paranormal', () => {
     render(<App />)
     expect(screen.getByText('Bianca')).toBeInTheDocument()
     expect(screen.getByText('Rituais Conhecidos')).toBeInTheDocument()
-    expect(screen.getByText('Faca')).toBeInTheDocument()
+    expect(screen.getByText('Ataques')).toBeInTheDocument() // seção de ataques por arma (R1)
+    // "Faca" aparece na seção Ataques e na de Equipamento
+    expect(screen.getAllByText('Faca').length).toBeGreaterThan(0)
     expect(screen.getByText(/Imprimir \/ Salvar PDF/)).toBeInTheDocument()
   })
 })

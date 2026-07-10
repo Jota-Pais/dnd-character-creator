@@ -9,7 +9,9 @@ import { getReachedTrilhaSlots, getPeLimit } from '../utils/progressionUtils'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount } from '../utils/ritualUtils'
 import { getEquipmentById, getTotalCarryCapacity, getModifiedSpaces, getModifiedDefenseBonus, getEffectiveCategory } from '../utils/equipmentUtils'
 import { getModification } from '../utils/modificationUtils'
+import { getOrdemWeaponAttack } from '../utils/ordemWeaponUtils'
 import { getPatente } from '../utils/patenteUtils'
+import type { OrdemWeapon } from '../types/equipment'
 
 const CAT_ROMAN = ['0', 'I', 'II', 'III', 'IV']
 
@@ -33,6 +35,10 @@ export function PrintableSheet() {
   const ritualSlots = draft.class === 'occultist' ? getRitualSlotsCount(draft.nex) : 0
   const rituals = draft.ritualChoices.slice(0, ritualSlots).filter((r): r is string => Boolean(r)).map(getRitualById).filter(Boolean)
   const equipment = draft.equipmentChoices.map(getEquipmentById).filter(Boolean)
+  const weaponAttacks = draft.equipmentChoices
+    .map(getEquipmentById)
+    .filter((w): w is OrdemWeapon => w?.type === 'weapon')
+    .map(w => getOrdemWeaponAttack(w, draft, draft.equipmentModifications[w.id] ?? []))
 
   return (
     <div className="print-sheet mx-auto max-w-[820px] bg-white text-gray-900 p-8 rounded-lg shadow-lg" style={{ fontFamily: 'Georgia, serif' }}>
@@ -137,6 +143,39 @@ export function PrintableSheet() {
                 <p className="text-gray-700">{r.description}</p>
               </div>
             ))}
+          </div>
+        </section>
+      )}
+
+      {weaponAttacks.length > 0 && (
+        <section className="mb-4">
+          <h2 className="font-bold uppercase text-sm tracking-wide border-b border-gray-400 mb-1">Ataques</h2>
+          <p className="text-[11px] text-gray-500 mb-1">Role a quantidade de d20 indicada e use o melhor resultado + o bônus.</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-gray-500 text-left">
+                  <th className="font-semibold pr-2">Arma</th>
+                  <th className="font-semibold pr-2">Perícia</th>
+                  <th className="font-semibold pr-2">Ataque</th>
+                  <th className="font-semibold pr-2">Dano</th>
+                  <th className="font-semibold pr-2">Crít.</th>
+                  <th className="font-semibold">Alcance</th>
+                </tr>
+              </thead>
+              <tbody>
+                {weaponAttacks.map((a, i) => (
+                  <tr key={`${a.name}-${i}`} className="text-gray-800">
+                    <td className="pr-2 py-0.5 font-semibold">{a.name}</td>
+                    <td className="pr-2 py-0.5">{a.skill}</td>
+                    <td className="pr-2 py-0.5">{a.rollDice}d20 <strong>{a.attackBonus >= 0 ? `+${a.attackBonus}` : a.attackBonus}</strong></td>
+                    <td className="pr-2 py-0.5">{a.damage}</td>
+                    <td className="pr-2 py-0.5">{a.critical}</td>
+                    <td className="py-0.5">{a.range}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </section>
       )}

@@ -8,6 +8,7 @@ import { EMPTY_EQUIPMENT_DRAFT } from '../types/equipment'
 import { EMPTY_SPELL_CHOICES } from '../types/spell'
 import { loadLibrary, saveCharacterEntry, deleteCharacterEntry, newId, type SavedCharacter } from '../utils/storage'
 import { getFirstIncompleteStep, isStepComplete } from '../utils/draftValidation'
+import { useAppStore } from '../../../core/stores/appStore'
 
 const initialLibrary = loadLibrary()
 
@@ -97,7 +98,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
       return { library, currentId: state.currentId === id ? null : state.currentId }
     }),
 
-  goToGallery: () =>
+  goToGallery: () => {
     set(state => {
       // salva a ficha atual antes de sair (se tem nome, vale a pena guardar)
       if (state.draft.name.trim()) {
@@ -105,7 +106,11 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
         return { view: 'gallery', library }
       }
       return { view: 'gallery' }
-    }),
+    })
+    // Sai para a galeria GLOBAL unificada (os dois sistemas juntos), não a galeria interna
+    // deste sistema — senão a lista só mostra os personagens deste sistema até dar refresh.
+    useAppStore.getState().setActiveSystem(null)
+  },
 
   goToPrint: () => set({ view: 'print' }),
   exitPrint: () => set({ view: 'wizard' }),
@@ -313,13 +318,14 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     }
   },
 
-  // "Recomeçar" na Revisão: mantém a ficha salva e volta para a galeria
+  // "Concluir/Recomeçar" na Revisão: mantém a ficha salva e volta para a galeria global
   reset: () => {
     const { currentId, draft, currentStep } = get()
     const library = draft.name.trim()
       ? persistCurrent(currentId, draft, currentStep).library
       : get().library
     set({ view: 'gallery', library, currentId: null })
+    useAppStore.getState().setActiveSystem(null)
   },
 
   importDraft: (draft) => {

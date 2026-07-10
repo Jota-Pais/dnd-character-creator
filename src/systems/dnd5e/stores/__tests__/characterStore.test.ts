@@ -3,6 +3,7 @@ import { useCharacterStore } from '../characterStore'
 import { EMPTY_DRAFT } from '../../types/character'
 import { loadLibrary } from '../../utils/storage'
 import { COMPLETE_DRAFT } from '../../../../test/fixtures'
+import { useAppStore } from '../../../../core/stores/appStore'
 
 beforeEach(() => {
   localStorage.clear()
@@ -72,5 +73,20 @@ describe('biblioteca', () => {
     useCharacterStore.getState().duplicateCharacter(id)
     const copies = useCharacterStore.getState().library.filter(c => c.draft.name.includes('cópia'))
     expect(copies.length).toBe(1)
+  })
+})
+
+describe('sair para a galeria global unificada (F14)', () => {
+  it('goToGallery() zera o activeSystemId (volta ao Multiverso, não à galeria mono-sistema)', () => {
+    useAppStore.getState().setActiveSystem('dnd5e')
+    useCharacterStore.getState().goToGallery()
+    expect(useAppStore.getState().activeSystemId).toBeNull()
+  })
+
+  it('reset() (Concluir) zera o activeSystemId', () => {
+    useAppStore.getState().setActiveSystem('dnd5e')
+    useCharacterStore.getState().setName('Krusk')
+    useCharacterStore.getState().reset()
+    expect(useAppStore.getState().activeSystemId).toBeNull()
   })
 })

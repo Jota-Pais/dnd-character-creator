@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
 import { useAppStore } from '../../core/stores/appStore'
 import { useOrdemStore } from './stores/characterStore'
-import { Gallery } from './components/Gallery'
 import { StepIndicator } from '../../components/wizard/StepIndicator'
 import { ordemSystem } from './index'
 
@@ -92,27 +91,19 @@ export function OrdemApp() {
           )}
         </header>
 
-        {view === 'gallery' ? (
-          <main className="animate-fade-in pb-24 lg:pb-32">
-            <Gallery />
-          </main>
-        ) : (
-          <>
-            <div className="mb-8 flex justify-center">
-              <StepIndicator steps={stepIndicatorProps} currentStepId={currentStep} />
-            </div>
+        <div className="mb-8 flex justify-center">
+          <StepIndicator steps={stepIndicatorProps} currentStepId={currentStep} />
+        </div>
 
-            <div className="flex items-center gap-3 mb-8">
-              <div className="h-px flex-1 bg-gradient-to-r from-transparent to-parchment-800" />
-              <span className="text-parchment-700 text-sm">✦</span>
-              <div className="h-px flex-1 bg-gradient-to-l from-transparent to-parchment-800" />
-            </div>
+        <div className="flex items-center gap-3 mb-8">
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent to-parchment-800" />
+          <span className="text-parchment-700 text-sm">✦</span>
+          <div className="h-px flex-1 bg-gradient-to-l from-transparent to-parchment-800" />
+        </div>
 
-            <main key={currentStep} className="animate-fade-in relative pb-24 lg:pb-32">
-              {CurrentStepComponent && <CurrentStepComponent />}
-            </main>
-          </>
-        )}
+        <main key={currentStep} className="animate-fade-in relative pb-24 lg:pb-32">
+          {CurrentStepComponent && <CurrentStepComponent />}
+        </main>
       </div>
 
       <footer className="border-t border-parchment-900 mt-12 py-6 text-center">

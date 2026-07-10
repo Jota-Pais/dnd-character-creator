@@ -1,5 +1,20 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { useOrdemStore } from '../characterStore'
+import { useAppStore } from '../../../../core/stores/appStore'
+
+describe('useOrdemStore — sair para a galeria global', () => {
+  it('reset() volta para a galeria global unificada (activeSystemId = null)', () => {
+    useAppStore.getState().setActiveSystem('ordem')
+    useOrdemStore.getState().reset()
+    expect(useAppStore.getState().activeSystemId).toBeNull()
+  })
+
+  it('goToGallery() volta para a galeria global unificada (activeSystemId = null)', () => {
+    useAppStore.getState().setActiveSystem('ordem')
+    useOrdemStore.getState().goToGallery()
+    expect(useAppStore.getState().activeSystemId).toBeNull()
+  })
+})
 
 describe('useOrdemStore — setClass', () => {
   beforeEach(() => {

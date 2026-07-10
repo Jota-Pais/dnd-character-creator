@@ -3,6 +3,7 @@ import type { OrdemAttributes, OrdemCharacterDraft, WizardStep } from '../types/
 import { WIZARD_STEPS, EMPTY_DRAFT } from '../types/character'
 import { loadLibrary, saveCharacterEntry, deleteCharacterEntry, newId, type SavedCharacter } from '../utils/storage'
 import { getFirstIncompleteStep, isStepComplete } from '../utils/draftValidation'
+import { useAppStore } from '../../../core/stores/appStore'
 
 const initialLibrary = loadLibrary()
 
@@ -84,14 +85,17 @@ export const useOrdemStore = create<CharacterStore>((set, get) => ({
       return { library, currentId: state.currentId === id ? null : state.currentId }
     }),
 
-  goToGallery: () =>
+  goToGallery: () => {
     set(state => {
       if (state.draft.name.trim()) {
         const { library } = persistCurrent(state.currentId, state.draft, state.currentStep)
         return { view: 'gallery', library }
       }
       return { view: 'gallery' }
-    }),
+    })
+    // Sai para a galeria GLOBAL unificada (os dois sistemas juntos), não a galeria interna.
+    useAppStore.getState().setActiveSystem(null)
+  },
 
   goToPrint: () => set({ view: 'print' }),
   exitPrint: () => set({ view: 'wizard' }),
@@ -199,6 +203,7 @@ export const useOrdemStore = create<CharacterStore>((set, get) => ({
       ? persistCurrent(currentId, draft, currentStep).library
       : get().library
     set({ view: 'gallery', library, currentId: null })
+    useAppStore.getState().setActiveSystem(null)
   },
 
   importDraft: (draft) => {

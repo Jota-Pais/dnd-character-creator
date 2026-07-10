@@ -11,6 +11,10 @@ import {
   isEquipmentStepComplete,
   hasWeaponProficiency,
   getEquipmentById,
+  getEffectiveCategory,
+  getModifiedSpaces,
+  getModifiedDefenseBonus,
+  getEffectiveCategoryCount,
   EQUIPMENTS,
 } from '../equipmentUtils'
 
@@ -140,5 +144,41 @@ describe('equipmentUtils', () => {
       equipmentChoices: ['mochila-militar', 'faca', 'martelo', 'punhal'], // 3 espaços ≤ 4
     })
     expect(isEquipmentStepComplete(comMochila)).toBe(true)
+  })
+
+  // ── Modificações (F12, Fase B) ──
+
+  it('getEffectiveCategory sobe com as modificações (teto IV)', () => {
+    const pistola = getEquipmentById('pistola')! // Cat I
+    expect(getEffectiveCategory(pistola, 0)).toBe(1)
+    expect(getEffectiveCategory(pistola, 2)).toBe(3)
+    expect(getEffectiveCategory(pistola, 9)).toBe(4) // teto
+  })
+
+  it('modificações aplicam variação de espaço e Defesa, e sobem a categoria efetiva', () => {
+    // Reforçada na proteção leve (Cat I, Defesa +5, 2 espaços): +2 Defesa, +1 espaço, Cat I → II
+    const draft = makeDraft({
+      class: 'combatant', patente: 'operador',
+      equipmentChoices: ['protecao-leve'],
+      equipmentModifications: { 'protecao-leve': ['reforcada'] },
+    })
+    expect(getModifiedDefenseBonus(draft)).toBe(7) // 5 + 2
+    expect(getModifiedSpaces(draft)).toBe(3) // 2 + 1
+    expect(getEffectiveCategoryCount(draft, 2)).toBe(1) // virou Cat II
+    expect(getEffectiveCategoryCount(draft, 1)).toBe(0)
+  })
+
+  it('uma modificação que estoura o limite da Patente invalida o loadout', () => {
+    const base = {
+      class: 'combatant' as const, patente: 'recruta' as const,
+      attributes: { ...EMPTY_ATTRIBUTES, strength: 1 }, // capacidade 5
+      equipmentChoices: ['protecao-leve'],
+    }
+    // sem modificação: proteção-leve é Cat I → Recruta (limite 2 Cat I) aceita
+    expect(isEquipmentStepComplete(makeDraft(base))).toBe(true)
+    // com Reforçada: vira Cat II → Recruta não tem Cat II → inválido
+    expect(isEquipmentStepComplete(makeDraft({ ...base, equipmentModifications: { 'protecao-leve': ['reforcada'] } }))).toBe(false)
+    // um Operador (1 slot Cat II) já aceita a mesma proteção modificada
+    expect(isEquipmentStepComplete(makeDraft({ ...base, patente: 'operador', equipmentModifications: { 'protecao-leve': ['reforcada'] } }))).toBe(true)
   })
 })

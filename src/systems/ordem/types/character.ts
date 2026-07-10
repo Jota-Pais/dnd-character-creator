@@ -64,6 +64,8 @@ export type OrdemCharacterDraft = {
   patente: OrdemPatenteId
   /** Itens do equipamento inicial, limitados pela Patente e pela capacidade de carga. */
   equipmentChoices: string[]
+  /** Modificações aplicadas por item (id do item → ids das modificações). Cada mod sobe a categoria efetiva em I. */
+  equipmentModifications: Record<string, string[]>
 }
 
 export const EMPTY_ATTRIBUTES: OrdemAttributes = {
@@ -93,4 +95,5 @@ export const EMPTY_DRAFT: OrdemCharacterDraft = {
   versatilityChoice: null,
   patente: 'recruta',
   equipmentChoices: [],
+  equipmentModifications: {},
 }

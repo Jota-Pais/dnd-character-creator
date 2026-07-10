@@ -1,0 +1,31 @@
+[
+  { "id": "certeira", "name": "Certeira", "effect": "+2 em testes de ataque.", "target": "weapon-melee-ranged" },
+  { "id": "cruel", "name": "Cruel", "effect": "+2 em rolagens de dano.", "target": "weapon-melee-ranged" },
+  { "id": "discreta-arma", "name": "Discreta", "effect": "+10 em testes de ocultar a arma e permite o teste mesmo destreinado.", "target": "weapon-melee-ranged" },
+  { "id": "perigosa", "name": "Perigosa", "effect": "+2 na margem de ameaça.", "target": "weapon-melee-ranged" },
+
+  { "id": "alongada", "name": "Alongada", "effect": "+2 em testes de ataque.", "target": "weapon-firearm" },
+  { "id": "calibre-grosso", "name": "Calibre Grosso", "effect": "Aumenta o dano em mais um dado do mesmo tipo.", "target": "weapon-firearm" },
+  { "id": "compensador", "name": "Compensador", "effect": "Anula a penalidade por disparar em rajadas.", "target": "weapon-firearm" },
+  { "id": "discreta-fogo", "name": "Discreta", "effect": "+5 em testes de ocultar a arma e reduz o espaço em 1.", "target": "weapon-firearm", "spaceDelta": -1 },
+  { "id": "ferrolho-automatico", "name": "Ferrolho Automático", "effect": "A arma se torna automática (pode disparar em rajadas).", "target": "weapon-firearm" },
+  { "id": "mira-laser", "name": "Mira Laser", "effect": "+2 na margem de ameaça.", "target": "weapon-firearm" },
+  { "id": "mira-telescopica", "name": "Mira Telescópica", "effect": "Aumenta o alcance da arma e o alcance da habilidade Ataque Furtivo.", "target": "weapon-firearm" },
+  { "id": "silenciador", "name": "Silenciador", "effect": "Reduz as penalidades em Furtividade ao disparar a arma.", "target": "weapon-firearm" },
+  { "id": "visao-de-calor", "name": "Visão de Calor", "effect": "A arma ignora camuflagem do alvo.", "target": "weapon-firearm" },
+
+  { "id": "tatica", "name": "Tática", "effect": "Pode sacar a arma como uma ação livre.", "target": "weapon-any" },
+
+  { "id": "dum-dum", "name": "Dum dum", "effect": "+2 no multiplicador de crítico.", "target": "ammunition" },
+  { "id": "explosiva", "name": "Explosiva", "effect": "Aumenta o dano em +2d6.", "target": "ammunition" },
+
+  { "id": "antibombas", "name": "Antibombas", "effect": "+5 em testes de resistência contra efeitos de área. Só em proteção pesada.", "target": "protection-heavy" },
+  { "id": "blindada", "name": "Blindada", "effect": "Aumenta a resistência a dano para 5 e o espaço ocupado em 1. Só em proteção pesada.", "target": "protection-heavy", "spaceDelta": 1 },
+  { "id": "discreta-protecao", "name": "Discreta", "effect": "Reduz o espaço em 1 e dá +5 em Crime para ocultar (permite o teste destreinado). Só em proteção leve.", "target": "protection-light", "spaceDelta": -1, "excludes": ["reforcada"] },
+  { "id": "reforcada", "name": "Reforçada", "effect": "Aumenta a Defesa fornecida em +2 e o espaço ocupado em 1.", "target": "protection-any", "defenseBonus": 2, "spaceDelta": 1, "excludes": ["discreta-protecao"] },
+
+  { "id": "aprimorado", "name": "Aprimorado", "effect": "O bônus de perícia concedido pelo acessório aumenta para +5.", "target": "accessory" },
+  { "id": "discreto-acessorio", "name": "Discreto", "effect": "Reduz o espaço em 1, dá +5 em Crime para ocultar e permite o teste destreinado.", "target": "accessory", "spaceDelta": -1 },
+  { "id": "funcao-adicional", "name": "Função Adicional", "effect": "O acessório concede +2 em uma perícia adicional à sua escolha.", "target": "accessory" },
+  { "id": "instrumental", "name": "Instrumental", "effect": "O acessório pode ser usado como um kit de perícia específico.", "target": "accessory" }
+]

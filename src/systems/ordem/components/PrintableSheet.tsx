@@ -7,8 +7,11 @@ import { getPower } from '../utils/powerUtils'
 import { deriveStats, getTrainedSkills, getEffectiveAttributes, getSkillGrade } from '../utils/characterUtils'
 import { getReachedTrilhaSlots, getPeLimit } from '../utils/progressionUtils'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount } from '../utils/ritualUtils'
-import { getEquipmentById, getTotalCarryCapacity, getCurrentSpaces, getEquippedDefenseBonus } from '../utils/equipmentUtils'
+import { getEquipmentById, getTotalCarryCapacity, getModifiedSpaces, getModifiedDefenseBonus, getEffectiveCategory } from '../utils/equipmentUtils'
+import { getModification } from '../utils/modificationUtils'
 import { getPatente } from '../utils/patenteUtils'
+
+const CAT_ROMAN = ['0', 'I', 'II', 'III', 'IV']
 
 /**
  * Versão imprimível com layout compacto de ficha cobrindo atributos,
@@ -21,7 +24,7 @@ export function PrintableSheet() {
   if (!cls) return null
 
   const attributes = getEffectiveAttributes(draft)
-  const stats = deriveStats(cls, attributes, draft.nex, getEquippedDefenseBonus(draft.equipmentChoices))
+  const stats = deriveStats(cls, attributes, draft.nex, getModifiedDefenseBonus(draft))
   const trainedSkills = getTrainedSkills(draft)
   const trilha = draft.trilha ? getTrilha(draft.trilha) : undefined
   const reachedTrilhaFeatures = trilha ? getReachedTrilhaSlots(draft.nex).map(nex => trilha.features.find(f => f.nex === nex)).filter(Boolean) : []
@@ -141,16 +144,22 @@ export function PrintableSheet() {
       {equipment.length > 0 && (
         <section className="mb-4">
           <h2 className="font-bold uppercase text-sm tracking-wide border-b border-gray-400 mb-2">
-            Equipamento ({getCurrentSpaces(draft.equipmentChoices)}/{getTotalCarryCapacity(draft)} espaços)
+            Equipamento ({getModifiedSpaces(draft)}/{getTotalCarryCapacity(draft)} espaços)
           </h2>
           <div className="space-y-1">
-            {equipment.map(item => item && (
-              <p key={item.id} className="text-sm">
-                <span className="font-semibold">{item.name}</span> (Cat {item.category === 0 ? '0' : 'I'}, {item.spaces} esp.)
-                {item.type === 'weapon' && ` — ${item.damage} ${item.damageType} (Crítico: ${item.critical})`}
-                {item.type === 'protection' && ` — Defesa +${item.defenseBonus}`}
-              </p>
-            ))}
+            {equipment.map(item => {
+              if (!item) return null
+              const mods = draft.equipmentModifications[item.id] ?? []
+              const effCat = getEffectiveCategory(item, mods.length)
+              return (
+                <p key={item.id} className="text-sm">
+                  <span className="font-semibold">{item.name}</span> (Cat {CAT_ROMAN[effCat]}, {item.spaces} esp.)
+                  {item.type === 'weapon' && ` — ${item.damage} ${item.damageType} (Crítico: ${item.critical})`}
+                  {item.type === 'protection' && ` — Defesa +${item.defenseBonus}`}
+                  {mods.length > 0 && <span className="text-gray-600"> · Mods: {mods.map(m => getModification(m)?.name).filter(Boolean).join(', ')}</span>}
+                </p>
+              )
+            })}
           </div>
         </section>
       )}

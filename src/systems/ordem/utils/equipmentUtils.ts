@@ -4,6 +4,7 @@ import equipmentsJson from '../data/equipments.json'
 import { getOrdemClass } from './classUtils'
 import { getEffectiveAttributes } from './characterUtils'
 import { getPatente, getCategoryLimit } from './patenteUtils'
+import { getModification } from './modificationUtils'
 
 export const EQUIPMENTS = equipmentsJson as OrdemEquipment[]
 
@@ -49,7 +50,7 @@ export function getCategoryICount(choices: string[]): number {
   return getCategoryCount(choices, 1)
 }
 
-/** Soma o bônus de Defesa das proteções escolhidas (Defesa = 10 + Agilidade + este bônus; livro pág. 43). */
+/** Soma o bônus de Defesa das proteções escolhidas (sem modificações). */
 export function getEquippedDefenseBonus(choices: string[]): number {
   return choices.reduce((acc, id) => {
     const item = getEquipmentById(id)
@@ -57,15 +58,59 @@ export function getEquippedDefenseBonus(choices: string[]): number {
   }, 0)
 }
 
-export function isEquipmentStepComplete(draft: OrdemCharacterDraft): boolean {
-  // A carga é limitada pela capacidade (5×Força efetiva + bônus de itens). Um loadout vazio é válido.
-  const capacity = getTotalCarryCapacity(draft)
-  if (getCurrentSpaces(draft.equipmentChoices) > capacity) return false
+// ── Efeitos das modificações (Fase B) ──────────────────────────────────────────
 
-  // Cada categoria (I–IV) é limitada pela Patente do agente (Tabela 3.1); Categoria 0 é ilimitada.
+function itemMods(draft: OrdemCharacterDraft, itemId: string): string[] {
+  return draft.equipmentModifications[itemId] ?? []
+}
+
+/** Categoria efetiva de um item = base + número de modificações (cada mod sobe a categoria em I; teto IV). */
+export function getEffectiveCategory(item: OrdemEquipment, modCount: number): number {
+  return Math.min(4, item.category + modCount)
+}
+
+/** Espaços de um item já com as variações das modificações (Discreta −1, Reforçada/Blindada +1...). */
+function itemModifiedSpaces(item: OrdemEquipment, modIds: string[]): number {
+  const delta = modIds.reduce((acc, id) => acc + (getModification(id)?.spaceDelta ?? 0), 0)
+  return Math.max(0, item.spaces + delta)
+}
+
+/** Total de espaços ocupados, considerando as modificações. */
+export function getModifiedSpaces(draft: OrdemCharacterDraft): number {
+  return draft.equipmentChoices.reduce((acc, id) => {
+    const item = getEquipmentById(id)
+    return acc + (item ? itemModifiedSpaces(item, itemMods(draft, id)) : 0)
+  }, 0)
+}
+
+/** Bônus de Defesa total das proteções, incluindo modificações (Reforçada +2). */
+export function getModifiedDefenseBonus(draft: OrdemCharacterDraft): number {
+  return draft.equipmentChoices.reduce((acc, id) => {
+    const item = getEquipmentById(id)
+    if (!item || item.type !== 'protection') return acc
+    const modDef = itemMods(draft, id).reduce((s, mid) => s + (getModification(mid)?.defenseBonus ?? 0), 0)
+    return acc + item.defenseBonus + modDef
+  }, 0)
+}
+
+/** Quantos itens escolhidos têm a categoria EFETIVA (base + modificações) igual a `category`. */
+export function getEffectiveCategoryCount(draft: OrdemCharacterDraft, category: number): number {
+  return draft.equipmentChoices.reduce((acc, id) => {
+    const item = getEquipmentById(id)
+    if (!item) return acc
+    return acc + (getEffectiveCategory(item, itemMods(draft, id).length) === category ? 1 : 0)
+  }, 0)
+}
+
+export function isEquipmentStepComplete(draft: OrdemCharacterDraft): boolean {
+  // A carga (já com as variações das modificações) é limitada pela capacidade (5×Força + bônus). Loadout vazio é válido.
+  const capacity = getTotalCarryCapacity(draft)
+  if (getModifiedSpaces(draft) > capacity) return false
+
+  // Cada categoria EFETIVA (base + modificações) é limitada pela Patente (Tabela 3.1); Categoria 0 é ilimitada.
   const patente = getPatente(draft.patente)
   for (let cat = 1; cat <= 4; cat++) {
-    if (getCategoryCount(draft.equipmentChoices, cat) > getCategoryLimit(patente, cat)) return false
+    if (getEffectiveCategoryCount(draft, cat) > getCategoryLimit(patente, cat)) return false
   }
 
   // Proficiência de arma NÃO bloqueia: o livro permite possuir uma arma sem proficiência (com

@@ -120,5 +120,8 @@ export function sanitizeImportedDraft(parsed: unknown): OrdemCharacterDraft | nu
       : {},
     patente: isValidPatente(p.patente) ? p.patente : 'recruta',
     equipmentChoices: Array.isArray(p.equipmentChoices) ? p.equipmentChoices : [],
+    equipmentModifications: p.equipmentModifications && typeof p.equipmentModifications === 'object' && !Array.isArray(p.equipmentModifications)
+      ? p.equipmentModifications
+      : {},
   }
 }

@@ -2,8 +2,9 @@ import { useOrdemStore } from '../../stores/characterStore'
 import { STEP_LABELS } from '../../types/character'
 import type { OrdemEquipment } from '../../types/equipment'
 import {
-  EQUIPMENTS, getTotalCarryCapacity, getCurrentSpaces, getCategoryCount, hasWeaponProficiency,
+  EQUIPMENTS, getTotalCarryCapacity, getModifiedSpaces, getEffectiveCategoryCount, getEffectiveCategory, hasWeaponProficiency,
 } from '../../utils/equipmentUtils'
+import { getAvailableModifications, canApplyModification, isModifiable } from '../../utils/modificationUtils'
 import { getEffectiveAttributes } from '../../utils/characterUtils'
 import { getPatente, getCategoryLimit, PATENTES } from '../../utils/patenteUtils'
 import { isStepComplete } from '../../utils/draftValidation'
@@ -16,7 +17,7 @@ export function EquipmentStep() {
 
   const strength = getEffectiveAttributes(draft).strength
   const capacity = getTotalCarryCapacity(draft)
-  const currentSpaces = getCurrentSpaces(draft.equipmentChoices)
+  const currentSpaces = getModifiedSpaces(draft)
   const isOverCapacity = currentSpaces > capacity
 
   const patente = getPatente(draft.patente)
@@ -30,17 +31,35 @@ export function EquipmentStep() {
   const toggleItem = (itemId: string) => {
     const choices = [...draft.equipmentChoices]
     const idx = choices.indexOf(itemId)
-    if (idx > -1) choices.splice(idx, 1)
-    else choices.push(itemId)
+    if (idx > -1) {
+      choices.splice(idx, 1)
+      // Ao remover o item, descarta as modificações dele.
+      const mods = { ...draft.equipmentModifications }
+      delete mods[itemId]
+      updateDraft({ equipmentChoices: choices, equipmentModifications: mods })
+      return
+    }
+    choices.push(itemId)
     updateDraft({ equipmentChoices: choices })
+  }
+
+  const toggleModification = (itemId: string, modId: string) => {
+    const current = draft.equipmentModifications[itemId] ?? []
+    const next = current.includes(modId) ? current.filter(m => m !== modId) : [...current, modId]
+    const updated = { ...draft.equipmentModifications }
+    if (next.length === 0) delete updated[itemId]
+    else updated[itemId] = next
+    updateDraft({ equipmentModifications: updated })
   }
 
   const renderItem = (item: OrdemEquipment) => {
     const isSelected = draft.equipmentChoices.includes(item.id)
+    const appliedMods = draft.equipmentModifications[item.id] ?? []
 
     // Bloqueio por limite de categoria da Patente (Categoria 0 é ilimitada).
+    // Um item novo entra na sua categoria BASE (ainda sem modificações).
     const catLimit = getCategoryLimit(patente, item.category)
-    const catCount = getCategoryCount(draft.equipmentChoices, item.category)
+    const catCount = getEffectiveCategoryCount(draft, item.category)
     const wouldExceedCategory = !isSelected && catCount >= catLimit
     // Proficiência de arma NÃO bloqueia — apenas sinaliza (você pode requisitar, mas com penalidade).
     const noProficiency = !hasWeaponProficiency(draft, item)
@@ -66,7 +85,8 @@ export function EquipmentStep() {
           </span>
           <div className="flex flex-wrap gap-2 text-xs text-parchment-500 mt-1">
             <span className="bg-parchment-900/50 px-2 py-0.5 rounded border border-parchment-800/50">
-              Cat {CAT_ROMAN[item.category]}
+              Cat {CAT_ROMAN[getEffectiveCategory(item, appliedMods.length)]}
+              {appliedMods.length > 0 && <span className="text-gold-500/80"> (base {CAT_ROMAN[item.category]})</span>}
             </span>
             <span className="bg-parchment-900/50 px-2 py-0.5 rounded border border-parchment-800/50">
               Espaço: {item.spaces}
@@ -97,6 +117,47 @@ export function EquipmentStep() {
           </div>
           {item.description && (
             <p className="text-parchment-600 text-xs mt-1.5 leading-snug">{item.description}</p>
+          )}
+
+          {isSelected && isModifiable(item) && (
+            <div className="mt-2 pt-2 border-t border-parchment-900/50" onClick={e => e.stopPropagation()}>
+              <p className="text-[11px] text-parchment-600 mb-1">
+                Modificações <span className="text-parchment-700">(cada uma sobe a categoria em I e consome um slot da sua Patente)</span>
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {getAvailableModifications(item).map(mod => {
+                  const applied = appliedMods.includes(mod.id)
+                  // Aplicar sobe a categoria efetiva em 1 → precisa caber no limite da Patente.
+                  const newCat = getEffectiveCategory(item, appliedMods.length) + 1
+                  const fitsPatente = newCat <= 4 && (getEffectiveCategoryCount(draft, newCat) + 1) <= getCategoryLimit(patente, newCat)
+                  const addable = applied || (canApplyModification(item, appliedMods, mod.id) && fitsPatente)
+                  return (
+                    <button
+                      key={mod.id}
+                      onClick={() => { if (addable) toggleModification(item.id, mod.id) }}
+                      disabled={!addable}
+                      title={mod.effect}
+                      className={`text-[11px] px-2 py-0.5 rounded border transition-all ${applied
+                        ? 'bg-gold-900/40 border-gold-700/50 text-gold-300'
+                        : addable
+                          ? 'border-parchment-800 text-parchment-500 hover:border-gold-800 hover:text-parchment-300'
+                          : 'border-parchment-900/40 text-parchment-800 cursor-not-allowed'}`}
+                    >
+                      {mod.name}
+                    </button>
+                  )
+                })}
+              </div>
+              {appliedMods.length > 0 && (
+                <ul className="mt-1.5 space-y-0.5">
+                  {getAvailableModifications(item).filter(m => appliedMods.includes(m.id)).map(m => (
+                    <li key={m.id} className="text-[11px] text-gold-600/90">
+                      <span className="font-semibold">{m.name}:</span> {m.effect}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           )}
         </div>
 
@@ -161,7 +222,7 @@ export function EquipmentStep() {
             <span className="font-fantasy text-xl">{currentSpaces} / {capacity}</span>
           </div>
           {accessibleCategories.map(c => {
-            const count = getCategoryCount(draft.equipmentChoices, c)
+            const count = getEffectiveCategoryCount(draft, c)
             const limit = getCategoryLimit(patente, c)
             const over = count > limit
             return (

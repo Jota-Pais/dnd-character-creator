@@ -98,7 +98,7 @@
 - **Triagem:** 🎨 UX/polish (a decisão está certa; falta só **comunicá-la**) — não é 📖 nem 🐛, já que a regra foi seguida corretamente
 - **Gap real encontrado:** o app nunca explica essa decisão pro jogador em nenhum ponto do fluxo (nem no passo de Equipamento, onde a Patente Recruta é o que define os limites de categoria/carga) — só aparece de relance na ficha final, sem contexto. Por isso pareceu "esquecimento" e não "decisão".
 - **A decidir na execução:** adicionar uma nota breve no passo Equipamento (algo como "Todo agente novo começa como Recruta — a Patente sobe em jogo, com Pontos de Prestígio ganhos em missões") pra fechar essa lacuna de comunicação, sem mudar a mecânica.
-- **Status:** ✅ CORRIGIDO — nota no passo Equipamento explicando que todo agente novo começa Recruta e que a Patente sobe em jogo (via Pontos de Prestígio do mestre), por isso não é escolhida na criação. Sem mudança de mecânica.
+- **Status:** ✅ CORRIGIDO → ↪ **SUPERADO pelo F12** — a nota inicial explicava por que a Patente *não* era escolhida; mas a decisão de 2026-07-10 (F12) tornou a Patente um parâmetro **escolhível** na criação. A nota foi substituída pelo seletor de Patente + explicação do que ela faz, no passo Equipamento.
 
 ### F11 — Nenhum item de equipamento (Ordem) tem descrição
 - **Sistema:** Ordem Paranormal
@@ -116,8 +116,10 @@
 - **Confirmado no livro:** existe um sistema inteiro de Modificações (Cap. 3) — Tabela 3.5 (armas, ex.: "Certeira: +2 em testes de ataque"), Tabela 3.7 (proteções) e Tabela 3.9 (acessórios). Cada modificação aumenta a categoria do item em I (mais caro/raro, análogo a upgrade de item mágico no D&D).
 - **Confirmado no código:** não existe **nenhum** campo de modificação no tipo `OrdemEquipment` nem dado de lista de modificações — o sistema simplesmente não foi implementado.
 - **Triagem:** ✨ feature nova (mecânica inteira faltando, não é ajuste pontual)
-- **Nota de escopo:** pode ter tensão com a decisão da Fase 14 de não simular Patente completa (upgrade de categoria via modificação normalmente dependeria de posse permanente/Patente mais alta) — **a esclarecer com o usuário na execução**: modificações entram no loadout inicial (Recruta) do jeito que o livro permite, ou fica só pro pós-criação (fora do escopo do criador de fichas, já que a Patente também está fora)?
-- **Status:** registrado (sem ação) — decisão de escopo pendente
+- **Decisão de escopo (2026-07-10):** o usuário decidiu que **Patente e Modificações são obrigatórias** — Patente vira um parâmetro escolhível na criação (como o NEX é o "nível" do agente), e as Modificações entram junto. Isso **revoga** a decisão da Fase 14 ("sem Patente, loadout fixo de Recruta"). Implementação em 2 fases.
+- **Status:** 🔄 EM ANDAMENTO —
+  - **Fase A (Patente) ✅ CONCLUÍDA:** `patente` no draft + `patentes.json` (Tabela 3.1) + `patenteUtils` (getPatente/getCategoryLimit/isValidPatente); seletor de Patente no passo Equipamento; validação passou a usar o limite por categoria da Patente (Cat 0 ilimitada, I–IV pela tabela) no lugar da regra fixa "≤2 Cat I, nada de II+"; a loja mostra todas as categorias com contador por categoria; proficiência de arma virou **informativa** (não bloqueia — o livro permite possuir sem proficiência, e isso destrava armas pesadas de Patente alta); Revisão/ficha mostram a Patente. +8 testes.
+  - **Fase B (Modificações) ⬜ a fazer:** dados das Tabelas 3.5/3.7/3.9, campo no draft, UI de aplicar modificação por item (cada mod sobe a categoria efetiva → conta nos limites da Patente), exibição na Revisão/ficha.
 
 ### F13 — Mochila Militar (e possivelmente outros itens) não aplica seu efeito mecânico
 - **Sistema:** Ordem Paranormal

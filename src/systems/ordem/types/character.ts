@@ -1,4 +1,5 @@
 import type { OrdemElement } from './ritual'
+import type { OrdemPatenteId } from './patente'
 
 export type OrdemAttributes = {
   agility: number
@@ -59,7 +60,9 @@ export type OrdemCharacterDraft = {
   skillGradeChoices: string[][]
   /** Versatilidade (NEX 50%): poder de classe extra, ou 1º poder de uma trilha diferente da sua. */
   versatilityChoice: VersatilityChoice | null
-  /** Itens comprados do equipamento inicial (Loadout Recruta). */
+  /** Patente na Ordem — define o limite de itens por categoria requisitáveis (Tabela 3.1). */
+  patente: OrdemPatenteId
+  /** Itens do equipamento inicial, limitados pela Patente e pela capacidade de carga. */
   equipmentChoices: string[]
 }
 
@@ -88,5 +91,6 @@ export const EMPTY_DRAFT: OrdemCharacterDraft = {
   attributeIncreaseChoices: [],
   skillGradeChoices: [],
   versatilityChoice: null,
+  patente: 'recruta',
   equipmentChoices: [],
 }

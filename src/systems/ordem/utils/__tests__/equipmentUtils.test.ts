@@ -9,6 +9,8 @@ import {
   getEquipmentCarryBonus,
   getTotalCarryCapacity,
   isEquipmentStepComplete,
+  hasWeaponProficiency,
+  getEquipmentById,
   EQUIPMENTS,
 } from '../equipmentUtils'
 
@@ -67,10 +69,25 @@ describe('equipmentUtils', () => {
     expect(isEquipmentStepComplete(draft)).toBe(true)
   })
 
-  it('exige proficiência de arma da classe', () => {
-    // machadinha é arma Tática: combatente é proficiente, ocultista não
-    expect(isEquipmentStepComplete(makeDraft({ class: 'occultist', equipmentChoices: ['machadinha'] }))).toBe(false)
+  it('proficiência de arma é informativa (não bloqueia a escolha; o livro permite possuir sem proficiência)', () => {
+    // machadinha (Cat 0, arma Tática): ambos podem requisitar; a proficiência só é sinalizada
+    expect(isEquipmentStepComplete(makeDraft({ class: 'occultist', equipmentChoices: ['machadinha'] }))).toBe(true)
     expect(isEquipmentStepComplete(makeDraft({ class: 'combatant', equipmentChoices: ['machadinha'] }))).toBe(true)
+    const machadinha = getEquipmentById('machadinha')!
+    expect(hasWeaponProficiency(makeDraft({ class: 'occultist' }), machadinha)).toBe(false)
+    expect(hasWeaponProficiency(makeDraft({ class: 'combatant' }), machadinha)).toBe(true)
+  })
+
+  it('a Patente limita os itens por categoria (Tabela 3.1)', () => {
+    // proteção-pesada é Cat II
+    expect(isEquipmentStepComplete(makeDraft({ class: 'combatant', patente: 'recruta', equipmentChoices: ['protecao-pesada'] }))).toBe(false)
+    expect(isEquipmentStepComplete(makeDraft({ class: 'combatant', patente: 'operador', equipmentChoices: ['protecao-pesada'] }))).toBe(true)
+  })
+
+  it('Recruta permite 2 itens de Cat I; Operador permite 3', () => {
+    const tresCatI = ['municao-balas-longas', 'municao-cartuchos', 'municao-foguete'] // 3× Cat I
+    expect(isEquipmentStepComplete(makeDraft({ class: 'combatant', patente: 'recruta', equipmentChoices: tresCatI }))).toBe(false)
+    expect(isEquipmentStepComplete(makeDraft({ class: 'combatant', patente: 'operador', equipmentChoices: tresCatI }))).toBe(true)
   })
 
   it('getEquippedDefenseBonus soma o bônus das proteções (proteção-leve +5, escudo +2)', () => {
@@ -80,11 +97,12 @@ describe('equipmentUtils', () => {
     expect(getEquippedDefenseBonus(['protecao-leve', 'escudo'])).toBe(7)
   })
 
-  it('bloqueia itens de Categoria II+ (fora do loadout Recruta, defesa contra import)', () => {
-    // proteção-pesada é Cat II, não é arma (isola a checagem de categoria da de proficiência)
+  it('Recruta (patente padrão) não acessa Categoria II+', () => {
+    // proteção-pesada e fuzil-assalto são Cat II; Recruta tem limite 0 para Cat II
     expect(isEquipmentStepComplete(makeDraft({ class: 'combatant', equipmentChoices: ['protecao-pesada'] }))).toBe(false)
-    // fuzil-assalto é Cat II e arma Tática: mesmo com proficiência do combatente, a categoria barra
     expect(isEquipmentStepComplete(makeDraft({ class: 'combatant', equipmentChoices: ['fuzil-assalto'] }))).toBe(false)
+    // ...mas um Agente de Elite acessa
+    expect(isEquipmentStepComplete(makeDraft({ class: 'combatant', patente: 'agente-elite', equipmentChoices: ['fuzil-assalto'] }))).toBe(true)
   })
 
   it('Mochila Militar dá +2 de capacidade de carga (livro pág. 66)', () => {

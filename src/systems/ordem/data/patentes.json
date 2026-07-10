@@ -1,0 +1,7 @@
+[
+  { "id": "recruta", "name": "Recruta", "pp": 0, "credit": "Baixo", "categoryLimits": [2, 0, 0, 0] },
+  { "id": "operador", "name": "Operador", "pp": 20, "credit": "Médio", "categoryLimits": [3, 1, 0, 0] },
+  { "id": "agente-especial", "name": "Agente Especial", "pp": 50, "credit": "Médio", "categoryLimits": [3, 2, 1, 0] },
+  { "id": "oficial-operacoes", "name": "Oficial de Operações", "pp": 100, "credit": "Alto", "categoryLimits": [3, 3, 2, 1] },
+  { "id": "agente-elite", "name": "Agente de Elite", "pp": 200, "credit": "Ilimitado", "categoryLimits": [3, 3, 3, 2] }
+]

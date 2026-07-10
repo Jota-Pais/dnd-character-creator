@@ -12,6 +12,7 @@ import {
 import { hasTrilha, hasVersatility } from './progressionUtils'
 import { isRitualStepComplete } from './ritualUtils'
 import { isEquipmentStepComplete } from './equipmentUtils'
+import { isValidPatente } from './patenteUtils'
 
 function countFilled(arr: (string | null)[], required: number): boolean {
   return arr.slice(0, required).filter(Boolean).length === required
@@ -117,6 +118,7 @@ export function sanitizeImportedDraft(parsed: unknown): OrdemCharacterDraft | nu
     ritualElementChoices: p.ritualElementChoices && typeof p.ritualElementChoices === 'object' && !Array.isArray(p.ritualElementChoices)
       ? p.ritualElementChoices
       : {},
+    patente: isValidPatente(p.patente) ? p.patente : 'recruta',
     equipmentChoices: Array.isArray(p.equipmentChoices) ? p.equipmentChoices : [],
   }
 }

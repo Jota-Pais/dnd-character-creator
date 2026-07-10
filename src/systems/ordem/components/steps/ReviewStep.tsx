@@ -7,6 +7,7 @@ import { getPower } from '../../utils/powerUtils'
 import { deriveStats, getTrainedSkills, getEffectiveAttributes, getSkillGrade } from '../../utils/characterUtils'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount } from '../../utils/ritualUtils'
 import { getEquipmentById, getTotalCarryCapacity, getCurrentSpaces, getEquippedDefenseBonus } from '../../utils/equipmentUtils'
+import { getPatente } from '../../utils/patenteUtils'
 import { getReachedTrilhaSlots, getPeLimit } from '../../utils/progressionUtils'
 import { exportCharacter } from '../../utils/storage'
 import { StepNav } from '../common/StepNav'
@@ -46,7 +47,7 @@ export function ReviewStep() {
         <h2 className="font-fantasy text-2xl font-bold text-gold-400">{draft.name}</h2>
         {draft.concept && <p className="text-parchment-500 text-sm italic mt-1">"{draft.concept}"</p>}
         <p className="text-parchment-600 text-xs mt-1">
-          {origin?.name} · {cls.name}{trilha ? ` (${trilha.name})` : ''} · NEX {draft.nex}%
+          {origin?.name} · {cls.name}{trilha ? ` (${trilha.name})` : ''} · NEX {draft.nex}% · {getPatente(draft.patente).name}
         </p>
       </div>
 

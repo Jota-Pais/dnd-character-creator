@@ -8,6 +8,7 @@ import { deriveStats, getTrainedSkills, getEffectiveAttributes, getSkillGrade } 
 import { getReachedTrilhaSlots, getPeLimit } from '../utils/progressionUtils'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount } from '../utils/ritualUtils'
 import { getEquipmentById, getTotalCarryCapacity, getCurrentSpaces, getEquippedDefenseBonus } from '../utils/equipmentUtils'
+import { getPatente } from '../utils/patenteUtils'
 
 /**
  * Versão imprimível com layout compacto de ficha cobrindo atributos,
@@ -35,7 +36,7 @@ export function PrintableSheet() {
       <header className="text-center border-b-2 border-gray-800 pb-3 mb-4">
         <h1 className="text-3xl font-bold">{draft.name}</h1>
         {draft.concept && <p className="italic text-gray-600 mt-1">"{draft.concept}"</p>}
-        <p className="text-sm text-gray-600 mt-1">{origin?.name} · {cls.name}{trilha ? ` (${trilha.name})` : ''} · NEX {draft.nex}% · Patente: Recruta</p>
+        <p className="text-sm text-gray-600 mt-1">{origin?.name} · {cls.name}{trilha ? ` (${trilha.name})` : ''} · NEX {draft.nex}% · Patente: {getPatente(draft.patente).name}</p>
       </header>
 
       <section className="grid grid-cols-4 gap-3 mb-2 text-center">

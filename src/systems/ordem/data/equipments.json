@@ -11,7 +11,8 @@
     "damage": "1d4",
     "critical": "19",
     "range": "Curto",
-    "damageType": "C"
+    "damageType": "C",
+    "description": "Faca de combate — arma branca leve e perfurante."
   },
   {
     "id": "martelo",
@@ -25,7 +26,8 @@
     "damage": "1d6",
     "critical": "x2",
     "range": "-",
-    "damageType": "I"
+    "damageType": "I",
+    "description": "Martelo — arma de concussão de uma mão."
   },
   {
     "id": "punhal",
@@ -39,7 +41,8 @@
     "damage": "1d4",
     "critical": "x3",
     "range": "-",
-    "damageType": "P"
+    "damageType": "P",
+    "description": "Punhal — arma branca leve, ágil e perfurante."
   },
   {
     "id": "bastao",
@@ -53,7 +56,8 @@
     "damage": "1d6/1d8",
     "critical": "x2",
     "range": "-",
-    "damageType": "I"
+    "damageType": "I",
+    "description": "Bastão — arma de concussão simples."
   },
   {
     "id": "machete",
@@ -67,7 +71,8 @@
     "damage": "1d6",
     "critical": "19",
     "range": "-",
-    "damageType": "C"
+    "damageType": "C",
+    "description": "Machete — lâmina larga de corte."
   },
   {
     "id": "lanca",
@@ -81,7 +86,8 @@
     "damage": "1d6",
     "critical": "x2",
     "range": "Curto",
-    "damageType": "P"
+    "damageType": "P",
+    "description": "Lança — arma de haste perfurante."
   },
   {
     "id": "cajado",
@@ -95,7 +101,8 @@
     "damage": "1d6/1d6",
     "critical": "x2",
     "range": "-",
-    "damageType": "I"
+    "damageType": "I",
+    "description": "Cajado — bastão longo empunhado com as duas mãos."
   },
   {
     "id": "arco",
@@ -109,7 +116,8 @@
     "damage": "1d6",
     "critical": "x3",
     "range": "Médio",
-    "damageType": "P"
+    "damageType": "P",
+    "description": "Arco — arma de disparo à distância."
   },
   {
     "id": "besta",
@@ -123,7 +131,8 @@
     "damage": "1d8",
     "critical": "19",
     "range": "Médio",
-    "damageType": "P"
+    "damageType": "P",
+    "description": "Besta — arma de disparo à distância."
   },
   {
     "id": "pistola",
@@ -137,7 +146,8 @@
     "damage": "1d12",
     "critical": "18",
     "range": "Curto",
-    "damageType": "B"
+    "damageType": "B",
+    "description": "Pistola — arma de fogo de disparo curto."
   },
   {
     "id": "revolver",
@@ -151,7 +161,8 @@
     "damage": "2d6",
     "critical": "19/x3",
     "range": "Curto",
-    "damageType": "B"
+    "damageType": "B",
+    "description": "Revólver — arma de fogo de disparo curto."
   },
   {
     "id": "fuzil-de-caca",
@@ -165,7 +176,8 @@
     "damage": "2d8",
     "critical": "19/x3",
     "range": "Médio",
-    "damageType": "B"
+    "damageType": "B",
+    "description": "Fuzil de caça — arma de fogo de disparo longo."
   },
   {
     "id": "machadinha",
@@ -179,7 +191,8 @@
     "damage": "1d6",
     "critical": "x3",
     "range": "Curto",
-    "damageType": "C"
+    "damageType": "C",
+    "description": "Machadinha — machado leve, pode ser arremessado."
   },
   {
     "id": "nunchaku",
@@ -193,7 +206,8 @@
     "damage": "1d8",
     "critical": "x2",
     "range": "-",
-    "damageType": "I"
+    "damageType": "I",
+    "description": "Nunchaku — arma de concussão ágil."
   },
   {
     "id": "corrente",
@@ -207,7 +221,8 @@
     "damage": "1d8",
     "critical": "x2",
     "range": "-",
-    "damageType": "I"
+    "damageType": "I",
+    "description": "Corrente — arma de concussão flexível, com alcance."
   },
   {
     "id": "espada",
@@ -221,7 +236,8 @@
     "damage": "1d8/1d10",
     "critical": "19",
     "range": "-",
-    "damageType": "C"
+    "damageType": "C",
+    "description": "Espada — arma branca versátil de corte."
   },
   {
     "id": "florete",
@@ -235,7 +251,8 @@
     "damage": "1d6",
     "critical": "18",
     "range": "-",
-    "damageType": "P"
+    "damageType": "P",
+    "description": "Florete — espada fina e ágil, de estocada perfurante."
   },
   {
     "id": "machado",
@@ -249,7 +266,8 @@
     "damage": "1d8",
     "critical": "x3",
     "range": "-",
-    "damageType": "C"
+    "damageType": "C",
+    "description": "Machado — arma de corte de uma mão."
   },
   {
     "id": "maca",
@@ -263,7 +281,8 @@
     "damage": "2d4",
     "critical": "x2",
     "range": "-",
-    "damageType": "I"
+    "damageType": "I",
+    "description": "Maça — arma de concussão."
   },
   {
     "id": "acha",
@@ -277,7 +296,8 @@
     "damage": "1d12",
     "critical": "x3",
     "range": "-",
-    "damageType": "C"
+    "damageType": "C",
+    "description": "Acha — machado de guerra empunhado com as duas mãos."
   },
   {
     "id": "gadanho",
@@ -291,7 +311,8 @@
     "damage": "2d4",
     "critical": "x4",
     "range": "-",
-    "damageType": "C"
+    "damageType": "C",
+    "description": "Gadanho — foice de guerra de corte."
   },
   {
     "id": "katana",
@@ -305,7 +326,8 @@
     "damage": "1d10",
     "critical": "19",
     "range": "-",
-    "damageType": "C"
+    "damageType": "C",
+    "description": "Katana — espada de lâmina curva e afiada."
   },
   {
     "id": "marreta",
@@ -319,7 +341,8 @@
     "damage": "3d4",
     "critical": "x2",
     "range": "-",
-    "damageType": "I"
+    "damageType": "I",
+    "description": "Marreta — arma pesada de concussão, empunhada com as duas mãos."
   },
   {
     "id": "montante",
@@ -333,7 +356,8 @@
     "damage": "2d6",
     "critical": "19",
     "range": "-",
-    "damageType": "C"
+    "damageType": "C",
+    "description": "Montante — espada grande empunhada com as duas mãos."
   },
   {
     "id": "motosserra",
@@ -347,7 +371,8 @@
     "damage": "3d6",
     "critical": "x2",
     "range": "-",
-    "damageType": "C"
+    "damageType": "C",
+    "description": "Moto-serra — ferramenta de corte usada como arma, empunhada com as duas mãos."
   },
   {
     "id": "arco-composto",
@@ -361,7 +386,8 @@
     "damage": "1d10",
     "critical": "x3",
     "range": "Médio",
-    "damageType": "P"
+    "damageType": "P",
+    "description": "Arco composto — arco reforçado, de maior potência."
   },
   {
     "id": "balestra",
@@ -375,7 +401,8 @@
     "damage": "1d12",
     "critical": "19",
     "range": "Médio",
-    "damageType": "P"
+    "damageType": "P",
+    "description": "Balestra — besta pesada de disparo."
   },
   {
     "id": "submetralhadora",
@@ -389,7 +416,8 @@
     "damage": "2d6",
     "critical": "19/x3",
     "range": "Curto",
-    "damageType": "B"
+    "damageType": "B",
+    "description": "Submetralhadora — arma de fogo automática de disparo curto."
   },
   {
     "id": "espingarda",
@@ -403,7 +431,8 @@
     "damage": "4d6",
     "critical": "x3",
     "range": "Curto",
-    "damageType": "B"
+    "damageType": "B",
+    "description": "Espingarda — arma de fogo de dispersão, a curta distância."
   },
   {
     "id": "fuzil-assalto",
@@ -417,7 +446,8 @@
     "damage": "2d10",
     "critical": "19/x3",
     "range": "Médio",
-    "damageType": "B"
+    "damageType": "B",
+    "description": "Fuzil de assalto — arma de fogo automática de disparo longo."
   },
   {
     "id": "fuzil-precisao",
@@ -431,7 +461,8 @@
     "damage": "2d10",
     "critical": "19/x3",
     "range": "Longo",
-    "damageType": "B"
+    "damageType": "B",
+    "description": "Fuzil de precisão — rifle de longo alcance para tiro preciso."
   },
   {
     "id": "bazuca",
@@ -445,7 +476,8 @@
     "damage": "10d8",
     "critical": "x2",
     "range": "Médio",
-    "damageType": "I"
+    "damageType": "I",
+    "description": "Bazuca — lançador de foguetes explosivo."
   },
   {
     "id": "lanca-chamas",
@@ -459,7 +491,8 @@
     "damage": "6d6",
     "critical": "x2",
     "range": "Curto",
-    "damageType": "Fogo"
+    "damageType": "Fogo",
+    "description": "Lança-chamas — projeta um jato de fogo à frente."
   },
   {
     "id": "metralhadora",
@@ -473,49 +506,56 @@
     "damage": "2d12",
     "critical": "19/x3",
     "range": "Médio",
-    "damageType": "B"
+    "damageType": "B",
+    "description": "Metralhadora — arma de fogo automática pesada."
   },
   {
     "id": "municao-flechas",
     "name": "Flechas",
     "category": 0,
     "spaces": 1,
-    "type": "general"
+    "type": "general",
+    "description": "Flechas — munição para arcos e bestas."
   },
   {
     "id": "municao-balas-curtas",
     "name": "Balas Curtas",
     "category": 0,
     "spaces": 1,
-    "type": "general"
+    "type": "general",
+    "description": "Balas curtas — munição para armas de disparo curto (pistolas, revólveres, submetralhadoras)."
   },
   {
     "id": "municao-balas-longas",
     "name": "Balas Longas",
     "category": 1,
     "spaces": 1,
-    "type": "general"
+    "type": "general",
+    "description": "Balas longas — munição para armas de disparo longo (fuzis, metralhadoras)."
   },
   {
     "id": "municao-cartuchos",
     "name": "Cartuchos",
     "category": 1,
     "spaces": 1,
-    "type": "general"
+    "type": "general",
+    "description": "Cartuchos — munição para espingardas."
   },
   {
     "id": "municao-foguete",
     "name": "Foguete",
     "category": 1,
     "spaces": 1,
-    "type": "general"
+    "type": "general",
+    "description": "Foguete — munição para a bazuca."
   },
   {
     "id": "municao-combustivel",
     "name": "Combustível",
     "category": 1,
     "spaces": 1,
-    "type": "general"
+    "type": "general",
+    "description": "Combustível — carga para o lança-chamas."
   },
   {
     "id": "protecao-leve",
@@ -523,7 +563,8 @@
     "category": 1,
     "spaces": 2,
     "type": "protection",
-    "defenseBonus": 5
+    "defenseBonus": 5,
+    "description": "Jaqueta de couro pesada ou colete de kevlar, usada por seguranças e policiais. Fornece +5 na Defesa."
   },
   {
     "id": "protecao-pesada",
@@ -531,7 +572,8 @@
     "category": 2,
     "spaces": 5,
     "type": "protection",
-    "defenseBonus": 10
+    "defenseBonus": 10,
+    "description": "Equipamento de forças especiais (capacete e colete de kevlar em várias camadas). Fornece +10 na Defesa e resistência a balístico/corte/impacto/perfuração 2, mas impõe –5 em perícias que sofrem penalidade de carga."
   },
   {
     "id": "escudo",
@@ -540,133 +582,152 @@
     "spaces": 2,
     "type": "protection",
     "defenseBonus": 2,
-    "isShield": true
+    "isShield": true,
+    "description": "Escudo medieval ou de tropa de choque, empunhado em uma mão. Fornece +2 na Defesa (conta como proteção pesada para fins de proficiência)."
   },
   {
     "id": "kit-pericia",
     "name": "Kit de Perícia",
     "category": 0,
     "spaces": 1,
-    "type": "accessory"
+    "type": "accessory",
+    "description": "Conjunto de ferramentas necessárias para certas perícias. Sem o kit, você sofre –5 no teste. Existe um kit para cada perícia que o exige."
   },
   {
     "id": "utensilio",
     "name": "Utensílio",
     "category": 1,
     "spaces": 1,
-    "type": "accessory"
+    "type": "accessory",
+    "description": "Item comum de utilidade específica (canivete, lupa, smartphone, notebook...). Concede +2 numa perícia à escolha (exceto Luta e Pontaria), definida ao adquirir. Ocupa 1 espaço e precisa ser empunhado."
   },
   {
     "id": "vestimenta",
     "name": "Vestimenta",
     "category": 1,
     "spaces": 1,
-    "type": "accessory"
+    "type": "accessory",
+    "description": "Peça de vestuário que concede +2 numa perícia específica (exceto Luta e Pontaria) — por exemplo, botas militares para Atletismo."
   },
   {
     "id": "granada-atordoamento",
     "name": "Granada de Atordoamento",
     "category": 0,
     "spaces": 1,
-    "type": "explosive"
+    "type": "explosive",
+    "description": "Flashbang: cria um estouro barulhento e luminoso. Arremesse em alcance médio (raio de 6m); seres na área ficam atordoados por 1 rodada (Fortitude reduz para ofuscado e surdo)."
   },
   {
     "id": "granada-fragmentacao",
     "name": "Granada de Fragmentação",
     "category": 1,
     "spaces": 1,
-    "type": "explosive"
+    "type": "explosive",
+    "description": "Espalha fragmentos perfurantes. Arremesse em alcance médio (raio de 6m); seres na área sofrem 8d6 de perfuração (Reflexos reduz à metade)."
   },
   {
     "id": "granada-fumaca",
     "name": "Granada de Fumaça",
     "category": 0,
     "spaces": 1,
-    "type": "explosive"
+    "type": "explosive",
+    "description": "Produz fumaça espessa e escura (raio de 6m); seres na área ficam cegos e sob camuflagem total. Dura 2 rodadas."
   },
   {
     "id": "granada-incendiaria",
     "name": "Granada Incendiária",
     "category": 1,
     "spaces": 1,
-    "type": "explosive"
+    "type": "explosive",
+    "description": "Espalha labaredas incandescentes (raio de 6m); seres na área sofrem 6d6 de fogo e ficam em chamas (Reflexos reduz o dano e evita as chamas)."
   },
   {
     "id": "mina-antipessoal",
     "name": "Mina Antipessoal",
     "category": 1,
     "spaces": 1,
-    "type": "explosive"
+    "type": "explosive",
+    "description": "Mina detonada por controle remoto (a até alcance longo). Dispara centenas de bolas de aço num cone de 6m, causando 12d6 de perfuração (Reflexos reduz à metade). Instalar exige uma ação completa e um teste de Tática (DT 15)."
   },
   {
     "id": "algemas",
     "name": "Algemas",
     "category": 0,
     "spaces": 1,
-    "type": "general"
+    "type": "general",
+    "description": "Par de algemas de aço. Para prender alguém não indefeso, agarre-o e vença um novo teste de agarrar. Prende os dois pulsos (–5 em ações com as mãos, impede conjuração) ou um pulso a um objeto fixo. Escapar exige Acrobacia DT 30."
   },
   {
     "id": "arpeu",
     "name": "Arpéu",
     "category": 0,
     "spaces": 1,
-    "type": "general"
+    "type": "general",
+    "description": "Gancho de aço na ponta de uma corda, para se fixar em muros, janelas e parapeitos. Prender exige Pontaria (DT 15); subir com a ajuda da corda dá +5 em Atletismo."
   },
   {
     "id": "bandoleira",
     "name": "Bandoleira",
     "category": 1,
     "spaces": 1,
-    "type": "general"
+    "type": "general",
+    "description": "Cinto com bolsos e alças. Uma vez por rodada, você pode sacar ou guardar um item do inventário como uma ação livre."
   },
   {
     "id": "binoculos",
     "name": "Binóculos",
     "category": 0,
     "spaces": 1,
-    "type": "general"
+    "type": "general",
+    "description": "Binóculos militares. Fornecem +5 em Percepção para observar coisas distantes."
   },
   {
     "id": "bloqueador-sinal",
     "name": "Bloqueador de Sinal",
     "category": 1,
     "spaces": 1,
-    "type": "general"
+    "type": "general",
+    "description": "Dispositivo compacto que \"polui\" a frequência de rádio dos celulares, impedindo qualquer aparelho em alcance médio de se conectar."
   },
   {
     "id": "cicatrizante",
     "name": "Cicatrizante",
     "category": 1,
     "spaces": 1,
-    "type": "general"
+    "type": "general",
+    "description": "Spray com remédio de potente efeito cicatrizante. Gaste uma ação padrão e o item para curar 2d8+2 PV em você ou num ser adjacente."
   },
   {
     "id": "corda",
     "name": "Corda",
     "category": 0,
     "spaces": 1,
-    "type": "general"
+    "type": "general",
+    "description": "Rolo com 10 metros de corda resistente. Ajuda a descer buracos ou prédios (+5 em Atletismo) e a amarrar pessoas inconscientes, entre outros usos."
   },
   {
     "id": "equipamento-sobrevivencia",
     "name": "Equipamento de Sobrevivência",
     "category": 0,
     "spaces": 2,
-    "type": "general"
+    "type": "general",
+    "description": "Mochila com saco de dormir, panelas, GPS e outros itens de mato. Fornece +5 em Sobrevivência para acampar e orientar-se, e permite fazer esses testes sem treinamento."
   },
   {
     "id": "lanterna-tatica",
     "name": "Lanterna Tática",
     "category": 1,
     "spaces": 1,
-    "type": "general"
+    "type": "general",
+    "description": "Ilumina lugares escuros. Você pode gastar uma ação de movimento para mirar a luz nos olhos de um ser em alcance curto, deixando-o ofuscado por 1 rodada."
   },
   {
     "id": "mascara-gas",
     "name": "Máscara de Gás",
     "category": 0,
     "spaces": 1,
-    "type": "general"
+    "type": "general",
+    "description": "Máscara com filtro que cobre o rosto inteiro. Fornece +10 em Fortitude contra efeitos que dependam de respiração."
   },
   {
     "id": "mochila-militar",
@@ -674,62 +735,71 @@
     "category": 1,
     "spaces": 0,
     "type": "general",
-    "carryBonus": 2
+    "carryBonus": 2,
+    "description": "Mochila leve e de alta qualidade. Não ocupa nenhum espaço e aumenta sua capacidade de carga em 2 espaços."
   },
   {
     "id": "oculos-visao-termica",
     "name": "Óculos de Visão Térmica",
     "category": 1,
     "spaces": 1,
-    "type": "general"
+    "type": "general",
+    "description": "Óculos que eliminam a penalidade em testes causada por camuflagem."
   },
   {
     "id": "pe-cabra",
     "name": "Pé de Cabra",
     "category": 0,
     "spaces": 1,
-    "type": "general"
+    "type": "general",
+    "description": "Barra de ferro. Fornece +5 em testes de Força para arrombar portas e pode ser usada em combate como um bastão."
   },
   {
     "id": "pistola-dardos",
     "name": "Pistola de Dardos",
     "category": 1,
     "spaces": 1,
-    "type": "general"
+    "type": "general",
+    "description": "Dispara dardos com um poderoso sonífero. Um ser acertado fica inconsciente até o fim da cena (Fortitude reduz para desprevenido e lento por 1 rodada). Vem com 2 dardos."
   },
   {
     "id": "pistola-sinalizadora",
     "name": "Pistola Sinalizadora",
     "category": 0,
     "spaces": 1,
-    "type": "general"
+    "type": "general",
+    "description": "Dispara um sinalizador luminoso para chamar pessoas à sua localização. Pode ser usada uma vez como arma de disparo leve (alcance curto), causando 2d6 de fogo."
   },
   {
     "id": "soqueira",
     "name": "Soqueira",
     "category": 0,
     "spaces": 1,
-    "type": "general"
+    "type": "general",
+    "description": "Peça de metal usada entre os dedos. Fornece +1 nas rolagens de dano desarmado e aceita modificações de armas corpo a corpo."
   },
   {
     "id": "spray-pimenta",
     "name": "Spray de Pimenta",
     "category": 1,
     "spaces": 1,
-    "type": "general"
+    "type": "general",
+    "description": "Dispara um composto químico que causa dor e lacrimejo. Gaste uma ação padrão para atingir um ser adjacente, cegando-o por 1d4 rodadas (Fortitude evita). A carga dura dois usos."
   },
   {
     "id": "taser",
     "name": "Taser",
     "category": 1,
     "spaces": 1,
-    "type": "general"
+    "type": "general",
+    "description": "Dispositivo de eletrochoque. Gaste uma ação padrão para atingir um ser adjacente: ele sofre 1d6 de eletricidade e fica atordoado por 1 rodada (Fortitude evita). A bateria dura dois usos."
   },
   {
     "id": "traje-hazmat",
     "name": "Traje Hazmat",
     "category": 1,
     "spaces": 2,
-    "type": "general"
+    "type": "general",
+    "description": "Roupa impermeável que cobre o corpo inteiro. Fornece +5 em testes de resistência contra efeitos ambientais e resistência a químico 10."
   }
 ]

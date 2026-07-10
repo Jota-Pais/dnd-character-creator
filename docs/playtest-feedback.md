@@ -107,7 +107,7 @@
 - **Confirmado no código:** dos **70 itens** de `equipments.json`, **todos os 70** têm o campo `description` vazio/ausente (o tipo `OrdemEquipmentBase` já tem `description?: string` opcional — é só um gap de dado, não de modelagem). Armas/proteções têm campos mecânicos (dano, categoria, Defesa etc.) exibidos, mas nenhum texto explicativo do item em si (o que ele faz, pra que serve).
 - **Triagem:** 🎨 UX/polish (mesmo princípio do F1 — decisão informada é a proposta central do produto)
 - **A decidir na execução:** digitalizar as descrições do Cap. 3 do livro pra cada item (armas, proteções, granadas, acessórios, itens gerais) e exibi-las no passo Equipamento (e Revisão/ficha, se fizer sentido).
-- **Status:** registrado (sem ação)
+- **Status:** ✅ CORRIGIDO — os 70 itens ganharam `description` em `equipments.json`, exibida no passo Equipamento. Itens gerais/acessórios/explosivos/proteções digitalizados fielmente do Cap. 3 (com o efeito mecânico: máscara de gás +10 Fortitude, taser 1d6 + atordoado, granadas, etc.); armas e munições receberam descrição funcional curta (os stats já aparecem nos chips). Teste de integridade garante que nenhum item fique sem descrição. (Nota: a extração via workflow paralelo falhou por um bug de args + limite de sessão; refeito inline lendo o livro.)
 
 ### F12 — Sistema de Modificações de arma/proteção/acessório não existe (Ordem)
 - **Sistema:** Ordem Paranormal

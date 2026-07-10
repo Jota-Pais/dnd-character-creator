@@ -9,6 +9,7 @@ import {
   getEquipmentCarryBonus,
   getTotalCarryCapacity,
   isEquipmentStepComplete,
+  EQUIPMENTS,
 } from '../equipmentUtils'
 
 function makeDraft(over: Partial<OrdemCharacterDraft>): OrdemCharacterDraft {
@@ -99,6 +100,11 @@ describe('equipmentUtils', () => {
     expect(getTotalCarryCapacity(semMochila)).toBe(5)
     const comMochila = makeDraft({ attributes: { ...EMPTY_ATTRIBUTES, strength: 1 }, equipmentChoices: ['mochila-militar'] })
     expect(getTotalCarryCapacity(comMochila)).toBe(7) // 5 + 2
+  })
+
+  it('todo item de equipamento tem uma descrição não vazia (F11)', () => {
+    const semDescricao = EQUIPMENTS.filter(e => !e.description || e.description.trim().length < 5)
+    expect(semDescricao.map(e => e.id)).toEqual([])
   })
 
   it('a Mochila Militar permite carregar além do limite base de Força', () => {

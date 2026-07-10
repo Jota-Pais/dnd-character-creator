@@ -68,11 +68,11 @@ export function EquipmentStep() {
               : 'bg-parchment-950/30 border-parchment-900/50 hover:border-red-900/40 hover:bg-parchment-900/40 cursor-pointer'}
         `}
       >
-        <div className="flex flex-col">
+        <div className="flex flex-col min-w-0">
           <span className={`font-fantasy text-lg ${isSelected ? 'text-red-400' : 'text-parchment-300'}`}>
             {item.name}
           </span>
-          <div className="flex gap-2 text-xs text-parchment-500 mt-1">
+          <div className="flex flex-wrap gap-2 text-xs text-parchment-500 mt-1">
             <span className="bg-parchment-900/50 px-2 py-0.5 rounded border border-parchment-800/50">
               Cat {item.category === 0 ? '0' : 'I'}
             </span>
@@ -98,8 +98,11 @@ export function EquipmentStep() {
                <span className="text-red-400/80 px-2 py-0.5">Sem Proficiência</span>
             )}
           </div>
+          {item.description && (
+            <p className="text-parchment-600 text-xs mt-1.5 leading-snug">{item.description}</p>
+          )}
         </div>
-        
+
         <div className={`
           w-6 h-6 rounded border flex items-center justify-center transition-colors
           ${isSelected 

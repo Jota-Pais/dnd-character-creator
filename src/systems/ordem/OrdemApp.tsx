@@ -28,6 +28,14 @@ export function OrdemApp() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [currentStep, view])
 
+  // Na tela de impressão, o título do documento vira o nome-padrão do PDF salvo.
+  useEffect(() => {
+    if (view !== 'print') return
+    const previous = document.title
+    document.title = `${name.trim() || 'Agente'} — Ordem Paranormal`
+    return () => { document.title = previous }
+  }, [view, name])
+
   useEffect(() => {
     if (view !== 'wizard') return
     function handleKeyDown(e: KeyboardEvent) {

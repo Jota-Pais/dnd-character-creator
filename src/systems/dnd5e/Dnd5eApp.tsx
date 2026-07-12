@@ -28,6 +28,14 @@ export function Dnd5eApp() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [currentStep, view])
 
+  // Na tela de impressão, o título do documento vira o nome-padrão do PDF salvo.
+  useEffect(() => {
+    if (view !== 'print') return
+    const previous = document.title
+    document.title = `${name.trim() || 'Personagem'} — D&D 5e`
+    return () => { document.title = previous }
+  }, [view, name])
+
   useEffect(() => {
     if (view !== 'wizard') return
     function handleKeyDown(e: KeyboardEvent) {

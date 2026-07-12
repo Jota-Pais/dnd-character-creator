@@ -242,6 +242,25 @@ describe('vagas da Patente com transbordo (F21) — item menor ocupa vaga maior'
   })
 })
 
+describe('poderes com efeito mecânico no equipamento (F25)', () => {
+  it('Tanque de Guerra: +2 na Defesa da proteção pesada (só com ela equipada)', () => {
+    const comPesada = makeDraft({ powerChoices: ['war-tank'], equipmentChoices: ['protecao-pesada'] })
+    const semPoder = makeDraft({ equipmentChoices: ['protecao-pesada'] })
+    expect(getModifiedDefenseBonus(comPesada)).toBe(getModifiedDefenseBonus(semPoder) + 2)
+    // Com proteção leve, o poder não faz nada.
+    const comLeve = makeDraft({ powerChoices: ['war-tank'], equipmentChoices: ['protecao-leve'] })
+    expect(getModifiedDefenseBonus(comLeve)).toBe(getModifiedDefenseBonus(makeDraft({ equipmentChoices: ['protecao-leve'] })))
+  })
+
+  it('proficiência via poder: Armamento Pesado destrava armas pesadas', () => {
+    const metralhadora = getEquipmentById('metralhadora')!
+    const combatente = makeDraft({ class: 'combatant' })
+    expect(hasWeaponProficiency(combatente, metralhadora)).toBe(false)
+    const comPoder = makeDraft({ class: 'combatant', powerChoices: ['heavy-weapons'] })
+    expect(hasWeaponProficiency(comPoder, metralhadora)).toBe(true)
+  })
+})
+
 describe('componentes ritualísticos (F22) — aviso de rituais sem componentes', () => {
   it('ocultista com ritual de Energia sem os componentes → avisa; com eles → não', () => {
     const base = {

@@ -242,3 +242,20 @@
 - **Implementado:** seção **"Personalização"** na Revisão com: select do **ritual predileto** (aparece só com o poder, inclusive via Versatilidade) e select da **perícia de ataque por arma** (Automática / Luta / Pontaria / Ocultismo — com nota da Lâmina Maldita). Custos de ritual na Revisão e no PDF agora saem calculados com as reduções e a justificativa ("custo 0 PE (predileto −1, Lâmina Maldita −1)"), com piso 0; o predileto ganha ★ no PDF. Ataques com Ocultismo rolam Intelecto d20 + treino de Ocultismo (dano corpo a corpo segue com Força). Campos novos: `favoriteRitual` e `weaponSkillChoices` (import robusto).
 - **Fora do escopo (anotado):** outros poderes com escolha embutida — Especialista/Mestre em Elemento (elemento) e Transcender (poder paranormal) — ainda sem picker; e a Lâmina Maldita "aprende Amaldiçoar Arma" não adiciona o ritual automaticamente à lista. Ficam pra próxima rodada se o playtest pedir.
 - **Status:** ✅ FEITO (2026-07-12) — `hasClassPower`/`hasFavoredRitualPower`/`hasLaminaMaldita`/`getRitualCost` em `characterUtils`; `skillOverride` no `getOrdemWeaponAttack`; `RITUAL_COST` movido pro `ritualUtils`. +5 testes.
+
+### F25 — Ritual Potente na ficha + varredura de poderes com efeito mecânico não aplicado (Ordem)
+- **Sistema:** Ordem Paranormal
+- **Onde:** rolagens/números derivados dos poderes de classe (ficha, Revisão, ataques, Defesa, proficiências)
+- **Relato:** o usuário notou que o **Ritual Potente** (soma Intelecto no dano/cura dos rituais) não aparecia na ficha, e pediu uma **auditoria geral**: "a cada poder novo que eu olho, a funcionalidade não está sendo aplicada na prática".
+- **Triagem:** 📖 fidelidade ao livro (varredura dos 46 poderes de classe)
+- **Aplicados nos números (efeitos determinísticos):**
+  - **Ritual Potente** — nota destacada nas seções de Rituais (Revisão + PDF) com o valor calculado: "some +Int nas rolagens de dano ou efeitos de cura" (os dados ficam nas descrições dos rituais; a nota evita parsear texto e cobre discente/verdadeiro).
+  - **Golpe Pesado** — +1 dado de dano (mesmo tipo) em armas corpo a corpo.
+  - **Tiro Certeiro** — +Agilidade no dano de armas de disparo (arco/besta/balestra; NÃO armas de fogo).
+  - **Balística Avançada** — +2 de dano em armas táticas de fogo + proficiência.
+  - **Ninja Urbano** — +2 de dano em armas táticas corpo a corpo + proficiência.
+  - **Tanque de Guerra** — +2 na Defesa da proteção pesada equipada (a RD +2 fica no texto do poder).
+  - **Armamento Pesado** — proficiência com armas pesadas (sinalização "Sem Proficiência" some).
+- **Ficam como texto (condicionais — dependem de gasto de PE/ação/contexto):** Ataque de Oportunidade, Combate Defensivo (+5 Defesa é ativável), Golpe Demolidor, Segurar o Gatilho, Sentido Tático, Fogo de Cobertura, Mãos Rápidas, Reflexos Defensivos (+5 condicionado a alcance curto), bônus situacionais de perícia (Hacker, Envolto em Mistério, Identificação Paranormal, Primeira Impressão — a coluna "Outros" da ficha serve pra isso), etc.
+- **Pendências (precisam de escolha própria, como o F24):** **Treinamento em Perícia** (escolher 2 perícias — não vira perícia treinada hoje!), **Especialista/Mestre em Elemento** (elemento), **Transcender** (poder paranormal), **Mochila de Utilidades** (item −1 categoria/−1 espaço), **Artista Marcial** (ataque desarmado não existe como arma no app). Registrado pra próxima rodada.
+- **Status:** ✅ FEITO (2026-07-12) — bônus de dano/Defesa/proficiência via `hasClassPower` no `ordemWeaponUtils`/`equipmentUtils`; nota do Ritual Potente na Revisão e no PDF. +3 testes.

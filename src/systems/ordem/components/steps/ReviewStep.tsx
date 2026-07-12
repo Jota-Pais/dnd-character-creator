@@ -5,7 +5,7 @@ import { getSkillName } from '../../utils/skillUtils'
 import { getTrilha } from '../../utils/trilhaUtils'
 import { getPower } from '../../utils/powerUtils'
 import {
-  getTrainedSkills, getSkillGrade, hasFavoredRitualPower, hasLaminaMaldita, getRitualCost,
+  getTrainedSkills, getSkillGrade, hasFavoredRitualPower, hasLaminaMaldita, getRitualCost, hasClassPower,
 } from '../../utils/characterUtils'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, ELEMENT_NAMES } from '../../utils/ritualUtils'
 import {
@@ -161,6 +161,12 @@ export function ReviewStep() {
               )
             })}
           </div>
+          {hasClassPower(draft, 'potent-ritual') && (
+            <p className="text-gold-500/90 text-xs mt-3">
+              ✨ <strong>Ritual Potente:</strong> some +{attributes.intellect} (Intelecto) nas rolagens de dano
+              ou nos efeitos de cura dos seus rituais.
+            </p>
+          )}
           {missingComponents.length > 0 && (
             <p className="text-amber-400/90 text-xs mt-3">
               ⚠️ Faltam <strong>Componentes Ritualísticos</strong> de {missingComponents.map(el => ELEMENT_NAMES[el]).join(' e ')} no

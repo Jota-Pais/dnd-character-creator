@@ -8,6 +8,7 @@ import { getOrdemClass } from './classUtils'
 import { getPatente, getCategoryLimit } from './patenteUtils'
 import { getModification } from './modificationUtils'
 import { getCurse, getCurseCategoryDelta, getItemCurses, getSheetAttributes, canApplyCurse, curseChoiceKey } from './curseUtils'
+import { hasClassPower } from './characterUtils'
 
 export const EQUIPMENTS = equipmentsJson as OrdemEquipment[]
 
@@ -127,13 +128,15 @@ export function getModifiedSpaces(draft: OrdemCharacterDraft): number {
   }, 0)
 }
 
-/** Bônus de Defesa total das proteções, incluindo modificações (Reforçada +2). */
+/** Bônus de Defesa total das proteções, incluindo modificações (Reforçada +2) e poderes (Tanque de Guerra). */
 export function getModifiedDefenseBonus(draft: OrdemCharacterDraft): number {
   return draft.equipmentChoices.reduce((acc, uid) => {
     const item = getEquipmentByInstance(uid)
     if (!item || item.type !== 'protection') return acc
     const modDef = itemMods(draft, uid).reduce((s, mid) => s + (getModification(mid)?.defenseBonus ?? 0), 0)
-    return acc + item.defenseBonus + modDef
+    // Tanque de Guerra: a Defesa (e a RD) da proteção pesada aumenta em +2.
+    const warTank = item.id === 'protecao-pesada' && hasClassPower(draft, 'war-tank') ? 2 : 0
+    return acc + item.defenseBonus + modDef + warTank
   }, 0)
 }
 
@@ -272,11 +275,16 @@ export function isEquipmentStepComplete(draft: OrdemCharacterDraft): boolean {
   return true
 }
 
-/** Se a classe do agente tem proficiência com a arma (apenas informativo — não bloqueia a escolha). */
+/** Se o agente tem proficiência com a arma — pela classe ou por poderes (apenas informativo, não bloqueia). */
 export function hasWeaponProficiency(draft: OrdemCharacterDraft, item: OrdemEquipment): boolean {
   if (item.type !== 'weapon' || !draft.class) return true
   const cls = getOrdemClass(draft.class)
-  return cls ? cls.weaponProficiencies.includes(item.proficiency) : true
+  if (cls?.weaponProficiencies.includes(item.proficiency)) return true
+  // Poderes que concedem proficiência: Armamento Pesado, Balística Avançada, Ninja Urbano.
+  if (item.proficiency === 'heavy' && hasClassPower(draft, 'heavy-weapons')) return true
+  if (item.proficiency === 'tactical' && item.weaponCategory === 'fogo' && hasClassPower(draft, 'advanced-ballistics')) return true
+  if (item.proficiency === 'tactical' && item.weaponCategory === 'corpo_a_corpo' && hasClassPower(draft, 'urban-ninja')) return true
+  return false
 }
 
 /**

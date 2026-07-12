@@ -4,7 +4,7 @@ import { getOrdemClass } from '../utils/classUtils'
 import { SKILLS } from '../utils/skillUtils'
 import { getTrilha } from '../utils/trilhaUtils'
 import { getPower } from '../utils/powerUtils'
-import { getTrainedSkills, getSkillGrade, getRitualCost } from '../utils/characterUtils'
+import { getTrainedSkills, getSkillGrade, getRitualCost, hasClassPower } from '../utils/characterUtils'
 import { getReachedTrilhaSlots, getPeLimit } from '../utils/progressionUtils'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount } from '../utils/ritualUtils'
 import {
@@ -237,6 +237,11 @@ export function PrintableSheet() {
                 DT de Rituais: {ritualDt}
               </div>
             </div>
+            {hasClassPower(draft, 'potent-ritual') && (
+              <p className="text-xs font-semibold mt-1">
+                Ritual Potente: some +{attributes.intellect} (Intelecto) nas rolagens de dano ou nos efeitos de cura dos seus rituais.
+              </p>
+            )}
             <div className="space-y-1.5 mt-2 text-sm">
               {rituals.map((r, i) => {
                 if (!r) return null

@@ -53,6 +53,24 @@ describe('ordemWeaponUtils', () => {
     expect(a.damage).toBe('1d4+2 corte') // dano corpo a corpo segue somando Força
   })
 
+  it('poderes de combate entram no dano (F25): Golpe Pesado, Tiro Certeiro, Balística Avançada, Ninja Urbano', () => {
+    // Golpe Pesado: +1 dado do mesmo tipo em armas corpo a corpo.
+    const golpePesado = makeDraft({ attributes: AGI3_FOR2.attributes, powerChoices: ['heavy-blow'] })
+    expect(getOrdemWeaponAttack(faca, golpePesado, []).damage).toBe('2d4+2 corte')
+    expect(getOrdemWeaponAttack(pistola, golpePesado, []).damage).toBe('1d12 balístico') // não é corpo a corpo
+    // Tiro Certeiro: +Agilidade no dano de armas de DISPARO (não armas de fogo).
+    const tiroCerteiro = makeDraft({ attributes: AGI3_FOR2.attributes, powerChoices: ['sure-shot'] })
+    const balestra = getEquipmentById('balestra') as OrdemWeapon // disparo
+    if (balestra) expect(getOrdemWeaponAttack(balestra, tiroCerteiro, []).damage).toContain('+3')
+    expect(getOrdemWeaponAttack(pistola, tiroCerteiro, []).damage).toBe('1d12 balístico') // fogo: sem bônus
+    // Balística Avançada: +2 no dano de armas TÁTICAS de fogo (fuzil de caça é simples → sem bônus).
+    const balistica = makeDraft({ attributes: AGI3_FOR2.attributes, powerChoices: ['advanced-ballistics'] })
+    const submetralhadora = getEquipmentById('submetralhadora') as OrdemWeapon
+    expect(getOrdemWeaponAttack(submetralhadora, balistica, []).damage).toBe('2d6+2 balístico')
+    const fuzilCaca = getEquipmentById('fuzil-de-caca') as OrdemWeapon
+    expect(getOrdemWeaponAttack(fuzilCaca, balistica, []).damage).toBe('2d8 balístico')
+  })
+
   it('modificações de combate entram nos números', () => {
     // Certeira (+2 ataque) + Cruel (+2 dano) na faca corpo a corpo
     const cc = getOrdemWeaponAttack(faca, AGI3_FOR2, ['certeira', 'cruel'])

@@ -6,7 +6,7 @@ import { getModification } from './modificationUtils'
 import { getCurse, getSheetAttributes } from './curseUtils'
 
 /** Bônus fixo por grau de treinamento (livro, Cap. 2). */
-const GRADE_BONUS: Record<SkillGrade, number> = {
+export const GRADE_BONUS: Record<SkillGrade, number> = {
   destreinado: 0,
   treinado: 5,
   veterano: 10,

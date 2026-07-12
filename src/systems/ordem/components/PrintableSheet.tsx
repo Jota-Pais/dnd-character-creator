@@ -1,27 +1,38 @@
 import { useOrdemStore } from '../stores/characterStore'
 import { getOrigin } from '../utils/originUtils'
 import { getOrdemClass } from '../utils/classUtils'
-import { getSkillName } from '../utils/skillUtils'
+import { SKILLS } from '../utils/skillUtils'
 import { getTrilha } from '../utils/trilhaUtils'
 import { getPower } from '../utils/powerUtils'
 import { getTrainedSkills, getSkillGrade } from '../utils/characterUtils'
 import { getReachedTrilhaSlots, getPeLimit } from '../utils/progressionUtils'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount } from '../utils/ritualUtils'
 import {
-  getEquipmentByInstance, getInstanceLabel, getTotalCarryCapacity, getModifiedSpaces, getModifiedDefenseBonus, getDraftInstanceCategory,
+  getEquipmentByInstance, getInstanceLabel, getTotalCarryCapacity, getModifiedSpaces, getModifiedDefenseBonus,
+  getDraftInstanceCategory,
 } from '../utils/equipmentUtils'
 import { getModification } from '../utils/modificationUtils'
 import { getCurse, getCursedDerivedStats, getSheetAttributes, formatCurseElement, formatCurseChoiceDetail } from '../utils/curseUtils'
-import type { OrdemEquipment } from '../types/equipment'
-import { getOrdemWeaponAttack } from '../utils/ordemWeaponUtils'
-import { getPatente } from '../utils/patenteUtils'
-import type { OrdemWeapon } from '../types/equipment'
+import { getOrdemWeaponAttack, GRADE_BONUS } from '../utils/ordemWeaponUtils'
+import { getPatente, getCategoryLimit } from '../utils/patenteUtils'
+import type { OrdemEquipment, OrdemWeapon } from '../types/equipment'
+import type { OrdemAttributes } from '../types/character'
 
 const CAT_ROMAN = ['0', 'I', 'II', 'III', 'IV']
+const ATTR_ABBREV: Record<keyof OrdemAttributes, string> = {
+  agility: 'AGI',
+  strength: 'FOR',
+  intellect: 'INT',
+  presence: 'PRE',
+  vigor: 'VIG',
+}
+/** Custo de conjuração por círculo (Tabela 5.2). */
+const RITUAL_COST: Record<number, number> = { 1: 1, 2: 3, 3: 6, 4: 10 }
 
 /**
- * Versão imprimível com layout compacto de ficha cobrindo atributos,
- * origem, classe, trilha, poderes, perícias, rituais, equipamento.
+ * Ficha imprimível no formato da Ficha de Agente oficial (sem a arte), em DUAS páginas:
+ * 1) atributos, origem/classe, NEX, PV/PE/Defesa/Sanidade, tabela completa de perícias e ataques;
+ * 2) habilidades & rituais (com DT), inventário (Patente, limites, crédito, carga) e descrição.
  */
 export function PrintableSheet() {
   const draft = useOrdemStore(state => state.draft)
@@ -31,7 +42,6 @@ export function PrintableSheet() {
 
   const attributes = getSheetAttributes(draft)
   const stats = getCursedDerivedStats(draft, cls, getModifiedDefenseBonus(draft))
-  const trainedSkills = getTrainedSkills(draft)
   const trilha = draft.trilha ? getTrilha(draft.trilha) : undefined
   const reachedTrilhaFeatures = trilha ? getReachedTrilhaSlots(draft.nex).map(nex => trilha.features.find(f => f.nex === nex)).filter(Boolean) : []
   const powers = draft.powerChoices.filter((p): p is string => Boolean(p)).map(getPower).filter(Boolean)
@@ -49,217 +59,342 @@ export function PrintableSheet() {
       name: getInstanceLabel(draft, uid),
     }))
   const cursedUnits = equipmentUnits.filter(u => (draft.equipmentCurses[u.uid]?.length ?? 0) > 0)
+  const protections = equipmentUnits.filter(u => u.item.type === 'protection')
+  const trainedSkills = getTrainedSkills(draft)
+  const patente = getPatente(draft.patente)
+  // DT de habilidades/rituais: 10 + limite de PE por rodada + Presença (exemplo do livro, pág. 121).
+  const ritualDt = 10 + getPeLimit(draft.nex) + attributes.presence
 
   return (
     <div className="print-sheet mx-auto max-w-[820px] bg-white text-gray-900 p-8 rounded-lg shadow-lg" style={{ fontFamily: 'Georgia, serif' }}>
-      <header className="text-center border-b-2 border-gray-800 pb-3 mb-4">
-        <h1 className="text-3xl font-bold">{draft.name}</h1>
-        {draft.concept && <p className="italic text-gray-600 mt-1">"{draft.concept}"</p>}
-        <p className="text-sm text-gray-600 mt-1">{origin?.name} · {cls.name}{trilha ? ` (${trilha.name})` : ''} · NEX {draft.nex}% · Patente: {getPatente(draft.patente).name}</p>
-      </header>
 
-      <section className="grid grid-cols-4 gap-3 mb-2 text-center">
-        <StatBox label="Pontos de Vida" value={stats.hp} />
-        <StatBox label="Pontos de Esforço" value={stats.pe} />
-        <StatBox label="Sanidade" value={stats.sanity} />
-        <StatBox label="Defesa" value={stats.defense} />
-      </section>
-      <p className="text-center text-xs text-gray-600 mb-2">
-        Limite de PE por turno: <strong>{getPeLimit(draft.nex)}</strong> · Deslocamento: <strong>9m</strong>
-      </p>
-
-      {/* Controle de sessão — espaços pra preencher a lápis na mesa */}
-      <section className="border border-gray-400 rounded p-2 mb-4">
-        <p className="text-[10px] uppercase text-gray-600 mb-1">Controle de Sessão (preencha a lápis)</p>
-        <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-gray-700 items-baseline">
-          <span>PV Atual: <span className="inline-block border-b border-gray-500 w-12" /> / {stats.hp}</span>
-          <span>PE Atuais: <span className="inline-block border-b border-gray-500 w-12" /> / {stats.pe}</span>
-          <span>Sanidade Atual: <span className="inline-block border-b border-gray-500 w-12" /> / {stats.sanity}</span>
-        </div>
-      </section>
-
-      <section className="mb-4">
-        <h2 className="font-bold uppercase text-sm tracking-wide border-b border-gray-400 mb-2">Atributos</h2>
-        <div className="grid grid-cols-5 gap-2 text-center">
-          <AttrBox label="Agilidade" value={attributes.agility} />
-          <AttrBox label="Força" value={attributes.strength} />
-          <AttrBox label="Intelecto" value={attributes.intellect} />
-          <AttrBox label="Presença" value={attributes.presence} />
-          <AttrBox label="Vigor" value={attributes.vigor} />
-        </div>
-      </section>
-
-      {origin && (
-        <section className="mb-4">
-          <h2 className="font-bold uppercase text-sm tracking-wide border-b border-gray-400 mb-2">Origem — {origin.name}</h2>
-          <p className="text-sm"><span className="font-semibold">{origin.power.name}.</span> {origin.power.description}</p>
-        </section>
-      )}
-
-      <section className="mb-4">
-        <h2 className="font-bold uppercase text-sm tracking-wide border-b border-gray-400 mb-2">Classe — {cls.name}</h2>
-        <p className="text-sm text-gray-700 mb-1">{cls.description}</p>
-        <p className="text-sm"><span className="font-semibold">{cls.classAbility.name}.</span> {cls.classAbility.description}</p>
-      </section>
-
-      {trilha && reachedTrilhaFeatures.length > 0 && (
-        <section className="mb-4">
-          <h2 className="font-bold uppercase text-sm tracking-wide border-b border-gray-400 mb-2">Trilha — {trilha.name}</h2>
-          <div className="space-y-1">
-            {reachedTrilhaFeatures.map(f => f && (
-              <p key={f.name} className="text-sm">
-                <span className="font-semibold">NEX {f.nex}% – {f.name}.</span> {f.description}
-              </p>
-            ))}
+      {/* ═══════════════ PÁGINA 1 ═══════════════ */}
+      <div className="page-break">
+        <header className="flex items-end justify-between border-b-2 border-gray-900 pb-2 mb-3">
+          <div className="flex gap-6">
+            <LabeledLine label="Personagem" value={draft.name} width="w-56" />
+            <LabeledLine label="Jogador" width="w-40" />
           </div>
-        </section>
-      )}
-
-      {powers.length > 0 && (
-        <section className="mb-4">
-          <h2 className="font-bold uppercase text-sm tracking-wide border-b border-gray-400 mb-2">Poderes de {cls.name}</h2>
-          <div className="space-y-1">
-            {powers.map(p => p && (
-              <p key={p.id} className="text-sm">
-                <span className="font-semibold">{p.name}.</span> {p.description}
-              </p>
-            ))}
+          <div className="text-right leading-tight">
+            <p className="font-bold text-lg tracking-wide">ORDEM PARANORMAL RPG</p>
+            <p className="text-[10px] uppercase tracking-widest text-gray-600">Ficha de Agente</p>
           </div>
-        </section>
-      )}
+        </header>
 
-      <section className="mb-4">
-        <h2 className="font-bold uppercase text-sm tracking-wide border-b border-gray-400 mb-2">
-          Perícias Treinadas ({trainedSkills.length})
-        </h2>
-        <p className="text-sm">
-          {trainedSkills.map(sid => {
-            const grade = getSkillGrade(draft, sid)
-            const name = getSkillName(sid)
-            return grade !== 'treinado' ? `${name} (${grade})` : name
-          }).join(', ')}
-        </p>
-      </section>
-
-      {rituals.length > 0 && (
-        <section className="mb-4">
-          <h2 className="font-bold uppercase text-sm tracking-wide border-b border-gray-400 mb-2">Rituais Conhecidos</h2>
-          <div className="space-y-1">
-            {rituals.map((r, i) => r && (
-              <div key={`${r.id}-${i}`} className="text-sm">
-                <span className="font-semibold">{r.name}</span>
-                <span className="text-gray-600"> ({formatRitualElementLabel(r, draft.ritualElementChoices)}, {r.circle}º Círculo)</span>
-                <span className="text-gray-500 text-xs"> — {r.execution}, {r.range}, {r.target}, {r.duration}{r.resistance ? `, ${r.resistance}` : ''}</span>
-                <p className="text-gray-700">{r.description}</p>
+        <div className="grid grid-cols-[1fr_1.15fr] gap-4">
+          {/* Coluna esquerda: atributos e características */}
+          <div className="space-y-3">
+            <section>
+              <BlackBar>Atributos</BlackBar>
+              <div className="flex justify-center mt-2">
+                <AttrHex label="Agilidade" abbrev="AGI" value={attributes.agility} />
               </div>
-            ))}
-          </div>
-        </section>
-      )}
+              <div className="flex justify-between px-2 -mt-1">
+                <AttrHex label="Força" abbrev="FOR" value={attributes.strength} />
+                <AttrHex label="Intelecto" abbrev="INT" value={attributes.intellect} />
+              </div>
+              <div className="flex justify-center gap-10 -mt-1">
+                <AttrHex label="Presença" abbrev="PRE" value={attributes.presence} />
+                <AttrHex label="Vigor" abbrev="VIG" value={attributes.vigor} />
+              </div>
+            </section>
 
-      {weaponAttacks.length > 0 && (
-        <section className="mb-4">
-          <h2 className="font-bold uppercase text-sm tracking-wide border-b border-gray-400 mb-1">Ataques</h2>
-          <p className="text-[11px] text-gray-500 mb-1">Role a quantidade de d20 indicada e use o melhor resultado + o bônus.</p>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <section className="space-y-1.5">
+              <LabeledBox label="Origem" value={origin?.name ?? ''} />
+              <LabeledBox label="Classe" value={`${cls.name}${trilha ? ` (${trilha.name})` : ''}`} />
+            </section>
+
+            <section className="grid grid-cols-3 gap-1.5">
+              <SmallStat label="NEX" value={`${draft.nex}%`} />
+              <SmallStat label="PE / Rodada" value={String(getPeLimit(draft.nex))} />
+              <SmallStat label="Desl." value="9m" />
+            </section>
+
+            <section className="grid grid-cols-2 gap-1.5">
+              <CurrentStat label="PV · Pontos de Vida" value={stats.hp} />
+              <CurrentStat label="PE · Pontos de Esforço" value={stats.pe} />
+            </section>
+
+            <section className="grid grid-cols-2 gap-1.5">
+              <div className="border-2 border-gray-900 rounded p-2">
+                <p className="text-[9px] uppercase font-bold text-gray-600">Defesa</p>
+                <p className="text-2xl font-bold leading-none">{stats.defense}</p>
+                <p className="text-[9px] text-gray-500 mt-1">= 10 + AGI + Equip. + Outros</p>
+              </div>
+              <CurrentStat label="SAN · Sanidade" value={stats.sanity} />
+            </section>
+
+            <section className="text-xs space-y-1">
+              <p>
+                <span className="font-bold uppercase text-[10px]">Proteção:</span>{' '}
+                {protections.length > 0
+                  ? protections.map(u => `${getInstanceLabel(draft, u.uid)} (+${u.item.type === 'protection' ? u.item.defenseBonus : 0})`).join(', ')
+                  : '—'}
+              </p>
+              <p className="flex items-baseline gap-1">
+                <span className="font-bold uppercase text-[10px]">Resistências:</span>
+                <span className="flex-1 border-b border-gray-400 min-h-[1em]" />
+              </p>
+            </section>
+          </div>
+
+          {/* Coluna direita: perícias completas */}
+          <section>
+            <BlackBar>Perícias</BlackBar>
+            <table className="w-full text-[11px] mt-1">
               <thead>
-                <tr className="text-gray-500 text-left">
-                  <th className="font-semibold pr-2">Arma</th>
-                  <th className="font-semibold pr-2">Perícia</th>
-                  <th className="font-semibold pr-2">Ataque</th>
-                  <th className="font-semibold pr-2">Dano</th>
-                  <th className="font-semibold pr-2">Crít.</th>
-                  <th className="font-semibold">Alcance</th>
+                <tr className="text-gray-500 text-left text-[9px] uppercase">
+                  <th className="font-semibold">Perícia</th>
+                  <th className="font-semibold text-center">Dados</th>
+                  <th className="font-semibold text-center">Treino</th>
+                  <th className="font-semibold text-center">Outros</th>
                 </tr>
               </thead>
               <tbody>
-                {weaponAttacks.map((a, i) => (
-                  <tr key={`${a.name}-${i}`} className="text-gray-800">
-                    <td className="pr-2 py-0.5 font-semibold">{a.name}</td>
-                    <td className="pr-2 py-0.5">{a.skill}</td>
-                    <td className="pr-2 py-0.5">{a.rollDice}d20 <strong>{a.attackBonus >= 0 ? `+${a.attackBonus}` : a.attackBonus}</strong></td>
-                    <td className="pr-2 py-0.5">{a.damage}</td>
-                    <td className="pr-2 py-0.5">{a.critical}</td>
-                    <td className="py-0.5">{a.range}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
-
-      {equipmentUnits.length > 0 && (
-        <section className="mb-4">
-          <h2 className="font-bold uppercase text-sm tracking-wide border-b border-gray-400 mb-2">
-            Equipamento ({getModifiedSpaces(draft)}/{getTotalCarryCapacity(draft)} espaços)
-          </h2>
-          <div className="space-y-1">
-            {equipmentUnits.map(({ uid, item }) => {
-              const mods = draft.equipmentModifications[uid] ?? []
-              const curses = draft.equipmentCurses[uid] ?? []
-              const effCat = getDraftInstanceCategory(draft, uid)
-              return (
-                <p key={uid} className="text-sm">
-                  <span className="font-semibold">{getInstanceLabel(draft, uid)}</span> (Cat {CAT_ROMAN[effCat]}, {item.spaces} esp.)
-                  {item.type === 'weapon' && ` — ${item.damage} ${item.damageType} (Crítico: ${item.critical})`}
-                  {item.type === 'protection' && ` — Defesa +${item.defenseBonus}`}
-                  {mods.length > 0 && <span className="text-gray-600"> · Mods: {mods.map(m => getModification(m)?.name).filter(Boolean).join(', ')}</span>}
-                  {curses.length > 0 && <span className="text-gray-600"> · Maldições: {curses.map(c => getCurse(c)?.name).filter(Boolean).join(', ')}</span>}
-                </p>
-              )
-            })}
-          </div>
-        </section>
-      )}
-
-      {cursedUnits.length > 0 && (
-        <section className="mb-4">
-          <h2 className="font-bold uppercase text-sm tracking-wide border-b border-gray-400 mb-1">Itens Amaldiçoados</h2>
-          <p className="text-[11px] text-gray-500 mb-2">
-            Bônus de maldições iguais em itens diferentes não se acumulam. Os bônus fixos (Defesa, atributos, PV/PE) já estão somados na ficha.
-          </p>
-          <div className="space-y-2">
-            {cursedUnits.map(({ uid }) => (
-              <div key={uid}>
-                <p className="text-sm font-semibold">{getInstanceLabel(draft, uid)}</p>
-                {(draft.equipmentCurses[uid] ?? []).map(cid => {
-                  const curse = getCurse(cid)
-                  if (!curse) return null
-                  const detail = formatCurseChoiceDetail(curse, uid, draft.equipmentCurseChoices)
+                {SKILLS.map(skill => {
+                  const grade = getSkillGrade(draft, skill.id)
+                  const trained = trainedSkills.includes(skill.id)
+                  const bonus = GRADE_BONUS[grade]
                   return (
-                    <p key={cid} className="text-sm text-gray-700">
-                      <span className="font-semibold">
-                        {curse.name} ({formatCurseElement(curse, uid, draft.equipmentCurseChoices)}{detail ? ` — ${detail}` : ''}).
-                      </span>{' '}
-                      {curse.effect}
-                    </p>
+                    <tr key={skill.id} className={trained ? 'font-bold' : 'text-gray-700'}>
+                      <td className="py-[1px]">
+                        {skill.name}
+                        {skill.trainedOnly ? '*' : ''}
+                        {skill.loadPenalty ? '+' : ''}
+                        {grade !== 'destreinado' && grade !== 'treinado' && (
+                          <span className="text-[9px] text-gray-500 font-normal"> ({grade})</span>
+                        )}
+                      </td>
+                      <td className="text-center">{attributes[skill.attribute as keyof OrdemAttributes]}d20 <span className="text-[9px] text-gray-500">({ATTR_ABBREV[skill.attribute as keyof OrdemAttributes]})</span></td>
+                      <td className="text-center">{bonus > 0 ? `+${bonus}` : '0'}</td>
+                      <td className="text-center"><span className="inline-block border-b border-gray-400 w-8" /></td>
+                    </tr>
                   )
                 })}
+              </tbody>
+            </table>
+            <p className="text-[9px] text-gray-500 mt-1">
+              + Penalidade de carga. * Somente treinada. Role os d20 indicados e use o melhor + bônus.
+            </p>
+          </section>
+        </div>
+
+        {/* Ataques (largura total) */}
+        <section className="mt-3">
+          <BlackBar>Ataques</BlackBar>
+          <table className="w-full text-xs mt-1">
+            <thead>
+              <tr className="text-gray-500 text-left text-[9px] uppercase">
+                <th className="font-semibold pr-2">Arma</th>
+                <th className="font-semibold pr-2">Teste</th>
+                <th className="font-semibold pr-2">Dano</th>
+                <th className="font-semibold pr-2">Crítico</th>
+                <th className="font-semibold">Alcance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {weaponAttacks.map((a, i) => (
+                <tr key={`${a.name}-${i}`} className="border-b border-gray-300">
+                  <td className="pr-2 py-0.5 font-semibold">{a.name}</td>
+                  <td className="pr-2 py-0.5">{a.skill} {a.rollDice}d20 <strong>{a.attackBonus >= 0 ? `+${a.attackBonus}` : a.attackBonus}</strong></td>
+                  <td className="pr-2 py-0.5">{a.damage}</td>
+                  <td className="pr-2 py-0.5">{a.critical}</td>
+                  <td className="py-0.5">{a.range}</td>
+                </tr>
+              ))}
+              {/* Linhas em branco pra anotar na mesa */}
+              {Array.from({ length: Math.max(0, 3 - weaponAttacks.length) }).map((_, i) => (
+                <tr key={`blank-${i}`} className="border-b border-gray-300">
+                  <td className="py-2.5" colSpan={5} />
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      </div>
+
+      {/* ═══════════════ PÁGINA 2 ═══════════════ */}
+      <div className="pt-6">
+        <section className="mb-4">
+          <div className="flex items-center justify-between">
+            <BlackBar className="flex-1">Habilidades &amp; Rituais</BlackBar>
+            {draft.class === 'occultist' && (
+              <div className="ml-2 border-2 border-gray-900 rounded px-2 py-0.5 text-xs font-bold whitespace-nowrap">
+                DT de Rituais: {ritualDt}
+              </div>
+            )}
+          </div>
+          <div className="space-y-1.5 mt-2 text-sm">
+            {origin && (
+              <p><span className="font-semibold">{origin.power.name} (origem).</span> {origin.power.description}</p>
+            )}
+            <p><span className="font-semibold">{cls.classAbility.name} ({cls.name}).</span> {cls.classAbility.description}</p>
+            {reachedTrilhaFeatures.map(f => f && (
+              <p key={f.name}><span className="font-semibold">{f.name} (trilha {trilha?.name}, NEX {f.nex}%).</span> {f.description}</p>
+            ))}
+            {powers.map(p => p && (
+              <p key={p.id}><span className="font-semibold">{p.name} (poder).</span> {p.description}</p>
+            ))}
+            {rituals.map((r, i) => r && (
+              <div key={`${r.id}-${i}`}>
+                <p>
+                  <span className="font-semibold">{r.name}</span>
+                  <span className="text-gray-600"> ({formatRitualElementLabel(r, draft.ritualElementChoices)}, {r.circle}º Círculo — custo {RITUAL_COST[r.circle]} PE)</span>
+                  <span className="text-gray-500 text-xs"> — {r.execution}, {r.range}, {r.target}, {r.duration}{r.resistance ? `, ${r.resistance}` : ''}</span>
+                </p>
+                <p className="text-gray-700 text-xs">{r.description}</p>
               </div>
             ))}
           </div>
         </section>
-      )}
+
+        <section className="mb-4">
+          <BlackBar>Inventário</BlackBar>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs">
+            <span><span className="font-bold uppercase text-[10px]">Pontos de Prestígio:</span> {patente.pp}</span>
+            <span><span className="font-bold uppercase text-[10px]">Patente:</span> {patente.name}</span>
+            <span>
+              <span className="font-bold uppercase text-[10px]">Limite de Itens:</span>{' '}
+              {[1, 2, 3, 4].map(c => `${CAT_ROMAN[c]}: ${getCategoryLimit(patente, c) || '—'}`).join(' · ')}
+            </span>
+            <span><span className="font-bold uppercase text-[10px]">Limite de Crédito:</span> {patente.credit}</span>
+            <span><span className="font-bold uppercase text-[10px]">Carga Máx.:</span> {getModifiedSpaces(draft)}/{getTotalCarryCapacity(draft)}</span>
+          </div>
+          <table className="w-full text-xs mt-2">
+            <thead>
+              <tr className="text-gray-500 text-left text-[9px] uppercase">
+                <th className="font-semibold pr-2">Item</th>
+                <th className="font-semibold text-center w-16">Categoria</th>
+                <th className="font-semibold text-center w-14">Espaços</th>
+              </tr>
+            </thead>
+            <tbody>
+              {equipmentUnits.map(({ uid, item }) => {
+                const mods = draft.equipmentModifications[uid] ?? []
+                const curses = draft.equipmentCurses[uid] ?? []
+                return (
+                  <tr key={uid} className="border-b border-gray-300 align-top">
+                    <td className="pr-2 py-0.5">
+                      <span className="font-semibold">{getInstanceLabel(draft, uid)}</span>
+                      {mods.length > 0 && <span className="text-gray-600"> · Mods: {mods.map(m => getModification(m)?.name).filter(Boolean).join(', ')}</span>}
+                      {curses.length > 0 && <span className="text-gray-600"> · Maldições: {curses.map(c => getCurse(c)?.name).filter(Boolean).join(', ')}</span>}
+                      {item.description && <p className="text-[10px] text-gray-500">{item.description}</p>}
+                    </td>
+                    <td className="text-center py-0.5">{CAT_ROMAN[getDraftInstanceCategory(draft, uid)]}</td>
+                    <td className="text-center py-0.5">{item.spaces}</td>
+                  </tr>
+                )
+              })}
+              {Array.from({ length: Math.max(0, 3 - equipmentUnits.length) }).map((_, i) => (
+                <tr key={`blank-${i}`} className="border-b border-gray-300">
+                  <td className="py-2.5" colSpan={3} />
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+
+        {cursedUnits.length > 0 && (
+          <section className="mb-4">
+            <BlackBar>Itens Amaldiçoados</BlackBar>
+            <p className="text-[10px] text-gray-500 mt-1 mb-1">
+              Bônus de maldições iguais em itens diferentes não se acumulam. Os bônus fixos (Defesa, atributos, PV/PE) já estão somados na ficha.
+            </p>
+            <div className="space-y-2">
+              {cursedUnits.map(({ uid }) => (
+                <div key={uid}>
+                  <p className="text-sm font-semibold">{getInstanceLabel(draft, uid)}</p>
+                  {(draft.equipmentCurses[uid] ?? []).map(cid => {
+                    const curse = getCurse(cid)
+                    if (!curse) return null
+                    const detail = formatCurseChoiceDetail(curse, uid, draft.equipmentCurseChoices)
+                    return (
+                      <p key={cid} className="text-sm text-gray-700">
+                        <span className="font-semibold">
+                          {curse.name} ({formatCurseElement(curse, uid, draft.equipmentCurseChoices)}{detail ? ` — ${detail}` : ''}).
+                        </span>{' '}
+                        {curse.effect}
+                      </p>
+                    )
+                  })}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <section>
+          <BlackBar>Descrição</BlackBar>
+          {draft.concept && <p className="text-xs italic text-gray-600 mt-1">"{draft.concept}"</p>}
+          <div className="grid grid-cols-4 gap-3 mt-2">
+            {['Aparência', 'Personalidade', 'Histórico', 'Objetivo'].map(label => (
+              <div key={label}>
+                <p className="text-[10px] uppercase font-bold text-center mb-1">{label}</p>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="border-b border-gray-400 h-4" />
+                ))}
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
     </div>
   )
 }
 
-function StatBox({ label, value }: { label: string; value: number }) {
+function BlackBar({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className="border border-gray-400 rounded p-2">
-      <p className="text-[10px] uppercase text-gray-600">{label}</p>
-      <p className="text-2xl font-bold">{value}</p>
+    <h2 className={`bg-gray-900 text-white uppercase text-xs font-bold tracking-widest px-2 py-1 rounded-sm ${className}`}>
+      {children}
+    </h2>
+  )
+}
+
+function AttrHex({ label, abbrev, value }: { label: string; abbrev: string; value: number }) {
+  return (
+    <div className="w-20 text-center border-2 border-gray-900 rounded-lg py-1.5 bg-white">
+      <p className="text-[8px] uppercase tracking-wide text-gray-600 leading-none">{label}</p>
+      <p className="text-[10px] font-bold leading-none mt-0.5">{abbrev}</p>
+      <p className="text-2xl font-bold leading-tight">{value}</p>
     </div>
   )
 }
 
-function AttrBox({ label, value }: { label: string; value: number }) {
+function LabeledLine({ label, value, width }: { label: string; value?: string; width: string }) {
   return (
-    <div>
-      <p className="text-[10px] uppercase text-gray-600">{label}</p>
-      <p className="text-xl font-bold">{value}</p>
+    <div className="flex flex-col">
+      <span className={`border-b border-gray-500 ${width} min-h-[1.4em] font-semibold`}>{value ?? ''}</span>
+      <span className="text-[9px] uppercase tracking-widest text-gray-500">{label}</span>
+    </div>
+  )
+}
+
+function LabeledBox({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="bg-gray-900 text-white uppercase text-[10px] font-bold px-2 py-1 rounded-sm w-20 text-center shrink-0">{label}</span>
+      <span className="flex-1 border-2 border-gray-900 rounded px-2 py-0.5 text-sm font-semibold min-h-[1.6em]">{value}</span>
+    </div>
+  )
+}
+
+function SmallStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="border-2 border-gray-900 rounded p-1.5 text-center">
+      <p className="text-[9px] uppercase font-bold text-gray-600 leading-none">{label}</p>
+      <p className="text-lg font-bold leading-tight">{value}</p>
+    </div>
+  )
+}
+
+function CurrentStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="border-2 border-gray-900 rounded p-2">
+      <p className="text-[9px] uppercase font-bold text-gray-600">{label}</p>
+      <p className="text-2xl font-bold leading-none">{value}</p>
+      <p className="text-[10px] text-gray-600 mt-1">
+        Atuais: <span className="inline-block border-b border-gray-500 w-14" />
+      </p>
     </div>
   )
 }

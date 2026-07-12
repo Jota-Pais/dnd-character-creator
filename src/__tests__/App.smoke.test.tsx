@@ -109,14 +109,18 @@ describe('App (smoke) — Ordem Paranormal', () => {
     expect(screen.getByText(/Equipamento \(/)).toBeInTheDocument()
   })
 
-  it('renderiza a ficha imprimível do agente sem quebrar', () => {
+  it('renderiza a ficha imprimível do agente sem quebrar (formato oficial em 2 páginas)', () => {
     useAppStore.getState().setActiveSystem('ordem')
     useOrdemStore.setState({ draft: seedOrdemAgent(), view: 'print' })
     render(<App />)
     expect(screen.getByText('Bianca')).toBeInTheDocument()
-    expect(screen.getByText('Rituais Conhecidos')).toBeInTheDocument()
+    // Página 1: perícias completas + ataques; página 2: habilidades & rituais + inventário + descrição.
+    expect(screen.getByText('Perícias')).toBeInTheDocument()
     expect(screen.getByText('Ataques')).toBeInTheDocument() // seção de ataques por arma (R1)
-    // "Faca" aparece na seção Ataques e na de Equipamento
+    expect(screen.getByText(/Habilidades & Rituais/)).toBeInTheDocument()
+    expect(screen.getByText('Inventário')).toBeInTheDocument()
+    expect(screen.getByText('Descrição')).toBeInTheDocument()
+    // "Faca" aparece na seção Ataques e na de Inventário
     expect(screen.getAllByText('Faca').length).toBeGreaterThan(0)
     expect(screen.getByText(/Imprimir \/ Salvar PDF/)).toBeInTheDocument()
   })

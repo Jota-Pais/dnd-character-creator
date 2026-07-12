@@ -57,6 +57,8 @@ export function PrintableSheet() {
       name: getInstanceLabel(draft, uid),
     }))
   const cursedUnits = equipmentUnits.filter(u => (draft.equipmentCurses[u.uid]?.length ?? 0) > 0)
+  // Armas com a maldição Ritualística: o ritual armazenado é listado junto das Habilidades.
+  const ritualisticUnits = equipmentUnits.filter(u => (draft.equipmentCurses[u.uid] ?? []).includes('ritualistica'))
   const protections = equipmentUnits.filter(u => u.item.type === 'protection')
   const trainedSkills = getTrainedSkills(draft)
   const patente = getPatente(draft.patente)
@@ -226,6 +228,21 @@ export function PrintableSheet() {
             {powers.map(p => p && (
               <p key={p.id}><span className="font-semibold">{p.name} (poder).</span> {p.description}</p>
             ))}
+            {ritualisticUnits.map(({ uid }) => {
+              const storedId = draft.equipmentCurseChoices[`${uid}:ritualistica`]
+              const stored = storedId ? getRitualById(storedId) : undefined
+              return (
+                <p key={uid}>
+                  <span className="font-semibold">Arma Ritualística — {getInstanceLabel(draft, uid)}.</span>{' '}
+                  {stored ? (
+                    <>Ritual armazenado: <span className="font-semibold">{stored.name}</span> ({stored.circle}º Círculo — custo {getRitualCost(draft, stored).cost} PE; descrição na seção Rituais). </>
+                  ) : (
+                    <>Ritual armazenado (a lápis): <span className="inline-block border-b border-gray-500 w-32" />. </>
+                  )}
+                  Ao acertar um ataque com a arma, descarregue o ritual armazenado como ação livre — o alvo (ou o centro da área) é o ser atingido. Para armazenar outro, conjure-o na arma pagando os PE normais.
+                </p>
+              )
+            })}
           </div>
         </section>
 
@@ -327,9 +344,6 @@ export function PrintableSheet() {
                           {curse.name} ({formatCurseElement(curse, uid, draft.equipmentCurseChoices)}{detail ? ` — ${detail}` : ''}).
                         </span>{' '}
                         {curse.effect}
-                        {curse.id === 'ritualistica' && !draft.equipmentCurseChoices[`${uid}:ritualistica`] && (
-                          <span className="text-gray-600"> Ritual armazenado (a lápis): <span className="inline-block border-b border-gray-500 w-36" /></span>
-                        )}
                       </p>
                     )
                   })}

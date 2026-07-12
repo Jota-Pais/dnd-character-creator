@@ -81,7 +81,16 @@ export function getAvailableFreeSkillOptions(draft: OrdemCharacterDraft, cls: Or
 }
 
 export function getRequiredFreeSkillCount(draft: OrdemCharacterDraft, cls: OrdemClass): number {
-  return getFreeSkillChoiceCount(cls, draft.attributes.intellect)
+  // "Se receber uma perícia que já havia recebido pela origem, escolha outra" (pág. 25):
+  // perícia repetida não acumula — cada FIXA da classe que colide com a origem vira +1 escolha livre.
+  const overlap = getFixedSkillOverlapWithOrigin(draft, cls).length
+  return getFreeSkillChoiceCount(cls, draft.attributes.intellect) + overlap
+}
+
+/** Perícias fixas da classe que a origem já forneceu (cada uma dá direito a "escolher outra"). */
+export function getFixedSkillOverlapWithOrigin(draft: OrdemCharacterDraft, cls: OrdemClass): string[] {
+  const origin = getOriginSkills(draft)
+  return cls.skills.fixed.filter(id => origin.includes(id))
 }
 
 // ── Progressão por NEX (trilha, poderes, aumento de atributo, grau de treinamento, versatilidade) ──

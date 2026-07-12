@@ -6,6 +6,7 @@ import {
   getAvailableChoiceGroupOptions,
   getAvailableFreeSkillOptions,
   getRequiredFreeSkillCount,
+  getFixedSkillOverlapWithOrigin,
 } from '../../utils/characterUtils'
 import { isStepComplete } from '../../utils/draftValidation'
 import { StepNav } from '../common/StepNav'
@@ -24,6 +25,7 @@ export function SkillsStep() {
 
   const originSkills = getOriginSkills(draft)
   const requiredFree = getRequiredFreeSkillCount(draft, cls)
+  const fixedOverlap = getFixedSkillOverlapWithOrigin(draft, cls)
   const allSkillIds = SKILLS.map(s => s.id)
 
   function toggleFreeSkill(skillId: string) {
@@ -63,6 +65,13 @@ export function SkillsStep() {
               <Chip key={sid} label={getSkillName(sid)} active />
             ))}
           </div>
+          {fixedOverlap.length > 0 && (
+            <p className="text-parchment-500 text-xs mt-2 leading-relaxed">
+              {fixedOverlap.map(getSkillName).join(' e ')} você já recebeu da origem — perícia repetida não acumula,
+              então o livro manda <span className="text-gold-500">escolher outra no lugar</span>:{' '}
+              você ganhou +{fixedOverlap.length} na escolha livre abaixo.
+            </p>
+          )}
         </div>
       )}
 

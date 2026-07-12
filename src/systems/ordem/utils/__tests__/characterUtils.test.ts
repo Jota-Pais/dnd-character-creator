@@ -6,6 +6,7 @@ import {
   getAvailableChoiceGroupOptions,
   getAvailableFreeSkillOptions,
   getRequiredFreeSkillCount,
+  getFixedSkillOverlapWithOrigin,
   getEffectiveAttributes,
   getSkillGrade,
   getAvailablePowerOptions,
@@ -152,6 +153,30 @@ describe('getRequiredFreeSkillCount', () => {
   it('ocultista: 3 + Intelecto', () => {
     const occultist = getOrdemClass('occultist')!
     const draft = makeDraft({ attributes: { agility: 1, strength: 1, intellect: 3, presence: 1, vigor: 1 } })
+    expect(getRequiredFreeSkillCount(draft, occultist)).toBe(6)
+  })
+
+  // F20: "Se receber uma perícia que já havia recebido pela origem, escolha outra" (pág. 25).
+  it('perícia FIXA da classe repetida da origem vira +1 escolha livre (Vítima dá Vontade; Ocultista tem Vontade fixa)', () => {
+    const occultist = getOrdemClass('occultist')!
+    const draft = makeDraft({
+      origin: 'victim', // reflexes + willpower
+      attributes: { agility: 1, strength: 1, intellect: 3, presence: 1, vigor: 1 },
+    })
+    expect(getFixedSkillOverlapWithOrigin(draft, occultist)).toEqual(['willpower'])
+    expect(getRequiredFreeSkillCount(draft, occultist)).toBe(7) // 3 + Int 3 + 1 da repetida
+    // A perícia continua treinada uma vez só (não acumula).
+    const trained = getTrainedSkills(draft)
+    expect(trained.filter(s => s === 'willpower')).toHaveLength(1)
+  })
+
+  it('origem sem colisão com as fixas não altera a contagem', () => {
+    const occultist = getOrdemClass('occultist')!
+    const draft = makeDraft({
+      origin: 'academic', // science + investigation
+      attributes: { agility: 1, strength: 1, intellect: 3, presence: 1, vigor: 1 },
+    })
+    expect(getFixedSkillOverlapWithOrigin(draft, occultist)).toEqual([])
     expect(getRequiredFreeSkillCount(draft, occultist)).toBe(6)
   })
 })

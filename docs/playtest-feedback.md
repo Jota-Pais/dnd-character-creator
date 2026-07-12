@@ -195,3 +195,12 @@
 - **Triagem:** 🎨 UX (navegação)
 - **Regra de alcance:** clicável = toda etapa cujas anteriores estão completas — pra trás sempre, pra frente até o 1º passo incompleto (o mesmo alcance de apertar "próximo" repetidamente; **nunca pula validação**). A checagem existe na UI (etapa não-clicável) e no store (`goToStep` valida de novo — defesa em profundidade, como o `nextStep`).
 - **Status:** ✅ FEITO (2026-07-12) — `goToStep` nas duas stores (persiste a ficha na biblioteca ao navegar, como próximo/anterior); `StepIndicator` ganhou `onStepClick` + estado clicável (hover com scale/dourado, `aria-current`, botão desabilitado nas inalcançáveis); `OrdemApp`/`Dnd5eApp` calculam o alcance via `isComplete` de cada etapa. +3 testes de store (navegação livre com ficha completa, bloqueio além do 1º incompleto, persistência).
+
+### F20 — Perícia repetida (origem × classe) deve dar direito a "escolher outra" (Ordem)
+- **Sistema:** Ordem Paranormal
+- **Onde:** passo Perícias (contagem de escolhas livres)
+- **Relato:** o usuário perguntou o que acontece quando fica treinado na mesma perícia duas vezes (ex.: Vontade pela origem E pela classe) — "ganho alguma coisa com isso?"
+- **Triagem:** 📖 fidelidade ao livro (a resposta revelou um gap real)
+- **Regra (pág. 25):** perícia repetida **não acumula nada** (treinada 2× não vira veterana — grau só sobe em NEX 35/70% ou pelo poder Treinamento em Perícia). Em vez disso: *"Se receber uma perícia que já havia recebido pela origem, escolha outra."*
+- **Análise (código):** nas perícias **de escolha** (grupos do Combatente e escolhas livres) o app já excluía as reservadas das opções — o jogador é obrigado a "escolher outra" ✓. O gap era nas **fixas do Ocultista** (Ocultismo, Vontade): colidindo com a origem (Religioso/Servidor Público/Vítima dão Vontade; Cultista Arrependido/Teórico da Conspiração dão Ocultismo), o app deduplicava e o jogador **perdia uma perícia** sem compensação.
+- **Status:** ✅ CORRIGIDO (2026-07-12) — cada perícia fixa da classe repetida da origem soma **+1 à escolha livre** (`getFixedSkillOverlapWithOrigin` + `getRequiredFreeSkillCount`); o passo Perícias explica a compensação ("você ganhou +1 na escolha livre") e o preview da Classe mostra a contagem certa. Validação acompanha automaticamente (usa a mesma contagem). +2 testes (Vítima+Ocultista → 7 escolhas; sem colisão → inalterado). Nota: grupos de escolha nunca zeram com os dados atuais (nenhuma origem cobre as duas opções de um grupo).

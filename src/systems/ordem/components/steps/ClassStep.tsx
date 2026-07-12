@@ -1,7 +1,8 @@
 import { useOrdemStore } from '../../stores/characterStore'
-import { ORDEM_CLASSES, getOrdemClass, getFreeSkillChoiceCount } from '../../utils/classUtils'
+import { ORDEM_CLASSES, getOrdemClass } from '../../utils/classUtils'
 import { getSkillName } from '../../utils/skillUtils'
 import { getCursedDerivedStats } from '../../utils/curseUtils'
+import { getRequiredFreeSkillCount } from '../../utils/characterUtils'
 import { isStepComplete } from '../../utils/draftValidation'
 import { StepNav } from '../common/StepNav'
 import type { OrdemClass } from '../../types/class'
@@ -75,7 +76,7 @@ export function ClassStep() {
                 {selected.skills.choiceGroups.map((g, i) => (
                   <li key={i}>Escolha {g.count} de: {g.from.map(getSkillName).join(' ou ')}</li>
                 ))}
-                <li>+ {getFreeSkillChoiceCount(selected, draft.attributes.intellect)} à escolha livre ({selected.skills.freeChoiceBase} + Intelecto)</li>
+                <li>+ {getRequiredFreeSkillCount(draft, selected)} à escolha livre ({selected.skills.freeChoiceBase} + Intelecto{getRequiredFreeSkillCount(draft, selected) > selected.skills.freeChoiceBase + draft.attributes.intellect ? ' + repetida da origem' : ''})</li>
               </ul>
             </div>
 

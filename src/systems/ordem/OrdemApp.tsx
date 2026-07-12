@@ -8,15 +8,21 @@ export function OrdemApp() {
   const setActiveSystem = useAppStore(state => state.setActiveSystem)
   const view = useOrdemStore(state => state.view)
   const currentStep = useOrdemStore(state => state.currentStep)
-  const name = useOrdemStore(state => state.draft.name)
+  const draft = useOrdemStore(state => state.draft)
+  const name = draft.name
   const prevStep = useOrdemStore(state => state.prevStep)
+  const goToStep = useOrdemStore(state => state.goToStep)
   const goToGallery = useOrdemStore(state => state.goToGallery)
   const exitPrint = useOrdemStore(state => state.exitPrint)
 
   const PrintableSheet = ordemSystem.PrintableSheet
   const steps = ordemSystem.getSteps()
   const CurrentStepComponent = steps.find(s => s.id === currentStep)?.component
-  const stepIndicatorProps = steps.map(s => ({ id: s.id, label: s.title }))
+  // Navegação livre: uma etapa é clicável se todas as anteriores estão completas
+  // (o mesmo alcance de avançar com "próximo" — nunca pula validação).
+  const firstIncompleteIdx = steps.findIndex(s => !s.isComplete(draft))
+  const maxReachableIdx = firstIncompleteIdx === -1 ? steps.length - 1 : firstIncompleteIdx
+  const stepIndicatorProps = steps.map((s, i) => ({ id: s.id, label: s.title, clickable: i <= maxReachableIdx }))
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -92,7 +98,7 @@ export function OrdemApp() {
         </header>
 
         <div className="mb-8 flex justify-center">
-          <StepIndicator steps={stepIndicatorProps} currentStepId={currentStep} />
+          <StepIndicator steps={stepIndicatorProps} currentStepId={currentStep} onStepClick={id => goToStep(id as typeof currentStep)} />
         </div>
 
         <div className="flex items-center gap-3 mb-8">

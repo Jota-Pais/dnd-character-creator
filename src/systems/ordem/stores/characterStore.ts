@@ -42,6 +42,7 @@ type CharacterStore = {
 
   nextStep: () => void
   prevStep: () => void
+  goToStep: (step: WizardStep) => void
   reset: () => void
   importDraft: (draft: OrdemCharacterDraft) => void
 }
@@ -196,6 +197,19 @@ export const useOrdemStore = create<CharacterStore>((set, get) => ({
       const { id, library } = persistCurrent(currentId, draft, prev)
       set({ currentStep: prev, currentId: id, library })
     }
+  },
+
+  // Navegação livre pelo stepper: pra trás sempre; pra frente, só até o 1º passo incompleto
+  // (o mesmo alcance de apertar "próximo" repetidamente — nunca pula validação).
+  goToStep: (step) => {
+    const { currentStep, draft, currentId } = get()
+    const targetIdx = WIZARD_STEPS.indexOf(step)
+    if (targetIdx < 0 || step === currentStep) return
+    const firstIncomplete = WIZARD_STEPS.findIndex(s => !isStepComplete(draft, s))
+    const maxIdx = firstIncomplete === -1 ? WIZARD_STEPS.length - 1 : firstIncomplete
+    if (targetIdx > maxIdx) return
+    const { id, library } = persistCurrent(currentId, draft, step)
+    set({ currentStep: step, currentId: id, library })
   },
 
   reset: () => {

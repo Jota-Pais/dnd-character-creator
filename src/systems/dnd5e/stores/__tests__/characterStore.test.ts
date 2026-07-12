@@ -76,6 +76,32 @@ describe('biblioteca', () => {
   })
 })
 
+describe('goToStep (navegação livre pelo stepper — F19)', () => {
+  it('ficha completa: navega livremente pra qualquer etapa, em qualquer ordem', () => {
+    useCharacterStore.getState().importDraft(structuredClone(COMPLETE_DRAFT))
+    useCharacterStore.getState().goToStep('abilities')
+    expect(useCharacterStore.getState().currentStep).toBe('abilities')
+    useCharacterStore.getState().goToStep('review')
+    expect(useCharacterStore.getState().currentStep).toBe('review')
+    useCharacterStore.getState().goToStep('name')
+    expect(useCharacterStore.getState().currentStep).toBe('name')
+  })
+
+  it('não pula validação: com só o nome preenchido, alcança "race" (1º incompleto) mas não além', () => {
+    useCharacterStore.getState().setName('Conan')
+    useCharacterStore.getState().goToStep('background')
+    expect(useCharacterStore.getState().currentStep).toBe('name')
+    useCharacterStore.getState().goToStep('race')
+    expect(useCharacterStore.getState().currentStep).toBe('race')
+  })
+
+  it('navegar persiste a ficha na biblioteca (como próximo/anterior)', () => {
+    useCharacterStore.getState().importDraft(structuredClone(COMPLETE_DRAFT))
+    useCharacterStore.getState().goToStep('class')
+    expect(loadLibrary().some(c => c.draft.name === 'Krusk' && c.step === 'class')).toBe(true)
+  })
+})
+
 describe('sair para a galeria global unificada (F14)', () => {
   it('goToGallery() zera o activeSystemId (volta ao Multiverso, não à galeria mono-sistema)', () => {
     useAppStore.getState().setActiveSystem('dnd5e')

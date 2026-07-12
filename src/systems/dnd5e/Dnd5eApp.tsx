@@ -8,15 +8,21 @@ export function Dnd5eApp() {
   const setActiveSystem = useAppStore(state => state.setActiveSystem)
   const view = useCharacterStore(state => state.view)
   const currentStep = useCharacterStore(state => state.currentStep)
-  const name = useCharacterStore(state => state.draft.name)
+  const draft = useCharacterStore(state => state.draft)
+  const name = draft.name
   const prevStep = useCharacterStore(state => state.prevStep)
+  const goToStep = useCharacterStore(state => state.goToStep)
   const goToGallery = useCharacterStore(state => state.goToGallery)
   const exitPrint = useCharacterStore(state => state.exitPrint)
-  
+
   const PrintableSheet = dnd5eSystem.PrintableSheet
   const steps = dnd5eSystem.getSteps()
   const CurrentStepComponent = steps.find(s => s.id === currentStep)?.component
-  const stepIndicatorProps = steps.map(s => ({ id: s.id, label: s.title }))
+  // Navegação livre: uma etapa é clicável se todas as anteriores estão completas
+  // (o mesmo alcance de avançar com "próximo" — nunca pula validação).
+  const firstIncompleteIdx = steps.findIndex(s => !s.isComplete(draft))
+  const maxReachableIdx = firstIncompleteIdx === -1 ? steps.length - 1 : firstIncompleteIdx
+  const stepIndicatorProps = steps.map((s, i) => ({ id: s.id, label: s.title, clickable: i <= maxReachableIdx }))
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -94,7 +100,7 @@ export function Dnd5eApp() {
 
         {/* Step indicator */}
         <div className="mb-8 flex justify-center">
-          <StepIndicator steps={stepIndicatorProps} currentStepId={currentStep} />
+          <StepIndicator steps={stepIndicatorProps} currentStepId={currentStep} onStepClick={id => goToStep(id as typeof currentStep)} />
         </div>
 
         {/* Divider ornamental */}

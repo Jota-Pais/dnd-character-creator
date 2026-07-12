@@ -187,3 +187,11 @@
 - **UI:** card do item mostra "×N"; botão "＋ adicionar outra unidade"; cada unidade tem seu bloco próprio de Modificações/Maldições, com cabeçalho numerado ("Revólver #2 · Cat III") e botão de remover. Revisão/ataques/PDF listam cada unidade com rótulo numerado — cada revólver vira uma linha própria na tabela de Ataques, com seus números.
 - **Detalhe:** o elemento-alvo escolhido do Antielemento agora aparece na ficha ("elemento-alvo: Energia") e é por unidade — dá pra ter dois revólveres Antielemento contra elementos diferentes.
 - **Status:** ✅ FEITO (2026-07-12) — `instanceItemId`/`newInstanceUid`/`getInstanceLabel`/`getDraftInstanceCategory` em `equipmentUtils`; `EquipmentStep` reestruturado por unidade; Revisão/PrintableSheet por unidade; `formatCurseChoiceDetail` em `curseUtils`. +4 testes (uids, ataques distintos por unidade, limite de Patente com 2× Cat III, escolhas por unidade).
+
+### F19 — Stepper clicável: voltar/pular pra qualquer etapa em ordem livre (D&D + Ordem)
+- **Sistema:** ambos (o `StepIndicator` é compartilhado)
+- **Onde:** indicador de etapas do wizard (as "moedas" no topo)
+- **Relato:** o usuário quer clicar em qualquer etapa do stepper pra voltar e mudar o que quiser (atributos, perícias...) em ordem livre, em vez de só andar com próximo/anterior.
+- **Triagem:** 🎨 UX (navegação)
+- **Regra de alcance:** clicável = toda etapa cujas anteriores estão completas — pra trás sempre, pra frente até o 1º passo incompleto (o mesmo alcance de apertar "próximo" repetidamente; **nunca pula validação**). A checagem existe na UI (etapa não-clicável) e no store (`goToStep` valida de novo — defesa em profundidade, como o `nextStep`).
+- **Status:** ✅ FEITO (2026-07-12) — `goToStep` nas duas stores (persiste a ficha na biblioteca ao navegar, como próximo/anterior); `StepIndicator` ganhou `onStepClick` + estado clicável (hover com scale/dourado, `aria-current`, botão desabilitado nas inalcançáveis); `OrdemApp`/`Dnd5eApp` calculam o alcance via `isComplete` de cada etapa. +3 testes de store (navegação livre com ficha completa, bloqueio além do 1º incompleto, persistência).

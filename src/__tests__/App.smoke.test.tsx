@@ -120,7 +120,6 @@ describe('App (smoke) — Ordem Paranormal', () => {
     expect(screen.getByText('Habilidades / Poderes')).toBeInTheDocument()
     expect(screen.getByText('Rituais')).toBeInTheDocument() // seção própria, separada das habilidades
     expect(screen.getByText('Inventário')).toBeInTheDocument()
-    expect(screen.getByText('Descrição')).toBeInTheDocument()
     // "Faca" aparece na seção Ataques e na de Inventário
     expect(screen.getAllByText('Faca').length).toBeGreaterThan(0)
     expect(screen.getByText(/Imprimir \/ Salvar PDF/)).toBeInTheDocument()

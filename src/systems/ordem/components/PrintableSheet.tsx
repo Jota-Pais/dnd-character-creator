@@ -343,20 +343,6 @@ export function PrintableSheet() {
           </table>
         </section>
 
-        <section>
-          <BlackBar>Descrição</BlackBar>
-          {draft.concept && <p className="text-xs italic text-gray-600 mt-1">"{draft.concept}"</p>}
-          <div className="grid grid-cols-4 gap-3 mt-2">
-            {['Aparência', 'Personalidade', 'Histórico', 'Objetivo'].map(label => (
-              <div key={label}>
-                <p className="text-[10px] uppercase font-bold text-center mb-1">{label}</p>
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="border-b border-gray-400 h-4" />
-                ))}
-              </div>
-            ))}
-          </div>
-        </section>
       </div>
     </div>
   )

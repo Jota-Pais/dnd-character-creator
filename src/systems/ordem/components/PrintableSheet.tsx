@@ -216,7 +216,7 @@ export function PrintableSheet() {
       {/* ═══════════════ PÁGINA 2 ═══════════════ */}
       <div className="pt-6">
         <section className="mb-4">
-          <BlackBar>Habilidades</BlackBar>
+          <BlackBar>Habilidades / Poderes</BlackBar>
           <div className="space-y-1.5 mt-2 text-sm">
             {origin && (
               <p><span className="font-semibold">{origin.power.name} (origem).</span> {origin.power.description}</p>
@@ -228,6 +228,20 @@ export function PrintableSheet() {
             {powers.map(p => p && (
               <p key={p.id}><span className="font-semibold">{p.name} (poder).</span> {p.description}</p>
             ))}
+            {/* Maldições dos itens amaldiçoados entram aqui, junto das habilidades (sem seção própria). */}
+            {cursedUnits.map(({ uid }) => (draft.equipmentCurses[uid] ?? []).map(cid => {
+              const curse = getCurse(cid)
+              if (!curse) return null
+              const detail = formatCurseChoiceDetail(curse, uid, draft.equipmentCurseChoices)
+              return (
+                <p key={`${uid}-${cid}`}>
+                  <span className="font-semibold">
+                    {curse.name} — {getInstanceLabel(draft, uid)} ({formatCurseElement(curse, uid, draft.equipmentCurseChoices)}{detail ? ` — ${detail}` : ''}).
+                  </span>{' '}
+                  {curse.effect}
+                </p>
+              )
+            }))}
             {ritualisticUnits.map(({ uid }) => {
               const storedId = draft.equipmentCurseChoices[`${uid}:ritualistica`]
               const stored = storedId ? getRitualById(storedId) : undefined
@@ -243,6 +257,11 @@ export function PrintableSheet() {
                 </p>
               )
             })}
+            {cursedUnits.length > 0 && (
+              <p className="text-[10px] text-gray-500">
+                Bônus de maldições iguais em itens diferentes não se acumulam. Os bônus fixos (Defesa, atributos, PV/PE) já estão somados na ficha.
+              </p>
+            )}
           </div>
         </section>
 
@@ -323,35 +342,6 @@ export function PrintableSheet() {
             </tbody>
           </table>
         </section>
-
-        {cursedUnits.length > 0 && (
-          <section className="mb-4">
-            <BlackBar>Itens Amaldiçoados</BlackBar>
-            <p className="text-[10px] text-gray-500 mt-1 mb-1">
-              Bônus de maldições iguais em itens diferentes não se acumulam. Os bônus fixos (Defesa, atributos, PV/PE) já estão somados na ficha.
-            </p>
-            <div className="space-y-2">
-              {cursedUnits.map(({ uid }) => (
-                <div key={uid}>
-                  <p className="text-sm font-semibold">{getInstanceLabel(draft, uid)}</p>
-                  {(draft.equipmentCurses[uid] ?? []).map(cid => {
-                    const curse = getCurse(cid)
-                    if (!curse) return null
-                    const detail = formatCurseChoiceDetail(curse, uid, draft.equipmentCurseChoices)
-                    return (
-                      <p key={cid} className="text-sm text-gray-700">
-                        <span className="font-semibold">
-                          {curse.name} ({formatCurseElement(curse, uid, draft.equipmentCurseChoices)}{detail ? ` — ${detail}` : ''}).
-                        </span>{' '}
-                        {curse.effect}
-                      </p>
-                    )
-                  })}
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
 
         <section>
           <BlackBar>Descrição</BlackBar>

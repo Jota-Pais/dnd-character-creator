@@ -1,5 +1,6 @@
 import type { OrdemCharacterDraft } from '../types/character'
 import type { OrdemEquipment } from '../types/equipment'
+import type { OrdemPatente } from '../types/patente'
 import equipmentsJson from '../data/equipments.json'
 import { getOrdemClass } from './classUtils'
 import { getPatente, getCategoryLimit } from './patenteUtils'
@@ -141,6 +142,95 @@ export function getEffectiveCategoryCount(draft: OrdemCharacterDraft, category: 
   }, 0)
 }
 
+// ── Vagas de requisição da Patente (F21) ───────────────────────────────────────
+// Decisão de mesa: um item de categoria MENOR pode ocupar uma vaga de categoria MAIOR
+// (quem pode requisitar um item Cat II pode requisitar um Cat I no lugar). A Tabela 3.1
+// continua sendo o total de vagas; só a alocação é flexível pra baixo.
+
+/** Contagem de unidades por categoria efetiva (índices 1..4; Categoria 0 não consome vaga). */
+export function getEffectiveCategoryCounts(draft: OrdemCharacterDraft): number[] {
+  const counts = [0, 0, 0, 0, 0]
+  for (const uid of draft.equipmentChoices) {
+    if (!getEquipmentByInstance(uid)) continue
+    const cat = getDraftInstanceCategory(draft, uid)
+    if (cat >= 1) counts[cat]++
+  }
+  return counts
+}
+
+/**
+ * As unidades cabem nas vagas da Patente? Como item menor desce em vaga maior,
+ * a condição é: para todo k (1..4), nº de itens com cat ≥ k ≤ nº de vagas com cat ≥ k.
+ */
+export function fitsPatenteSlots(counts: number[], patente: OrdemPatente): boolean {
+  let items = 0
+  let slots = 0
+  for (let k = 4; k >= 1; k--) {
+    items += counts[k] ?? 0
+    slots += getCategoryLimit(patente, k)
+    if (items > slots) return false
+  }
+  return true
+}
+
+/** Simula ajustes de contagem (ex.: +1 item Cat I, ou mover um item de Cat I→II) e testa se cabe. */
+export function fitsWithAdjustedCounts(
+  draft: OrdemCharacterDraft,
+  patente: OrdemPatente,
+  adjust: Record<number, number>,
+): boolean {
+  const counts = getEffectiveCategoryCounts(draft)
+  for (const [cat, delta] of Object.entries(adjust)) {
+    const c = Number(cat)
+    if (c >= 1 && c <= 4) counts[c] += delta
+  }
+  return fitsPatenteSlots(counts, patente)
+}
+
+export type CategorySlotInfo = {
+  category: number
+  /** Unidades cuja categoria efetiva é esta. */
+  items: number
+  /** Vagas desta categoria ocupadas (próprias + emprestadas de categorias menores). */
+  usedSlots: number
+  /** Quantas dessas vagas estão ocupadas por itens de categoria MENOR. */
+  spillIn: number
+  limit: number
+  /** Estouro real neste nível (itens de cat ≥ k além das vagas de cat ≥ k) — inválido. */
+  overflow: boolean
+}
+
+/**
+ * Alocação das unidades nas vagas da Patente, pra exibição nos contadores:
+ * itens de categoria maior alocam primeiro; cada item usa a menor vaga livre ≥ à sua categoria.
+ */
+export function getCategorySlotAllocation(draft: OrdemCharacterDraft, patente: OrdemPatente): CategorySlotInfo[] {
+  const counts = getEffectiveCategoryCounts(draft)
+  const free = [0, 1, 2, 3, 4].map(k => (k === 0 ? 0 : getCategoryLimit(patente, k)))
+  const used = [0, 0, 0, 0, 0]
+  const spillIn = [0, 0, 0, 0, 0]
+  for (let c = 4; c >= 1; c--) {
+    let remaining = counts[c]
+    for (let k = c; k <= 4 && remaining > 0; k++) {
+      const take = Math.min(remaining, free[k])
+      free[k] -= take
+      used[k] += take
+      if (k > c) spillIn[k] += take
+      remaining -= take
+    }
+    // `remaining > 0` = configuração inválida; a validação bloqueia, aqui só exibimos.
+  }
+  return [1, 2, 3, 4].map(k => {
+    let items = 0
+    let slots = 0
+    for (let c = k; c <= 4; c++) {
+      items += counts[c]
+      slots += getCategoryLimit(patente, c)
+    }
+    return { category: k, items: counts[k], usedSlots: used[k], spillIn: spillIn[k], limit: getCategoryLimit(patente, k), overflow: items > slots }
+  })
+}
+
 /**
  * As maldições aplicadas são estruturalmente válidas? (alvo certo, sem duplicatas, sem
  * elementos opressores no mesmo item, e com o parâmetro escolhido quando exigido).
@@ -167,11 +257,10 @@ export function isEquipmentStepComplete(draft: OrdemCharacterDraft): boolean {
   const capacity = getTotalCarryCapacity(draft)
   if (getModifiedSpaces(draft) > capacity) return false
 
-  // Cada categoria EFETIVA (base + modificações + maldições) é limitada pela Patente (Tabela 3.1); Categoria 0 é ilimitada.
+  // As vagas da Tabela 3.1 limitam as unidades pela categoria EFETIVA (base + mods + maldições);
+  // Categoria 0 é ilimitada, e item de categoria menor pode ocupar vaga de categoria maior (F21).
   const patente = getPatente(draft.patente)
-  for (let cat = 1; cat <= 4; cat++) {
-    if (getEffectiveCategoryCount(draft, cat) > getCategoryLimit(patente, cat)) return false
-  }
+  if (!fitsPatenteSlots(getEffectiveCategoryCounts(draft), patente)) return false
 
   // Maldições precisam ser válidas (alvo, oposição de elementos, parâmetros escolhidos).
   if (!areCursesValid(draft)) return false

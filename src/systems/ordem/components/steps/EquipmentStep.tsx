@@ -2,8 +2,9 @@ import { useOrdemStore } from '../../stores/characterStore'
 import { STEP_LABELS } from '../../types/character'
 import type { OrdemEquipment } from '../../types/equipment'
 import {
-  EQUIPMENTS, getTotalCarryCapacity, getModifiedSpaces, getEffectiveCategoryCount, getDraftInstanceCategory,
+  EQUIPMENTS, getTotalCarryCapacity, getModifiedSpaces, getDraftInstanceCategory,
   hasWeaponProficiency, instanceItemId, newInstanceUid, getInstanceLabel,
+  fitsWithAdjustedCounts, getCategorySlotAllocation,
 } from '../../utils/equipmentUtils'
 import { getAvailableModifications, canApplyModification, isModifiable } from '../../utils/modificationUtils'
 import {
@@ -11,7 +12,7 @@ import {
 } from '../../utils/curseUtils'
 import type { OrdemElement } from '../../types/ritual'
 import { getAvailableRituals, ELEMENT_NAMES } from '../../utils/ritualUtils'
-import { getPatente, getCategoryLimit, PATENTES } from '../../utils/patenteUtils'
+import { getPatente, PATENTES } from '../../utils/patenteUtils'
 import { isStepComplete } from '../../utils/draftValidation'
 import { StepNav } from '../common/StepNav'
 
@@ -32,8 +33,9 @@ export function EquipmentStep() {
   const isOverCapacity = currentSpaces > capacity
 
   const patente = getPatente(draft.patente)
-  // Categorias com acesso pela patente atual (limite > 0), pra montar os contadores.
-  const accessibleCategories = [1, 2, 3, 4].filter(c => getCategoryLimit(patente, c) > 0)
+  // Alocação das unidades nas vagas da Patente (item menor pode ocupar vaga maior — F21).
+  const slotAllocation = getCategorySlotAllocation(draft, patente)
+  const accessibleSlots = slotAllocation.filter(s => s.limit > 0)
 
   const weapons = EQUIPMENTS.filter(i => i.type === 'weapon')
   const protections = EQUIPMENTS.filter(i => i.type === 'protection')
@@ -91,11 +93,9 @@ export function EquipmentStep() {
     const units = draft.equipmentChoices.filter(uid => instanceItemId(uid) === item.id)
     const isSelected = units.length > 0
 
-    // Bloqueio por limite de categoria da Patente (Categoria 0 é ilimitada).
+    // Bloqueio por vagas da Patente (Categoria 0 é ilimitada; item menor pode usar vaga maior).
     // Uma unidade nova entra na sua categoria BASE (ainda sem modificações/maldições).
-    const catLimit = getCategoryLimit(patente, item.category)
-    const catCount = getEffectiveCategoryCount(draft, item.category)
-    const canAddUnit = catCount < catLimit
+    const canAddUnit = item.category === 0 || fitsWithAdjustedCounts(draft, patente, { [item.category]: 1 })
     // Proficiência de arma NÃO bloqueia — apenas sinaliza (você pode requisitar, mas com penalidade).
     const noProficiency = !hasWeaponProficiency(draft, item)
 
@@ -153,7 +153,7 @@ export function EquipmentStep() {
               </span>
             )}
             {isDisabled && !isSelected && (
-              <span className="text-red-400/70 px-2 py-0.5">Patente insuficiente</span>
+              <span className="text-red-400/70 px-2 py-0.5">Sem vaga na Patente</span>
             )}
           </div>
           {item.description && (
@@ -190,9 +190,9 @@ export function EquipmentStep() {
                     <div className="flex flex-wrap gap-1">
                       {getAvailableModifications(item).map(mod => {
                         const applied = appliedMods.includes(mod.id)
-                        // Aplicar sobe a categoria efetiva em 1 → precisa caber no limite da Patente.
+                        // Aplicar sobe a categoria efetiva em 1 → a unidade precisa continuar cabendo nas vagas.
                         const newCat = unitCat + 1
-                        const fitsPatente = newCat <= 4 && (getEffectiveCategoryCount(draft, newCat) + 1) <= getCategoryLimit(patente, newCat)
+                        const fitsPatente = newCat <= 4 && fitsWithAdjustedCounts(draft, patente, { [unitCat]: -1, [newCat]: 1 })
                         const addable = applied || (canApplyModification(item, appliedMods, mod.id) && fitsPatente)
                         return (
                           <button
@@ -233,7 +233,7 @@ export function EquipmentStep() {
                         const applied = appliedCurses.includes(curse.id)
                         // Adicionar leva a categoria (sem teto) pra: base + mods + delta das maldições com mais uma.
                         const newCat = item.category + appliedMods.length + getCurseCategoryDelta(appliedCurses.length + 1)
-                        const fitsPatente = newCat <= 4 && (getEffectiveCategoryCount(draft, newCat) + 1) <= getCategoryLimit(patente, newCat)
+                        const fitsPatente = newCat <= 4 && fitsWithAdjustedCounts(draft, patente, { [unitCat]: -1, [newCat]: 1 })
                         const addable = applied || (canApplyCurse(item, appliedCurses, curse.id, draft.equipmentCurseChoices, uid) && fitsPatente)
                         return (
                           <button
@@ -358,9 +358,9 @@ export function EquipmentStep() {
         <p className="text-parchment-500 text-sm mb-1">
           A <strong className="text-red-400">Patente</strong> é sua posição na Ordem (diferente do NEX, que é seu poder):
           define quantos itens de cada categoria você pode requisitar. Categoria 0 é ilimitada (só pela carga);
-          <strong className="text-parchment-300"> {patente.name}</strong> libera {accessibleCategories.length > 0
-            ? accessibleCategories.map(c => `${getCategoryLimit(patente, c)}× Cat ${CAT_ROMAN[c]}`).join(' · ')
-            : 'nenhuma categoria acima de 0'}.
+          <strong className="text-parchment-300"> {patente.name}</strong> libera {accessibleSlots.length > 0
+            ? accessibleSlots.map(s => `${s.limit}× Cat ${CAT_ROMAN[s.category]}`).join(' · ')
+            : 'nenhuma categoria acima de 0'}. Um item de categoria menor pode ocupar uma vaga de categoria maior.
         </p>
         <p className="text-parchment-700 text-xs mb-4">
           Crédito para compras de missão: <strong className="text-parchment-500">{patente.credit}</strong> (uso na mesa, não afeta a criação).
@@ -372,14 +372,24 @@ export function EquipmentStep() {
             <span className="text-xs uppercase tracking-wider opacity-70">Carga</span>
             <span className="font-fantasy text-xl">{currentSpaces} / {capacity}</span>
           </div>
-          {accessibleCategories.map(c => {
-            const count = getEffectiveCategoryCount(draft, c)
-            const limit = getCategoryLimit(patente, c)
-            const over = count > limit
+          {accessibleSlots.map(s => {
+            // Mostra o maior entre "itens desta categoria" e "vagas desta categoria usadas"
+            // (ex.: Operador com 4 itens Cat I → Cat I "4/3" e Cat II "1/1, inclui 1 de cat. menor").
+            const shown = Math.max(s.items, s.usedSlots)
+            const borrowing = s.items > s.limit && !s.overflow
+            const style = s.overflow
+              ? 'bg-red-950/50 border-red-500/50 text-red-300'
+              : borrowing || s.spillIn > 0
+                ? 'bg-gold-950/40 border-gold-600/50 text-gold-300'
+                : 'bg-parchment-900/30 border-parchment-800/50 text-parchment-300'
             return (
-              <div key={c} className={`flex flex-col px-4 py-2 rounded-lg border ${over ? 'bg-red-950/50 border-red-500/50 text-red-300' : 'bg-parchment-900/30 border-parchment-800/50 text-parchment-300'}`}>
-                <span className="text-xs uppercase tracking-wider opacity-70">Categoria {CAT_ROMAN[c]}</span>
-                <span className="font-fantasy text-xl">{count} / {limit}</span>
+              <div key={s.category} className={`flex flex-col px-4 py-2 rounded-lg border ${style}`}>
+                <span className="text-xs uppercase tracking-wider opacity-70">Categoria {CAT_ROMAN[s.category]}</span>
+                <span className="font-fantasy text-xl">{shown} / {s.limit}</span>
+                {s.overflow && <span className="text-[10px] opacity-80">sem vaga — remova um item</span>}
+                {!s.overflow && borrowing && <span className="text-[10px] opacity-80">+{s.items - s.limit} na vaga de cat. maior</span>}
+                {!s.overflow && s.spillIn > 0 && <span className="text-[10px] opacity-80">inclui {s.spillIn} de cat. menor</span>}
+                {!s.overflow && !borrowing && s.spillIn === 0 && s.usedSlots >= s.limit && <span className="text-[10px] opacity-80">máximo atingido</span>}
               </div>
             )
           })}

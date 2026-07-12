@@ -15,8 +15,11 @@ import {
   getModifiedSpaces,
   getModifiedDefenseBonus,
   getEffectiveCategoryCount,
+  fitsPatenteSlots,
+  getCategorySlotAllocation,
   EQUIPMENTS,
 } from '../equipmentUtils'
+import { getPatente } from '../patenteUtils'
 
 function makeDraft(over: Partial<OrdemCharacterDraft>): OrdemCharacterDraft {
   return { ...EMPTY_DRAFT, ...over }
@@ -180,5 +183,60 @@ describe('equipmentUtils', () => {
     expect(isEquipmentStepComplete(makeDraft({ ...base, equipmentModifications: { 'protecao-leve': ['reforcada'] } }))).toBe(false)
     // um Operador (1 slot Cat II) já aceita a mesma proteção modificada
     expect(isEquipmentStepComplete(makeDraft({ ...base, patente: 'operador', equipmentModifications: { 'protecao-leve': ['reforcada'] } }))).toBe(true)
+  })
+})
+
+describe('vagas da Patente com transbordo (F21) — item menor ocupa vaga maior', () => {
+  it('fitsPatenteSlots: viável ⟺ itens de cat ≥ k cabem nas vagas de cat ≥ k, pra todo k', () => {
+    const operador = getPatente('operador') // 3× Cat I, 1× Cat II
+    expect(fitsPatenteSlots([0, 4, 0, 0, 0], operador)).toBe(true) // 4 Cat I: 3 na I + 1 na II
+    expect(fitsPatenteSlots([0, 5, 0, 0, 0], operador)).toBe(false) // 5 > 4 vagas totais
+    expect(fitsPatenteSlots([0, 3, 1, 0, 0], operador)).toBe(true) // exato
+    expect(fitsPatenteSlots([0, 4, 1, 0, 0], operador)).toBe(false) // 5 itens, 4 vagas
+    expect(fitsPatenteSlots([0, 0, 0, 1, 0], operador)).toBe(false) // Cat III sem vaga ≥ III
+  })
+
+  it('Operador com 4 armas Cat I: válido (a 4ª ocupa a vaga de Cat II)', () => {
+    const quatroRevolveres = makeDraft({
+      class: 'combatant',
+      patente: 'operador',
+      attributes: { ...EMPTY_ATTRIBUTES, strength: 1 }, // capacidade 5 ≥ 4 espaços
+      equipmentChoices: ['revolver', 'revolver#2', 'revolver#3', 'revolver#4'],
+    })
+    expect(isEquipmentStepComplete(quatroRevolveres)).toBe(true)
+    // Com um 5º item Cat I não há mais vaga nenhuma.
+    expect(isEquipmentStepComplete(makeDraft({
+      ...quatroRevolveres,
+      attributes: { ...EMPTY_ATTRIBUTES, strength: 2 },
+      equipmentChoices: [...quatroRevolveres.equipmentChoices, 'revolver#5'],
+    }))).toBe(false)
+  })
+
+  it('alocação pra exibição: Operador + 4 Cat I → "4/3" na I e vaga da II ocupada por 1 de cat. menor', () => {
+    const draft = makeDraft({
+      patente: 'operador',
+      equipmentChoices: ['revolver', 'revolver#2', 'revolver#3', 'revolver#4'],
+    })
+    const alloc = getCategorySlotAllocation(draft, getPatente('operador'))
+    const cat1 = alloc.find(s => s.category === 1)!
+    const cat2 = alloc.find(s => s.category === 2)!
+    expect(cat1).toMatchObject({ items: 4, usedSlots: 3, spillIn: 0, limit: 3, overflow: false })
+    expect(cat2).toMatchObject({ items: 0, usedSlots: 1, spillIn: 1, limit: 1, overflow: false })
+  })
+
+  it('item de categoria maior tem prioridade na própria vaga (Cat II real + excedente de Cat I não cabem juntos)', () => {
+    // Operador: 3× Cat I + 1 proteção pesada (Cat II) = ok; +1 Cat I não tem mais onde entrar.
+    const cheio = makeDraft({
+      class: 'combatant',
+      patente: 'operador',
+      attributes: { ...EMPTY_ATTRIBUTES, strength: 2 },
+      equipmentChoices: ['revolver', 'revolver#2', 'revolver#3', 'protecao-pesada'],
+    })
+    expect(isEquipmentStepComplete(cheio)).toBe(true)
+    expect(isEquipmentStepComplete(makeDraft({
+      ...cheio,
+      attributes: { ...EMPTY_ATTRIBUTES, strength: 3 },
+      equipmentChoices: [...cheio.equipmentChoices, 'revolver#4'],
+    }))).toBe(false)
   })
 })

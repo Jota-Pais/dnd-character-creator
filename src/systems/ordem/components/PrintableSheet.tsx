@@ -216,14 +216,7 @@ export function PrintableSheet() {
       {/* ═══════════════ PÁGINA 2 ═══════════════ */}
       <div className="pt-6">
         <section className="mb-4">
-          <div className="flex items-center justify-between">
-            <BlackBar className="flex-1">Habilidades &amp; Rituais</BlackBar>
-            {draft.class === 'occultist' && (
-              <div className="ml-2 border-2 border-gray-900 rounded px-2 py-0.5 text-xs font-bold whitespace-nowrap">
-                DT de Rituais: {ritualDt}
-              </div>
-            )}
-          </div>
+          <BlackBar>Habilidades</BlackBar>
           <div className="space-y-1.5 mt-2 text-sm">
             {origin && (
               <p><span className="font-semibold">{origin.power.name} (origem).</span> {origin.power.description}</p>
@@ -235,18 +228,31 @@ export function PrintableSheet() {
             {powers.map(p => p && (
               <p key={p.id}><span className="font-semibold">{p.name} (poder).</span> {p.description}</p>
             ))}
-            {rituals.map((r, i) => r && (
-              <div key={`${r.id}-${i}`}>
-                <p>
-                  <span className="font-semibold">{r.name}</span>
-                  <span className="text-gray-600"> ({formatRitualElementLabel(r, draft.ritualElementChoices)}, {r.circle}º Círculo — custo {RITUAL_COST[r.circle]} PE)</span>
-                  <span className="text-gray-500 text-xs"> — {r.execution}, {r.range}, {r.target}, {r.duration}{r.resistance ? `, ${r.resistance}` : ''}</span>
-                </p>
-                <p className="text-gray-700 text-xs">{r.description}</p>
-              </div>
-            ))}
           </div>
         </section>
+
+        {rituals.length > 0 && (
+          <section className="mb-4">
+            <div className="flex items-center justify-between">
+              <BlackBar className="flex-1">Rituais</BlackBar>
+              <div className="ml-2 border-2 border-gray-900 rounded px-2 py-0.5 text-xs font-bold whitespace-nowrap">
+                DT de Rituais: {ritualDt}
+              </div>
+            </div>
+            <div className="space-y-1.5 mt-2 text-sm">
+              {rituals.map((r, i) => r && (
+                <div key={`${r.id}-${i}`}>
+                  <p>
+                    <span className="font-semibold">{r.name}</span>
+                    <span className="text-gray-600"> ({formatRitualElementLabel(r, draft.ritualElementChoices)}, {r.circle}º Círculo — custo {RITUAL_COST[r.circle]} PE)</span>
+                    <span className="text-gray-500 text-xs"> — {r.execution}, {r.range}, {r.target}, {r.duration}{r.resistance ? `, ${r.resistance}` : ''}</span>
+                  </p>
+                  <p className="text-gray-700 text-xs">{r.description}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className="mb-4">
           <BlackBar>Inventário</BlackBar>

@@ -145,7 +145,7 @@ export function PrintableSheet() {
               <thead>
                 <tr className="text-gray-500 text-left text-[9px] uppercase">
                   <th className="font-semibold">Perícia</th>
-                  <th className="font-semibold text-center">Dados</th>
+                  <th className="font-semibold text-center">Dados (d20)</th>
                   <th className="font-semibold text-center">Treino</th>
                   <th className="font-semibold text-center">Outros</th>
                 </tr>
@@ -165,7 +165,7 @@ export function PrintableSheet() {
                           <span className="text-[9px] text-gray-500 font-normal"> ({grade})</span>
                         )}
                       </td>
-                      <td className="text-center">{attributes[skill.attribute as keyof OrdemAttributes]}d20 <span className="text-[9px] text-gray-500">({ATTR_ABBREV[skill.attribute as keyof OrdemAttributes]})</span></td>
+                      <td className="text-center">{attributes[skill.attribute as keyof OrdemAttributes]} <span className="text-[9px] text-gray-500">{ATTR_ABBREV[skill.attribute as keyof OrdemAttributes]}</span></td>
                       <td className="text-center">{bonus > 0 ? `+${bonus}` : '0'}</td>
                       <td className="text-center"><span className="inline-block border-b border-gray-400 w-8" /></td>
                     </tr>

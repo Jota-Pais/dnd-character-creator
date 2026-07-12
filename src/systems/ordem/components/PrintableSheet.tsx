@@ -4,11 +4,12 @@ import { getOrdemClass } from '../utils/classUtils'
 import { getSkillName } from '../utils/skillUtils'
 import { getTrilha } from '../utils/trilhaUtils'
 import { getPower } from '../utils/powerUtils'
-import { deriveStats, getTrainedSkills, getEffectiveAttributes, getSkillGrade } from '../utils/characterUtils'
+import { getTrainedSkills, getSkillGrade } from '../utils/characterUtils'
 import { getReachedTrilhaSlots, getPeLimit } from '../utils/progressionUtils'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount } from '../utils/ritualUtils'
-import { getEquipmentById, getTotalCarryCapacity, getModifiedSpaces, getModifiedDefenseBonus, getEffectiveCategory } from '../utils/equipmentUtils'
+import { getEquipmentById, getTotalCarryCapacity, getModifiedSpaces, getModifiedDefenseBonus, getDraftItemCategory } from '../utils/equipmentUtils'
 import { getModification } from '../utils/modificationUtils'
+import { getCurse, getCursedDerivedStats, getSheetAttributes, formatCurseElement } from '../utils/curseUtils'
 import { getOrdemWeaponAttack } from '../utils/ordemWeaponUtils'
 import { getPatente } from '../utils/patenteUtils'
 import type { OrdemWeapon } from '../types/equipment'
@@ -25,8 +26,8 @@ export function PrintableSheet() {
   const cls = draft.class ? getOrdemClass(draft.class) : undefined
   if (!cls) return null
 
-  const attributes = getEffectiveAttributes(draft)
-  const stats = deriveStats(cls, attributes, draft.nex, getModifiedDefenseBonus(draft))
+  const attributes = getSheetAttributes(draft)
+  const stats = getCursedDerivedStats(draft, cls, getModifiedDefenseBonus(draft))
   const trainedSkills = getTrainedSkills(draft)
   const trilha = draft.trilha ? getTrilha(draft.trilha) : undefined
   const reachedTrilhaFeatures = trilha ? getReachedTrilhaSlots(draft.nex).map(nex => trilha.features.find(f => f.nex === nex)).filter(Boolean) : []
@@ -38,7 +39,8 @@ export function PrintableSheet() {
   const weaponAttacks = draft.equipmentChoices
     .map(getEquipmentById)
     .filter((w): w is OrdemWeapon => w?.type === 'weapon')
-    .map(w => getOrdemWeaponAttack(w, draft, draft.equipmentModifications[w.id] ?? []))
+    .map(w => getOrdemWeaponAttack(w, draft, draft.equipmentModifications[w.id] ?? [], draft.equipmentCurses[w.id] ?? []))
+  const cursedItems = equipment.filter((i): i is NonNullable<typeof i> => Boolean(i && (draft.equipmentCurses[i.id]?.length ?? 0) > 0))
 
   return (
     <div className="print-sheet mx-auto max-w-[820px] bg-white text-gray-900 p-8 rounded-lg shadow-lg" style={{ fontFamily: 'Georgia, serif' }}>
@@ -189,16 +191,49 @@ export function PrintableSheet() {
             {equipment.map(item => {
               if (!item) return null
               const mods = draft.equipmentModifications[item.id] ?? []
-              const effCat = getEffectiveCategory(item, mods.length)
+              const curses = draft.equipmentCurses[item.id] ?? []
+              const effCat = getDraftItemCategory(draft, item)
               return (
                 <p key={item.id} className="text-sm">
                   <span className="font-semibold">{item.name}</span> (Cat {CAT_ROMAN[effCat]}, {item.spaces} esp.)
                   {item.type === 'weapon' && ` — ${item.damage} ${item.damageType} (Crítico: ${item.critical})`}
                   {item.type === 'protection' && ` — Defesa +${item.defenseBonus}`}
                   {mods.length > 0 && <span className="text-gray-600"> · Mods: {mods.map(m => getModification(m)?.name).filter(Boolean).join(', ')}</span>}
+                  {curses.length > 0 && <span className="text-gray-600"> · Maldições: {curses.map(c => getCurse(c)?.name).filter(Boolean).join(', ')}</span>}
                 </p>
               )
             })}
+          </div>
+        </section>
+      )}
+
+      {cursedItems.length > 0 && (
+        <section className="mb-4">
+          <h2 className="font-bold uppercase text-sm tracking-wide border-b border-gray-400 mb-1">Itens Amaldiçoados</h2>
+          <p className="text-[11px] text-gray-500 mb-2">
+            Bônus de maldições iguais em itens diferentes não se acumulam. Os bônus fixos (Defesa, atributos, PV/PE) já estão somados na ficha.
+          </p>
+          <div className="space-y-2">
+            {cursedItems.map(item => (
+              <div key={item.id}>
+                <p className="text-sm font-semibold">{item.name}</p>
+                {(draft.equipmentCurses[item.id] ?? []).map(cid => {
+                  const curse = getCurse(cid)
+                  if (!curse) return null
+                  const ritual = curse.choice === 'ritual1'
+                    ? getRitualById(draft.equipmentCurseChoices[`${item.id}:${curse.id}`] ?? '')
+                    : undefined
+                  return (
+                    <p key={cid} className="text-sm text-gray-700">
+                      <span className="font-semibold">
+                        {curse.name} ({formatCurseElement(curse, item.id, draft.equipmentCurseChoices)}{ritual ? ` — ritual vinculado: ${ritual.name}` : ''}).
+                      </span>{' '}
+                      {curse.effect}
+                    </p>
+                  )
+                })}
+              </div>
+            ))}
           </div>
         </section>
       )}

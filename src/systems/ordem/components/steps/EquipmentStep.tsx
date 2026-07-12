@@ -2,20 +2,30 @@ import { useOrdemStore } from '../../stores/characterStore'
 import { STEP_LABELS } from '../../types/character'
 import type { OrdemEquipment } from '../../types/equipment'
 import {
-  EQUIPMENTS, getTotalCarryCapacity, getModifiedSpaces, getEffectiveCategoryCount, getEffectiveCategory, hasWeaponProficiency,
+  EQUIPMENTS, getTotalCarryCapacity, getModifiedSpaces, getEffectiveCategoryCount, getDraftItemCategory, hasWeaponProficiency,
 } from '../../utils/equipmentUtils'
 import { getAvailableModifications, canApplyModification, isModifiable } from '../../utils/modificationUtils'
-import { getEffectiveAttributes } from '../../utils/characterUtils'
+import {
+  getAvailableCurses, canApplyCurse, isCursable, getCurseCategoryDelta, curseChoiceKey, formatCurseElement, getSheetAttributes,
+} from '../../utils/curseUtils'
+import type { OrdemElement } from '../../types/ritual'
+import { getAvailableRituals, ELEMENT_NAMES } from '../../utils/ritualUtils'
 import { getPatente, getCategoryLimit, PATENTES } from '../../utils/patenteUtils'
 import { isStepComplete } from '../../utils/draftValidation'
 import { StepNav } from '../common/StepNav'
 
 const CAT_ROMAN = ['0', 'I', 'II', 'III', 'IV']
 
+/** Elementos escolhíveis por maldição: Antielemento rola 1d4 (sem Medo); Proteção Elemental aceita qualquer. */
+const CURSE_ELEMENT_OPTIONS: Record<string, OrdemElement[]> = {
+  antielemento: ['knowledge', 'energy', 'death', 'blood'],
+  'protecao-elemental': ['knowledge', 'energy', 'death', 'blood', 'fear'],
+}
+
 export function EquipmentStep() {
   const { draft, updateDraft, nextStep, prevStep } = useOrdemStore()
 
-  const strength = getEffectiveAttributes(draft).strength
+  const strength = getSheetAttributes(draft).strength
   const capacity = getTotalCarryCapacity(draft)
   const currentSpaces = getModifiedSpaces(draft)
   const isOverCapacity = currentSpaces > capacity
@@ -33,10 +43,15 @@ export function EquipmentStep() {
     const idx = choices.indexOf(itemId)
     if (idx > -1) {
       choices.splice(idx, 1)
-      // Ao remover o item, descarta as modificações dele.
+      // Ao remover o item, descarta as modificações e maldições dele.
       const mods = { ...draft.equipmentModifications }
       delete mods[itemId]
-      updateDraft({ equipmentChoices: choices, equipmentModifications: mods })
+      const curses = { ...draft.equipmentCurses }
+      delete curses[itemId]
+      const curseChoices = Object.fromEntries(
+        Object.entries(draft.equipmentCurseChoices).filter(([k]) => !k.startsWith(`${itemId}:`)),
+      )
+      updateDraft({ equipmentChoices: choices, equipmentModifications: mods, equipmentCurses: curses, equipmentCurseChoices: curseChoices })
       return
     }
     choices.push(itemId)
@@ -52,9 +67,27 @@ export function EquipmentStep() {
     updateDraft({ equipmentModifications: updated })
   }
 
+  const toggleCurse = (itemId: string, curseId: string) => {
+    const current = draft.equipmentCurses[itemId] ?? []
+    const next = current.includes(curseId) ? current.filter(c => c !== curseId) : [...current, curseId]
+    const updated = { ...draft.equipmentCurses }
+    if (next.length === 0) delete updated[itemId]
+    else updated[itemId] = next
+    // Ao remover a maldição, descarta a escolha de parâmetro (elemento/ritual) dela.
+    const choices = { ...draft.equipmentCurseChoices }
+    if (current.includes(curseId)) delete choices[curseChoiceKey(itemId, curseId)]
+    updateDraft({ equipmentCurses: updated, equipmentCurseChoices: choices })
+  }
+
+  const setCurseChoice = (itemId: string, curseId: string, value: string) => {
+    updateDraft({ equipmentCurseChoices: { ...draft.equipmentCurseChoices, [curseChoiceKey(itemId, curseId)]: value } })
+  }
+
   const renderItem = (item: OrdemEquipment) => {
     const isSelected = draft.equipmentChoices.includes(item.id)
     const appliedMods = draft.equipmentModifications[item.id] ?? []
+    const appliedCurses = draft.equipmentCurses[item.id] ?? []
+    const itemCat = getDraftItemCategory(draft, item)
 
     // Bloqueio por limite de categoria da Patente (Categoria 0 é ilimitada).
     // Um item novo entra na sua categoria BASE (ainda sem modificações).
@@ -85,8 +118,8 @@ export function EquipmentStep() {
           </span>
           <div className="flex flex-wrap gap-2 text-xs text-parchment-500 mt-1">
             <span className="bg-parchment-900/50 px-2 py-0.5 rounded border border-parchment-800/50">
-              Cat {CAT_ROMAN[getEffectiveCategory(item, appliedMods.length)]}
-              {appliedMods.length > 0 && <span className="text-gold-500/80"> (base {CAT_ROMAN[item.category]})</span>}
+              Cat {CAT_ROMAN[itemCat]}
+              {(appliedMods.length > 0 || appliedCurses.length > 0) && <span className="text-gold-500/80"> (base {CAT_ROMAN[item.category]})</span>}
             </span>
             <span className="bg-parchment-900/50 px-2 py-0.5 rounded border border-parchment-800/50">
               Espaço: {item.spaces}
@@ -128,7 +161,7 @@ export function EquipmentStep() {
                 {getAvailableModifications(item).map(mod => {
                   const applied = appliedMods.includes(mod.id)
                   // Aplicar sobe a categoria efetiva em 1 → precisa caber no limite da Patente.
-                  const newCat = getEffectiveCategory(item, appliedMods.length) + 1
+                  const newCat = itemCat + 1
                   const fitsPatente = newCat <= 4 && (getEffectiveCategoryCount(draft, newCat) + 1) <= getCategoryLimit(patente, newCat)
                   const addable = applied || (canApplyModification(item, appliedMods, mod.id) && fitsPatente)
                   return (
@@ -153,6 +186,72 @@ export function EquipmentStep() {
                   {getAvailableModifications(item).filter(m => appliedMods.includes(m.id)).map(m => (
                     <li key={m.id} className="text-[11px] text-gold-600/90">
                       <span className="font-semibold">{m.name}:</span> {m.effect}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
+          {isSelected && isCursable(item) && (
+            <div className="mt-2 pt-2 border-t border-parchment-900/50" onClick={e => e.stopPropagation()}>
+              <p className="text-[11px] text-parchment-600 mb-1">
+                Maldições <span className="text-parchment-700">(itens amaldiçoados: a 1ª sobe a categoria em II, as seguintes em I; elementos opressores não se combinam no mesmo item)</span>
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {getAvailableCurses(item).map(curse => {
+                  const applied = appliedCurses.includes(curse.id)
+                  // Adicionar leva a categoria (sem teto) pra: base + mods + delta das maldições com mais uma.
+                  const newCat = item.category + appliedMods.length + getCurseCategoryDelta(appliedCurses.length + 1)
+                  const fitsPatente = newCat <= 4 && (getEffectiveCategoryCount(draft, newCat) + 1) <= getCategoryLimit(patente, newCat)
+                  const addable = applied || (canApplyCurse(item, appliedCurses, curse.id, draft.equipmentCurseChoices) && fitsPatente)
+                  return (
+                    <button
+                      key={curse.id}
+                      onClick={() => { if (addable) toggleCurse(item.id, curse.id) }}
+                      disabled={!addable}
+                      title={curse.effect}
+                      className={`text-[11px] px-2 py-0.5 rounded border transition-all ${applied
+                        ? 'bg-purple-900/40 border-purple-600/50 text-purple-300'
+                        : addable
+                          ? 'border-parchment-800 text-parchment-500 hover:border-purple-800 hover:text-parchment-300'
+                          : 'border-parchment-900/40 text-parchment-800 cursor-not-allowed'}`}
+                    >
+                      {curse.name}
+                      <span className="opacity-60"> · {curse.element === 'varies' ? 'Varia' : ELEMENT_NAMES[curse.element]}</span>
+                    </button>
+                  )
+                })}
+              </div>
+              {appliedCurses.length > 0 && (
+                <ul className="mt-1.5 space-y-1">
+                  {getAvailableCurses(item).filter(c => appliedCurses.includes(c.id)).map(c => (
+                    <li key={c.id} className="text-[11px] text-purple-400/90">
+                      <span className="font-semibold">{c.name} ({formatCurseElement(c, item.id, draft.equipmentCurseChoices)}):</span> {c.effect}
+                      {c.choice === 'element' && (
+                        <select
+                          value={draft.equipmentCurseChoices[curseChoiceKey(item.id, c.id)] ?? ''}
+                          onChange={e => setCurseChoice(item.id, c.id, e.target.value)}
+                          className="block mt-1 bg-parchment-950 border border-purple-900/50 rounded px-1.5 py-0.5 text-purple-300 text-[11px]"
+                        >
+                          <option value="" disabled>Escolha o elemento…</option>
+                          {(CURSE_ELEMENT_OPTIONS[c.id] ?? []).map(el => (
+                            <option key={el} value={el}>{ELEMENT_NAMES[el]}</option>
+                          ))}
+                        </select>
+                      )}
+                      {c.choice === 'ritual1' && (
+                        <select
+                          value={draft.equipmentCurseChoices[curseChoiceKey(item.id, c.id)] ?? ''}
+                          onChange={e => setCurseChoice(item.id, c.id, e.target.value)}
+                          className="block mt-1 bg-parchment-950 border border-purple-900/50 rounded px-1.5 py-0.5 text-purple-300 text-[11px]"
+                        >
+                          <option value="" disabled>Escolha o ritual vinculado (1º círculo)…</option>
+                          {getAvailableRituals(1).map(r => (
+                            <option key={r.id} value={r.id}>{r.name}</option>
+                          ))}
+                        </select>
+                      )}
                     </li>
                   ))}
                 </ul>

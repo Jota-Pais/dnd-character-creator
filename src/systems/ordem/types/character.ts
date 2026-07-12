@@ -66,6 +66,10 @@ export type OrdemCharacterDraft = {
   equipmentChoices: string[]
   /** Modificações aplicadas por item (id do item → ids das modificações). Cada mod sobe a categoria efetiva em I. */
   equipmentModifications: Record<string, string[]>
+  /** Maldições aplicadas por item (id do item → ids das maldições). A 1ª sobe a categoria em II; as seguintes em I. */
+  equipmentCurses: Record<string, string[]>
+  /** Escolhas de parâmetro de maldição ("itemId:curseId" → elemento ou ritual de 1º círculo). */
+  equipmentCurseChoices: Record<string, string>
 }
 
 export const EMPTY_ATTRIBUTES: OrdemAttributes = {
@@ -96,4 +100,6 @@ export const EMPTY_DRAFT: OrdemCharacterDraft = {
   patente: 'recruta',
   equipmentChoices: [],
   equipmentModifications: {},
+  equipmentCurses: {},
+  equipmentCurseChoices: {},
 }

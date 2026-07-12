@@ -1,0 +1,258 @@
+[
+  {
+    "id": "antielemento",
+    "name": "Antielemento",
+    "element": "knowledge",
+    "target": "weapon-any",
+    "choice": "element",
+    "effect": "A arma é letal contra criaturas de um elemento (escolha o elemento ao receber o item, ou role 1d4: 1) Conhecimento; 2) Energia; 3) Morte; 4) Sangue). Quando ataca uma criatura desse elemento, você pode gastar 2 PE. Se fizer isso e acertar o ataque, causa +4d8 pontos de dano."
+  },
+  {
+    "id": "ritualistica",
+    "name": "Ritualística",
+    "element": "knowledge",
+    "target": "weapon-any",
+    "effect": "Você pode armazenar na arma um ritual que tenha como alvo um ser ou que afete uma área, gastando os PE como se tivesse conjurado o ritual normalmente (Tabela 5.2 — 1º círculo: 1 PE; 2º: 3 PE; 3º: 6 PE; 4º: 10 PE). O ritual não gera efeito na hora; fica guardado no item. Quando acerta um ataque com a arma, você pode descarregar o ritual armazenado como uma ação livre — o alvo do ritual, ou o centro da área dele, é o ser atingido. Uma vez que o ritual seja descarregado, outro pode ser armazenado."
+  },
+  {
+    "id": "senciente",
+    "name": "Senciente",
+    "element": "knowledge",
+    "target": "weapon-any",
+    "effect": "Você pode gastar uma ação de movimento e 2 PE para imbuir a arma com uma fagulha de sua consciência. A arma flutua ao seu lado e, uma vez por rodada, ataca um ser em alcance curto (ou no alcance da arma, o que for maior) à sua escolha, com as mesmas estatísticas que teria se você a estivesse empunhando. Você pode gastar 1 PE no início de cada um de seus turnos para manter esse efeito; se não o fizer, a arma cai no chão. Você pode usar uma ação de movimento para apanhar a arma no ar; soltá-la para que volte a flutuar é uma ação livre."
+  },
+  {
+    "id": "empuxo",
+    "name": "Empuxo",
+    "element": "energy",
+    "target": "weapon-melee",
+    "effect": "A arma ganha a capacidade de ser arremessada em alcance curto (se já podia ser arremessada, seu alcance aumenta em uma categoria) e causa mais um dado de dano do mesmo tipo quando usada dessa forma. Após efetuar um ataque à distância com a arma, ela volta voando para você no mesmo turno; pegar a arma é uma reação. Somente armas corpo a corpo podem receber esta maldição."
+  },
+  {
+    "id": "energetica",
+    "name": "Energética",
+    "element": "energy",
+    "target": "weapon-any",
+    "effect": "Você pode gastar 2 PE para transformar a arma (exceto seu cabo ou empunhadura) ou a munição disparada pela arma em Energia pura. Até o final da cena, a arma fornece +5 em testes de ataque, ignora resistência a dano e converte todo o dano causado para Energia. Armas de corpo a corpo emanam luz como uma lâmpada; munição toma uma forma plasmática iluminada como feixes de luz."
+  },
+  {
+    "id": "vibrante",
+    "name": "Vibrante",
+    "element": "energy",
+    "target": "weapon-any",
+    "effect": "A arma vibra constantemente com um fluxo de Energia. Você recebe a habilidade Ataque Extra, da trilha Operações Especiais do combatente. Se já a possui, em vez disso o custo para usá-la diminui em –1 PE."
+  },
+  {
+    "id": "consumidora",
+    "name": "Consumidora",
+    "element": "death",
+    "target": "weapon-any",
+    "effect": "A arma drena a entropia de seres, deixando alvos atingidos lentos até o final da cena. Quando ataca, você pode gastar 2 PE. Se fizer isso e acertar o ataque, o alvo fica imóvel por uma rodada."
+  },
+  {
+    "id": "erosiva",
+    "name": "Erosiva",
+    "element": "death",
+    "target": "weapon-any",
+    "extraDamage": "1d8 Morte",
+    "effect": "A arma acelera o envelhecimento dos alvos, causando +1d8 pontos de dano de Morte. Quando ataca, você pode gastar 2 PE. Se fizer isso e acertar o ataque, a vítima sofre 2d4 pontos de dano de Morte no início de seus turnos pelas próximas duas rodadas."
+  },
+  {
+    "id": "repulsora",
+    "name": "Repulsora",
+    "element": "death",
+    "target": "weapon-any",
+    "defenseBonus": 2,
+    "effect": "A arma gera uma aura similar a uma fumaça espiralada que desacelera ataques vindos em sua direção, fornecendo +2 de Defesa enquanto estiver empunhada. Quando você faz um bloqueio, pode gastar 2 PE; se fizer isso, recebe um bônus adicional de +5 em Defesa."
+  },
+  {
+    "id": "lancinante",
+    "name": "Lancinante",
+    "element": "blood",
+    "target": "weapon-any",
+    "extraDamage": "1d8 Sangue",
+    "effect": "A arma inflige ferimentos terríveis, causando +1d8 de dano de Sangue. Este dado é multiplicado em acertos críticos (por exemplo, se a arma possuir crítico x3, em um acerto crítico o dano adicional vira +3d8)."
+  },
+  {
+    "id": "predadora",
+    "name": "Predadora",
+    "element": "blood",
+    "target": "weapon-any",
+    "doublesThreat": true,
+    "rangeIncrease": true,
+    "effect": "A arma tem sede de sangue e persegue seus alvos, anulando penalidades por camuflagem e cobertura (mas não cobertura total). Caso a arma seja de ataque à distância, seu alcance também aumenta em uma categoria. Além disso, a margem de ameaça da arma duplica (efeitos que duplicam a margem de ameaça são aplicados antes de quaisquer efeitos que a aumentem)."
+  },
+  {
+    "id": "sanguinaria",
+    "name": "Sanguinária",
+    "element": "blood",
+    "target": "weapon-any",
+    "effect": "Os ferimentos causados pela arma se rasgam além da área acertada: um ser atingido fica sangrando. O sangramento causado pela arma é cumulativo — um ser atingido duas vezes sofre 2d6 pontos de dano de sangramento por rodada. Além disso, quando você faz um acerto crítico com a arma, ela drena o sangue derramado, deixando o alvo fraco e concedendo a você 2d10 pontos de vida temporários."
+  },
+  {
+    "id": "abascanta",
+    "name": "Abascanta",
+    "element": "knowledge",
+    "target": "protection-any",
+    "effect": "Você recebe +5 em testes de resistência contra rituais. Uma vez por rodada, quando você é alvo de um ritual, pode gastar uma reação e PE igual ao custo dele para refleti-lo de volta ao conjurador. As características do ritual (efeitos, DT...) se mantêm, mas você toma qualquer decisão exigida por ele."
+  },
+  {
+    "id": "profetica",
+    "name": "Profética",
+    "element": "knowledge",
+    "target": "protection-any",
+    "effect": "A proteção concede vislumbres de um possível futuro imediato. Você recebe resistência a Conhecimento 10 e pode gastar 2 PE para rolar novamente um teste de resistência, uma vez."
+  },
+  {
+    "id": "sombria",
+    "name": "Sombria",
+    "element": "knowledge",
+    "target": "protection-any",
+    "effect": "A proteção confunde os sentidos. Você recebe +5 em Furtividade e ignora a penalidade de carga em testes dessa perícia. Além disso, pode gastar uma ação de movimento e 1 PE para fazer o item adquirir a aparência de uma roupa comum, mantendo suas propriedades (bônus na Defesa, penalidade de armadura...)."
+  },
+  {
+    "id": "cinetica",
+    "name": "Cinética",
+    "element": "energy",
+    "target": "protection-any",
+    "defenseBonus": 2,
+    "effect": "A proteção produz uma barreira invisível que desvia ataques, concedendo +2 em Defesa e resistência a dano 2 (para proteção leve) ou 5 (para proteção pesada)."
+  },
+  {
+    "id": "lepida",
+    "name": "Lépida",
+    "element": "energy",
+    "target": "protection-any",
+    "effect": "A proteção amplifica sua mobilidade, concedendo +10 em testes de Atletismo e +3m de deslocamento. Você pode gastar 2 PE para se mover de forma sobrenatural: até o final do turno, ignora terreno difícil, recebe deslocamento de escalada igual ao seu deslocamento terrestre e fica imune a dano por queda de até 9m."
+  },
+  {
+    "id": "voltaica",
+    "name": "Voltaica",
+    "element": "energy",
+    "target": "protection-any",
+    "effect": "Você recebe resistência a Energia 10 e pode gastar uma ação de movimento e 2 PE para fazer a proteção emitir arcos de Energia até o fim da cena. Se fizer isso, no fim de cada um de seus turnos você causa 1d6 pontos de dano de Energia em todos os seres adjacentes."
+  },
+  {
+    "id": "letargica",
+    "name": "Letárgica",
+    "element": "death",
+    "target": "protection-any",
+    "defenseBonus": 2,
+    "effect": "A proteção desacelera ataques perigosos, concedendo +2 em Defesa. Além disso, você recebe 25% de chance (para proteção leve) ou 50% de chance (para pesada) de ignorar o dano extra de acertos críticos e ataques furtivos."
+  },
+  {
+    "id": "repulsiva",
+    "name": "Repulsiva",
+    "element": "death",
+    "target": "protection-any",
+    "effect": "Você recebe resistência a Morte 10 e pode gastar uma ação de movimento e 2 PE para cobrir seu corpo com uma camada de lodo escuro até o final da cena. Se fizer isso, qualquer ser que o ataque em corpo a corpo sofre 2d8 pontos de dano de Morte."
+  },
+  {
+    "id": "regenerativa",
+    "name": "Regenerativa",
+    "element": "blood",
+    "target": "protection-any",
+    "effect": "A proteção melhora sua capacidade de resistência e regeneração. Você recebe resistência a Sangue 10 e pode gastar uma ação de movimento e 1 PE para recuperar 1d12 pontos de vida."
+  },
+  {
+    "id": "sadica",
+    "name": "Sádica",
+    "element": "blood",
+    "target": "protection-any",
+    "effect": "No início de seu turno, você recebe +1 em testes de ataque e rolagens de dano para cada 10 pontos de dano que sofreu desde o fim de seu último turno (por exemplo, se tiver sofrido 45 pontos de dano, recebe +4)."
+  },
+  {
+    "id": "carisma",
+    "name": "Carisma",
+    "element": "knowledge",
+    "target": "accessory-wear",
+    "attributeBonus": { "attribute": "presence", "value": 1, "noPe": true },
+    "effect": "O acessório gera uma aura que torna você mais carismático e autoconfiante. Você recebe +1 em Presença (este aumento não fornece PE adicionais)."
+  },
+  {
+    "id": "conjuracao",
+    "name": "Conjuração",
+    "element": "knowledge",
+    "target": "accessory-wear",
+    "choice": "ritual1",
+    "effect": "Esse acessório tem um ritual de 1º círculo vinculado. Se estiver empunhando o item, você pode conjurar o ritual como se o conhecesse (custo normal de 1º círculo: 1 PE). Caso conheça o ritual, seu custo diminui em –1 PE."
+  },
+  {
+    "id": "escudo-mental",
+    "name": "Escudo Mental",
+    "element": "knowledge",
+    "target": "accessory-wear",
+    "effect": "O acessório gera uma barreira psíquica. Você recebe resistência mental 10."
+  },
+  {
+    "id": "reflexao",
+    "name": "Reflexão",
+    "element": "knowledge",
+    "target": "accessory-wear",
+    "effect": "Quando você é alvo de um ritual, pode gastar PE igual ao custo dele para refleti-lo de volta ao seu conjurador. As características do ritual (efeitos, DT...) se mantêm, mas você toma qualquer decisão exigida por ele."
+  },
+  {
+    "id": "sagacidade",
+    "name": "Sagacidade",
+    "element": "knowledge",
+    "target": "accessory-wear",
+    "attributeBonus": { "attribute": "intellect", "value": 1 },
+    "effect": "Sua mente é acelerada pelas forças do Conhecimento, fornecendo a você +1 em Intelecto (este aumento não fornece perícias treinadas extras)."
+  },
+  {
+    "id": "defesa",
+    "name": "Defesa",
+    "element": "energy",
+    "target": "accessory-wear",
+    "defenseBonus": 5,
+    "effect": "Uma barreira de energia protetora invisível gerada por este acessório fornece +5 de Defesa."
+  },
+  {
+    "id": "destreza",
+    "name": "Destreza",
+    "element": "energy",
+    "target": "accessory-wear",
+    "attributeBonus": { "attribute": "agility", "value": 1 },
+    "effect": "Este acessório aprimora sua coordenação e velocidade, fornecendo +1 em Agilidade."
+  },
+  {
+    "id": "esforco-adicional",
+    "name": "Esforço Adicional",
+    "element": "death",
+    "target": "accessory-wear",
+    "peBonus": 5,
+    "effect": "Este acessório concede +5 PE. Este efeito só se ativa após um dia de uso."
+  },
+  {
+    "id": "disposicao",
+    "name": "Disposição",
+    "element": "blood",
+    "target": "accessory-wear",
+    "attributeBonus": { "attribute": "vigor", "value": 1 },
+    "effect": "Valendo-se do poder do Sangue, você recebe +1 em Vigor."
+  },
+  {
+    "id": "pujanca",
+    "name": "Pujança",
+    "element": "blood",
+    "target": "accessory-wear",
+    "attributeBonus": { "attribute": "strength", "value": 1 },
+    "effect": "O acessório aumenta sua potência muscular, fornecendo +1 em Força."
+  },
+  {
+    "id": "vitalidade",
+    "name": "Vitalidade",
+    "element": "blood",
+    "target": "accessory-wear",
+    "hpBonus": 15,
+    "effect": "Você recebe +15 PV. Os efeitos só se ativam após um dia de uso."
+  },
+  {
+    "id": "protecao-elemental",
+    "name": "Proteção Elemental",
+    "element": "varies",
+    "target": "accessory-wear",
+    "choice": "element",
+    "effect": "Você recebe resistência 10 contra um elemento. Este acessório conta como um item do elemento contra o qual fornece resistência (por exemplo, um utensílio de proteção elemental contra Energia é um item de Energia)."
+  }
+]

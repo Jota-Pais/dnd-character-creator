@@ -123,5 +123,11 @@ export function sanitizeImportedDraft(parsed: unknown): OrdemCharacterDraft | nu
     equipmentModifications: p.equipmentModifications && typeof p.equipmentModifications === 'object' && !Array.isArray(p.equipmentModifications)
       ? p.equipmentModifications
       : {},
+    equipmentCurses: p.equipmentCurses && typeof p.equipmentCurses === 'object' && !Array.isArray(p.equipmentCurses)
+      ? p.equipmentCurses
+      : {},
+    equipmentCurseChoices: p.equipmentCurseChoices && typeof p.equipmentCurseChoices === 'object' && !Array.isArray(p.equipmentCurseChoices)
+      ? p.equipmentCurseChoices
+      : {},
   }
 }

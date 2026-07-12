@@ -1,8 +1,9 @@
 import type { OrdemCharacterDraft } from '../types/character'
 import type { OrdemWeapon } from '../types/equipment'
 import type { SkillGrade } from './characterUtils'
-import { getSkillGrade, getEffectiveAttributes } from './characterUtils'
+import { getSkillGrade } from './characterUtils'
 import { getModification } from './modificationUtils'
+import { getCurse, getSheetAttributes } from './curseUtils'
 
 /** Bônus fixo por grau de treinamento (livro, Cap. 2). */
 const GRADE_BONUS: Record<SkillGrade, number> = {
@@ -67,37 +68,54 @@ function formatCritical(threat: number, mult: number): string {
   return parts.length ? parts.join('/') : 'x2'
 }
 
+/** Alcances em ordem crescente, pra maldição Predadora subir uma categoria (curto 9m → ... → extremo 90m). */
+const RANGE_ORDER = ['Curto', 'Médio', 'Longo', 'Extremo']
+
+function increaseRange(range: string): string {
+  const idx = RANGE_ORDER.indexOf(range)
+  return idx >= 0 && idx < RANGE_ORDER.length - 1 ? RANGE_ORDER[idx + 1] : range
+}
+
 /**
  * Ataque de uma arma do Ordem: perícia (Luta/Pontaria) e seu bônus de treino, número de d20
- * (atributo-base), dano (com Força para corpo a corpo) e crítico — tudo já com as modificações
- * de combate aplicadas (Certeira/Alongada no ataque, Cruel no dano, Calibre Grosso +1 dado,
- * Perigosa/Mira Laser na margem de ameaça).
+ * (atributo-base, já com bônus de acessórios amaldiçoados), dano (com Força para corpo a corpo)
+ * e crítico — com as modificações de combate (Certeira/Alongada no ataque, Cruel no dano,
+ * Calibre Grosso +1 dado, Perigosa/Mira Laser na margem de ameaça) e as maldições incondicionais
+ * (Lancinante/Erosiva +1d8 de dano do elemento; Predadora duplica a margem de ameaça — antes dos
+ * aumentos fixos, como manda o livro — e sobe o alcance em uma categoria).
  */
 export function getOrdemWeaponAttack(
   weapon: OrdemWeapon,
   draft: OrdemCharacterDraft,
   modIds: string[],
+  curseIds: string[] = [],
 ): OrdemWeaponAttack {
-  const attrs = getEffectiveAttributes(draft)
+  const attrs = getSheetAttributes(draft)
   const melee = isMelee(weapon)
   const skillId = melee ? 'fighting' : 'aim'
   const skill = melee ? 'Luta' : 'Pontaria'
   const rollDice = melee ? attrs.strength : attrs.agility
 
   const mods = modIds.map(getModification).filter((m): m is NonNullable<typeof m> => Boolean(m))
+  const curses = curseIds.map(getCurse).filter((c): c is NonNullable<typeof c> => Boolean(c))
   const attackBonus = GRADE_BONUS[getSkillGrade(draft, skillId)] + mods.reduce((s, m) => s + (m.attackBonus ?? 0), 0)
   const damageBonus = (melee ? attrs.strength : 0) + mods.reduce((s, m) => s + (m.damageBonus ?? 0), 0)
   const extraDice = mods.reduce((s, m) => s + (m.damageDice ?? 0), 0)
   const threatMargin = mods.reduce((s, m) => s + (m.threatMargin ?? 0), 0)
+  const curseDamage = curses.map(c => c.extraDamage).filter(Boolean).map(d => ` +${d}`).join('')
 
   const typePt = DAMAGE_TYPE_PT[weapon.damageType] ?? weapon.damageType
   const dmgMatch = String(weapon.damage).match(/^(\d+)d(\d+)/)
-  const damage = dmgMatch
+  const damage = (dmgMatch
     ? `${parseInt(dmgMatch[1], 10) + extraDice}d${dmgMatch[2]}${damageBonus !== 0 ? signed(damageBonus) : ''} ${typePt}`
-    : `${weapon.damage}${damageBonus !== 0 ? ` ${signed(damageBonus)}` : ''} ${typePt}`
+    : `${weapon.damage}${damageBonus !== 0 ? ` ${signed(damageBonus)}` : ''} ${typePt}`) + curseDamage
 
   const { threat, mult } = parseCritical(weapon.critical)
-  const critical = formatCritical(threat - threatMargin, mult)
+  // Predadora: a margem (20 − início + 1) duplica ANTES dos aumentos fixos (ex.: fuzil de caça 19 → 17).
+  const doubledThreat = curses.some(c => c.doublesThreat) ? 21 - 2 * (21 - threat) : threat
+  const critical = formatCritical(doubledThreat - threatMargin, mult)
 
-  return { name: weapon.name, skill, rollDice, attackBonus, damage, critical, range: weapon.range }
+  const range = curses.some(c => c.rangeIncrease) ? increaseRange(weapon.range) : weapon.range
+
+  return { name: weapon.name, skill, rollDice, attackBonus, damage, critical, range }
 }

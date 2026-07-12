@@ -4,10 +4,11 @@ import { getOrdemClass } from '../../utils/classUtils'
 import { getSkillName } from '../../utils/skillUtils'
 import { getTrilha } from '../../utils/trilhaUtils'
 import { getPower } from '../../utils/powerUtils'
-import { deriveStats, getTrainedSkills, getEffectiveAttributes, getSkillGrade } from '../../utils/characterUtils'
+import { getTrainedSkills, getSkillGrade } from '../../utils/characterUtils'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount } from '../../utils/ritualUtils'
-import { getEquipmentById, getTotalCarryCapacity, getModifiedSpaces, getModifiedDefenseBonus, getEffectiveCategory } from '../../utils/equipmentUtils'
+import { getEquipmentById, getTotalCarryCapacity, getModifiedSpaces, getModifiedDefenseBonus, getDraftItemCategory } from '../../utils/equipmentUtils'
 import { getModification } from '../../utils/modificationUtils'
+import { getCurse, getCursedDerivedStats, getSheetAttributes, formatCurseElement } from '../../utils/curseUtils'
 import { getOrdemWeaponAttack } from '../../utils/ordemWeaponUtils'
 import { getPatente } from '../../utils/patenteUtils'
 import type { OrdemWeapon } from '../../types/equipment'
@@ -27,8 +28,8 @@ export function ReviewStep() {
   const cls = draft.class ? getOrdemClass(draft.class) : undefined
   if (!cls) return null
 
-  const attributes = getEffectiveAttributes(draft)
-  const stats = deriveStats(cls, attributes, draft.nex, getModifiedDefenseBonus(draft))
+  const attributes = getSheetAttributes(draft)
+  const stats = getCursedDerivedStats(draft, cls, getModifiedDefenseBonus(draft))
   const trainedSkills = getTrainedSkills(draft)
   const trilha = draft.trilha ? getTrilha(draft.trilha) : undefined
   const reachedTrilhaFeatures = trilha
@@ -43,7 +44,8 @@ export function ReviewStep() {
   const weaponAttacks = draft.equipmentChoices
     .map(getEquipmentById)
     .filter((w): w is OrdemWeapon => w?.type === 'weapon')
-    .map(w => getOrdemWeaponAttack(w, draft, draft.equipmentModifications[w.id] ?? []))
+    .map(w => getOrdemWeaponAttack(w, draft, draft.equipmentModifications[w.id] ?? [], draft.equipmentCurses[w.id] ?? []))
+  const cursedItems = equipment.filter((i): i is NonNullable<typeof i> => Boolean(i && (draft.equipmentCurses[i.id]?.length ?? 0) > 0))
   const upgradedSkills = trainedSkills.filter(sid => getSkillGrade(draft, sid) !== 'treinado')
 
   function handleExport() {
@@ -158,7 +160,8 @@ export function ReviewStep() {
             {equipment.map(item => {
               if (!item) return null
               const mods = draft.equipmentModifications[item.id] ?? []
-              const effCat = getEffectiveCategory(item, mods.length)
+              const curses = draft.equipmentCurses[item.id] ?? []
+              const effCat = getDraftItemCategory(draft, item)
               return (
                 <p key={item.id} className="text-parchment-500 text-xs">
                   <span className="font-semibold text-parchment-300">{item.name}</span> <span className="text-parchment-700">(Cat {CAT_ROMAN[effCat]}, {item.spaces} esp.)</span>
@@ -167,9 +170,42 @@ export function ReviewStep() {
                   {mods.length > 0 && (
                     <span className="text-gold-600"> · Mods: {mods.map(m => getModification(m)?.name).filter(Boolean).join(', ')}</span>
                   )}
+                  {curses.length > 0 && (
+                    <span className="text-purple-400"> · Maldições: {curses.map(c => getCurse(c)?.name).filter(Boolean).join(', ')}</span>
+                  )}
                 </p>
               )
             })}
+          </div>
+        </Section>
+      )}
+
+      {cursedItems.length > 0 && (
+        <Section title="Itens Amaldiçoados">
+          <p className="text-parchment-700 text-[11px] mb-2">
+            Bônus de maldições iguais em itens diferentes não se acumulam. Os bônus fixos (Defesa, atributos, PV/PE) já estão somados na ficha.
+          </p>
+          <div className="space-y-3">
+            {cursedItems.map(item => (
+              <div key={item.id}>
+                <p className="text-purple-300 font-fantasy font-semibold text-sm">{item.name}</p>
+                {(draft.equipmentCurses[item.id] ?? []).map(cid => {
+                  const curse = getCurse(cid)
+                  if (!curse) return null
+                  const ritual = curse.choice === 'ritual1'
+                    ? getRitualById(draft.equipmentCurseChoices[`${item.id}:${curse.id}`] ?? '')
+                    : undefined
+                  return (
+                    <p key={cid} className="text-parchment-500 text-xs mt-1">
+                      <span className="font-semibold text-purple-400">
+                        {curse.name} ({formatCurseElement(curse, item.id, draft.equipmentCurseChoices)}{ritual ? ` — ritual vinculado: ${ritual.name}` : ''}).
+                      </span>{' '}
+                      {curse.effect}
+                    </p>
+                  )
+                })}
+              </div>
+            ))}
           </div>
         </Section>
       )}

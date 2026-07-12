@@ -68,6 +68,15 @@ function formatCritical(threat: number, mult: number): string {
   return parts.length ? parts.join('/') : 'x2'
 }
 
+/** Perícias possíveis pro teste de ataque; Ocultismo entra via Lâmina Maldita (arma amaldiçoada). */
+export type AttackSkillChoice = 'fighting' | 'aim' | 'occultism'
+
+const ATTACK_SKILLS: Record<AttackSkillChoice, { name: string; attribute: 'strength' | 'agility' | 'intellect' }> = {
+  fighting: { name: 'Luta', attribute: 'strength' },
+  aim: { name: 'Pontaria', attribute: 'agility' },
+  occultism: { name: 'Ocultismo', attribute: 'intellect' },
+}
+
 /** Alcances em ordem crescente, pra maldição Predadora subir uma categoria (curto 9m → ... → extremo 90m). */
 const RANGE_ORDER = ['Curto', 'Médio', 'Longo', 'Extremo']
 
@@ -89,12 +98,15 @@ export function getOrdemWeaponAttack(
   draft: OrdemCharacterDraft,
   modIds: string[],
   curseIds: string[] = [],
+  skillOverride?: AttackSkillChoice,
 ): OrdemWeaponAttack {
   const attrs = getSheetAttributes(draft)
   const melee = isMelee(weapon)
-  const skillId = melee ? 'fighting' : 'aim'
-  const skill = melee ? 'Luta' : 'Pontaria'
-  const rollDice = melee ? attrs.strength : attrs.agility
+  // Perícia do teste: automática pela arma (Luta/Pontaria), ou a escolhida na Personalização
+  // (ex.: Ocultismo via Lâmina Maldita). O dano corpo a corpo segue somando Força.
+  const skillId: AttackSkillChoice = skillOverride ?? (melee ? 'fighting' : 'aim')
+  const skill = ATTACK_SKILLS[skillId].name
+  const rollDice = attrs[ATTACK_SKILLS[skillId].attribute]
 
   const mods = modIds.map(getModification).filter((m): m is NonNullable<typeof m> => Boolean(m))
   const curses = curseIds.map(getCurse).filter((c): c is NonNullable<typeof c> => Boolean(c))

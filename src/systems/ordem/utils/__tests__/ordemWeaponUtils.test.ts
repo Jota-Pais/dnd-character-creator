@@ -41,6 +41,18 @@ describe('ordemWeaponUtils', () => {
     expect(getOrdemWeaponAttack(faca, treinado, []).attackBonus).toBe(5)
   })
 
+  it('perícia de ataque escolhida (Lâmina Maldita): Ocultismo rola Intelecto e usa o treino de Ocultismo', () => {
+    const ocultista = makeDraft({
+      attributes: { agility: 1, strength: 2, intellect: 3, presence: 1, vigor: 1 },
+      class: 'occultist', // Ocultismo é perícia fixa → treinado (+5)
+    })
+    const a = getOrdemWeaponAttack(faca, ocultista, [], [], 'occultism')
+    expect(a.skill).toBe('Ocultismo')
+    expect(a.rollDice).toBe(3) // Intelecto
+    expect(a.attackBonus).toBe(5) // treinado em Ocultismo
+    expect(a.damage).toBe('1d4+2 corte') // dano corpo a corpo segue somando Força
+  })
+
   it('modificações de combate entram nos números', () => {
     // Certeira (+2 ataque) + Cruel (+2 dano) na faca corpo a corpo
     const cc = getOrdemWeaponAttack(faca, AGI3_FOR2, ['certeira', 'cruel'])

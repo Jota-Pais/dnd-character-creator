@@ -1,10 +1,12 @@
 import type { OrdemCharacterDraft } from '../types/character'
 import type { OrdemClass } from '../types/class'
 import type { Trilha } from '../types/trilha'
+import type { OrdemRitual } from '../types/ritual'
 import { getOrigin } from './originUtils'
 import { getOrdemClass, getFreeSkillChoiceCount } from './classUtils'
 import { getTrilhasByClass } from './trilhaUtils'
 import { getPowersByClass } from './powerUtils'
+import { RITUAL_COST } from './ritualUtils'
 import { getNexIndex, getReachedPowerSlots, getReachedAttributeIncreaseSlots, getReachedSkillGradeSlots, ATTRIBUTE_INCREASE_CAP } from './progressionUtils'
 
 export type DerivedStats = {
@@ -152,4 +154,46 @@ export function getSkillGrade(draft: OrdemCharacterDraft, skillId: string): Skil
   const upgrades = draft.skillGradeChoices.flat().filter(id => id === skillId).length
   const index = Math.min(GRADES.length - 1, baseIndex + upgrades)
   return GRADES[index]
+}
+
+// ── Personalização da ficha (F24) ──────────────────────────────────────────────
+
+/** O agente tem um poder de classe (via slots regulares ou Versatilidade)? */
+export function hasClassPower(draft: OrdemCharacterDraft, powerId: string): boolean {
+  if (draft.powerChoices.includes(powerId)) return true
+  return draft.versatilityChoice?.kind === 'power' && draft.versatilityChoice.powerId === powerId
+}
+
+/** Tem o poder Ritual Predileto (escolha um ritual conhecido: custo −1 PE)? */
+export function hasFavoredRitualPower(draft: OrdemCharacterDraft): boolean {
+  return hasClassPower(draft, 'favored-ritual')
+}
+
+/**
+ * Tem a habilidade Lâmina Maldita (trilha Lâmina Paranormal, NEX 10%)? Também vale quando
+ * a Versatilidade concedeu o 1º poder dessa trilha. Efeitos: Amaldiçoar Arma custa −1 PE
+ * se já o conhece, e os ataques com a arma amaldiçoada podem usar Ocultismo.
+ */
+export function hasLaminaMaldita(draft: OrdemCharacterDraft): boolean {
+  if (draft.trilha === 'paranormal-blade' && draft.nex >= 10) return true
+  return draft.versatilityChoice?.kind === 'trilha' && draft.versatilityChoice.trilhaId === 'paranormal-blade'
+}
+
+/**
+ * Custo final de conjuração de um ritual conhecido, com as reduções determinísticas:
+ * Ritual Predileto (−1 PE no ritual escolhido) e Lâmina Maldita (−1 PE no Amaldiçoar Arma).
+ * As reduções se acumulam (texto do Ritual Predileto); nunca abaixo de 0.
+ */
+export function getRitualCost(draft: OrdemCharacterDraft, ritual: OrdemRitual): { cost: number; notes: string[] } {
+  let cost = RITUAL_COST[ritual.circle]
+  const notes: string[] = []
+  if (hasFavoredRitualPower(draft) && draft.favoriteRitual === ritual.id) {
+    cost -= 1
+    notes.push('predileto −1')
+  }
+  if (ritual.id === 'amaldicoar-arma' && hasLaminaMaldita(draft)) {
+    cost -= 1
+    notes.push('Lâmina Maldita −1')
+  }
+  return { cost: Math.max(0, cost), notes }
 }

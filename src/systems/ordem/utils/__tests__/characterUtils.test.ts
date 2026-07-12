@@ -7,6 +7,9 @@ import {
   getAvailableFreeSkillOptions,
   getRequiredFreeSkillCount,
   getFixedSkillOverlapWithOrigin,
+  getRitualCost,
+  hasFavoredRitualPower,
+  hasLaminaMaldita,
   getEffectiveAttributes,
   getSkillGrade,
   getAvailablePowerOptions,
@@ -17,6 +20,7 @@ import { getOrdemClass } from '../classUtils'
 import { SKILLS } from '../skillUtils'
 import { EMPTY_DRAFT } from '../../types/character'
 import type { OrdemCharacterDraft } from '../../types/character'
+import type { OrdemRitual } from '../../types/ritual'
 
 function makeDraft(overrides: Partial<OrdemCharacterDraft>): OrdemCharacterDraft {
   return { ...EMPTY_DRAFT, attributes: { ...EMPTY_DRAFT.attributes }, ...overrides }
@@ -178,6 +182,45 @@ describe('getRequiredFreeSkillCount', () => {
     })
     expect(getFixedSkillOverlapWithOrigin(draft, occultist)).toEqual([])
     expect(getRequiredFreeSkillCount(draft, occultist)).toBe(6)
+  })
+})
+
+describe('personalização da ficha (F24) — Ritual Predileto e Lâmina Maldita', () => {
+  const amaldicoarArma = { id: 'amaldicoar-arma', circle: 1 } as OrdemRitual
+  const outroRitual = { id: 'eletrocussao', circle: 1 } as OrdemRitual
+  const ritual3 = { id: 'qualquer', circle: 3 } as OrdemRitual
+
+  it('custo base segue a Tabela 5.2 (1º = 1 PE, 3º = 6 PE)', () => {
+    expect(getRitualCost(makeDraft({}), outroRitual)).toEqual({ cost: 1, notes: [] })
+    expect(getRitualCost(makeDraft({}), ritual3)).toEqual({ cost: 6, notes: [] })
+  })
+
+  it('Ritual Predileto reduz −1 PE só no ritual escolhido, e só com o poder', () => {
+    const comPoder = makeDraft({ powerChoices: ['favored-ritual'], favoriteRitual: 'qualquer' })
+    expect(getRitualCost(comPoder, ritual3).cost).toBe(5)
+    expect(getRitualCost(comPoder, outroRitual).cost).toBe(1) // não é o predileto
+    // Escolha marcada sem o poder não reduz nada.
+    const semPoder = makeDraft({ favoriteRitual: 'qualquer' })
+    expect(getRitualCost(semPoder, ritual3).cost).toBe(6)
+  })
+
+  it('poder concedido pela Versatilidade também conta', () => {
+    const draft = makeDraft({ versatilityChoice: { kind: 'power', powerId: 'favored-ritual' }, favoriteRitual: 'qualquer' })
+    expect(hasFavoredRitualPower(draft)).toBe(true)
+    expect(getRitualCost(draft, ritual3).cost).toBe(5)
+  })
+
+  it('Lâmina Maldita: Amaldiçoar Arma custa −1 PE; acumulando com predileto chega a 0 (piso)', () => {
+    const lamina = makeDraft({ trilha: 'paranormal-blade', nex: 10 })
+    expect(hasLaminaMaldita(lamina)).toBe(true)
+    expect(getRitualCost(lamina, amaldicoarArma).cost).toBe(0) // 1 − 1
+    const dupla = makeDraft({
+      trilha: 'paranormal-blade', nex: 10,
+      powerChoices: ['favored-ritual'], favoriteRitual: 'amaldicoar-arma',
+    })
+    expect(getRitualCost(dupla, amaldicoarArma)).toEqual({ cost: 0, notes: ['predileto −1', 'Lâmina Maldita −1'] })
+    // Outra trilha não reduz.
+    expect(getRitualCost(makeDraft({ trilha: 'graduado', nex: 10 }), amaldicoarArma).cost).toBe(1)
   })
 })
 

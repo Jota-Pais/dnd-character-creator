@@ -4,7 +4,9 @@ import { getOrdemClass } from '../../utils/classUtils'
 import { getSkillName } from '../../utils/skillUtils'
 import { getTrilha } from '../../utils/trilhaUtils'
 import { getPower } from '../../utils/powerUtils'
-import { getTrainedSkills, getSkillGrade } from '../../utils/characterUtils'
+import {
+  getTrainedSkills, getSkillGrade, hasFavoredRitualPower, hasLaminaMaldita, getRitualCost,
+} from '../../utils/characterUtils'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, ELEMENT_NAMES } from '../../utils/ritualUtils'
 import {
   getEquipmentByInstance, getInstanceLabel, getTotalCarryCapacity, getModifiedSpaces, getModifiedDefenseBonus, getDraftInstanceCategory,
@@ -24,6 +26,7 @@ import { StepNav } from '../common/StepNav'
 
 export function ReviewStep() {
   const draft = useOrdemStore(state => state.draft)
+  const updateDraft = useOrdemStore(state => state.updateDraft)
   const prevStep = useOrdemStore(state => state.prevStep)
   const goToPrint = useOrdemStore(state => state.goToPrint)
   const reset = useOrdemStore(state => state.reset)
@@ -48,14 +51,22 @@ export function ReviewStep() {
   const equipmentUnits = draft.equipmentChoices
     .map(uid => ({ uid, item: getEquipmentByInstance(uid) }))
     .filter((u): u is { uid: string; item: OrdemEquipment } => Boolean(u.item))
-  const weaponAttacks = equipmentUnits
-    .filter((u): u is { uid: string; item: OrdemWeapon } => u.item.type === 'weapon')
-    .map(({ uid, item }) => ({
-      ...getOrdemWeaponAttack(item, draft, draft.equipmentModifications[uid] ?? [], draft.equipmentCurses[uid] ?? []),
-      name: getInstanceLabel(draft, uid),
-    }))
+  const weaponUnits = equipmentUnits.filter((u): u is { uid: string; item: OrdemWeapon } => u.item.type === 'weapon')
+  const weaponAttacks = weaponUnits.map(({ uid, item }) => ({
+    ...getOrdemWeaponAttack(item, draft, draft.equipmentModifications[uid] ?? [], draft.equipmentCurses[uid] ?? [], draft.weaponSkillChoices[uid]),
+    name: getInstanceLabel(draft, uid),
+  }))
   const cursedUnits = equipmentUnits.filter(u => (draft.equipmentCurses[u.uid]?.length ?? 0) > 0)
   const missingComponents = getMissingRitualComponentElements(draft)
+  const showFavoriteRitualPicker = hasFavoredRitualPower(draft) && rituals.length > 0
+  const showPersonalization = showFavoriteRitualPicker || weaponUnits.length > 0
+
+  const setWeaponSkill = (uid: string, value: string) => {
+    const choices = { ...draft.weaponSkillChoices }
+    if (value === 'auto') delete choices[uid]
+    else choices[uid] = value as 'fighting' | 'aim' | 'occultism'
+    updateDraft({ weaponSkillChoices: choices })
+  }
   const upgradedSkills = trainedSkills.filter(sid => getSkillGrade(draft, sid) !== 'treinado')
 
   function handleExport() {
@@ -137,12 +148,18 @@ export function ReviewStep() {
       {rituals.length > 0 && (
         <Section title={`Rituais Conhecidos (${rituals.length})`}>
           <div className="space-y-2">
-            {rituals.map((r, i) => r && (
-              <p key={`${r.id}-${i}`} className="text-parchment-500 text-xs">
-                <span className="font-semibold text-parchment-300">{r.name}</span>{' '}
-                <span className="text-parchment-700">({formatRitualElementLabel(r, draft.ritualElementChoices)}, {r.circle}º Círculo)</span>
-              </p>
-            ))}
+            {rituals.map((r, i) => {
+              if (!r) return null
+              const { cost, notes } = getRitualCost(draft, r)
+              return (
+                <p key={`${r.id}-${i}`} className="text-parchment-500 text-xs">
+                  <span className="font-semibold text-parchment-300">{r.name}</span>{' '}
+                  <span className="text-parchment-700">
+                    ({formatRitualElementLabel(r, draft.ritualElementChoices)}, {r.circle}º Círculo — custo {cost} PE{notes.length > 0 ? ` (${notes.join(', ')})` : ''})
+                  </span>
+                </p>
+              )
+            })}
           </div>
           {missingComponents.length > 0 && (
             <p className="text-amber-400/90 text-xs mt-3">
@@ -150,6 +167,56 @@ export function ReviewStep() {
               equipamento — sem eles (e uma mão livre), esses rituais não podem ser conjurados.
             </p>
           )}
+        </Section>
+      )}
+
+      {showPersonalization && (
+        <Section title="Personalização ⚙️">
+          <div className="space-y-3">
+            {showFavoriteRitualPicker && (
+              <div>
+                <p className="text-parchment-400 text-xs font-semibold mb-1">Qual é o seu ritual predileto? <span className="text-parchment-600 font-normal">(poder Ritual Predileto: custo −1 PE)</span></p>
+                <select
+                  value={draft.favoriteRitual ?? ''}
+                  onChange={e => updateDraft({ favoriteRitual: e.target.value || null })}
+                  className="w-full bg-parchment-950 border border-parchment-800 rounded px-2 py-1 text-parchment-300 text-xs"
+                >
+                  <option value="">Escolha o ritual…</option>
+                  {rituals.map((r, i) => r && (
+                    <option key={`${r.id}-${i}`} value={r.id}>{r.name} ({r.circle}º Círculo)</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {weaponUnits.length > 0 && (
+              <div>
+                <p className="text-parchment-400 text-xs font-semibold mb-1">
+                  Com qual perícia você realiza os ataques?
+                  {hasLaminaMaldita(draft) && (
+                    <span className="text-parchment-600 font-normal"> (Lâmina Maldita: com a arma amaldiçoada, você pode usar Ocultismo)</span>
+                  )}
+                </p>
+                <div className="space-y-1">
+                  {weaponUnits.map(({ uid }) => (
+                    <div key={uid} className="flex items-center gap-2">
+                      <span className="text-parchment-500 text-xs w-36 shrink-0 truncate">{getInstanceLabel(draft, uid)}</span>
+                      <select
+                        value={draft.weaponSkillChoices[uid] ?? 'auto'}
+                        onChange={e => setWeaponSkill(uid, e.target.value)}
+                        className="flex-1 bg-parchment-950 border border-parchment-800 rounded px-2 py-1 text-parchment-300 text-xs"
+                      >
+                        <option value="auto">Automática (Luta corpo a corpo / Pontaria à distância)</option>
+                        <option value="fighting">Luta</option>
+                        <option value="aim">Pontaria</option>
+                        <option value="occultism">Ocultismo (Lâmina Maldita, com a arma amaldiçoada)</option>
+                      </select>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </Section>
       )}
 

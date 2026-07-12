@@ -4,7 +4,7 @@ import { getOrdemClass } from '../utils/classUtils'
 import { SKILLS } from '../utils/skillUtils'
 import { getTrilha } from '../utils/trilhaUtils'
 import { getPower } from '../utils/powerUtils'
-import { getTrainedSkills, getSkillGrade } from '../utils/characterUtils'
+import { getTrainedSkills, getSkillGrade, getRitualCost } from '../utils/characterUtils'
 import { getReachedTrilhaSlots, getPeLimit } from '../utils/progressionUtils'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount } from '../utils/ritualUtils'
 import {
@@ -26,8 +26,6 @@ const ATTR_ABBREV: Record<keyof OrdemAttributes, string> = {
   presence: 'PRE',
   vigor: 'VIG',
 }
-/** Custo de conjuração por círculo (Tabela 5.2). */
-const RITUAL_COST: Record<number, number> = { 1: 1, 2: 3, 3: 6, 4: 10 }
 
 /**
  * Ficha imprimível no formato da Ficha de Agente oficial (sem a arte), em DUAS páginas:
@@ -55,7 +53,7 @@ export function PrintableSheet() {
   const weaponAttacks = equipmentUnits
     .filter((u): u is { uid: string; item: OrdemWeapon } => u.item.type === 'weapon')
     .map(({ uid, item }) => ({
-      ...getOrdemWeaponAttack(item, draft, draft.equipmentModifications[uid] ?? [], draft.equipmentCurses[uid] ?? []),
+      ...getOrdemWeaponAttack(item, draft, draft.equipmentModifications[uid] ?? [], draft.equipmentCurses[uid] ?? [], draft.weaponSkillChoices[uid]),
       name: getInstanceLabel(draft, uid),
     }))
   const cursedUnits = equipmentUnits.filter(u => (draft.equipmentCurses[u.uid]?.length ?? 0) > 0)
@@ -240,16 +238,20 @@ export function PrintableSheet() {
               </div>
             </div>
             <div className="space-y-1.5 mt-2 text-sm">
-              {rituals.map((r, i) => r && (
-                <div key={`${r.id}-${i}`}>
-                  <p>
-                    <span className="font-semibold">{r.name}</span>
-                    <span className="text-gray-600"> ({formatRitualElementLabel(r, draft.ritualElementChoices)}, {r.circle}º Círculo — custo {RITUAL_COST[r.circle]} PE)</span>
-                    <span className="text-gray-500 text-xs"> — {r.execution}, {r.range}, {r.target}, {r.duration}{r.resistance ? `, ${r.resistance}` : ''}</span>
-                  </p>
-                  <p className="text-gray-700 text-xs">{r.description}</p>
-                </div>
-              ))}
+              {rituals.map((r, i) => {
+                if (!r) return null
+                const { cost, notes } = getRitualCost(draft, r)
+                return (
+                  <div key={`${r.id}-${i}`}>
+                    <p>
+                      <span className="font-semibold">{r.name}{draft.favoriteRitual === r.id ? ' ★' : ''}</span>
+                      <span className="text-gray-600"> ({formatRitualElementLabel(r, draft.ritualElementChoices)}, {r.circle}º Círculo — custo {cost} PE{notes.length > 0 ? ` (${notes.join(', ')})` : ''})</span>
+                      <span className="text-gray-500 text-xs"> — {r.execution}, {r.range}, {r.target}, {r.duration}{r.resistance ? `, ${r.resistance}` : ''}</span>
+                    </p>
+                    <p className="text-gray-700 text-xs">{r.description}</p>
+                  </div>
+                )
+              })}
             </div>
           </section>
         )}

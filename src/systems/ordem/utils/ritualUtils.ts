@@ -4,6 +4,9 @@ import { getNexIndex, NEX_STEPS } from './progressionUtils'
 
 export const RITUALS = ritualsJson as OrdemRitual[]
 
+/** Custo de conjuração por círculo (Tabela 5.2): 1º = 1 PE, 2º = 3, 3º = 6, 4º = 10. */
+export const RITUAL_COST: Record<OrdemRitualCircle, number> = { 1: 1, 2: 3, 3: 6, 4: 10 }
+
 export const ELEMENT_NAMES: Record<OrdemElement, string> = {
   blood: 'Sangue',
   death: 'Morte',

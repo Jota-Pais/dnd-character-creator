@@ -104,8 +104,8 @@ describe('App (smoke) — Ordem Paranormal', () => {
     expect(screen.getByText('Defesa')).toBeInTheDocument() // Defesa = 10 + Agilidade (+ proteção)
     expect(screen.getByText(/Rituais Conhecidos/)).toBeInTheDocument()
     expect(screen.getByText(RITUALS[0].name)).toBeInTheDocument()
-    // Amaldiçoar Arma exibe só o elemento escolhido (Sangue), não os 4 (F9)
-    expect(screen.getByText(/\(Sangue, 1º Círculo\)/)).toBeInTheDocument()
+    // Amaldiçoar Arma exibe só o elemento escolhido (Sangue), não os 4 (F9) — e o custo em PE (F24)
+    expect(screen.getByText(/\(Sangue, 1º Círculo — custo \d+ PE/)).toBeInTheDocument()
     expect(screen.getByText(/Equipamento \(/)).toBeInTheDocument()
   })
 

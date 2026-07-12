@@ -129,5 +129,9 @@ export function sanitizeImportedDraft(parsed: unknown): OrdemCharacterDraft | nu
     equipmentCurseChoices: p.equipmentCurseChoices && typeof p.equipmentCurseChoices === 'object' && !Array.isArray(p.equipmentCurseChoices)
       ? p.equipmentCurseChoices
       : {},
+    favoriteRitual: typeof p.favoriteRitual === 'string' ? p.favoriteRitual : null,
+    weaponSkillChoices: p.weaponSkillChoices && typeof p.weaponSkillChoices === 'object' && !Array.isArray(p.weaponSkillChoices)
+      ? p.weaponSkillChoices
+      : {},
   }
 }

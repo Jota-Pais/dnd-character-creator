@@ -70,6 +70,11 @@ export function formatCurseChoiceDetail(
   uid: string,
   curseChoices: Record<string, string>,
 ): string | null {
+  // Ritualística: o ritual armazenado é opcional (conjurado pra dentro da arma em jogo, troca livre).
+  if (curse.id === 'ritualistica') {
+    const stored = curseChoices[curseChoiceKey(uid, curse.id)]
+    return stored ? `ritual armazenado: ${getRitualById(stored)?.name ?? stored}` : null
+  }
   if (!curse.choice) return null
   const chosen = curseChoices[curseChoiceKey(uid, curse.id)]
   if (!chosen) return 'escolha pendente'

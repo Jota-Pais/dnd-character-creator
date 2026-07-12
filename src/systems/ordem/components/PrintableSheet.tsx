@@ -327,6 +327,9 @@ export function PrintableSheet() {
                           {curse.name} ({formatCurseElement(curse, uid, draft.equipmentCurseChoices)}{detail ? ` — ${detail}` : ''}).
                         </span>{' '}
                         {curse.effect}
+                        {curse.id === 'ritualistica' && !draft.equipmentCurseChoices[`${uid}:ritualistica`] && (
+                          <span className="text-gray-600"> Ritual armazenado (a lápis): <span className="inline-block border-b border-gray-500 w-36" /></span>
+                        )}
                       </p>
                     )
                   })}

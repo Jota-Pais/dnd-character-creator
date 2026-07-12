@@ -59,6 +59,9 @@ export function ReviewStep() {
   const cursedUnits = equipmentUnits.filter(u => (draft.equipmentCurses[u.uid]?.length ?? 0) > 0)
   const missingComponents = getMissingRitualComponentElements(draft)
   const showFavoriteRitualPicker = hasFavoredRitualPower(draft) && rituals.length > 0
+  // Armas com a maldição Ritualística podem ter um ritual conhecido pré-armazenado (opcional).
+  const ritualisticUnits = weaponUnits.filter(u => (draft.equipmentCurses[u.uid] ?? []).includes('ritualistica'))
+  const showStoredRitualPicker = ritualisticUnits.length > 0 && rituals.length > 0
   const showPersonalization = showFavoriteRitualPicker || weaponUnits.length > 0
 
   const setWeaponSkill = (uid: string, value: string) => {
@@ -192,6 +195,36 @@ export function ReviewStep() {
                     <option key={`${r.id}-${i}`} value={r.id}>{r.name} ({r.circle}º Círculo)</option>
                   ))}
                 </select>
+              </div>
+            )}
+
+            {showStoredRitualPicker && (
+              <div>
+                <p className="text-parchment-400 text-xs font-semibold mb-1">
+                  Ritual armazenado na arma Ritualística <span className="text-parchment-600 font-normal">(opcional — você conjura pra dentro da arma pagando os PE; troca livre em jogo)</span>
+                </p>
+                <div className="space-y-1">
+                  {ritualisticUnits.map(({ uid }) => (
+                    <div key={uid} className="flex items-center gap-2">
+                      <span className="text-parchment-500 text-xs w-36 shrink-0 truncate">{getInstanceLabel(draft, uid)}</span>
+                      <select
+                        value={draft.equipmentCurseChoices[`${uid}:ritualistica`] ?? ''}
+                        onChange={e => {
+                          const choices = { ...draft.equipmentCurseChoices }
+                          if (e.target.value) choices[`${uid}:ritualistica`] = e.target.value
+                          else delete choices[`${uid}:ritualistica`]
+                          updateDraft({ equipmentCurseChoices: choices })
+                        }}
+                        className="flex-1 bg-parchment-950 border border-parchment-800 rounded px-2 py-1 text-parchment-300 text-xs"
+                      >
+                        <option value="">Nenhum (anotar a lápis na missão)</option>
+                        {rituals.map((r, i) => r && (
+                          <option key={`${r.id}-${i}`} value={r.id}>{r.name} ({r.circle}º Círculo — {getRitualCost(draft, r).cost} PE)</option>
+                        ))}
+                      </select>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 

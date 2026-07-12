@@ -12,15 +12,46 @@ export function getEquipmentById(id: string): OrdemEquipment | undefined {
   return EQUIPMENTS.find(e => e.id === id)
 }
 
+// ── Unidades de equipamento ────────────────────────────────────────────────────
+// `equipmentChoices` guarda UNIDADES, não ids únicos: a 1ª unidade de um item usa o
+// próprio id ("revolver") e duplicatas ganham sufixo ("revolver#2"), permitindo dois
+// revólveres com modificações/maldições diferentes. Mods, maldições e escolhas de
+// parâmetro são chaveadas pela unidade — saves antigos (1 unidade por item) seguem válidos.
+
+/** Id do item de catálogo de uma unidade ("revolver#2" → "revolver"). */
+export function instanceItemId(uid: string): string {
+  return uid.split('#')[0]
+}
+
+export function getEquipmentByInstance(uid: string): OrdemEquipment | undefined {
+  return getEquipmentById(instanceItemId(uid))
+}
+
+/** Uid pra uma nova unidade do item: o próprio id se livre, senão o menor sufixo livre. */
+export function newInstanceUid(choices: string[], itemId: string): string {
+  if (!choices.includes(itemId)) return itemId
+  let n = 2
+  while (choices.includes(`${itemId}#${n}`)) n++
+  return `${itemId}#${n}`
+}
+
+/** Nome de exibição de uma unidade: "Revólver" (única) ou "Revólver #2" (duplicatas). */
+export function getInstanceLabel(draft: OrdemCharacterDraft, uid: string): string {
+  const item = getEquipmentByInstance(uid)
+  if (!item) return uid
+  const same = draft.equipmentChoices.filter(c => instanceItemId(c) === item.id)
+  return same.length > 1 ? `${item.name} #${same.indexOf(uid) + 1}` : item.name
+}
+
 /** Capacidade de carga base pela Força: 5 espaços por ponto (2 se Força 0). */
 export function getMaxCapacity(strength: number): number {
   return Math.max(2, strength * 5)
 }
 
-/** Bônus de capacidade de carga concedido pelos itens escolhidos (ex.: Mochila Militar = +2). */
+/** Bônus de capacidade de carga concedido pelas unidades escolhidas (ex.: Mochila Militar = +2). */
 export function getEquipmentCarryBonus(choices: string[]): number {
-  return choices.reduce((acc, id) => {
-    const item = getEquipmentById(id)
+  return choices.reduce((acc, uid) => {
+    const item = getEquipmentByInstance(uid)
     return acc + (item?.carryBonus ?? 0)
   }, 0)
 }
@@ -31,16 +62,16 @@ export function getTotalCarryCapacity(draft: OrdemCharacterDraft): number {
 }
 
 export function getCurrentSpaces(choices: string[]): number {
-  return choices.reduce((acc, id) => {
-    const item = getEquipmentById(id)
+  return choices.reduce((acc, uid) => {
+    const item = getEquipmentByInstance(uid)
     return acc + (item ? item.spaces : 0)
   }, 0)
 }
 
-/** Quantos itens escolhidos são de uma dada categoria. */
+/** Quantas unidades escolhidas são de uma dada categoria. */
 export function getCategoryCount(choices: string[], category: number): number {
-  return choices.reduce((acc, id) => {
-    const item = getEquipmentById(id)
+  return choices.reduce((acc, uid) => {
+    const item = getEquipmentByInstance(uid)
     return acc + (item?.category === category ? 1 : 0)
   }, 0)
 }
@@ -52,16 +83,16 @@ export function getCategoryICount(choices: string[]): number {
 
 /** Soma o bônus de Defesa das proteções escolhidas (sem modificações). */
 export function getEquippedDefenseBonus(choices: string[]): number {
-  return choices.reduce((acc, id) => {
-    const item = getEquipmentById(id)
+  return choices.reduce((acc, uid) => {
+    const item = getEquipmentByInstance(uid)
     return acc + (item && item.type === 'protection' ? item.defenseBonus : 0)
   }, 0)
 }
 
 // ── Efeitos das modificações (Fase B) ──────────────────────────────────────────
 
-function itemMods(draft: OrdemCharacterDraft, itemId: string): string[] {
-  return draft.equipmentModifications[itemId] ?? []
+function itemMods(draft: OrdemCharacterDraft, uid: string): string[] {
+  return draft.equipmentModifications[uid] ?? []
 }
 
 /**
@@ -72,9 +103,11 @@ export function getEffectiveCategory(item: OrdemEquipment, modCount: number, cur
   return Math.min(4, item.category + modCount + getCurseCategoryDelta(curseCount))
 }
 
-/** Categoria efetiva de um item do draft, lendo modificações e maldições aplicadas. */
-export function getDraftItemCategory(draft: OrdemCharacterDraft, item: OrdemEquipment): number {
-  return getEffectiveCategory(item, itemMods(draft, item.id).length, getItemCurses(draft, item.id).length)
+/** Categoria efetiva de uma unidade do draft, lendo as modificações e maldições dela. */
+export function getDraftInstanceCategory(draft: OrdemCharacterDraft, uid: string): number {
+  const item = getEquipmentByInstance(uid)
+  if (!item) return 0
+  return getEffectiveCategory(item, itemMods(draft, uid).length, getItemCurses(draft, uid).length)
 }
 
 /** Espaços de um item já com as variações das modificações (Discreta −1, Reforçada/Blindada +1...). */
@@ -85,28 +118,26 @@ function itemModifiedSpaces(item: OrdemEquipment, modIds: string[]): number {
 
 /** Total de espaços ocupados, considerando as modificações. */
 export function getModifiedSpaces(draft: OrdemCharacterDraft): number {
-  return draft.equipmentChoices.reduce((acc, id) => {
-    const item = getEquipmentById(id)
-    return acc + (item ? itemModifiedSpaces(item, itemMods(draft, id)) : 0)
+  return draft.equipmentChoices.reduce((acc, uid) => {
+    const item = getEquipmentByInstance(uid)
+    return acc + (item ? itemModifiedSpaces(item, itemMods(draft, uid)) : 0)
   }, 0)
 }
 
 /** Bônus de Defesa total das proteções, incluindo modificações (Reforçada +2). */
 export function getModifiedDefenseBonus(draft: OrdemCharacterDraft): number {
-  return draft.equipmentChoices.reduce((acc, id) => {
-    const item = getEquipmentById(id)
+  return draft.equipmentChoices.reduce((acc, uid) => {
+    const item = getEquipmentByInstance(uid)
     if (!item || item.type !== 'protection') return acc
-    const modDef = itemMods(draft, id).reduce((s, mid) => s + (getModification(mid)?.defenseBonus ?? 0), 0)
+    const modDef = itemMods(draft, uid).reduce((s, mid) => s + (getModification(mid)?.defenseBonus ?? 0), 0)
     return acc + item.defenseBonus + modDef
   }, 0)
 }
 
-/** Quantos itens escolhidos têm a categoria EFETIVA (base + modificações + maldições) igual a `category`. */
+/** Quantas unidades escolhidas têm a categoria EFETIVA (base + modificações + maldições) igual a `category`. */
 export function getEffectiveCategoryCount(draft: OrdemCharacterDraft, category: number): number {
-  return draft.equipmentChoices.reduce((acc, id) => {
-    const item = getEquipmentById(id)
-    if (!item) return acc
-    return acc + (getDraftItemCategory(draft, item) === category ? 1 : 0)
+  return draft.equipmentChoices.reduce((acc, uid) => {
+    return acc + (getEquipmentByInstance(uid) && getDraftInstanceCategory(draft, uid) === category ? 1 : 0)
   }, 0)
 }
 
@@ -115,17 +146,17 @@ export function getEffectiveCategoryCount(draft: OrdemCharacterDraft, category: 
  * elementos opressores no mesmo item, e com o parâmetro escolhido quando exigido).
  */
 export function areCursesValid(draft: OrdemCharacterDraft): boolean {
-  for (const itemId of draft.equipmentChoices) {
-    const item = getEquipmentById(itemId)
-    const curses = getItemCurses(draft, itemId)
+  for (const uid of draft.equipmentChoices) {
+    const item = getEquipmentByInstance(uid)
+    const curses = getItemCurses(draft, uid)
     if (curses.length === 0) continue
     if (!item) return false
     for (let i = 0; i < curses.length; i++) {
-      // Cada maldição precisa ser aplicável considerando as demais do item.
+      // Cada maldição precisa ser aplicável considerando as demais da unidade.
       const others = curses.filter((_, j) => j !== i)
-      if (!canApplyCurse(item, others, curses[i], draft.equipmentCurseChoices)) return false
+      if (!canApplyCurse(item, others, curses[i], draft.equipmentCurseChoices, uid)) return false
       const curse = getCurse(curses[i])
-      if (curse?.choice && !draft.equipmentCurseChoices[curseChoiceKey(itemId, curse.id)]) return false
+      if (curse?.choice && !draft.equipmentCurseChoices[curseChoiceKey(uid, curse.id)]) return false
     }
   }
   return true

@@ -7,9 +7,12 @@ import { getPower } from '../utils/powerUtils'
 import { getTrainedSkills, getSkillGrade } from '../utils/characterUtils'
 import { getReachedTrilhaSlots, getPeLimit } from '../utils/progressionUtils'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount } from '../utils/ritualUtils'
-import { getEquipmentById, getTotalCarryCapacity, getModifiedSpaces, getModifiedDefenseBonus, getDraftItemCategory } from '../utils/equipmentUtils'
+import {
+  getEquipmentByInstance, getInstanceLabel, getTotalCarryCapacity, getModifiedSpaces, getModifiedDefenseBonus, getDraftInstanceCategory,
+} from '../utils/equipmentUtils'
 import { getModification } from '../utils/modificationUtils'
-import { getCurse, getCursedDerivedStats, getSheetAttributes, formatCurseElement } from '../utils/curseUtils'
+import { getCurse, getCursedDerivedStats, getSheetAttributes, formatCurseElement, formatCurseChoiceDetail } from '../utils/curseUtils'
+import type { OrdemEquipment } from '../types/equipment'
 import { getOrdemWeaponAttack } from '../utils/ordemWeaponUtils'
 import { getPatente } from '../utils/patenteUtils'
 import type { OrdemWeapon } from '../types/equipment'
@@ -35,12 +38,17 @@ export function PrintableSheet() {
   // Só o Ocultista conhece rituais; limita aos slots abertos pelo NEX (ver ReviewStep).
   const ritualSlots = draft.class === 'occultist' ? getRitualSlotsCount(draft.nex) : 0
   const rituals = draft.ritualChoices.slice(0, ritualSlots).filter((r): r is string => Boolean(r)).map(getRitualById).filter(Boolean)
-  const equipment = draft.equipmentChoices.map(getEquipmentById).filter(Boolean)
-  const weaponAttacks = draft.equipmentChoices
-    .map(getEquipmentById)
-    .filter((w): w is OrdemWeapon => w?.type === 'weapon')
-    .map(w => getOrdemWeaponAttack(w, draft, draft.equipmentModifications[w.id] ?? [], draft.equipmentCurses[w.id] ?? []))
-  const cursedItems = equipment.filter((i): i is NonNullable<typeof i> => Boolean(i && (draft.equipmentCurses[i.id]?.length ?? 0) > 0))
+  // Cada entrada de `equipmentChoices` é uma UNIDADE ("revolver", "revolver#2"...), com mods/maldições próprias.
+  const equipmentUnits = draft.equipmentChoices
+    .map(uid => ({ uid, item: getEquipmentByInstance(uid) }))
+    .filter((u): u is { uid: string; item: OrdemEquipment } => Boolean(u.item))
+  const weaponAttacks = equipmentUnits
+    .filter((u): u is { uid: string; item: OrdemWeapon } => u.item.type === 'weapon')
+    .map(({ uid, item }) => ({
+      ...getOrdemWeaponAttack(item, draft, draft.equipmentModifications[uid] ?? [], draft.equipmentCurses[uid] ?? []),
+      name: getInstanceLabel(draft, uid),
+    }))
+  const cursedUnits = equipmentUnits.filter(u => (draft.equipmentCurses[u.uid]?.length ?? 0) > 0)
 
   return (
     <div className="print-sheet mx-auto max-w-[820px] bg-white text-gray-900 p-8 rounded-lg shadow-lg" style={{ fontFamily: 'Georgia, serif' }}>
@@ -182,20 +190,19 @@ export function PrintableSheet() {
         </section>
       )}
 
-      {equipment.length > 0 && (
+      {equipmentUnits.length > 0 && (
         <section className="mb-4">
           <h2 className="font-bold uppercase text-sm tracking-wide border-b border-gray-400 mb-2">
             Equipamento ({getModifiedSpaces(draft)}/{getTotalCarryCapacity(draft)} espaços)
           </h2>
           <div className="space-y-1">
-            {equipment.map(item => {
-              if (!item) return null
-              const mods = draft.equipmentModifications[item.id] ?? []
-              const curses = draft.equipmentCurses[item.id] ?? []
-              const effCat = getDraftItemCategory(draft, item)
+            {equipmentUnits.map(({ uid, item }) => {
+              const mods = draft.equipmentModifications[uid] ?? []
+              const curses = draft.equipmentCurses[uid] ?? []
+              const effCat = getDraftInstanceCategory(draft, uid)
               return (
-                <p key={item.id} className="text-sm">
-                  <span className="font-semibold">{item.name}</span> (Cat {CAT_ROMAN[effCat]}, {item.spaces} esp.)
+                <p key={uid} className="text-sm">
+                  <span className="font-semibold">{getInstanceLabel(draft, uid)}</span> (Cat {CAT_ROMAN[effCat]}, {item.spaces} esp.)
                   {item.type === 'weapon' && ` — ${item.damage} ${item.damageType} (Crítico: ${item.critical})`}
                   {item.type === 'protection' && ` — Defesa +${item.defenseBonus}`}
                   {mods.length > 0 && <span className="text-gray-600"> · Mods: {mods.map(m => getModification(m)?.name).filter(Boolean).join(', ')}</span>}
@@ -207,26 +214,24 @@ export function PrintableSheet() {
         </section>
       )}
 
-      {cursedItems.length > 0 && (
+      {cursedUnits.length > 0 && (
         <section className="mb-4">
           <h2 className="font-bold uppercase text-sm tracking-wide border-b border-gray-400 mb-1">Itens Amaldiçoados</h2>
           <p className="text-[11px] text-gray-500 mb-2">
             Bônus de maldições iguais em itens diferentes não se acumulam. Os bônus fixos (Defesa, atributos, PV/PE) já estão somados na ficha.
           </p>
           <div className="space-y-2">
-            {cursedItems.map(item => (
-              <div key={item.id}>
-                <p className="text-sm font-semibold">{item.name}</p>
-                {(draft.equipmentCurses[item.id] ?? []).map(cid => {
+            {cursedUnits.map(({ uid }) => (
+              <div key={uid}>
+                <p className="text-sm font-semibold">{getInstanceLabel(draft, uid)}</p>
+                {(draft.equipmentCurses[uid] ?? []).map(cid => {
                   const curse = getCurse(cid)
                   if (!curse) return null
-                  const ritual = curse.choice === 'ritual1'
-                    ? getRitualById(draft.equipmentCurseChoices[`${item.id}:${curse.id}`] ?? '')
-                    : undefined
+                  const detail = formatCurseChoiceDetail(curse, uid, draft.equipmentCurseChoices)
                   return (
                     <p key={cid} className="text-sm text-gray-700">
                       <span className="font-semibold">
-                        {curse.name} ({formatCurseElement(curse, item.id, draft.equipmentCurseChoices)}{ritual ? ` — ritual vinculado: ${ritual.name}` : ''}).
+                        {curse.name} ({formatCurseElement(curse, uid, draft.equipmentCurseChoices)}{detail ? ` — ${detail}` : ''}).
                       </span>{' '}
                       {curse.effect}
                     </p>

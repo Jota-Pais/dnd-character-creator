@@ -62,13 +62,17 @@ export type OrdemCharacterDraft = {
   versatilityChoice: VersatilityChoice | null
   /** Patente na Ordem — define o limite de itens por categoria requisitáveis (Tabela 3.1). */
   patente: OrdemPatenteId
-  /** Itens do equipamento inicial, limitados pela Patente e pela capacidade de carga. */
+  /**
+   * UNIDADES do equipamento inicial, limitadas pela Patente e pela capacidade de carga.
+   * A 1ª unidade de um item usa o próprio id ("revolver"); duplicatas ganham sufixo
+   * ("revolver#2"), permitindo duas unidades com modificações/maldições diferentes.
+   */
   equipmentChoices: string[]
-  /** Modificações aplicadas por item (id do item → ids das modificações). Cada mod sobe a categoria efetiva em I. */
+  /** Modificações aplicadas por unidade (uid → ids das modificações). Cada mod sobe a categoria efetiva em I. */
   equipmentModifications: Record<string, string[]>
-  /** Maldições aplicadas por item (id do item → ids das maldições). A 1ª sobe a categoria em II; as seguintes em I. */
+  /** Maldições aplicadas por unidade (uid → ids das maldições). A 1ª sobe a categoria em II; as seguintes em I. */
   equipmentCurses: Record<string, string[]>
-  /** Escolhas de parâmetro de maldição ("itemId:curseId" → elemento ou ritual de 1º círculo). */
+  /** Escolhas de parâmetro de maldição ("uid:curseId" → elemento ou ritual de 1º círculo). */
   equipmentCurseChoices: Record<string, string>
 }
 

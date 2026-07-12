@@ -2,7 +2,8 @@ import { useOrdemStore } from '../../stores/characterStore'
 import { STEP_LABELS } from '../../types/character'
 import type { OrdemEquipment } from '../../types/equipment'
 import {
-  EQUIPMENTS, getTotalCarryCapacity, getModifiedSpaces, getEffectiveCategoryCount, getDraftItemCategory, hasWeaponProficiency,
+  EQUIPMENTS, getTotalCarryCapacity, getModifiedSpaces, getEffectiveCategoryCount, getDraftInstanceCategory,
+  hasWeaponProficiency, instanceItemId, newInstanceUid, getInstanceLabel,
 } from '../../utils/equipmentUtils'
 import { getAvailableModifications, canApplyModification, isModifiable } from '../../utils/modificationUtils'
 import {
@@ -38,71 +39,75 @@ export function EquipmentStep() {
   const protections = EQUIPMENTS.filter(i => i.type === 'protection')
   const general = EQUIPMENTS.filter(i => i.type !== 'weapon' && i.type !== 'protection')
 
-  const toggleItem = (itemId: string) => {
-    const choices = [...draft.equipmentChoices]
-    const idx = choices.indexOf(itemId)
-    if (idx > -1) {
-      choices.splice(idx, 1)
-      // Ao remover o item, descarta as modificações e maldições dele.
-      const mods = { ...draft.equipmentModifications }
-      delete mods[itemId]
-      const curses = { ...draft.equipmentCurses }
-      delete curses[itemId]
-      const curseChoices = Object.fromEntries(
-        Object.entries(draft.equipmentCurseChoices).filter(([k]) => !k.startsWith(`${itemId}:`)),
-      )
-      updateDraft({ equipmentChoices: choices, equipmentModifications: mods, equipmentCurses: curses, equipmentCurseChoices: curseChoices })
-      return
-    }
-    choices.push(itemId)
-    updateDraft({ equipmentChoices: choices })
+  const addUnit = (itemId: string) => {
+    const uid = newInstanceUid(draft.equipmentChoices, itemId)
+    updateDraft({ equipmentChoices: [...draft.equipmentChoices, uid] })
   }
 
-  const toggleModification = (itemId: string, modId: string) => {
-    const current = draft.equipmentModifications[itemId] ?? []
+  const removeUnit = (uid: string) => {
+    // Ao remover a unidade, descarta as modificações, maldições e escolhas de parâmetro dela.
+    const mods = { ...draft.equipmentModifications }
+    delete mods[uid]
+    const curses = { ...draft.equipmentCurses }
+    delete curses[uid]
+    const curseChoices = Object.fromEntries(
+      Object.entries(draft.equipmentCurseChoices).filter(([k]) => !k.startsWith(`${uid}:`)),
+    )
+    updateDraft({
+      equipmentChoices: draft.equipmentChoices.filter(c => c !== uid),
+      equipmentModifications: mods,
+      equipmentCurses: curses,
+      equipmentCurseChoices: curseChoices,
+    })
+  }
+
+  const toggleModification = (uid: string, modId: string) => {
+    const current = draft.equipmentModifications[uid] ?? []
     const next = current.includes(modId) ? current.filter(m => m !== modId) : [...current, modId]
     const updated = { ...draft.equipmentModifications }
-    if (next.length === 0) delete updated[itemId]
-    else updated[itemId] = next
+    if (next.length === 0) delete updated[uid]
+    else updated[uid] = next
     updateDraft({ equipmentModifications: updated })
   }
 
-  const toggleCurse = (itemId: string, curseId: string) => {
-    const current = draft.equipmentCurses[itemId] ?? []
+  const toggleCurse = (uid: string, curseId: string) => {
+    const current = draft.equipmentCurses[uid] ?? []
     const next = current.includes(curseId) ? current.filter(c => c !== curseId) : [...current, curseId]
     const updated = { ...draft.equipmentCurses }
-    if (next.length === 0) delete updated[itemId]
-    else updated[itemId] = next
+    if (next.length === 0) delete updated[uid]
+    else updated[uid] = next
     // Ao remover a maldição, descarta a escolha de parâmetro (elemento/ritual) dela.
     const choices = { ...draft.equipmentCurseChoices }
-    if (current.includes(curseId)) delete choices[curseChoiceKey(itemId, curseId)]
+    if (current.includes(curseId)) delete choices[curseChoiceKey(uid, curseId)]
     updateDraft({ equipmentCurses: updated, equipmentCurseChoices: choices })
   }
 
-  const setCurseChoice = (itemId: string, curseId: string, value: string) => {
-    updateDraft({ equipmentCurseChoices: { ...draft.equipmentCurseChoices, [curseChoiceKey(itemId, curseId)]: value } })
+  const setCurseChoice = (uid: string, curseId: string, value: string) => {
+    updateDraft({ equipmentCurseChoices: { ...draft.equipmentCurseChoices, [curseChoiceKey(uid, curseId)]: value } })
   }
 
   const renderItem = (item: OrdemEquipment) => {
-    const isSelected = draft.equipmentChoices.includes(item.id)
-    const appliedMods = draft.equipmentModifications[item.id] ?? []
-    const appliedCurses = draft.equipmentCurses[item.id] ?? []
-    const itemCat = getDraftItemCategory(draft, item)
+    // Unidades deste item (permite 2 revólveres, cada um com mods/maldições próprias).
+    const units = draft.equipmentChoices.filter(uid => instanceItemId(uid) === item.id)
+    const isSelected = units.length > 0
 
     // Bloqueio por limite de categoria da Patente (Categoria 0 é ilimitada).
-    // Um item novo entra na sua categoria BASE (ainda sem modificações).
+    // Uma unidade nova entra na sua categoria BASE (ainda sem modificações/maldições).
     const catLimit = getCategoryLimit(patente, item.category)
     const catCount = getEffectiveCategoryCount(draft, item.category)
-    const wouldExceedCategory = !isSelected && catCount >= catLimit
+    const canAddUnit = catCount < catLimit
     // Proficiência de arma NÃO bloqueia — apenas sinaliza (você pode requisitar, mas com penalidade).
     const noProficiency = !hasWeaponProficiency(draft, item)
 
-    const isDisabled = wouldExceedCategory
+    const isDisabled = !isSelected && !canAddUnit
 
     return (
       <div
         key={item.id}
-        onClick={() => { if (!isDisabled || isSelected) toggleItem(item.id) }}
+        onClick={() => {
+          if (isSelected) removeUnit(units[units.length - 1])
+          else if (!isDisabled) addUnit(item.id)
+        }}
         className={`
           relative flex items-center justify-between p-3 rounded-lg border transition-all duration-200
           ${isSelected
@@ -115,11 +120,14 @@ export function EquipmentStep() {
         <div className="flex flex-col min-w-0">
           <span className={`font-fantasy text-lg ${isSelected ? 'text-red-400' : 'text-parchment-300'}`}>
             {item.name}
+            {units.length > 1 && <span className="text-red-300/80 text-sm"> ×{units.length}</span>}
           </span>
           <div className="flex flex-wrap gap-2 text-xs text-parchment-500 mt-1">
             <span className="bg-parchment-900/50 px-2 py-0.5 rounded border border-parchment-800/50">
-              Cat {CAT_ROMAN[itemCat]}
-              {(appliedMods.length > 0 || appliedCurses.length > 0) && <span className="text-gold-500/80"> (base {CAT_ROMAN[item.category]})</span>}
+              Cat {CAT_ROMAN[units.length === 1 ? getDraftInstanceCategory(draft, units[0]) : item.category]}
+              {units.length === 1 && getDraftInstanceCategory(draft, units[0]) !== item.category && (
+                <span className="text-gold-500/80"> (base {CAT_ROMAN[item.category]})</span>
+              )}
             </span>
             <span className="bg-parchment-900/50 px-2 py-0.5 rounded border border-parchment-800/50">
               Espaço: {item.spaces}
@@ -152,110 +160,154 @@ export function EquipmentStep() {
             <p className="text-parchment-600 text-xs mt-1.5 leading-snug">{item.description}</p>
           )}
 
-          {isSelected && isModifiable(item) && (
-            <div className="mt-2 pt-2 border-t border-parchment-900/50" onClick={e => e.stopPropagation()}>
-              <p className="text-[11px] text-parchment-600 mb-1">
-                Modificações <span className="text-parchment-700">(cada uma sobe a categoria em I e consome um slot da sua Patente)</span>
-              </p>
-              <div className="flex flex-wrap gap-1">
-                {getAvailableModifications(item).map(mod => {
-                  const applied = appliedMods.includes(mod.id)
-                  // Aplicar sobe a categoria efetiva em 1 → precisa caber no limite da Patente.
-                  const newCat = itemCat + 1
-                  const fitsPatente = newCat <= 4 && (getEffectiveCategoryCount(draft, newCat) + 1) <= getCategoryLimit(patente, newCat)
-                  const addable = applied || (canApplyModification(item, appliedMods, mod.id) && fitsPatente)
-                  return (
+          {isSelected && units.map(uid => {
+            const appliedMods = draft.equipmentModifications[uid] ?? []
+            const appliedCurses = draft.equipmentCurses[uid] ?? []
+            const unitCat = getDraftInstanceCategory(draft, uid)
+            const editable = isModifiable(item) || isCursable(item)
+            return (
+              <div key={uid} className="mt-2 pt-2 border-t border-parchment-900/50" onClick={e => e.stopPropagation()}>
+                {units.length > 1 && (
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-[11px] font-semibold text-red-300/90">
+                      {getInstanceLabel(draft, uid)} <span className="text-parchment-600 font-normal">· Cat {CAT_ROMAN[unitCat]}</span>
+                    </p>
                     <button
-                      key={mod.id}
-                      onClick={() => { if (addable) toggleModification(item.id, mod.id) }}
-                      disabled={!addable}
-                      title={mod.effect}
-                      className={`text-[11px] px-2 py-0.5 rounded border transition-all ${applied
-                        ? 'bg-gold-900/40 border-gold-700/50 text-gold-300'
-                        : addable
-                          ? 'border-parchment-800 text-parchment-500 hover:border-gold-800 hover:text-parchment-300'
-                          : 'border-parchment-900/40 text-parchment-800 cursor-not-allowed'}`}
+                      onClick={() => removeUnit(uid)}
+                      className="text-[11px] text-parchment-600 hover:text-red-400 px-1.5 transition-colors"
+                      title="Remover esta unidade"
                     >
-                      {mod.name}
+                      ✕ remover
                     </button>
-                  )
-                })}
-              </div>
-              {appliedMods.length > 0 && (
-                <ul className="mt-1.5 space-y-0.5">
-                  {getAvailableModifications(item).filter(m => appliedMods.includes(m.id)).map(m => (
-                    <li key={m.id} className="text-[11px] text-gold-600/90">
-                      <span className="font-semibold">{m.name}:</span> {m.effect}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
+                  </div>
+                )}
 
-          {isSelected && isCursable(item) && (
-            <div className="mt-2 pt-2 border-t border-parchment-900/50" onClick={e => e.stopPropagation()}>
-              <p className="text-[11px] text-parchment-600 mb-1">
-                Maldições <span className="text-parchment-700">(itens amaldiçoados: a 1ª sobe a categoria em II, as seguintes em I; elementos opressores não se combinam no mesmo item)</span>
-              </p>
-              <div className="flex flex-wrap gap-1">
-                {getAvailableCurses(item).map(curse => {
-                  const applied = appliedCurses.includes(curse.id)
-                  // Adicionar leva a categoria (sem teto) pra: base + mods + delta das maldições com mais uma.
-                  const newCat = item.category + appliedMods.length + getCurseCategoryDelta(appliedCurses.length + 1)
-                  const fitsPatente = newCat <= 4 && (getEffectiveCategoryCount(draft, newCat) + 1) <= getCategoryLimit(patente, newCat)
-                  const addable = applied || (canApplyCurse(item, appliedCurses, curse.id, draft.equipmentCurseChoices) && fitsPatente)
-                  return (
-                    <button
-                      key={curse.id}
-                      onClick={() => { if (addable) toggleCurse(item.id, curse.id) }}
-                      disabled={!addable}
-                      title={curse.effect}
-                      className={`text-[11px] px-2 py-0.5 rounded border transition-all ${applied
-                        ? 'bg-purple-900/40 border-purple-600/50 text-purple-300'
-                        : addable
-                          ? 'border-parchment-800 text-parchment-500 hover:border-purple-800 hover:text-parchment-300'
-                          : 'border-parchment-900/40 text-parchment-800 cursor-not-allowed'}`}
-                    >
-                      {curse.name}
-                      <span className="opacity-60"> · {curse.element === 'varies' ? 'Varia' : ELEMENT_NAMES[curse.element]}</span>
-                    </button>
-                  )
-                })}
+                {isModifiable(item) && (
+                  <>
+                    <p className="text-[11px] text-parchment-600 mb-1">
+                      Modificações <span className="text-parchment-700">(cada uma sobe a categoria em I e consome um slot da sua Patente)</span>
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {getAvailableModifications(item).map(mod => {
+                        const applied = appliedMods.includes(mod.id)
+                        // Aplicar sobe a categoria efetiva em 1 → precisa caber no limite da Patente.
+                        const newCat = unitCat + 1
+                        const fitsPatente = newCat <= 4 && (getEffectiveCategoryCount(draft, newCat) + 1) <= getCategoryLimit(patente, newCat)
+                        const addable = applied || (canApplyModification(item, appliedMods, mod.id) && fitsPatente)
+                        return (
+                          <button
+                            key={mod.id}
+                            onClick={() => { if (addable) toggleModification(uid, mod.id) }}
+                            disabled={!addable}
+                            title={mod.effect}
+                            className={`text-[11px] px-2 py-0.5 rounded border transition-all ${applied
+                              ? 'bg-gold-900/40 border-gold-700/50 text-gold-300'
+                              : addable
+                                ? 'border-parchment-800 text-parchment-500 hover:border-gold-800 hover:text-parchment-300'
+                                : 'border-parchment-900/40 text-parchment-800 cursor-not-allowed'}`}
+                          >
+                            {mod.name}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    {appliedMods.length > 0 && (
+                      <ul className="mt-1.5 space-y-0.5">
+                        {getAvailableModifications(item).filter(m => appliedMods.includes(m.id)).map(m => (
+                          <li key={m.id} className="text-[11px] text-gold-600/90">
+                            <span className="font-semibold">{m.name}:</span> {m.effect}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </>
+                )}
+
+                {isCursable(item) && (
+                  <>
+                    <p className={`text-[11px] text-parchment-600 mb-1 ${isModifiable(item) ? 'mt-2' : ''}`}>
+                      Maldições <span className="text-parchment-700">(itens amaldiçoados: a 1ª sobe a categoria em II, as seguintes em I; elementos opressores não se combinam no mesmo item)</span>
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {getAvailableCurses(item).map(curse => {
+                        const applied = appliedCurses.includes(curse.id)
+                        // Adicionar leva a categoria (sem teto) pra: base + mods + delta das maldições com mais uma.
+                        const newCat = item.category + appliedMods.length + getCurseCategoryDelta(appliedCurses.length + 1)
+                        const fitsPatente = newCat <= 4 && (getEffectiveCategoryCount(draft, newCat) + 1) <= getCategoryLimit(patente, newCat)
+                        const addable = applied || (canApplyCurse(item, appliedCurses, curse.id, draft.equipmentCurseChoices, uid) && fitsPatente)
+                        return (
+                          <button
+                            key={curse.id}
+                            onClick={() => { if (addable) toggleCurse(uid, curse.id) }}
+                            disabled={!addable}
+                            title={curse.effect}
+                            className={`text-[11px] px-2 py-0.5 rounded border transition-all ${applied
+                              ? 'bg-purple-900/40 border-purple-600/50 text-purple-300'
+                              : addable
+                                ? 'border-parchment-800 text-parchment-500 hover:border-purple-800 hover:text-parchment-300'
+                                : 'border-parchment-900/40 text-parchment-800 cursor-not-allowed'}`}
+                          >
+                            {curse.name}
+                            <span className="opacity-60"> · {curse.element === 'varies' ? 'Varia' : ELEMENT_NAMES[curse.element]}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                    {appliedCurses.length > 0 && (
+                      <ul className="mt-1.5 space-y-1">
+                        {getAvailableCurses(item).filter(c => appliedCurses.includes(c.id)).map(c => (
+                          <li key={c.id} className="text-[11px] text-purple-400/90">
+                            <span className="font-semibold">{c.name} ({formatCurseElement(c, uid, draft.equipmentCurseChoices)}):</span> {c.effect}
+                            {c.choice === 'element' && (
+                              <select
+                                value={draft.equipmentCurseChoices[curseChoiceKey(uid, c.id)] ?? ''}
+                                onChange={e => setCurseChoice(uid, c.id, e.target.value)}
+                                className="block mt-1 bg-parchment-950 border border-purple-900/50 rounded px-1.5 py-0.5 text-purple-300 text-[11px]"
+                              >
+                                <option value="" disabled>Escolha o elemento…</option>
+                                {(CURSE_ELEMENT_OPTIONS[c.id] ?? []).map(el => (
+                                  <option key={el} value={el}>{ELEMENT_NAMES[el]}</option>
+                                ))}
+                              </select>
+                            )}
+                            {c.choice === 'ritual1' && (
+                              <select
+                                value={draft.equipmentCurseChoices[curseChoiceKey(uid, c.id)] ?? ''}
+                                onChange={e => setCurseChoice(uid, c.id, e.target.value)}
+                                className="block mt-1 bg-parchment-950 border border-purple-900/50 rounded px-1.5 py-0.5 text-purple-300 text-[11px]"
+                              >
+                                <option value="" disabled>Escolha o ritual vinculado (1º círculo)…</option>
+                                {getAvailableRituals(1).map(r => (
+                                  <option key={r.id} value={r.id}>{r.name}</option>
+                                ))}
+                              </select>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </>
+                )}
+
+                {!editable && units.length > 1 && (
+                  <p className="text-[11px] text-parchment-700">Unidade sem opções de modificação/maldição.</p>
+                )}
               </div>
-              {appliedCurses.length > 0 && (
-                <ul className="mt-1.5 space-y-1">
-                  {getAvailableCurses(item).filter(c => appliedCurses.includes(c.id)).map(c => (
-                    <li key={c.id} className="text-[11px] text-purple-400/90">
-                      <span className="font-semibold">{c.name} ({formatCurseElement(c, item.id, draft.equipmentCurseChoices)}):</span> {c.effect}
-                      {c.choice === 'element' && (
-                        <select
-                          value={draft.equipmentCurseChoices[curseChoiceKey(item.id, c.id)] ?? ''}
-                          onChange={e => setCurseChoice(item.id, c.id, e.target.value)}
-                          className="block mt-1 bg-parchment-950 border border-purple-900/50 rounded px-1.5 py-0.5 text-purple-300 text-[11px]"
-                        >
-                          <option value="" disabled>Escolha o elemento…</option>
-                          {(CURSE_ELEMENT_OPTIONS[c.id] ?? []).map(el => (
-                            <option key={el} value={el}>{ELEMENT_NAMES[el]}</option>
-                          ))}
-                        </select>
-                      )}
-                      {c.choice === 'ritual1' && (
-                        <select
-                          value={draft.equipmentCurseChoices[curseChoiceKey(item.id, c.id)] ?? ''}
-                          onChange={e => setCurseChoice(item.id, c.id, e.target.value)}
-                          className="block mt-1 bg-parchment-950 border border-purple-900/50 rounded px-1.5 py-0.5 text-purple-300 text-[11px]"
-                        >
-                          <option value="" disabled>Escolha o ritual vinculado (1º círculo)…</option>
-                          {getAvailableRituals(1).map(r => (
-                            <option key={r.id} value={r.id}>{r.name}</option>
-                          ))}
-                        </select>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
+            )
+          })}
+
+          {isSelected && (
+            <div className="mt-2" onClick={e => e.stopPropagation()}>
+              <button
+                onClick={() => { if (canAddUnit) addUnit(item.id) }}
+                disabled={!canAddUnit}
+                title={canAddUnit ? `Adicionar outra unidade de ${item.name} (com modificações/maldições próprias)` : 'Limite da Patente atingido pra categoria deste item'}
+                className={`text-[11px] px-2 py-0.5 rounded border transition-all ${canAddUnit
+                  ? 'border-parchment-800 text-parchment-500 hover:border-red-800 hover:text-parchment-300'
+                  : 'border-parchment-900/40 text-parchment-800 cursor-not-allowed'}`}
+              >
+                ＋ adicionar outra unidade
+              </button>
             </div>
           )}
         </div>

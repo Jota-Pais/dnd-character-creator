@@ -12,8 +12,13 @@ import {
   getCurseDefenseBonus,
   getCursedDerivedStats,
   areOpposingElements,
+  formatCurseElement,
+  formatCurseChoiceDetail,
 } from '../curseUtils'
-import { getEquipmentById, getEffectiveCategory, isEquipmentStepComplete, areCursesValid, getDraftItemCategory } from '../equipmentUtils'
+import {
+  getEquipmentById, getEffectiveCategory, isEquipmentStepComplete, areCursesValid, getDraftInstanceCategory,
+  instanceItemId, newInstanceUid, getInstanceLabel, getModifiedSpaces,
+} from '../equipmentUtils'
 import { getOrdemWeaponAttack } from '../ordemWeaponUtils'
 import { getOrdemClass } from '../classUtils'
 
@@ -184,7 +189,7 @@ describe('validação de equipamento com maldições', () => {
       equipmentChoices: ['revolver'],
       equipmentCurses: { revolver: ['senciente'] },
     }
-    expect(getDraftItemCategory(makeDraft(base), revolver)).toBe(3)
+    expect(getDraftInstanceCategory(makeDraft(base), 'revolver')).toBe(3)
     expect(isEquipmentStepComplete(makeDraft({ ...base, patente: 'recruta' }))).toBe(false)
     expect(isEquipmentStepComplete(makeDraft({ ...base, patente: 'agente-especial' }))).toBe(true)
   })
@@ -214,5 +219,61 @@ describe('validação de equipamento com maldições', () => {
     })
     expect(areCursesValid(comEscolha)).toBe(true)
     expect(isEquipmentStepComplete(comEscolha)).toBe(true)
+  })
+})
+
+describe('unidades de equipamento — 2 revólveres com características diferentes', () => {
+  it('uids: 1ª unidade usa o id do item, duplicatas ganham sufixo', () => {
+    expect(newInstanceUid(['revolver'], 'revolver')).toBe('revolver#2')
+    expect(newInstanceUid(['revolver', 'revolver#2'], 'revolver')).toBe('revolver#3')
+    expect(newInstanceUid([], 'revolver')).toBe('revolver')
+    expect(instanceItemId('revolver#2')).toBe('revolver')
+    expect(instanceItemId('revolver')).toBe('revolver')
+  })
+
+  it('cada unidade tem maldições próprias e vira um ataque próprio na ficha', () => {
+    const draft = makeDraft({
+      patente: 'oficial-operacoes',
+      equipmentChoices: ['revolver', 'revolver#2'],
+      equipmentCurses: { revolver: ['senciente'], 'revolver#2': ['lancinante'] },
+    })
+    // Rótulos numerados quando há duplicatas.
+    expect(getInstanceLabel(draft, 'revolver')).toBe('Revólver #1')
+    expect(getInstanceLabel(draft, 'revolver#2')).toBe('Revólver #2')
+    // Categorias por unidade: cada uma Cat I +II (1ª maldição) = III.
+    expect(getDraftInstanceCategory(draft, 'revolver')).toBe(3)
+    expect(getDraftInstanceCategory(draft, 'revolver#2')).toBe(3)
+    // Ataques distintos: só a unidade Lancinante tem o dano extra.
+    const a1 = getOrdemWeaponAttack(revolver as OrdemWeapon, draft, [], draft.equipmentCurses['revolver'])
+    const a2 = getOrdemWeaponAttack(revolver as OrdemWeapon, draft, [], draft.equipmentCurses['revolver#2'])
+    expect(a1.damage).not.toContain('+1d8 Sangue')
+    expect(a2.damage).toContain('+1d8 Sangue')
+    // Espaços contam por unidade (2 revólveres = 2 espaços).
+    expect(getModifiedSpaces(draft)).toBe(2)
+  })
+
+  it('limite da Patente conta por unidade: 2× Cat III exige Oficial de Operações', () => {
+    const dois = {
+      equipmentChoices: ['revolver', 'revolver#2'],
+      equipmentCurses: { revolver: ['senciente'], 'revolver#2': ['lancinante'] },
+    }
+    // Agente Especial: limite 1 de Cat III → inválido; Oficial de Operações: limite 2 → válido.
+    expect(isEquipmentStepComplete(makeDraft({ ...dois, patente: 'agente-especial' }))).toBe(false)
+    expect(isEquipmentStepComplete(makeDraft({ ...dois, patente: 'oficial-operacoes' }))).toBe(true)
+  })
+
+  it('escolhas de elemento são por unidade (dois Antielemento com elementos diferentes)', () => {
+    const draft = makeDraft({
+      patente: 'oficial-operacoes',
+      equipmentChoices: ['revolver', 'revolver#2'],
+      equipmentCurses: { revolver: ['antielemento'], 'revolver#2': ['antielemento'] },
+      equipmentCurseChoices: { 'revolver:antielemento': 'energy', 'revolver#2:antielemento': 'death' },
+    })
+    expect(areCursesValid(draft)).toBe(true)
+    // O elemento da maldição Antielemento é fixo (Conhecimento); o escolhido é o elemento-ALVO, por unidade.
+    const antielemento = getCurse('antielemento')!
+    expect(formatCurseElement(antielemento, 'revolver', draft.equipmentCurseChoices)).toBe('Conhecimento')
+    expect(formatCurseChoiceDetail(antielemento, 'revolver', draft.equipmentCurseChoices)).toBe('elemento-alvo: Energia')
+    expect(formatCurseChoiceDetail(antielemento, 'revolver#2', draft.equipmentCurseChoices)).toBe('elemento-alvo: Morte')
   })
 })

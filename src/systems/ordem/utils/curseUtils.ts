@@ -6,7 +6,7 @@ import type { OrdemEquipment } from '../types/equipment'
 import type { OrdemElement } from '../types/ritual'
 import { getEffectiveAttributes, deriveStats } from './characterUtils'
 import type { DerivedStats } from './characterUtils'
-import { ELEMENT_NAMES } from './ritualUtils'
+import { ELEMENT_NAMES, getRitualById } from './ritualUtils'
 
 export const CURSES = cursesJson as OrdemCurse[]
 
@@ -31,33 +31,52 @@ export function areOpposingElements(a: OrdemElement | null, b: OrdemElement | nu
   return OPPRESSES[a] === b || OPPRESSES[b] === a
 }
 
-/** Chave das escolhas de parâmetro de maldição (elemento/ritual) em `equipmentCurseChoices`. */
-export function curseChoiceKey(itemId: string, curseId: string): string {
-  return `${itemId}:${curseId}`
+/** Chave das escolhas de parâmetro de maldição (elemento/ritual) em `equipmentCurseChoices`, por UNIDADE. */
+export function curseChoiceKey(uid: string, curseId: string): string {
+  return `${uid}:${curseId}`
 }
 
 /**
- * Elemento efetivo de uma maldição aplicada a um item: o da maldição, ou o escolhido
+ * Elemento efetivo de uma maldição aplicada a uma unidade: o da maldição, ou o escolhido
  * quando o elemento varia (Proteção Elemental). Null enquanto a escolha não foi feita.
  */
 export function getAppliedCurseElement(
   curse: OrdemCurse,
-  itemId: string,
+  uid: string,
   curseChoices: Record<string, string>,
 ): OrdemElement | null {
   if (curse.element !== 'varies') return curse.element
-  const chosen = curseChoices[curseChoiceKey(itemId, curse.id)]
+  const chosen = curseChoices[curseChoiceKey(uid, curse.id)]
   return (chosen as OrdemElement) || null
 }
 
 /** Rótulo do elemento de uma maldição aplicada: fixo, o escolhido, ou aviso de escolha pendente. */
 export function formatCurseElement(
   curse: OrdemCurse,
-  itemId: string,
+  uid: string,
   curseChoices: Record<string, string>,
 ): string {
-  const element = getAppliedCurseElement(curse, itemId, curseChoices)
+  const element = getAppliedCurseElement(curse, uid, curseChoices)
   return element ? ELEMENT_NAMES[element] : 'elemento a escolher'
+}
+
+/**
+ * Detalhe da escolha de parâmetro de uma maldição aplicada, pra exibição na ficha:
+ * Antielemento → "elemento-alvo: X"; Conjuração → "ritual vinculado: X"; Proteção
+ * Elemental → null (o elemento escolhido já aparece como o elemento da maldição).
+ */
+export function formatCurseChoiceDetail(
+  curse: OrdemCurse,
+  uid: string,
+  curseChoices: Record<string, string>,
+): string | null {
+  if (!curse.choice) return null
+  const chosen = curseChoices[curseChoiceKey(uid, curse.id)]
+  if (!chosen) return 'escolha pendente'
+  if (curse.choice === 'element') {
+    return curse.element === 'varies' ? null : `elemento-alvo: ${ELEMENT_NAMES[chosen as OrdemElement]}`
+  }
+  return `ritual vinculado: ${getRitualById(chosen)?.name ?? chosen}`
 }
 
 /** Uma maldição pode ser aplicada a este item? (pág. 145-148). */
@@ -88,21 +107,23 @@ export function getAvailableCurses(item: OrdemEquipment): OrdemCurse[] {
 /**
  * Uma maldição pode ser adicionada agora? Regras da pág. 144: maldições iguais não se
  * acumulam no item, e elementos opressores não coexistem no mesmo item.
+ * `uid` identifica a UNIDADE (padrão: o id do item), pra resolver escolhas de elemento.
  */
 export function canApplyCurse(
   item: OrdemEquipment,
   applied: string[],
   curseId: string,
   curseChoices: Record<string, string> = {},
+  uid: string = item.id,
 ): boolean {
   const curse = getCurse(curseId)
   if (!curse || !curseAppliesTo(curse, item)) return false
   if (applied.includes(curseId)) return false
-  const element = getAppliedCurseElement(curse, item.id, curseChoices)
+  const element = getAppliedCurseElement(curse, uid, curseChoices)
   for (const otherId of applied) {
     const other = getCurse(otherId)
     if (!other) continue
-    const otherElement = getAppliedCurseElement(other, item.id, curseChoices)
+    const otherElement = getAppliedCurseElement(other, uid, curseChoices)
     if (areOpposingElements(element, otherElement)) return false
   }
   return true
@@ -115,19 +136,19 @@ export function getCurseCategoryDelta(curseCount: number): number {
 
 // ── Efeitos das maldições nos números da ficha ─────────────────────────────────
 
-/** Maldições dos itens de um draft (só de itens realmente equipados). */
-export function getItemCurses(draft: OrdemCharacterDraft, itemId: string): string[] {
-  return draft.equipmentChoices.includes(itemId) ? (draft.equipmentCurses[itemId] ?? []) : []
+/** Maldições de uma unidade do draft (só de unidades realmente equipadas). */
+export function getItemCurses(draft: OrdemCharacterDraft, uid: string): string[] {
+  return draft.equipmentChoices.includes(uid) ? (draft.equipmentCurses[uid] ?? []) : []
 }
 
 /**
- * Maldições únicas entre todos os itens equipados — "bônus de itens amaldiçoados não se
+ * Maldições únicas entre todas as unidades equipadas — "bônus de itens amaldiçoados não se
  * acumulam" (pág. 144): a mesma maldição em dois itens concede o benefício uma vez só.
  */
 export function getUniqueEquippedCurses(draft: OrdemCharacterDraft): OrdemCurse[] {
   const ids = new Set<string>()
-  for (const itemId of draft.equipmentChoices) {
-    for (const curseId of draft.equipmentCurses[itemId] ?? []) ids.add(curseId)
+  for (const uid of draft.equipmentChoices) {
+    for (const curseId of draft.equipmentCurses[uid] ?? []) ids.add(curseId)
   }
   return [...ids].map(getCurse).filter((c): c is OrdemCurse => Boolean(c))
 }

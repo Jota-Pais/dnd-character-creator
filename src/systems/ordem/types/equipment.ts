@@ -11,6 +11,10 @@ export interface OrdemEquipmentBase {
   description?: string;
   /** Bônus à capacidade de carga concedido pelo item (ex.: Mochila Militar = +2 espaços). */
   carryBonus?: number;
+  /** Item Paranormal (Tabela 3.10) — exibido em seção própria no passo de Equipamento. */
+  paranormal?: boolean;
+  /** Componentes ritualísticos: elemento cujos rituais este kit permite conjurar. */
+  ritualComponentFor?: 'knowledge' | 'energy' | 'death' | 'blood';
 }
 
 export type OrdemWeaponProficiency = 'simple' | 'tactical' | 'heavy';

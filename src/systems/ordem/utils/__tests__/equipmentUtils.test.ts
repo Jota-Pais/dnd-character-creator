@@ -17,6 +17,7 @@ import {
   getEffectiveCategoryCount,
   fitsPatenteSlots,
   getCategorySlotAllocation,
+  getMissingRitualComponentElements,
   EQUIPMENTS,
 } from '../equipmentUtils'
 import { getPatente } from '../patenteUtils'
@@ -238,5 +239,47 @@ describe('vagas da Patente com transbordo (F21) — item menor ocupa vaga maior'
       attributes: { ...EMPTY_ATTRIBUTES, strength: 3 },
       equipmentChoices: [...cheio.equipmentChoices, 'revolver#4'],
     }))).toBe(false)
+  })
+})
+
+describe('componentes ritualísticos (F22) — aviso de rituais sem componentes', () => {
+  it('ocultista com ritual de Energia sem os componentes → avisa; com eles → não', () => {
+    const base = {
+      class: 'occultist' as const,
+      nex: 5,
+      ritualChoices: ['eletrocussao', 'cicatrizacao', 'decadencia'], // Energia, Morte, Morte
+    }
+    expect(getMissingRitualComponentElements(makeDraft(base))).toEqual(
+      expect.arrayContaining(['energy', 'death']),
+    )
+    const equipado = makeDraft({
+      ...base,
+      equipmentChoices: ['componentes-ritualisticos-energia', 'componentes-ritualisticos-morte'],
+    })
+    expect(getMissingRitualComponentElements(equipado)).toEqual([])
+  })
+
+  it('ritual multi-elemento conta pelo elemento escolhido ao aprender', () => {
+    const draft = makeDraft({
+      class: 'occultist',
+      nex: 5,
+      ritualChoices: ['amaldicoar-arma', 'cicatrizacao', 'decadencia'],
+      ritualElementChoices: { 'amaldicoar-arma': 'blood' },
+      equipmentChoices: ['componentes-ritualisticos-morte'],
+    })
+    expect(getMissingRitualComponentElements(draft)).toEqual(['blood'])
+  })
+
+  it('não-ocultista nunca gera aviso', () => {
+    expect(getMissingRitualComponentElements(makeDraft({ class: 'combatant' }))).toEqual([])
+  })
+
+  it('componentes ritualísticos são Categoria 0 e ocupam 1 espaço (Tabela 3.10)', () => {
+    for (const el of ['conhecimento', 'energia', 'morte', 'sangue']) {
+      const item = getEquipmentById(`componentes-ritualisticos-${el}`)!
+      expect(item.category).toBe(0)
+      expect(item.spaces).toBe(1)
+      expect(item.paranormal).toBe(true)
+    }
   })
 })

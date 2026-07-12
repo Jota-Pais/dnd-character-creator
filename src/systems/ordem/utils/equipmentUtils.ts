@@ -1,6 +1,8 @@
 import type { OrdemCharacterDraft } from '../types/character'
 import type { OrdemEquipment } from '../types/equipment'
 import type { OrdemPatente } from '../types/patente'
+import type { OrdemElement } from '../types/ritual'
+import { getRitualById, getRitualSlotsCount } from './ritualUtils'
 import equipmentsJson from '../data/equipments.json'
 import { getOrdemClass } from './classUtils'
 import { getPatente, getCategoryLimit } from './patenteUtils'
@@ -275,4 +277,24 @@ export function hasWeaponProficiency(draft: OrdemCharacterDraft, item: OrdemEqui
   if (item.type !== 'weapon' || !draft.class) return true
   const cls = getOrdemClass(draft.class)
   return cls ? cls.weaponProficiencies.includes(item.proficiency) : true
+}
+
+/**
+ * Elementos dos rituais conhecidos SEM os componentes ritualísticos correspondentes no loadout.
+ * Conjurar exige manipular componentes do elemento (exceto Medo) — sem eles, o ritual não sai
+ * (pág. 119). Não bloqueia a ficha; alimenta o aviso no Equipamento/Revisão.
+ */
+export function getMissingRitualComponentElements(draft: OrdemCharacterDraft): OrdemElement[] {
+  if (draft.class !== 'occultist') return []
+  const needed = new Set<OrdemElement>()
+  for (const id of draft.ritualChoices.slice(0, getRitualSlotsCount(draft.nex))) {
+    if (!id) continue
+    const ritual = getRitualById(id)
+    if (!ritual) continue
+    // Ritual multi-elemento vale pelo elemento escolhido ao aprender (ex.: Amaldiçoar Arma).
+    const element = ritual.elements.length > 1 ? draft.ritualElementChoices[ritual.id] : ritual.elements[0]
+    if (element && element !== 'fear') needed.add(element)
+  }
+  const owned = new Set(draft.equipmentChoices.map(uid => getEquipmentByInstance(uid)?.ritualComponentFor))
+  return [...needed].filter(el => !owned.has(el))
 }

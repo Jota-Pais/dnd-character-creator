@@ -5,9 +5,10 @@ import { getSkillName } from '../../utils/skillUtils'
 import { getTrilha } from '../../utils/trilhaUtils'
 import { getPower } from '../../utils/powerUtils'
 import { getTrainedSkills, getSkillGrade } from '../../utils/characterUtils'
-import { getRitualById, formatRitualElementLabel, getRitualSlotsCount } from '../../utils/ritualUtils'
+import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, ELEMENT_NAMES } from '../../utils/ritualUtils'
 import {
   getEquipmentByInstance, getInstanceLabel, getTotalCarryCapacity, getModifiedSpaces, getModifiedDefenseBonus, getDraftInstanceCategory,
+  getMissingRitualComponentElements,
 } from '../../utils/equipmentUtils'
 import { getModification } from '../../utils/modificationUtils'
 import { getCurse, getCursedDerivedStats, getSheetAttributes, formatCurseElement, formatCurseChoiceDetail } from '../../utils/curseUtils'
@@ -54,6 +55,7 @@ export function ReviewStep() {
       name: getInstanceLabel(draft, uid),
     }))
   const cursedUnits = equipmentUnits.filter(u => (draft.equipmentCurses[u.uid]?.length ?? 0) > 0)
+  const missingComponents = getMissingRitualComponentElements(draft)
   const upgradedSkills = trainedSkills.filter(sid => getSkillGrade(draft, sid) !== 'treinado')
 
   function handleExport() {
@@ -142,6 +144,12 @@ export function ReviewStep() {
               </p>
             ))}
           </div>
+          {missingComponents.length > 0 && (
+            <p className="text-amber-400/90 text-xs mt-3">
+              ⚠️ Faltam <strong>Componentes Ritualísticos</strong> de {missingComponents.map(el => ELEMENT_NAMES[el]).join(' e ')} no
+              equipamento — sem eles (e uma mão livre), esses rituais não podem ser conjurados.
+            </p>
+          )}
         </Section>
       )}
 

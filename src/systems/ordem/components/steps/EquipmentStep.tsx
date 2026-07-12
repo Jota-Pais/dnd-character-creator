@@ -4,7 +4,7 @@ import type { OrdemEquipment } from '../../types/equipment'
 import {
   EQUIPMENTS, getTotalCarryCapacity, getModifiedSpaces, getDraftInstanceCategory,
   hasWeaponProficiency, instanceItemId, newInstanceUid, getInstanceLabel,
-  fitsWithAdjustedCounts, getCategorySlotAllocation,
+  fitsWithAdjustedCounts, getCategorySlotAllocation, getMissingRitualComponentElements,
 } from '../../utils/equipmentUtils'
 import { getAvailableModifications, canApplyModification, isModifiable } from '../../utils/modificationUtils'
 import {
@@ -39,7 +39,10 @@ export function EquipmentStep() {
 
   const weapons = EQUIPMENTS.filter(i => i.type === 'weapon')
   const protections = EQUIPMENTS.filter(i => i.type === 'protection')
-  const general = EQUIPMENTS.filter(i => i.type !== 'weapon' && i.type !== 'protection')
+  const paranormal = EQUIPMENTS.filter(i => i.paranormal)
+  const general = EQUIPMENTS.filter(i => i.type !== 'weapon' && i.type !== 'protection' && !i.paranormal)
+  // Rituais conhecidos cujos componentes ritualísticos não estão no loadout (aviso, não bloqueia).
+  const missingComponents = getMissingRitualComponentElements(draft)
 
   const addUnit = (itemId: string) => {
     const uid = newInstanceUid(draft.equipmentChoices, itemId)
@@ -408,6 +411,20 @@ export function EquipmentStep() {
           <h3 className="font-fantasy text-xl text-parchment-300 border-b border-parchment-900/50 pb-2 mb-4">Proteções</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {protections.map(renderItem)}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="font-fantasy text-xl text-parchment-300 border-b border-parchment-900/50 pb-2 mb-4">Itens Paranormais</h3>
+          {missingComponents.length > 0 && (
+            <div className="mb-4 p-3 rounded-lg border border-amber-700/50 bg-amber-950/30 text-amber-300 text-sm">
+              ⚠️ Você conhece rituais de <strong>{missingComponents.map(el => ELEMENT_NAMES[el]).join(' e ')}</strong>, mas
+              não pegou os <strong>Componentes Ritualísticos</strong> desses elementos. Sem eles (e uma mão livre), o
+              ritual não pode ser conjurado — eles não são gastos, mas precisam estar com você.
+            </div>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {paranormal.map(renderItem)}
           </div>
         </div>
 

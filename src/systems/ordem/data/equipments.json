@@ -801,5 +801,90 @@
     "spaces": 2,
     "type": "general",
     "description": "Roupa impermeável que cobre o corpo inteiro. Fornece +5 em testes de resistência contra efeitos ambientais e resistência a químico 10."
+  },
+  {
+    "id": "componentes-ritualisticos-conhecimento",
+    "name": "Componentes Ritualísticos (Conhecimento)",
+    "category": 0,
+    "spaces": 1,
+    "type": "general",
+    "paranormal": true,
+    "ritualComponentFor": "knowledge",
+    "description": "Necessários para conjurar rituais de Conhecimento (sem eles e uma mão livre, o ritual não pode ser conjurado; não são gastos na conjuração). Ex.: escrituras, papéis, livros, pergaminhos, pedras preciosas, ouro, cordas, tecido, cristais brancos, vidro, máscaras, instrumentos de escrita."
+  },
+  {
+    "id": "componentes-ritualisticos-energia",
+    "name": "Componentes Ritualísticos (Energia)",
+    "category": 0,
+    "spaces": 1,
+    "type": "general",
+    "paranormal": true,
+    "ritualComponentFor": "energy",
+    "description": "Necessários para conjurar rituais de Energia (sem eles e uma mão livre, o ritual não pode ser conjurado; não são gastos na conjuração). Ex.: eletricidade, dispositivos tecnológicos (celulares, computadores), circuitos eletrônicos, fontes de calor e luz, pilhas, baterias, cabos de cobre e prata, pólvora, moedas, dados, ímãs."
+  },
+  {
+    "id": "componentes-ritualisticos-morte",
+    "name": "Componentes Ritualísticos (Morte)",
+    "category": 0,
+    "spaces": 1,
+    "type": "general",
+    "paranormal": true,
+    "ritualComponentFor": "death",
+    "description": "Necessários para conjurar rituais de Morte (sem eles e uma mão livre, o ritual não pode ser conjurado; não são gastos na conjuração). Ex.: ossos, dentes, cinzas, fios de cabelo, cristais pretos, relógios, galhos secos, folhas secas, plantas mortas, raízes, areia, poeira, Lodo."
+  },
+  {
+    "id": "componentes-ritualisticos-sangue",
+    "name": "Componentes Ritualísticos (Sangue)",
+    "category": 0,
+    "spaces": 1,
+    "type": "general",
+    "paranormal": true,
+    "ritualComponentFor": "blood",
+    "description": "Necessários para conjurar rituais de Sangue (sem eles e uma mão livre, o ritual não pode ser conjurado; não são gastos na conjuração). Ex.: órgãos, carne, sangue, animais vivos (para sacrifício), navalhas, agulhas, arame farpado, correntes, metal enferrujado, fluidos corporais."
+  },
+  {
+    "id": "amarras-elemento",
+    "name": "Amarras de (Elemento)",
+    "category": 2,
+    "spaces": 1,
+    "type": "general",
+    "paranormal": true,
+    "description": "Cordas ou correntes feitas de um elemento Paranormal (escolha ao requisitar), preparadas para imobilizar criaturas do Outro Lado vulneráveis a ele. Armadilha: gasta as amarras, uma ação completa e 2 PE — armadilha de 3×3m; criatura que atravessar faz Reflexos (DT Int) ou fica imóvel até o fim da cena (mesmo passando, é terreno difícil). Laçar: ação padrão e 1 PE — criatura em alcance curto faz Vontade (DT Agi) ou fica paralisada até o início do próximo turno dela (manter custa 1 PE por rodada)."
+  },
+  {
+    "id": "camera-aura-paranormal",
+    "name": "Câmera de Aura Paranormal",
+    "category": 2,
+    "spaces": 1,
+    "type": "general",
+    "paranormal": true,
+    "description": "Câmera amaldiçoada com Energia e sigilos de Conhecimento. Tirar uma foto gasta uma ação padrão e 1 PE; as fotos são instantâneas e revelam auras paranormais em pessoas e objetos, na cor do elemento associado."
+  },
+  {
+    "id": "emissor-pulsos-paranormais",
+    "name": "Emissor de Pulsos Paranormais",
+    "category": 2,
+    "spaces": 1,
+    "type": "general",
+    "paranormal": true,
+    "description": "Caixa coberta de sigilos que serve de \"isca\" paranormal. Ativar gasta uma ação completa e 1 PE: emite um pulso de um elemento definido pelo ativador, que atrai criaturas do mesmo elemento e afasta criaturas do elemento oposto (Vontade DT Pre evita)."
+  },
+  {
+    "id": "escuta-ruidos-paranormais",
+    "name": "Escuta de Ruídos Paranormais",
+    "category": 2,
+    "spaces": 1,
+    "type": "general",
+    "paranormal": true,
+    "description": "Microfone espião que capta ruídos paranormais. Ativar gasta uma ação completa e 2 PE e grava ruídos por até 24 horas; ouvir a escuta fornece +5 em testes de Ocultismo para identificar criatura."
+  },
+  {
+    "id": "scanner-manifestacao-paranormal",
+    "name": "Scanner de Manifestação Paranormal de (Elemento)",
+    "category": 2,
+    "spaces": 1,
+    "type": "general",
+    "paranormal": true,
+    "description": "Dispositivo com objetos amaldiçoados e sigilos, sintonizado num elemento (escolha ao requisitar). Ativar é uma ação padrão; enquanto ativo consome 1 PE por rodada e indica a direção de todas as manifestações paranormais ativas do elemento (rituais, criaturas, itens amaldiçoados) em alcance longo — inclusive criaturas que tenham o elemento como complemento."
   }
 ]

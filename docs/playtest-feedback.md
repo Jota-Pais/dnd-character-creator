@@ -155,3 +155,13 @@
 - **Triagem:** ✨ feature nova
 - **Regra:** método manual/homebrew — cada atributo livre na faixa dos dados de criação (3 a 18, do 4d6 descartando o menor), sem limite de soma. Os bônus de raça entram por cima (18 + racial pode chegar ao teto 20).
 - **Status:** ✅ FEITO (2026-07-10) — novo método `'custom'`: card no seletor, `CustomPanel` com input editável por atributo (+/− e digitação, clamp 3–18 no blur), validação `isAbilitiesStepComplete` (todos em 3–18) e `clampCustomScore`. Import robusto (ABILITY_METHODS aceita 'custom'). +8 testes (validação, clamp, render do painel).
+
+### F16 — Aumento de Vigor por NEX tem que aumentar o PV retroativamente (desde o NEX 5%)
+- **Sistema:** Ordem Paranormal
+- **Onde:** cálculo de PV (Aumentos de Atributo do passo Progressão, NEX 20/50/80/95%)
+- **Relato:** em NEX maiores o personagem ganha mais pontos de atributo; se ganhar +1 de Vigor num desses aumentos, "tem que lembrar de aumentar a vida dele desde o nível 0" — ou seja, o PV precisa ser recalculado retroativamente, como se o Vigor novo valesse desde o começo.
+- **Triagem:** 📖 fidelidade ao livro (conferência de regra)
+- **Regra (conferida no livro):** PV máximo é característica **derivada** de classe + Vigor (pág. 36, "Toques Finais"): inicial (20/16/12 + Vig) e "+X PV (+Vig) **a cada novo nível de exposição**". Logo, aumentar o Vigor recalcula o PV em todos os degraus, do 5% ao NEX atual. Mesmo princípio pro PE com Presença. (O livro reforça essa lógica retroativa no poder Potencial Aprimorado: "se escolher este poder em NEX 30%, recebe 6 PE".)
+- **Análise (código):** **já está correto** nos pontos que valem: `deriveStats` calcula `PV = inicial + Vig + degraus×(porNex + Vig)` e a Revisão + ficha impressa passam `getEffectiveAttributes(draft)` (base + aumentos de NEX, teto 5) — então +1 Vigor no NEX 50% soma +1 PV do inicial e +1 por degrau, retroativo de verdade. Idem PE/Presença.
+- **Gaps encontrados na conferência:** (1) o preview de PV/PE no passo **Classe** usava `draft.attributes` (base) — ao voltar pra lá depois de escolher aumentos na Progressão, mostrava PV/PE menores que os da Revisão; (2) não havia teste travando o comportamento retroativo (obrigatório pra fórmula de derivação, pelo CLAUDE.md).
+- **Status:** ✅ CORRIGIDO — ClassStep passou a usar `getEffectiveAttributes`; +2 testes de integração (aumentos de Vigor→PV e Presença→PE recalculados retroativamente em todos os degraus).

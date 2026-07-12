@@ -1,7 +1,7 @@
 import { useOrdemStore } from '../../stores/characterStore'
 import { ORDEM_CLASSES, getOrdemClass, getFreeSkillChoiceCount } from '../../utils/classUtils'
 import { getSkillName } from '../../utils/skillUtils'
-import { deriveStats } from '../../utils/characterUtils'
+import { deriveStats, getEffectiveAttributes } from '../../utils/characterUtils'
 import { isStepComplete } from '../../utils/draftValidation'
 import { StepNav } from '../common/StepNav'
 import type { OrdemClass } from '../../types/class'
@@ -23,7 +23,8 @@ export function ClassStep() {
 
   const selected: OrdemClass | undefined = draft.class ? getOrdemClass(draft.class) : undefined
   const canAdvance = isStepComplete(draft, 'class')
-  const stats = selected ? deriveStats(selected, draft.attributes, draft.nex) : null
+  // Atributos efetivos (com Aumentos de Atributo por NEX), senão o preview diverge da Revisão ao voltar aqui.
+  const stats = selected ? deriveStats(selected, getEffectiveAttributes(draft), draft.nex) : null
 
   return (
     <div className="flex flex-col lg:flex-row gap-6">

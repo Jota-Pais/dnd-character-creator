@@ -177,6 +177,33 @@ describe('getEffectiveAttributes', () => {
     })
     expect(getEffectiveAttributes(draft).vigor).toBe(5)
   })
+
+  // F16: aumentar Vigor/Presença via Aumento de Atributo recalcula PV/PE retroativamente,
+  // como se o valor novo valesse desde o NEX 5% (PV/PE máximos são derivados, pág. 36).
+  it('F16: +1 Vigor (Aumento de Atributo) aumenta o PV retroativamente em todos os degraus de NEX', () => {
+    const combatant = getOrdemClass('combatant')!
+    const base = makeDraft({ attributes: { agility: 1, strength: 1, intellect: 1, presence: 1, vigor: 1 } })
+    const increased = makeDraft({
+      attributes: { agility: 1, strength: 1, intellect: 1, presence: 1, vigor: 1 },
+      attributeIncreaseChoices: ['vigor'],
+    })
+    // NEX 20% = 3 degraus além do 5%. Vigor 1→2: +1 no inicial e +1 por degrau = +4 PV.
+    const hpBefore = deriveStats(combatant, getEffectiveAttributes(base), 20).hp
+    const hpAfter = deriveStats(combatant, getEffectiveAttributes(increased), 20).hp
+    expect(hpBefore).toBe(20 + 1 + 3 * (4 + 1)) // 36
+    expect(hpAfter).toBe(20 + 2 + 3 * (4 + 2)) // 40
+    expect(hpAfter - hpBefore).toBe(1 + 3)
+  })
+
+  it('F16: +1 Presença (Aumento de Atributo) aumenta o PE retroativamente em todos os degraus de NEX', () => {
+    const occultist = getOrdemClass('occultist')!
+    const increased = makeDraft({
+      attributes: { agility: 1, strength: 1, intellect: 1, presence: 2, vigor: 0 },
+      attributeIncreaseChoices: ['presence'],
+    })
+    // NEX 50% = 9 degraus além do 5%. Presença efetiva 3: PE = 4+3 + 9×(4+3).
+    expect(deriveStats(occultist, getEffectiveAttributes(increased), 50).pe).toBe(4 + 3 + 9 * (4 + 3))
+  })
 })
 
 describe('getSkillGrade', () => {

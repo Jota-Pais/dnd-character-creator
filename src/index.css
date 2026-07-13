@@ -8,10 +8,12 @@
   --color-parchment-100: #f5e8cc;
   --color-parchment-200: #e8d5b7;
   --color-parchment-300: #d4b896;
-  --color-parchment-400: #b8946f;
-  --color-parchment-500: #9a7650;
-  --color-parchment-600: #7a5a38;
-  --color-parchment-700: #5a3e24;
+  /* Tons 400-700 são texto secundário sobre fundo escuro — clareados pra legibilidade
+     (feedback de playtest: rótulos como "NEX" quase sumiam). 800+ seguem escuros (bordas/fundos). */
+  --color-parchment-400: #c9a883;
+  --color-parchment-500: #b08d63;
+  --color-parchment-600: #9a7650;
+  --color-parchment-700: #7d5c3c;
   --color-parchment-800: #3a2614;
   --color-parchment-900: #231608;
   --color-parchment-950: #120c04;

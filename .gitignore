@@ -25,3 +25,6 @@ docs/_book-extracts/
 *.njsproj
 *.sln
 *.sw?
+
+# Claude Code (config local de máquina)
+.claude/

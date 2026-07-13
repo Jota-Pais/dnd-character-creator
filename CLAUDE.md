@@ -34,15 +34,16 @@ Toda decisão de produto e design serve a esse objetivo: guiar o iniciante sem t
 - Pontos de vida por dois métodos: **média** (`average`) ou **rolagem** (`roll`) dos dados de vida acima do nível 1
 - Raças e classes do livro básico (PHB 2014)
 - Sistema de magias (truques e magias por nível, slots, CD e bônus de ataque derivados do nível)
-- Fluxo de criação completo (8 passos):
+- Fluxo de criação completo (9 passos):
   1. Nome (e nível)
   2. Raça
   3. Classe
   4. Atributos
-  5. Magias (apenas para conjuradores; após Atributos para o jogador já conhecer os modificadores)
-  6. Antecedente
-  7. Equipamento
-  8. Revisão
+  5. Aprimoramentos (ASI/talentos; apenas para níveis com espaço de ASI, ou Humano Variante)
+  6. Magias (apenas para conjuradores; após Atributos/Aprimoramentos para o jogador já conhecer os modificadores finais)
+  7. Antecedente
+  8. Equipamento
+  9. Revisão
 - Salvar/carregar localmente
 - Exportar/importar ficha como JSON (portabilidade entre dispositivos)
 

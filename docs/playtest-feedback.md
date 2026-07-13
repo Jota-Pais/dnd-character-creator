@@ -277,3 +277,7 @@
 ### F28 — Trilhas em colunas no passo Progressão (Ordem)
 - **Relato:** a página de Progressão tinha muito espaço vazio; o usuário pediu uma coluna por trilha, com os detalhes à mostra sem precisar clicar.
 - **Status:** ✅ FEITO (2026-07-12) — grid de até 5 colunas na largura da página, cada card com descrição, requisito e os 4 poderes (🔒 nos não alcançados); demais seções seguem na coluna central.
+
+### F29 — NEX 0% existe; 0→5% conta como nível de exposição (ruling do usuário, Ordem)
+- **Relato:** dá sim pra fazer ficha NEX 0%, e um ocultista NEX 5% com Vig 1 tem **16 PV** — os valores "iniciais" das classes valem no 0%, e cada degrau (inclusive 0→5%) concede os ganhos por NEX de PV/PE/SAN.
+- **Status:** ✅ FEITO (2026-07-12) — NEX_STEPS ganhou o 0%; PV/PE/SAN derivam com +1 degrau em todos os NEX (ocultista 5% Vig1 = 16 PV ✓); limite de PE preservado pela Tabela 1.2 (5%→1, 10%→2... mínimo 1 no 0%); rituais seguem 3 iniciais no 5% (+1 por NEX acima); slider do Nome começa no 0% ("pessoas comuns"); Progressão vazia até 5%. Testes recalculados (580 no total).

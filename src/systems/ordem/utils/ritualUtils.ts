@@ -44,8 +44,8 @@ export function getMaxRitualCircle(nex: number): OrdemRitualCircle {
 }
 
 export function getRitualSlotsCount(nex: number): number {
-  // Escolhido pelo Outro Lado: 3 iniciais (NEX 5%) + 1 por NEX ganho
-  return 3 + getNexIndex(nex)
+  // Escolhido pelo Outro Lado: 3 iniciais (NEX 5%) + 1 por NEX ganho acima de 5%.
+  return 3 + Math.max(0, getNexIndex(nex) - 1)
 }
 
 /**
@@ -55,7 +55,7 @@ export function getRitualSlotsCount(nex: number): number {
  */
 export function getRitualSlotNex(slotIndex: number): number {
   if (slotIndex < 3) return 5
-  return NEX_STEPS[slotIndex - 2]
+  return NEX_STEPS[slotIndex - 1]
 }
 
 export function getAvailableRituals(maxCircle: OrdemRitualCircle): OrdemRitual[] {

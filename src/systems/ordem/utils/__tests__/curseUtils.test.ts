@@ -111,9 +111,9 @@ describe('bônus das maldições na ficha', () => {
   it('Disposição (+1 Vigor) aumenta o PV retroativamente, como qualquer Vigor', () => {
     const base = makeDraft({ nex: 20, equipmentChoices: ['utensilio'] })
     const cursed = makeDraft({ nex: 20, equipmentChoices: ['utensilio'], equipmentCurses: { utensilio: ['disposicao'] } })
-    // NEX 20% = 3 degraus. Vigor 1→2: 20+2 + 3×(4+2) = 40 (vs 36 sem a maldição).
-    expect(getCursedDerivedStats(base, combatant).hp).toBe(36)
-    expect(getCursedDerivedStats(cursed, combatant).hp).toBe(40)
+    // NEX 20% = 4 degraus (desde o 0%). Vigor 1→2: 20+2 + 4×(4+2) = 46 (vs 41 sem a maldição).
+    expect(getCursedDerivedStats(base, combatant).hp).toBe(41)
+    expect(getCursedDerivedStats(cursed, combatant).hp).toBe(46)
   })
 
   it('Carisma (+1 Presença) NÃO fornece PE adicionais, mas aparece no atributo da ficha', () => {

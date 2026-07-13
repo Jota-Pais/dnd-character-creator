@@ -28,36 +28,39 @@ function makeDraft(overrides: Partial<OrdemCharacterDraft>): OrdemCharacterDraft
 }
 
 describe('deriveStats', () => {
-  it('combatente em NEX 5%: PV = 20+Vig, PE = 2+Pre, Sanidade = 12 (flat)', () => {
+  // Ruling do usuário (2026-07-12): os valores "iniciais" valem no NEX 0%, e 0→5% já é um novo
+  // nível de exposição — ocultista NEX 5% com Vig 1 tem 16 PV (12+1 + 2+1).
+  it('NEX 0%: valores iniciais puros (combatente: 20+Vig, 2+Pre, SAN 12)', () => {
     const combatant = getOrdemClass('combatant')!
-    const stats = deriveStats(combatant, { agility: 1, strength: 1, intellect: 1, presence: 2, vigor: 3 }, 5)
+    const stats = deriveStats(combatant, { agility: 1, strength: 1, intellect: 1, presence: 2, vigor: 3 }, 0)
     expect(stats).toEqual({ hp: 23, pe: 4, sanity: 12, defense: 11 })
   })
 
-  it('ocultista em NEX 5%: PV = 12+Vig, PE = 4+Pre, Sanidade = 20 (a maior das 3 classes)', () => {
+  it('ocultista em NEX 5% (1 degrau): 12+Vig + (2+Vig) de PV — Vig 1 dá 16 PV', () => {
     const occultist = getOrdemClass('occultist')!
-    const stats = deriveStats(occultist, { agility: 1, strength: 1, intellect: 1, presence: 3, vigor: 0 }, 5)
-    expect(stats).toEqual({ hp: 12, pe: 7, sanity: 20, defense: 11 })
+    const stats = deriveStats(occultist, { agility: 1, strength: 1, intellect: 1, presence: 1, vigor: 1 }, 5)
+    expect(stats.hp).toBe(16)
+    const stats2 = deriveStats(occultist, { agility: 1, strength: 1, intellect: 1, presence: 3, vigor: 0 }, 5)
+    expect(stats2).toEqual({ hp: 14, pe: 14, sanity: 25, defense: 11 })
   })
 
-  it('especialista em NEX 5%: PV = 16+Vig, PE = 3+Pre, Sanidade = 16', () => {
+  it('especialista em NEX 5%: 16+Vig + (3+Vig)', () => {
     const specialist = getOrdemClass('specialist')!
     const stats = deriveStats(specialist, { agility: 1, strength: 1, intellect: 1, presence: 1, vigor: 1 }, 5)
-    expect(stats).toEqual({ hp: 17, pe: 4, sanity: 16, defense: 11 })
+    expect(stats).toEqual({ hp: 21, pe: 8, sanity: 20, defense: 11 })
   })
 
-  it('combatente em NEX 10% (1 degrau além do inicial): soma +4+Vig de PV e +2+Pre de PE', () => {
+  it('combatente em NEX 10% (2 degraus desde o 0%)', () => {
     const combatant = getOrdemClass('combatant')!
     const stats = deriveStats(combatant, { agility: 1, strength: 1, intellect: 1, presence: 1, vigor: 1 }, 10)
-    // NEX5%: 20+1=21 PV, 2+1=3 PE, 12 SAN. +1 degrau: +4+1=5 PV, +2+1=3 PE, +3 SAN.
-    expect(stats).toEqual({ hp: 26, pe: 6, sanity: 15, defense: 11 })
+    // NEX0%: 20+1=21 PV, 2+1=3 PE, 12 SAN. +2 degraus: +4+1=5 PV, +2+1=3 PE, +3 SAN cada.
+    expect(stats).toEqual({ hp: 31, pe: 9, sanity: 18, defense: 11 })
   })
 
-  it('ocultista em NEX 99% (19 degraus além do inicial)', () => {
+  it('ocultista em NEX 99% (20 degraus desde o 0%)', () => {
     const occultist = getOrdemClass('occultist')!
     const stats = deriveStats(occultist, { agility: 1, strength: 1, intellect: 1, presence: 1, vigor: 1 }, 99)
-    // NEX5%: 12+1=13 PV, 4+1=5 PE, 20 SAN. +19 degraus: +2+1=3 PV/degrau, +4+1=5 PE/degrau, +5 SAN/degrau.
-    expect(stats).toEqual({ hp: 13 + 19 * 3, pe: 5 + 19 * 5, sanity: 20 + 19 * 5, defense: 11 })
+    expect(stats).toEqual({ hp: 13 + 20 * 3, pe: 5 + 20 * 5, sanity: 20 + 20 * 5, defense: 11 })
   })
 
   it('Defesa = 10 + Agilidade + bônus de proteção (livro pág. 43)', () => {
@@ -292,12 +295,12 @@ describe('getEffectiveAttributes', () => {
       attributes: { agility: 1, strength: 1, intellect: 1, presence: 1, vigor: 1 },
       attributeIncreaseChoices: ['vigor'],
     })
-    // NEX 20% = 3 degraus além do 5%. Vigor 1→2: +1 no inicial e +1 por degrau = +4 PV.
+    // NEX 20% = 4 degraus desde o 0%. Vigor 1→2: +1 no inicial e +1 por degrau = +5 PV.
     const hpBefore = deriveStats(combatant, getEffectiveAttributes(base), 20).hp
     const hpAfter = deriveStats(combatant, getEffectiveAttributes(increased), 20).hp
-    expect(hpBefore).toBe(20 + 1 + 3 * (4 + 1)) // 36
-    expect(hpAfter).toBe(20 + 2 + 3 * (4 + 2)) // 40
-    expect(hpAfter - hpBefore).toBe(1 + 3)
+    expect(hpBefore).toBe(20 + 1 + 4 * (4 + 1)) // 41
+    expect(hpAfter).toBe(20 + 2 + 4 * (4 + 2)) // 46
+    expect(hpAfter - hpBefore).toBe(1 + 4)
   })
 
   it('F16: +1 Presença (Aumento de Atributo) aumenta o PE retroativamente em todos os degraus de NEX', () => {
@@ -306,8 +309,8 @@ describe('getEffectiveAttributes', () => {
       attributes: { agility: 1, strength: 1, intellect: 1, presence: 2, vigor: 0 },
       attributeIncreaseChoices: ['presence'],
     })
-    // NEX 50% = 9 degraus além do 5%. Presença efetiva 3: PE = 4+3 + 9×(4+3).
-    expect(deriveStats(occultist, getEffectiveAttributes(increased), 50).pe).toBe(4 + 3 + 9 * (4 + 3))
+    // NEX 50% = 10 degraus desde o 0%. Presença efetiva 3: PE = 4+3 + 10×(4+3).
+    expect(deriveStats(occultist, getEffectiveAttributes(increased), 50).pe).toBe(4 + 3 + 10 * (4 + 3))
   })
 })
 

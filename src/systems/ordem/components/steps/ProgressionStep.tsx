@@ -44,7 +44,7 @@ export function ProgressionStep() {
   const requiredGradeSlots = getRequiredSkillGradeSlots(draft.nex)
   const showVersatility = hasVersatility(draft.nex)
 
-  if (draft.nex === 5) {
+  if (draft.nex <= 5) {
     return (
       <div className="max-w-lg mx-auto text-center">
         <div className="text-5xl mb-3">🕯️</div>

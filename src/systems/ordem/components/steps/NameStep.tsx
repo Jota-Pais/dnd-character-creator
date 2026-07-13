@@ -83,8 +83,8 @@ export function NameStep() {
         />
         <p className="text-parchment-200 font-fantasy font-bold text-lg mt-1">NEX {nex}%</p>
         <p className="text-parchment-600 text-xs mt-1">
-          Todo agente novo começa em 5%. Suba a barra se quiser criar um agente já experiente
-          (com trilha, poderes e mais PV/PE/Sanidade já desenvolvidos).
+          Pessoas comuns têm NEX 0%; agentes novos começam em 5%. Suba a barra se quiser criar
+          um agente já experiente (com trilha, poderes e mais PV/PE/Sanidade já desenvolvidos).
         </p>
       </div>
 

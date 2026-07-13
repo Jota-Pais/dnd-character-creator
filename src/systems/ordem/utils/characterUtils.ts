@@ -240,6 +240,15 @@ export function hasLaminaMaldita(draft: OrdemCharacterDraft): boolean {
 }
 
 /**
+ * Perícia de ataque alternativa VÁLIDA de uma arma: o teste é fixo pela arma (Luta corpo a
+ * corpo / Pontaria à distância); a única exceção do livro é usar Ocultismo com a arma
+ * amaldiçoada via Lâmina Maldita. Escolhas fora disso são ignoradas.
+ */
+export function getWeaponSkillOverride(draft: OrdemCharacterDraft, uid: string): 'occultism' | undefined {
+  return draft.weaponSkillChoices[uid] === 'occultism' && hasLaminaMaldita(draft) ? 'occultism' : undefined
+}
+
+/**
  * Custo final de conjuração de um ritual conhecido, com as reduções determinísticas:
  * Ritual Predileto (−1 PE no ritual escolhido) e Lâmina Maldita (−1 PE no Amaldiçoar Arma).
  * As reduções se acumulam (texto do Ritual Predileto); nunca abaixo de 0.

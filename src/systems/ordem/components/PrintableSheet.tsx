@@ -4,7 +4,7 @@ import { getOrdemClass } from '../utils/classUtils'
 import { SKILLS } from '../utils/skillUtils'
 import { getTrilha } from '../utils/trilhaUtils'
 import { getPower } from '../utils/powerUtils'
-import { getTrainedSkills, getSkillGrade, getRitualCost, hasClassPower } from '../utils/characterUtils'
+import { getTrainedSkills, getSkillGrade, getRitualCost, hasClassPower, getWeaponSkillOverride } from '../utils/characterUtils'
 import { getReachedTrilhaSlots, getPeLimit } from '../utils/progressionUtils'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount } from '../utils/ritualUtils'
 import {
@@ -53,7 +53,7 @@ export function PrintableSheet() {
   const weaponAttacks = equipmentUnits
     .filter((u): u is { uid: string; item: OrdemWeapon } => u.item.type === 'weapon')
     .map(({ uid, item }) => ({
-      ...getOrdemWeaponAttack(item, draft, draft.equipmentModifications[uid] ?? [], draft.equipmentCurses[uid] ?? [], draft.weaponSkillChoices[uid]),
+      ...getOrdemWeaponAttack(item, draft, draft.equipmentModifications[uid] ?? [], draft.equipmentCurses[uid] ?? [], getWeaponSkillOverride(draft, uid)),
       name: getInstanceLabel(draft, uid),
     }))
   const cursedUnits = equipmentUnits.filter(u => (draft.equipmentCurses[u.uid]?.length ?? 0) > 0)

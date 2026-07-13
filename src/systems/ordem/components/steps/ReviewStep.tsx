@@ -5,7 +5,7 @@ import { getSkillName } from '../../utils/skillUtils'
 import { getTrilha } from '../../utils/trilhaUtils'
 import { getPower } from '../../utils/powerUtils'
 import {
-  getTrainedSkills, getSkillGrade, hasFavoredRitualPower, hasLaminaMaldita, getRitualCost, hasClassPower,
+  getTrainedSkills, getSkillGrade, hasFavoredRitualPower, hasLaminaMaldita, getRitualCost, hasClassPower, getWeaponSkillOverride,
 } from '../../utils/characterUtils'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, ELEMENT_NAMES } from '../../utils/ritualUtils'
 import {
@@ -53,7 +53,7 @@ export function ReviewStep() {
     .filter((u): u is { uid: string; item: OrdemEquipment } => Boolean(u.item))
   const weaponUnits = equipmentUnits.filter((u): u is { uid: string; item: OrdemWeapon } => u.item.type === 'weapon')
   const weaponAttacks = weaponUnits.map(({ uid, item }) => ({
-    ...getOrdemWeaponAttack(item, draft, draft.equipmentModifications[uid] ?? [], draft.equipmentCurses[uid] ?? [], draft.weaponSkillChoices[uid]),
+    ...getOrdemWeaponAttack(item, draft, draft.equipmentModifications[uid] ?? [], draft.equipmentCurses[uid] ?? [], getWeaponSkillOverride(draft, uid)),
     name: getInstanceLabel(draft, uid),
   }))
   const cursedUnits = equipmentUnits.filter(u => (draft.equipmentCurses[u.uid]?.length ?? 0) > 0)
@@ -62,7 +62,9 @@ export function ReviewStep() {
   // Armas com a maldição Ritualística podem ter um ritual conhecido pré-armazenado (opcional).
   const ritualisticUnits = weaponUnits.filter(u => (draft.equipmentCurses[u.uid] ?? []).includes('ritualistica'))
   const showStoredRitualPicker = ritualisticUnits.length > 0 && rituals.length > 0
-  const showPersonalization = showFavoriteRitualPicker || weaponUnits.length > 0
+  // Perícia de ataque só é escolhível com a Lâmina Maldita (única exceção do livro: Ocultismo).
+  const showWeaponSkillPicker = hasLaminaMaldita(draft) && weaponUnits.length > 0
+  const showPersonalization = showFavoriteRitualPicker || showStoredRitualPicker || showWeaponSkillPicker
 
   const setWeaponSkill = (uid: string, value: string) => {
     const choices = { ...draft.weaponSkillChoices }
@@ -227,27 +229,23 @@ export function ReviewStep() {
               </div>
             )}
 
-            {weaponUnits.length > 0 && (
+            {showWeaponSkillPicker && (
               <div>
                 <p className="text-parchment-400 text-xs font-semibold mb-1">
-                  Com qual perícia você realiza os ataques?
-                  {hasLaminaMaldita(draft) && (
-                    <span className="text-parchment-600 font-normal"> (Lâmina Maldita: com a arma amaldiçoada, você pode usar Ocultismo)</span>
-                  )}
+                  Perícia de ataque
+                  <span className="text-parchment-600 font-normal"> (Lâmina Maldita: com a arma amaldiçoada, você pode usar Ocultismo no lugar de Luta/Pontaria)</span>
                 </p>
                 <div className="space-y-1">
                   {weaponUnits.map(({ uid }) => (
                     <div key={uid} className="flex items-center gap-2">
                       <span className="text-parchment-500 text-xs w-36 shrink-0 truncate">{getInstanceLabel(draft, uid)}</span>
                       <select
-                        value={draft.weaponSkillChoices[uid] ?? 'auto'}
+                        value={draft.weaponSkillChoices[uid] === 'occultism' ? 'occultism' : 'auto'}
                         onChange={e => setWeaponSkill(uid, e.target.value)}
                         className="flex-1 bg-parchment-950 border border-parchment-800 rounded px-2 py-1 text-parchment-300 text-xs"
                       >
                         <option value="auto">Automática (Luta corpo a corpo / Pontaria à distância)</option>
-                        <option value="fighting">Luta</option>
-                        <option value="aim">Pontaria</option>
-                        <option value="occultism">Ocultismo (Lâmina Maldita, com a arma amaldiçoada)</option>
+                        <option value="occultism">Ocultismo (com a arma amaldiçoada)</option>
                       </select>
                     </div>
                   ))}

@@ -43,8 +43,9 @@ export function NameStep() {
           WebkitMaskRepeat: 'no-repeat',
           maskPosition: 'center',
           WebkitMaskPosition: 'center',
-          maskSize: 'min(115vh, 115vw)',
-          WebkitMaskSize: 'min(115vh, 115vw)',
+          // Cabe inteiro na viewport (sem cortes em cima/embaixo), no maior tamanho possível.
+          maskSize: 'min(96vh, 96vw)',
+          WebkitMaskSize: 'min(96vh, 96vw)',
         }}
       />
 

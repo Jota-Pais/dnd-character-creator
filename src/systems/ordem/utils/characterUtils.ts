@@ -1,7 +1,7 @@
 import type { OrdemCharacterDraft } from '../types/character'
 import type { OrdemClass } from '../types/class'
 import type { Trilha } from '../types/trilha'
-import type { OrdemRitual } from '../types/ritual'
+import type { OrdemRitual, OrdemElement } from '../types/ritual'
 import { getOrigin } from './originUtils'
 import { getOrdemClass, getFreeSkillChoiceCount } from './classUtils'
 import { getTrilhasByClass } from './trilhaUtils'
@@ -48,10 +48,21 @@ export function getOriginSkills(draft: OrdemCharacterDraft): string[] {
  * Perícias fixas da classe entram sempre; grupos de escolha e escolhas livres só contam se preenchidos.
  */
 export function getTrainedSkills(draft: OrdemCharacterDraft): string[] {
+  // Treinamento em Perícia (poder): cada perícia escolhida vira treinada (F27).
+  const powerPicks = getPowerSkillPicks(draft)
+  const origin = getOriginSkills(draft)
+  const cls = draft.class ? getOrdemClass(draft.class) : undefined
+  if (!cls) return dedupe([...origin, ...powerPicks])
+
+  const groupPicks = draft.classChoiceGroupPicks.filter((s): s is string => Boolean(s))
+  return dedupe([...origin, ...cls.skills.fixed, ...groupPicks, ...draft.classFreeSkillChoices, ...powerPicks])
+}
+
+/** Perícias treinadas SEM os picks do poder Treinamento em Perícia (base pra saber o que é upgrade). */
+function getTrainedSkillsWithoutPowerPicks(draft: OrdemCharacterDraft): string[] {
   const origin = getOriginSkills(draft)
   const cls = draft.class ? getOrdemClass(draft.class) : undefined
   if (!cls) return dedupe(origin)
-
   const groupPicks = draft.classChoiceGroupPicks.filter((s): s is string => Boolean(s))
   return dedupe([...origin, ...cls.skills.fixed, ...groupPicks, ...draft.classFreeSkillChoices])
 }
@@ -151,9 +162,58 @@ const GRADES: SkillGrade[] = ['destreinado', 'treinado', 'veterano', 'expert']
 /** Grau efetivo de uma perícia: treinado se estiver entre as treinadas, +1 grau por vez que aparecer nas escolhas de Grau de Treinamento. */
 export function getSkillGrade(draft: OrdemCharacterDraft, skillId: string): SkillGrade {
   const baseIndex = getTrainedSkills(draft).includes(skillId) ? 1 : 0
-  const upgrades = draft.skillGradeChoices.flat().filter(id => id === skillId).length
+  // Treinamento em Perícia numa perícia JÁ treinada (fora do próprio poder) sobe o grau
+  // (NEX 35%+ → veterano, 70%+ → expert); a 1ª escolha numa destreinada só treina.
+  const baseTrained = getTrainedSkillsWithoutPowerPicks(draft).includes(skillId)
+  const powerPicks = getPowerSkillPicks(draft).filter(id => id === skillId)
+  const powerUpgrades = baseTrained ? powerPicks.length : Math.max(0, powerPicks.length - 1)
+  const upgrades = draft.skillGradeChoices.flat().filter(id => id === skillId).length + powerUpgrades
   const index = Math.min(GRADES.length - 1, baseIndex + upgrades)
   return GRADES[index]
+}
+
+// ── Poderes com escolha embutida (F27) ─────────────────────────────────────────
+
+/** Poderes que exigem parâmetros: quantos e de que tipo. */
+export const POWER_PARAM_SPECS: Record<string, { kind: 'skills' | 'element'; count: number }> = {
+  'skill-training': { kind: 'skills', count: 2 },
+  'element-specialist': { kind: 'element', count: 1 },
+  'element-master': { kind: 'element', count: 1 },
+}
+
+/** Instâncias de poderes escolhidos que exigem parâmetro (slots regulares + Versatilidade). */
+export function getPowerParamSlots(draft: OrdemCharacterDraft): { key: string; powerId: string }[] {
+  const slots: { key: string; powerId: string }[] = []
+  draft.powerChoices.forEach((id, i) => {
+    if (id && POWER_PARAM_SPECS[id]) slots.push({ key: `slot-${i}`, powerId: id })
+  })
+  if (draft.versatilityChoice?.kind === 'power' && POWER_PARAM_SPECS[draft.versatilityChoice.powerId]) {
+    slots.push({ key: 'versatility', powerId: draft.versatilityChoice.powerId })
+  }
+  return slots
+}
+
+/** Perícias escolhidas em todas as instâncias de Treinamento em Perícia. */
+export function getPowerSkillPicks(draft: OrdemCharacterDraft): string[] {
+  return getPowerParamSlots(draft)
+    .filter(s => s.powerId === 'skill-training')
+    .flatMap(s => draft.powerParams[s.key] ?? [])
+    .filter(Boolean)
+}
+
+/** Elemento escolhido pra um poder de elemento (primeira instância preenchida). */
+export function getChosenElementForPower(draft: OrdemCharacterDraft, powerId: string): OrdemElement | null {
+  const slot = getPowerParamSlots(draft).find(s => s.powerId === powerId && (draft.powerParams[s.key] ?? []).length > 0)
+  return slot ? ((draft.powerParams[slot.key][0] as OrdemElement) ?? null) : null
+}
+
+/** Todas as instâncias de poderes com parâmetro estão preenchidas? (valida o passo Progressão) */
+export function arePowerParamsComplete(draft: OrdemCharacterDraft): boolean {
+  return getPowerParamSlots(draft).every(s => {
+    const spec = POWER_PARAM_SPECS[s.powerId]
+    const values = (draft.powerParams[s.key] ?? []).filter(Boolean)
+    return values.length === spec.count
+  })
 }
 
 // ── Personalização da ficha (F24) ──────────────────────────────────────────────
@@ -194,6 +254,15 @@ export function getRitualCost(draft: OrdemCharacterDraft, ritual: OrdemRitual): 
   if (ritual.id === 'amaldicoar-arma' && hasLaminaMaldita(draft)) {
     cost -= 1
     notes.push('Lâmina Maldita −1')
+  }
+  // Mestre em Elemento: −1 PE nos rituais do elemento escolhido (multi-elemento usa o escolhido ao aprender).
+  const masterElement = getChosenElementForPower(draft, 'element-master')
+  if (masterElement) {
+    const ritualElement = ritual.elements.length > 1 ? draft.ritualElementChoices[ritual.id] : ritual.elements[0]
+    if (ritualElement === masterElement) {
+      cost -= 1
+      notes.push('Mestre em Elemento −1')
+    }
   }
   return { cost: Math.max(0, cost), notes }
 }

@@ -74,6 +74,11 @@ export type OrdemCharacterDraft = {
   equipmentCurses: Record<string, string[]>
   /** Escolhas de parâmetro de maldição ("uid:curseId" → elemento ou ritual de 1º círculo). */
   equipmentCurseChoices: Record<string, string>
+  /**
+   * Parâmetros de poderes com escolha embutida, por slot ("slot-0".."slot-5" ou "versatility"):
+   * Treinamento em Perícia → 2 ids de perícia; Especialista/Mestre em Elemento → 1 elemento.
+   */
+  powerParams: Record<string, string[]>
   /** Ritual escolhido pro poder Ritual Predileto (custo −1 PE). Null = não escolhido. */
   favoriteRitual: string | null
   /** Perícia de ataque por unidade de arma (uid → perícia); ausente = automática (Luta/Pontaria). */
@@ -110,6 +115,7 @@ export const EMPTY_DRAFT: OrdemCharacterDraft = {
   equipmentModifications: {},
   equipmentCurses: {},
   equipmentCurseChoices: {},
+  powerParams: {},
   favoriteRitual: null,
   weaponSkillChoices: {},
 }

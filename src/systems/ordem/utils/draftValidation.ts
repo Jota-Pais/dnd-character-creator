@@ -8,6 +8,7 @@ import {
   getRequiredPowerSlots,
   getRequiredAttributeIncreaseSlots,
   getRequiredSkillGradeSlots,
+  arePowerParamsComplete,
 } from './characterUtils'
 import { hasTrilha, hasVersatility } from './progressionUtils'
 import { isRitualStepComplete } from './ritualUtils'
@@ -67,6 +68,10 @@ export function isStepComplete(draft: OrdemCharacterDraft, step: WizardStep): bo
       if (gradeSlotsFilled !== requiredGradeSlots) return false
 
       if (hasVersatility(draft.nex) && !draft.versatilityChoice) return false
+
+      // Poderes com escolha embutida (Treinamento em Perícia, Especialista/Mestre em Elemento)
+      // precisam dos parâmetros preenchidos (F27).
+      if (!arePowerParamsComplete(draft)) return false
 
       return true
     }
@@ -128,6 +133,9 @@ export function sanitizeImportedDraft(parsed: unknown): OrdemCharacterDraft | nu
       : {},
     equipmentCurseChoices: p.equipmentCurseChoices && typeof p.equipmentCurseChoices === 'object' && !Array.isArray(p.equipmentCurseChoices)
       ? p.equipmentCurseChoices
+      : {},
+    powerParams: p.powerParams && typeof p.powerParams === 'object' && !Array.isArray(p.powerParams)
+      ? p.powerParams
       : {},
     favoriteRitual: typeof p.favoriteRitual === 'string' ? p.favoriteRitual : null,
     weaponSkillChoices: p.weaponSkillChoices && typeof p.weaponSkillChoices === 'object' && !Array.isArray(p.weaponSkillChoices)

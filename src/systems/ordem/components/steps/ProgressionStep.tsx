@@ -11,8 +11,13 @@ import {
   getRequiredPowerSlots,
   getRequiredAttributeIncreaseSlots,
   getRequiredSkillGradeSlots,
+  getSkillGrade,
+  POWER_PARAM_SPECS,
 } from '../../utils/characterUtils'
 import { hasTrilha, hasVersatility } from '../../utils/progressionUtils'
+import { SKILLS } from '../../utils/skillUtils'
+import { ELEMENT_NAMES } from '../../utils/ritualUtils'
+import type { OrdemElement } from '../../types/ritual'
 import { ATTRIBUTES, ATTRIBUTE_MAX } from '../../utils/attributeUtils'
 import { isStepComplete } from '../../utils/draftValidation'
 import { StepNav } from '../common/StepNav'
@@ -188,11 +193,72 @@ function PowerSection({ draft, cls, required, onPick }: {
                   {options.find(p => p.id === chosen)?.description}
                 </p>
               )}
+              {chosen && POWER_PARAM_SPECS[chosen] && (
+                <PowerParamPicker draft={draft} slotKey={`slot-${slot}`} powerId={chosen} />
+              )}
             </div>
           )
         })}
       </div>
     </Section>
+  )
+}
+
+/** Escolhas embutidas de um poder (F27): 2 perícias (Treinamento) ou 1 elemento (Especialista/Mestre). */
+function PowerParamPicker({ draft, slotKey, powerId }: {
+  draft: import('../../types/character').OrdemCharacterDraft
+  slotKey: string
+  powerId: string
+}) {
+  const updateDraft = useOrdemStore(state => state.updateDraft)
+  const spec = POWER_PARAM_SPECS[powerId]
+  const values = draft.powerParams[slotKey] ?? []
+
+  const setValue = (index: number, value: string) => {
+    const next = [...values]
+    next[index] = value
+    updateDraft({ powerParams: { ...draft.powerParams, [slotKey]: next } })
+  }
+
+  if (spec.kind === 'element') {
+    const ELEMENTS: OrdemElement[] = ['knowledge', 'energy', 'death', 'blood']
+    return (
+      <div className="mt-1.5">
+        <p className="text-parchment-600 text-[11px] mb-1">Escolha o elemento:</p>
+        <div className="flex flex-wrap gap-1.5">
+          {ELEMENTS.map(el => (
+            <Chip key={el} label={ELEMENT_NAMES[el]} active={values[0] === el} onClick={() => setValue(0, el)} />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  // Treinamento em Perícia: destreinada → treinada; a partir de NEX 35%/70% pode subir grau de treinada/veterana.
+  const eligible = (skillId: string, index: number) => {
+    if (values.includes(skillId) && values[index] !== skillId) return false
+    const grade = getSkillGrade(draft, skillId)
+    if (grade === 'destreinado' || values[index] === skillId) return true
+    if (grade === 'treinado') return draft.nex >= 35
+    if (grade === 'veterano') return draft.nex >= 70
+    return false
+  }
+  return (
+    <div className="mt-1.5 space-y-1">
+      {[0, 1].map(i => (
+        <select
+          key={i}
+          value={values[i] ?? ''}
+          onChange={e => setValue(i, e.target.value)}
+          className="w-full bg-parchment-950 border border-parchment-800 rounded px-2 py-1 text-parchment-300 text-xs"
+        >
+          <option value="" disabled>Escolha a {i + 1}ª perícia…</option>
+          {SKILLS.filter(s => eligible(s.id, i)).map(s => (
+            <option key={s.id} value={s.id}>{s.name}{getSkillGrade(draft, s.id) !== 'destreinado' ? ` (subir grau)` : ''}</option>
+          ))}
+        </select>
+      ))}
+    </div>
   )
 }
 

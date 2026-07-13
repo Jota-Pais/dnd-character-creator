@@ -10,6 +10,7 @@ import {
   getRitualCost,
   hasFavoredRitualPower,
   hasLaminaMaldita,
+  arePowerParamsComplete,
   getEffectiveAttributes,
   getSkillGrade,
   getAvailablePowerOptions,
@@ -221,6 +222,42 @@ describe('personalização da ficha (F24) — Ritual Predileto e Lâmina Maldita
     expect(getRitualCost(dupla, amaldicoarArma)).toEqual({ cost: 0, notes: ['predileto −1', 'Lâmina Maldita −1'] })
     // Outra trilha não reduz.
     expect(getRitualCost(makeDraft({ trilha: 'graduado', nex: 10 }), amaldicoarArma).cost).toBe(1)
+  })
+})
+
+describe('poderes com escolha embutida (F27)', () => {
+  it('Treinamento em Perícia: destreinada vira treinada; já treinada sobe de grau (NEX 35%+)', () => {
+    const draft = makeDraft({
+      class: 'occultist', // Ocultismo/Vontade fixas
+      nex: 35,
+      powerChoices: ['skill-training'],
+      powerParams: { 'slot-0': ['stealth', 'occultism'] },
+    })
+    expect(getTrainedSkills(draft)).toContain('stealth')
+    expect(getSkillGrade(draft, 'stealth')).toBe('treinado')
+    expect(getSkillGrade(draft, 'occultism')).toBe('veterano') // já era treinada pela classe
+  })
+
+  it('validação: poder com parâmetro pendente bloqueia; preenchido libera', () => {
+    const pendente = makeDraft({ powerChoices: ['skill-training'] })
+    expect(arePowerParamsComplete(pendente)).toBe(false)
+    expect(arePowerParamsComplete(makeDraft({
+      powerChoices: ['skill-training'],
+      powerParams: { 'slot-0': ['stealth', 'perception'] },
+    }))).toBe(true)
+    // Poder sem parâmetro não exige nada.
+    expect(arePowerParamsComplete(makeDraft({ powerChoices: ['potent-ritual'] }))).toBe(true)
+  })
+
+  it('Mestre em Elemento: −1 PE nos rituais do elemento escolhido', () => {
+    const draft = makeDraft({
+      powerChoices: ['element-master'],
+      powerParams: { 'slot-0': ['energy'] },
+    })
+    const ritualEnergia = { id: 'eletrocussao', circle: 1, elements: ['energy'] } as OrdemRitual
+    const ritualMorte = { id: 'decadencia', circle: 1, elements: ['death'] } as OrdemRitual
+    expect(getRitualCost(draft, ritualEnergia)).toEqual({ cost: 0, notes: ['Mestre em Elemento −1'] })
+    expect(getRitualCost(draft, ritualMorte).cost).toBe(1)
   })
 })
 

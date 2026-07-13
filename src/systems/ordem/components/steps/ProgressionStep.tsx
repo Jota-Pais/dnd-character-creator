@@ -1,7 +1,6 @@
 import { useOrdemStore } from '../../stores/characterStore'
 import { getOrdemClass } from '../../utils/classUtils'
 import { getSkillName } from '../../utils/skillUtils'
-import { getTrilha } from '../../utils/trilhaUtils'
 import {
   getAvailableTrilhaOptions,
   getAvailableVersatilityTrilhaOptions,
@@ -60,7 +59,7 @@ export function ProgressionStep() {
   }
 
   return (
-    <div className="max-w-lg mx-auto space-y-4 pb-16">
+    <div className="max-w-6xl mx-auto space-y-4 pb-16">
       <div className="text-center mb-2">
         <h2 className="font-fantasy text-2xl font-bold text-parchment-200">Progressão até NEX {draft.nex}%</h2>
         <p className="text-parchment-500 text-sm mt-1">
@@ -68,27 +67,30 @@ export function ProgressionStep() {
         </p>
       </div>
 
+      {/* A trilha ocupa a largura toda (uma coluna por trilha, detalhes sempre visíveis). */}
       {showTrilha && (
         <TrilhaSection draft={draft} cls={cls} onSelect={setTrilha} />
       )}
 
-      {requiredPowers > 0 && (
-        <PowerSection draft={draft} cls={cls} required={requiredPowers} onPick={setPowerChoice} />
-      )}
+      <div className="max-w-lg mx-auto space-y-4">
+        {requiredPowers > 0 && (
+          <PowerSection draft={draft} cls={cls} required={requiredPowers} onPick={setPowerChoice} />
+        )}
 
-      {requiredAttrIncreases > 0 && (
-        <AttributeIncreaseSection draft={draft} required={requiredAttrIncreases} onPick={setAttributeIncreaseChoice} />
-      )}
+        {requiredAttrIncreases > 0 && (
+          <AttributeIncreaseSection draft={draft} required={requiredAttrIncreases} onPick={setAttributeIncreaseChoice} />
+        )}
 
-      {requiredGradeSlots > 0 && (
-        <SkillGradeSection draft={draft} cls={cls} required={requiredGradeSlots} onPick={setSkillGradeChoice} />
-      )}
+        {requiredGradeSlots > 0 && (
+          <SkillGradeSection draft={draft} cls={cls} required={requiredGradeSlots} onPick={setSkillGradeChoice} />
+        )}
 
-      {showVersatility && (
-        <VersatilitySection draft={draft} cls={cls} onPick={setVersatilityChoice} />
-      )}
+        {showVersatility && (
+          <VersatilitySection draft={draft} cls={cls} onPick={setVersatilityChoice} />
+        )}
 
-      <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={canAdvance} />
+        <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={canAdvance} />
+      </div>
     </div>
   )
 }
@@ -120,20 +122,19 @@ function Chip({ label, active, disabled, onClick }: { label: string; active: boo
 
 function TrilhaSection({ draft, cls, onSelect }: { draft: import('../../types/character').OrdemCharacterDraft; cls: import('../../types/class').OrdemClass; onSelect: (id: string) => void }) {
   const options = getAvailableTrilhaOptions(cls)
-  const selected = draft.trilha ? getTrilha(draft.trilha) : undefined
 
   return (
     <Section title="Trilha (NEX 10%)">
       <p className="text-parchment-600 text-[11px] mb-2">
-        A trilha define o foco do seu agente e concede um poder em NEX 10%, 40%, 65% e 99%. Você já vê aqui
-        tudo que cada trilha entrega ao longo da progressão, mesmo o que só ganha mais pra frente.
+        A trilha define o foco do seu agente e concede um poder em NEX 10%, 40%, 65% e 99%. Os detalhes de
+        todas já estão à mostra — clique numa coluna pra escolher.
       </p>
-      <div className="grid grid-cols-1 gap-1.5 mb-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 items-stretch">
         {options.map(t => (
           <button
             key={t.id}
             onClick={() => onSelect(t.id)}
-            className="text-left px-3 py-2 rounded-lg border transition-all"
+            className="text-left px-3 py-2.5 rounded-lg border transition-all flex flex-col"
             style={{
               borderColor: draft.trilha === t.id ? '#d4900a' : '#2a2213',
               backgroundColor: draft.trilha === t.id ? '#d4900a15' : '#0a070499',
@@ -142,28 +143,22 @@ function TrilhaSection({ draft, cls, onSelect }: { draft: import('../../types/ch
             <p className="font-fantasy font-semibold text-sm text-parchment-200">{t.name}</p>
             <p className="text-parchment-500 text-[11px] mt-0.5 leading-snug">{t.description}</p>
             {t.requirement && <p className="text-parchment-600 text-[11px] mt-0.5">Requisito: {t.requirement}</p>}
+            <div className="mt-2 pt-2 border-t border-parchment-900/60 space-y-1.5">
+              {t.features.map(f => {
+                const reached = f.nex <= draft.nex
+                return (
+                  <p key={f.name} className={`text-[11px] leading-snug ${reached ? 'text-parchment-500' : 'text-parchment-700 opacity-70'}`}>
+                    <span className={`font-semibold ${reached ? 'text-parchment-300' : 'text-parchment-500'}`}>
+                      {reached ? '' : '🔒 '}NEX {f.nex}% – {f.name}.
+                    </span>{' '}
+                    {f.description}
+                  </p>
+                )
+              })}
+            </div>
           </button>
         ))}
       </div>
-      {selected && (
-        <div className="space-y-1.5 pt-2 border-t border-parchment-900">
-          <p className="text-[11px] font-fantasy text-parchment-600 uppercase tracking-widest mb-1">
-            Poderes de {selected.name}
-          </p>
-          {selected.features.map(f => {
-            const reached = f.nex <= draft.nex
-            return (
-              <p key={f.name} className={`text-xs ${reached ? 'text-parchment-500' : 'text-parchment-700 opacity-70'}`}>
-                <span className={`font-semibold ${reached ? 'text-parchment-300' : 'text-parchment-500'}`}>
-                  {reached ? '' : '🔒 '}NEX {f.nex}% – {f.name}.
-                </span>{' '}
-                {f.description}
-                {!reached && <span className="text-parchment-700 italic"> (ainda não alcançado)</span>}
-              </p>
-            )
-          })}
-        </div>
-      )}
     </Section>
   )
 }

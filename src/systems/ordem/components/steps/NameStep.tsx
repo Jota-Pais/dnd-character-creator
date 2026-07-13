@@ -31,15 +31,9 @@ export function NameStep() {
 
   return (
     <div className="max-w-lg mx-auto text-center">
-      <div className="text-6xl mb-4">🕯️</div>
-
-      <h2 className="font-fantasy text-3xl font-bold text-parchment-200 mb-2">
-        Quem é você antes<br />de cruzar o véu?
+      <h2 className="font-fantasy text-3xl font-bold text-parchment-200 mb-8">
+        Qual o nome de seu Agente?
       </h2>
-      <p className="text-parchment-500 mb-8 leading-relaxed">
-        Todo agente da Ordem tem uma vida antes do Paranormal. Escolha um nome
-        e resuma quem seu personagem é numa frase curta — isso vai guiar as próximas escolhas.
-      </p>
 
       <div className="mb-4">
         <input

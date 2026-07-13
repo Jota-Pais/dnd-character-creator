@@ -6,10 +6,29 @@ import { useCharacterStore as useDndStore } from './systems/dnd5e/stores/charact
 import { useOrdemStore } from './systems/ordem/stores/characterStore'
 import { dnd5eSystem } from './systems/dnd5e'
 import { ordemSystem } from './systems/ordem'
+import simboloMaior from './systems/ordem/assets/simbolo-maior.webp'
 
 type UnifiedCharacter =
   | (DndSaved & { system: 'dnd5e' })
   | (OrdemSaved & { system: 'ordem' })
+
+/** Paleta por sistema nas linhas da galeria (handoff "Redesign Ordem": chrome neutro, acento por seção). */
+const SYSTEM_UI = {
+  ordem: {
+    rowBorder: '#2a1518', rowBg: '#120a0c', rowHoverBorder: '#7f1d1d', rowHoverBg: '#170c0e',
+    avatarBg: '#1a0c0e', avatarBorder: '#7f1d1d', accent: '#ef4444',
+    openBg: '#2a0d0f', openBorder: '#7f1d1d', openColor: '#fca5a5', openHoverBg: '#3d1114',
+    headerColor: '#fca5a5', rule: 'linear-gradient(90deg,#7f1d1d,transparent)',
+    levelLabel: 'NEX',
+  },
+  dnd5e: {
+    rowBorder: '#2a2014', rowBg: '#13100a', rowHoverBorder: '#7a4e05', rowHoverBg: '#181308',
+    avatarBg: '#1a150c', avatarBorder: '#7a4e05', accent: '#f0b429',
+    openBg: '#241a08', openBorder: '#7a4e05', openColor: '#fcd67a', openHoverBg: '#31230b',
+    headerColor: '#fcd67a', rule: 'linear-gradient(90deg,#7a4e05,transparent)',
+    levelLabel: 'Nível',
+  },
+} as const
 
 export function GlobalGallery() {
   const setActiveSystem = useAppStore(s => s.setActiveSystem)
@@ -34,11 +53,15 @@ export function GlobalGallery() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [showSystemSelect, setShowSystemSelect] = useState(false)
 
-  const characters = useMemo<UnifiedCharacter[]>(() => {
-    const dnd = dndLibrary.map(c => ({ ...c, system: 'dnd5e' as const }))
-    const ordem = ordemLibrary.map(c => ({ ...c, system: 'ordem' as const }))
-    return [...dnd, ...ordem].sort((a, b) => b.updatedAt - a.updatedAt)
-  }, [dndLibrary, ordemLibrary])
+  const ordemChars = useMemo<UnifiedCharacter[]>(
+    () => ordemLibrary.map(c => ({ ...c, system: 'ordem' as const })).sort((a, b) => b.updatedAt - a.updatedAt),
+    [ordemLibrary],
+  )
+  const dndChars = useMemo<UnifiedCharacter[]>(
+    () => dndLibrary.map(c => ({ ...c, system: 'dnd5e' as const })).sort((a, b) => b.updatedAt - a.updatedAt),
+    [dndLibrary],
+  )
+  const total = ordemChars.length + dndChars.length
 
   async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -85,88 +108,130 @@ export function GlobalGallery() {
   }
 
   function handleCreate(system: 'dnd5e' | 'ordem') {
+    setShowSystemSelect(false)
     if (system === 'dnd5e') dndNew()
     else ordemNew()
     setActiveSystem(system)
   }
 
   return (
-    <div className="min-h-screen bg-parchment-950 p-8">
-      <div className="max-w-4xl mx-auto">
-        <header className="text-center mb-12">
-          <div className="text-5xl mb-3">🕯️</div>
-          <h1 className="font-fantasy text-4xl font-bold text-gold-400 tracking-wide mb-2">
-            Multiverso de Agentes e Aventureiros
-          </h1>
-          <p className="text-parchment-500 font-fantasy">Escolha o seu destino e comece a jornada.</p>
-        </header>
-
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-          <h2 className="font-fantasy text-2xl font-bold text-parchment-200">Meus Personagens</h2>
-          <div className="flex gap-2">
+    <div className="min-h-screen px-6 lg:px-14 py-10" style={{ backgroundColor: '#0e0c0a', color: '#ede2d6' }}>
+      <div className="max-w-5xl mx-auto">
+        <header className="flex flex-wrap items-center justify-between gap-4 mb-8">
+          <div>
+            <h1 className="font-fantasy font-bold text-2xl" style={{ color: '#f6ece0', letterSpacing: '.04em' }}>MEUS PERSONAGENS</h1>
+            <p className="text-[13px] mt-0.5" style={{ color: '#a39685' }}>
+              {total === 0 ? 'Nenhuma ficha salva neste navegador' : `${total} ficha${total > 1 ? 's' : ''} salva${total > 1 ? 's' : ''} neste navegador`}
+            </p>
+          </div>
+          <div className="flex gap-3">
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="px-4 py-2 rounded-xl border border-parchment-800 text-parchment-400 hover:text-parchment-200 text-sm font-fantasy transition-colors"
+              className="px-4 py-2.5 rounded-lg text-[13.5px] transition-colors"
+              style={{ border: '1px solid #3a332b', color: '#cbbfae' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = '#5c5245'; e.currentTarget.style.color = '#ede2d6' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#3a332b'; e.currentTarget.style.color = '#cbbfae' }}
             >
               ↑ Importar
             </button>
             <div className="relative">
               <button
                 onClick={() => setShowSystemSelect(!showSystemSelect)}
-                className="px-4 py-2 rounded-xl font-fantasy font-bold text-sm bg-gold-500 text-parchment-950 hover:bg-gold-400 transition-colors"
+                className="px-5 py-2.5 rounded-lg font-fantasy font-bold text-[13.5px] transition-colors"
+                style={{ backgroundColor: '#e8d5b7', color: '#1a1510' }}
+                onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#f5e8cc' }}
+                onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#e8d5b7' }}
               >
                 ＋ Novo personagem
               </button>
               {showSystemSelect && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-parchment-900 border border-parchment-800 rounded-xl shadow-xl z-50 overflow-hidden">
-                  <button onClick={() => handleCreate('dnd5e')} className="w-full text-left px-4 py-3 hover:bg-parchment-800 font-fantasy text-parchment-200 text-sm border-b border-parchment-800/50">
-                    🐉 D&D 5e
-                  </button>
-                  <button onClick={() => handleCreate('ordem')} className="w-full text-left px-4 py-3 hover:bg-parchment-800 font-fantasy text-parchment-200 text-sm">
+                <div className="absolute right-0 top-full mt-2 w-56 rounded-lg shadow-xl z-50 overflow-hidden" style={{ backgroundColor: '#171310', border: '1px solid #3a332b' }}>
+                  <button onClick={() => handleCreate('ordem')} className="w-full text-left px-4 py-3 font-fantasy text-sm" style={{ color: '#fca5a5', borderBottom: '1px solid #3a332b' }}>
                     👁️ Ordem Paranormal
+                  </button>
+                  <button onClick={() => handleCreate('dnd5e')} className="w-full text-left px-4 py-3 font-fantasy text-sm" style={{ color: '#fcd67a' }}>
+                    🐉 D&D 5e
                   </button>
                 </div>
               )}
             </div>
           </div>
           <input ref={fileInputRef} type="file" accept="application/json,.json" onChange={handleImport} className="hidden" />
-        </div>
+        </header>
 
         {importError && (
-          <p className="text-red-400 text-sm mb-4">Arquivo inválido — não parece uma ficha exportada compatível.</p>
+          <p className="text-sm mb-4" style={{ color: '#ef4444' }}>Arquivo inválido — não parece uma ficha exportada compatível.</p>
         )}
 
-        {characters.length === 0 ? (
-          <div className="rounded-2xl border-2 border-dashed border-parchment-800 p-10 text-center">
+        {total === 0 && (
+          <div className="rounded-xl p-10 text-center" style={{ border: '2px dashed #3a332b' }}>
             <div className="text-5xl mb-3">📜</div>
-            <p className="text-parchment-400 mb-4">Você ainda não tem personagens salvos.</p>
+            <p style={{ color: '#a39685' }}>Você ainda não tem personagens salvos.</p>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {characters.map(char => (
-              <CharacterCard
-                key={`${char.system}-${char.id}`}
-                char={char}
-                onOpen={() => handleOpen(char)}
-                onDuplicate={() => handleDuplicate(char)}
-                onExport={() => handleExport(char)}
-                onDelete={() => handleDelete(char)}
+        )}
+
+        {ordemChars.length > 0 && (
+          <Section
+            marker={
+              <span
+                className="w-[26px] h-[26px] inline-block"
+                style={{
+                  backgroundColor: '#ef4444',
+                  maskImage: `url(${simboloMaior})`, WebkitMaskImage: `url(${simboloMaior})`,
+                  maskSize: 'contain', WebkitMaskSize: 'contain',
+                  maskRepeat: 'no-repeat', WebkitMaskRepeat: 'no-repeat',
+                  maskPosition: 'center', WebkitMaskPosition: 'center',
+                }}
               />
+            }
+            title="ORDEM PARANORMAL"
+            count={`${ordemChars.length} agente${ordemChars.length > 1 ? 's' : ''}`}
+            ui={SYSTEM_UI.ordem}
+          >
+            {ordemChars.map(c => (
+              <CharacterRow key={`ordem-${c.id}`} char={c} onOpen={() => handleOpen(c)} onDuplicate={() => handleDuplicate(c)} onExport={() => handleExport(c)} onDelete={() => handleDelete(c)} />
             ))}
-          </div>
+          </Section>
+        )}
+
+        {dndChars.length > 0 && (
+          <Section
+            marker={<span className="text-xl">🐉</span>}
+            title="DUNGEONS & DRAGONS 5E"
+            count={`${dndChars.length} aventureiro${dndChars.length > 1 ? 's' : ''}`}
+            ui={SYSTEM_UI.dnd5e}
+          >
+            {dndChars.map(c => (
+              <CharacterRow key={`dnd-${c.id}`} char={c} onOpen={() => handleOpen(c)} onDuplicate={() => handleDuplicate(c)} onExport={() => handleExport(c)} onDelete={() => handleDelete(c)} />
+            ))}
+          </Section>
         )}
       </div>
     </div>
   )
 }
 
-function CharacterCard({
-  char,
-  onOpen,
-  onDuplicate,
-  onExport,
-  onDelete,
-}: {
+function Section({ marker, title, count, ui, children }: {
+  marker: React.ReactNode
+  title: string
+  count: string
+  ui: (typeof SYSTEM_UI)[keyof typeof SYSTEM_UI]
+  children: React.ReactNode
+}) {
+  return (
+    <section className="mb-9">
+      <div className="flex items-center gap-3.5 mb-3.5">
+        {marker}
+        <span className="font-fantasy font-bold text-base" style={{ color: ui.headerColor, letterSpacing: '.08em' }}>{title}</span>
+        <span className="text-xs rounded-full px-2.5 py-0.5" style={{ color: '#a08b80', border: '1px solid #3d2a2c' }}>{count}</span>
+        <div className="flex-1 h-px" style={{ background: ui.rule }} />
+      </div>
+      <div className="flex flex-col gap-2">{children}</div>
+    </section>
+  )
+}
+
+function CharacterRow({ char, onOpen, onDuplicate, onExport, onDelete }: {
   char: UnifiedCharacter
   onOpen: () => void
   onDuplicate: () => void
@@ -174,49 +239,81 @@ function CharacterCard({
   onDelete: () => void
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [hover, setHover] = useState(false)
+  const ui = SYSTEM_UI[char.system]
   const name = char.draft.name?.trim() || '(sem nome)'
   const subtitle = char.system === 'dnd5e' ? dnd5eSystem.formatDraftName(char.draft) : ordemSystem.formatDraftName(char.draft)
-  const emoji = char.system === 'dnd5e' ? '🐉' : '👁️'
-  const systemName = char.system === 'dnd5e' ? 'D&D 5e' : 'Ordem Paranormal'
+  const levelValue = char.system === 'dnd5e' ? `${char.draft.level}` : `${char.draft.nex}%`
 
   return (
-    <div className="rounded-xl border border-parchment-800 bg-parchment-950/60 p-4 flex flex-col gap-3">
-      <div className="flex items-center gap-4">
-        <button onClick={onOpen} className="flex items-center gap-4 flex-1 min-w-0 text-left">
-          <span className="text-3xl shrink-0 opacity-80">{emoji}</span>
-          <div className="min-w-0">
-            <p className="font-fantasy font-bold text-parchment-200 truncate text-lg">{name}</p>
-            <p className="text-parchment-500 text-xs truncate">{subtitle}</p>
-            <span className="inline-block mt-1 text-[11px] uppercase tracking-wider px-2 py-0.5 rounded bg-parchment-900/50 text-parchment-600 border border-parchment-800/50">
-              {systemName}
-            </span>
-          </div>
-        </button>
+    <div
+      className="rounded-[10px] px-5 py-3 grid items-center gap-4 transition-colors"
+      style={{
+        gridTemplateColumns: '40px 1.4fr 1fr auto auto',
+        border: `1px solid ${hover ? ui.rowHoverBorder : ui.rowBorder}`,
+        backgroundColor: hover ? ui.rowHoverBg : ui.rowBg,
+      }}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+    >
+      {/* Avatar losango: quadrado 40px rotacionado 45° com a inicial */}
+      <div className="w-10 h-10 flex items-center justify-center" style={{ transform: 'rotate(45deg)', backgroundColor: ui.avatarBg, border: `2px solid ${ui.avatarBorder}` }}>
+        <span className="font-fantasy font-black text-sm" style={{ transform: 'rotate(-45deg)', color: ui.accent }}>{name.charAt(0).toUpperCase()}</span>
       </div>
-
-      <div className="flex items-center gap-2 justify-end border-t border-parchment-900/50 pt-3">
-        <IconBtn title="Abrir" onClick={onOpen}>✎</IconBtn>
+      <div className="min-w-0">
+        <p className="font-fantasy font-bold text-base truncate" style={{ color: '#f6ece0' }}>{name}</p>
+        <p className="text-[12.5px] truncate" style={{ color: '#b3a094' }}>{subtitle}</p>
+      </div>
+      <div className="text-[13px] hidden sm:block" style={{ color: '#cbb8a8' }}>
+        {ui.levelLabel} <span className="font-fantasy font-black text-base" style={{ color: ui.accent }}>{levelValue}</span>
+      </div>
+      <button
+        onClick={onOpen}
+        className="px-5 py-2 rounded-lg font-fantasy font-bold text-[13px] transition-colors"
+        style={{ backgroundColor: ui.openBg, border: `1px solid ${ui.openBorder}`, color: ui.openColor }}
+        onMouseEnter={e => { e.currentTarget.style.backgroundColor = ui.openHoverBg }}
+        onMouseLeave={e => { e.currentTarget.style.backgroundColor = ui.openBg }}
+      >
+        Abrir
+      </button>
+      <div className="flex gap-1.5">
         <IconBtn title="Duplicar" onClick={onDuplicate}>⧉</IconBtn>
         <IconBtn title="Exportar JSON" onClick={onExport}>↓</IconBtn>
         {confirmDelete ? (
           <>
-            <button onClick={onDelete} className="text-xs px-3 py-1.5 rounded-lg bg-red-900/50 text-red-300 font-fantasy border border-red-800/50" title="Confirmar exclusão">Excluir?</button>
-            <button onClick={() => setConfirmDelete(false)} className="text-xs px-3 py-1.5 rounded-lg text-parchment-600 hover:bg-parchment-900/50" title="Cancelar">✕</button>
+            <button onClick={onDelete} className="text-xs px-2.5 rounded-lg font-fantasy" style={{ backgroundColor: '#2a0d0f', color: '#ef4444', border: '1px solid #7f1d1d' }} title="Confirmar exclusão">Excluir?</button>
+            <button onClick={() => setConfirmDelete(false)} className="text-xs px-2" style={{ color: '#8a7368' }} title="Cancelar">✕</button>
           </>
         ) : (
-          <IconBtn title="Excluir" onClick={() => setConfirmDelete(true)}>🗑</IconBtn>
+          <IconBtn title="Excluir" onClick={() => setConfirmDelete(true)} danger dangerColor={ui.accent} dangerBorder={ui.openBorder}>🗑</IconBtn>
         )}
       </div>
     </div>
   )
 }
 
-function IconBtn({ title, onClick, children }: { title: string; onClick: () => void; children: React.ReactNode }) {
+function IconBtn({ title, onClick, children, danger, dangerColor, dangerBorder }: {
+  title: string
+  onClick: () => void
+  children: React.ReactNode
+  danger?: boolean
+  dangerColor?: string
+  dangerBorder?: string
+}) {
   return (
     <button
       title={title}
       onClick={onClick}
-      className="w-8 h-8 flex items-center justify-center rounded-lg border border-parchment-800 text-parchment-400 hover:text-parchment-200 hover:border-parchment-600 hover:bg-parchment-900/50 transition-colors text-sm"
+      className="w-[35px] h-[35px] flex items-center justify-center rounded-lg text-[13px] transition-colors"
+      style={{ border: '1px solid #3d2a2c', color: danger ? '#8a7368' : '#b3a094' }}
+      onMouseEnter={e => {
+        if (danger) { e.currentTarget.style.color = dangerColor ?? '#ef4444'; e.currentTarget.style.borderColor = dangerBorder ?? '#7f1d1d' }
+        else e.currentTarget.style.color = '#ede2d6'
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.color = danger ? '#8a7368' : '#b3a094'
+        e.currentTarget.style.borderColor = '#3d2a2c'
+      }}
     >
       {children}
     </button>

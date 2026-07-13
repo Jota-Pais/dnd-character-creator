@@ -22,18 +22,17 @@ afterEach(() => {
 describe('App (smoke) — galeria global', () => {
   it('abre no multiverso (galeria global) por padrão', () => {
     render(<App />)
-    expect(screen.getByText('Multiverso de Agentes e Aventureiros')).toBeInTheDocument()
-    expect(screen.getByText('Meus Personagens')).toBeInTheDocument()
+    expect(screen.getByText('MEUS PERSONAGENS')).toBeInTheDocument()
   })
 
   it('lista uma ficha D&D salva e a abre no sistema certo ao clicar', () => {
     useCharacterStore.getState().importDraft(structuredClone(COMPLETE_DRAFT))
 
     render(<App />)
-    const nome = screen.getByText('Krusk')
-    expect(nome).toBeInTheDocument()
+    expect(screen.getByText('Krusk')).toBeInTheDocument()
+    expect(screen.getByText('DUNGEONS & DRAGONS 5E')).toBeInTheDocument()
 
-    fireEvent.click(nome)
+    fireEvent.click(screen.getByText('Abrir'))
     expect(useAppStore.getState().activeSystemId).toBe('dnd5e')
     expect(useCharacterStore.getState().view).toBe('wizard')
   })

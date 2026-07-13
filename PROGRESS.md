@@ -1,12 +1,34 @@
-# Progresso — D&D Character Creator
+# Progresso — D&D Character Creator (+ Ordem Paranormal)
 
-> Atualizado: 2026-07-08
+> Atualizado: 2026-07-13
 
 ## Status atual
 
-**Fases 1–7 concluídas.** Falta só a Fase 8 (gamificação, auditoria final e deploy).
+**Todo o roadmap de build está concluído** — Fases 1–16 do `ROADMAP.md`: D&D 5e nível 1–20 completo e Ordem Paranormal NEX 5–99% completo, ambos auditados linha a linha contra o livro.
 
-**Próximo passo:** Fase 8 — glossário ampliado + medidor de completude + notas para iniciantes + bugiganga aleatória na criação (consome `trinkets.json`), auditoria capítulo-a-capítulo contra o livro, e deploy estático.
+Desde **2026-07-09** o projeto está em **fase de playtest** com usuários reais. Feedback registrado item a item em `docs/playtest-feedback.md`; **F1–F29 concluídos**, **F30 (redesign visual do módulo Ordem) em andamento** — resumo na seção "Fase de Playtest" abaixo.
+
+**Próximo passo:** terminar os ajustes finos pendentes do F30 e seguir recebendo/priorizando feedback de playtest. Deploy estático segue adiado até o playtest fechar (Fase 8.3 do `ROADMAP.md`) — sem config de deploy no repo ainda.
+
+## Fase de Playtest (2026-07-09 → em andamento)
+
+> Tracker completo, item a item (relato do usuário + regra conferida no livro + o que mudou no código): `docs/playtest-feedback.md`. Este resumo agrupa por tema — não duplica o detalhe, só orienta.
+
+**29 itens concluídos (F1–F29).** Agrupados por natureza:
+
+- **Bugs de fidelidade ao livro corrigidos:** F6 (texto estático de dado escalável divergia do painel dinâmico — Ataque Furtivo/Artes Marciais), F9 (ritual Amaldiçoar Arma sem escolha de elemento), F13 (Mochila Militar não aumentava a capacidade de carga), F16 (preview de PV/PE no passo Classe não usava atributos efetivos — o cálculo real da Revisão já estava certo), F20 (perícia fixa da classe repetida da origem não dava escolha compensatória), F22 (Componentes Ritualísticos da Tabela 3.10 ausentes de `equipments.json`). F2 e F3 foram investigados e **confirmados corretos** pelo usuário (sem bug, sem alteração de código).
+- **Bug real (não de regra):** F14 — galeria não unificava D&D+Ordem depois de "Concluir" (só corrigia com refresh); causa raiz eram galerias internas legadas por sistema, removidas junto com a correção.
+- **Features novas:** F12 (Patente + Modificações de equipamento — decisão de escopo que revoga a Fase 9 original "sem Patente"), F15 (método "Personalizado" de atributos no D&D), F17 (Itens Amaldiçoados — 34 maldições), F18 (múltiplas unidades do mesmo item de equipamento, cada uma com mods/maldições próprias), F19 (stepper clicável — navegação livre entre etapas nos dois sistemas), F21 (item de categoria menor pode ocupar vaga de categoria maior na Patente), F27 (poderes com escolha embutida: Treinamento em Perícia, Especialista/Mestre em Elemento, Mochila de Utilidades), F29 (NEX 0% como grau real de progressão, com PV/PE/SAN corretos).
+- **UX/clareza:** F1 e F11 (descrições de equipamento, D&D e Ordem), F4 (emoji do D&D 🎲→🐉), F5 (ataques por arma no PDF), F7 (espaços de controle de sessão na ficha — depois reformatado pelo F23), F8 (seleção de trilha explica a mecânica e mostra as habilidades futuras), F10→F12 (Patente explicada e depois virou parâmetro escolhível), F23 (ficha do Ordem no formato oficial de 2 páginas), F24 (Personalização na Revisão: ritual predileto + perícia de ataque), F25 (auditoria dos 46 poderes de classe — vários bônus que só existiam como texto do livro passaram a valer nos números da ficha), F26 (ritual armazenado na arma Ritualística visível na ficha), F28 (trilhas em colunas no passo Progressão).
+
+**F30 — Redesign visual do módulo Ordem: 🔄 em andamento.** Handoff de design externo (protótipo hifi; conteúdo relevante já incorporado ao `DESIGN.md`, pasta original removida do repo em 2026-07-13). **Fase 1 ✅** (tokens `.theme-ordem`, sidebar fixa de 250px, sigilo animado, rodapé de navegação) e **Fase 2 ✅** (galeria neutra em linhas por sistema), ambas de 2026-07-13. **Pendente:** catálogo visível de rituais no lugar do `<select>`, padrão mestre-detalhe em Origem/Classe, CTA desabilitado explicando o que falta pro jogador, chips de perícia no padrão novo, etiquetas coloridas por elemento de ritual.
+
+**Ajustes de playtest sem número F** (feitos diretamente, fora do intake formal):
+- Fonte base do app aumentada (`html { font-size: 112.5% }`, 2026-07-12) e tons de texto secundário (`parchment` 400–700) clareados — legibilidade.
+- 2026-07-13: correção do seletor de perícia de ataque do Ordem (só Ocultismo via Lâmina Maldita, não escolha livre — ajuste ao F24); perícias mostram o atributo do qual derivam (ex. "Atletismo (FOR)"); passo Classe do Ordem explica as fórmulas de PV/PE/SAN com o cálculo por extenso pro NEX atual.
+- 2026-07-13: `DESIGN.md` criado — auditoria do sistema visual (cores, tipografia, radius, spacing, componentes), validada contra o schema oficial do formato (`npx @google/design.md lint`, 0 erros).
+
+---
 
 ### Fase 5.1 — Montarias/veículos + bugigangas ✅ CONCLUÍDA (2026-07-08)
 

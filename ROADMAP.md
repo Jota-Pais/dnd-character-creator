@@ -2,6 +2,8 @@
 
 > Criado: 2026-07-07 · Baseado na auditoria completa do código (fluxo/UI, dados, lógica/testes)
 > Objetivo: fechar integralmente a promessa do produto — criação de fichas **níveis 1–20 fiéis ao PHB 2014** — corrigindo primeiro o que está errado no núcleo de nível 1.
+>
+> **Status (2026-07-13): roadmap de build 100% concluído** — Fases 1–16 (D&D 5e + Ordem Paranormal). Desde 2026-07-09 o projeto está em **fase de playtest**: ver `docs/playtest-feedback.md` (tracker item a item) e `PROGRESS.md` (resumo consolidado, seção "Fase de Playtest"). Este arquivo permanece como registro histórico de como cada fase foi decidida e executada — não é mais atualizado fase a fase.
 
 ## Fonte da verdade e método de trabalho
 
@@ -262,7 +264,7 @@ Decisão de formato: ficha **própria** (não a oficial da WotC), em português,
 
 | # | Etapa | Detalhe |
 | - | ----- | ------- |
-| 8.1 | Gamificação & Usabilidade | ⏩ **Adiada para o Pós-Testes.** (Glossário ampliado, medidor de completude, notas para iniciantes e sorteio de bugigangas movidos para o Backlog de Polimentos) |
+| 8.1 | Gamificação & Usabilidade | ⏩ **Parcialmente adiada.** "Notas para iniciantes" nos cards de raça/classe (badge "⭐ Bom para iniciantes") já existia desde 2026-06-03 — mantido aqui só por precisão histórica, item **já concluído**. Glossário ampliado, medidor de completude e sorteio de bugigangas seguem no Backlog de Polimentos. |
 | 8.2 | Auditoria final contra o livro | ✅ **Concluída (2026-07-08).** Script de auditoria confirmou estatísticas exatas do PHB pt-BR: 9 raças (20 variantes), 12 classes (40 subclasses - removido "Gloom Stalker" extraído por engano), 13 antecedentes, 42 talentos, 361 magias, loja 100% PHB. Tudo verificado. |
 | 8.3 | Deploy estático | ⏩ **Adiado para o Pós-Testes.** (Vercel/Netlify + smoke test do fluxo completo aguardando homologação local com usuários reais) |
 
@@ -378,14 +380,13 @@ Se começarmos o módulo Ordem por cima disso, ou duplicamos ~150 linhas de "chr
 
 ## 📌 Backlog de Polimentos e Melhorias (Icebox / Pós-Testes)
 
-Pequenos detalhes, abstrações, gamificação ou ideias de melhoria contínua identificados durante o desenvolvimento (aguardando feedback de playtest para priorização):
+Pequenos detalhes, abstrações, gamificação ou ideias de melhoria contínua identificados durante o desenvolvimento (priorizados conforme feedback de playtest — ver `docs/playtest-feedback.md`).
+
+> Itens já entregues durante o playtest foram removidos desta lista (conferido contra o código em 2026-07-13): "Notas para iniciantes" (já existia desde 2026-06-03), "Detalhamento de Armas no PDF" (F5, 2026-07-10) e "Espaços de Controle de Sessão" (F7, 2026-07-10, depois reformatado pelo F23). Detalhe de cada um em `PROGRESS.md`.
 
 - **Gamificação & UX:**
-  - Glossário ampliado (adicionar mais além dos 10 termos iniciais).
+  - Glossário ampliado (adicionar mais além dos 11 termos atuais em `glossary.ts`).
   - Medidor de completude da ficha ("Falta escolher X atributos").
-  - Notas "para iniciantes" visíveis nos cards de classe (ex: "Focado em dano mágico" vs "Complexo").
-  - Sorteio de bugiganga aleatória na criação do personagem (momento de diversão / alívio).
-- **Exportação de PDF — Detalhamento de Armas:** Pode ser interessante adicionar uma tabela individual para cada arma equipada, unindo a fórmula global de acerto com o dado de dano específico da arma (já disponível em `weapons.json`), facilitando a visualização rápida durante o combate.
+  - Sorteio de bugiganga aleatória na criação do personagem (dado pronto em `trinkets.json`, não consumido em lugar nenhum ainda).
 - **Exportação de PDF — Página de Magias (Grimório):** Como o banco de dados já possui a descrição completa de todas as magias (`spells.json`), uma excelente melhoria seria gerar uma segunda página (anexo) no PDF dedicada exclusivamente a imprimir os textos completos das magias conhecidas do personagem.
 - **Exportação de PDF — Traços de Antecedente:** A ficha atualmente resolve com precisão matemática as proficiências e equipamentos dos antecedentes. Seria uma boa adição considerar imprimir também a "habilidade narrativa" de cada antecedente (ex: "Contato Criminal" do Criminoso) na seção de Traços.
-- **Exportação de PDF — Espaços de Controle de Sessão (Tracking):** Pode ser muito útil incluir na interface do PDF espaços "em branco" visuais (caixas ou linhas) projetados para o jogador marcar e apagar com lápis na mesa. Exemplos: áreas explícitas para HP Atual, HP Temporário, bolinhas de Testes contra a Morte, e *checkboxes* para marcar os usos gastos de slots de magia e recursos de classe (como Fúria ou Ki).

@@ -1,7 +1,7 @@
 import { useOrdemStore } from '../../stores/characterStore'
 import { getOrigin } from '../../utils/originUtils'
 import { getOrdemClass } from '../../utils/classUtils'
-import { getSkillName } from '../../utils/skillUtils'
+import { formatSkillWithAttribute } from '../../utils/skillUtils'
 import { getTrilha } from '../../utils/trilhaUtils'
 import { getPower } from '../../utils/powerUtils'
 import {
@@ -332,7 +332,7 @@ export function ReviewStep() {
             const grade = getSkillGrade(draft, sid)
             return (
               <span key={sid} className="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-gold-900/30 text-gold-400">
-                {getSkillName(sid)}{grade !== 'treinado' && ` (${grade})`}
+                {formatSkillWithAttribute(sid)}{grade !== 'treinado' && ` · ${grade}`}
               </span>
             )
           })}

@@ -1,6 +1,6 @@
 import { useOrdemStore } from '../../stores/characterStore'
 import { getOrdemClass } from '../../utils/classUtils'
-import { getSkillName } from '../../utils/skillUtils'
+import { formatSkillWithAttribute } from '../../utils/skillUtils'
 import {
   getAvailableTrilhaOptions,
   getAvailableVersatilityTrilhaOptions,
@@ -249,7 +249,7 @@ function PowerParamPicker({ draft, slotKey, powerId }: {
         >
           <option value="" disabled>Escolha a {i + 1}ª perícia…</option>
           {SKILLS.filter(s => eligible(s.id, i)).map(s => (
-            <option key={s.id} value={s.id}>{s.name}{getSkillGrade(draft, s.id) !== 'destreinado' ? ` (subir grau)` : ''}</option>
+            <option key={s.id} value={s.id}>{formatSkillWithAttribute(s.id)}{getSkillGrade(draft, s.id) !== 'destreinado' ? ` (subir grau)` : ''}</option>
           ))}
         </select>
       ))}
@@ -318,7 +318,7 @@ function SkillGradeSection({ draft, cls, required, onPick }: {
                   return (
                     <Chip
                       key={sid}
-                      label={getSkillName(sid)}
+                      label={formatSkillWithAttribute(sid)}
                       active={active}
                       disabled={disabled}
                       onClick={() => onPick(slot, active ? chosen.filter(s => s !== sid) : [...chosen, sid])}

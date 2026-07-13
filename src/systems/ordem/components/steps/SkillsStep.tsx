@@ -1,6 +1,6 @@
 import { useOrdemStore } from '../../stores/characterStore'
 import { getOrdemClass } from '../../utils/classUtils'
-import { SKILLS, getSkillName } from '../../utils/skillUtils'
+import { SKILLS, getSkillName, formatSkillWithAttribute } from '../../utils/skillUtils'
 import {
   getOriginSkills,
   getAvailableChoiceGroupOptions,
@@ -51,7 +51,7 @@ export function SkillsStep() {
           <SectionTitle>Já garantidas pela origem</SectionTitle>
           <div className="flex flex-wrap gap-1.5">
             {originSkills.map(sid => (
-              <Chip key={sid} label={getSkillName(sid)} active />
+              <Chip key={sid} label={formatSkillWithAttribute(sid)} active />
             ))}
           </div>
         </div>
@@ -62,7 +62,7 @@ export function SkillsStep() {
           <SectionTitle>Fixas pela classe</SectionTitle>
           <div className="flex flex-wrap gap-1.5">
             {cls.skills.fixed.map(sid => (
-              <Chip key={sid} label={getSkillName(sid)} active />
+              <Chip key={sid} label={formatSkillWithAttribute(sid)} active />
             ))}
           </div>
           {fixedOverlap.length > 0 && (
@@ -85,7 +85,7 @@ export function SkillsStep() {
               {options.map(sid => (
                 <Chip
                   key={sid}
-                  label={getSkillName(sid)}
+                  label={formatSkillWithAttribute(sid)}
                   active={picked === sid}
                   onClick={() => setChoiceGroupPick(i, sid)}
                 />
@@ -107,7 +107,7 @@ export function SkillsStep() {
               return (
                 <Chip
                   key={sid}
-                  label={getSkillName(sid)}
+                  label={formatSkillWithAttribute(sid)}
                   active={active}
                   disabled={disabled}
                   onClick={() => toggleFreeSkill(sid)}

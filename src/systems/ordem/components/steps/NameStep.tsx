@@ -6,10 +6,8 @@ import { StepNav } from '../common/StepNav'
 
 export function NameStep() {
   const name = useOrdemStore(state => state.draft.name)
-  const concept = useOrdemStore(state => state.draft.concept)
   const nex = useOrdemStore(state => state.draft.nex)
   const setName = useOrdemStore(state => state.setName)
-  const setConcept = useOrdemStore(state => state.setConcept)
   const setNex = useOrdemStore(state => state.setNex)
   const nextStep = useOrdemStore(state => state.nextStep)
   const importDraft = useOrdemStore(state => state.importDraft)
@@ -45,20 +43,6 @@ export function NameStep() {
           autoFocus
           className="w-full px-5 py-4 rounded-xl border-2 border-parchment-800 bg-parchment-950/60 text-parchment-200 placeholder-parchment-700 text-lg text-center font-fantasy tracking-wide focus:outline-none focus:border-gold-500 focus:shadow-lg focus:shadow-gold-900/20 transition-all"
         />
-      </div>
-
-      <div className="mb-8">
-        <textarea
-          value={concept}
-          onChange={e => setConcept(e.target.value)}
-          placeholder="Ex: uma cientista forense curiosa e corajosa, que ainda não sabe usar armas"
-          maxLength={280}
-          rows={3}
-          className="w-full px-4 py-3 rounded-xl border-2 border-parchment-800 bg-parchment-950/60 text-parchment-200 placeholder-parchment-700 text-sm text-left focus:outline-none focus:border-gold-500 transition-all resize-none"
-        />
-        <p className="text-parchment-700 text-xs mt-1 text-left">
-          Conceito (opcional, mas ajuda a decidir origem e classe a seguir).
-        </p>
       </div>
 
       <div className="mb-8 rounded-xl border border-parchment-800 bg-parchment-950/60 p-4">

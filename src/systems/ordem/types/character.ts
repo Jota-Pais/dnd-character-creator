@@ -31,7 +31,6 @@ export type VersatilityChoice =
 
 export type OrdemCharacterDraft = {
   name: string
-  concept: string
   /** Nível de Exposição Paranormal — 5 a 99, em passos de 5 (exceto o último, 95→99). */
   nex: number
   attributes: OrdemAttributes
@@ -97,7 +96,6 @@ export const EMPTY_ATTRIBUTES: OrdemAttributes = {
 
 export const EMPTY_DRAFT: OrdemCharacterDraft = {
   name: '',
-  concept: '',
   nex: 5,
   attributes: { ...EMPTY_ATTRIBUTES },
   origin: null,

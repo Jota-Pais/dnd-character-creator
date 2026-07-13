@@ -25,7 +25,6 @@ type CharacterStore = {
   exitPrint: () => void
 
   setName: (name: string) => void
-  setConcept: (concept: string) => void
   setNex: (nex: number) => void
   setAttribute: (attribute: keyof OrdemAttributes, value: number) => void
   setOrigin: (originId: string) => void
@@ -102,7 +101,6 @@ export const useOrdemStore = create<CharacterStore>((set, get) => ({
   exitPrint: () => set({ view: 'wizard' }),
 
   setName: (name) => set(state => ({ draft: { ...state.draft, name } })),
-  setConcept: (concept) => set(state => ({ draft: { ...state.draft, concept } })),
 
   setNex: (nex) => set(state => ({ draft: { ...state.draft, nex } })),
 

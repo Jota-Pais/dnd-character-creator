@@ -84,7 +84,6 @@ describe('App (smoke) — Ordem Paranormal', () => {
     return {
       ...ORDEM_EMPTY,
       name: 'Bianca',
-      concept: 'Ocultista curiosa',
       attributes: { agility: 1, strength: 1, intellect: 1, presence: 1, vigor: 1 },
       origin: 'academic',
       class: 'occultist' as const,

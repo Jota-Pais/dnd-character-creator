@@ -80,7 +80,6 @@ export function ReviewStep() {
     <div className="max-w-lg mx-auto space-y-4 pb-16">
       <div className="text-center mb-2">
         <h2 className="font-fantasy text-2xl font-bold text-gold-400">{draft.name}</h2>
-        {draft.concept && <p className="text-parchment-500 text-sm italic mt-1">"{draft.concept}"</p>}
         <p className="text-parchment-600 text-xs mt-1">
           {origin?.name} · {cls.name}{trilha ? ` (${trilha.name})` : ''} · NEX {draft.nex}% · {getPatente(draft.patente).name}
         </p>

@@ -106,7 +106,6 @@ export function sanitizeImportedDraft(parsed: unknown): OrdemCharacterDraft | nu
   return {
     ...EMPTY_DRAFT,
     name: p.name,
-    concept: typeof p.concept === 'string' ? p.concept : '',
     nex: typeof p.nex === 'number' ? p.nex : EMPTY_DRAFT.nex,
     attributes: { ...EMPTY_DRAFT.attributes, ...p.attributes },
     origin: typeof p.origin === 'string' ? p.origin : null,

@@ -303,6 +303,6 @@ export function getMissingRitualComponentElements(draft: OrdemCharacterDraft): O
     const element = ritual.elements.length > 1 ? draft.ritualElementChoices[ritual.id] : ritual.elements[0]
     if (element && element !== 'fear') needed.add(element)
   }
-  const owned = new Set(draft.equipmentChoices.map(uid => getEquipmentByInstance(uid)?.ritualComponentFor))
+  const owned = new Set<OrdemElement | undefined>(draft.equipmentChoices.map(uid => getEquipmentByInstance(uid)?.ritualComponentFor))
   return [...needed].filter(el => !owned.has(el))
 }

@@ -3,6 +3,7 @@ import { useOrdemStore } from '../../stores/characterStore'
 import { importCharacter } from '../../utils/storage'
 import { NEX_STEPS } from '../../utils/progressionUtils'
 import { StepNav } from '../common/StepNav'
+import simboloMaior from '../../assets/simbolo-maior.webp'
 
 export function NameStep() {
   const name = useOrdemStore(state => state.draft.name)
@@ -28,8 +29,26 @@ export function NameStep() {
   }
 
   return (
-    <div className="max-w-lg mx-auto text-center">
-      <h2 className="font-fantasy text-3xl font-bold text-parchment-200 mb-8">
+    <div className="max-w-lg mx-auto text-center relative">
+      {/* Símbolo Maior ao fundo — a arte é branca sobre transparente, então vira MÁSCARA
+          de uma camada vermelha (dá pra pintar de qualquer cor sem editar a imagem). */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 opacity-[0.09]"
+        style={{
+          backgroundColor: '#dc2626',
+          maskImage: `url(${simboloMaior})`,
+          WebkitMaskImage: `url(${simboloMaior})`,
+          maskRepeat: 'no-repeat',
+          WebkitMaskRepeat: 'no-repeat',
+          maskPosition: 'center',
+          WebkitMaskPosition: 'center',
+          maskSize: 'min(85vh, 85vw)',
+          WebkitMaskSize: 'min(85vh, 85vw)',
+        }}
+      />
+
+      <h2 className="font-fantasy text-3xl font-bold text-parchment-200 mb-8 relative">
         Qual o nome de seu Agente?
       </h2>
 

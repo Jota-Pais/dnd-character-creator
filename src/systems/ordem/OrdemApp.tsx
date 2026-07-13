@@ -50,7 +50,7 @@ export function OrdemApp() {
 
   if (view === 'print') {
     return (
-      <div className="min-h-screen py-6 px-4">
+      <div className="theme-ordem min-h-screen py-6 px-4">
         <div className="no-print max-w-[820px] mx-auto mb-4 flex justify-between items-center">
           <button
             onClick={exitPrint}
@@ -74,7 +74,7 @@ export function OrdemApp() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="theme-ordem min-h-screen">
       <div className="max-w-6xl mx-auto px-4 pb-28 lg:pb-10">
 
         <header className="pt-8 pb-6 text-center">

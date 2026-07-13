@@ -138,8 +138,8 @@ function Chip({ label, active, disabled, onClick }: { label: string; active: boo
       disabled={disabled || !onClick}
       className="px-2 py-0.5 rounded-md text-xs font-mono font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
       style={{
-        backgroundColor: active ? '#d4900a30' : '#1a140a',
-        color: active ? '#d4900a' : '#8a7a5a',
+        backgroundColor: active ? '#dc262630' : '#1a140a',
+        color: active ? '#dc2626' : '#8a7a5a',
       }}
     >
       {label}

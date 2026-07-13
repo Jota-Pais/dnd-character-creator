@@ -28,7 +28,7 @@ export function AttributesStep() {
         <span className="text-parchment-500 text-sm font-fantasy">Pontos restantes</span>
         <span
           className="text-2xl font-bold font-fantasy"
-          style={{ color: remaining === 0 ? '#d4900a' : '#fb923c' }}
+          style={{ color: remaining === 0 ? '#dc2626' : '#fb923c' }}
         >
           {remaining}
         </span>

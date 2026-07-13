@@ -34,7 +34,7 @@ export function NameStep() {
           de uma camada vermelha (dá pra pintar de qualquer cor sem editar a imagem). */}
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-0 opacity-[0.09]"
+        className="pointer-events-none fixed inset-0 opacity-[0.22]"
         style={{
           backgroundColor: '#dc2626',
           maskImage: `url(${simboloMaior})`,
@@ -43,8 +43,8 @@ export function NameStep() {
           WebkitMaskRepeat: 'no-repeat',
           maskPosition: 'center',
           WebkitMaskPosition: 'center',
-          maskSize: 'min(85vh, 85vw)',
-          WebkitMaskSize: 'min(85vh, 85vw)',
+          maskSize: 'min(115vh, 115vw)',
+          WebkitMaskSize: 'min(115vh, 115vw)',
         }}
       />
 

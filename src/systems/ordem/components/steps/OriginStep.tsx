@@ -41,8 +41,8 @@ export function OriginStep() {
               onClick={() => setOrigin(origin.id)}
               className="text-left px-3 py-2.5 rounded-lg border transition-all"
               style={{
-                borderColor: draft.origin === origin.id ? '#d4900a' : '#2a2213',
-                backgroundColor: draft.origin === origin.id ? '#d4900a15' : '#0a070499',
+                borderColor: draft.origin === origin.id ? '#dc2626' : '#2a2213',
+                backgroundColor: draft.origin === origin.id ? '#dc262615' : '#0a070499',
               }}
             >
               <p className="font-fantasy font-semibold text-sm text-parchment-200">{origin.name}</p>
@@ -86,8 +86,8 @@ export function OriginStep() {
                           disabled={disabled}
                           className="px-2 py-0.5 rounded-md text-xs font-mono font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                           style={{
-                            backgroundColor: isSelected ? '#d4900a30' : '#1a140a',
-                            color: isSelected ? '#d4900a' : '#8a7a5a',
+                            backgroundColor: isSelected ? '#dc262630' : '#1a140a',
+                            color: isSelected ? '#dc2626' : '#8a7a5a',
                           }}
                         >
                           {skill.name}

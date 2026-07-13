@@ -44,8 +44,8 @@ export function ClassStep() {
               onClick={() => setClass(cls.id)}
               className="w-full text-left px-4 py-3 rounded-xl border-2 transition-all flex items-start gap-3"
               style={{
-                borderColor: draft.class === cls.id ? '#d4900a' : '#2a2213',
-                backgroundColor: draft.class === cls.id ? '#d4900a15' : '#0a070499',
+                borderColor: draft.class === cls.id ? '#dc2626' : '#2a2213',
+                backgroundColor: draft.class === cls.id ? '#dc262615' : '#0a070499',
               }}
             >
               <span className="text-2xl shrink-0">{CLASS_EMOJI[cls.id]}</span>

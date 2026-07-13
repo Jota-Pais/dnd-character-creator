@@ -111,8 +111,8 @@ function Chip({ label, active, disabled, onClick }: { label: string; active: boo
       disabled={disabled || !onClick}
       className="px-2 py-0.5 rounded-md text-xs font-mono font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
       style={{
-        backgroundColor: active ? '#d4900a30' : '#1a140a',
-        color: active ? '#d4900a' : '#8a7a5a',
+        backgroundColor: active ? '#dc262630' : '#1a140a',
+        color: active ? '#dc2626' : '#8a7a5a',
       }}
     >
       {label}
@@ -136,8 +136,8 @@ function TrilhaSection({ draft, cls, onSelect }: { draft: import('../../types/ch
             onClick={() => onSelect(t.id)}
             className="text-left px-3 py-2.5 rounded-lg border transition-all flex flex-col"
             style={{
-              borderColor: draft.trilha === t.id ? '#d4900a' : '#2a2213',
-              backgroundColor: draft.trilha === t.id ? '#d4900a15' : '#0a070499',
+              borderColor: draft.trilha === t.id ? '#dc2626' : '#2a2213',
+              backgroundColor: draft.trilha === t.id ? '#dc262615' : '#0a070499',
             }}
           >
             <p className="font-fantasy font-semibold text-base text-parchment-200">{t.name}</p>

@@ -1,8 +1,15 @@
 import { useOrdemStore } from '../../stores/characterStore'
 import { ORDEM_CLASSES, getOrdemClass } from '../../utils/classUtils'
 import { getSkillName } from '../../utils/skillUtils'
-import { getCursedDerivedStats } from '../../utils/curseUtils'
+import { getCursedDerivedStats, getSheetAttributes } from '../../utils/curseUtils'
 import { getRequiredFreeSkillCount } from '../../utils/characterUtils'
+import { getNexIndex } from '../../utils/progressionUtils'
+
+/** Cálculo por extenso de PV/PE: "12 + 1 VIG + 1×(2 + 1 VIG)". */
+function statBreakdown(initial: number, perNex: number, attr: number, abbrev: string, tiers: number): string {
+  const base = `${initial} + ${attr} ${abbrev}`
+  return tiers > 0 ? `${base} + ${tiers}×(${perNex} + ${attr} ${abbrev})` : base
+}
 import { isStepComplete } from '../../utils/draftValidation'
 import { StepNav } from '../common/StepNav'
 import type { OrdemClass } from '../../types/class'
@@ -26,6 +33,8 @@ export function ClassStep() {
   const canAdvance = isStepComplete(draft, 'class')
   // Cálculo completo (Aumentos de Atributo + maldições), senão o preview diverge da Revisão ao voltar aqui.
   const stats = selected ? getCursedDerivedStats(draft, selected) : null
+  const attrs = getSheetAttributes(draft)
+  const tiers = Math.max(0, getNexIndex(draft.nex))
 
   return (
     <div className="flex flex-col lg:flex-row gap-6">
@@ -52,6 +61,12 @@ export function ClassStep() {
               <div className="min-w-0">
                 <p className="font-fantasy font-bold text-parchment-200">{cls.name}</p>
                 <p className="text-parchment-500 text-xs mt-0.5 leading-relaxed">{cls.description}</p>
+                {/* Fórmulas mecânicas da classe (livro): iniciais no NEX 0% + ganho por nível de exposição. */}
+                <p className="text-xs mt-1.5 font-mono leading-relaxed" style={{ color: '#c96a6a' }}>
+                  PV {cls.hp.initialFlat}+VIG <span className="text-parchment-600">(+{cls.hp.perNexFlat}+VIG por NEX)</span>{' · '}
+                  PE {cls.pe.initialFlat}+PRE <span className="text-parchment-600">(+{cls.pe.perNexFlat}+PRE por NEX)</span>{' · '}
+                  SAN {cls.sanity.initialFlat} <span className="text-parchment-600">(+{cls.sanity.perNex} por NEX)</span>
+                </p>
               </div>
             </button>
           ))}
@@ -62,10 +77,14 @@ export function ClassStep() {
         {selected && stats ? (
           <div className="sticky top-4 space-y-4">
             <div className="grid grid-cols-3 gap-3">
-              <Stat label={`PV (NEX ${draft.nex}%)`} value={String(stats.hp)} />
-              <Stat label={`PE (NEX ${draft.nex}%)`} value={String(stats.pe)} />
-              <Stat label="Sanidade" value={String(stats.sanity)} />
+              <Stat label={`PV (NEX ${draft.nex}%)`} value={String(stats.hp)} detail={statBreakdown(selected.hp.initialFlat, selected.hp.perNexFlat, attrs.vigor, 'VIG', tiers)} />
+              <Stat label={`PE (NEX ${draft.nex}%)`} value={String(stats.pe)} detail={statBreakdown(selected.pe.initialFlat, selected.pe.perNexFlat, attrs.presence, 'PRE', tiers)} />
+              <Stat label="Sanidade" value={String(stats.sanity)} detail={tiers > 0 ? `${selected.sanity.initialFlat} + ${tiers}×${selected.sanity.perNex}` : `${selected.sanity.initialFlat}`} />
             </div>
+            <p className="text-parchment-600 text-xs -mt-2">
+              Cálculo com seus atributos atuais e {tiers} {tiers === 1 ? 'nível' : 'níveis'} de exposição (NEX {draft.nex}%);
+              valores iniciais valem no NEX 0%.
+            </p>
 
             <div className="rounded-xl border border-parchment-900 bg-parchment-950/60 p-4">
               <SectionTitle>Perícias Treinadas</SectionTitle>
@@ -109,11 +128,12 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   )
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value, detail }: { label: string; value: string; detail?: string }) {
   return (
     <div className="rounded-xl border border-parchment-900 bg-parchment-950/60 p-3 text-center">
       <p className="text-parchment-700 text-xs uppercase tracking-wide">{label}</p>
       <p className="text-gold-400 font-fantasy font-bold text-xl">{value}</p>
+      {detail && <p className="text-parchment-500 text-[11px] font-mono mt-1 leading-snug">= {detail}</p>}
     </div>
   )
 }

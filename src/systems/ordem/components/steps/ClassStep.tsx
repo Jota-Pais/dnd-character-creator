@@ -112,7 +112,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-parchment-900 bg-parchment-950/60 p-3 text-center">
-      <p className="text-parchment-700 text-[11px] uppercase tracking-wide">{label}</p>
+      <p className="text-parchment-700 text-xs uppercase tracking-wide">{label}</p>
       <p className="text-gold-400 font-fantasy font-bold text-xl">{value}</p>
     </div>
   )

@@ -108,7 +108,7 @@ export function EquipmentChoiceCard({ choiceIndex, choice, resolution, onResolve
                 </span>
                 {describeEquipmentOption(option)}
                 {details.map(d => (
-                  <span key={d.name} className="block text-[10px] opacity-75 mt-0.5 ml-5">
+                  <span key={d.name} className="block text-[11px] opacity-75 mt-0.5 ml-5">
                     {d.name}: {d.detail}
                   </span>
                 ))}
@@ -199,7 +199,7 @@ function ItemGrid({
           >
             <span className={isWeapon ? 'font-semibold' : ''}>{item.name}</span>
             {isWeapon && (
-              <span className="block text-[10px] opacity-80 mt-0.5">{formatWeaponSummary(item as Weapon)}</span>
+              <span className="block text-[11px] opacity-80 mt-0.5">{formatWeaponSummary(item as Weapon)}</span>
             )}
           </button>
         )

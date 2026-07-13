@@ -178,7 +178,7 @@ export function EquipmentStep() {
                   <button
                     onClick={() => updateDraft({ utilityBackpackItem: isBackpacked ? null : uid })}
                     title="Mochila de Utilidades: este item conta como uma categoria abaixo e ocupa 1 espaço a menos (um item por vez, exceto armas)"
-                    className={`text-[11px] px-2 py-0.5 rounded border mb-1.5 transition-all ${isBackpacked
+                    className={`text-xs px-2 py-0.5 rounded border mb-1.5 transition-all ${isBackpacked
                       ? 'bg-gold-900/40 border-gold-700/50 text-gold-300'
                       : 'border-parchment-800 text-parchment-500 hover:border-gold-800 hover:text-parchment-300'}`}
                   >
@@ -187,12 +187,12 @@ export function EquipmentStep() {
                 )}
                 {units.length > 1 && (
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-[11px] font-semibold text-red-300/90">
+                    <p className="text-xs font-semibold text-red-300/90">
                       {getInstanceLabel(draft, uid)} <span className="text-parchment-600 font-normal">· Cat {CAT_ROMAN[unitCat]}</span>
                     </p>
                     <button
                       onClick={() => removeUnit(uid)}
-                      className="text-[11px] text-parchment-600 hover:text-red-400 px-1.5 transition-colors"
+                      className="text-xs text-parchment-600 hover:text-red-400 px-1.5 transition-colors"
                       title="Remover esta unidade"
                     >
                       ✕ remover
@@ -202,7 +202,7 @@ export function EquipmentStep() {
 
                 {isModifiable(item) && (
                   <>
-                    <p className="text-[11px] text-parchment-600 mb-1">
+                    <p className="text-xs text-parchment-600 mb-1">
                       Modificações <span className="text-parchment-700">(cada uma sobe a categoria em I e consome um slot da sua Patente)</span>
                     </p>
                     <div className="flex flex-wrap gap-1">
@@ -218,7 +218,7 @@ export function EquipmentStep() {
                             onClick={() => { if (addable) toggleModification(uid, mod.id) }}
                             disabled={!addable}
                             title={mod.effect}
-                            className={`text-[11px] px-2 py-0.5 rounded border transition-all ${applied
+                            className={`text-xs px-2 py-0.5 rounded border transition-all ${applied
                               ? 'bg-gold-900/40 border-gold-700/50 text-gold-300'
                               : addable
                                 ? 'border-parchment-800 text-parchment-500 hover:border-gold-800 hover:text-parchment-300'
@@ -232,7 +232,7 @@ export function EquipmentStep() {
                     {appliedMods.length > 0 && (
                       <ul className="mt-1.5 space-y-0.5">
                         {getAvailableModifications(item).filter(m => appliedMods.includes(m.id)).map(m => (
-                          <li key={m.id} className="text-[11px] text-gold-600/90">
+                          <li key={m.id} className="text-xs text-gold-600/90">
                             <span className="font-semibold">{m.name}:</span> {m.effect}
                           </li>
                         ))}
@@ -243,7 +243,7 @@ export function EquipmentStep() {
 
                 {isCursable(item) && (
                   <>
-                    <p className={`text-[11px] text-parchment-600 mb-1 ${isModifiable(item) ? 'mt-2' : ''}`}>
+                    <p className={`text-xs text-parchment-600 mb-1 ${isModifiable(item) ? 'mt-2' : ''}`}>
                       Maldições <span className="text-parchment-700">(itens amaldiçoados: a 1ª sobe a categoria em II, as seguintes em I; elementos opressores não se combinam no mesmo item)</span>
                     </p>
                     <div className="flex flex-wrap gap-1">
@@ -259,7 +259,7 @@ export function EquipmentStep() {
                             onClick={() => { if (addable) toggleCurse(uid, curse.id) }}
                             disabled={!addable}
                             title={curse.effect}
-                            className={`text-[11px] px-2 py-0.5 rounded border transition-all ${applied
+                            className={`text-xs px-2 py-0.5 rounded border transition-all ${applied
                               ? 'bg-purple-900/40 border-purple-600/50 text-purple-300'
                               : addable
                                 ? 'border-parchment-800 text-parchment-500 hover:border-purple-800 hover:text-parchment-300'
@@ -274,13 +274,13 @@ export function EquipmentStep() {
                     {appliedCurses.length > 0 && (
                       <ul className="mt-1.5 space-y-1">
                         {getAvailableCurses(item).filter(c => appliedCurses.includes(c.id)).map(c => (
-                          <li key={c.id} className="text-[11px] text-purple-400/90">
+                          <li key={c.id} className="text-xs text-purple-400/90">
                             <span className="font-semibold">{c.name} ({formatCurseElement(c, uid, draft.equipmentCurseChoices)}):</span> {c.effect}
                             {c.choice === 'element' && (
                               <select
                                 value={draft.equipmentCurseChoices[curseChoiceKey(uid, c.id)] ?? ''}
                                 onChange={e => setCurseChoice(uid, c.id, e.target.value)}
-                                className="block mt-1 bg-parchment-950 border border-purple-900/50 rounded px-1.5 py-0.5 text-purple-300 text-[11px]"
+                                className="block mt-1 bg-parchment-950 border border-purple-900/50 rounded px-1.5 py-0.5 text-purple-300 text-xs"
                               >
                                 <option value="" disabled>Escolha o elemento…</option>
                                 {(CURSE_ELEMENT_OPTIONS[c.id] ?? []).map(el => (
@@ -292,7 +292,7 @@ export function EquipmentStep() {
                               <select
                                 value={draft.equipmentCurseChoices[curseChoiceKey(uid, c.id)] ?? ''}
                                 onChange={e => setCurseChoice(uid, c.id, e.target.value)}
-                                className="block mt-1 bg-parchment-950 border border-purple-900/50 rounded px-1.5 py-0.5 text-purple-300 text-[11px]"
+                                className="block mt-1 bg-parchment-950 border border-purple-900/50 rounded px-1.5 py-0.5 text-purple-300 text-xs"
                               >
                                 <option value="" disabled>Escolha o ritual vinculado (1º círculo)…</option>
                                 {getAvailableRituals(1).map(r => (
@@ -308,7 +308,7 @@ export function EquipmentStep() {
                 )}
 
                 {!editable && units.length > 1 && (
-                  <p className="text-[11px] text-parchment-700">Unidade sem opções de modificação/maldição.</p>
+                  <p className="text-xs text-parchment-700">Unidade sem opções de modificação/maldição.</p>
                 )}
               </div>
             )
@@ -320,7 +320,7 @@ export function EquipmentStep() {
                 onClick={() => { if (canAddUnit) addUnit(item.id) }}
                 disabled={!canAddUnit}
                 title={canAddUnit ? `Adicionar outra unidade de ${item.name} (com modificações/maldições próprias)` : 'Limite da Patente atingido pra categoria deste item'}
-                className={`text-[11px] px-2 py-0.5 rounded border transition-all ${canAddUnit
+                className={`text-xs px-2 py-0.5 rounded border transition-all ${canAddUnit
                   ? 'border-parchment-800 text-parchment-500 hover:border-red-800 hover:text-parchment-300'
                   : 'border-parchment-900/40 text-parchment-800 cursor-not-allowed'}`}
               >
@@ -404,10 +404,10 @@ export function EquipmentStep() {
               <div key={s.category} className={`flex flex-col px-4 py-2 rounded-lg border ${style}`}>
                 <span className="text-xs uppercase tracking-wider opacity-70">Categoria {CAT_ROMAN[s.category]}</span>
                 <span className="font-fantasy text-xl">{shown} / {s.limit}</span>
-                {s.overflow && <span className="text-[10px] opacity-80">sem vaga — remova um item</span>}
-                {!s.overflow && borrowing && <span className="text-[10px] opacity-80">+{s.items - s.limit} na vaga de cat. maior</span>}
-                {!s.overflow && s.spillIn > 0 && <span className="text-[10px] opacity-80">inclui {s.spillIn} de cat. menor</span>}
-                {!s.overflow && !borrowing && s.spillIn === 0 && s.usedSlots >= s.limit && <span className="text-[10px] opacity-80">máximo atingido</span>}
+                {s.overflow && <span className="text-[11px] opacity-80">sem vaga — remova um item</span>}
+                {!s.overflow && borrowing && <span className="text-[11px] opacity-80">+{s.items - s.limit} na vaga de cat. maior</span>}
+                {!s.overflow && s.spillIn > 0 && <span className="text-[11px] opacity-80">inclui {s.spillIn} de cat. menor</span>}
+                {!s.overflow && !borrowing && s.spillIn === 0 && s.usedSlots >= s.limit && <span className="text-[11px] opacity-80">máximo atingido</span>}
               </div>
             )
           })}

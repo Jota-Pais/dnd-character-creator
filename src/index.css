@@ -26,6 +26,12 @@
 }
 
 @layer base {
+  /* Base maior que o padrão (16px): as fontes do app estavam pequenas demais (feedback de playtest).
+     Em rem, escala todos os tamanhos do Tailwind (text-xs, text-sm...) proporcionalmente. */
+  html {
+    font-size: 112.5%; /* 18px */
+  }
+
   body {
     background-color: #0e0a06;
     background-image:
@@ -34,7 +40,6 @@
     min-height: 100vh;
     color: #e8d5b7;
     font-family: var(--font-body);
-    font-size: 16px;
     line-height: 1.6;
   }
 

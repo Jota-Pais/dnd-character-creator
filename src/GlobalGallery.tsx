@@ -187,7 +187,7 @@ function CharacterCard({
           <div className="min-w-0">
             <p className="font-fantasy font-bold text-parchment-200 truncate text-lg">{name}</p>
             <p className="text-parchment-500 text-xs truncate">{subtitle}</p>
-            <span className="inline-block mt-1 text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-parchment-900/50 text-parchment-600 border border-parchment-800/50">
+            <span className="inline-block mt-1 text-[11px] uppercase tracking-wider px-2 py-0.5 rounded bg-parchment-900/50 text-parchment-600 border border-parchment-800/50">
               {systemName}
             </span>
           </div>

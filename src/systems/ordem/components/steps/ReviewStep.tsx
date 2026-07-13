@@ -261,7 +261,7 @@ export function ReviewStep() {
 
       {weaponAttacks.length > 0 && (
         <Section title="Ataques">
-          <p className="text-parchment-700 text-[11px] mb-2">Role a quantidade de d20 indicada e use o melhor + o bônus.</p>
+          <p className="text-parchment-700 text-xs mb-2">Role a quantidade de d20 indicada e use o melhor + o bônus.</p>
           <div className="space-y-1">
             {weaponAttacks.map((a, i) => (
               <p key={`${a.name}-${i}`} className="text-parchment-500 text-xs">
@@ -303,7 +303,7 @@ export function ReviewStep() {
 
       {cursedUnits.length > 0 && (
         <Section title="Itens Amaldiçoados">
-          <p className="text-parchment-700 text-[11px] mb-2">
+          <p className="text-parchment-700 text-xs mb-2">
             Bônus de maldições iguais em itens diferentes não se acumulam. Os bônus fixos (Defesa, atributos, PV/PE) já estão somados na ficha.
           </p>
           <div className="space-y-3">
@@ -341,7 +341,7 @@ export function ReviewStep() {
           })}
         </div>
         {upgradedSkills.length === 0 && trainedSkills.length > 0 && (
-          <p className="text-parchment-700 text-[11px] mt-2">Todas treinadas — nenhuma subiu de grau ainda.</p>
+          <p className="text-parchment-700 text-xs mt-2">Todas treinadas — nenhuma subiu de grau ainda.</p>
         )}
       </Section>
 
@@ -377,7 +377,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-parchment-900 bg-parchment-950/60 p-3 text-center">
-      <p className="text-parchment-700 text-[11px] uppercase tracking-wide">{label}</p>
+      <p className="text-parchment-700 text-xs uppercase tracking-wide">{label}</p>
       <p className="text-gold-400 font-fantasy font-bold text-xl">{value}</p>
     </div>
   )
@@ -386,7 +386,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 function AttrStat({ label, value }: { label: string; value: number }) {
   return (
     <div>
-      <p className="text-parchment-700 text-[10px] uppercase tracking-wide">{label}</p>
+      <p className="text-parchment-700 text-[11px] uppercase tracking-wide">{label}</p>
       <p className="text-parchment-200 font-fantasy font-bold text-lg">{value}</p>
     </div>
   )

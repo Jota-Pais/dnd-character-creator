@@ -34,7 +34,7 @@ export function Tooltip({ term, definition }: Props) {
           e.stopPropagation()
           setOpen(o => !o)
         }}
-        className="inline-flex items-center justify-center w-4 h-4 rounded-full border text-[10px] font-bold leading-none border-parchment-700 text-parchment-600 hover:border-gold-500 hover:text-gold-400 transition-colors"
+        className="inline-flex items-center justify-center w-4 h-4 rounded-full border text-[11px] font-bold leading-none border-parchment-700 text-parchment-600 hover:border-gold-500 hover:text-gold-400 transition-colors"
       >
         ?
       </button>

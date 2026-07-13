@@ -125,7 +125,7 @@ function TrilhaSection({ draft, cls, onSelect }: { draft: import('../../types/ch
 
   return (
     <Section title="Trilha (NEX 10%)">
-      <p className="text-parchment-600 text-[11px] mb-2">
+      <p className="text-parchment-600 text-xs mb-2">
         A trilha define o foco do seu agente e concede um poder em NEX 10%, 40%, 65% e 99%. Os detalhes de
         todas já estão à mostra — clique numa coluna pra escolher.
       </p>
@@ -140,14 +140,14 @@ function TrilhaSection({ draft, cls, onSelect }: { draft: import('../../types/ch
               backgroundColor: draft.trilha === t.id ? '#d4900a15' : '#0a070499',
             }}
           >
-            <p className="font-fantasy font-semibold text-sm text-parchment-200">{t.name}</p>
-            <p className="text-parchment-500 text-[11px] mt-0.5 leading-snug">{t.description}</p>
-            {t.requirement && <p className="text-parchment-600 text-[11px] mt-0.5">Requisito: {t.requirement}</p>}
+            <p className="font-fantasy font-semibold text-base text-parchment-200">{t.name}</p>
+            <p className="text-parchment-500 text-xs mt-0.5 leading-snug">{t.description}</p>
+            {t.requirement && <p className="text-parchment-600 text-xs mt-0.5">Requisito: {t.requirement}</p>}
             <div className="mt-2 pt-2 border-t border-parchment-900/60 space-y-1.5">
               {t.features.map(f => {
                 const reached = f.nex <= draft.nex
                 return (
-                  <p key={f.name} className={`text-[11px] leading-snug ${reached ? 'text-parchment-500' : 'text-parchment-700 opacity-70'}`}>
+                  <p key={f.name} className={`text-xs leading-snug ${reached ? 'text-parchment-500' : 'text-parchment-700 opacity-70'}`}>
                     <span className={`font-semibold ${reached ? 'text-parchment-300' : 'text-parchment-500'}`}>
                       {reached ? '' : '🔒 '}NEX {f.nex}% – {f.name}.
                     </span>{' '}
@@ -177,7 +177,7 @@ function PowerSection({ draft, cls, required, onPick }: {
           const options = getAvailablePowerOptions(draft, cls, slot)
           return (
             <div key={slot}>
-              <p className="text-parchment-600 text-[11px] mb-1">Poder {slot + 1} de {required}</p>
+              <p className="text-parchment-600 text-xs mb-1">Poder {slot + 1} de {required}</p>
               <div className="flex flex-wrap gap-1.5">
                 {options.map(p => (
                   <Chip key={p.id} label={p.name} active={chosen === p.id} onClick={() => onPick(slot, p.id)} />
@@ -219,7 +219,7 @@ function PowerParamPicker({ draft, slotKey, powerId }: {
     const ELEMENTS: OrdemElement[] = ['knowledge', 'energy', 'death', 'blood']
     return (
       <div className="mt-1.5">
-        <p className="text-parchment-600 text-[11px] mb-1">Escolha o elemento:</p>
+        <p className="text-parchment-600 text-xs mb-1">Escolha o elemento:</p>
         <div className="flex flex-wrap gap-1.5">
           {ELEMENTS.map(el => (
             <Chip key={el} label={ELEMENT_NAMES[el]} active={values[0] === el} onClick={() => setValue(0, el)} />
@@ -270,7 +270,7 @@ function AttributeIncreaseSection({ draft, required, onPick }: {
           const chosen = draft.attributeIncreaseChoices[slot]
           return (
             <div key={slot} className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-parchment-600 text-[11px] mr-1">#{slot + 1}</span>
+              <span className="text-parchment-600 text-xs mr-1">#{slot + 1}</span>
               {ATTRIBUTES.map(attr => {
                 const id = attr.id as keyof OrdemAttributes
                 const atCap = effective[id] >= ATTRIBUTE_INCREASE_CAP && chosen !== id
@@ -288,7 +288,7 @@ function AttributeIncreaseSection({ draft, required, onPick }: {
           )
         })}
       </div>
-      <p className="text-parchment-700 text-[11px] mt-2">Teto {ATTRIBUTE_MAX + 2} por esta via (aumento de atributo, não de criação).</p>
+      <p className="text-parchment-700 text-xs mt-2">Teto {ATTRIBUTE_MAX + 2} por esta via (aumento de atributo, não de criação).</p>
     </Section>
   )
 }
@@ -308,7 +308,7 @@ function SkillGradeSection({ draft, cls, required, onPick }: {
           const options = getEligibleSkillGradeOptions(draft)
           return (
             <div key={slot}>
-              <p className="text-parchment-600 text-[11px] mb-1">
+              <p className="text-parchment-600 text-xs mb-1">
                 Slot {slot + 1} de {required} — escolha {countPerSlot} ({chosen.length}/{countPerSlot})
               </p>
               <div className="flex flex-wrap gap-1.5">
@@ -345,9 +345,9 @@ function VersatilitySection({ draft, cls, onPick }: {
 
   return (
     <Section title="Versatilidade (NEX 50%)">
-      <p className="text-parchment-600 text-[11px] mb-2">Escolha um poder extra de {cls.name}, ou o 1º poder de outra trilha.</p>
+      <p className="text-parchment-600 text-xs mb-2">Escolha um poder extra de {cls.name}, ou o 1º poder de outra trilha.</p>
       <div className="mb-2">
-        <p className="text-parchment-700 text-[11px] mb-1">Poder extra</p>
+        <p className="text-parchment-700 text-xs mb-1">Poder extra</p>
         <div className="flex flex-wrap gap-1.5">
           {powerOptions.map(p => (
             <Chip
@@ -360,7 +360,7 @@ function VersatilitySection({ draft, cls, onPick }: {
         </div>
       </div>
       <div>
-        <p className="text-parchment-700 text-[11px] mb-1">Ou 1º poder de outra trilha</p>
+        <p className="text-parchment-700 text-xs mb-1">Ou 1º poder de outra trilha</p>
         <div className="flex flex-wrap gap-1.5">
           {trilhaOptions.map(t => (
             <Chip

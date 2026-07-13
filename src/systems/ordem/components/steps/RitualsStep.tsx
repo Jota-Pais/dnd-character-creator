@@ -134,7 +134,7 @@ export function RitualsStep() {
                         <div className="flex items-center flex-wrap gap-2 mb-2">
                           <span className="font-bold text-parchment-200">{r.name}</span>
                           {r.elements.map(e => (
-                            <span key={e} className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded border ${ELEMENT_COLORS[e]}`}>
+                            <span key={e} className={`text-[11px] uppercase tracking-wider font-bold px-2 py-0.5 rounded border ${ELEMENT_COLORS[e]}`}>
                               {ELEMENT_NAMES[e]}
                             </span>
                           ))}
@@ -165,7 +165,7 @@ export function RitualsStep() {
                               })}
                             </div>
                             {!ritualElementChoices[r.id] && (
-                              <p className="text-red-400/80 text-[11px] mt-1.5">Escolha um elemento para poder avançar.</p>
+                              <p className="text-red-400/80 text-xs mt-1.5">Escolha um elemento para poder avançar.</p>
                             )}
                           </div>
                         )}

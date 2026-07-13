@@ -107,11 +107,19 @@ export function getEffectiveCategory(item: OrdemEquipment, modCount: number, cur
   return Math.min(4, item.category + modCount + getCurseCategoryDelta(curseCount))
 }
 
-/** Categoria efetiva de uma unidade do draft, lendo as modificações e maldições dela. */
+/** A unidade é a escolhida da Mochila de Utilidades? (−1 categoria e −1 espaço; exceto armas) */
+export function isUtilityBackpackItem(draft: OrdemCharacterDraft, uid: string): boolean {
+  if (draft.utilityBackpackItem !== uid || !hasClassPower(draft, 'utility-backpack')) return false
+  const item = getEquipmentByInstance(uid)
+  return Boolean(item && item.type !== 'weapon' && draft.equipmentChoices.includes(uid))
+}
+
+/** Categoria efetiva de uma unidade do draft, lendo modificações, maldições e Mochila de Utilidades. */
 export function getDraftInstanceCategory(draft: OrdemCharacterDraft, uid: string): number {
   const item = getEquipmentByInstance(uid)
   if (!item) return 0
-  return getEffectiveCategory(item, itemMods(draft, uid).length, getItemCurses(draft, uid).length)
+  const cat = getEffectiveCategory(item, itemMods(draft, uid).length, getItemCurses(draft, uid).length)
+  return isUtilityBackpackItem(draft, uid) ? Math.max(0, cat - 1) : cat
 }
 
 /** Espaços de um item já com as variações das modificações (Discreta −1, Reforçada/Blindada +1...). */
@@ -120,11 +128,13 @@ function itemModifiedSpaces(item: OrdemEquipment, modIds: string[]): number {
   return Math.max(0, item.spaces + delta)
 }
 
-/** Total de espaços ocupados, considerando as modificações. */
+/** Total de espaços ocupados, considerando modificações e Mochila de Utilidades (−1 espaço). */
 export function getModifiedSpaces(draft: OrdemCharacterDraft): number {
   return draft.equipmentChoices.reduce((acc, uid) => {
     const item = getEquipmentByInstance(uid)
-    return acc + (item ? itemModifiedSpaces(item, itemMods(draft, uid)) : 0)
+    if (!item) return acc
+    const spaces = itemModifiedSpaces(item, itemMods(draft, uid))
+    return acc + (isUtilityBackpackItem(draft, uid) ? Math.max(0, spaces - 1) : spaces)
   }, 0)
 }
 

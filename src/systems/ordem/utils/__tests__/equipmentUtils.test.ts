@@ -15,6 +15,7 @@ import {
   getModifiedSpaces,
   getModifiedDefenseBonus,
   getEffectiveCategoryCount,
+  getDraftInstanceCategory,
   fitsPatenteSlots,
   getCategorySlotAllocation,
   getMissingRitualComponentElements,
@@ -258,6 +259,23 @@ describe('poderes com efeito mecânico no equipamento (F25)', () => {
     expect(hasWeaponProficiency(combatente, metralhadora)).toBe(false)
     const comPoder = makeDraft({ class: 'combatant', powerChoices: ['heavy-weapons'] })
     expect(hasWeaponProficiency(comPoder, metralhadora)).toBe(true)
+  })
+})
+
+describe('Mochila de Utilidades (F27) — item escolhido conta −1 categoria e −1 espaço', () => {
+  it('aplica só com o poder, na unidade escolhida, e nunca em armas', () => {
+    const base = {
+      powerChoices: ['utility-backpack'],
+      equipmentChoices: ['protecao-leve', 'revolver'],
+      utilityBackpackItem: 'protecao-leve',
+    }
+    const draft = makeDraft(base)
+    expect(getDraftInstanceCategory(draft, 'protecao-leve')).toBe(0) // Cat I → 0
+    expect(getModifiedSpaces(draft)).toBe(1 + 1) // proteção 2−1 + revólver 1
+    // Sem o poder, a escolha não faz nada.
+    expect(getDraftInstanceCategory(makeDraft({ ...base, powerChoices: [] }), 'protecao-leve')).toBe(1)
+    // Arma escolhida é ignorada.
+    expect(getDraftInstanceCategory(makeDraft({ ...base, utilityBackpackItem: 'revolver' }), 'revolver')).toBe(1)
   })
 })
 

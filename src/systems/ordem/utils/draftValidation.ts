@@ -137,6 +137,7 @@ export function sanitizeImportedDraft(parsed: unknown): OrdemCharacterDraft | nu
     powerParams: p.powerParams && typeof p.powerParams === 'object' && !Array.isArray(p.powerParams)
       ? p.powerParams
       : {},
+    utilityBackpackItem: typeof p.utilityBackpackItem === 'string' ? p.utilityBackpackItem : null,
     favoriteRitual: typeof p.favoriteRitual === 'string' ? p.favoriteRitual : null,
     weaponSkillChoices: p.weaponSkillChoices && typeof p.weaponSkillChoices === 'object' && !Array.isArray(p.weaponSkillChoices)
       ? p.weaponSkillChoices

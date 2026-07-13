@@ -12,6 +12,7 @@ import {
 } from '../../utils/curseUtils'
 import type { OrdemElement } from '../../types/ritual'
 import { getAvailableRituals, ELEMENT_NAMES } from '../../utils/ritualUtils'
+import { hasClassPower } from '../../utils/characterUtils'
 import { getPatente, PATENTES } from '../../utils/patenteUtils'
 import { isStepComplete } from '../../utils/draftValidation'
 import { StepNav } from '../common/StepNav'
@@ -63,6 +64,7 @@ export function EquipmentStep() {
       equipmentModifications: mods,
       equipmentCurses: curses,
       equipmentCurseChoices: curseChoices,
+      ...(draft.utilityBackpackItem === uid ? { utilityBackpackItem: null } : {}),
     })
   }
 
@@ -168,8 +170,21 @@ export function EquipmentStep() {
             const appliedCurses = draft.equipmentCurses[uid] ?? []
             const unitCat = getDraftInstanceCategory(draft, uid)
             const editable = isModifiable(item) || isCursable(item)
+            const canBackpack = hasClassPower(draft, 'utility-backpack') && item.type !== 'weapon'
+            const isBackpacked = draft.utilityBackpackItem === uid
             return (
               <div key={uid} className="mt-2 pt-2 border-t border-parchment-900/50" onClick={e => e.stopPropagation()}>
+                {canBackpack && (
+                  <button
+                    onClick={() => updateDraft({ utilityBackpackItem: isBackpacked ? null : uid })}
+                    title="Mochila de Utilidades: este item conta como uma categoria abaixo e ocupa 1 espaço a menos (um item por vez, exceto armas)"
+                    className={`text-[11px] px-2 py-0.5 rounded border mb-1.5 transition-all ${isBackpacked
+                      ? 'bg-gold-900/40 border-gold-700/50 text-gold-300'
+                      : 'border-parchment-800 text-parchment-500 hover:border-gold-800 hover:text-parchment-300'}`}
+                  >
+                    🎒 Mochila de Utilidades{isBackpacked ? ' (−1 categoria, −1 espaço)' : ''}
+                  </button>
+                )}
                 {units.length > 1 && (
                   <div className="flex items-center justify-between mb-1">
                     <p className="text-[11px] font-semibold text-red-300/90">

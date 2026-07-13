@@ -79,6 +79,8 @@ export type OrdemCharacterDraft = {
    * Treinamento em Perícia → 2 ids de perícia; Especialista/Mestre em Elemento → 1 elemento.
    */
   powerParams: Record<string, string[]>
+  /** Unidade escolhida pra Mochila de Utilidades (−1 categoria e −1 espaço; exceto armas). */
+  utilityBackpackItem: string | null
   /** Ritual escolhido pro poder Ritual Predileto (custo −1 PE). Null = não escolhido. */
   favoriteRitual: string | null
   /** Perícia de ataque por unidade de arma (uid → perícia); ausente = automática (Luta/Pontaria). */
@@ -116,6 +118,7 @@ export const EMPTY_DRAFT: OrdemCharacterDraft = {
   equipmentCurses: {},
   equipmentCurseChoices: {},
   powerParams: {},
+  utilityBackpackItem: null,
   favoriteRitual: null,
   weaponSkillChoices: {},
 }

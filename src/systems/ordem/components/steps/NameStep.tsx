@@ -1,10 +1,8 @@
 import { useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
 import { useOrdemStore } from '../../stores/characterStore'
 import { importCharacter } from '../../utils/storage'
 import { NEX_STEPS } from '../../utils/progressionUtils'
 import { StepNav } from '../common/StepNav'
-import simboloMaior from '../../assets/simbolo-maior.webp'
 
 export function NameStep() {
   const name = useOrdemStore(state => state.draft.name)
@@ -31,29 +29,7 @@ export function NameStep() {
 
   return (
     <div className="max-w-lg mx-auto text-center">
-      {/* Símbolo Maior ao fundo da PÁGINA — via portal no body, porque o <main> do wizard
-          tem transform (animação) e recortaria um position:fixed interno. A arte é branca
-          sobre transparente, então vira MÁSCARA de uma camada vermelha. */}
-      {createPortal(
-        <div
-          aria-hidden
-          className="pointer-events-none fixed inset-0 -z-10 opacity-[0.22]"
-          style={{
-            backgroundColor: '#dc2626',
-            maskImage: `url(${simboloMaior})`,
-            WebkitMaskImage: `url(${simboloMaior})`,
-            maskRepeat: 'no-repeat',
-            WebkitMaskRepeat: 'no-repeat',
-            maskPosition: 'center',
-            WebkitMaskPosition: 'center',
-            maskSize: '105vmin',
-            WebkitMaskSize: '105vmin',
-          }}
-        />,
-        document.body,
-      )}
-
-      <h2 className="font-fantasy text-3xl font-bold text-parchment-200 mb-8">
+      <h2 className="font-fantasy text-3xl font-bold text-parchment-100 mb-8">
         Qual o nome de seu Agente?
       </h2>
 

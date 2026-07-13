@@ -27,16 +27,34 @@
   --color-gold-900: #2d1c06;
 }
 
-/* Tema do módulo Ordem Paranormal: o acento dourado vira o vermelho do Símbolo Maior (#dc2626).
-   As utilities do Tailwind v4 resolvem via var(), então basta sobrescrever no escopo do sistema. */
+/* Tema do módulo Ordem Paranormal (handoff "Redesign Ordem", 2026-07-13): acento vermelho do
+   Símbolo Maior + neutros quentes de alto contraste. As utilities do Tailwind v4 resolvem via
+   var(), então sobrescrever os tokens no escopo re-tematiza todas as telas do sistema. */
 .theme-ordem {
-  --color-gold-300: #fca5a5;
+  --color-gold-300: #fecaca;
   --color-gold-400: #ef4444;
   --color-gold-500: #dc2626;
-  --color-gold-600: #b91c1c;
+  --color-gold-600: #c96a6a;
   --color-gold-700: #991b1b;
   --color-gold-800: #7f1d1d;
-  --color-gold-900: #450a0a;
+  --color-gold-900: #2a0d0f;
+
+  --color-parchment-100: #f6ece0;
+  --color-parchment-200: #ede2d6;
+  --color-parchment-300: #d8c7b8;
+  --color-parchment-400: #cbb8a8;
+  --color-parchment-500: #b3a094;
+  --color-parchment-600: #a08b80;
+  --color-parchment-700: #8a7368;
+  --color-parchment-800: #3d2a2c;
+  --color-parchment-900: #2a1518;
+  --color-parchment-950: #120a0c;
+}
+
+/* Rotação lenta do Símbolo Maior de fundo (240s, contínua). */
+@keyframes sigilSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 @layer base {

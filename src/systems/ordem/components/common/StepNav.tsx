@@ -5,29 +5,23 @@ type Props = {
   nextLabel?: string
 }
 
+/**
+ * Rodapé de navegação do wizard (handoff "Redesign Ordem"): barra fixa com borda superior,
+ * "← Voltar" à esquerda e CTA vermelho à direita. No desktop, começa depois da sidebar (250px).
+ */
 export function StepNav({ onPrev, onNext, canAdvance, nextLabel = 'Continuar ✦' }: Props) {
   return (
-    <>
-      <div
-        className="fixed bottom-0 left-0 right-0 border-t border-parchment-900 px-4 py-3 flex justify-between items-center lg:hidden"
-        style={{ backgroundColor: '#0a0704ee', backdropFilter: 'blur(8px)' }}
-      >
-        <NavButtons onPrev={onPrev} onNext={onNext} canAdvance={canAdvance} nextLabel={nextLabel} />
-      </div>
-      <div className="hidden lg:flex lg:absolute lg:bottom-8 lg:right-8 gap-3">
-        <NavButtons onPrev={onPrev} onNext={onNext} canAdvance={canAdvance} nextLabel={nextLabel} />
-      </div>
-    </>
-  )
-}
-
-function NavButtons({ onPrev, onNext, canAdvance, nextLabel }: Required<Omit<Props, 'onPrev'>> & Pick<Props, 'onPrev'>) {
-  return (
-    <>
+    <div
+      className="fixed bottom-0 right-0 left-0 lg:left-[250px] px-5 lg:px-10 py-3.5 flex justify-between items-center z-20"
+      style={{ backgroundColor: '#0e080aee', borderTop: '1px solid #2a1518', backdropFilter: 'blur(8px)' }}
+    >
       {onPrev ? (
         <button
           onClick={onPrev}
-          className="px-4 py-2 text-parchment-500 hover:text-parchment-300 transition-colors text-sm font-fantasy"
+          className="px-4 py-2.5 text-sm font-fantasy transition-colors"
+          style={{ color: '#b3a094' }}
+          onMouseEnter={e => { e.currentTarget.style.color = '#ede2d6' }}
+          onMouseLeave={e => { e.currentTarget.style.color = '#b3a094' }}
         >
           ← Voltar
         </button>
@@ -35,10 +29,15 @@ function NavButtons({ onPrev, onNext, canAdvance, nextLabel }: Required<Omit<Pro
       <button
         onClick={onNext}
         disabled={!canAdvance}
-        className="px-6 py-2 rounded-xl font-fantasy font-bold text-sm tracking-wide transition-all bg-gold-500 text-parchment-950 hover:bg-gold-400 disabled:bg-parchment-900 disabled:text-parchment-700 disabled:cursor-not-allowed"
+        className="px-8 py-3 rounded-[10px] font-fantasy font-bold text-[14.5px] transition-all"
+        style={canAdvance
+          ? { backgroundColor: '#dc2626', color: '#ffffff', letterSpacing: '.06em', boxShadow: '0 4px 18px rgba(220,38,38,.35)' }
+          : { backgroundColor: '#5a1214', color: '#c9a5a5', letterSpacing: '.06em', cursor: 'not-allowed' }}
+        onMouseEnter={e => { if (canAdvance) e.currentTarget.style.backgroundColor = '#ef4444' }}
+        onMouseLeave={e => { if (canAdvance) e.currentTarget.style.backgroundColor = '#dc2626' }}
       >
         {nextLabel}
       </button>
-    </>
+    </div>
   )
 }

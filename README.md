@@ -1,75 +1,82 @@
-# 🎲 Criador de Personagem - D&D 5e (PHB 2014)
+# ⚒️ Forja de Heróis — Criador de Fichas de RPG
 
-Um aplicativo web moderno, intuitivo e responsivo para criação de personagens de Dungeons & Dragons 5ª Edição, baseado nas regras do Player's Handbook (Livro do Jogador) de 2014.
+Um aplicativo web pra criar fichas de RPG de mesa em **poucos minutos**, mesmo sem nunca ter aberto o livro de regras: um assistente guiado passo a passo esconde a complexidade das regras (mas nunca as escolhas), calcula tudo sozinho e entrega uma ficha pronta pra imprimir e levar pra mesa.
 
-## ✨ Funcionalidades
+Hoje a Forja suporta **dois sistemas completos**, e a arquitetura foi desenhada pra receber outros.
 
-- **Criação Passo a Passo**: Um assistente (wizard) guiado e fluido para montar seu personagem de forma progressiva.
-  - 📝 **Nome**: Defina a identidade do seu aventureiro.
-  - 🧝 **Raça**: Escolha suas origens e receba traços raciais, aumento de atributos e proficiências.
-  - ⚔️ **Classe**: Defina seu caminho heroico, proficiências, equipamentos iniciais e habilidades de classe.
-  - 🎲 **Habilidades**: Gere e distribua seus atributos (Força, Destreza, Constituição, Inteligência, Sabedoria, Carisma).
-  - 📜 **Antecedente**: Descubra a história e origem do seu personagem antes da aventura.
-- **Validação em Tempo Real**: O sistema guia o usuário e evita que etapas fiquem incompletas.
-- **Design Temático e Imersivo**: Interface rica e responsiva, utilizando estilos e paletas de cores que remetem a pergaminhos, ouro e fantasia clássica.
+## 🎲 Sistemas Suportados
 
-## 🛠️ Tecnologias Utilizadas
+### D&D 5ª Edição (Livro do Jogador 2014)
+- Fichas de **nível 1 a 20**, fiéis ao PHB 2014 (sem regras do One D&D / 2024).
+- Fluxo em 8 passos: Nome e nível → Raça → Classe → Atributos → Magias → Antecedente → Equipamento → Revisão.
+- Todas as raças e classes do livro básico, com traços, proficiências, subclasses e progressão completa (ASI, Ataque Extra, recursos por nível).
+- Sistema de magias completo: truques e magias conhecidas/preparadas, espaços por nível, CD e bônus de conjuração derivados.
+- Atributos por array padrão, compra de pontos, rolagem (4d6) ou valores personalizados; PV por média ou rolagem.
+- Equipamento inicial por pacotes de classe ou compra com ouro rolado.
 
-Este projeto foi construído utilizando as ferramentas mais modernas do ecossistema front-end:
+### Ordem Paranormal RPG
+- Agentes completos de **NEX 5% a 99%**: origem, classe, trilha, poderes, aumentos de atributo, graus de treinamento e Versatilidade.
+- **Rituais** com elementos, círculos, custos em PE (com reduções de Ritual Predileto e Lâmina Maldita) e DT calculada.
+- **Equipamento com Patente**: limites de requisição por categoria (com vagas flexíveis — item menor ocupa vaga maior), capacidade de carga, **modificações** (Tabelas 3.5/3.7/3.9) e **itens amaldiçoados** (maldições com elementos opressores, tudo dobrado nos números da ficha).
+- Itens paranormais da Tabela 3.10, incluindo componentes ritualísticos com aviso automático pra conjuradores.
+- Múltiplas unidades do mesmo item (dois revólveres com maldições diferentes, cada um com sua linha de ataque).
+- Ficha imprimível em **2 páginas no formato da Ficha de Agente oficial**, com tabela completa de perícias, ataques por arma e inventário.
 
-- **[React 19](https://react.dev/)**: Biblioteca poderosa para construção da interface de usuário com componentes.
-- **[TypeScript](https://www.typescriptlang.org/)**: Superset do JavaScript que adiciona tipagem estática e maior segurança ao código.
-- **[Vite](https://vitejs.dev/)**: Build tool e bundler ultrarrápido para uma excelente experiência de desenvolvimento.
-- **[Tailwind CSS v4](https://tailwindcss.com/)**: Framework CSS utilitário para estilização rápida, consistente e responsiva.
-- **[Zustand](https://zustand-demo.pmnd.rs/)**: Gerenciamento de estado global da aplicação de forma leve e direta (sem boilerplate desnecessário).
+## ✨ Funcionalidades Gerais
 
-## 📁 Estrutura do Projeto
+- **Assistente guiado com validação em tempo real** — não dá pra avançar com um passo incompleto, e o stepper permite voltar a qualquer etapa já preenchida, em ordem livre.
+- **Galeria unificada de personagens** dos dois sistemas, com salvamento automático local (localStorage).
+- **Exportar/importar fichas em JSON** pra portabilidade entre dispositivos.
+- **Ficha imprimível / exportável em PDF** direto do navegador, com o nome do arquivo no padrão "Personagem — Sistema".
+- **Fidelidade aos livros**: os dados são digitalizados das fontes oficiais e auditados; mais de 570 testes automatizados cobrem fórmulas de derivação, validações e regras.
 
-Abaixo uma visão geral da organização do código-fonte (`/src`):
+## 🛠️ Stack
 
-- `/components`: Componentes visuais do React, organizados em subdiretórios:
-  - `/steps`: Telas específicas de cada passo do assistente de criação.
-  - `/wizard`: Componentes de controle do assistente (ex: indicador de progresso).
-  - Componentes de UI menores (botões, cards, etc.).
-- `/stores`: Lógica de gerenciamento de estado global com Zustand (ex: `characterStore.ts`).
-- `/data`: Estruturas de dados estáticos e catálogos baseados nas regras de D&D.
-- `/types`: Definições globais de tipos e interfaces do TypeScript para garantir a integridade dos dados.
-- `/utils`: Funções utilitárias.
-- `/docs`: Documentação adicional e transcrição em Markdown das regras utilizadas no projeto.
+- **[React 19](https://react.dev/)** + **React Compiler** (memoização automática)
+- **[TypeScript](https://www.typescriptlang.org/)** estrito
+- **[Vite](https://vitejs.dev/)**
+- **[Tailwind CSS v4](https://tailwindcss.com/)**
+- **[Zustand](https://zustand-demo.pmnd.rs/)** (estado global)
+- **[Vitest](https://vitest.dev/)** + Testing Library (testes)
+
+SPA 100% front-end, sem backend — pronta pra deploy estático.
+
+## 📁 Arquitetura
+
+O núcleo é **agnóstico de sistema**: cada RPG é um módulo plugável.
+
+```
+src/
+ ├─ core/       # Motor agnóstico: tipos base, registro de sistemas, estado global
+ ├─ components/ # Design system / UI genérica (sem regras de negócio)
+ └─ systems/    # Módulos de RPG (plugins)
+     ├─ dnd5e/  # D&D 5e: data (JSONs do PHB), types, utils, stores e componentes
+     └─ ordem/  # Ordem Paranormal: idem, com dados digitalizados do livro
+docs/           # Regras digitalizadas em markdown + rastreador de playtest
+```
+
+Cada módulo define seus passos do wizard, validações, dados e ficha imprimível; o core só orquestra.
 
 ## 🚀 Como Executar Localmente
 
-### Pré-requisitos
-- [Node.js](https://nodejs.org/) (versão 18 ou superior)
-- npm (ou outro gerenciador de pacotes como yarn/pnpm)
+Pré-requisitos: [Node.js](https://nodejs.org/) 18+ e npm.
 
-### Instalação e Execução
+```bash
+git clone https://github.com/Jota-Pais/dnd-character-creator.git
+cd dnd-character-creator
+npm install
+npm run dev
+```
 
-1. Clone o repositório ou faça o download dos arquivos:
-   ```bash
-   git clone <url-do-repositorio>
-   cd dnd-character-creator
-   ```
+O app abre em `http://localhost:5173/`.
 
-2. Instale as dependências do projeto:
-   ```bash
-   npm install
-   ```
+## 📝 Scripts
 
-3. Inicie o servidor de desenvolvimento:
-   ```bash
-   npm run dev
-   ```
-
-4. O aplicativo estará disponível no navegador, geralmente no endereço `http://localhost:5173/`.
-
-## 📝 Scripts Disponíveis
-
-- `npm run dev`: Inicia o servidor local de desenvolvimento.
-- `npm run build`: Faz a checagem de tipos (`tsc`) e gera a build de produção otimizada.
-- `npm run lint`: Executa o ESLint para encontrar e reportar problemas no código.
-- `npm run test`: Executa os testes automatizados com o Vitest.
+- `npm run dev` — servidor de desenvolvimento
+- `npm run build` — checagem de tipos (`tsc -b`) + build de produção
+- `npm run test` — testes com Vitest
+- `npm run lint` — ESLint
 
 ## 📜 Notas Legais
 
-Este projeto foi criado para fins de estudo e uso pessoal. O conteúdo relacionado a Dungeons & Dragons, como nomes, regras e mecânicas, é de propriedade intelectual da Wizards of the Coast.
+Projeto de estudo e uso pessoal, sem fins comerciais. **Dungeons & Dragons** e todo o conteúdo relacionado são propriedade da Wizards of the Coast. **Ordem Paranormal RPG** é criação de Rafael Lange (Cellbit), publicado pela Jambo Editora. Este projeto não reproduz os livros — apenas implementa as mecânicas necessárias pra criação de fichas; adquira os livros oficiais.

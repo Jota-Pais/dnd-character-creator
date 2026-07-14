@@ -130,6 +130,21 @@ describe('equipmentUtils', () => {
     expect(getTotalCarryCapacity(comMochila)).toBe(7) // 5 + 2
   })
 
+  it('Inventário Otimizado (Técnico NEX 10%) soma Intelecto à Força pro cálculo de carga', () => {
+    const semTrilha = makeDraft({ attributes: { ...EMPTY_ATTRIBUTES, strength: 1, intellect: 3 } })
+    expect(getTotalCarryCapacity(semTrilha)).toBe(5) // só a Força (1×5), Intelecto não entra
+    const comTecnico = makeDraft({
+      class: 'specialist', trilha: 'technician', nex: 10,
+      attributes: { ...EMPTY_ATTRIBUTES, strength: 1, intellect: 3 },
+    })
+    expect(getTotalCarryCapacity(comTecnico)).toBe(20) // (1+3)×5
+    const antesDoNex = makeDraft({
+      class: 'specialist', trilha: 'technician', nex: 5,
+      attributes: { ...EMPTY_ATTRIBUTES, strength: 1, intellect: 3 },
+    })
+    expect(getTotalCarryCapacity(antesDoNex)).toBe(5) // ainda não alcançou NEX 10%
+  })
+
   it('todo item de equipamento tem uma descrição não vazia (F11)', () => {
     const semDescricao = EQUIPMENTS.filter(e => !e.description || e.description.trim().length < 5)
     expect(semDescricao.map(e => e.id)).toEqual([])

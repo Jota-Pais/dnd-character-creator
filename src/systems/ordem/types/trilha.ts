@@ -14,6 +14,8 @@ export type TrilhaFeatureEffects = {
   paranormalResistanceBonus?: number
   /** Resistência a dano mental E paranormal, valor fixo (ex.: Inabalável 10). */
   mentalAndParanormalDamageResistance?: number
+  /** Soma Intelecto à Força para o cálculo de capacidade de carga (Inventário Otimizado). */
+  carryCapacityAddsIntellect?: boolean
 }
 
 export type TrilhaFeature = {

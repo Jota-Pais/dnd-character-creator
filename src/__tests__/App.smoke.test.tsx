@@ -248,4 +248,27 @@ describe('App (smoke) — Ordem Paranormal', () => {
     expect(screen.getByText(/Resistência a dano mental\/paranormal: 10/)).toBeInTheDocument()
     expect(screen.getByText(/Resistência a dano mental: 5/)).toBeInTheDocument()
   })
+
+  // Inventário Otimizado (Técnico NEX 10%) soma Intelecto à Força pro cálculo de carga (Fase 4).
+  // A seção "Equipamento" só renderiza com pelo menos 1 item — por isso a faca.
+  function seedTechnicianAt10() {
+    return {
+      ...ORDEM_EMPTY,
+      name: 'Faz-Tudo',
+      attributes: { agility: 1, strength: 1, intellect: 3, presence: 1, vigor: 1 },
+      origin: 'academic',
+      class: 'specialist' as const,
+      nex: 10,
+      trilha: 'technician',
+      equipmentChoices: ['faca'],
+    }
+  }
+
+  it('Revisão do Técnico NEX 10%: carga soma Intelecto à Força ((1+3)×5 = 20 espaços)', () => {
+    useAppStore.getState().setActiveSystem('ordem')
+    useOrdemStore.setState({ draft: seedTechnicianAt10(), view: 'wizard', currentStep: 'review' })
+    render(<App />)
+    // Faca ocupa 1 espaço; capacidade (1 Força + 3 Intelecto) × 5 = 20.
+    expect(screen.getByText(/Equipamento \(1\/20 espaços\)/)).toBeInTheDocument()
+  })
 })

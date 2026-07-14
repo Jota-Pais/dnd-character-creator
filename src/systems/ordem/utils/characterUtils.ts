@@ -387,6 +387,11 @@ export function getMentalParanormalDamageResistance(draft: OrdemCharacterDraft):
     .reduce((s, { feature }) => s + (feature.effects?.mentalAndParanormalDamageResistance ?? 0), 0)
 }
 
+/** Tem Inventário Otimizado (Técnico NEX 10%): soma Intelecto à Força pro cálculo de carga? */
+export function hasCarryCapacityIntellectBonus(draft: OrdemCharacterDraft): boolean {
+  return getReachedTrilhaFeaturesWithSource(draft).some(({ feature }) => feature.effects?.carryCapacityAddsIntellect)
+}
+
 // ── Efeitos do poder de origem (aplicados na ficha) ─────────────────────────────
 
 /** Efeitos mecânicos estruturados do poder da origem escolhida (objeto vazio se não houver). */

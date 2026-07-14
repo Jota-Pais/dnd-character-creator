@@ -29,6 +29,7 @@ import {
   getParanormalResistanceBonus,
   getMentalParanormalDamageResistance,
   getOriginMentalDamageResistance,
+  hasCarryCapacityIntellectBonus,
 } from '../characterUtils'
 import { getCursedDerivedStats } from '../curseUtils'
 import { getOrdemClass } from '../classUtils'
@@ -361,6 +362,14 @@ describe('Resistências (Grupo D): Mente Sã, Inabalável, Eu Já Sabia', () => 
     const draft = makeDraft({ class: 'occultist', trilha: 'intuitive', nex: 65, origin: 'conspiracy-theorist' })
     expect(getMentalParanormalDamageResistance(draft)).toBe(10)
     expect(getOriginMentalDamageResistance(draft, 3)).toBe(3)
+  })
+})
+
+describe('hasCarryCapacityIntellectBonus (Inventário Otimizado, Técnico NEX 10%)', () => {
+  it('só vale a partir do NEX 10% da trilha Técnico', () => {
+    expect(hasCarryCapacityIntellectBonus(makeDraft({ class: 'specialist', trilha: 'technician', nex: 10 }))).toBe(true)
+    expect(hasCarryCapacityIntellectBonus(makeDraft({ class: 'specialist', trilha: 'technician', nex: 5 }))).toBe(false)
+    expect(hasCarryCapacityIntellectBonus(makeDraft({ class: 'specialist', trilha: 'field-medic', nex: 99 }))).toBe(false)
   })
 })
 

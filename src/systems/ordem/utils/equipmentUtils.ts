@@ -8,7 +8,7 @@ import { getOrdemClass } from './classUtils'
 import { getPatente, getCategoryLimit } from './patenteUtils'
 import { getModification } from './modificationUtils'
 import { getCurse, getCurseCategoryDelta, getItemCurses, getSheetAttributes, canApplyCurse, curseChoiceKey } from './curseUtils'
-import { hasClassPower, getFavoriteWeaponReduction, getFavoriteEquipmentReduction, getGrantedRituals } from './characterUtils'
+import { hasClassPower, getFavoriteWeaponReduction, getFavoriteEquipmentReduction, getGrantedRituals, hasCarryCapacityIntellectBonus } from './characterUtils'
 
 export const EQUIPMENTS = equipmentsJson as OrdemEquipment[]
 
@@ -60,9 +60,14 @@ export function getEquipmentCarryBonus(choices: string[]): number {
   }, 0)
 }
 
-/** Capacidade de carga total: base (5×Força da ficha, incluindo maldição Pujança) + bônus dos itens (Mochila Militar etc.). */
+/**
+ * Capacidade de carga total: base (5×Força da ficha, incluindo maldição Pujança — mais Intelecto
+ * se Inventário Otimizado) + bônus dos itens (Mochila Militar etc.).
+ */
 export function getTotalCarryCapacity(draft: OrdemCharacterDraft): number {
-  return getMaxCapacity(getSheetAttributes(draft).strength) + getEquipmentCarryBonus(draft.equipmentChoices)
+  const sheet = getSheetAttributes(draft)
+  const strength = sheet.strength + (hasCarryCapacityIntellectBonus(draft) ? sheet.intellect : 0)
+  return getMaxCapacity(strength) + getEquipmentCarryBonus(draft.equipmentChoices)
 }
 
 export function getCurrentSpaces(choices: string[]): number {

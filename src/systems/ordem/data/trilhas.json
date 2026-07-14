@@ -123,7 +123,7 @@
     "description": "Especialista em manutenção e reparo de equipamento, capaz de improvisar ferramentas com o que tiver à disposição e sabotar itens de inimigos.",
     "requirement": null,
     "features": [
-      { "nex": 10, "name": "Inventário Otimizado", "description": "Você soma seu Intelecto à sua Força para calcular seu valor de inventário." },
+      { "nex": 10, "name": "Inventário Otimizado", "description": "Você soma seu Intelecto à sua Força para calcular seu valor de inventário.", "effects": { "carryCapacityAddsIntellect": true } },
       { "nex": 40, "name": "Remendão", "description": "Gaste uma ação completa e 1 PE para remover a condição quebrado de um equipamento adjacente até o final da cena. Equipamentos de investigação têm categoria reduzida em I para você." },
       { "nex": 65, "name": "Improvisar", "description": "Escolha um equipamento de investigação e gaste uma ação completa e 2 PE (mais 2 PE por categoria do item) para criar uma versão funcional dele, que segue as regras de espaço e categoria normalmente. Torna-se inútil ao final da cena." },
       { "nex": 99, "name": "Preparado para Tudo", "description": "Sempre que precisar de um item qualquer (exceto armas), gaste uma ação de movimento e 3 PE por categoria do item para tê-lo à mão." }

@@ -1,6 +1,11 @@
 [
   {
     "id": "barbarian",
+    "casterProgression": "none",
+    "multiclassPrereq": { "mode": "all", "abilities": ["STR"] },
+    "armorProficiencies": ["light", "medium", "shields"],
+    "weaponProficiencies": ["simple", "martial"],
+    "multiclassProficiencies": { "armor": ["shields"], "weapons": ["simple", "martial"], "tools": [], "skills": null, "instruments": 0 },
     "name": "Bárbaro",
     "description": "Um combatente feroz que usa a fúria primitiva para devastar inimigos e resistir a quantidades massivas de dano.",
     "primaryAbility": ["STR"],
@@ -50,6 +55,11 @@
   },
   {
     "id": "bard",
+    "casterProgression": "full",
+    "multiclassPrereq": { "mode": "all", "abilities": ["CHA"] },
+    "armorProficiencies": ["light"],
+    "weaponProficiencies": ["simple", "hand-crossbows", "longswords", "rapiers", "shortswords"],
+    "multiclassProficiencies": { "armor": ["light"], "weapons": [], "tools": [], "skills": { "count": 1, "from": "any" }, "instruments": 1 },
     "name": "Bardo",
     "description": "Um artista versátil e conjurador arcano que manipula a magia pela música e pelas palavras, capaz de cumprir quase qualquer papel no grupo.",
     "primaryAbility": ["CHA"],
@@ -117,6 +127,11 @@
   },
   {
     "id": "warlock",
+    "casterProgression": "pact",
+    "multiclassPrereq": { "mode": "all", "abilities": ["CHA"] },
+    "armorProficiencies": ["light"],
+    "weaponProficiencies": ["simple"],
+    "multiclassProficiencies": { "armor": ["light"], "weapons": ["simple"], "tools": [], "skills": null, "instruments": 0 },
     "name": "Bruxo",
     "description": "Um conjurador que extrai sua magia de um pacto firmado com uma entidade extraplanar poderosa, personalizando poderes com invocações místicas.",
     "primaryAbility": ["CHA"],
@@ -217,6 +232,11 @@
   },
   {
     "id": "cleric",
+    "casterProgression": "full",
+    "multiclassPrereq": { "mode": "all", "abilities": ["WIS"] },
+    "armorProficiencies": ["light", "medium", "shields"],
+    "weaponProficiencies": ["simple"],
+    "multiclassProficiencies": { "armor": ["light", "medium", "shields"], "weapons": [], "tools": [], "skills": null, "instruments": 0 },
     "name": "Clérigo",
     "description": "Um intermediário divino que conjura magias através de profunda devoção, atuando como curandeiro poderoso, suporte ou combatente.",
     "primaryAbility": ["WIS"],
@@ -397,6 +417,11 @@
   },
   {
     "id": "druid",
+    "casterProgression": "full",
+    "multiclassPrereq": { "mode": "all", "abilities": ["WIS"] },
+    "armorProficiencies": ["light", "medium", "shields"],
+    "weaponProficiencies": ["clubs", "daggers", "darts", "javelins", "maces", "quarterstaffs", "scimitars", "sickles", "slings", "spears"],
+    "multiclassProficiencies": { "armor": ["light", "medium", "shields"], "weapons": [], "tools": [], "skills": null, "instruments": 0 },
     "name": "Druida",
     "description": "Conjuradores devotados ao equilíbrio natural, capazes de assumir formas de feras selvagens e conjurar a fúria da natureza.",
     "primaryAbility": ["WIS"],
@@ -460,6 +485,11 @@
   },
   {
     "id": "sorcerer",
+    "casterProgression": "full",
+    "multiclassPrereq": { "mode": "all", "abilities": ["CHA"] },
+    "armorProficiencies": [],
+    "weaponProficiencies": ["daggers", "darts", "slings", "quarterstaffs", "light-crossbows"],
+    "multiclassProficiencies": { "armor": [], "weapons": [], "tools": [], "skills": null, "instruments": 0 },
     "name": "Feiticeiro",
     "description": "Conjuradores inatos cuja magia flui de uma linhagem exótica, influência cósmica ou energia bruta e caótica em suas veias.",
     "primaryAbility": ["CHA"],
@@ -553,6 +583,11 @@
   },
   {
     "id": "fighter",
+    "casterProgression": "none",
+    "multiclassPrereq": { "mode": "any", "abilities": ["STR", "DEX"] },
+    "armorProficiencies": ["light", "medium", "heavy", "shields"],
+    "weaponProficiencies": ["simple", "martial"],
+    "multiclassProficiencies": { "armor": ["light", "medium", "shields"], "weapons": ["simple", "martial"], "tools": [], "skills": null, "instruments": 0 },
     "name": "Guerreiro",
     "description": "Especialistas em combate que dominam armas e armaduras, combinando resistência tática e versatilidade marcial incomparável.",
     "primaryAbility": ["STR", "DEX"],
@@ -573,7 +608,7 @@
     "subclasses": [
       { "id": "champion", "name": "Campeão", "description": "Maximiza o potencial físico bruto para alcançar a perfeição marcial através de treinamento intenso.", "features": [{ "name": "Crítico Aprimorado", "description": "Seus ataques com arma causam acerto crítico com uma rolagem de 19 ou 20 na jogada de ataque." }], "extras": null },
       { "id": "battle-master", "name": "Mestre de Batalha", "description": "Aprende manobras militares para explorar as fraquezas do inimigo com precisão tática.", "features": [{ "name": "Superioridade em Combate", "description": "Você aprende 3 manobras (de uma lista) alimentadas por 4 dados de superioridade (d8), recuperados em descanso curto ou longo. A CD das manobras é 8 + bônus de proficiência + seu modificador de Força ou Destreza." }, { "name": "Estudioso da Guerra", "description": "Você ganha proficiência com um tipo de ferramenta de artesão, à sua escolha." }], "extras": null },
-      { "id": "eldritch-knight", "name": "Cavaleiro Arcano", "description": "Combina arte marcial com estudo de magia arcana de abjuração e evocação.", "features": [{ "name": "Conjuração", "description": "Você amplia seu poderio marcial com magia de mago (usando Inteligência): aprende 2 truques e algumas magias de 1° nível, focadas em abjuração e evocação." }, { "name": "Vínculo com Arma", "description": "Por um ritual de 1 hora, você forja um elo com até duas armas. Você não pode ser desarmado delas e pode invocá-las para sua mão como ação bônus, se estiverem no mesmo plano." }], "extras": null }
+      { "id": "eldritch-knight", "casterProgression": "third", "name": "Cavaleiro Arcano", "description": "Combina arte marcial com estudo de magia arcana de abjuração e evocação.", "features": [{ "name": "Conjuração", "description": "Você amplia seu poderio marcial com magia de mago (usando Inteligência): aprende 2 truques e algumas magias de 1° nível, focadas em abjuração e evocação." }, { "name": "Vínculo com Arma", "description": "Por um ritual de 1 hora, você forja um elo com até duas armas. Você não pode ser desarmado delas e pode invocá-las para sua mão como ação bônus, se estiverem no mesmo plano." }], "extras": null }
     ],
     "startingEquipment": {
       "fixed": [],
@@ -622,6 +657,11 @@
   },
   {
     "id": "rogue",
+    "casterProgression": "none",
+    "multiclassPrereq": { "mode": "all", "abilities": ["DEX"] },
+    "armorProficiencies": ["light"],
+    "weaponProficiencies": ["simple", "hand-crossbows", "longswords", "rapiers", "shortswords"],
+    "multiclassProficiencies": { "armor": ["light"], "weapons": [], "tools": ["thieves-tools"], "skills": { "count": 1, "from": "class-list" }, "instruments": 0 },
     "name": "Ladino",
     "description": "Mestre da furtividade, das perícias e da precisão letal. Usa astúcia e exploração de fraquezas com ataques furtivos devastadores.",
     "primaryAbility": ["DEX"],
@@ -643,7 +683,7 @@
     "subclasses": [
       { "id": "thief", "name": "Ladrão", "description": "Aprimora habilidades de escalar, esconder e roubar com versatilidade incomum.", "features": [{ "name": "Mãos Rápidas", "description": "Você pode usar a ação bônus da Ação Ardilosa para fazer um teste de Destreza (Prestidigitação), usar ferramentas de ladrão para desarmar armadilha ou abrir fechadura, ou realizar a ação de Usar um Objeto." }, { "name": "Andarilho de Telhados", "description": "Escalar não custa movimento extra e, ao saltar com corrida, a distância aumenta em 0,3 m × seu modificador de Destreza." }], "extras": null },
       { "id": "assassin", "name": "Assassino", "description": "Especializado em eliminar alvos de surpresa com letalidade máxima.", "features": [{ "name": "Proficiência Adicional", "description": "Você ganha proficiência com kit de disfarce e kit de venenos." }, { "name": "Assassinar", "description": "Você tem vantagem em ataques contra criaturas que ainda não agiram no combate. Qualquer acerto contra uma criatura surpresa é um acerto crítico." }], "extras": null },
-      { "id": "arcane-trickster", "name": "Trapaceiro Arcano", "description": "Combina furtividade com truques arcanos de ilusão e encantamento.", "features": [{ "name": "Conjuração", "description": "Você adquire magia de mago (usando Inteligência), com foco em ilusão e encantamento: aprende 3 truques (incluindo mãos mágicas) e algumas magias de 1° nível." }, { "name": "Mãos Mágicas Malabaristas", "description": "Ao conjurar mãos mágicas você pode torná-la invisível, guardar/recuperar objetos em recipientes de outra criatura e usar ferramentas de ladrão à distância, controlando-a com a ação bônus da Ação Ardilosa." }], "extras": null }
+      { "id": "arcane-trickster", "casterProgression": "third", "name": "Trapaceiro Arcano", "description": "Combina furtividade com truques arcanos de ilusão e encantamento.", "features": [{ "name": "Conjuração", "description": "Você adquire magia de mago (usando Inteligência), com foco em ilusão e encantamento: aprende 3 truques (incluindo mãos mágicas) e algumas magias de 1° nível." }, { "name": "Mãos Mágicas Malabaristas", "description": "Ao conjurar mãos mágicas você pode torná-la invisível, guardar/recuperar objetos em recipientes de outra criatura e usar ferramentas de ladrão à distância, controlando-a com a ação bônus da Ação Ardilosa." }], "extras": null }
     ],
     "startingEquipment": {
       "fixed": [
@@ -684,6 +724,11 @@
   },
   {
     "id": "wizard",
+    "casterProgression": "full",
+    "multiclassPrereq": { "mode": "all", "abilities": ["INT"] },
+    "armorProficiencies": [],
+    "weaponProficiencies": ["daggers", "darts", "slings", "quarterstaffs", "light-crossbows"],
+    "multiclassProficiencies": { "armor": [], "weapons": [], "tools": [], "skills": null, "instruments": 0 },
     "name": "Mago",
     "description": "Estudiosos devotados às artes arcanas que manipulam a realidade através do intelecto e de um vasto grimório.",
     "primaryAbility": ["INT"],
@@ -753,6 +798,11 @@
   },
   {
     "id": "monk",
+    "casterProgression": "none",
+    "multiclassPrereq": { "mode": "all", "abilities": ["DEX", "WIS"] },
+    "armorProficiencies": [],
+    "weaponProficiencies": ["simple", "shortswords"],
+    "multiclassProficiencies": { "armor": [], "weapons": ["simple", "shortswords"], "tools": [], "skills": null, "instruments": 0 },
     "name": "Monge",
     "description": "Mestre em artes marciais que canaliza o chi para feitos físicos impressionantes e ataques desarmados incrivelmente rápidos sem armaduras.",
     "primaryAbility": ["DEX", "WIS"],
@@ -805,6 +855,11 @@
   },
   {
     "id": "paladin",
+    "casterProgression": "half",
+    "multiclassPrereq": { "mode": "all", "abilities": ["STR", "CHA"] },
+    "armorProficiencies": ["light", "medium", "heavy", "shields"],
+    "weaponProficiencies": ["simple", "martial"],
+    "multiclassProficiencies": { "armor": ["light", "medium", "shields"], "weapons": ["simple", "martial"], "tools": [], "skills": null, "instruments": 0 },
     "name": "Paladino",
     "description": "Um guerreiro divino cujos juramentos sagrados concedem proezas marciais implacáveis e poder mágico para curar aliados e destruir o mal.",
     "primaryAbility": ["STR", "CHA"],
@@ -877,6 +932,11 @@
   },
   {
     "id": "ranger",
+    "casterProgression": "half",
+    "multiclassPrereq": { "mode": "all", "abilities": ["DEX", "WIS"] },
+    "armorProficiencies": ["light", "medium", "shields"],
+    "weaponProficiencies": ["simple", "martial"],
+    "multiclassProficiencies": { "armor": ["light", "medium", "shields"], "weapons": ["simple", "martial"], "tools": [], "skills": { "count": 1, "from": "class-list" }, "instruments": 0 },
     "name": "Patrulheiro",
     "description": "Guerreiros da natureza que combinam sobrevivência, combate mortal e conjuração natural para rastrear e abater suas presas.",
     "primaryAbility": ["DEX", "WIS"],

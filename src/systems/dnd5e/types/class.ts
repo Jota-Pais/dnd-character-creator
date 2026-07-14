@@ -36,12 +36,37 @@ export type ClassSubclass = {
   features: ClassFeature[]
   /** Features da subclasse por nível (2–20). Preenchido na fase 3 do roadmap. */
   featuresByLevel?: LevelFeature[]
+  /** Só Cavaleiro Arcano / Trapaceiro Arcano conjuram (third-caster); as demais subclasses omitem. */
+  casterProgression?: CasterProgression
   extras: SubclassExtraChoices | null
 }
 
 export type ClassToolProficiencies = {
   granted: string[]
   choices: { count: number; from: 'musical-instrument' | 'artisan' | 'any-tool' }[]
+}
+
+/** Categorias de proficiência de armadura (PHB). */
+export type ArmorProficiency = 'light' | 'medium' | 'heavy' | 'shields'
+
+/**
+ * Progressão de conjuração da classe para o cálculo de multiclasse (livro pág. 166-167):
+ * full = níveis contam inteiros; half = metade (⌊÷2⌋); third = um terço (⌊÷3⌋, só via
+ * subclasse Cavaleiro Arcano/Trapaceiro Arcano); pact = Magia de Pacto (pool separado);
+ * none = não conjura.
+ */
+export type CasterProgression = 'full' | 'half' | 'third' | 'pact' | 'none'
+
+/** Pré-requisito de atributo para multiclassar (livro pág. 166; mínimo sempre 13). */
+export type MulticlassPrereq = { mode: 'all' | 'any'; abilities: AbilityScore[] }
+
+/** Proficiências ganhas ao multiclassar NESTA classe (livro pág. 166 — subconjunto das iniciais). */
+export type MulticlassProficiencies = {
+  armor: ArmorProficiency[]
+  weapons: string[]
+  tools: string[]
+  skills: { count: number; from: 'any' | 'class-list' } | null
+  instruments: number
 }
 
 export type GameClass = {
@@ -53,6 +78,14 @@ export type GameClass = {
   savingThrows: AbilityScore[]
   skillChoices: { count: number; from: string[] }
   toolProficiencies: ClassToolProficiencies
+  /** Proficiências de armadura da classe (concedidas por completo só à 1ª classe na multiclasse). */
+  armorProficiencies: ArmorProficiency[]
+  /** Proficiências de arma: tokens 'simple'/'martial' e/ou armas específicas. */
+  weaponProficiencies: string[]
+  /** Progressão de conjuração p/ multiclasse; a subclasse pode elevar p/ 'third'. */
+  casterProgression: CasterProgression
+  multiclassPrereq: MulticlassPrereq
+  multiclassProficiencies: MulticlassProficiencies
   isCaster: boolean
   spellcasting: ClassSpellcasting | null
   features: ClassFeature[]

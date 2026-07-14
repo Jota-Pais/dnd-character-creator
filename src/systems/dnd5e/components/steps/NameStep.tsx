@@ -12,6 +12,8 @@ export function NameStep() {
   const level = useCharacterStore(state => state.draft.level)
   const setName = useCharacterStore(state => state.setName)
   const setLevel = useCharacterStore(state => state.setLevel)
+  const multiclass = useCharacterStore(state => state.draft.multiclass)
+  const setMulticlass = useCharacterStore(state => state.setMulticlass)
   const nextStep = useCharacterStore(state => state.nextStep)
   const importDraft = useCharacterStore(state => state.importDraft)
 
@@ -88,6 +90,40 @@ export function NameStep() {
         </div>
         <p className="text-parchment-600 text-xs mt-2 font-fantasy">
           {ORDINALS[level]} nível — bônus de proficiência +{level <= 4 ? 2 : level <= 8 ? 3 : level <= 12 ? 4 : level <= 16 ? 5 : 6}
+        </p>
+      </div>
+
+      {/* Classe única × Multiclasse */}
+      <div className="mb-8 rounded-xl border border-parchment-800 bg-parchment-950/60 p-4">
+        <p className="text-xs font-fantasy text-parchment-600 uppercase tracking-widest mb-3">
+          Classes
+        </p>
+        <div className="flex gap-2">
+          {([
+            { on: false, label: 'Classe única' },
+            { on: true, label: 'Multiclasse' },
+          ] as const).map(opt => {
+            const active = multiclass === opt.on
+            return (
+              <button
+                key={opt.label}
+                onClick={() => setMulticlass(opt.on)}
+                className="flex-1 px-3 py-2 rounded-lg border text-sm font-fantasy font-semibold transition-all"
+                style={{
+                  borderColor: active ? '#d4900a' : 'rgba(90,62,36,0.5)',
+                  backgroundColor: active ? 'rgba(212,144,10,0.15)' : 'transparent',
+                  color: active ? '#d4900a' : '#9a7650',
+                }}
+              >
+                {opt.label}
+              </button>
+            )
+          })}
+        </div>
+        <p className="text-parchment-600 text-xs mt-2 font-fantasy leading-relaxed">
+          {multiclass
+            ? `Você distribuirá seus ${level} ${level === 1 ? 'nível' : 'níveis'} entre classes no passo Classe (a 1ª classe é a inicial).`
+            : 'Seu personagem terá uma única classe. Você pode mudar isso depois.'}
         </p>
       </div>
 

@@ -12,6 +12,8 @@ import {
   isAsiChoiceComplete,
 } from '../../utils/asiUtils'
 import { getAllFeats, getFeat } from '../../utils/featUtils'
+import { getClass } from '../../utils/classUtils'
+import { getPrimaryLevel } from '../../utils/multiclassUtils'
 
 const ACCENT = '#c0961a'
 type Mode = 'plus2' | 'split' | 'feat'
@@ -19,15 +21,30 @@ type Mode = 'plus2' | 'split' | 'feat'
 export function ImprovementsStep() {
   const draft = useCharacterStore(state => state.draft)
   const setAsiChoice = useCharacterStore(state => state.setAsiChoice)
+  const setAdditionalAsiChoice = useCharacterStore(state => state.setAdditionalAsiChoice)
   const nextStep = useCharacterStore(state => state.nextStep)
   const prevStep = useCharacterStore(state => state.prevStep)
 
-  const level = draft.level ?? 1
-  const asiLevels = getReachedAsiLevels(draft.class, level)
   const finalScores = getFinalAbilityScores(draft)
   const canAdvance = isImprovementsStepComplete(draft)
+  const racial = getRacialBonuses(draft)
 
-  if (asiLevels.length === 0) {
+  // Uma trilha de ASI por classe: a primária (nível derivado) + cada classe adicional no nível dela.
+  const primaryLevel = getPrimaryLevel(draft)
+  const groups = [
+    ...(draft.class ? [{ key: 'primary', classId: draft.class, level: primaryLevel, choices: draft.asiChoices, set: setAsiChoice }] : []),
+    ...draft.additionalClasses.map(e => ({
+      key: e.classId, classId: e.classId, level: e.level, choices: e.asiChoices,
+      set: (i: number, c: AsiChoice | null) => setAdditionalAsiChoice(e.classId, i, c),
+    })),
+  ]
+  const multi = groups.length > 1
+
+  // Slots achatados para o preview do teto de 20 (soma de TODAS as escolhas, menos a que se edita).
+  const flat: { gi: number; slot: number; choice: AsiChoice | undefined }[] = []
+  groups.forEach((g, gi) => getReachedAsiLevels(g.classId, g.level).forEach((_, slot) => flat.push({ gi, slot, choice: g.choices[slot] })))
+
+  if (flat.length === 0) {
     return (
       <div className="max-w-2xl mx-auto text-center">
         <h2 className="font-fantasy text-2xl font-bold text-parchment-200 mb-3">Aprimoramentos</h2>
@@ -62,18 +79,33 @@ export function ImprovementsStep() {
         ))}
       </div>
 
-      <div className="space-y-4">
-        {asiLevels.map((asiLevel, slot) => (
-          <AsiSlot
-            key={slot}
-            asiLevel={asiLevel}
-            choice={draft.asiChoices[slot]}
-            baseScore={ab => draft.abilityScores[ab] ?? 10}
-            otherBonuses={getAsiBonuses(draft.asiChoices.filter((_, i) => i !== slot))}
-            racial={getRacialBonuses(draft)}
-            onChange={c => setAsiChoice(slot, c)}
-          />
-        ))}
+      <div className="space-y-6">
+        {groups.map((g, gi) => {
+          const reached = getReachedAsiLevels(g.classId, g.level)
+          if (reached.length === 0) return null
+          return (
+            <div key={g.key}>
+              {multi && (
+                <p className="text-xs font-fantasy text-parchment-500 uppercase tracking-widest mb-2">
+                  {getClass(g.classId)?.name ?? g.classId} · nível {g.level}
+                </p>
+              )}
+              <div className="space-y-4">
+                {reached.map((asiLevel, slot) => (
+                  <AsiSlot
+                    key={slot}
+                    asiLevel={asiLevel}
+                    choice={g.choices[slot]}
+                    baseScore={ab => draft.abilityScores[ab] ?? 10}
+                    otherBonuses={getAsiBonuses(flat.filter(f => !(f.gi === gi && f.slot === slot)).map(f => f.choice).filter((c): c is AsiChoice => Boolean(c)))}
+                    racial={racial}
+                    onChange={c => g.set(slot, c)}
+                  />
+                ))}
+              </div>
+            </div>
+          )
+        })}
       </div>
 
       <StepNav canAdvance={canAdvance} onPrev={prevStep} onNext={nextStep} />

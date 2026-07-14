@@ -25,12 +25,16 @@ type Props = {
   onChange: (patch: Partial<ClassChoiceSelections>) => void
   excludedSkills?: string[]
   excludedTools?: string[]
+  /** Classe adicional (multiclasse): concede só o subconjunto de perícias e nenhuma escolha de ferramenta. */
+  multiclass?: boolean
 }
 
-export function ClassChoicePanel({ cls, choices, accent, level, onChange, excludedSkills, excludedTools }: Props) {
+export function ClassChoicePanel({ cls, choices, accent, level, onChange, excludedSkills, excludedTools, multiclass = false }: Props) {
   const skillOptions = getSkillOptions(cls)
   const excludedSkillSet = new Set(excludedSkills ?? [])
   const excludedToolSet = new Set(excludedTools ?? [])
+  // Ao multiclassar, a classe dá só o subconjunto de perícias da Tabela de Proficiências (0 ou 1).
+  const skillLimit = multiclass ? (cls.multiclassProficiencies.skills?.count ?? 0) : cls.skillChoices.count
 
   function handleSkillToggle(skillId: string) {
     if (choices.skills.includes(skillId)) {
@@ -39,7 +43,7 @@ export function ClassChoicePanel({ cls, choices, accent, level, onChange, exclud
         expertiseItems: choices.expertiseItems.filter(e => e !== skillId),
       })
     } else {
-      if (choices.skills.length >= cls.skillChoices.count) return
+      if (choices.skills.length >= skillLimit) return
       onChange({ skills: [...choices.skills, skillId] })
     }
   }
@@ -68,21 +72,22 @@ export function ClassChoicePanel({ cls, choices, accent, level, onChange, exclud
 
   const selectedSubclass = cls.subclasses.find(s => s.id === choices.subclass)
   const subclassExtras = selectedSubclass?.extras ?? null
-  const skillsFullyChosen = choices.skills.length === cls.skillChoices.count
+  const skillsFullyChosen = choices.skills.length === skillLimit
 
   return (
     <div className="space-y-5">
 
       {/* ── Seleção de perícias ── */}
+      {skillLimit > 0 && (
       <ChoiceSection
-        title={`Perícias (${choices.skills.length}/${cls.skillChoices.count})`}
+        title={`Perícias (${choices.skills.length}/${skillLimit})`}
         accent={accent}
       >
         <div className="flex flex-wrap gap-1.5">
           {skillOptions.map(skill => {
             const selected = choices.skills.includes(skill.id)
             const excluded = excludedSkillSet.has(skill.id)
-            const disabled = excluded || (!selected && choices.skills.length >= cls.skillChoices.count)
+            const disabled = excluded || (!selected && choices.skills.length >= skillLimit)
             return (
               <button
                 key={skill.id}
@@ -103,9 +108,10 @@ export function ClassChoicePanel({ cls, choices, accent, level, onChange, exclud
           })}
         </div>
       </ChoiceSection>
+      )}
 
-      {/* ── Ferramentas (Bardo/Monge) ── */}
-      {cls.toolProficiencies.choices.map((toolChoice, i) => {
+      {/* ── Ferramentas (Bardo/Monge) — só na classe inicial ── */}
+      {!multiclass && cls.toolProficiencies.choices.map((toolChoice, i) => {
         const filtered =
           toolChoice.from === 'musical-instrument' ? ALL_TOOLS.filter(t => t.category === 'musical-instrument')
           : toolChoice.from === 'artisan' ? ALL_TOOLS.filter(t => t.category === 'artisan')

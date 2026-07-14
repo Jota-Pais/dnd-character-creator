@@ -47,6 +47,7 @@ type CharacterStore = {
   removeClass: (classId: string) => void
   setAdditionalClassLevel: (classId: string, level: number) => void
   updateAdditionalClassChoices: (classId: string, choices: Partial<ClassChoiceSelections>) => void
+  setAdditionalAsiChoice: (classId: string, index: number, choice: AsiChoice | null) => void
   setAbilityMethod: (method: AbilityMethod) => void
   setAbilityScore: (ability: AbilityScore, score: number | null) => void
   setRolledValues: (values: number[]) => void
@@ -268,6 +269,20 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
         additionalClasses: state.draft.additionalClasses.map(c =>
           c.classId === classId ? { ...c, classChoices: { ...c.classChoices, ...choices } } : c,
         ),
+      },
+    })),
+
+  setAdditionalAsiChoice: (classId, index, choice) =>
+    set(state => ({
+      draft: {
+        ...state.draft,
+        additionalClasses: state.draft.additionalClasses.map(c => {
+          if (c.classId !== classId) return c
+          const asiChoices = [...c.asiChoices]
+          if (choice === null) asiChoices.splice(index, 1)
+          else asiChoices[index] = choice
+          return { ...c, asiChoices }
+        }),
       },
     })),
 

@@ -7,13 +7,15 @@ import {
   getClass,
   getSubclass,
   isActiveCaster,
-  isClassStepComplete,
   getHpFormula,
 } from '../../utils/classUtils'
+import { getPrimaryLevel } from '../../utils/multiclassUtils'
+import { isStepComplete } from '../../utils/draftValidation'
 import { ABILITY_LABELS } from '../../utils/abilityScoreUtils'
 import { getExcludedSkills, getExcludedTools } from '../../utils/proficiencyUtils'
 import { ClassCard } from '../class/ClassCard'
 import { ClassChoicePanel } from '../class/ClassChoicePanel'
+import { MulticlassPanel } from '../class/MulticlassPanel'
 
 export function ClassStep() {
   const draft = useCharacterStore(state => state.draft)
@@ -33,9 +35,12 @@ export function ClassStep() {
     ? (CLASS_PRESENTATION[selectedClass.id]?.accent ?? '#d4900a')
     : '#d4900a'
 
-  const activeCaster = selectedClass ? isActiveCaster(selectedClass, draft.level) : false
+  // Em multiclasse, a classe primária ocupa só parte do nível total (o resto vai pras adicionais).
+  const primaryLevel = draft.multiclass ? getPrimaryLevel(draft) : draft.level
+  const activeCaster = selectedClass ? isActiveCaster(selectedClass, primaryLevel) : false
 
-  const canAdvance = isClassStepComplete(selectedClass ?? null, draft.classChoices, draft.level)
+  // Valida o passo inteiro (primária + adicionais + orçamento), não só a primária.
+  const canAdvance = isStepComplete(draft, 'class')
 
   // Perícias/ferramentas já obtidas de raça ou antecedente não podem ser re-escolhidas
   const excludedSkills = getExcludedSkills(draft, 'class')
@@ -200,11 +205,11 @@ export function ClassStep() {
               </div>
 
               {/* Subclasses ainda não disponíveis (nível de escolha não atingido) */}
-              {selectedClass.subclassLevel > draft.level && (
+              {selectedClass.subclassLevel > primaryLevel && (
                 <div className="rounded-xl border border-parchment-900 bg-parchment-950/60 p-4">
                   <SectionTitle>Subclasses (Nível {selectedClass.subclassLevel})</SectionTitle>
                   <p className="text-parchment-600 text-xs mb-2">
-                    Sua subclasse é escolhida no nível {selectedClass.subclassLevel}. Como seu personagem é nível {draft.level}, você poderá escolher ao subir de nível. Opções:
+                    Sua subclasse é escolhida no nível {selectedClass.subclassLevel}. Como esta classe está no nível {primaryLevel}, você poderá escolher ao subir de nível. Opções:
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedClass.subclasses.map(sub => (
@@ -226,12 +231,19 @@ export function ClassStep() {
                   cls={selectedClass}
                   choices={draft.classChoices}
                   accent={accent}
-                  level={draft.level}
+                  level={primaryLevel}
                   onChange={updateClassChoices}
                   excludedSkills={excludedSkills}
                   excludedTools={excludedTools}
                 />
               </div>
+
+              {draft.multiclass && (
+                <div className="rounded-xl border border-parchment-900 bg-parchment-950/60 p-4">
+                  <SectionTitle>Multiclasse</SectionTitle>
+                  <MulticlassPanel />
+                </div>
+              )}
 
             </div>
           </div>

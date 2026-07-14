@@ -175,24 +175,36 @@ export function ReviewStep() {
                 {' '}<span className="text-gold-600/90">(Mente Sã)</span>
               </p>
             )}
-            {mentalParanormalDr > 0 && (
-              <p className="text-parchment-500 text-xs">
-                <span className="font-semibold text-parchment-300">Resistência a dano mental/paranormal: {mentalParanormalDr}</span>
-                {' '}<span className="text-gold-600/90">(Inabalável)</span>
-                <br />
-                <span className="text-parchment-600">Quando for alvo de um efeito paranormal que permite reduzir o dano à metade com um teste de Vontade, não sofre dano algum se passar.</span>
-              </p>
-            )}
-            {originMentalDr > 0 && (
-              <p className="text-parchment-500 text-xs">
-                <span className="font-semibold text-parchment-300">Resistência a dano mental: {originMentalDr}</span>
-                {' '}<span className="text-gold-600/90">(Eu Já Sabia)</span>
-              </p>
-            )}
-            {mentalParanormalDr > 0 && originMentalDr > 0 && (
-              <p className="text-amber-400/80 text-[11px] italic">
-                Duas fontes de resistência a dano mental — o livro não diz se acumulam; combine com o mestre.
-              </p>
+            {mentalParanormalDr > 0 && originMentalDr > 0 ? (
+              <>
+                <p className="text-parchment-500 text-xs">
+                  <span className="font-semibold text-parchment-300">Resistência a dano mental: {mentalParanormalDr + originMentalDr}</span>
+                  {' '}<span className="text-gold-600/90">(Inabalável, Eu Já Sabia)</span>
+                </p>
+                <p className="text-parchment-500 text-xs">
+                  <span className="font-semibold text-parchment-300">Resistência a dano paranormal: {mentalParanormalDr}</span>
+                  {' '}<span className="text-gold-600/90">(Inabalável)</span>
+                  <br />
+                  <span className="text-parchment-600">Quando for alvo de um efeito paranormal que permite reduzir o dano à metade com um teste de Vontade, não sofre dano algum se passar.</span>
+                </p>
+              </>
+            ) : (
+              <>
+                {mentalParanormalDr > 0 && (
+                  <p className="text-parchment-500 text-xs">
+                    <span className="font-semibold text-parchment-300">Resistência a dano mental/paranormal: {mentalParanormalDr}</span>
+                    {' '}<span className="text-gold-600/90">(Inabalável)</span>
+                    <br />
+                    <span className="text-parchment-600">Quando for alvo de um efeito paranormal que permite reduzir o dano à metade com um teste de Vontade, não sofre dano algum se passar.</span>
+                  </p>
+                )}
+                {originMentalDr > 0 && (
+                  <p className="text-parchment-500 text-xs">
+                    <span className="font-semibold text-parchment-300">Resistência a dano mental: {originMentalDr}</span>
+                    {' '}<span className="text-gold-600/90">(Eu Já Sabia)</span>
+                  </p>
+                )}
+              </>
             )}
           </div>
         </Section>

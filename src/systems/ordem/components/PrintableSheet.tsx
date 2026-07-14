@@ -288,17 +288,26 @@ export function PrintableSheet() {
               {paranormalResistanceBonus > 0 && (
                 <p><span className="font-semibold">Teste de resistência paranormal: +{paranormalResistanceBonus}</span> (Mente Sã).</p>
               )}
-              {mentalParanormalDr > 0 && (
-                <p>
-                  <span className="font-semibold">Resistência a dano mental/paranormal: {mentalParanormalDr}</span> (Inabalável).{' '}
-                  Quando for alvo de um efeito paranormal que permite reduzir o dano à metade com um teste de Vontade, não sofre dano algum se passar.
-                </p>
-              )}
-              {originMentalDr > 0 && (
-                <p><span className="font-semibold">Resistência a dano mental: {originMentalDr}</span> (Eu Já Sabia).</p>
-              )}
-              {mentalParanormalDr > 0 && originMentalDr > 0 && (
-                <p className="text-[10px] text-gray-500">Duas fontes de resistência a dano mental — o livro não diz se acumulam; combine com o mestre.</p>
+              {mentalParanormalDr > 0 && originMentalDr > 0 ? (
+                <>
+                  <p><span className="font-semibold">Resistência a dano mental: {mentalParanormalDr + originMentalDr}</span> (Inabalável, Eu Já Sabia).</p>
+                  <p>
+                    <span className="font-semibold">Resistência a dano paranormal: {mentalParanormalDr}</span> (Inabalável).{' '}
+                    Quando for alvo de um efeito paranormal que permite reduzir o dano à metade com um teste de Vontade, não sofre dano algum se passar.
+                  </p>
+                </>
+              ) : (
+                <>
+                  {mentalParanormalDr > 0 && (
+                    <p>
+                      <span className="font-semibold">Resistência a dano mental/paranormal: {mentalParanormalDr}</span> (Inabalável).{' '}
+                      Quando for alvo de um efeito paranormal que permite reduzir o dano à metade com um teste de Vontade, não sofre dano algum se passar.
+                    </p>
+                  )}
+                  {originMentalDr > 0 && (
+                    <p><span className="font-semibold">Resistência a dano mental: {originMentalDr}</span> (Eu Já Sabia).</p>
+                  )}
+                </>
               )}
             </div>
           </section>

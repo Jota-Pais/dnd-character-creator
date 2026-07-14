@@ -430,9 +430,10 @@ export function getOriginDefenseBonus(draft: OrdemCharacterDraft): number {
  * Resistência a dano mental do poder de origem (ex.: Eu Já Sabia = Intelecto). Recebe o Intelecto
  * já pronto (em vez de calcular internamente) para o chamador poder passar o valor com maldições,
  * como o resto da ficha faz — mesmo padrão de `deriveStats` recebendo atributos por parâmetro.
- * É uma fonte SEPARADA de "resistência a dano mental" da de Inabalável (trilha); o livro não
- * confirma se resistências de fontes diferentes se acumulam, então a ficha mostra as duas como
- * linhas distintas em vez de somar — ver `getMentalParanormalDamageResistance`.
+ * É uma fonte SEPARADA de "resistência a dano mental" da de Inabalável (trilha). Conforme a
+ * regra do capítulo de Combate ("Cura Acelerada, Pontos Temporários e Resistência a Dano acumulam,
+ * exceto quando suas fontes não o fazem"), as duas fontes se acumulam na UI (Revisão e PDF)
+ * sem emitir aviso de sobreposição, totalizando a resistência a dano mental do personagem.
  */
 export function getOriginMentalDamageResistance(draft: OrdemCharacterDraft, intellect: number): number {
   return getOriginEffects(draft).mentalDamageResistanceEqualsIntellect ? intellect : 0

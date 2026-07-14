@@ -229,24 +229,23 @@ describe('App (smoke) — Ordem Paranormal', () => {
     }
   }
 
-  it('Revisão: mostra Mente Sã, Inabalável e Eu Já Sabia, com o aviso de fontes diferentes', () => {
+  it('Revisão: mostra Mente Sã, Inabalável e Eu Já Sabia somados corretamente', () => {
     useAppStore.getState().setActiveSystem('ordem')
     useOrdemStore.setState({ draft: seedIntuitiveAt65WithConspiracyOrigin(), view: 'wizard', currentStep: 'review' })
     render(<App />)
     expect(screen.getByText('Resistências')).toBeInTheDocument()
     expect(screen.getByText(/Teste de resistência paranormal: \+5/)).toBeInTheDocument()
-    expect(screen.getByText(/Resistência a dano mental\/paranormal: 10/)).toBeInTheDocument()
-    expect(screen.getByText(/Resistência a dano mental: 5/)).toBeInTheDocument()
-    expect(screen.getByText(/o livro não diz se acumulam/)).toBeInTheDocument()
+    expect(screen.getByText(/Resistência a dano mental: 15/)).toBeInTheDocument()
+    expect(screen.getByText(/Resistência a dano paranormal: 10/)).toBeInTheDocument()
   })
 
-  it('Ficha imprimível: mostra a seção Resistências com as 3 linhas', () => {
+  it('Ficha imprimível: mostra a seção Resistências com as resistências somadas', () => {
     useAppStore.getState().setActiveSystem('ordem')
     useOrdemStore.setState({ draft: seedIntuitiveAt65WithConspiracyOrigin(), view: 'print' })
     render(<App />)
     expect(screen.getByText('Resistências')).toBeInTheDocument()
-    expect(screen.getByText(/Resistência a dano mental\/paranormal: 10/)).toBeInTheDocument()
-    expect(screen.getByText(/Resistência a dano mental: 5/)).toBeInTheDocument()
+    expect(screen.getByText(/Resistência a dano mental: 15/)).toBeInTheDocument()
+    expect(screen.getByText(/Resistência a dano paranormal: 10/)).toBeInTheDocument()
   })
 
   // Inventário Otimizado (Técnico NEX 10%) soma Intelecto à Força pro cálculo de carga (Fase 4).

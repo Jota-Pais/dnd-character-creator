@@ -285,3 +285,14 @@
 ### F30 — Redesign do módulo Ordem (handoff em docs/Novo design da aplicação de ordem)
 - **Relato:** o usuário entregou um handoff hifi (README + protótipo HTML, seção 2a aprovada) com novo padrão visual do Ordem — só design; regras intactas.
 - **Status:** 🔄 EM ANDAMENTO (2026-07-13) — **Fase 1 ✅**: tokens novos no `.theme-ordem` (vermelhos + neutros de alto contraste, re-tematizando todos os passos), sidebar fixa de 250px (logo/etapas/estados ✦/Meus agentes), overline "Etapa N de 9", sigilo girando (240s) + vinheta, StepNav como barra fixa com CTA vermelho. **Fase 2 ✅**: galeria neutra em linhas por sistema (avatar losango, Abrir tintado, ações 35px). **Pendente**: aplicar padrões finos por tela (catálogo visível de rituais no lugar de selects, mestre-detalhe em Origem/Classe conforme protótipo, CTA desabilitado dizendo "o que falta", chips de perícia no padrão novo, etiquetas coloridas de elemento).
+
+### F31 — Efeitos determinísticos de Origem, Trilha e Poderes estruturados na ficha (Ordem)
+- **Relato:** Continuação da varredura (iniciada no F25) para aplicar bônus estáticos à ficha, desta vez cobrindo origens e trilhas.
+- **Implementado em 5 fases:**
+  1. **Efeitos de Origem:** Stats base (Patrulha +2 Def; Calejado +PV; Cicatrizes +SAN; Dedicação +PE e limite). Dano de Mão Pesada e Para Bellum.
+  2. **Rituais:** Bônus na DT (Rituais Eficientes +5, Especialista +2), custo (Tatuagem Ritualística −1), bônus no limite de PE (Presença Poderosa).
+  3. **Resistências:** Mente Sã, Inabalável, Eu Já Sabia adicionados à aba de resistências. Regra de empilhamento de Resistência a Dano (RD) aplicada.
+  4. **Inventário:** Inventário Otimizado passa a somar Intelecto à carga.
+  5. **Combate:** Ferramenta de Trabalho (+1 arma escolhida) e ataque Desarmado do Artista Marcial resolvidos.
+- **Pendências justificadas:** Remendão (não há tag de itens "de investigação") e Traços do Outro Lado / Transcender (Poderes Paranormais ainda não digitalizados).
+- **Status:** ✅ FEITO (2026-07-14) — 5 fases implementadas, regras de RD empilhadas e testes cobrindo todas as mecânicas acima (678 testes passando).

@@ -164,7 +164,7 @@
     "name": "Teórico da Conspiração",
     "description": "Investigou a fundo assuntos como reptilianos, Illuminati e a Terra plana — até sua pesquisa esbarrar no Paranormal de verdade.",
     "skillProficiencies": ["investigation", "occultism"],
-    "power": { "name": "Eu Já Sabia", "description": "Você não se abala com entidades ou anomalias — sempre soube que isso tudo existia. Recebe resistência a dano mental igual ao seu Intelecto." },
+    "power": { "name": "Eu Já Sabia", "description": "Você não se abala com entidades ou anomalias — sempre soube que isso tudo existia. Recebe resistência a dano mental igual ao seu Intelecto.", "effects": { "mentalDamageResistanceEqualsIntellect": true } },
     "rollRange": [33, 33]
   },
   {

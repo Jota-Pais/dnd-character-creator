@@ -175,9 +175,9 @@
     "description": "Preparou a mente para resistir aos efeitos do Outro Lado. Seu foco e força de vontade expandem os limites de suas capacidades paranormais.",
     "requirement": null,
     "features": [
-      { "nex": 10, "name": "Mente Sã", "description": "Você recebe resistência paranormal +5 (+5 em testes de resistência contra efeitos paranormais)." },
+      { "nex": 10, "name": "Mente Sã", "description": "Você recebe resistência paranormal +5 (+5 em testes de resistência contra efeitos paranormais).", "effects": { "paranormalResistanceBonus": 5 } },
       { "nex": 40, "name": "Presença Poderosa", "description": "Você adiciona sua Presença ao seu limite de PE por turno, mas apenas para conjurar rituais.", "effects": { "ritualPeLimitBonusFromPresence": true } },
-      { "nex": 65, "name": "Inabalável", "description": "Você recebe resistência a dano mental e paranormal 10. Quando é alvo de um efeito paranormal que permite um teste de Vontade para reduzir o dano à metade, não sofre dano algum se passar." },
+      { "nex": 65, "name": "Inabalável", "description": "Você recebe resistência a dano mental e paranormal 10. Quando é alvo de um efeito paranormal que permite um teste de Vontade para reduzir o dano à metade, não sofre dano algum se passar.", "effects": { "mentalAndParanormalDamageResistance": 10 } },
       { "nex": 99, "name": "Presença do Medo", "description": "Você aprende o ritual Presença do Medo.", "grantsRitual": "presenca-do-medo" }
     ]
   },

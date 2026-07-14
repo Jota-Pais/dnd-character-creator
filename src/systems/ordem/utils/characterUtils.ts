@@ -375,6 +375,18 @@ export function hasRitualPeLimitBonusFromPresence(draft: OrdemCharacterDraft): b
   return getReachedTrilhaFeaturesWithSource(draft).some(({ feature }) => feature.effects?.ritualPeLimitBonusFromPresence)
 }
 
+/** Bônus em testes de resistência contra efeitos paranormais, de features de trilha (ex.: Mente Sã +5). */
+export function getParanormalResistanceBonus(draft: OrdemCharacterDraft): number {
+  return getReachedTrilhaFeaturesWithSource(draft)
+    .reduce((s, { feature }) => s + (feature.effects?.paranormalResistanceBonus ?? 0), 0)
+}
+
+/** Resistência a dano mental E paranormal, de features de trilha (ex.: Inabalável 10). */
+export function getMentalParanormalDamageResistance(draft: OrdemCharacterDraft): number {
+  return getReachedTrilhaFeaturesWithSource(draft)
+    .reduce((s, { feature }) => s + (feature.effects?.mentalAndParanormalDamageResistance ?? 0), 0)
+}
+
 // ── Efeitos do poder de origem (aplicados na ficha) ─────────────────────────────
 
 /** Efeitos mecânicos estruturados do poder da origem escolhida (objeto vazio se não houver). */
@@ -407,6 +419,18 @@ export function getOriginPeBonus(draft: OrdemCharacterDraft): number {
 /** Defesa extra da origem (ex.: Patrulha +2). */
 export function getOriginDefenseBonus(draft: OrdemCharacterDraft): number {
   return getOriginEffects(draft).defenseBonus ?? 0
+}
+
+/**
+ * Resistência a dano mental do poder de origem (ex.: Eu Já Sabia = Intelecto). Recebe o Intelecto
+ * já pronto (em vez de calcular internamente) para o chamador poder passar o valor com maldições,
+ * como o resto da ficha faz — mesmo padrão de `deriveStats` recebendo atributos por parâmetro.
+ * É uma fonte SEPARADA de "resistência a dano mental" da de Inabalável (trilha); o livro não
+ * confirma se resistências de fontes diferentes se acumulam, então a ficha mostra as duas como
+ * linhas distintas em vez de somar — ver `getMentalParanormalDamageResistance`.
+ */
+export function getOriginMentalDamageResistance(draft: OrdemCharacterDraft, intellect: number): number {
+  return getOriginEffects(draft).mentalDamageResistanceEqualsIntellect ? intellect : 0
 }
 
 /** Limite de PE por turno já com o bônus de origem (ex.: Dedicação +1). */

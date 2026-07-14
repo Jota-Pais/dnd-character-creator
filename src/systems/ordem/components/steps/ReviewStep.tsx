@@ -6,6 +6,7 @@ import { getTrilha } from '../../utils/trilhaUtils'
 import { getPower } from '../../utils/powerUtils'
 import {
   getTrainedSkills, getSkillGrade, hasFavoredRitualPower, hasLaminaMaldita, getRitualCost, hasClassPower, getWeaponSkillOverride, getGrantedRituals, getEffectivePeLimit,
+  getParanormalResistanceBonus, getMentalParanormalDamageResistance, getOriginMentalDamageResistance,
 } from '../../utils/characterUtils'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, ritualNeedsElementChoice, ELEMENT_NAMES } from '../../utils/ritualUtils'
 import {
@@ -43,6 +44,10 @@ export function ReviewStep() {
     ? getReachedTrilhaSlots(draft.nex).map(nex => trilha.features.find(f => f.nex === nex)).filter(Boolean)
     : []
   const powers = draft.powerChoices.filter((p): p is string => Boolean(p)).map(getPower).filter(Boolean)
+  // Resistências automáticas (Mente Sã/Inabalável da trilha; Eu Já Sabia da origem) — ver Section "Resistências".
+  const paranormalResistanceBonus = getParanormalResistanceBonus(draft)
+  const mentalParanormalDr = getMentalParanormalDamageResistance(draft)
+  const originMentalDr = getOriginMentalDamageResistance(draft, attributes.intellect)
   // Só o Ocultista conhece rituais; limita aos slots realmente abertos pelo NEX (baixar o NEX
   // depois de escolher não deve deixar rituais obsoletos de círculos inacessíveis na ficha).
   const ritualSlots = draft.class === 'occultist' ? getRitualSlotsCount(draft.nex) : 0
@@ -152,6 +157,38 @@ export function ReviewStep() {
                 <span className="font-semibold text-parchment-300">{p.name}.</span> {p.description}
               </p>
             ))}
+          </div>
+        </Section>
+      )}
+
+      {(paranormalResistanceBonus > 0 || mentalParanormalDr > 0 || originMentalDr > 0) && (
+        <Section title="Resistências">
+          <div className="space-y-1.5">
+            {paranormalResistanceBonus > 0 && (
+              <p className="text-parchment-500 text-xs">
+                <span className="font-semibold text-parchment-300">Teste de resistência paranormal: +{paranormalResistanceBonus}</span>
+                {' '}<span className="text-gold-600/90">(Mente Sã)</span>
+              </p>
+            )}
+            {mentalParanormalDr > 0 && (
+              <p className="text-parchment-500 text-xs">
+                <span className="font-semibold text-parchment-300">Resistência a dano mental/paranormal: {mentalParanormalDr}</span>
+                {' '}<span className="text-gold-600/90">(Inabalável)</span>
+                <br />
+                <span className="text-parchment-600">Quando for alvo de um efeito paranormal que permite reduzir o dano à metade com um teste de Vontade, não sofre dano algum se passar.</span>
+              </p>
+            )}
+            {originMentalDr > 0 && (
+              <p className="text-parchment-500 text-xs">
+                <span className="font-semibold text-parchment-300">Resistência a dano mental: {originMentalDr}</span>
+                {' '}<span className="text-gold-600/90">(Eu Já Sabia)</span>
+              </p>
+            )}
+            {mentalParanormalDr > 0 && originMentalDr > 0 && (
+              <p className="text-amber-400/80 text-[11px] italic">
+                Duas fontes de resistência a dano mental — o livro não diz se acumulam; combine com o mestre.
+              </p>
+            )}
           </div>
         </Section>
       )}

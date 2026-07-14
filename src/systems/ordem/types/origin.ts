@@ -20,6 +20,8 @@ export type OriginPowerEffects = {
   meleeDamageBonus?: number
   /** Bônus em rolagens de dano com armas de fogo (ex.: Para Bellum +2). */
   firearmDamageBonus?: number
+  /** Resistência a dano mental igual ao Intelecto (ex.: Eu Já Sabia). */
+  mentalDamageResistanceEqualsIntellect?: boolean
 }
 
 export type Origin = {

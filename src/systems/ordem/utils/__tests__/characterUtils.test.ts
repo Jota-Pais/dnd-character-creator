@@ -26,6 +26,9 @@ import {
   getEffectivePeLimit,
   getRitualDtBonusFromTrilha,
   hasRitualPeLimitBonusFromPresence,
+  getParanormalResistanceBonus,
+  getMentalParanormalDamageResistance,
+  getOriginMentalDamageResistance,
 } from '../characterUtils'
 import { getCursedDerivedStats } from '../curseUtils'
 import { getOrdemClass } from '../classUtils'
@@ -333,6 +336,31 @@ describe('getRitualDtBonusFromTrilha / hasRitualPeLimitBonusFromPresence', () =>
     expect(hasRitualPeLimitBonusFromPresence(makeDraft({ class: 'occultist', trilha: 'intuitive', nex: 40 }))).toBe(true)
     expect(hasRitualPeLimitBonusFromPresence(makeDraft({ class: 'occultist', trilha: 'intuitive', nex: 10 }))).toBe(false)
     expect(hasRitualPeLimitBonusFromPresence(makeDraft({ class: 'occultist', trilha: 'conduit', nex: 99 }))).toBe(false)
+  })
+})
+
+describe('Resistências (Grupo D): Mente Sã, Inabalável, Eu Já Sabia', () => {
+  it('Mente Sã (Intuitivo NEX 10%) soma +5 em testes de resistência paranormal', () => {
+    expect(getParanormalResistanceBonus(makeDraft({ class: 'occultist', trilha: 'intuitive', nex: 10 }))).toBe(5)
+    expect(getParanormalResistanceBonus(makeDraft({ class: 'occultist', trilha: 'intuitive', nex: 5 }))).toBe(0)
+    expect(getParanormalResistanceBonus(makeDraft({ class: 'occultist', trilha: 'conduit', nex: 99 }))).toBe(0)
+  })
+
+  it('Inabalável (Intuitivo NEX 65%) dá resistência a dano mental e paranormal 10', () => {
+    expect(getMentalParanormalDamageResistance(makeDraft({ class: 'occultist', trilha: 'intuitive', nex: 65 }))).toBe(10)
+    expect(getMentalParanormalDamageResistance(makeDraft({ class: 'occultist', trilha: 'intuitive', nex: 60 }))).toBe(0)
+  })
+
+  it('Eu Já Sabia (Teórico da Conspiração) dá resistência a dano mental igual ao Intelecto recebido', () => {
+    expect(getOriginMentalDamageResistance(makeDraft({ origin: 'conspiracy-theorist' }), 4)).toBe(4)
+    expect(getOriginMentalDamageResistance(makeDraft({ origin: 'conspiracy-theorist' }), 0)).toBe(0)
+    expect(getOriginMentalDamageResistance(makeDraft({ origin: 'academic' }), 4)).toBe(0)
+  })
+
+  it('Inabalável e Eu Já Sabia são independentes (fontes diferentes, mesma NEX/origem não interfere)', () => {
+    const draft = makeDraft({ class: 'occultist', trilha: 'intuitive', nex: 65, origin: 'conspiracy-theorist' })
+    expect(getMentalParanormalDamageResistance(draft)).toBe(10)
+    expect(getOriginMentalDamageResistance(draft, 3)).toBe(3)
   })
 })
 

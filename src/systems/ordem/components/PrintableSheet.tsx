@@ -4,7 +4,10 @@ import { getOrdemClass } from '../utils/classUtils'
 import { SKILLS } from '../utils/skillUtils'
 import { getTrilha } from '../utils/trilhaUtils'
 import { getPower } from '../utils/powerUtils'
-import { getTrainedSkills, getSkillGrade, getRitualCost, hasClassPower, getWeaponSkillOverride, getGrantedRituals, getEffectivePeLimit } from '../utils/characterUtils'
+import {
+  getTrainedSkills, getSkillGrade, getRitualCost, hasClassPower, getWeaponSkillOverride, getGrantedRituals, getEffectivePeLimit,
+  getParanormalResistanceBonus, getMentalParanormalDamageResistance, getOriginMentalDamageResistance,
+} from '../utils/characterUtils'
 import { getReachedTrilhaSlots, getPeLimit } from '../utils/progressionUtils'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount } from '../utils/ritualUtils'
 import {
@@ -43,6 +46,10 @@ export function PrintableSheet() {
   const trilha = draft.trilha ? getTrilha(draft.trilha) : undefined
   const reachedTrilhaFeatures = trilha ? getReachedTrilhaSlots(draft.nex).map(nex => trilha.features.find(f => f.nex === nex)).filter(Boolean) : []
   const powers = draft.powerChoices.filter((p): p is string => Boolean(p)).map(getPower).filter(Boolean)
+  // Resistências automáticas (Mente Sã/Inabalável da trilha; Eu Já Sabia da origem) — ver seção "Resistências".
+  const paranormalResistanceBonus = getParanormalResistanceBonus(draft)
+  const mentalParanormalDr = getMentalParanormalDamageResistance(draft)
+  const originMentalDr = getOriginMentalDamageResistance(draft, attributes.intellect)
   // Só o Ocultista conhece rituais; limita aos slots abertos pelo NEX (ver ReviewStep).
   const ritualSlots = draft.class === 'occultist' ? getRitualSlotsCount(draft.nex) : 0
   const rituals = draft.ritualChoices.slice(0, ritualSlots).filter((r): r is string => Boolean(r)).map(getRitualById).filter(Boolean)
@@ -268,6 +275,29 @@ export function PrintableSheet() {
             )}
           </div>
         </section>
+
+        {(paranormalResistanceBonus > 0 || mentalParanormalDr > 0 || originMentalDr > 0) && (
+          <section className="mb-4">
+            <BlackBar>Resistências</BlackBar>
+            <div className="space-y-1 mt-2 text-sm">
+              {paranormalResistanceBonus > 0 && (
+                <p><span className="font-semibold">Teste de resistência paranormal: +{paranormalResistanceBonus}</span> (Mente Sã).</p>
+              )}
+              {mentalParanormalDr > 0 && (
+                <p>
+                  <span className="font-semibold">Resistência a dano mental/paranormal: {mentalParanormalDr}</span> (Inabalável).{' '}
+                  Quando for alvo de um efeito paranormal que permite reduzir o dano à metade com um teste de Vontade, não sofre dano algum se passar.
+                </p>
+              )}
+              {originMentalDr > 0 && (
+                <p><span className="font-semibold">Resistência a dano mental: {originMentalDr}</span> (Eu Já Sabia).</p>
+              )}
+              {mentalParanormalDr > 0 && originMentalDr > 0 && (
+                <p className="text-[10px] text-gray-500">Duas fontes de resistência a dano mental — o livro não diz se acumulam; combine com o mestre.</p>
+              )}
+            </div>
+          </section>
+        )}
 
         {(rituals.length > 0 || grantedRituals.length > 0) && (
           <section className="mb-4">

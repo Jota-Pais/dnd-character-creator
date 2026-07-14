@@ -213,4 +213,39 @@ describe('App (smoke) — Ordem Paranormal', () => {
     // Limite base (NEX 40% → 8) + Presença 4 (Presença Poderosa) = 12.
     expect(screen.getByText(/Limite PE p\/ Ritual: 12/)).toBeInTheDocument()
   })
+
+  // Resistências (Fase 3): Mente Sã + Inabalável (Intuitivo NEX 65%) junto com Eu Já Sabia
+  // (Teórico da Conspiração), pra ver as 3 linhas e o aviso de fontes de resistência diferentes.
+  function seedIntuitiveAt65WithConspiracyOrigin() {
+    return {
+      ...ORDEM_EMPTY,
+      name: 'Cética',
+      attributes: { agility: 1, strength: 1, intellect: 5, presence: 1, vigor: 1 },
+      origin: 'conspiracy-theorist',
+      class: 'occultist' as const,
+      nex: 65,
+      trilha: 'intuitive',
+      ritualChoices: [],
+    }
+  }
+
+  it('Revisão: mostra Mente Sã, Inabalável e Eu Já Sabia, com o aviso de fontes diferentes', () => {
+    useAppStore.getState().setActiveSystem('ordem')
+    useOrdemStore.setState({ draft: seedIntuitiveAt65WithConspiracyOrigin(), view: 'wizard', currentStep: 'review' })
+    render(<App />)
+    expect(screen.getByText('Resistências')).toBeInTheDocument()
+    expect(screen.getByText(/Teste de resistência paranormal: \+5/)).toBeInTheDocument()
+    expect(screen.getByText(/Resistência a dano mental\/paranormal: 10/)).toBeInTheDocument()
+    expect(screen.getByText(/Resistência a dano mental: 5/)).toBeInTheDocument()
+    expect(screen.getByText(/o livro não diz se acumulam/)).toBeInTheDocument()
+  })
+
+  it('Ficha imprimível: mostra a seção Resistências com as 3 linhas', () => {
+    useAppStore.getState().setActiveSystem('ordem')
+    useOrdemStore.setState({ draft: seedIntuitiveAt65WithConspiracyOrigin(), view: 'print' })
+    render(<App />)
+    expect(screen.getByText('Resistências')).toBeInTheDocument()
+    expect(screen.getByText(/Resistência a dano mental\/paranormal: 10/)).toBeInTheDocument()
+    expect(screen.getByText(/Resistência a dano mental: 5/)).toBeInTheDocument()
+  })
 })

@@ -20,6 +20,7 @@ import {
   getCombinedCasterLevel,
 } from '../multiclassUtils'
 import { getFinalAbilityScores, isImprovementsStepComplete } from '../asiUtils'
+import { isStepComplete } from '../draftValidation'
 
 function makeDraft(over: Partial<CharacterDraft>): CharacterDraft {
   return { ...EMPTY_DRAFT, ...over }
@@ -264,5 +265,58 @@ describe('multiclasse — ASI aplicado e validado por classe', () => {
     // Preenchido, completo
     const complete = makeDraft({ ...base, additionalClasses: [entry({ classId: 'wizard', level: 4, asiChoices: [{ kind: 'asi', abilities: ['INT', 'CON'] }] })] })
     expect(isImprovementsStepComplete(complete)).toBe(true)
+  })
+})
+
+describe('multiclasse — validação do passo Classe (isStepComplete)', () => {
+  // Guerreiro primário nível 3 (2 perícias + estilo + subclasse no nível 3) + Bárbaro adicional nível 1.
+  const primaryChoices = { ...EMPTY_DRAFT.classChoices, skills: ['athletics', 'acrobatics'], fightingStyle: 'defense', subclass: 'champion' }
+
+  it('multiclasse completa: primária no nível dela + adicional com o subconjunto de multiclasse', () => {
+    const d = makeDraft({
+      class: 'fighter', level: 4, classChoices: primaryChoices,
+      additionalClasses: [entry({ classId: 'barbarian', level: 1 })],
+    })
+    expect(getPrimaryLevel(d)).toBe(3)
+    expect(isStepComplete(d, 'class')).toBe(true)
+  })
+
+  it('orçamento estourado (adicionais ≥ total) reprova o passo Classe', () => {
+    const d = makeDraft({
+      class: 'fighter', level: 4, classChoices: primaryChoices,
+      additionalClasses: [entry({ classId: 'barbarian', level: 4 })],
+    })
+    expect(isStepComplete(d, 'class')).toBe(false)
+  })
+
+  it('adicional incompleta reprova: Ladino adicional exige 1 perícia (multiclasse) + 2 de especialização', () => {
+    const base = { class: 'fighter' as const, level: 4, classChoices: primaryChoices }
+    // Ladino nível 1: multiclasse dá 1 perícia; Especialização (feature) exige 2 itens.
+    const semPericia = makeDraft({ ...base, additionalClasses: [entry({ classId: 'rogue', level: 1, classChoices: { ...EMPTY_DRAFT.classChoices, expertiseItems: ['a', 'b'] } })] })
+    expect(isStepComplete(semPericia, 'class')).toBe(false)
+    const completo = makeDraft({ ...base, additionalClasses: [entry({ classId: 'rogue', level: 1, classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['stealth'], expertiseItems: ['stealth', 'a'] } })] })
+    expect(isStepComplete(completo, 'class')).toBe(true)
+  })
+})
+
+describe('multiclasse — bloqueio de pré-requisitos na Revisão', () => {
+  const mc = (str: number) => makeDraft({
+    class: 'wizard', level: 5,
+    abilityScores: { STR: str, DEX: 12, CON: 10, INT: 13, WIS: 10, CHA: 10 },
+    additionalClasses: [entry({ classId: 'fighter', level: 2 })],
+    multiclass: true,
+  })
+
+  it('reprova quando uma classe não cumpre o mínimo (Guerreiro exige FOR 13 ou DES 13)', () => {
+    expect(isStepComplete(mc(12), 'review')).toBe(false)
+  })
+
+  it('aprova quando todas cumprem (Mago INT 13, Guerreiro FOR 13)', () => {
+    expect(isStepComplete(mc(13), 'review')).toBe(true)
+  })
+
+  it('classe única nunca é bloqueada por pré-requisito de multiclasse', () => {
+    const single = makeDraft({ class: 'wizard', level: 5, abilityScores: { STR: 8, DEX: 8, CON: 8, INT: 8, WIS: 8, CHA: 8 } })
+    expect(isStepComplete(single, 'review')).toBe(true)
   })
 })

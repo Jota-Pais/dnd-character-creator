@@ -178,3 +178,30 @@ export function getCombinedCasterLevel(draft: CharacterDraft): number {
   }
   return total
 }
+
+/** Níveis já alocados às classes adicionais (o resto do orçamento fica com a primária). */
+export function getAdditionalLevelsUsed(draft: CharacterDraft): number {
+  return draft.additionalClasses.reduce((sum, c) => sum + c.level, 0)
+}
+
+/** Ainda cabe outra classe? A primária precisa manter ao menos 1 nível. */
+export function canAddAnotherClass(draft: CharacterDraft): boolean {
+  return getAdditionalLevelsUsed(draft) < draft.level - 1
+}
+
+/**
+ * Todas as classes cumprem seus pré-requisitos de multiclasse (PHB pág. 166)? Só se aplica quando
+ * há multiclasse — classe única não tem pré-requisito. Usa os atributos FINAIS (o chamador passa
+ * getFinalAbilityScores; assim este módulo não depende de asiUtils, evitando ciclo de import).
+ */
+export function meetsAllMulticlassPrereqs(
+  draft: CharacterDraft,
+  finalScores: Partial<Record<AbilityScore, number>>,
+): boolean {
+  if (!isMulticlassed(draft)) return true
+  for (const entry of allClassEntries(draft)) {
+    const cls = getClass(entry.classId)
+    if (!cls || !meetsMulticlassPrereq(cls, finalScores)) return false
+  }
+  return true
+}

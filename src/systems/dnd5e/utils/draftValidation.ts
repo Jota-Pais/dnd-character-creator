@@ -20,7 +20,13 @@ import { getBackground, isBackgroundStepComplete } from './backgroundUtils'
 import { isAbilitiesStepComplete } from './abilityScoreUtils'
 import { getSpell, isSpellStepComplete } from './spellUtils'
 import { isEquipmentStepComplete } from './equipmentUtils'
-import { isImprovementsStepComplete } from './asiUtils'
+import { isImprovementsStepComplete, getFinalAbilityScores } from './asiUtils'
+import {
+  getPrimaryLevel,
+  allClassEntries,
+  getAdditionalLevelsUsed,
+  meetsAllMulticlassPrereqs,
+} from './multiclassUtils'
 import type { AsiChoice } from '../types/character'
 
 const ABILITY_KEYS: AbilityScore[] = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA']
@@ -304,20 +310,38 @@ export function isStepComplete(draft: CharacterDraft, step: WizardStep): boolean
       return draft.name.trim().length > 0
     case 'race':
       return isRaceStepComplete(race, subrace, draft.raceChoices)
-    case 'class':
-      return isClassStepComplete(cls, draft.classChoices, draft.level)
+    case 'class': {
+      // Classe primária no nível dela (total − adicionais); cada adicional no nível dela
+      // (com o subconjunto de proficiências de multiclasse); orçamento não pode estourar.
+      if (!isClassStepComplete(cls, draft.classChoices, getPrimaryLevel(draft))) return false
+      if (getAdditionalLevelsUsed(draft) > draft.level - 1) return false
+      for (const entry of draft.additionalClasses) {
+        const ec = getClass(entry.classId) ?? null
+        if (!isClassStepComplete(ec, entry.classChoices, entry.level, true)) return false
+      }
+      return true
+    }
     case 'abilities':
       return isAbilitiesStepComplete(draft.abilityMethod, draft.abilityScores, draft.rolledValues)
     case 'improvements':
       return isImprovementsStepComplete(draft)
-    case 'spells':
-      return isSpellStepComplete(cls, draft.spellChoices, draft.level)
+    case 'spells': {
+      // Cada classe conjuradora valida suas magias no nível que tem NELA.
+      for (const entry of allClassEntries(draft)) {
+        const ec = getClass(entry.classId) ?? null
+        if (!isSpellStepComplete(ec, entry.spellChoices, entry.level)) return false
+      }
+      return true
+    }
     case 'background':
       return isBackgroundStepComplete(background, draft.backgroundChoices)
     case 'equipment':
       return isEquipmentStepComplete(draft.equipment, cls?.startingEquipment)
     case 'review':
-      return true
+      // Bloqueio de pré-requisitos de multiclasse (fiel ao PHB), sobre os atributos finais —
+      // avaliado aqui porque só na Revisão todos os insumos (base + racial + ASI) existem.
+      // Classe única sempre passa (sem pré-requisito de multiclasse).
+      return meetsAllMulticlassPrereqs(draft, getFinalAbilityScores(draft))
   }
 }
 

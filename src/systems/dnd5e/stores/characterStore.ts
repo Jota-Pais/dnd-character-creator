@@ -1,9 +1,10 @@
 import { create } from 'zustand'
-import type { WizardStep, CharacterDraft, RaceChoiceSelections, ClassChoiceSelections, AbilityMethod, BackgroundChoiceSelections, EquipmentDraft, SpellChoices, HpMethod, AsiChoice } from '../types/character'
+import type { WizardStep, CharacterDraft, ClassEntry, RaceChoiceSelections, ClassChoiceSelections, AbilityMethod, BackgroundChoiceSelections, EquipmentDraft, SpellChoices, HpMethod, AsiChoice } from '../types/character'
 import type { AbilityScore } from '../types/race'
 import type { ChoiceResolution } from '../types/equipment'
 import { WIZARD_STEPS, EMPTY_DRAFT } from '../types/character'
 import { getClass } from '../utils/classUtils'
+import { getAdditionalLevelsUsed } from '../utils/multiclassUtils'
 import { EMPTY_EQUIPMENT_DRAFT } from '../types/equipment'
 import { EMPTY_SPELL_CHOICES } from '../types/spell'
 import { loadLibrary, saveCharacterEntry, deleteCharacterEntry, newId, type SavedCharacter } from '../utils/storage'
@@ -41,6 +42,11 @@ type CharacterStore = {
   setClass: (classId: string) => void
   updateClassChoices: (choices: Partial<ClassChoiceSelections>) => void
   updateSpellChoices: (choices: Partial<SpellChoices>) => void
+  setMulticlass: (enabled: boolean) => void
+  addClass: (classId: string) => void
+  removeClass: (classId: string) => void
+  setAdditionalClassLevel: (classId: string, level: number) => void
+  updateAdditionalClassChoices: (classId: string, choices: Partial<ClassChoiceSelections>) => void
   setAbilityMethod: (method: AbilityMethod) => void
   setAbilityScore: (ability: AbilityScore, score: number | null) => void
   setRolledValues: (values: number[]) => void
@@ -126,6 +132,8 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
         hpRolls: [],
         spellChoices: { ...EMPTY_SPELL_CHOICES },
         asiChoices: [],
+        // mudar o orçamento de nível refaz a alocação de multiclasse
+        additionalClasses: [],
       },
     })),
 
@@ -176,6 +184,8 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
         spellChoices: { ...EMPTY_SPELL_CHOICES },
         equipment: { ...EMPTY_EQUIPMENT_DRAFT },
         asiChoices: [],
+        // trocar a classe primária zera a multiclasse (evita conflito com a nova primária)
+        additionalClasses: [],
       },
     })),
 
@@ -192,6 +202,72 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
       draft: {
         ...state.draft,
         spellChoices: { ...state.draft.spellChoices, ...choices },
+      },
+    })),
+
+  setMulticlass: (enabled) =>
+    set(state => ({
+      draft: {
+        ...state.draft,
+        multiclass: enabled,
+        // desligar volta pra classe única (a primária recupera o orçamento inteiro)
+        additionalClasses: enabled ? state.draft.additionalClasses : [],
+      },
+    })),
+
+  addClass: (classId) =>
+    set(state => {
+      const { draft } = state
+      if (classId === draft.class) return {} // não duplica a primária
+      if (draft.additionalClasses.some(c => c.classId === classId)) return {} // já presente
+      if (getAdditionalLevelsUsed(draft) >= draft.level - 1) return {} // sem orçamento (primária ≥ 1)
+      const newEntry: ClassEntry = {
+        classId,
+        level: 1,
+        classChoices: { ...EMPTY_DRAFT.classChoices },
+        spellChoices: { ...EMPTY_SPELL_CHOICES },
+        asiChoices: [],
+        hpRolls: [],
+      }
+      return { draft: { ...draft, multiclass: true, additionalClasses: [...draft.additionalClasses, newEntry] } }
+    }),
+
+  removeClass: (classId) =>
+    set(state => ({
+      draft: {
+        ...state.draft,
+        additionalClasses: state.draft.additionalClasses.filter(c => c.classId !== classId),
+      },
+    })),
+
+  setAdditionalClassLevel: (classId, level) =>
+    set(state => {
+      const { draft } = state
+      const others = draft.additionalClasses
+        .filter(c => c.classId !== classId)
+        .reduce((sum, c) => sum + c.level, 0)
+      const maxForThis = draft.level - 1 - others // mantém a primária com ≥ 1 nível
+      const clamped = Math.max(1, Math.min(maxForThis, level))
+      return {
+        draft: {
+          ...draft,
+          additionalClasses: draft.additionalClasses.map(c =>
+            c.classId === classId
+              // mudar o nível reseta o que depende dele (magias/ASI/PV), como no setLevel da primária
+              ? { ...c, level: clamped, spellChoices: { ...EMPTY_SPELL_CHOICES }, asiChoices: [], hpRolls: [] }
+              : c,
+          ),
+        },
+      }
+    }),
+
+  updateAdditionalClassChoices: (classId, choices) =>
+    set(state => ({
+      draft: {
+        ...state.draft,
+        additionalClasses: state.draft.additionalClasses.map(c =>
+          c.classId === classId ? { ...c, classChoices: { ...c.classChoices, ...choices } } : c,
+        ),
       },
     })),
 

@@ -199,12 +199,18 @@ export function isClassStepComplete(
   cls: GameClass | null,
   choices: ClassChoiceSelections,
   currentLevel = 1,
+  multiclass = false,
 ): boolean {
   if (!cls) return false
 
-  if (choices.skills.length !== cls.skillChoices.count) return false
+  // Ao multiclassar, a classe concede só o subconjunto de perícias da Tabela de Proficiências
+  // de Multiclasse (0, ou 1 para bardo/ladino/patrulheiro) — não a lista completa da 1ª classe.
+  const skillCount = multiclass ? (cls.multiclassProficiencies.skills?.count ?? 0) : cls.skillChoices.count
+  if (choices.skills.length !== skillCount) return false
 
-  const requiredTools = cls.toolProficiencies.choices.reduce((sum, c) => sum + c.count, 0)
+  // Escolhas de ferramenta/instrumento só valem para a 1ª classe; as adicionais recebem as
+  // proficiências de multiclasse já concedidas (sem seletor nesta fase).
+  const requiredTools = multiclass ? 0 : cls.toolProficiencies.choices.reduce((sum, c) => sum + c.count, 0)
   if (choices.tools.length < requiredTools) return false
 
   if (cls.hasFightingStyle && !choices.fightingStyle) return false

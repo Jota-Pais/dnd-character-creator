@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { EMPTY_DRAFT } from '../../types/character'
 import type { OrdemCharacterDraft } from '../../types/character'
 import type { OrdemWeapon } from '../../types/equipment'
+import type { OrdemRitual } from '../../types/ritual'
 import {
   CURSES,
   getCurse,
@@ -14,6 +15,8 @@ import {
   areOpposingElements,
   formatCurseElement,
   formatCurseChoiceDetail,
+  getRitualDt,
+  getRitualPeLimit,
 } from '../curseUtils'
 import {
   getEquipmentById, getEffectiveCategory, isEquipmentStepComplete, areCursesValid, getDraftInstanceCategory,
@@ -21,6 +24,8 @@ import {
 } from '../equipmentUtils'
 import { getOrdemWeaponAttack } from '../ordemWeaponUtils'
 import { getOrdemClass } from '../classUtils'
+import { getEffectivePeLimit } from '../characterUtils'
+import { getPeLimit } from '../progressionUtils'
 
 function makeDraft(over: Partial<OrdemCharacterDraft>): OrdemCharacterDraft {
   return { ...EMPTY_DRAFT, attributes: { ...EMPTY_DRAFT.attributes }, ...over }
@@ -275,5 +280,55 @@ describe('unidades de equipamento — 2 revólveres com características diferen
     expect(formatCurseElement(antielemento, 'revolver', draft.equipmentCurseChoices)).toBe('Conhecimento')
     expect(formatCurseChoiceDetail(antielemento, 'revolver', draft.equipmentCurseChoices)).toBe('elemento-alvo: Energia')
     expect(formatCurseChoiceDetail(antielemento, 'revolver#2', draft.equipmentCurseChoices)).toBe('elemento-alvo: Morte')
+  })
+})
+
+describe('getRitualDt', () => {
+  const armaduraDeSangue = { id: 'armadura-de-sangue', circle: 1, elements: ['blood'], range: 'pessoal', target: 'você' } as OrdemRitual
+
+  it('base: 10 + limite de PE por rodada + Presença, sem bônus', () => {
+    const draft = makeDraft({ nex: 25, attributes: { agility: 1, strength: 1, intellect: 1, presence: 4, vigor: 1 } })
+    expect(getRitualDt(draft, armaduraDeSangue)).toEqual({ dt: 10 + getPeLimit(25) + 4, notes: [] })
+  })
+
+  it('Rituais Eficientes (Graduado NEX 65%) soma +5 em qualquer ritual', () => {
+    const draft = makeDraft({
+      class: 'occultist', trilha: 'scholar', nex: 65,
+      attributes: { agility: 1, strength: 1, intellect: 1, presence: 2, vigor: 1 },
+    })
+    expect(getRitualDt(draft, armaduraDeSangue)).toEqual({ dt: 10 + getPeLimit(65) + 2 + 5, notes: ['Rituais Eficientes +5'] })
+  })
+
+  it('Especialista em Elemento soma +2 só no elemento escolhido', () => {
+    const sangue = makeDraft({
+      nex: 5,
+      powerChoices: ['element-specialist'],
+      powerParams: { 'slot-0': ['blood'] },
+      attributes: { agility: 1, strength: 1, intellect: 1, presence: 2, vigor: 1 },
+    })
+    expect(getRitualDt(sangue, armaduraDeSangue)).toEqual({ dt: 10 + getPeLimit(5) + 2 + 2, notes: ['Especialista em Elemento +2'] })
+
+    const medo = makeDraft({
+      nex: 5,
+      powerChoices: ['element-specialist'],
+      powerParams: { 'slot-0': ['fear'] },
+      attributes: { agility: 1, strength: 1, intellect: 1, presence: 2, vigor: 1 },
+    })
+    expect(getRitualDt(medo, armaduraDeSangue)).toEqual({ dt: 10 + getPeLimit(5) + 2, notes: [] })
+  })
+})
+
+describe('getRitualPeLimit', () => {
+  it('sem Presença Poderosa, é igual ao limite geral de PE por turno', () => {
+    const draft = makeDraft({ nex: 40, attributes: { agility: 1, strength: 1, intellect: 1, presence: 3, vigor: 1 } })
+    expect(getRitualPeLimit(draft)).toBe(getEffectivePeLimit(draft))
+  })
+
+  it('Presença Poderosa (Intuitivo NEX 40%) soma Presença só pra conjurar rituais', () => {
+    const draft = makeDraft({
+      class: 'occultist', trilha: 'intuitive', nex: 40,
+      attributes: { agility: 1, strength: 1, intellect: 1, presence: 3, vigor: 1 },
+    })
+    expect(getRitualPeLimit(draft)).toBe(getEffectivePeLimit(draft) + 3)
   })
 })

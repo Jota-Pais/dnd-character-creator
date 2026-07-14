@@ -3,10 +3,14 @@ import type { OrdemCurse } from '../types/curse'
 import type { OrdemCharacterDraft, OrdemAttributes } from '../types/character'
 import type { OrdemClass } from '../types/class'
 import type { OrdemEquipment } from '../types/equipment'
-import type { OrdemElement } from '../types/ritual'
-import { getEffectiveAttributes, deriveStats, getOriginHpBonus, getOriginPeBonus, getOriginSanityBonus, getOriginDefenseBonus } from './characterUtils'
+import type { OrdemElement, OrdemRitual } from '../types/ritual'
+import {
+  getEffectiveAttributes, deriveStats, getOriginHpBonus, getOriginPeBonus, getOriginSanityBonus, getOriginDefenseBonus,
+  getEffectivePeLimit, getRitualDtBonusFromTrilha, hasRitualPeLimitBonusFromPresence, getChosenElementForPower,
+} from './characterUtils'
 import type { DerivedStats } from './characterUtils'
 import { ELEMENT_NAMES, getRitualById } from './ritualUtils'
+import { getPeLimit } from './progressionUtils'
 
 export const CURSES = cursesJson as OrdemCurse[]
 
@@ -209,4 +213,40 @@ export function getCursedDerivedStats(
     pe: stats.pe + peFlat,
     sanity: stats.sanity + getOriginSanityBonus(draft),
   }
+}
+
+/**
+ * DT para resistir a um ritual conhecido: 10 + limite de PE por rodada + Presença (livro, pág.
+ * 121), com os bônus determinísticos: Rituais Eficientes (+5 em TODOS) e Especialista em
+ * Elemento (+2 nos rituais do elemento escolhido; multi-elemento usa o escolhido ao aprender).
+ * Usa a Presença já com maldições (igual ao resto da ficha), mas o limite de PE BASE (sem
+ * Presença Poderosa — essa soma PE por turno pra conjurar, não a dificuldade do ritual em si).
+ */
+export function getRitualDt(draft: OrdemCharacterDraft, ritual: OrdemRitual): { dt: number; notes: string[] } {
+  let dt = 10 + getPeLimit(draft.nex) + getSheetAttributes(draft).presence
+  const notes: string[] = []
+  const trilhaBonus = getRitualDtBonusFromTrilha(draft)
+  if (trilhaBonus > 0) {
+    dt += trilhaBonus
+    notes.push(`Rituais Eficientes +${trilhaBonus}`)
+  }
+  const specialistElement = getChosenElementForPower(draft, 'element-specialist')
+  if (specialistElement) {
+    const ritualElement = ritual.elements.length > 1 ? draft.ritualElementChoices[ritual.id] : ritual.elements[0]
+    if (ritualElement === specialistElement) {
+      dt += 2
+      notes.push('Especialista em Elemento +2')
+    }
+  }
+  return { dt, notes }
+}
+
+/**
+ * Limite de PE por turno só para conjurar rituais: igual ao geral (`getEffectivePeLimit`), mas
+ * com Presença somada quando o personagem tem Presença Poderosa (Intuitivo NEX 40%). Fora de
+ * conjuração, vale o limite geral — por isso é um número separado, não substitui o outro.
+ */
+export function getRitualPeLimit(draft: OrdemCharacterDraft): number {
+  const base = getEffectivePeLimit(draft)
+  return hasRitualPeLimitBonusFromPresence(draft) ? base + getSheetAttributes(draft).presence : base
 }

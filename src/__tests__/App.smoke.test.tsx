@@ -153,6 +153,64 @@ describe('App (smoke) — Ordem Paranormal', () => {
     render(<App />)
     expect(screen.getByText('Rituais')).toBeInTheDocument()
     expect(screen.getByText('Canalizar o Medo')).toBeInTheDocument()
-    expect(screen.getByText(/concedido pela Trilha Conduíte/)).toBeInTheDocument()
+  })
+
+  // Rituais Eficientes (Graduado NEX 65%) soma +5 na DT de todos os rituais (Fase 2).
+  function seedScholarAt65() {
+    return {
+      ...ORDEM_EMPTY,
+      name: 'Erudita',
+      attributes: { agility: 1, strength: 1, intellect: 1, presence: 3, vigor: 1 },
+      origin: 'academic',
+      class: 'occultist' as const,
+      nex: 65,
+      trilha: 'scholar',
+      ritualChoices: ['armadura-de-sangue'],
+    }
+  }
+
+  it('Revisão do Graduado NEX 65%: DT do ritual soma +5 (Rituais Eficientes)', () => {
+    useAppStore.getState().setActiveSystem('ordem')
+    useOrdemStore.setState({ draft: seedScholarAt65(), view: 'wizard', currentStep: 'review' })
+    render(<App />)
+    // Base: 10 + limite de PE (NEX 65% → 13) + Presença 3 = 26; +5 (Rituais Eficientes) = 31.
+    expect(screen.getByText(/DT 31 \(Rituais Eficientes \+5\)/)).toBeInTheDocument()
+  })
+
+  it('Ficha imprimível do Graduado NEX 65%: DT Base fica em 26 e o ritual mostra 31 com a nota', () => {
+    useAppStore.getState().setActiveSystem('ordem')
+    useOrdemStore.setState({ draft: seedScholarAt65(), view: 'print' })
+    render(<App />)
+    expect(screen.getByText(/DT Base: 26/)).toBeInTheDocument()
+    expect(screen.getByText(/DT 31 \(Rituais Eficientes \+5\)/)).toBeInTheDocument()
+  })
+
+  // Presença Poderosa (Intuitivo NEX 40%) soma Presença ao limite de PE só pra conjurar rituais (Fase 2).
+  function seedIntuitiveAt40() {
+    return {
+      ...ORDEM_EMPTY,
+      name: 'Vidente Firme',
+      attributes: { agility: 1, strength: 1, intellect: 1, presence: 4, vigor: 1 },
+      origin: 'academic',
+      class: 'occultist' as const,
+      nex: 40,
+      trilha: 'intuitive',
+      ritualChoices: ['armadura-de-sangue'],
+    }
+  }
+
+  it('Revisão do Intuitivo NEX 40%: mostra o limite de PE extra pra conjurar rituais', () => {
+    useAppStore.getState().setActiveSystem('ordem')
+    useOrdemStore.setState({ draft: seedIntuitiveAt40(), view: 'wizard', currentStep: 'review' })
+    render(<App />)
+    expect(screen.getByText(/ao conjurar rituais — Presença Poderosa/)).toBeInTheDocument()
+  })
+
+  it('Ficha imprimível do Intuitivo NEX 40%: mostra o badge de Limite PE p/ Ritual', () => {
+    useAppStore.getState().setActiveSystem('ordem')
+    useOrdemStore.setState({ draft: seedIntuitiveAt40(), view: 'print' })
+    render(<App />)
+    // Limite base (NEX 40% → 8) + Presença 4 (Presença Poderosa) = 12.
+    expect(screen.getByText(/Limite PE p\/ Ritual: 12/)).toBeInTheDocument()
   })
 })

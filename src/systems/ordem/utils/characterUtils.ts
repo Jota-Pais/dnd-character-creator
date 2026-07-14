@@ -277,8 +277,9 @@ export function getWeaponSkillOverride(draft: OrdemCharacterDraft, uid: string):
 
 /**
  * Custo final de conjuração de um ritual conhecido, com as reduções determinísticas:
- * Ritual Predileto (−1 PE no ritual escolhido) e Lâmina Maldita (−1 PE no Amaldiçoar Arma).
- * As reduções se acumulam (texto do Ritual Predileto); nunca abaixo de 0.
+ * Ritual Predileto (−1 PE no ritual escolhido), Lâmina Maldita (−1 PE no Amaldiçoar Arma) e
+ * Tatuagem Ritualística (−1 PE em ritual de alcance pessoal que mira só você). Acumulam
+ * (texto do Ritual Predileto); nunca abaixo de 0.
  */
 export function getRitualCost(draft: OrdemCharacterDraft, ritual: OrdemRitual): { cost: number; notes: string[] } {
   let cost = RITUAL_COST[ritual.circle]
@@ -300,15 +301,45 @@ export function getRitualCost(draft: OrdemCharacterDraft, ritual: OrdemRitual): 
       notes.push('Mestre em Elemento −1')
     }
   }
+  // Tatuagem Ritualística: só rituais de alcance PESSOAL que miram "você" (uma minoria dos de
+  // alcance pessoal são área centrada em você, ex. Presença do Medo — não contam).
+  if (hasClassPower(draft, 'ritualistic-tattoo') && ritual.range === 'pessoal' && ritual.target === 'você') {
+    cost -= 1
+    notes.push('Tatuagem Ritualística −1')
+  }
   return { cost: Math.max(0, cost), notes }
 }
 
-// ── Rituais concedidos por trilha ───────────────────────────────────────────────
+// ── Rituais e efeitos concedidos por trilha ─────────────────────────────────────
 
 export type GrantedRitual = {
   ritual: OrdemRitual
   /** Rótulo da fonte que ensinou o ritual (ex.: "Trilha Conduíte" ou "Versatilidade"). */
   source: string
+}
+
+/**
+ * Features de trilha já alcançadas: as da trilha do personagem (NEX já alcançado) + a 1ª feature
+ * (NEX 10%) de outra trilha, se a Versatilidade (NEX 50%) a concedeu. Base compartilhada por
+ * `getGrantedRituals` e pelos getters de efeito de trilha (DT de ritual, limite de PE...).
+ */
+function getReachedTrilhaFeaturesWithSource(draft: OrdemCharacterDraft): { feature: TrilhaFeature; source: string }[] {
+  const result: { feature: TrilhaFeature; source: string }[] = []
+  const trilha = draft.trilha ? getTrilha(draft.trilha) : undefined
+  if (trilha) {
+    for (const feature of trilha.features.filter(f => f.nex <= draft.nex)) {
+      result.push({ feature, source: `Trilha ${trilha.name}` })
+    }
+  }
+  if (draft.versatilityChoice?.kind === 'trilha') {
+    const versTrilha = getTrilha(draft.versatilityChoice.trilhaId)
+    if (versTrilha) {
+      for (const feature of versTrilha.features.filter(f => f.nex <= TRILHA_FEATURE_NEX[0])) {
+        result.push({ feature, source: 'Versatilidade' })
+      }
+    }
+  }
+  return result
 }
 
 /**
@@ -321,34 +352,27 @@ export type GrantedRitual = {
 export function getGrantedRituals(draft: OrdemCharacterDraft): GrantedRitual[] {
   const result: GrantedRitual[] = []
   const seen = new Set<string>()
-
-  const collect = (features: TrilhaFeature[], source: string) => {
-    for (const feature of features) {
-      const ritualId = feature.grantsRitual
-      if (!ritualId || seen.has(ritualId)) continue
-      const ritual = getRitualById(ritualId)
-      if (!ritual) continue
-      seen.add(ritualId)
-      result.push({ ritual, source })
-    }
+  for (const { feature, source } of getReachedTrilhaFeaturesWithSource(draft)) {
+    const ritualId = feature.grantsRitual
+    if (!ritualId || seen.has(ritualId)) continue
+    const ritual = getRitualById(ritualId)
+    if (!ritual) continue
+    seen.add(ritualId)
+    result.push({ ritual, source })
   }
-
-  // Trilha do personagem: features cujo NEX já foi alcançado.
-  const trilha = draft.trilha ? getTrilha(draft.trilha) : undefined
-  if (trilha) {
-    collect(trilha.features.filter(f => f.nex <= draft.nex), `Trilha ${trilha.name}`)
-  }
-
-  // Versatilidade: concede apenas a 1ª feature (NEX 10%) de uma trilha diferente da sua.
-  if (draft.versatilityChoice?.kind === 'trilha') {
-    const versTrilha = getTrilha(draft.versatilityChoice.trilhaId)
-    if (versTrilha) {
-      collect(versTrilha.features.filter(f => f.nex <= TRILHA_FEATURE_NEX[0]), 'Versatilidade')
-    }
-  }
-
   const chosen = new Set(draft.ritualChoices.filter((id): id is string => Boolean(id)))
   return result.filter(g => !chosen.has(g.ritual.id))
+}
+
+/** Soma dos bônus de DT de rituais concedidos por trilha (ex.: Rituais Eficientes +5). */
+export function getRitualDtBonusFromTrilha(draft: OrdemCharacterDraft): number {
+  return getReachedTrilhaFeaturesWithSource(draft)
+    .reduce((s, { feature }) => s + (feature.effects?.allRitualDtBonus ?? 0), 0)
+}
+
+/** Tem Presença Poderosa (Intuitivo NEX 40%): soma Presença ao limite de PE, só para rituais? */
+export function hasRitualPeLimitBonusFromPresence(draft: OrdemCharacterDraft): boolean {
+  return getReachedTrilhaFeaturesWithSource(draft).some(({ feature }) => feature.effects?.ritualPeLimitBonusFromPresence)
 }
 
 // ── Efeitos do poder de origem (aplicados na ficha) ─────────────────────────────

@@ -24,6 +24,8 @@ import {
   getOriginSanityBonus,
   getOriginPeBonus,
   getEffectivePeLimit,
+  getRitualDtBonusFromTrilha,
+  hasRitualPeLimitBonusFromPresence,
 } from '../characterUtils'
 import { getCursedDerivedStats } from '../curseUtils'
 import { getOrdemClass } from '../classUtils'
@@ -305,6 +307,32 @@ describe('poderes com escolha embutida (F27)', () => {
     const ritualMorte = { id: 'decadencia', circle: 1, elements: ['death'] } as OrdemRitual
     expect(getRitualCost(draft, ritualEnergia)).toEqual({ cost: 0, notes: ['Mestre em Elemento −1'] })
     expect(getRitualCost(draft, ritualMorte).cost).toBe(1)
+  })
+
+  it('Tatuagem Ritualística: −1 PE só em ritual de alcance pessoal que mira "você"', () => {
+    const comTatuagem = makeDraft({ powerChoices: ['ritualistic-tattoo'] })
+    const armaduraDeSangue = { id: 'armadura-de-sangue', circle: 1, elements: ['blood'], range: 'pessoal', target: 'você' } as OrdemRitual
+    // Pessoal mas área centrada em você (não "você" como alvo) — não conta, mesmo com alcance pessoal.
+    const deteccaoDeAmeacas = { id: 'deteccao-de-ameacas', circle: 2, elements: ['knowledge'], range: 'pessoal', target: 'esfera de 18m de raio' } as OrdemRitual
+    expect(getRitualCost(comTatuagem, armaduraDeSangue)).toEqual({ cost: 0, notes: ['Tatuagem Ritualística −1'] })
+    expect(getRitualCost(comTatuagem, deteccaoDeAmeacas)).toEqual({ cost: 3, notes: [] })
+    // Sem o poder, nenhuma redução.
+    const semPoder = makeDraft({})
+    expect(getRitualCost(semPoder, armaduraDeSangue).cost).toBe(1)
+  })
+})
+
+describe('getRitualDtBonusFromTrilha / hasRitualPeLimitBonusFromPresence', () => {
+  it('Rituais Eficientes (Graduado NEX 65%) soma +5 na DT de todos os rituais', () => {
+    expect(getRitualDtBonusFromTrilha(makeDraft({ class: 'occultist', trilha: 'scholar', nex: 65 }))).toBe(5)
+    expect(getRitualDtBonusFromTrilha(makeDraft({ class: 'occultist', trilha: 'scholar', nex: 60 }))).toBe(0)
+    expect(getRitualDtBonusFromTrilha(makeDraft({ class: 'occultist', trilha: 'conduit', nex: 99 }))).toBe(0)
+  })
+
+  it('Presença Poderosa (Intuitivo NEX 40%) soma Presença ao limite de PE só pra rituais', () => {
+    expect(hasRitualPeLimitBonusFromPresence(makeDraft({ class: 'occultist', trilha: 'intuitive', nex: 40 }))).toBe(true)
+    expect(hasRitualPeLimitBonusFromPresence(makeDraft({ class: 'occultist', trilha: 'intuitive', nex: 10 }))).toBe(false)
+    expect(hasRitualPeLimitBonusFromPresence(makeDraft({ class: 'occultist', trilha: 'conduit', nex: 99 }))).toBe(false)
   })
 })
 

@@ -12,7 +12,7 @@ import {
   getDraftInstanceCategory,
 } from '../utils/equipmentUtils'
 import { getModification } from '../utils/modificationUtils'
-import { getCurse, getCursedDerivedStats, getSheetAttributes, formatCurseElement, formatCurseChoiceDetail } from '../utils/curseUtils'
+import { getCurse, getCursedDerivedStats, getSheetAttributes, formatCurseElement, formatCurseChoiceDetail, getRitualDt, getRitualPeLimit } from '../utils/curseUtils'
 import { getOrdemWeaponAttack, GRADE_BONUS } from '../utils/ordemWeaponUtils'
 import { getPatente, getCategoryLimit } from '../utils/patenteUtils'
 import type { OrdemEquipment, OrdemWeapon } from '../types/equipment'
@@ -271,11 +271,16 @@ export function PrintableSheet() {
 
         {(rituals.length > 0 || grantedRituals.length > 0) && (
           <section className="mb-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <BlackBar className="flex-1">Rituais</BlackBar>
-              <div className="ml-2 border-2 border-gray-900 rounded px-2 py-0.5 text-xs font-bold whitespace-nowrap">
-                DT de Rituais: {ritualDt}
+              <div className="border-2 border-gray-900 rounded px-2 py-0.5 text-xs font-bold whitespace-nowrap">
+                DT Base: {ritualDt}
               </div>
+              {getRitualPeLimit(draft) !== getEffectivePeLimit(draft) && (
+                <div className="border-2 border-gray-900 rounded px-2 py-0.5 text-xs font-bold whitespace-nowrap">
+                  Limite PE p/ Ritual: {getRitualPeLimit(draft)}
+                </div>
+              )}
             </div>
             {hasClassPower(draft, 'potent-ritual') && (
               <p className="text-xs font-semibold mt-1">
@@ -286,11 +291,12 @@ export function PrintableSheet() {
               {rituals.map((r, i) => {
                 if (!r) return null
                 const { cost, notes } = getRitualCost(draft, r)
+                const { dt, notes: dtNotes } = getRitualDt(draft, r)
                 return (
                   <div key={`${r.id}-${i}`}>
                     <p>
                       <span className="font-semibold">{r.name}{draft.favoriteRitual === r.id ? ' ★' : ''}</span>
-                      <span className="text-gray-600"> ({formatRitualElementLabel(r, draft.ritualElementChoices)}, {r.circle}º Círculo — custo {cost} PE{notes.length > 0 ? ` (${notes.join(', ')})` : ''})</span>
+                      <span className="text-gray-600"> ({formatRitualElementLabel(r, draft.ritualElementChoices)}, {r.circle}º Círculo — custo {cost} PE{notes.length > 0 ? ` (${notes.join(', ')})` : ''}, DT {dt}{dtNotes.length > 0 ? ` (${dtNotes.join(', ')})` : ''})</span>
                       <span className="text-gray-500 text-xs"> — {r.execution}, {r.range}, {r.target}, {r.duration}{r.resistance ? `, ${r.resistance}` : ''}</span>
                     </p>
                     <p className="text-gray-700 text-xs">{r.description}</p>
@@ -299,11 +305,12 @@ export function PrintableSheet() {
               })}
               {grantedRituals.map(({ ritual: r, source }, i) => {
                 const { cost, notes } = getRitualCost(draft, r)
+                const { dt, notes: dtNotes } = getRitualDt(draft, r)
                 return (
                   <div key={`granted-${r.id}-${i}`}>
                     <p>
                       <span className="font-semibold">{r.name}{draft.favoriteRitual === r.id ? ' ★' : ''}</span>
-                      <span className="text-gray-600"> ({formatRitualElementLabel(r, draft.ritualElementChoices)}, {r.circle}º Círculo — custo {cost} PE{notes.length > 0 ? ` (${notes.join(', ')})` : ''})</span>
+                      <span className="text-gray-600"> ({formatRitualElementLabel(r, draft.ritualElementChoices)}, {r.circle}º Círculo — custo {cost} PE{notes.length > 0 ? ` (${notes.join(', ')})` : ''}, DT {dt}{dtNotes.length > 0 ? ` (${dtNotes.join(', ')})` : ''})</span>
                       <span className="text-gray-500 text-xs"> — {r.execution}, {r.range}, {r.target}, {r.duration}{r.resistance ? `, ${r.resistance}` : ''}</span>
                     </p>
                     <p className="text-gray-700 text-xs">{r.description} <span className="italic">(concedido pela {source})</span></p>

@@ -13,7 +13,7 @@ import {
   getMissingRitualComponentElements,
 } from '../../utils/equipmentUtils'
 import { getModification } from '../../utils/modificationUtils'
-import { getCurse, getCursedDerivedStats, getSheetAttributes, formatCurseElement, formatCurseChoiceDetail } from '../../utils/curseUtils'
+import { getCurse, getCursedDerivedStats, getSheetAttributes, formatCurseElement, formatCurseChoiceDetail, getRitualDt, getRitualPeLimit } from '../../utils/curseUtils'
 import type { OrdemEquipment } from '../../types/equipment'
 import { getOrdemWeaponAttack } from '../../utils/ordemWeaponUtils'
 import { getPatente } from '../../utils/patenteUtils'
@@ -99,6 +99,9 @@ export function ReviewStep() {
       </div>
       <p className="text-center text-parchment-600 text-xs">
         Limite de PE por turno: <span className="text-parchment-400 font-semibold">{getEffectivePeLimit(draft)}</span>
+        {getRitualPeLimit(draft) !== getEffectivePeLimit(draft) && (
+          <span className="text-gold-600/90"> ({getRitualPeLimit(draft)} ao conjurar rituais — Presença Poderosa)</span>
+        )}
         {' · '}Deslocamento: <span className="text-parchment-400 font-semibold">9m</span>
       </p>
 
@@ -159,17 +162,19 @@ export function ReviewStep() {
             {rituals.map((r, i) => {
               if (!r) return null
               const { cost, notes } = getRitualCost(draft, r)
+              const { dt, notes: dtNotes } = getRitualDt(draft, r)
               return (
                 <p key={`${r.id}-${i}`} className="text-parchment-500 text-xs">
                   <span className="font-semibold text-parchment-300">{r.name}</span>{' '}
                   <span className="text-parchment-700">
-                    ({formatRitualElementLabel(r, draft.ritualElementChoices)}, {r.circle}º Círculo — custo {cost} PE{notes.length > 0 ? ` (${notes.join(', ')})` : ''})
+                    ({formatRitualElementLabel(r, draft.ritualElementChoices)}, {r.circle}º Círculo — custo {cost} PE{notes.length > 0 ? ` (${notes.join(', ')})` : ''}, DT {dt}{dtNotes.length > 0 ? ` (${dtNotes.join(', ')})` : ''})
                   </span>
                 </p>
               )
             })}
             {grantedRituals.map(({ ritual: r, source }, i) => {
               const { cost, notes } = getRitualCost(draft, r)
+              const { dt, notes: dtNotes } = getRitualDt(draft, r)
               // Rituais concedidos multi-elemento (ex.: Amaldiçoar Arma via Lâmina Maldita) ainda exigem escolher o elemento.
               const needsElement = ritualNeedsElementChoice(r) && !draft.ritualElementChoices[r.id]
               return (
@@ -177,7 +182,7 @@ export function ReviewStep() {
                   <p className="text-parchment-500 text-xs">
                     <span className="font-semibold text-parchment-300">{r.name}</span>{' '}
                     <span className="text-parchment-700">
-                      ({formatRitualElementLabel(r, draft.ritualElementChoices)}, {r.circle}º Círculo — custo {cost} PE{notes.length > 0 ? ` (${notes.join(', ')})` : ''})
+                      ({formatRitualElementLabel(r, draft.ritualElementChoices)}, {r.circle}º Círculo — custo {cost} PE{notes.length > 0 ? ` (${notes.join(', ')})` : ''}, DT {dt}{dtNotes.length > 0 ? ` (${dtNotes.join(', ')})` : ''})
                     </span>{' '}
                     <span className="text-gold-600/90">— concedido pela {source}</span>
                   </p>

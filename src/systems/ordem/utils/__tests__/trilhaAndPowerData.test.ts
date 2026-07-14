@@ -3,6 +3,7 @@ import { TRILHAS, getTrilhasByClass } from '../trilhaUtils'
 import { CLASS_POWERS, getPowersByClass } from '../powerUtils'
 import { ORDEM_CLASSES } from '../classUtils'
 import { TRILHA_FEATURE_NEX } from '../progressionUtils'
+import { getRitualById } from '../ritualUtils'
 
 describe('TRILHAS — integridade estrutural', () => {
   it('tem 15 trilhas (5 por classe × 3 classes)', () => {
@@ -33,6 +34,33 @@ describe('TRILHAS — integridade estrutural', () => {
         expect(f.description.length).toBeGreaterThan(0)
       }
     }
+  })
+
+  it('todo grantsRitual aponta para um ritual existente', () => {
+    for (const trilha of TRILHAS) {
+      for (const f of trilha.features) {
+        if (f.grantsRitual) {
+          expect(getRitualById(f.grantsRitual), `${trilha.name}/${f.name} → ${f.grantsRitual}`).toBeDefined()
+        }
+      }
+    }
+  })
+
+  it('as 6 features de Ocultista que ensinam rituais estão mapeadas', () => {
+    const grants = TRILHAS.flatMap(t =>
+      t.features.filter(f => f.grantsRitual).map(f => [t.id, f.nex, f.grantsRitual] as const)
+    )
+    expect(grants).toEqual(
+      expect.arrayContaining([
+        ['conduit', 99, 'canalizar-o-medo'],
+        ['flagellant', 99, 'medo-tangivel'],
+        ['scholar', 99, 'conhecendo-o-medo'],
+        ['intuitive', 99, 'presenca-do-medo'],
+        ['paranormal-blade', 10, 'amaldicoar-arma'],
+        ['paranormal-blade', 99, 'lamina-do-medo'],
+      ])
+    )
+    expect(grants).toHaveLength(6)
   })
 })
 

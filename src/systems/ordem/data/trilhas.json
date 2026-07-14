@@ -139,7 +139,7 @@
       { "nex": 10, "name": "Ampliar Ritual", "description": "Quando lança um ritual, pode gastar +2 PE para aumentar seu alcance em um passo (de curto para médio, de médio para longo ou de longo para extremo) ou dobrar sua área de efeito." },
       { "nex": 40, "name": "Acelerar Ritual", "description": "Uma vez por rodada, pode aumentar o custo de um ritual em 4 PE para conjurá-lo como uma ação livre." },
       { "nex": 65, "name": "Anular Ritual", "description": "Quando for alvo de um ritual, pode gastar uma quantidade de PE igual ao custo pago por esse ritual e fazer um teste oposto de Ocultismo contra o conjurador; se vencer, anula o ritual." },
-      { "nex": 99, "name": "Canalizar o Medo", "description": "Você aprende o ritual Canalizar o Medo." }
+      { "nex": 99, "name": "Canalizar o Medo", "description": "Você aprende o ritual Canalizar o Medo.", "grantsRitual": "canalizar-o-medo" }
     ]
   },
   {
@@ -152,7 +152,7 @@
       { "nex": 10, "name": "Poder do Flagelo", "description": "Ao conjurar um ritual, pode gastar seus próprios pontos de vida para pagar o custo em pontos de esforço, à taxa de 2 PV por PE pago. PV gastos assim só podem ser recuperados com descanso." },
       { "nex": 40, "name": "Abraçar a Dor", "description": "Sempre que sofrer dano não paranormal, pode gastar uma reação e 2 PE para reduzir esse dano à metade." },
       { "nex": 65, "name": "Absorver Agonia", "description": "Sempre que reduz um ou mais inimigos a 0 PV com um ritual, recebe uma quantidade de PE temporários igual ao círculo do ritual utilizado." },
-      { "nex": 99, "name": "Medo Tangível", "description": "Você aprende o ritual Medo Tangível." }
+      { "nex": 99, "name": "Medo Tangível", "description": "Você aprende o ritual Medo Tangível.", "grantsRitual": "medo-tangivel" }
     ]
   },
   {
@@ -165,7 +165,7 @@
       { "nex": 10, "name": "Saber Ampliado", "description": "Você aprende um ritual de 1º círculo. Toda vez que ganha acesso a um novo círculo, aprende um ritual adicional daquele círculo. Esses rituais não contam no seu limite de rituais conhecidos." },
       { "nex": 40, "name": "Grimório Ritualístico", "description": "Cria um grimório especial que armazena rituais: aprende uma quantidade de rituais de 1º ou 2º círculo igual ao seu Intelecto (não contam no limite). Ao ganhar acesso a um novo círculo, pode incluir um novo ritual desse círculo. Precisa de uma ação completa para relembrar um ritual do grimório antes de conjurá-lo; o grimório ocupa 1 espaço (pode ser replicado com uma semana de trabalho se perdido)." },
       { "nex": 65, "name": "Rituais Eficientes", "description": "A DT para resistir a todos os seus rituais aumenta em +5." },
-      { "nex": 99, "name": "Conhecendo o Medo", "description": "Você aprende o ritual Conhecendo o Medo." }
+      { "nex": 99, "name": "Conhecendo o Medo", "description": "Você aprende o ritual Conhecendo o Medo.", "grantsRitual": "conhecendo-o-medo" }
     ]
   },
   {
@@ -178,7 +178,7 @@
       { "nex": 10, "name": "Mente Sã", "description": "Você recebe resistência paranormal +5 (+5 em testes de resistência contra efeitos paranormais)." },
       { "nex": 40, "name": "Presença Poderosa", "description": "Você adiciona sua Presença ao seu limite de PE por turno, mas apenas para conjurar rituais." },
       { "nex": 65, "name": "Inabalável", "description": "Você recebe resistência a dano mental e paranormal 10. Quando é alvo de um efeito paranormal que permite um teste de Vontade para reduzir o dano à metade, não sofre dano algum se passar." },
-      { "nex": 99, "name": "Presença do Medo", "description": "Você aprende o ritual Presença do Medo." }
+      { "nex": 99, "name": "Presença do Medo", "description": "Você aprende o ritual Presença do Medo.", "grantsRitual": "presenca-do-medo" }
     ]
   },
   {
@@ -188,10 +188,10 @@
     "description": "Prefere usar o paranormal como uma arma, mesclando habilidades de conjuração com capacidades de combate — corpo a corpo ou à distância.",
     "requirement": null,
     "features": [
-      { "nex": 10, "name": "Lâmina Maldita", "description": "Você aprende o ritual Amaldiçoar Arma (custo reduzido em −1 PE se já o conhece). Ao conjurá-lo, pode usar Ocultismo em vez de Luta ou Pontaria para testes de ataque com a arma amaldiçoada." },
+      { "nex": 10, "name": "Lâmina Maldita", "description": "Você aprende o ritual Amaldiçoar Arma (custo reduzido em −1 PE se já o conhece). Ao conjurá-lo, pode usar Ocultismo em vez de Luta ou Pontaria para testes de ataque com a arma amaldiçoada.", "grantsRitual": "amaldicoar-arma" },
       { "nex": 40, "name": "Gladiador Paranormal", "description": "Sempre que acerta um ataque corpo a corpo em um inimigo, recebe 2 PE temporários (máximo por cena igual ao seu limite de PE). Desaparecem no final da cena." },
       { "nex": 65, "name": "Conjuração Marcial", "description": "Uma vez por rodada, quando lança um ritual com execução de uma ação padrão, pode gastar 2 PE para fazer um ataque corpo a corpo como uma ação livre." },
-      { "nex": 99, "name": "Lâmina do Medo", "description": "Você aprende o ritual Lâmina do Medo." }
+      { "nex": 99, "name": "Lâmina do Medo", "description": "Você aprende o ritual Lâmina do Medo.", "grantsRitual": "lamina-do-medo" }
     ]
   }
 ]

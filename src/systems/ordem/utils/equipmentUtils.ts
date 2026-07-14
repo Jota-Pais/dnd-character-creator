@@ -8,7 +8,7 @@ import { getOrdemClass } from './classUtils'
 import { getPatente, getCategoryLimit } from './patenteUtils'
 import { getModification } from './modificationUtils'
 import { getCurse, getCurseCategoryDelta, getItemCurses, getSheetAttributes, canApplyCurse, curseChoiceKey } from './curseUtils'
-import { hasClassPower, getFavoriteWeaponReduction, getFavoriteEquipmentReduction } from './characterUtils'
+import { hasClassPower, getFavoriteWeaponReduction, getFavoriteEquipmentReduction, getGrantedRituals } from './characterUtils'
 
 export const EQUIPMENTS = equipmentsJson as OrdemEquipment[]
 
@@ -340,10 +340,13 @@ export function hasWeaponProficiency(draft: OrdemCharacterDraft, item: OrdemEqui
  */
 export function getMissingRitualComponentElements(draft: OrdemCharacterDraft): OrdemElement[] {
   if (draft.class !== 'occultist') return []
+  // Rituais escolhidos + concedidos por trilha (ex.: Amaldiçoar Arma via Lâmina Maldita) exigem componentes.
+  const chosenRituals = draft.ritualChoices
+    .slice(0, getRitualSlotsCount(draft.nex))
+    .map(id => (id ? getRitualById(id) : undefined))
+  const grantedRituals = getGrantedRituals(draft).map(g => g.ritual)
   const needed = new Set<OrdemElement>()
-  for (const id of draft.ritualChoices.slice(0, getRitualSlotsCount(draft.nex))) {
-    if (!id) continue
-    const ritual = getRitualById(id)
+  for (const ritual of [...chosenRituals, ...grantedRituals]) {
     if (!ritual) continue
     // Ritual multi-elemento vale pelo elemento escolhido ao aprender (ex.: Amaldiçoar Arma).
     const element = ritual.elements.length > 1 ? draft.ritualElementChoices[ritual.id] : ritual.elements[0]

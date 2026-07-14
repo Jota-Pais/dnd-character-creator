@@ -18,6 +18,7 @@ import {
   getAvailablePowerOptions,
   getAvailableTrilhaOptions,
   getAvailableVersatilityTrilhaOptions,
+  getGrantedRituals,
 } from '../characterUtils'
 import { getOrdemClass } from '../classUtils'
 import { SKILLS } from '../skillUtils'
@@ -435,5 +436,50 @@ describe('getAvailableTrilhaOptions / getAvailableVersatilityTrilhaOptions', () 
     const options = getAvailableVersatilityTrilhaOptions(draft, combatant)
     expect(options).toHaveLength(4)
     expect(options.find(t => t.id === 'annihilator')).toBeUndefined()
+  })
+})
+
+describe('getGrantedRituals — rituais aprendidos por feature de trilha', () => {
+  it('Conduíte NEX 99% concede Canalizar o Medo, com a fonte da trilha', () => {
+    const draft = makeDraft({ class: 'occultist', trilha: 'conduit', nex: 99 })
+    const granted = getGrantedRituals(draft)
+    expect(granted).toHaveLength(1)
+    expect(granted[0].ritual.id).toBe('canalizar-o-medo')
+    expect(granted[0].source).toBe('Trilha Conduíte')
+  })
+
+  it('não concede nada antes de alcançar o NEX da feature (Conduíte em NEX 95%)', () => {
+    const draft = makeDraft({ class: 'occultist', trilha: 'conduit', nex: 95 })
+    expect(getGrantedRituals(draft)).toHaveLength(0)
+  })
+
+  it('sem trilha (ou não-ocultista) não há rituais concedidos', () => {
+    expect(getGrantedRituals(makeDraft({ class: 'occultist', trilha: null, nex: 99 }))).toHaveLength(0)
+    expect(getGrantedRituals(makeDraft({ class: 'combatant', trilha: 'annihilator', nex: 99 }))).toHaveLength(0)
+  })
+
+  it('Lâmina Paranormal concede Amaldiçoar Arma já no NEX 10% e soma Lâmina do Medo no NEX 99%', () => {
+    const nex10 = getGrantedRituals(makeDraft({ class: 'occultist', trilha: 'paranormal-blade', nex: 10 }))
+    expect(nex10.map(g => g.ritual.id)).toEqual(['amaldicoar-arma'])
+
+    const nex99 = getGrantedRituals(makeDraft({ class: 'occultist', trilha: 'paranormal-blade', nex: 99 }))
+    expect(nex99.map(g => g.ritual.id).sort()).toEqual(['amaldicoar-arma', 'lamina-do-medo'])
+  })
+
+  it('não duplica um ritual que o jogador já escolheu manualmente', () => {
+    const draft = makeDraft({ class: 'occultist', trilha: 'conduit', nex: 99, ritualChoices: ['canalizar-o-medo'] })
+    expect(getGrantedRituals(draft)).toHaveLength(0)
+  })
+
+  it('Versatilidade concede o ritual da 1ª feature da outra trilha (Lâmina Maldita → Amaldiçoar Arma)', () => {
+    const draft = makeDraft({
+      class: 'occultist',
+      trilha: 'conduit',
+      nex: 50,
+      versatilityChoice: { kind: 'trilha', trilhaId: 'paranormal-blade' },
+    })
+    const granted = getGrantedRituals(draft)
+    expect(granted.map(g => g.ritual.id)).toEqual(['amaldicoar-arma'])
+    expect(granted[0].source).toBe('Versatilidade')
   })
 })

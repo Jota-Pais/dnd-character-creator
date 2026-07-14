@@ -1,13 +1,13 @@
 import type { OrdemCharacterDraft } from '../types/character'
 import type { OrdemClass } from '../types/class'
-import type { Trilha } from '../types/trilha'
+import type { Trilha, TrilhaFeature } from '../types/trilha'
 import type { OrdemRitual, OrdemElement } from '../types/ritual'
 import { getOrigin } from './originUtils'
 import { getOrdemClass, getFreeSkillChoiceCount } from './classUtils'
-import { getTrilhasByClass } from './trilhaUtils'
+import { getTrilhasByClass, getTrilha } from './trilhaUtils'
 import { getPowersByClass } from './powerUtils'
-import { RITUAL_COST } from './ritualUtils'
-import { getNexIndex, getReachedPowerSlots, getReachedAttributeIncreaseSlots, getReachedSkillGradeSlots, ATTRIBUTE_INCREASE_CAP } from './progressionUtils'
+import { RITUAL_COST, getRitualById } from './ritualUtils'
+import { getNexIndex, getReachedPowerSlots, getReachedAttributeIncreaseSlots, getReachedSkillGradeSlots, ATTRIBUTE_INCREASE_CAP, TRILHA_FEATURE_NEX } from './progressionUtils'
 
 export type DerivedStats = {
   hp: number
@@ -300,4 +300,52 @@ export function getRitualCost(draft: OrdemCharacterDraft, ritual: OrdemRitual): 
     }
   }
   return { cost: Math.max(0, cost), notes }
+}
+
+// ── Rituais concedidos por trilha ───────────────────────────────────────────────
+
+export type GrantedRitual = {
+  ritual: OrdemRitual
+  /** Rótulo da fonte que ensinou o ritual (ex.: "Trilha Conduíte" ou "Versatilidade"). */
+  source: string
+}
+
+/**
+ * Rituais que o personagem aprende automaticamente por features de trilha ("Você aprende o
+ * ritual X"), derivados do NEX + trilha escolhida — e da Versatilidade (NEX 50%), quando ela
+ * concede a 1ª feature de outra trilha (ex.: Lâmina Maldita → Amaldiçoar Arma). São bônus:
+ * NÃO contam no limite de rituais conhecidos. A lista é deduplicada por id e omite os rituais
+ * que o jogador já escolheu manualmente em `ritualChoices` (para não listar o mesmo duas vezes).
+ */
+export function getGrantedRituals(draft: OrdemCharacterDraft): GrantedRitual[] {
+  const result: GrantedRitual[] = []
+  const seen = new Set<string>()
+
+  const collect = (features: TrilhaFeature[], source: string) => {
+    for (const feature of features) {
+      const ritualId = feature.grantsRitual
+      if (!ritualId || seen.has(ritualId)) continue
+      const ritual = getRitualById(ritualId)
+      if (!ritual) continue
+      seen.add(ritualId)
+      result.push({ ritual, source })
+    }
+  }
+
+  // Trilha do personagem: features cujo NEX já foi alcançado.
+  const trilha = draft.trilha ? getTrilha(draft.trilha) : undefined
+  if (trilha) {
+    collect(trilha.features.filter(f => f.nex <= draft.nex), `Trilha ${trilha.name}`)
+  }
+
+  // Versatilidade: concede apenas a 1ª feature (NEX 10%) de uma trilha diferente da sua.
+  if (draft.versatilityChoice?.kind === 'trilha') {
+    const versTrilha = getTrilha(draft.versatilityChoice.trilhaId)
+    if (versTrilha) {
+      collect(versTrilha.features.filter(f => f.nex <= TRILHA_FEATURE_NEX[0]), 'Versatilidade')
+    }
+  }
+
+  const chosen = new Set(draft.ritualChoices.filter((id): id is string => Boolean(id)))
+  return result.filter(g => !chosen.has(g.ritual.id))
 }

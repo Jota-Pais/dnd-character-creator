@@ -122,4 +122,37 @@ describe('App (smoke) — Ordem Paranormal', () => {
     expect(screen.getAllByText('Faca').length).toBeGreaterThan(0)
     expect(screen.getByText(/Imprimir \/ Salvar PDF/)).toBeInTheDocument()
   })
+
+  // Rituais aprendidos por feature de trilha (ex.: Conduíte NEX 99% → Canalizar o Medo) vão direto
+  // pra ficha, mesmo sem o jogador escolher no passo Rituais.
+  function seedConduitAt99() {
+    return {
+      ...ORDEM_EMPTY,
+      name: 'Vidente',
+      attributes: { agility: 1, strength: 1, intellect: 1, presence: 1, vigor: 1 },
+      origin: 'academic',
+      class: 'occultist' as const,
+      nex: 99,
+      trilha: 'conduit',
+      ritualChoices: [],
+    }
+  }
+
+  it('Revisão do Conduíte NEX 99%: Canalizar o Medo aparece como concedido pela trilha', () => {
+    useAppStore.getState().setActiveSystem('ordem')
+    useOrdemStore.setState({ draft: seedConduitAt99(), view: 'wizard', currentStep: 'review' })
+    render(<App />)
+    expect(screen.getByText(/Rituais Conhecidos/)).toBeInTheDocument()
+    expect(screen.getByText('Canalizar o Medo')).toBeInTheDocument()
+    expect(screen.getByText(/concedido pela Trilha Conduíte/)).toBeInTheDocument()
+  })
+
+  it('Ficha imprimível do Conduíte NEX 99%: Canalizar o Medo consta na seção Rituais', () => {
+    useAppStore.getState().setActiveSystem('ordem')
+    useOrdemStore.setState({ draft: seedConduitAt99(), view: 'print' })
+    render(<App />)
+    expect(screen.getByText('Rituais')).toBeInTheDocument()
+    expect(screen.getByText('Canalizar o Medo')).toBeInTheDocument()
+    expect(screen.getByText(/concedido pela Trilha Conduíte/)).toBeInTheDocument()
+  })
 })

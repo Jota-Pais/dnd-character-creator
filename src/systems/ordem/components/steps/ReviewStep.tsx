@@ -5,9 +5,9 @@ import { formatSkillWithAttribute } from '../../utils/skillUtils'
 import { getTrilha } from '../../utils/trilhaUtils'
 import { getPower } from '../../utils/powerUtils'
 import {
-  getTrainedSkills, getSkillGrade, hasFavoredRitualPower, hasLaminaMaldita, getRitualCost, hasClassPower, getWeaponSkillOverride,
+  getTrainedSkills, getSkillGrade, hasFavoredRitualPower, hasLaminaMaldita, getRitualCost, hasClassPower, getWeaponSkillOverride, getGrantedRituals,
 } from '../../utils/characterUtils'
-import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, ELEMENT_NAMES } from '../../utils/ritualUtils'
+import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, ritualNeedsElementChoice, ELEMENT_NAMES } from '../../utils/ritualUtils'
 import {
   getEquipmentByInstance, getInstanceLabel, getTotalCarryCapacity, getModifiedSpaces, getModifiedDefenseBonus, getDraftInstanceCategory,
   getMissingRitualComponentElements,
@@ -47,6 +47,10 @@ export function ReviewStep() {
   // depois de escolher não deve deixar rituais obsoletos de círculos inacessíveis na ficha).
   const ritualSlots = draft.class === 'occultist' ? getRitualSlotsCount(draft.nex) : 0
   const rituals = draft.ritualChoices.slice(0, ritualSlots).filter((r): r is string => Boolean(r)).map(getRitualById).filter(Boolean)
+  // Rituais aprendidos automaticamente por features de trilha (ex.: Canalizar o Medo no Conduíte NEX 99%).
+  const grantedRituals = draft.class === 'occultist' ? getGrantedRituals(draft) : []
+  // Tudo que o personagem "conhece" (escolhidos + concedidos): base dos pickers de Ritual Predileto / arma Ritualística.
+  const allKnownRituals = [...rituals, ...grantedRituals.map(g => g.ritual)]
   // Cada entrada de `equipmentChoices` é uma UNIDADE ("revolver", "revolver#2"...), com mods/maldições próprias.
   const equipmentUnits = draft.equipmentChoices
     .map(uid => ({ uid, item: getEquipmentByInstance(uid) }))
@@ -58,10 +62,10 @@ export function ReviewStep() {
   }))
   const cursedUnits = equipmentUnits.filter(u => (draft.equipmentCurses[u.uid]?.length ?? 0) > 0)
   const missingComponents = getMissingRitualComponentElements(draft)
-  const showFavoriteRitualPicker = hasFavoredRitualPower(draft) && rituals.length > 0
+  const showFavoriteRitualPicker = hasFavoredRitualPower(draft) && allKnownRituals.length > 0
   // Armas com a maldição Ritualística podem ter um ritual conhecido pré-armazenado (opcional).
   const ritualisticUnits = weaponUnits.filter(u => (draft.equipmentCurses[u.uid] ?? []).includes('ritualistica'))
-  const showStoredRitualPicker = ritualisticUnits.length > 0 && rituals.length > 0
+  const showStoredRitualPicker = ritualisticUnits.length > 0 && allKnownRituals.length > 0
   // Perícia de ataque só é escolhível com a Lâmina Maldita (única exceção do livro: Ocultismo).
   const showWeaponSkillPicker = hasLaminaMaldita(draft) && weaponUnits.length > 0
   const showPersonalization = showFavoriteRitualPicker || showStoredRitualPicker || showWeaponSkillPicker
@@ -149,8 +153,8 @@ export function ReviewStep() {
         </Section>
       )}
 
-      {rituals.length > 0 && (
-        <Section title={`Rituais Conhecidos (${rituals.length})`}>
+      {allKnownRituals.length > 0 && (
+        <Section title={`Rituais Conhecidos (${allKnownRituals.length})`}>
           <div className="space-y-2">
             {rituals.map((r, i) => {
               if (!r) return null
@@ -162,6 +166,36 @@ export function ReviewStep() {
                     ({formatRitualElementLabel(r, draft.ritualElementChoices)}, {r.circle}º Círculo — custo {cost} PE{notes.length > 0 ? ` (${notes.join(', ')})` : ''})
                   </span>
                 </p>
+              )
+            })}
+            {grantedRituals.map(({ ritual: r, source }, i) => {
+              const { cost, notes } = getRitualCost(draft, r)
+              // Rituais concedidos multi-elemento (ex.: Amaldiçoar Arma via Lâmina Maldita) ainda exigem escolher o elemento.
+              const needsElement = ritualNeedsElementChoice(r) && !draft.ritualElementChoices[r.id]
+              return (
+                <div key={`granted-${r.id}-${i}`}>
+                  <p className="text-parchment-500 text-xs">
+                    <span className="font-semibold text-parchment-300">{r.name}</span>{' '}
+                    <span className="text-parchment-700">
+                      ({formatRitualElementLabel(r, draft.ritualElementChoices)}, {r.circle}º Círculo — custo {cost} PE{notes.length > 0 ? ` (${notes.join(', ')})` : ''})
+                    </span>{' '}
+                    <span className="text-gold-600/90">— concedido pela {source}</span>
+                  </p>
+                  {needsElement && (
+                    <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                      <span className="text-amber-400/90 text-xs">Escolha o elemento deste ritual:</span>
+                      {r.elements.map(el => (
+                        <button
+                          key={el}
+                          onClick={() => updateDraft({ ritualElementChoices: { ...draft.ritualElementChoices, [r.id]: el } })}
+                          className="text-[11px] uppercase tracking-wider font-bold px-2 py-0.5 rounded border border-parchment-800 text-parchment-500 hover:border-gold-500 hover:text-gold-400 transition-colors"
+                        >
+                          {ELEMENT_NAMES[el]}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )
             })}
           </div>
@@ -192,7 +226,7 @@ export function ReviewStep() {
                   className="w-full bg-parchment-950 border border-parchment-800 rounded px-2 py-1 text-parchment-300 text-xs"
                 >
                   <option value="">Escolha o ritual…</option>
-                  {rituals.map((r, i) => r && (
+                  {allKnownRituals.map((r, i) => r && (
                     <option key={`${r.id}-${i}`} value={r.id}>{r.name} ({r.circle}º Círculo)</option>
                   ))}
                 </select>
@@ -219,7 +253,7 @@ export function ReviewStep() {
                         className="flex-1 bg-parchment-950 border border-parchment-800 rounded px-2 py-1 text-parchment-300 text-xs"
                       >
                         <option value="">Nenhum (anotar a lápis na missão)</option>
-                        {rituals.map((r, i) => r && (
+                        {allKnownRituals.map((r, i) => r && (
                           <option key={`${r.id}-${i}`} value={r.id}>{r.name} ({r.circle}º Círculo — {getRitualCost(draft, r).cost} PE)</option>
                         ))}
                       </select>

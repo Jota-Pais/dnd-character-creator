@@ -4,7 +4,7 @@ import { getOrdemClass } from '../utils/classUtils'
 import { SKILLS } from '../utils/skillUtils'
 import { getTrilha } from '../utils/trilhaUtils'
 import { getPower } from '../utils/powerUtils'
-import { getTrainedSkills, getSkillGrade, getRitualCost, hasClassPower, getWeaponSkillOverride } from '../utils/characterUtils'
+import { getTrainedSkills, getSkillGrade, getRitualCost, hasClassPower, getWeaponSkillOverride, getGrantedRituals } from '../utils/characterUtils'
 import { getReachedTrilhaSlots, getPeLimit } from '../utils/progressionUtils'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount } from '../utils/ritualUtils'
 import {
@@ -46,6 +46,8 @@ export function PrintableSheet() {
   // Só o Ocultista conhece rituais; limita aos slots abertos pelo NEX (ver ReviewStep).
   const ritualSlots = draft.class === 'occultist' ? getRitualSlotsCount(draft.nex) : 0
   const rituals = draft.ritualChoices.slice(0, ritualSlots).filter((r): r is string => Boolean(r)).map(getRitualById).filter(Boolean)
+  // Rituais aprendidos por features de trilha (ex.: Canalizar o Medo no Conduíte NEX 99%) — bônus, não contam no limite.
+  const grantedRituals = draft.class === 'occultist' ? getGrantedRituals(draft) : []
   // Cada entrada de `equipmentChoices` é uma UNIDADE ("revolver", "revolver#2"...), com mods/maldições próprias.
   const equipmentUnits = draft.equipmentChoices
     .map(uid => ({ uid, item: getEquipmentByInstance(uid) }))
@@ -265,7 +267,7 @@ export function PrintableSheet() {
           </div>
         </section>
 
-        {rituals.length > 0 && (
+        {(rituals.length > 0 || grantedRituals.length > 0) && (
           <section className="mb-4">
             <div className="flex items-center justify-between">
               <BlackBar className="flex-1">Rituais</BlackBar>
@@ -290,6 +292,19 @@ export function PrintableSheet() {
                       <span className="text-gray-500 text-xs"> — {r.execution}, {r.range}, {r.target}, {r.duration}{r.resistance ? `, ${r.resistance}` : ''}</span>
                     </p>
                     <p className="text-gray-700 text-xs">{r.description}</p>
+                  </div>
+                )
+              })}
+              {grantedRituals.map(({ ritual: r, source }, i) => {
+                const { cost, notes } = getRitualCost(draft, r)
+                return (
+                  <div key={`granted-${r.id}-${i}`}>
+                    <p>
+                      <span className="font-semibold">{r.name}{draft.favoriteRitual === r.id ? ' ★' : ''}</span>
+                      <span className="text-gray-600"> ({formatRitualElementLabel(r, draft.ritualElementChoices)}, {r.circle}º Círculo — custo {cost} PE{notes.length > 0 ? ` (${notes.join(', ')})` : ''})</span>
+                      <span className="text-gray-500 text-xs"> — {r.execution}, {r.range}, {r.target}, {r.duration}{r.resistance ? `, ${r.resistance}` : ''}</span>
+                    </p>
+                    <p className="text-gray-700 text-xs">{r.description} <span className="italic">(concedido pela {source})</span></p>
                   </div>
                 )
               })}

@@ -19,7 +19,13 @@ import {
   getAvailableTrilhaOptions,
   getAvailableVersatilityTrilhaOptions,
   getGrantedRituals,
+  getOriginDefenseBonus,
+  getOriginHpBonus,
+  getOriginSanityBonus,
+  getOriginPeBonus,
+  getEffectivePeLimit,
 } from '../characterUtils'
+import { getCursedDerivedStats } from '../curseUtils'
 import { getOrdemClass } from '../classUtils'
 import { SKILLS } from '../skillUtils'
 import { EMPTY_DRAFT } from '../../types/character'
@@ -481,5 +487,51 @@ describe('getGrantedRituals — rituais aprendidos por feature de trilha', () =>
     const granted = getGrantedRituals(draft)
     expect(granted.map(g => g.ritual.id)).toEqual(['amaldicoar-arma'])
     expect(granted[0].source).toBe('Versatilidade')
+  })
+})
+
+describe('efeitos do poder de origem (Grupo A) — stats base', () => {
+  it('getOriginDefenseBonus: Patrulha (Policial) +2; origem ativa/sem efeito = 0', () => {
+    expect(getOriginDefenseBonus(makeDraft({ origin: 'police-officer' }))).toBe(2)
+    expect(getOriginDefenseBonus(makeDraft({ origin: 'academic' }))).toBe(0)
+    expect(getOriginDefenseBonus(makeDraft({ origin: null }))).toBe(0)
+  })
+
+  it('getOriginHpBonus: Calejado (Desgarrado) soma 1 PV por degrau de NEX', () => {
+    expect(getOriginHpBonus(makeDraft({ origin: 'drifter', nex: 5 }))).toBe(1)
+    expect(getOriginHpBonus(makeDraft({ origin: 'drifter', nex: 50 }))).toBe(10)
+    expect(getOriginHpBonus(makeDraft({ origin: 'drifter', nex: 99 }))).toBe(20)
+    expect(getOriginHpBonus(makeDraft({ origin: 'academic', nex: 99 }))).toBe(0)
+  })
+
+  it('getOriginSanityBonus: Cicatrizes (Vítima) soma 1 Sanidade por degrau de NEX', () => {
+    expect(getOriginSanityBonus(makeDraft({ origin: 'victim', nex: 99 }))).toBe(20)
+    expect(getOriginSanityBonus(makeDraft({ origin: 'victim', nex: 10 }))).toBe(2)
+  })
+
+  it('getOriginPeBonus: Dedicação (Universitário) = +1 fixo e +1 por degrau ímpar {15,25,...,95}', () => {
+    expect(getOriginPeBonus(makeDraft({ origin: 'college-student', nex: 10 }))).toBe(1) // só o fixo (15% ainda não)
+    expect(getOriginPeBonus(makeDraft({ origin: 'college-student', nex: 15 }))).toBe(2) // fixo + 15%
+    expect(getOriginPeBonus(makeDraft({ origin: 'college-student', nex: 25 }))).toBe(3) // fixo + 15,25
+    expect(getOriginPeBonus(makeDraft({ origin: 'college-student', nex: 99 }))).toBe(10) // fixo + 9 degraus ímpares
+  })
+
+  it('getEffectivePeLimit: Dedicação soma +1 ao limite de PE por turno', () => {
+    expect(getEffectivePeLimit(makeDraft({ origin: 'college-student', nex: 10 }))).toBe(3) // base 2 + 1
+    expect(getEffectivePeLimit(makeDraft({ origin: 'academic', nex: 10 }))).toBe(2) // base, sem bônus
+  })
+
+  it('getCursedDerivedStats aplica os bônus de origem sobre a fórmula da classe', () => {
+    const cls = getOrdemClass('combatant')!
+    const attrs = { agility: 1, strength: 1, intellect: 1, presence: 1, vigor: 1 }
+    const base = makeDraft({ origin: 'academic', nex: 99, attributes: attrs })
+    const police = makeDraft({ origin: 'police-officer', nex: 99, attributes: attrs })
+    const drifter = makeDraft({ origin: 'drifter', nex: 99, attributes: attrs })
+    const victim = makeDraft({ origin: 'victim', nex: 99, attributes: attrs })
+    const student = makeDraft({ origin: 'college-student', nex: 99, attributes: attrs })
+    expect(getCursedDerivedStats(police, cls).defense - getCursedDerivedStats(base, cls).defense).toBe(2)
+    expect(getCursedDerivedStats(drifter, cls).hp - getCursedDerivedStats(base, cls).hp).toBe(20)
+    expect(getCursedDerivedStats(victim, cls).sanity - getCursedDerivedStats(base, cls).sanity).toBe(20)
+    expect(getCursedDerivedStats(student, cls).pe - getCursedDerivedStats(base, cls).pe).toBe(10)
   })
 })

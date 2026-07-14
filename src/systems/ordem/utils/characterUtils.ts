@@ -2,12 +2,13 @@ import type { OrdemCharacterDraft } from '../types/character'
 import type { OrdemClass } from '../types/class'
 import type { Trilha, TrilhaFeature } from '../types/trilha'
 import type { OrdemRitual, OrdemElement } from '../types/ritual'
+import type { OriginPowerEffects } from '../types/origin'
 import { getOrigin } from './originUtils'
 import { getOrdemClass, getFreeSkillChoiceCount } from './classUtils'
 import { getTrilhasByClass, getTrilha } from './trilhaUtils'
 import { getPowersByClass } from './powerUtils'
 import { RITUAL_COST, getRitualById } from './ritualUtils'
-import { getNexIndex, getReachedPowerSlots, getReachedAttributeIncreaseSlots, getReachedSkillGradeSlots, ATTRIBUTE_INCREASE_CAP, TRILHA_FEATURE_NEX } from './progressionUtils'
+import { getNexIndex, getReachedPowerSlots, getReachedAttributeIncreaseSlots, getReachedSkillGradeSlots, ATTRIBUTE_INCREASE_CAP, TRILHA_FEATURE_NEX, NEX_STEPS, getPeLimit } from './progressionUtils'
 
 export type DerivedStats = {
   hp: number
@@ -348,4 +349,43 @@ export function getGrantedRituals(draft: OrdemCharacterDraft): GrantedRitual[] {
 
   const chosen = new Set(draft.ritualChoices.filter((id): id is string => Boolean(id)))
   return result.filter(g => !chosen.has(g.ritual.id))
+}
+
+// ── Efeitos do poder de origem (aplicados na ficha) ─────────────────────────────
+
+/** Efeitos mecânicos estruturados do poder da origem escolhida (objeto vazio se não houver). */
+export function getOriginEffects(draft: OrdemCharacterDraft): OriginPowerEffects {
+  const origin = draft.origin ? getOrigin(draft.origin) : undefined
+  return origin?.power.effects ?? {}
+}
+
+/** Quantos degraus ímpares de NEX {15,25,...,95} já foram alcançados (para Dedicação). */
+function oddNexStepsReached(nex: number): number {
+  return NEX_STEPS.filter(step => step >= 15 && step <= nex && (step / 5) % 2 === 1).length
+}
+
+/** PV extra da origem (ex.: Calejado: +1 por degrau de NEX alcançado). */
+export function getOriginHpBonus(draft: OrdemCharacterDraft): number {
+  return (getOriginEffects(draft).hpPerNexStep ?? 0) * getNexIndex(draft.nex)
+}
+
+/** Sanidade extra da origem (ex.: Cicatrizes Psicológicas: +1 por degrau de NEX). */
+export function getOriginSanityBonus(draft: OrdemCharacterDraft): number {
+  return (getOriginEffects(draft).sanityPerNexStep ?? 0) * getNexIndex(draft.nex)
+}
+
+/** PE extra da origem (ex.: Dedicação: +1 fixo e +1 por degrau ímpar de NEX). */
+export function getOriginPeBonus(draft: OrdemCharacterDraft): number {
+  const e = getOriginEffects(draft)
+  return (e.peFlat ?? 0) + (e.pePerOddNexStep ?? 0) * oddNexStepsReached(draft.nex)
+}
+
+/** Defesa extra da origem (ex.: Patrulha +2). */
+export function getOriginDefenseBonus(draft: OrdemCharacterDraft): number {
+  return getOriginEffects(draft).defenseBonus ?? 0
+}
+
+/** Limite de PE por turno já com o bônus de origem (ex.: Dedicação +1). */
+export function getEffectivePeLimit(draft: OrdemCharacterDraft): number {
+  return getPeLimit(draft.nex) + (getOriginEffects(draft).peLimitBonus ?? 0)
 }

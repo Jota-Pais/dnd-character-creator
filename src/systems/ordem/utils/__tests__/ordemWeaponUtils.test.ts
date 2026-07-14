@@ -71,6 +71,17 @@ describe('ordemWeaponUtils', () => {
     expect(getOrdemWeaponAttack(fuzilCaca, balistica, []).damage).toBe('2d8 balístico')
   })
 
+  it('poderes de origem entram no dano: Mão Pesada (+2 corpo a corpo) e Para Bellum (+2 armas de fogo)', () => {
+    // Mão Pesada (Lutador): +2 em dano corpo a corpo; nada em armas de fogo.
+    const maoPesada = makeDraft({ attributes: AGI3_FOR2.attributes, origin: 'brawler' })
+    expect(getOrdemWeaponAttack(faca, maoPesada, []).damage).toBe('1d4+4 corte') // Força 2 + Mão Pesada 2
+    expect(getOrdemWeaponAttack(pistola, maoPesada, []).damage).toBe('1d12 balístico') // fogo: sem bônus
+    // Para Bellum (Militar): +2 em dano com armas de fogo; nada corpo a corpo.
+    const paraBellum = makeDraft({ attributes: AGI3_FOR2.attributes, origin: 'military' })
+    expect(getOrdemWeaponAttack(pistola, paraBellum, []).damage).toBe('1d12+2 balístico')
+    expect(getOrdemWeaponAttack(faca, paraBellum, []).damage).toBe('1d4+2 corte') // corpo a corpo: só a Força
+  })
+
   it('modificações de combate entram nos números', () => {
     // Certeira (+2 ataque) + Cruel (+2 dano) na faca corpo a corpo
     const cc = getOrdemWeaponAttack(faca, AGI3_FOR2, ['certeira', 'cruel'])

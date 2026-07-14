@@ -5,7 +5,7 @@ import { formatSkillWithAttribute } from '../../utils/skillUtils'
 import { getTrilha } from '../../utils/trilhaUtils'
 import { getPower } from '../../utils/powerUtils'
 import {
-  getTrainedSkills, getSkillGrade, hasFavoredRitualPower, hasLaminaMaldita, getRitualCost, hasClassPower, getWeaponSkillOverride, getGrantedRituals,
+  getTrainedSkills, getSkillGrade, hasFavoredRitualPower, hasLaminaMaldita, getRitualCost, hasClassPower, getWeaponSkillOverride, getGrantedRituals, getEffectivePeLimit,
 } from '../../utils/characterUtils'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, ritualNeedsElementChoice, ELEMENT_NAMES } from '../../utils/ritualUtils'
 import {
@@ -20,7 +20,7 @@ import { getPatente } from '../../utils/patenteUtils'
 import type { OrdemWeapon } from '../../types/equipment'
 
 const CAT_ROMAN = ['0', 'I', 'II', 'III', 'IV']
-import { getReachedTrilhaSlots, getPeLimit } from '../../utils/progressionUtils'
+import { getReachedTrilhaSlots } from '../../utils/progressionUtils'
 import { exportCharacter } from '../../utils/storage'
 import { StepNav } from '../common/StepNav'
 
@@ -98,7 +98,7 @@ export function ReviewStep() {
         <Stat label="Defesa" value={String(stats.defense)} />
       </div>
       <p className="text-center text-parchment-600 text-xs">
-        Limite de PE por turno: <span className="text-parchment-400 font-semibold">{getPeLimit(draft.nex)}</span>
+        Limite de PE por turno: <span className="text-parchment-400 font-semibold">{getEffectivePeLimit(draft)}</span>
         {' · '}Deslocamento: <span className="text-parchment-400 font-semibold">9m</span>
       </p>
 

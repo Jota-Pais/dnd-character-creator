@@ -4,7 +4,7 @@ import type { OrdemCharacterDraft, OrdemAttributes } from '../types/character'
 import type { OrdemClass } from '../types/class'
 import type { OrdemEquipment } from '../types/equipment'
 import type { OrdemElement } from '../types/ritual'
-import { getEffectiveAttributes, deriveStats } from './characterUtils'
+import { getEffectiveAttributes, deriveStats, getOriginHpBonus, getOriginPeBonus, getOriginSanityBonus, getOriginDefenseBonus } from './characterUtils'
 import type { DerivedStats } from './characterUtils'
 import { ELEMENT_NAMES, getRitualById } from './ritualUtils'
 
@@ -198,9 +198,15 @@ export function getCursedDerivedStats(
     cls,
     { ...sheet, presence: sheet.presence - noPePresence },
     draft.nex,
-    protectionBonus + getCurseDefenseBonus(draft),
+    protectionBonus + getCurseDefenseBonus(draft) + getOriginDefenseBonus(draft),
   )
-  const hpFlat = curses.reduce((s, c) => s + (c.hpBonus ?? 0), 0)
-  const peFlat = curses.reduce((s, c) => s + (c.peBonus ?? 0), 0)
-  return { ...stats, hp: stats.hp + hpFlat, pe: stats.pe + peFlat }
+  // Bônus flat somados sobre a fórmula da classe: maldições + poder de origem (Calejado/Cicatrizes/Dedicação).
+  const hpFlat = curses.reduce((s, c) => s + (c.hpBonus ?? 0), 0) + getOriginHpBonus(draft)
+  const peFlat = curses.reduce((s, c) => s + (c.peBonus ?? 0), 0) + getOriginPeBonus(draft)
+  return {
+    ...stats,
+    hp: stats.hp + hpFlat,
+    pe: stats.pe + peFlat,
+    sanity: stats.sanity + getOriginSanityBonus(draft),
+  }
 }

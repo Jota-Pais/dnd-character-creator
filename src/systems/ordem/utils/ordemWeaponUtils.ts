@@ -1,7 +1,7 @@
 import type { OrdemCharacterDraft } from '../types/character'
 import type { OrdemWeapon, OrdemWeaponGrip, OrdemWeaponProficiency, OrdemWeaponCategory } from '../types/equipment'
 import type { SkillGrade } from './characterUtils'
-import { getSkillGrade, hasClassPower } from './characterUtils'
+import { getSkillGrade, hasClassPower, getOriginEffects } from './characterUtils'
 import { getModification } from './modificationUtils'
 import { getCurse, getSheetAttributes } from './curseUtils'
 
@@ -145,11 +145,15 @@ export function getOrdemWeaponAttack(
   const attackBonus = GRADE_BONUS[getSkillGrade(draft, skillId)] + mods.reduce((s, m) => s + (m.attackBonus ?? 0), 0)
   // Poderes de classe com efeito incondicional no dano (F25): Tiro Certeiro (+AGI em armas de
   // disparo), Balística Avançada/Ninja Urbano (+2 em táticas de fogo/corpo a corpo),
-  // Golpe Pesado (+1 dado corpo a corpo).
+  // Golpe Pesado (+1 dado corpo a corpo). E poderes de origem: Mão Pesada (+2 corpo a corpo),
+  // Para Bellum (+2 armas de fogo).
+  const originEffects = getOriginEffects(draft)
   const powerDamage =
     (hasClassPower(draft, 'sure-shot') && weapon.weaponCategory === 'disparo' ? attrs.agility : 0) +
     (hasClassPower(draft, 'advanced-ballistics') && weapon.proficiency === 'tactical' && weapon.weaponCategory === 'fogo' ? 2 : 0) +
-    (hasClassPower(draft, 'urban-ninja') && weapon.proficiency === 'tactical' && weapon.weaponCategory === 'corpo_a_corpo' ? 2 : 0)
+    (hasClassPower(draft, 'urban-ninja') && weapon.proficiency === 'tactical' && weapon.weaponCategory === 'corpo_a_corpo' ? 2 : 0) +
+    (weapon.weaponCategory === 'corpo_a_corpo' ? (originEffects.meleeDamageBonus ?? 0) : 0) +
+    (weapon.weaponCategory === 'fogo' ? (originEffects.firearmDamageBonus ?? 0) : 0)
   const damageBonus = (melee ? attrs.strength : 0) + powerDamage + mods.reduce((s, m) => s + (m.damageBonus ?? 0), 0)
   const extraDice = mods.reduce((s, m) => s + (m.damageDice ?? 0), 0) +
     (hasClassPower(draft, 'heavy-blow') && weapon.weaponCategory === 'corpo_a_corpo' ? 1 : 0)

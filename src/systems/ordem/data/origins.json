@@ -68,7 +68,7 @@
     "name": "Desgarrado",
     "description": "Não vivia de acordo com as normas da sociedade — eremita, pessoa em situação de rua, ou alguém que abandonou sua rotina após descobrir o Paranormal.",
     "skillProficiencies": ["fortitude", "survival"],
-    "power": { "name": "Calejado", "description": "Você recebe +1 PV para cada 5% de NEX." },
+    "power": { "name": "Calejado", "description": "Você recebe +1 PV para cada 5% de NEX.", "effects": { "hpPerNexStep": 1 } },
     "rollRange": [19, 19]
   },
   {
@@ -100,7 +100,7 @@
     "name": "Lutador",
     "description": "Pratica uma arte marcial ou esporte de luta, ou cresceu em um bairro perigoso onde aprendeu briga de rua.",
     "skillProficiencies": ["fighting", "reflexes"],
-    "power": { "name": "Mão Pesada", "description": "Você recebe +2 em rolagens de dano com ataques corpo a corpo." },
+    "power": { "name": "Mão Pesada", "description": "Você recebe +2 em rolagens de dano com ataques corpo a corpo.", "effects": { "meleeDamageBonus": 2 } },
     "rollRange": [24, 24]
   },
   {
@@ -124,7 +124,7 @@
     "name": "Militar",
     "description": "Serviu em uma força militar, como o exército ou a marinha. Perito no uso de armas de fogo.",
     "skillProficiencies": ["aim", "tactics"],
-    "power": { "name": "Para Bellum", "description": "Você recebe +2 em rolagens de dano com armas de fogo." },
+    "power": { "name": "Para Bellum", "description": "Você recebe +2 em rolagens de dano com armas de fogo.", "effects": { "firearmDamageBonus": 2 } },
     "rollRange": [27, 27]
   },
   {
@@ -140,7 +140,7 @@
     "name": "Policial",
     "description": "Fez parte de uma força de segurança pública, civil ou militar.",
     "skillProficiencies": ["perception", "aim"],
-    "power": { "name": "Patrulha", "description": "Você recebe +2 em Defesa." },
+    "power": { "name": "Patrulha", "description": "Você recebe +2 em Defesa.", "effects": { "defenseBonus": 2 } },
     "rollRange": [29, 30]
   },
   {
@@ -196,7 +196,7 @@
     "name": "Universitário",
     "description": "Aluno de faculdade que, em meio à rotina de estudos, provas e festas, acabou descobrindo algo que chamou a atenção da Ordem.",
     "skillProficiencies": ["current-affairs", "investigation"],
-    "power": { "name": "Dedicação", "description": "Você recebe +1 PE, e mais 1 PE adicional a cada NEX ímpar (15%, 25%...). Além disso, seu limite de PE por turno aumenta em 1." },
+    "power": { "name": "Dedicação", "description": "Você recebe +1 PE, e mais 1 PE adicional a cada NEX ímpar (15%, 25%...). Além disso, seu limite de PE por turno aumenta em 1.", "effects": { "peFlat": 1, "pePerOddNexStep": 1, "peLimitBonus": 1 } },
     "rollRange": [37, 38]
   },
   {
@@ -204,7 +204,7 @@
     "name": "Vítima",
     "description": "Em algum momento da vida, encontrou o Paranormal de forma traumática — e decidiu lutar para impedir que outros inocentes passem pelo mesmo.",
     "skillProficiencies": ["reflexes", "willpower"],
-    "power": { "name": "Cicatrizes Psicológicas", "description": "Você recebe +1 de Sanidade para cada 5% de NEX." },
+    "power": { "name": "Cicatrizes Psicológicas", "description": "Você recebe +1 de Sanidade para cada 5% de NEX.", "effects": { "sanityPerNexStep": 1 } },
     "rollRange": [39, 40]
   }
 ]

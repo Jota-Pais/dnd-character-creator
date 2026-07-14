@@ -4,7 +4,7 @@ import { getOrdemClass } from '../utils/classUtils'
 import { SKILLS } from '../utils/skillUtils'
 import { getTrilha } from '../utils/trilhaUtils'
 import { getPower } from '../utils/powerUtils'
-import { getTrainedSkills, getSkillGrade, getRitualCost, hasClassPower, getWeaponSkillOverride, getGrantedRituals } from '../utils/characterUtils'
+import { getTrainedSkills, getSkillGrade, getRitualCost, hasClassPower, getWeaponSkillOverride, getGrantedRituals, getEffectivePeLimit } from '../utils/characterUtils'
 import { getReachedTrilhaSlots, getPeLimit } from '../utils/progressionUtils'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount } from '../utils/ritualUtils'
 import {
@@ -65,6 +65,8 @@ export function PrintableSheet() {
   const trainedSkills = getTrainedSkills(draft)
   const patente = getPatente(draft.patente)
   // DT de habilidades/rituais: 10 + limite de PE por rodada + Presença (exemplo do livro, pág. 121).
+  // DT de ritual usa a contagem de degraus de NEX (getPeLimit base), não o limite de PE modificável
+  // por poderes de origem — Dedicação aumenta o gasto por turno, não a dificuldade dos seus rituais.
   const ritualDt = 10 + getPeLimit(draft.nex) + attributes.presence
 
   return (
@@ -108,7 +110,7 @@ export function PrintableSheet() {
 
             <section className="grid grid-cols-3 gap-1.5">
               <SmallStat label="NEX" value={`${draft.nex}%`} />
-              <SmallStat label="PE / Rodada" value={String(getPeLimit(draft.nex))} />
+              <SmallStat label="PE / Rodada" value={String(getEffectivePeLimit(draft))} />
               <SmallStat label="Desl." value="9m" />
             </section>
 

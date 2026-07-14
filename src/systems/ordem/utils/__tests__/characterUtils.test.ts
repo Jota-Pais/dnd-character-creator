@@ -10,6 +10,8 @@ import {
   getRitualCost,
   hasFavoredRitualPower,
   hasLaminaMaldita,
+  getFavoriteWeaponReduction,
+  getFavoriteEquipmentReduction,
   arePowerParamsComplete,
   getEffectiveAttributes,
   getSkillGrade,
@@ -225,6 +227,41 @@ describe('personalização da ficha (F24) — Ritual Predileto e Lâmina Maldita
     expect(getRitualCost(dupla, amaldicoarArma)).toEqual({ cost: 0, notes: ['predileto −1', 'Lâmina Maldita −1'] })
     // Outra trilha não reduz.
     expect(getRitualCost(makeDraft({ trilha: 'graduado', nex: 10 }), amaldicoarArma).cost).toBe(1)
+  })
+})
+
+describe('getFavoriteWeaponReduction (trilha Aniquilador — A Favorita)', () => {
+  it('escala com o NEX: 0 antes de 10%, I/II/III/IV em NEX 10/40/65/99', () => {
+    expect(getFavoriteWeaponReduction(makeDraft({ trilha: 'annihilator', nex: 5 }))).toBe(0)
+    expect(getFavoriteWeaponReduction(makeDraft({ trilha: 'annihilator', nex: 10 }))).toBe(1)
+    expect(getFavoriteWeaponReduction(makeDraft({ trilha: 'annihilator', nex: 40 }))).toBe(2)
+    expect(getFavoriteWeaponReduction(makeDraft({ trilha: 'annihilator', nex: 65 }))).toBe(3)
+    expect(getFavoriteWeaponReduction(makeDraft({ trilha: 'annihilator', nex: 99 }))).toBe(4)
+  })
+
+  it('outra trilha não reduz nada', () => {
+    expect(getFavoriteWeaponReduction(makeDraft({ trilha: 'graduado', nex: 99 }))).toBe(0)
+    expect(getFavoriteWeaponReduction(makeDraft({ trilha: null, nex: 99 }))).toBe(0)
+  })
+
+  it('Versatilidade pra Aniquilador só concede "A Favorita" (redução fixa em I, não escala)', () => {
+    const draft = makeDraft({
+      trilha: 'graduado', nex: 99,
+      versatilityChoice: { kind: 'trilha', trilhaId: 'annihilator' },
+    })
+    expect(getFavoriteWeaponReduction(draft)).toBe(1)
+  })
+})
+
+describe('getFavoriteEquipmentReduction (origem Engenheiro — Ferramentas Favoritas)', () => {
+  it('I fixo pra quem tem a origem, independente do NEX', () => {
+    expect(getFavoriteEquipmentReduction(makeDraft({ origin: 'engineer', nex: 5 }))).toBe(1)
+    expect(getFavoriteEquipmentReduction(makeDraft({ origin: 'engineer', nex: 99 }))).toBe(1)
+  })
+
+  it('outra origem não reduz nada', () => {
+    expect(getFavoriteEquipmentReduction(makeDraft({ origin: 'drifter', nex: 99 }))).toBe(0)
+    expect(getFavoriteEquipmentReduction(makeDraft({ origin: null, nex: 99 }))).toBe(0)
   })
 })
 

@@ -84,6 +84,18 @@ export type OrdemCharacterDraft = {
   favoriteRitual: string | null
   /** Perícia de ataque por unidade de arma (uid → perícia); ausente = automática (Luta/Pontaria). */
   weaponSkillChoices: Record<string, 'fighting' | 'aim' | 'occultism'>
+  /**
+   * Id do item de catálogo escolhido como Arma Favorita (trilha Aniquilador, NEX 10%+).
+   * É o id da arma (não uma unidade/uid): a redução de categoria vale pra qualquer unidade
+   * dela, e pode ser marcada mesmo antes de a arma ser requisitada (ver `getFavoriteWeaponReduction`).
+   */
+  favoriteWeapon: string | null
+  /**
+   * Id do item de catálogo escolhido como Ferramentas Favoritas (origem Engenheiro). Mesmo
+   * esquema da Arma Favorita, mas pra um item que não seja arma e com redução fixa em I
+   * (ver `getFavoriteEquipmentReduction`).
+   */
+  favoriteEquipment: string | null
 }
 
 export const EMPTY_ATTRIBUTES: OrdemAttributes = {
@@ -119,4 +131,6 @@ export const EMPTY_DRAFT: OrdemCharacterDraft = {
   utilityBackpackItem: null,
   favoriteRitual: null,
   weaponSkillChoices: {},
+  favoriteWeapon: null,
+  favoriteEquipment: null,
 }

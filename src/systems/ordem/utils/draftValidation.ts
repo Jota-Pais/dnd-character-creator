@@ -141,5 +141,7 @@ export function sanitizeImportedDraft(parsed: unknown): OrdemCharacterDraft | nu
     weaponSkillChoices: p.weaponSkillChoices && typeof p.weaponSkillChoices === 'object' && !Array.isArray(p.weaponSkillChoices)
       ? p.weaponSkillChoices
       : {},
+    favoriteWeapon: typeof p.favoriteWeapon === 'string' ? p.favoriteWeapon : null,
+    favoriteEquipment: typeof p.favoriteEquipment === 'string' ? p.favoriteEquipment : null,
   }
 }

@@ -19,6 +19,7 @@ import {
   fitsPatenteSlots,
   getCategorySlotAllocation,
   getMissingRitualComponentElements,
+  getCatalogCategory,
   EQUIPMENTS,
 } from '../equipmentUtils'
 import { getPatente } from '../patenteUtils'
@@ -276,6 +277,73 @@ describe('Mochila de Utilidades (F27) — item escolhido conta −1 categoria e 
     expect(getDraftInstanceCategory(makeDraft({ ...base, powerChoices: [] }), 'protecao-leve')).toBe(1)
     // Arma escolhida é ignorada.
     expect(getDraftInstanceCategory(makeDraft({ ...base, utilityBackpackItem: 'revolver' }), 'revolver')).toBe(1)
+  })
+})
+
+describe('Arma Favorita (trilha Aniquilador) — reduz a categoria da arma escolhida', () => {
+  it('getCatalogCategory reduz mesmo sem unidade escolhida (destrava o "cabe na Patente" antes de requisitar)', () => {
+    const lancaChamas = getEquipmentById('lanca-chamas')! // Cat III
+    const semTrilha = makeDraft({ favoriteWeapon: 'lanca-chamas' })
+    expect(getCatalogCategory(semTrilha, lancaChamas)).toBe(3) // sem a trilha, marcar não faz nada
+
+    const nex10 = makeDraft({ trilha: 'annihilator', nex: 10, favoriteWeapon: 'lanca-chamas' })
+    expect(getCatalogCategory(nex10, lancaChamas)).toBe(2) // III − I
+
+    const nex40 = makeDraft({ trilha: 'annihilator', nex: 40, favoriteWeapon: 'lanca-chamas' })
+    expect(getCatalogCategory(nex40, lancaChamas)).toBe(1) // III − II
+  })
+
+  it('um Operador (sem Cat III) só consegue requisitar o lança-chamas depois de marcá-lo como favorito', () => {
+    const base = { class: 'combatant' as const, patente: 'operador' as const, equipmentChoices: ['lanca-chamas'] }
+    // Sem a trilha: Cat III não cabe no Operador (limite 0 pra Cat III).
+    expect(isEquipmentStepComplete(makeDraft(base))).toBe(false)
+    // Aniquilador em NEX 10% reduz pra Cat II, que cabe no único slot de Cat II do Operador.
+    expect(isEquipmentStepComplete(makeDraft({ ...base, trilha: 'annihilator', nex: 10, favoriteWeapon: 'lanca-chamas' }))).toBe(true)
+    // Marcar outra arma como favorita não ajuda o lança-chamas.
+    expect(isEquipmentStepComplete(makeDraft({ ...base, trilha: 'annihilator', nex: 10, favoriteWeapon: 'faca' }))).toBe(false)
+  })
+
+  it('getDraftInstanceCategory reflete a redução na unidade já escolhida', () => {
+    const draft = makeDraft({ trilha: 'annihilator', nex: 65, equipmentChoices: ['lanca-chamas'], favoriteWeapon: 'lanca-chamas' })
+    expect(getDraftInstanceCategory(draft, 'lanca-chamas')).toBe(0) // III − III
+  })
+
+  it('nunca reduz abaixo de 0, mesmo em NEX 99%', () => {
+    const faca = getEquipmentById('faca')! // Cat 0
+    const draft = makeDraft({ trilha: 'annihilator', nex: 99, favoriteWeapon: 'faca' })
+    expect(getCatalogCategory(draft, faca)).toBe(0)
+  })
+})
+
+describe('Ferramentas Favoritas (origem Engenheiro) — reduz a categoria do item escolhido (exceto armas)', () => {
+  it('getCatalogCategory reduz mesmo sem unidade escolhida, só com a origem', () => {
+    const pesada = getEquipmentById('protecao-pesada')! // Cat II
+    const semOrigem = makeDraft({ favoriteEquipment: 'protecao-pesada' })
+    expect(getCatalogCategory(semOrigem, pesada)).toBe(2) // sem a origem, marcar não faz nada
+
+    const comOrigem = makeDraft({ origin: 'engineer', favoriteEquipment: 'protecao-pesada' })
+    expect(getCatalogCategory(comOrigem, pesada)).toBe(1) // II − I
+  })
+
+  it('nunca vale pra armas', () => {
+    const revolver = getEquipmentById('revolver')!
+    const draft = makeDraft({ origin: 'engineer', favoriteEquipment: 'revolver' })
+    expect(getCatalogCategory(draft, revolver)).toBe(revolver.category)
+  })
+
+  it('um Recruta (sem Cat II) só consegue requisitar a proteção pesada depois de marcá-la como favorita', () => {
+    const base = { patente: 'recruta' as const, equipmentChoices: ['protecao-pesada'] }
+    // Sem a origem: Cat II não cabe no Recruta (limite 0 pra Cat II).
+    expect(isEquipmentStepComplete(makeDraft(base))).toBe(false)
+    // Engenheiro reduz pra Cat I, que cabe no limite de 2 do Recruta.
+    expect(isEquipmentStepComplete(makeDraft({ ...base, origin: 'engineer', favoriteEquipment: 'protecao-pesada' }))).toBe(true)
+    // Marcar outro item como favorito não ajuda a proteção pesada.
+    expect(isEquipmentStepComplete(makeDraft({ ...base, origin: 'engineer', favoriteEquipment: 'utensilio' }))).toBe(false)
+  })
+
+  it('getDraftInstanceCategory reflete a redução na unidade já escolhida', () => {
+    const draft = makeDraft({ origin: 'engineer', equipmentChoices: ['protecao-pesada'], favoriteEquipment: 'protecao-pesada' })
+    expect(getDraftInstanceCategory(draft, 'protecao-pesada')).toBe(1) // II − I
   })
 })
 

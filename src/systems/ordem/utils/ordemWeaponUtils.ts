@@ -1,5 +1,5 @@
 import type { OrdemCharacterDraft } from '../types/character'
-import type { OrdemWeapon } from '../types/equipment'
+import type { OrdemWeapon, OrdemWeaponGrip, OrdemWeaponProficiency, OrdemWeaponCategory } from '../types/equipment'
 import type { SkillGrade } from './characterUtils'
 import { getSkillGrade, hasClassPower } from './characterUtils'
 import { getModification } from './modificationUtils'
@@ -37,7 +37,7 @@ export type OrdemWeaponAttack = {
 }
 
 /** Armas corpo a corpo e de arremesso usam Luta e somam Força no dano; disparo/fogo usam Pontaria. */
-function isMelee(weapon: OrdemWeapon): boolean {
+export function isMelee(weapon: OrdemWeapon): boolean {
   return weapon.weaponCategory === 'corpo_a_corpo' || weapon.weaponCategory === 'arremesso'
 }
 
@@ -75,6 +75,38 @@ const ATTACK_SKILLS: Record<AttackSkillChoice, { name: string; attribute: 'stren
   fighting: { name: 'Luta', attribute: 'strength' },
   aim: { name: 'Pontaria', attribute: 'agility' },
   occultism: { name: 'Ocultismo', attribute: 'intellect' },
+}
+
+/** Perícia padrão do teste de ataque da arma (Luta corpo a corpo/arremesso, Pontaria à distância). */
+export function getWeaponSkillName(weapon: OrdemWeapon): string {
+  return ATTACK_SKILLS[isMelee(weapon) ? 'fighting' : 'aim'].name
+}
+
+const GRIP_PT: Record<OrdemWeaponGrip, string> = {
+  leve: 'leve',
+  uma_mao: 'uma mão',
+  duas_maos: 'duas mãos',
+}
+
+const PROFICIENCY_PT: Record<OrdemWeaponProficiency, string> = {
+  simple: 'simples',
+  tactical: 'tática',
+  heavy: 'pesada',
+}
+
+const WEAPON_CATEGORY_PT: Record<OrdemWeaponCategory, string> = {
+  corpo_a_corpo: 'corpo a corpo',
+  arremesso: 'arremesso',
+  disparo: 'disparo',
+  fogo: 'arma de fogo',
+}
+
+/** Resumo compacto pro card de escolha: "Luta · corpo a corpo · uma mão · tática". */
+export function formatWeaponSummary(weapon: OrdemWeapon): string {
+  const parts = [getWeaponSkillName(weapon), WEAPON_CATEGORY_PT[weapon.weaponCategory]]
+  if (weapon.range !== '-') parts.push(`alcance ${weapon.range}`)
+  parts.push(GRIP_PT[weapon.grip], `proficiência ${PROFICIENCY_PT[weapon.proficiency]}`)
+  return parts.join(' · ')
 }
 
 /** Alcances em ordem crescente, pra maldição Predadora subir uma categoria (curto 9m → ... → extremo 90m). */

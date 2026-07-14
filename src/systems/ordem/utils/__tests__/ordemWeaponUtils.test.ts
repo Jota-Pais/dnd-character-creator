@@ -3,7 +3,7 @@ import { EMPTY_DRAFT } from '../../types/character'
 import type { OrdemCharacterDraft } from '../../types/character'
 import type { OrdemWeapon } from '../../types/equipment'
 import { getEquipmentById } from '../equipmentUtils'
-import { getOrdemWeaponAttack } from '../ordemWeaponUtils'
+import { getOrdemWeaponAttack, getWeaponSkillName, formatWeaponSummary, isMelee } from '../ordemWeaponUtils'
 
 function makeDraft(over: Partial<OrdemCharacterDraft>): OrdemCharacterDraft {
   return { ...EMPTY_DRAFT, ...over }
@@ -80,5 +80,30 @@ describe('ordemWeaponUtils', () => {
     expect(getOrdemWeaponAttack(pistola, AGI3_FOR2, ['calibre-grosso']).damage).toBe('2d12 balístico')
     // Perigosa amplia a margem de ameaça: crítico 19 → 17
     expect(getOrdemWeaponAttack(faca, AGI3_FOR2, ['perigosa']).critical).toBe('17')
+  })
+})
+
+describe('resumo de arma pro card de escolha (getWeaponSkillName / formatWeaponSummary)', () => {
+  it('getWeaponSkillName segue a mesma regra do teste de ataque', () => {
+    expect(getWeaponSkillName(faca)).toBe('Luta')
+    expect(getWeaponSkillName(pistola)).toBe('Pontaria')
+    expect(isMelee(faca)).toBe(true)
+    expect(isMelee(pistola)).toBe(false)
+  })
+
+  it('formatWeaponSummary inclui perícia, tipo, alcance (quando houver), empunhadura e proficiência', () => {
+    expect(formatWeaponSummary(faca)).toBe('Luta · corpo a corpo · alcance Curto · leve · proficiência simples')
+    expect(formatWeaponSummary(pistola)).toBe('Pontaria · arma de fogo · alcance Curto · leve · proficiência simples')
+  })
+
+  it('omite o alcance quando a arma não tem (ex.: punhal, corpo a corpo puro)', () => {
+    const punhal = getEquipmentById('punhal') as OrdemWeapon
+    expect(punhal.range).toBe('-')
+    expect(formatWeaponSummary(punhal)).toBe('Luta · corpo a corpo · leve · proficiência simples')
+  })
+
+  it('lança-chamas: Pontaria, arma de fogo, alcance curto, duas mãos, proficiência pesada', () => {
+    const lancaChamas = getEquipmentById('lanca-chamas') as OrdemWeapon
+    expect(formatWeaponSummary(lancaChamas)).toBe('Pontaria · arma de fogo · alcance Curto · duas mãos · proficiência pesada')
   })
 })

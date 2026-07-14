@@ -240,6 +240,32 @@ export function hasLaminaMaldita(draft: OrdemCharacterDraft): boolean {
 }
 
 /**
+ * Redução de categoria da Arma Favorita (trilha Aniquilador): 0 antes de NEX 10%, e I/II/III/IV
+ * em NEX 10/40/65/99 (A Favorita, Técnica Secreta, Técnica Sublime, Máquina de Matar). A
+ * Versatilidade (NEX 50%) só concede o 1º poder de outra trilha — se for Aniquilador, isso é
+ * só "A Favorita", então a redução fica fixa em I, sem escalar com o NEX de quem versatilizou.
+ */
+export function getFavoriteWeaponReduction(draft: OrdemCharacterDraft): number {
+  if (draft.trilha === 'annihilator') {
+    if (draft.nex >= 99) return 4
+    if (draft.nex >= 65) return 3
+    if (draft.nex >= 40) return 2
+    if (draft.nex >= 10) return 1
+    return 0
+  }
+  if (draft.versatilityChoice?.kind === 'trilha' && draft.versatilityChoice.trilhaId === 'annihilator') return 1
+  return 0
+}
+
+/**
+ * Redução de categoria das Ferramentas Favoritas (origem Engenheiro): I fixo, sem escalar —
+ * ao contrário da Arma Favorita, é um poder de origem, ativo desde a criação da ficha.
+ */
+export function getFavoriteEquipmentReduction(draft: OrdemCharacterDraft): number {
+  return draft.origin === 'engineer' ? 1 : 0
+}
+
+/**
  * Perícia de ataque alternativa VÁLIDA de uma arma: o teste é fixo pela arma (Luta corpo a
  * corpo / Pontaria à distância); a única exceção do livro é usar Ocultismo com a arma
  * amaldiçoada via Lâmina Maldita. Escolhas fora disso são ignoradas.

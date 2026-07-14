@@ -8,7 +8,7 @@ import { getOrdemClass } from './classUtils'
 import { getPatente, getCategoryLimit } from './patenteUtils'
 import { getModification } from './modificationUtils'
 import { getCurse, getCurseCategoryDelta, getItemCurses, getSheetAttributes, canApplyCurse, curseChoiceKey } from './curseUtils'
-import { hasClassPower } from './characterUtils'
+import { hasClassPower, getFavoriteWeaponReduction, getFavoriteEquipmentReduction } from './characterUtils'
 
 export const EQUIPMENTS = equipmentsJson as OrdemEquipment[]
 
@@ -114,12 +114,48 @@ export function isUtilityBackpackItem(draft: OrdemCharacterDraft, uid: string): 
   return Boolean(item && item.type !== 'weapon' && draft.equipmentChoices.includes(uid))
 }
 
-/** Categoria efetiva de uma unidade do draft, lendo modificações, maldições e Mochila de Utilidades. */
+/**
+ * O item de catálogo é a Arma Favorita (trilha Aniquilador)? Ao contrário da Mochila de
+ * Utilidades, vale pra qualquer unidade desse item — inclusive antes dele ser requisitado
+ * (ver `getCatalogCategory`), já que "A Favorita" escolhe uma ARMA, não uma unidade específica.
+ */
+export function isFavoriteWeaponItem(draft: OrdemCharacterDraft, item: OrdemEquipment): boolean {
+  return item.type === 'weapon' && draft.favoriteWeapon === item.id
+}
+
+/**
+ * O item de catálogo é as Ferramentas Favoritas (origem Engenheiro)? Mesmo esquema da Arma
+ * Favorita: vale pra qualquer unidade desse item, inclusive antes dele ser requisitado (ver
+ * `getCatalogCategory`), já que o poder escolhe um ITEM, não uma unidade específica.
+ */
+export function isFavoriteEquipmentItem(draft: OrdemCharacterDraft, item: OrdemEquipment): boolean {
+  return item.type !== 'weapon' && draft.favoriteEquipment === item.id
+}
+
+/** Categoria efetiva de uma unidade do draft, lendo modificações, maldições, Mochila de Utilidades, Ferramentas Favoritas e Arma Favorita. */
 export function getDraftInstanceCategory(draft: OrdemCharacterDraft, uid: string): number {
   const item = getEquipmentByInstance(uid)
   if (!item) return 0
   const cat = getEffectiveCategory(item, itemMods(draft, uid).length, getItemCurses(draft, uid).length)
-  return isUtilityBackpackItem(draft, uid) ? Math.max(0, cat - 1) : cat
+  const afterBackpack = isUtilityBackpackItem(draft, uid) ? Math.max(0, cat - 1) : cat
+  const afterFavoriteEquipment = isFavoriteEquipmentItem(draft, item)
+    ? Math.max(0, afterBackpack - getFavoriteEquipmentReduction(draft))
+    : afterBackpack
+  return isFavoriteWeaponItem(draft, item) ? Math.max(0, afterFavoriteEquipment - getFavoriteWeaponReduction(draft)) : afterFavoriteEquipment
+}
+
+/**
+ * Categoria "de catálogo" de um item pra decidir se cabe na Patente ANTES de ter unidade —
+ * já reduzida se for a Arma Favorita ou as Ferramentas Favoritas. Sem isso, um item de
+ * categoria acima do limite (ex.: lança-chamas Cat III pra um Operador) nunca fica
+ * requisitável mesmo depois de marcado como favorito, porque a marcação em si exige que a
+ * unidade já exista (ver `EquipmentStep`).
+ */
+export function getCatalogCategory(draft: OrdemCharacterDraft, item: OrdemEquipment): number {
+  const afterFavoriteEquipment = isFavoriteEquipmentItem(draft, item)
+    ? Math.max(0, item.category - getFavoriteEquipmentReduction(draft))
+    : item.category
+  return isFavoriteWeaponItem(draft, item) ? Math.max(0, afterFavoriteEquipment - getFavoriteWeaponReduction(draft)) : afterFavoriteEquipment
 }
 
 /** Espaços de um item já com as variações das modificações (Discreta −1, Reforçada/Blindada +1...). */

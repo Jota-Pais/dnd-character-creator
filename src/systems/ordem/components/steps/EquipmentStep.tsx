@@ -2,7 +2,7 @@ import { useOrdemStore } from '../../stores/characterStore'
 import { STEP_LABELS } from '../../types/character'
 import type { OrdemEquipment } from '../../types/equipment'
 import {
-  EQUIPMENTS, getTotalCarryCapacity, getModifiedSpaces, getDraftInstanceCategory,
+  EQUIPMENTS, getTotalCarryCapacity, getModifiedSpaces, getDraftInstanceCategory, getCatalogCategory,
   hasWeaponProficiency, instanceItemId, newInstanceUid, getInstanceLabel,
   fitsWithAdjustedCounts, getCategorySlotAllocation, getMissingRitualComponentElements,
 } from '../../utils/equipmentUtils'
@@ -12,7 +12,8 @@ import {
 } from '../../utils/curseUtils'
 import type { OrdemElement } from '../../types/ritual'
 import { getAvailableRituals, ELEMENT_NAMES } from '../../utils/ritualUtils'
-import { hasClassPower } from '../../utils/characterUtils'
+import { hasClassPower, getFavoriteWeaponReduction, getFavoriteEquipmentReduction } from '../../utils/characterUtils'
+import { isMelee, formatWeaponSummary } from '../../utils/ordemWeaponUtils'
 import { getPatente, PATENTES } from '../../utils/patenteUtils'
 import { isStepComplete } from '../../utils/draftValidation'
 import { StepNav } from '../common/StepNav'
@@ -99,10 +100,21 @@ export function EquipmentStep() {
     const isSelected = units.length > 0
 
     // Bloqueio por vagas da Patente (Categoria 0 é ilimitada; item menor pode usar vaga maior).
-    // Uma unidade nova entra na sua categoria BASE (ainda sem modificações/maldições).
-    const canAddUnit = item.category === 0 || fitsWithAdjustedCounts(draft, patente, { [item.category]: 1 })
+    // Uma unidade nova entra na sua categoria de catálogo — já reduzida se for a Arma Favorita
+    // (trilha Aniquilador), senão uma arma acima do limite nunca ficaria requisitável pra marcar.
+    const catalogCategory = getCatalogCategory(draft, item)
+    const canAddUnit = catalogCategory === 0 || fitsWithAdjustedCounts(draft, patente, { [catalogCategory]: 1 })
     // Proficiência de arma NÃO bloqueia — apenas sinaliza (você pode requisitar, mas com penalidade).
     const noProficiency = !hasWeaponProficiency(draft, item)
+    // Arma Favorita (trilha Aniquilador, NEX 10%+): reduz a categoria da arma escolhida.
+    const favoriteReduction = getFavoriteWeaponReduction(draft)
+    const canMarkFavorite = item.type === 'weapon' && favoriteReduction > 0
+    const isFavorite = item.type === 'weapon' && draft.favoriteWeapon === item.id
+    // Ferramentas Favoritas (origem Engenheiro): reduz a categoria de um item que não seja arma.
+    const equipmentFavoriteReduction = getFavoriteEquipmentReduction(draft)
+    const canMarkFavoriteEquipment = item.type !== 'weapon' && equipmentFavoriteReduction > 0
+    const isFavoriteEquipment = item.type !== 'weapon' && draft.favoriteEquipment === item.id
+    const displayCat = units.length === 1 ? getDraftInstanceCategory(draft, units[0]) : catalogCategory
 
     const isDisabled = !isSelected && !canAddUnit
 
@@ -129,14 +141,36 @@ export function EquipmentStep() {
           </span>
           <div className="flex flex-wrap gap-2 text-xs text-parchment-500 mt-1">
             <span className="bg-parchment-900/50 px-2 py-0.5 rounded border border-parchment-800/50">
-              Cat {CAT_ROMAN[units.length === 1 ? getDraftInstanceCategory(draft, units[0]) : item.category]}
-              {units.length === 1 && getDraftInstanceCategory(draft, units[0]) !== item.category && (
+              Cat {CAT_ROMAN[displayCat]}
+              {displayCat !== item.category && (
                 <span className="text-gold-500/80"> (base {CAT_ROMAN[item.category]})</span>
               )}
             </span>
             <span className="bg-parchment-900/50 px-2 py-0.5 rounded border border-parchment-800/50">
               Espaço: {item.spaces}
             </span>
+            {canMarkFavorite && (
+              <button
+                onClick={e => { e.stopPropagation(); updateDraft({ favoriteWeapon: isFavorite ? null : item.id }) }}
+                title="Arma Favorita (trilha Aniquilador): reduz a categoria desta arma, liberando-a mesmo acima do limite normal da sua Patente"
+                className={`text-xs px-2 py-0.5 rounded border transition-all ${isFavorite
+                  ? 'bg-gold-900/40 border-gold-700/50 text-gold-300'
+                  : 'border-parchment-800 text-parchment-500 hover:border-gold-800 hover:text-parchment-300'}`}
+              >
+                ⭐ Favorita{isFavorite ? ` (−${CAT_ROMAN[favoriteReduction]})` : ''}
+              </button>
+            )}
+            {canMarkFavoriteEquipment && (
+              <button
+                onClick={e => { e.stopPropagation(); updateDraft({ favoriteEquipment: isFavoriteEquipment ? null : item.id }) }}
+                title="Ferramentas Favoritas (origem Engenheiro): reduz a categoria deste item, liberando-o mesmo acima do limite normal da sua Patente"
+                className={`text-xs px-2 py-0.5 rounded border transition-all ${isFavoriteEquipment
+                  ? 'bg-gold-900/40 border-gold-700/50 text-gold-300'
+                  : 'border-parchment-800 text-parchment-500 hover:border-gold-800 hover:text-parchment-300'}`}
+              >
+                🔧 Favorito{isFavoriteEquipment ? ` (−${CAT_ROMAN[equipmentFavoriteReduction]})` : ''}
+              </button>
+            )}
             {item.type === 'weapon' && (
               <>
                 <span className="bg-parchment-900/50 px-2 py-0.5 rounded border border-parchment-800/50">
@@ -144,6 +178,12 @@ export function EquipmentStep() {
                 </span>
                 <span className="bg-parchment-900/50 px-2 py-0.5 rounded border border-parchment-800/50">
                   Crítico: {item.critical}
+                </span>
+                <span
+                  className="bg-parchment-900/50 px-2 py-0.5 rounded border border-parchment-800/50"
+                  title={isMelee(item) ? 'Soma Força no dano' : 'Não soma atributo no dano'}
+                >
+                  {formatWeaponSummary(item)}
                 </span>
               </>
             )}

@@ -107,8 +107,10 @@ describe('ordemWeaponUtils', () => {
 })
 
 describe('getUnarmedAttack (Artista Marcial)', () => {
-  it('sem o poder, retorna null', () => {
-    expect(getUnarmedAttack(AGI3_FOR2)).toBeNull()
+  it('sem o poder, retorna o ataque desarmado básico (1d3 não letal)', () => {
+    const attack = getUnarmedAttack(AGI3_FOR2)
+    expect(attack).not.toBeNull()
+    expect(attack?.damage).toContain('1d3+2 I (não letal)')
   })
 
   it('com o poder: 1d6 até NEX 34%, 1d8 em NEX 35%+, 1d10 em NEX 70%+', () => {

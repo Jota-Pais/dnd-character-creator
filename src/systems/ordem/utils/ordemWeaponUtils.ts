@@ -117,6 +117,12 @@ function increaseRange(range: string): string {
   return idx >= 0 && idx < RANGE_ORDER.length - 1 ? RANGE_ORDER[idx + 1] : range
 }
 
+function hasTrilhaFeature(draft: OrdemCharacterDraft, trilhaId: string, nex: number): boolean {
+  if (draft.trilha === trilhaId && draft.nex >= nex) return true
+  if (nex === 10 && draft.versatilityChoice?.kind === 'trilha' && draft.versatilityChoice.trilhaId === trilhaId) return true
+  return false
+}
+
 /**
  * Ataque de uma arma do Ordem: perícia (Luta/Pontaria) e seu bônus de treino, número de d20
  * (atributo-base, já com bônus de acessórios amaldiçoados), dano (com Força para corpo a corpo)
@@ -159,7 +165,12 @@ export function getOrdemWeaponAttack(
   const damageBonus = (melee ? attrs.strength : 0) + powerDamage + workToolBonus + mods.reduce((s, m) => s + (m.damageBonus ?? 0), 0)
   const extraDice = mods.reduce((s, m) => s + (m.damageDice ?? 0), 0) +
     (hasClassPower(draft, 'heavy-blow') && weapon.weaponCategory === 'corpo_a_corpo' ? 1 : 0)
-  const threatMargin = workToolBonus + mods.reduce((s, m) => s + (m.threatMargin ?? 0), 0)
+
+  const trilhaThreatMargin =
+    (hasTrilhaFeature(draft, 'warrior', 10) && melee ? 2 : 0) +
+    (hasTrilhaFeature(draft, 'annihilator', 99) && draft.favoriteWeapon === weapon.id ? 2 : 0)
+
+  const threatMargin = workToolBonus + trilhaThreatMargin + mods.reduce((s, m) => s + (m.threatMargin ?? 0), 0)
   const curseDamage = curses.map(c => c.extraDamage).filter(Boolean).map(d => ` +${d}`).join('')
 
   const typePt = DAMAGE_TYPE_PT[weapon.damageType] ?? weapon.damageType
@@ -179,20 +190,25 @@ export function getOrdemWeaponAttack(
 }
 
 /**
- * Ataque desarmado do Artista Marcial: 1d6 (1d8 em NEX 35%+, 1d10 em NEX 70%+), letal, e "conta
- * como arma" — por isso é modelado como uma arma corpo a corpo sintética (sem categoria/espaço,
- * não é item de inventário) e passa pelo mesmo `getOrdemWeaponAttack`, herdando corretamente
- * bônus condicionados a "armas corpo a corpo" (Golpe Pesado, Mão Pesada etc.). O tipo de dano
- * (impacto) é inferido — o livro não especifica; não modela "conta como arma ágil" (nenhuma
- * regra já implementada depende de uma arma ser "ágil").
+ * Ataque desarmado: 1d3 não letal na base. Artista Marcial sobe para 1d6 (1d8 em NEX 35%+,
+ * 1d10 em NEX 70%+), letal, e "conta como arma" — por isso é modelado como uma arma corpo a corpo
+ * sintética (sem categoria/espaço, não é item de inventário) e passa pelo mesmo `getOrdemWeaponAttack`,
+ * herdando corretamente bônus condicionados a "armas corpo a corpo" (Golpe Pesado, Mão Pesada etc.).
+ * O tipo de dano (impacto) é inferido; não modela "conta como arma ágil" (nenhuma regra já
+ * implementada depende de uma arma ser "ágil").
  */
-export function getUnarmedAttack(draft: OrdemCharacterDraft): OrdemWeaponAttack | null {
-  if (!hasClassPower(draft, 'martial-artist')) return null
-  const damage = draft.nex >= 70 ? '1d10' : draft.nex >= 35 ? '1d8' : '1d6'
+export function getUnarmedAttack(draft: OrdemCharacterDraft): OrdemWeaponAttack {
+  const isMartialArtist = hasClassPower(draft, 'martial-artist')
+  let damage = '1d3'
+  let damageType = 'I (não letal)'
+  if (isMartialArtist) {
+    damageType = 'I'
+    damage = draft.nex >= 70 ? '1d10' : draft.nex >= 35 ? '1d8' : '1d6'
+  }
   const unarmedWeapon: OrdemWeapon = {
     id: 'desarmado', name: 'Desarmado', category: 0, spaces: 0, type: 'weapon',
     proficiency: 'simple', weaponCategory: 'corpo_a_corpo', grip: 'leve',
-    damage, critical: 'x2', range: '-', damageType: 'I',
+    damage, critical: 'x2', range: '-', damageType,
   }
   return { ...getOrdemWeaponAttack(unarmedWeapon, draft, []), name: 'Desarmado' }
 }

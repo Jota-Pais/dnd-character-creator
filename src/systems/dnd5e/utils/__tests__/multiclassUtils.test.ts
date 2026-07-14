@@ -21,6 +21,7 @@ import {
 } from '../multiclassUtils'
 import { getFinalAbilityScores, isImprovementsStepComplete } from '../asiUtils'
 import { isStepComplete } from '../draftValidation'
+import { getCombinedSpellSlots, getPactSlots } from '../spellUtils'
 
 function makeDraft(over: Partial<CharacterDraft>): CharacterDraft {
   return { ...EMPTY_DRAFT, ...over }
@@ -318,5 +319,38 @@ describe('multiclasse — bloqueio de pré-requisitos na Revisão', () => {
   it('classe única nunca é bloqueada por pré-requisito de multiclasse', () => {
     const single = makeDraft({ class: 'wizard', level: 5, abilityScores: { STR: 8, DEX: 8, CON: 8, INT: 8, WIS: 8, CHA: 8 } })
     expect(isStepComplete(single, 'review')).toBe(true)
+  })
+})
+
+describe('multiclasse — pool de espaços de magia combinado', () => {
+  it('classe única plena usa a tabela própria', () => {
+    expect(getCombinedSpellSlots(makeDraft({ class: 'wizard', level: 5 })).slice(0, 3)).toEqual([4, 3, 2])
+  })
+
+  it('UMA conjuradora numa multiclasse usa a tabela DELA, não a combinada (Paladino 5 / Guerreiro 3)', () => {
+    const d = makeDraft({ class: 'paladin', level: 8, additionalClasses: [entry({ classId: 'fighter', level: 3 })] })
+    expect(getPrimaryLevel(d)).toBe(5)
+    // meio-conjurador nv5 = 4×1º + 2×2º (tabela do paladino), NÃO ⌊5/2⌋=2 → [3] da tabela combinada
+    expect(getCombinedSpellSlots(d).slice(0, 3)).toEqual([4, 2, 0])
+  })
+
+  it('DUAS plenas somam níveis inteiros (Mago 3 / Clérigo 1 = nível de conjurador 4)', () => {
+    const d = makeDraft({ class: 'wizard', level: 4, additionalClasses: [entry({ classId: 'cleric', level: 1 })] })
+    expect(getCombinedSpellSlots(d).slice(0, 3)).toEqual([4, 3, 0])
+  })
+
+  it('meio + pleno: Paladino 6 / Feiticeiro 4 → ⌊6/2⌋ + 4 = 7', () => {
+    const d = makeDraft({ class: 'paladin', level: 10, additionalClasses: [entry({ classId: 'sorcerer', level: 4 })] })
+    expect(getCombinedSpellSlots(d).slice(0, 4)).toEqual([4, 3, 3, 1])
+  })
+
+  it('Bruxo fica fora do pool combinado; o Pacto é separado', () => {
+    const w = makeDraft({ class: 'warlock', level: 5 })
+    expect(getCombinedSpellSlots(w).every(n => n === 0)).toBe(true)
+    expect(getPactSlots(w)).not.toBeNull()
+    // Mago 5 / Bruxo 3: pool = só o mago (tabela própria); Pacto à parte
+    const mix = makeDraft({ class: 'wizard', level: 8, additionalClasses: [entry({ classId: 'warlock', level: 3 })] })
+    expect(getCombinedSpellSlots(mix).slice(0, 3)).toEqual([4, 3, 2])
+    expect(getPactSlots(mix)).not.toBeNull()
   })
 })

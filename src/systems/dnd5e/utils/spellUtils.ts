@@ -1,8 +1,10 @@
 import type { Spell, SpellClass, SpellChoices } from '../types/spell'
 import type { GameClass, ClassSpellcasting } from '../types/class'
 import type { AbilityScore } from '../types/race'
+import type { CharacterDraft } from '../types/character'
 import { calculateModifier, getProficiencyBonus } from './abilityScoreUtils'
-import { isActiveCaster } from './classUtils'
+import { isActiveCaster, getClass } from './classUtils'
+import { allClassEntries } from './multiclassUtils'
 import spellsData from '../data/spells.json'
 import progressionData from '../data/progression.json'
 
@@ -61,6 +63,41 @@ export function getSpellSlots(classId: string, charLevel: number): number[] {
 export function getWarlockPactSlots(charLevel: number): { slots: number; slotLevel: number } | null {
   const idx = Math.max(1, Math.min(20, charLevel)) - 1
   return progressionData.spellSlots.warlock[idx]
+}
+
+// ── Multiclasse: pool de espaços combinado (PHB pág. 166-167) ───────────────────
+
+/** Classes conjuradoras que compartilham o pool combinado (full/half, ativas). Bruxo fica de fora (Pacto). */
+function pooledCasterEntries(draft: CharacterDraft): { classId: string; level: number }[] {
+  return allClassEntries(draft).filter(e => {
+    const ct = getCasterType(e.classId)
+    const cls = getClass(e.classId)
+    return (ct === 'full' || ct === 'half') && !!cls && isActiveCaster(cls, e.level)
+  })
+}
+
+/**
+ * Espaços de magia do pool combinado (9 elementos, índice 0 = 1º nível). Com UMA classe
+ * conjuradora usa a tabela própria dela (regra da classe); com DUAS ou mais, soma níveis
+ * inteiros dos plenos + metade (⌊÷2⌋) dos meio-conjuradores e indexa a tabela de pleno.
+ * O Bruxo (Pacto) nunca entra aqui — ver getPactSlots.
+ */
+export function getCombinedSpellSlots(draft: CharacterDraft): number[] {
+  const pooled = pooledCasterEntries(draft)
+  if (pooled.length === 0) return Array(9).fill(0)
+  if (pooled.length === 1) return getSpellSlots(pooled[0].classId, pooled[0].level)
+  let level = 0
+  for (const e of pooled) level += getCasterType(e.classId) === 'full' ? e.level : Math.floor(e.level / 2)
+  const idx = Math.max(1, Math.min(20, level)) - 1
+  return progressionData.spellSlots.full[idx]
+}
+
+/** Espaços de Magia de Pacto do bruxo (separados do pool combinado), ou null se não houver bruxo. */
+export function getPactSlots(draft: CharacterDraft): { slots: number; slotLevel: number } | null {
+  const warlock = allClassEntries(draft).find(e => e.classId === 'warlock')
+  const cls = getClass('warlock')
+  if (!warlock || !cls || !isActiveCaster(cls, warlock.level)) return null
+  return getWarlockPactSlots(warlock.level)
 }
 
 /** Highest spell level the class can access at charLevel (0 = no spells). */

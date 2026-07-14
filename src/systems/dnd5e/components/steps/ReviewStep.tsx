@@ -7,9 +7,11 @@ import { getFinalAbilityScores } from '../../utils/asiUtils'
 import { getFeat } from '../../utils/featUtils'
 import {
   getClass, getSubclass, CLASS_PRESENTATION,
-  getHpAtLevel1, getAverageHpAtLevel, getRolledHpAtLevel, isActiveCaster,
-  getClassFeaturesUpToLevel,
+  isActiveCaster, getClassFeaturesUpToLevel,
 } from '../../utils/classUtils'
+import {
+  allClassEntries, getTotalHpAverage, getTotalHpRolled, getAllAsiChoices,
+} from '../../utils/multiclassUtils'
 import { getClassResources } from '../../utils/classResourceUtils'
 import { getBackground, BACKGROUND_PRESENTATION, getToolName, SKILLS } from '../../utils/backgroundUtils'
 import {
@@ -25,7 +27,8 @@ import {
   getSpell,
   getSpellSaveDC,
   formatSpellAttackBonus,
-  getSpellSlots,
+  getCombinedSpellSlots,
+  getPactSlots,
   SCHOOL_EMOJI,
 } from '../../utils/spellUtils'
 import { exportCharacter } from '../../utils/storage'
@@ -77,10 +80,11 @@ export function ReviewStep() {
   const race = draft.race ? getRace(draft.race) : undefined
   const subrace = race && draft.subrace ? getSubrace(race, draft.subrace) : null
   const cls = draft.class ? getClass(draft.class) : undefined
-  const subclassData = cls && draft.classChoices.subclass
-    ? getSubclass(cls, draft.classChoices.subclass)
-    : undefined
   const bg = draft.background ? getBackground(draft.background) : undefined
+
+  // Todas as classes (primária + adicionais), com o nível derivado da primária.
+  const entries = allClassEntries(draft)
+  const isMc = entries.length > 1
 
   const classP = cls ? (CLASS_PRESENTATION[cls.id] ?? { emoji: '?', accent: '#c0961a' }) : null
   const accent = classP?.accent ?? '#c0961a'
@@ -98,17 +102,11 @@ export function ReviewStep() {
   const conMod = calculateModifier(finalScores.CON)
   const wisMod = calculateModifier(finalScores.WIS)
 
-  // HP calculation
-  let hp: number | null = null
-  if (cls) {
-    if (level <= 1) {
-      hp = getHpAtLevel1(cls, conMod)
-    } else if (hpMethod === 'average') {
-      hp = getAverageHpAtLevel(cls, conMod, level)
-    } else {
-      hp = getRolledHpAtLevel(cls, conMod, level, draft.hpRolls)
-    }
-  }
+  // PV total: soma o poço de dados de vida de todas as classes (só o 1º nível da classe
+  // inicial usa o dado máximo). Para classe única equivale ao cálculo anterior.
+  const hp: number | null = cls
+    ? (hpMethod === 'average' ? getTotalHpAverage(draft, conMod) : getTotalHpRolled(draft, conMod))
+    : null
 
   const speed = race ? getEffectiveSpeed(race, subrace ?? null) : null
   const darkvision = race ? getEffectiveDarkvision(race, subrace ?? null) : 0
@@ -120,8 +118,8 @@ export function ReviewStep() {
     wisMod,
     bodyArmor,
     hasShield,
-    unarmoredDefense: getUnarmoredDefense(cls?.id),
-    hasDefenseFightingStyle: draft.classChoices.fightingStyle === 'defense',
+    unarmoredDefense: getUnarmoredDefense(entries.find(e => e.classId === 'barbarian' || e.classId === 'monk')?.classId ?? cls?.id),
+    hasDefenseFightingStyle: entries.some(e => e.classChoices.fightingStyle === 'defense'),
   })
   const ac = acResult.value
   const acNote = acResult.stealthDisadvantage ? '*' : ''
@@ -152,9 +150,15 @@ export function ReviewStep() {
 
   const allTools = getAllGrantedTools(draft)
 
+  const classLabel = entries.map(e => {
+    const ec = getClass(e.classId)
+    const sub = ec && e.classChoices.subclass ? getSubclass(ec, e.classChoices.subclass) : null
+    return `${ec?.name ?? e.classId} ${e.level}°${sub ? ` (${sub.name})` : ''}`
+  }).join(' / ')
+
   const identityParts = [
     race ? `${RACE_PRESENTATION[race.id]?.emoji ?? ''} ${subrace ? subrace.name : race.name}` : null,
-    cls ? `${classP?.emoji ?? ''} ${cls.name} ${level}°${subclassData ? ` (${subclassData.name})` : ''}` : null,
+    cls ? `${classP?.emoji ?? ''} ${classLabel}${isMc ? ` — nível ${level}` : ''}` : null,
     bg ? `${BACKGROUND_PRESENTATION[bg.id]?.emoji ?? ''} ${bg.name}` : null,
   ].filter(Boolean).join(' · ')
 
@@ -574,7 +578,7 @@ export function ReviewStep() {
       {(() => {
         const featIds = [
           ...(draft.raceChoices.feat ? [draft.raceChoices.feat] : []),
-          ...(draft.asiChoices ?? []).filter(c => c.kind === 'feat' && c.featId).map(c => (c as { featId: string }).featId),
+          ...getAllAsiChoices(draft).filter(c => c.kind === 'feat' && c.featId).map(c => (c as { featId: string }).featId),
         ]
         const feats = [...new Set(featIds)].map(id => getFeat(id)).filter(Boolean)
         if (feats.length === 0) return null
@@ -592,101 +596,92 @@ export function ReviewStep() {
         )
       })()}
 
-      {/* Class Features (agrupadas por nível) */}
-      {cls && (() => {
-        const feats = getClassFeaturesUpToLevel(cls, subclassData ?? null, level)
-        const byLevel = new Map<number, typeof feats>()
-        for (const f of feats) {
-          const arr = byLevel.get(f.level) ?? []
-          arr.push(f)
-          byLevel.set(f.level, arr)
-        }
-        const levels = [...byLevel.keys()].sort((a, b) => a - b)
-        return (
-          <Section title="Habilidades de Classe">
-            <div className="space-y-3">
-              {levels.map(lvl => (
-                <div key={lvl}>
-                  <p className="text-xs text-parchment-700 font-fantasy uppercase tracking-widest mb-1.5">
-                    Nível {lvl}
-                  </p>
-                  {byLevel.get(lvl)!.map(feat => (
-                    <div key={feat.name} className="mb-2 last:mb-0">
-                      <span className="text-sm font-semibold font-fantasy text-parchment-200">
-                        {feat.name}.{' '}
-                      </span>
-                      <span className="text-sm text-parchment-500 leading-relaxed">
-                        {feat.description}
-                      </span>
-                    </div>
-                  ))}
+      {/* Habilidades de Classe (por classe, agrupadas por nível) */}
+      {cls && (
+        <Section title="Habilidades de Classe">
+          <div className="space-y-4">
+            {entries.map(e => {
+              const ec = getClass(e.classId)
+              if (!ec) return null
+              const sub = e.classChoices.subclass ? getSubclass(ec, e.classChoices.subclass) : null
+              const feats = getClassFeaturesUpToLevel(ec, sub ?? null, e.level)
+              if (feats.length === 0) return null
+              const byLevel = new Map<number, typeof feats>()
+              for (const f of feats) {
+                const arr = byLevel.get(f.level) ?? []
+                arr.push(f)
+                byLevel.set(f.level, arr)
+              }
+              const levels = [...byLevel.keys()].sort((a, b) => a - b)
+              return (
+                <div key={e.classId}>
+                  {isMc && (
+                    <p className="text-sm font-fantasy font-bold mb-2" style={{ color: accent }}>
+                      {ec.name} {e.level}°
+                    </p>
+                  )}
+                  <div className="space-y-3">
+                    {levels.map(lvl => (
+                      <div key={lvl}>
+                        <p className="text-xs text-parchment-700 font-fantasy uppercase tracking-widest mb-1.5">Nível {lvl}</p>
+                        {byLevel.get(lvl)!.map(feat => (
+                          <div key={feat.name} className="mb-2 last:mb-0">
+                            <span className="text-sm font-semibold font-fantasy text-parchment-200">{feat.name}. </span>
+                            <span className="text-sm text-parchment-500 leading-relaxed">{feat.description}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              ))}
-            </div>
-          </Section>
-        )
-      })()}
+              )
+            })}
+          </div>
+        </Section>
+      )}
 
-      {/* Progression Choices */}
+      {/* Escolhas de Progressão (por classe) */}
       {cls && (() => {
-        const slots = getProgressionSlotsUpToLevel(cls.id, draft.classChoices.subclass, level)
-        if (slots.length === 0) return null
-
-        let hasAnyChoice = false
-        for (const slot of slots) {
-          const picked = draft.classChoices.progressionChoices[slot.id] ?? []
-          if (picked.length > 0) hasAnyChoice = true
-        }
-        if (!hasAnyChoice) return null
+        const blocks = entries.map(e => ({
+          e,
+          slots: getProgressionSlotsUpToLevel(e.classId, e.classChoices.subclass, e.level)
+            .filter(slot => (e.classChoices.progressionChoices[slot.id] ?? []).length > 0),
+        })).filter(b => b.slots.length > 0)
+        if (blocks.length === 0) return null
 
         return (
           <Section title="Escolhas de Progressão">
-            <div className="space-y-3">
-              {slots.map(slot => {
-                const picked = draft.classChoices.progressionChoices[slot.id] ?? []
-                if (picked.length === 0) return null
-                const options = getProgressionOptions(slot.optionsListId)
-                
-                return (
-                  <div key={slot.id}>
-                    <p className="text-xs text-parchment-700 font-fantasy uppercase tracking-widest mb-1.5">
-                      {slot.label} {slot.cumulative ? `(Nível ${slot.level})` : ''}
-                    </p>
-                    {picked.map(optId => {
-                      const opt = options.find(o => o.id === optId)
-                      if (!opt) return null
+            <div className="space-y-4">
+              {blocks.map(({ e, slots }) => (
+                <div key={e.classId}>
+                  {isMc && (
+                    <p className="text-sm font-fantasy font-bold mb-2" style={{ color: accent }}>{getClass(e.classId)?.name}</p>
+                  )}
+                  <div className="space-y-3">
+                    {slots.map(slot => {
+                      const picked = e.classChoices.progressionChoices[slot.id] ?? []
+                      const options = getProgressionOptions(slot.optionsListId)
                       return (
-                        <div key={opt.id} className="mb-2 last:mb-0">
-                          <span className="text-sm font-semibold font-fantasy text-parchment-200">
-                            {opt.name}.{' '}
-                          </span>
-                          <span className="text-sm text-parchment-500 leading-relaxed">
-                            {opt.description ?? (level >= 14 ? opt.tier14 : level >= 6 ? opt.tier6 : opt.tier3) ?? opt.prerequisite ?? ''}
-                          </span>
+                        <div key={slot.id}>
+                          <p className="text-xs text-parchment-700 font-fantasy uppercase tracking-widest mb-1.5">
+                            {slot.label} {slot.cumulative ? `(Nível ${slot.level})` : ''}
+                          </p>
+                          {picked.map(optId => {
+                            const opt = options.find(o => o.id === optId)
+                            if (!opt) return null
+                            return (
+                              <div key={opt.id} className="mb-2 last:mb-0">
+                                <span className="text-sm font-semibold font-fantasy text-parchment-200">{opt.name}. </span>
+                                <span className="text-sm text-parchment-500 leading-relaxed">
+                                  {opt.description ?? (e.level >= 14 ? opt.tier14 : e.level >= 6 ? opt.tier6 : opt.tier3) ?? opt.prerequisite ?? ''}
+                                </span>
+                              </div>
+                            )
+                          })}
                         </div>
                       )
                     })}
                   </div>
-                )
-              })}
-            </div>
-          </Section>
-        )
-      })()}
-
-      {/* Class Resources */}
-      {cls && (() => {
-        const resources = getClassResources(cls.id, level)
-        if (resources.length === 0) return null
-        return (
-          <Section title="Recursos de Classe">
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {resources.map(r => (
-                <div key={r.key} className="rounded-lg border border-parchment-800/60 bg-parchment-950/60 p-2.5 text-center">
-                  <p className="text-base font-bold font-fantasy leading-none" style={{ color: accent }}>
-                    {r.value}
-                  </p>
-                  <p className="text-xs text-parchment-600 font-fantasy mt-1 leading-tight">{r.label}</p>
                 </div>
               ))}
             </div>
@@ -694,71 +689,106 @@ export function ReviewStep() {
         )
       })()}
 
-      {/* Spells */}
-      {cls && isActiveCaster(cls, level) && cls.spellcasting && (() => {
-        const sc_ = cls.spellcasting!
-        const dc = getSpellSaveDC(sc_, finalScores, level)
-        const attackBonus = formatSpellAttackBonus(sc_, finalScores, level)
-        const isWarlock = cls.id === 'warlock'
-        const slotEntries = getSpellSlots(cls.id, level)
-          .map((count, i) => ({ spellLevel: i + 1, count }))
-          .filter(s => s.count > 0)
-        const cantrips = (draft.spellChoices?.cantrips ?? []).map(id => getSpell(id)).filter(Boolean)
-        const spells = (draft.spellChoices?.spells ?? []).map(id => getSpell(id)).filter(Boolean)
+      {/* Recursos de Classe (por classe) */}
+      {cls && (() => {
+        const blocks = entries
+          .map(e => ({ e, resources: getClassResources(e.classId, e.level) }))
+          .filter(b => b.resources.length > 0)
+        if (blocks.length === 0) return null
+        return (
+          <Section title="Recursos de Classe">
+            <div className="space-y-3">
+              {blocks.map(({ e, resources }) => (
+                <div key={e.classId}>
+                  {isMc && (
+                    <p className="text-xs font-fantasy mb-1.5" style={{ color: accent }}>{getClass(e.classId)?.name}</p>
+                  )}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {resources.map(r => (
+                      <div key={r.key} className="rounded-lg border border-parchment-800/60 bg-parchment-950/60 p-2.5 text-center">
+                        <p className="text-base font-bold font-fantasy leading-none" style={{ color: accent }}>{r.value}</p>
+                        <p className="text-xs text-parchment-600 font-fantasy mt-1 leading-tight">{r.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Section>
+        )
+      })()}
+
+      {/* Magias — slots combinados (pool único) + seleção por classe conjuradora */}
+      {(() => {
+        const casters = entries.flatMap(e => {
+          const ec = getClass(e.classId)
+          return ec && ec.spellcasting && isActiveCaster(ec, e.level) ? [{ e, ec }] : []
+        })
+        if (casters.length === 0) return null
+        const combined = getCombinedSpellSlots(draft).map((count, i) => ({ spellLevel: i + 1, count })).filter(s => s.count > 0)
+        const pact = getPactSlots(draft)
         return (
           <Section title="Magias">
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <SpellStat label="CD de Magia" value={String(dc)} accent={accent} term="cd-de-magia" />
-              <SpellStat label="Bônus de Ataque" value={attackBonus} accent={accent} term="bonus-ataque-magia" />
-            </div>
-
-            {slotEntries.length > 0 && (
-              <div className="mb-4">
-                <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">
-                  {isWarlock ? 'Magia de Pacto' : 'Espaços de Magia'}
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {slotEntries.map(({ spellLevel, count }) => (
-                    <span
-                      key={spellLevel}
-                      className="px-2 py-1 rounded-md bg-parchment-900 border border-parchment-800 text-xs text-parchment-400 font-fantasy"
-                    >
-                      {count}× {spellLevel}°
+            {(combined.length > 0 || pact) && (
+              <div className="mb-4 space-y-2">
+                {combined.length > 0 && (
+                  <div>
+                    <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">Espaços de Magia</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {combined.map(({ spellLevel, count }) => (
+                        <span key={spellLevel} className="px-2 py-1 rounded-md bg-parchment-900 border border-parchment-800 text-xs text-parchment-400 font-fantasy">{count}× {spellLevel}°</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {pact && (
+                  <div>
+                    <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">Magia de Pacto</p>
+                    <span className="px-2 py-1 rounded-md bg-parchment-900 border border-parchment-800 text-xs text-parchment-400 font-fantasy">
+                      {pact.slots}× {pact.slotLevel}° · recupera em descanso curto
                     </span>
-                  ))}
-                </div>
+                  </div>
+                )}
               </div>
             )}
 
-            {cantrips.length > 0 && (
-              <div className="mb-3">
-                <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">
-                  Truques ({cantrips.length})
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {cantrips.map(s => s && (
-                    <SpellChip key={s.id} name={s.name} school={s.school} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {spells.length > 0 && (
-              <div>
-                <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">
-                  {sc_.type === 'prepared' ? 'Preparadas' : 'Conhecidas'} ({spells.length})
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {spells.map(s => s && (
-                    <SpellChip key={s.id} name={s.name} school={s.school} concentration={s.concentration} ritual={s.ritual} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {cantrips.length === 0 && spells.length === 0 && (
-              <p className="text-parchment-700 text-sm italic">Nenhuma magia selecionada</p>
-            )}
+            <div className="space-y-4">
+              {casters.map(({ e, ec }) => {
+                const sc_ = ec.spellcasting!
+                const dc = getSpellSaveDC(sc_, finalScores, level)
+                const attackBonus = formatSpellAttackBonus(sc_, finalScores, level)
+                const cantrips = e.spellChoices.cantrips.map(id => getSpell(id)).filter(Boolean)
+                const spells = e.spellChoices.spells.map(id => getSpell(id)).filter(Boolean)
+                return (
+                  <div key={e.classId}>
+                    {isMc && (
+                      <p className="text-sm font-fantasy font-bold mb-2" style={{ color: accent }}>
+                        {ec.name} · {ABILITY_LABELS[sc_.ability].short}
+                      </p>
+                    )}
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                      <SpellStat label="CD de Magia" value={String(dc)} accent={accent} term="cd-de-magia" />
+                      <SpellStat label="Bônus de Ataque" value={attackBonus} accent={accent} term="bonus-ataque-magia" />
+                    </div>
+                    {cantrips.length > 0 && (
+                      <div className="mb-3">
+                        <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">Truques ({cantrips.length})</p>
+                        <div className="flex flex-wrap gap-1.5">{cantrips.map(s => s && <SpellChip key={s.id} name={s.name} school={s.school} />)}</div>
+                      </div>
+                    )}
+                    {spells.length > 0 && (
+                      <div>
+                        <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">{sc_.type === 'prepared' ? 'Preparadas' : 'Conhecidas'} ({spells.length})</p>
+                        <div className="flex flex-wrap gap-1.5">{spells.map(s => s && <SpellChip key={s.id} name={s.name} school={s.school} concentration={s.concentration} ritual={s.ritual} />)}</div>
+                      </div>
+                    )}
+                    {cantrips.length === 0 && spells.length === 0 && (
+                      <p className="text-parchment-700 text-sm italic">Nenhuma magia selecionada</p>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           </Section>
         )
       })()}

@@ -5,9 +5,11 @@ import {
   getAvailableInnateSpells, TOOL_NAMES,
 } from '../utils/raceUtils'
 import {
-  getClass, getSubclass, getHpAtLevel1, getAverageHpAtLevel, getRolledHpAtLevel,
-  isActiveCaster, getClassFeaturesUpToLevel,
+  getClass, getSubclass, isActiveCaster, getClassFeaturesUpToLevel,
 } from '../utils/classUtils'
+import {
+  allClassEntries, getTotalHpAverage, getTotalHpRolled, getHitDicePool, getAllAsiChoices,
+} from '../utils/multiclassUtils'
 import { getBackground, getToolName } from '../utils/backgroundUtils'
 import {
   calculateModifier, formatModifier, getProficiencyBonus, getPassivePerception,
@@ -18,7 +20,7 @@ import { getAllGrantedSkills, getAllGrantedTools } from '../utils/proficiencyUti
 import { calculateArmorClass, getUnarmoredDefense } from '../utils/armorClassUtils'
 import { getEquippedArmor, getItemName, getWeaponById } from '../utils/equipmentUtils'
 import { getClassResources } from '../utils/classResourceUtils'
-import { getSpell, getSpellSaveDC, formatSpellAttackBonus, getSpellSlots } from '../utils/spellUtils'
+import { getSpell, getSpellSaveDC, formatSpellAttackBonus, getCombinedSpellSlots, getPactSlots } from '../utils/spellUtils'
 import { getFeat } from '../utils/featUtils'
 import { getWeaponAttack } from '../utils/weaponFormat'
 import type { CharacterDraft } from '../types/character'
@@ -140,8 +142,9 @@ export function PrintableSheet() {
   const race = draft.race ? getRace(draft.race) : undefined
   const subrace = (race && draft.subrace ? getSubrace(race, draft.subrace) : null) ?? null
   const cls = draft.class ? getClass(draft.class) : undefined
-  const subclass = cls && draft.classChoices.subclass ? getSubclass(cls, draft.classChoices.subclass) : undefined
   const bg = draft.background ? getBackground(draft.background) : undefined
+  const entries = allClassEntries(draft)
+  const isMc = entries.length > 1
 
   const prof = getProficiencyBonus(level)
   const finalScores = getFinalAbilityScores(draft)
@@ -154,15 +157,12 @@ export function PrintableSheet() {
   const { bodyArmor, hasShield } = getEquippedArmor(draft.equipment, cls?.startingEquipment)
   const ac = calculateArmorClass({
     dexMod, conMod, wisMod, bodyArmor, hasShield,
-    unarmoredDefense: getUnarmoredDefense(cls?.id),
-    hasDefenseFightingStyle: draft.classChoices.fightingStyle === 'defense',
+    unarmoredDefense: getUnarmoredDefense(entries.find(e => e.classId === 'barbarian' || e.classId === 'monk')?.classId ?? cls?.id),
+    hasDefenseFightingStyle: entries.some(e => e.classChoices.fightingStyle === 'defense'),
   }).value
-  let hp: number | null = null
-  if (cls) {
-    hp = level <= 1 ? getHpAtLevel1(cls, conMod)
-      : draft.hpMethod === 'roll' ? getRolledHpAtLevel(cls, conMod, level, draft.hpRolls)
-      : getAverageHpAtLevel(cls, conMod, level)
-  }
+  const hp: number | null = cls
+    ? (draft.hpMethod === 'roll' ? getTotalHpRolled(draft, conMod) : getTotalHpAverage(draft, conMod))
+    : null
   const speed = race ? getEffectiveSpeed(race, subrace) : 0
   const darkvision = race ? getEffectiveDarkvision(race, subrace) : 0
 
@@ -181,27 +181,43 @@ export function PrintableSheet() {
     ...(draft.backgroundChoices.languages ?? []),
   ])]
 
+  const classLabel = entries.map(e => {
+    const ec = getClass(e.classId)
+    const sub = ec && e.classChoices.subclass ? getSubclass(ec, e.classChoices.subclass) : null
+    return `${ec?.name ?? e.classId} ${e.level}°${sub ? ` (${sub.name})` : ''}`
+  }).join(' / ')
   const identity = [
     subrace ? subrace.name : race?.name,
-    cls ? `${cls.name}${subclass ? ` (${subclass.name})` : ''} nível ${level}` : `Nível ${level}`,
+    cls ? `${classLabel}${isMc ? ` — nível ${level}` : ` nível ${level}`}` : `Nível ${level}`,
     bg?.name,
   ].filter(Boolean).join(' · ')
 
-  const features = cls ? getClassFeaturesUpToLevel(cls, subclass ?? null, level) : []
-  const featsFromAsi = (draft.asiChoices ?? []).filter(c => c.kind === 'feat' && c.featId).map(c => (c as { featId: string }).featId)
+  // Features por classe (multiclasse): cada classe no nível que tem nela.
+  const featureBlocks = entries.map(e => {
+    const ec = getClass(e.classId)
+    const sub = ec && e.classChoices.subclass ? getSubclass(ec, e.classChoices.subclass) : null
+    return { e, ec, features: ec ? getClassFeaturesUpToLevel(ec, sub ?? null, e.level) : [] }
+  })
+  const featsFromAsi = getAllAsiChoices(draft).filter(c => c.kind === 'feat' && c.featId).map(c => (c as { featId: string }).featId)
   const featIds = [...new Set([...(draft.raceChoices.feat ? [draft.raceChoices.feat] : []), ...featsFromAsi])]
   const feats = featIds.map(id => getFeat(id)).filter(Boolean)
-  const resources = cls ? getClassResources(cls.id, level) : []
+  const resourceBlocks = entries
+    .map(e => ({ e, resources: getClassResources(e.classId, e.level) }))
+    .filter(b => b.resources.length > 0)
   const inventory = gatherInventory(draft)
 
-  // Ataques por arma equipada (F5). "Ataque Extra" (nv5+ de várias classes) multiplica os ataques.
+  // Ataques por arma equipada (F5). Ataque Extra NÃO empilha entre classes (PHB): usa o máximo.
   const weapons = gatherEquippedWeapons(draft)
   const strMod = mod('STR')
-  const attacksPerAction = 1 + features.filter(f => f.name === 'Ataque Extra').length
+  const attacksPerAction = 1 + Math.max(0, ...featureBlocks.map(b => b.features.filter(f => f.name === 'Ataque Extra').length))
   const innateSpells = race ? getAvailableInnateSpells(race, subrace, level) : []
   const racialCantrip = draft.raceChoices.cantrip ? getSpell(draft.raceChoices.cantrip) : undefined
 
-  const isCaster = !!cls && isActiveCaster(cls, level) && !!cls.spellcasting
+  const casters = entries.flatMap(e => {
+    const ec = getClass(e.classId)
+    return ec && ec.spellcasting && isActiveCaster(ec, e.level) ? [{ e, ec }] : []
+  })
+  const isCaster = casters.length > 0
 
   return (
     <div className="print-sheet mx-auto max-w-[820px] bg-white text-gray-900 p-8 rounded-lg shadow-lg" style={{ fontFamily: 'Georgia, serif' }}>
@@ -228,7 +244,7 @@ export function PrintableSheet() {
         <Stat label="Classe de Armadura" value={String(ac)} />
         <Stat label="Iniciativa" value={formatModifier(dexMod)} />
         <Stat label="Pontos de Vida" value={hp !== null ? String(hp) : '—'} />
-        <Stat label="Dados de Vida" value={cls ? `${level}d${cls.hitDie}` : '—'} />
+        <Stat label="Dados de Vida" value={cls ? getHitDicePool(draft).map(p => `${p.count}d${p.die}`).join(' + ') : '—'} />
         <Stat label="Deslocamento" value={metersLabel(speed)} />
         <Stat label="Percepção Passiva" value={String(passivePerception)} />
         <Stat label="Visão no Escuro" value={darkvision > 0 ? metersLabel(darkvision) : '—'} />
@@ -317,51 +333,68 @@ export function PrintableSheet() {
             Ataque Extra: você faz {attacksPerAction} ataques ao usar a ação de Atacar.
           </p>
         )}
-        {isCaster && cls?.spellcasting && (
-          <p className="text-xs text-gray-700">
-            Magia — CD do teste de resistência: <strong>{getSpellSaveDC(cls.spellcasting, finalScores, level)}</strong> ·
-            {' '}Bônus de ataque: <strong>{formatSpellAttackBonus(cls.spellcasting, finalScores, level)}</strong> ·
-            {' '}Atributo: {ABILITY_LABELS[cls.spellcasting.ability].short}
+        {casters.map(({ e, ec }) => (
+          <p key={e.classId} className="text-xs text-gray-700">
+            {isMc && <strong>{ec.name} — </strong>}Magia · CD: <strong>{getSpellSaveDC(ec.spellcasting!, finalScores, level)}</strong> ·
+            {' '}Ataque: <strong>{formatSpellAttackBonus(ec.spellcasting!, finalScores, level)}</strong> ·
+            {' '}Atributo: {ABILITY_LABELS[ec.spellcasting!.ability].short}
           </p>
-        )}
+        ))}
       </Box>
 
-      {/* Magias */}
-      {isCaster && cls?.spellcasting && (() => {
-        const slots = getSpellSlots(cls.id, level).map((count, i) => ({ lvl: i + 1, count })).filter(s => s.count > 0)
-        const cantrips = (draft.spellChoices?.cantrips ?? []).map(id => getSpell(id)?.name).filter(Boolean)
-        const spells = (draft.spellChoices?.spells ?? []).map(id => getSpell(id)).filter(Boolean)
-        const byLevel = new Map<number, string[]>()
-        for (const s of spells) { const a = byLevel.get(s!.level) ?? []; a.push(s!.name); byLevel.set(s!.level, a) }
+      {/* Magias — pool combinado + Pacto; listas por classe conjuradora */}
+      {isCaster && (() => {
+        const slots = getCombinedSpellSlots(draft).map((count, i) => ({ lvl: i + 1, count })).filter(s => s.count > 0)
+        const pact = getPactSlots(draft)
         return (
           <Box title="Magias" className="mb-4">
             {slots.length > 0 && (
               <p className="text-xs mb-1">
                 <span className="text-gray-600">Espaços (marque os gastos): </span>
                 {slots.map(s => `${s.lvl}º: ${trackCircles(s.count) || s.count}`).join(' · ')}
-                {cls.id === 'warlock' && ' (Magia de Pacto — recupera em descanso curto)'}
               </p>
             )}
-            {cantrips.length > 0 && <p className="text-xs mb-1"><span className="text-gray-600">Truques: </span>{cantrips.join(', ')}</p>}
-            {[...byLevel.keys()].sort((a, b) => a - b).map(lvl => (
-              <p key={lvl} className="text-xs mb-0.5"><span className="text-gray-600">{lvl}º nível: </span>{byLevel.get(lvl)!.join(', ')}</p>
-            ))}
+            {pact && (
+              <p className="text-xs mb-1">
+                <span className="text-gray-600">Magia de Pacto: </span>
+                {pact.slotLevel}º: {trackCircles(pact.slots) || pact.slots} (recupera em descanso curto)
+              </p>
+            )}
+            {casters.map(({ e, ec }) => {
+              const cantrips = e.spellChoices.cantrips.map(id => getSpell(id)?.name).filter(Boolean)
+              const spells = e.spellChoices.spells.map(id => getSpell(id)).filter(Boolean)
+              const byLevel = new Map<number, string[]>()
+              for (const s of spells) { const a = byLevel.get(s!.level) ?? []; a.push(s!.name); byLevel.set(s!.level, a) }
+              if (cantrips.length === 0 && spells.length === 0) return null
+              return (
+                <div key={e.classId} className="mb-1">
+                  {isMc && <p className="text-xs font-bold text-gray-700 mt-1">{ec.name}</p>}
+                  {cantrips.length > 0 && <p className="text-xs mb-0.5"><span className="text-gray-600">Truques: </span>{cantrips.join(', ')}</p>}
+                  {[...byLevel.keys()].sort((a, b) => a - b).map(lvl => (
+                    <p key={lvl} className="text-xs mb-0.5"><span className="text-gray-600">{lvl}º nível: </span>{byLevel.get(lvl)!.join(', ')}</p>
+                  ))}
+                </div>
+              )
+            })}
           </Box>
         )
       })()}
 
-      {/* Recursos de classe */}
-      {resources.length > 0 && (
+      {/* Recursos de classe (por classe) */}
+      {resourceBlocks.length > 0 && (
         <Box title="Recursos de Classe" className="mb-4">
-          <p className="text-xs">
-            {resources.map(r => {
-              // Recursos que são um número de usos (Fúrias, Ki...) ganham círculos pra marcar;
-              // os que são dado (Ataque Furtivo 2d6, Artes Marciais d6) ficam só com o valor.
-              const isPool = /^\d+$/.test(String(r.value))
-              const circles = isPool ? trackCircles(Number(r.value)) : ''
-              return `${r.label}: ${r.value}${circles ? ` ${circles}` : ''}`
-            }).join(' · ')}
-          </p>
+          {resourceBlocks.map(({ e, resources }) => (
+            <p key={e.classId} className="text-xs mb-0.5">
+              {isMc && <span className="font-bold text-gray-700">{getClass(e.classId)?.name}: </span>}
+              {resources.map(r => {
+                // Recursos que são um número de usos (Fúrias, Ki...) ganham círculos pra marcar;
+                // os que são dado (Ataque Furtivo 2d6, Artes Marciais d6) ficam só com o valor.
+                const isPool = /^\d+$/.test(String(r.value))
+                const circles = isPool ? trackCircles(Number(r.value)) : ''
+                return `${r.label}: ${r.value}${circles ? ` ${circles}` : ''}`
+              }).join(' · ')}
+            </p>
+          ))}
         </Box>
       )}
 
@@ -389,10 +422,15 @@ export function PrintableSheet() {
         ))}
       </Box>
 
-      {features.length > 0 && (
+      {featureBlocks.some(b => b.features.length > 0) && (
         <Box title="Habilidades de Classe" className="mb-4">
-          {features.map((f, i) => (
-            <p key={`${f.name}-${i}`} className="text-xs mb-1"><strong>{f.name}</strong> (nv {f.level}). {f.description}</p>
+          {featureBlocks.map(({ e, ec, features }) => features.length > 0 && (
+            <div key={e.classId} className="mb-1">
+              {isMc && <p className="text-xs font-bold text-gray-700">{ec?.name} {e.level}°</p>}
+              {features.map((f, i) => (
+                <p key={`${f.name}-${i}`} className="text-xs mb-1"><strong>{f.name}</strong> (nv {f.level}). {f.description}</p>
+              ))}
+            </div>
           ))}
         </Box>
       )}

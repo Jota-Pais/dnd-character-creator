@@ -48,10 +48,14 @@ export const dnd5eSystem: IRpgSystem = {
   formatDraftName: (draft: unknown) => {
     const dndDraft = draft as CharacterDraft;
     const race = dndDraft.race ? getRace(dndDraft.race) : undefined;
-    const cls = dndDraft.class ? getClass(dndDraft.class) : undefined;
-    const parts = [race?.name, cls?.name].filter(Boolean);
-    return parts.length > 0 
-      ? `${parts.join(' · ')} — nível ${dndDraft.level ?? 1}` 
+    const classNames = [
+      ...(dndDraft.class ? [getClass(dndDraft.class)?.name] : []),
+      ...(dndDraft.additionalClasses ?? []).map(c => getClass(c.classId)?.name),
+    ].filter(Boolean);
+    const classLabel = classNames.length > 0 ? classNames.join('/') : null;
+    const parts = [race?.name, classLabel].filter(Boolean);
+    return parts.length > 0
+      ? `${parts.join(' · ')} — nível ${dndDraft.level ?? 1}`
       : `Nível ${dndDraft.level ?? 1}`;
   },
   Component: Dnd5eApp,

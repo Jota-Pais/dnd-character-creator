@@ -118,7 +118,7 @@ export function SkillsStep() {
         </div>
       )}
 
-      <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={canAdvance} />
+      <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={canAdvance} disabledReason="Preencha as perícias pendentes" />
     </div>
   )
 }
@@ -136,11 +136,11 @@ function Chip({ label, active, disabled, onClick }: { label: string; active: boo
     <button
       onClick={onClick}
       disabled={disabled || !onClick}
-      className="px-2 py-0.5 rounded-md text-xs font-mono font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-      style={{
-        backgroundColor: active ? '#dc262630' : '#1a140a',
-        color: active ? '#dc2626' : '#8a7a5a',
-      }}
+      className={`px-3 py-1 rounded-full text-xs font-bold transition-all border disabled:opacity-40 disabled:cursor-not-allowed ${
+        active 
+          ? 'bg-red-950/40 text-red-400 border-red-900/50 shadow-[0_0_10px_rgba(220,38,38,0.15)]'
+          : 'bg-parchment-950/80 text-parchment-500 border-parchment-800 hover:border-parchment-600 hover:text-parchment-300'
+      }`}
     >
       {label}
     </button>

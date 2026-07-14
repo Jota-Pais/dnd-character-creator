@@ -8,7 +8,7 @@ import {
   getTrainedSkills, getSkillGrade, hasFavoredRitualPower, hasLaminaMaldita, getRitualCost, hasClassPower, getWeaponSkillOverride, getGrantedRituals, getEffectivePeLimit,
   getParanormalResistanceBonus, getMentalParanormalDamageResistance, getOriginMentalDamageResistance,
 } from '../../utils/characterUtils'
-import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, ritualNeedsElementChoice, ELEMENT_NAMES } from '../../utils/ritualUtils'
+import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, ritualNeedsElementChoice, ELEMENT_NAMES, ELEMENT_COLORS } from '../../utils/ritualUtils'
 import {
   getEquipmentByInstance, getInstanceLabel, getTotalCarryCapacity, getModifiedSpaces, getModifiedDefenseBonus, getDraftInstanceCategory,
   getMissingRitualComponentElements,
@@ -247,7 +247,7 @@ export function ReviewStep() {
                         <button
                           key={el}
                           onClick={() => updateDraft({ ritualElementChoices: { ...draft.ritualElementChoices, [r.id]: el } })}
-                          className="text-[11px] uppercase tracking-wider font-bold px-2 py-0.5 rounded border border-parchment-800 text-parchment-500 hover:border-gold-500 hover:text-gold-400 transition-colors"
+                          className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded border transition-colors ${ELEMENT_COLORS[el]}`}
                         >
                           {ELEMENT_NAMES[el]}
                         </button>

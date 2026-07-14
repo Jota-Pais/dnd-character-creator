@@ -15,7 +15,7 @@ import {
 } from '../../utils/characterUtils'
 import { hasTrilha, hasVersatility } from '../../utils/progressionUtils'
 import { SKILLS } from '../../utils/skillUtils'
-import { ELEMENT_NAMES } from '../../utils/ritualUtils'
+import { ELEMENT_NAMES, ELEMENT_COLORS } from '../../utils/ritualUtils'
 import type { OrdemElement } from '../../types/ritual'
 import { ATTRIBUTES, ATTRIBUTE_MAX } from '../../utils/attributeUtils'
 import { isStepComplete } from '../../utils/draftValidation'
@@ -53,7 +53,7 @@ export function ProgressionStep() {
           Em NEX 5%, seu agente ainda não escolheu trilha, poderes extras nem aumentos de atributo —
           isso começa a partir de NEX 10%. Volte ao passo Nome se quiser criar um agente mais experiente.
         </p>
-        <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={canAdvance} />
+        <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={canAdvance} disabledReason="Preencha a progressão" />
       </div>
     )
   }
@@ -89,7 +89,7 @@ export function ProgressionStep() {
           <VersatilitySection draft={draft} cls={cls} onPick={setVersatilityChoice} />
         )}
 
-        <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={canAdvance} />
+        <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={canAdvance} disabledReason="Faça as escolhas pendentes" />
       </div>
     </div>
   )
@@ -221,9 +221,20 @@ function PowerParamPicker({ draft, slotKey, powerId }: {
       <div className="mt-1.5">
         <p className="text-parchment-600 text-xs mb-1">Escolha o elemento:</p>
         <div className="flex flex-wrap gap-1.5">
-          {ELEMENTS.map(el => (
-            <Chip key={el} label={ELEMENT_NAMES[el]} active={values[0] === el} onClick={() => setValue(0, el)} />
-          ))}
+          {ELEMENTS.map(el => {
+            const active = values[0] === el
+            return (
+              <button
+                key={el}
+                onClick={() => setValue(0, el)}
+                className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded border transition-colors ${
+                  active ? ELEMENT_COLORS[el] : 'text-parchment-600 border-parchment-800 hover:border-parchment-600'
+                }`}
+              >
+                {ELEMENT_NAMES[el]}
+              </button>
+            )
+          })}
         </div>
       </div>
     )

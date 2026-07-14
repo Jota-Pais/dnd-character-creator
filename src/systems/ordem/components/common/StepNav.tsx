@@ -3,13 +3,14 @@ type Props = {
   onNext: () => void
   canAdvance: boolean
   nextLabel?: string
+  disabledReason?: string
 }
 
 /**
  * Rodapé de navegação do wizard (handoff "Redesign Ordem"): barra fixa com borda superior,
  * "← Voltar" à esquerda e CTA vermelho à direita. No desktop, começa depois da sidebar (250px).
  */
-export function StepNav({ onPrev, onNext, canAdvance, nextLabel = 'Continuar ✦' }: Props) {
+export function StepNav({ onPrev, onNext, canAdvance, nextLabel = 'Continuar ✦', disabledReason }: Props) {
   return (
     <div
       className="fixed bottom-0 right-0 left-0 lg:left-[250px] px-5 lg:px-10 py-3.5 flex justify-between items-center z-20"
@@ -36,7 +37,7 @@ export function StepNav({ onPrev, onNext, canAdvance, nextLabel = 'Continuar ✦
         onMouseEnter={e => { if (canAdvance) e.currentTarget.style.backgroundColor = '#ef4444' }}
         onMouseLeave={e => { if (canAdvance) e.currentTarget.style.backgroundColor = '#dc2626' }}
       >
-        {nextLabel}
+        {canAdvance || !disabledReason ? nextLabel : disabledReason}
       </button>
     </div>
   )

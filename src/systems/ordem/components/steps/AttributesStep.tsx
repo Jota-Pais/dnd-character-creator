@@ -90,7 +90,7 @@ export function AttributesStep() {
         </p>
       )}
 
-      <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={canAdvance} />
+      <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={canAdvance} disabledReason="Distribua os pontos" />
     </div>
   )
 }

@@ -11,7 +11,7 @@ import {
   getAvailableCurses, canApplyCurse, isCursable, getCurseCategoryDelta, curseChoiceKey, formatCurseElement, getSheetAttributes,
 } from '../../utils/curseUtils'
 import type { OrdemElement } from '../../types/ritual'
-import { getAvailableRituals, ELEMENT_NAMES } from '../../utils/ritualUtils'
+import { getAvailableRituals, ELEMENT_NAMES, ELEMENT_COLORS } from '../../utils/ritualUtils'
 import { hasClassPower, getFavoriteWeaponReduction, getFavoriteEquipmentReduction, getWorkToolBonus } from '../../utils/characterUtils'
 import { isMelee, formatWeaponSummary } from '../../utils/ordemWeaponUtils'
 import { getPatente, PATENTES } from '../../utils/patenteUtils'
@@ -332,16 +332,21 @@ export function EquipmentStep() {
                           <li key={c.id} className="text-xs text-purple-400/90">
                             <span className="font-semibold">{c.name} ({formatCurseElement(c, uid, draft.equipmentCurseChoices)}):</span> {c.effect}
                             {c.choice === 'element' && (
-                              <select
-                                value={draft.equipmentCurseChoices[curseChoiceKey(uid, c.id)] ?? ''}
-                                onChange={e => setCurseChoice(uid, c.id, e.target.value)}
-                                className="block mt-1 bg-parchment-950 border border-purple-900/50 rounded px-1.5 py-0.5 text-purple-300 text-xs"
-                              >
-                                <option value="" disabled>Escolha o elemento…</option>
+                              <div className="mt-1 flex flex-wrap gap-1.5">
                                 {(CURSE_ELEMENT_OPTIONS[c.id] ?? []).map(el => (
-                                  <option key={el} value={el}>{ELEMENT_NAMES[el]}</option>
+                                  <button
+                                    key={el}
+                                    onClick={() => setCurseChoice(uid, c.id, el)}
+                                    className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded border transition-colors ${
+                                      draft.equipmentCurseChoices[curseChoiceKey(uid, c.id)] === el
+                                        ? ELEMENT_COLORS[el]
+                                        : 'text-parchment-600 border-parchment-800 hover:border-parchment-600 hover:text-parchment-300'
+                                    }`}
+                                  >
+                                    {ELEMENT_NAMES[el]}
+                                  </button>
                                 ))}
-                              </select>
+                              </div>
                             )}
                             {c.choice === 'ritual1' && (
                               <select
@@ -506,7 +511,7 @@ export function EquipmentStep() {
         </div>
       </div>
 
-      <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={isStepComplete(draft, 'equipment')} />
+      <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={isStepComplete(draft, 'equipment')} disabledReason="Limite de patentes excedido" />
     </div>
   )
 }

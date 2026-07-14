@@ -1,17 +1,12 @@
+import { useState } from 'react'
 import { useOrdemStore } from '../../stores/characterStore'
-import { getRitualSlotsCount, getMaxRitualCircle, getAvailableRituals, getRitualSlotNex, isRitualStepComplete, ritualNeedsElementChoice, ELEMENT_NAMES } from '../../utils/ritualUtils'
+import { getRitualSlotsCount, getMaxRitualCircle, getAvailableRituals, getRitualSlotNex, isRitualStepComplete, ritualNeedsElementChoice, ELEMENT_NAMES, ELEMENT_COLORS } from '../../utils/ritualUtils'
 import { STEP_LABELS } from '../../types/character'
 import type { OrdemElement } from '../../types/ritual'
-
-const ELEMENT_COLORS: Record<string, string> = {
-  blood: 'text-red-500 bg-red-950/30 border-red-900',
-  death: 'text-zinc-400 bg-zinc-950/30 border-zinc-800',
-  energy: 'text-purple-400 bg-purple-950/30 border-purple-900',
-  knowledge: 'text-amber-500 bg-amber-950/30 border-amber-900',
-  fear: 'text-white bg-slate-900/50 border-slate-700',
-}
+import { StepNav } from '../common/StepNav'
 
 export function RitualsStep() {
+  const [openSlot, setOpenSlot] = useState<number | null>(null)
   const nex = useOrdemStore(state => state.draft.nex)
   const charClass = useOrdemStore(state => state.draft.class)
   const ritualChoices = useOrdemStore(state => state.draft.ritualChoices)
@@ -29,10 +24,7 @@ export function RitualsStep() {
         <div className="bg-parchment-950 border border-parchment-900 rounded-xl p-8 text-center text-parchment-600">
           Apenas <strong className="text-gold-500">Ocultistas</strong> recebem rituais na criação de personagem.
         </div>
-        <div className="flex justify-between pt-6 border-t border-parchment-900">
-          <button onClick={prevStep} className="px-6 py-2 rounded-xl font-fantasy font-bold text-parchment-500 hover:bg-parchment-950 transition-colors">← Voltar</button>
-          <button onClick={nextStep} className="px-6 py-2 rounded-xl font-fantasy font-bold bg-gold-500 text-parchment-950 hover:bg-gold-400 transition-colors">Avançar →</button>
-        </div>
+        <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={true} />
       </div>
     )
   }
@@ -97,49 +89,62 @@ export function RitualsStep() {
                 <span className="text-xs font-normal text-parchment-600">Até {slotMaxCircle}º Círculo</span>
               </label>
               
-              <div className="relative">
-                <select
-                  value={selectedId ?? ''}
-                  onChange={e => handleSelect(i, e.target.value)}
-                  className="w-full bg-parchment-950 border border-parchment-800 rounded-lg p-3 text-parchment-200 outline-none focus:border-gold-500 transition-colors appearance-none cursor-pointer"
-                >
-                  <option value="" disabled className="text-parchment-700">Escolha um ritual...</option>
-                  {/* Agrupar opções por Círculo */}
-                  {[1, 2, 3, 4].filter(c => c <= slotMaxCircle).map(circle => {
-                    const rits = options.filter(r => r.circle === circle)
-                    if (rits.length === 0) return null
-                    return (
-                      <optgroup key={circle} label={`${circle}º Círculo`} className="text-gold-600 bg-parchment-950 font-fantasy">
-                        {rits.map(r => (
-                          <option key={r.id} value={r.id} className="text-parchment-300 font-sans">
-                            {r.name} ({r.elements.map(e => ELEMENT_NAMES[e]).join('/')})
-                          </option>
-                        ))}
-                      </optgroup>
-                    )
-                  })}
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-parchment-600">
-                  ▼
-                </div>
-              </div>
-
-              {selectedId && (
-                <div className="mt-4 p-4 rounded-lg bg-black/40 border border-parchment-900/50">
-                  {(() => {
-                    const r = availableRituals.find(x => x.id === selectedId)
-                    if (!r) return null
-                    return (
-                      <div className="text-sm">
-                        <div className="flex items-center flex-wrap gap-2 mb-2">
-                          <span className="font-bold text-parchment-200">{r.name}</span>
-                          {r.elements.map(e => (
-                            <span key={e} className={`text-[11px] uppercase tracking-wider font-bold px-2 py-0.5 rounded border ${ELEMENT_COLORS[e]}`}>
-                              {ELEMENT_NAMES[e]}
-                            </span>
-                          ))}
-                        </div>
-                        <p className="text-parchment-600 text-xs mb-2">
+              <div className="mt-1">
+                {openSlot === i ? (
+                  <div className="space-y-4">
+                    <button onClick={() => setOpenSlot(null)} className="text-xs font-bold font-fantasy text-red-400 hover:text-red-300">
+                      ✕ Cancelar seleção
+                    </button>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                      {options.map(r => (
+                        <button
+                          key={r.id}
+                          onClick={() => { handleSelect(i, r.id); setOpenSlot(null) }}
+                          className={`text-left p-4 rounded-xl border transition-colors ${selectedId === r.id ? 'bg-red-950/20 border-red-900' : 'bg-parchment-950/80 border-parchment-800 hover:border-gold-500 hover:bg-parchment-900/50'}`}
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <span className="font-fantasy text-gold-400 font-bold text-lg leading-none">{r.name}</span>
+                            <span className="text-[10px] text-parchment-500 font-bold uppercase tracking-wider">{r.circle}º C.</span>
+                          </div>
+                          <div className="flex gap-1.5 mb-2">
+                            {r.elements.map(e => (
+                               <span key={e} className={`text-[9px] uppercase px-1.5 py-0.5 rounded font-bold ${ELEMENT_COLORS[e]}`}>{ELEMENT_NAMES[e]}</span>
+                            ))}
+                          </div>
+                          <p className="text-xs text-parchment-400 line-clamp-3 leading-relaxed">{r.description}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : !selectedId ? (
+                  <button
+                    onClick={() => setOpenSlot(i)}
+                    className="w-full py-6 rounded-xl border-2 border-dashed border-parchment-800 hover:border-gold-500/50 hover:bg-parchment-900/20 text-parchment-500 hover:text-gold-400 font-fantasy text-lg transition-all"
+                  >
+                    + Escolher Ritual
+                  </button>
+                ) : (
+                  <div className="p-4 rounded-xl bg-black/40 border border-parchment-900/50 relative group">
+                    <button
+                      onClick={() => setOpenSlot(i)}
+                      className="absolute top-3 right-3 px-3 py-1 bg-parchment-900 text-parchment-200 hover:bg-parchment-800 text-xs font-bold rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      Trocar
+                    </button>
+                    {(() => {
+                      const r = availableRituals.find(x => x.id === selectedId)
+                      if (!r) return null
+                      return (
+                        <div className="text-sm">
+                          <div className="flex items-center flex-wrap gap-2 mb-2 pr-16">
+                            <span className="font-bold text-parchment-200 text-lg">{r.name}</span>
+                            {r.elements.map(e => (
+                              <span key={e} className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded border ${ELEMENT_COLORS[e]}`}>
+                                {ELEMENT_NAMES[e]}
+                              </span>
+                            ))}
+                          </div>
+                          <p className="text-parchment-500 text-xs mb-3 leading-relaxed">
                           Execução: {r.execution} · Alcance: {r.range} · Alvo: {r.target} · Duração: {r.duration}
                           {r.resistance && ` · Resistência: ${r.resistance}`}
                         </p>
@@ -174,26 +179,13 @@ export function RitualsStep() {
                   })()}
                 </div>
               )}
+              </div>
             </div>
           )
         })}
       </div>
 
-      <div className="flex justify-between pt-6 border-t border-parchment-900">
-        <button
-          onClick={prevStep}
-          className="px-6 py-2 rounded-xl font-fantasy font-bold text-parchment-500 hover:bg-parchment-950 transition-colors"
-        >
-          ← Voltar
-        </button>
-        <button
-          onClick={nextStep}
-          disabled={!isComplete}
-          className="px-6 py-2 rounded-xl font-fantasy font-bold bg-gold-500 text-parchment-950 hover:bg-gold-400 disabled:opacity-50 disabled:hover:bg-gold-500 transition-colors"
-        >
-          Avançar →
-        </button>
-      </div>
+      <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={isComplete} disabledReason="Escolha todos os rituais pendentes" />
     </div>
   )
 }

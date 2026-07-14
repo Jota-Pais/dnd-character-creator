@@ -115,7 +115,7 @@ export function OriginStep() {
         )}
       </div>
 
-      <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={canAdvance} />
+      <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={canAdvance} disabledReason={!draft.origin ? "Escolha uma Origem" : "Preencha as opções da Origem"} />
     </div>
   )
 }

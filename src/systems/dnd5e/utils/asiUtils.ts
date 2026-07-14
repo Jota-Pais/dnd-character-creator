@@ -3,6 +3,7 @@ import type { CharacterDraft, AsiChoice } from '../types/character'
 import { getRace, getSubrace, getEffectiveAbilityBonuses } from './raceUtils'
 import { ALL_ABILITY_SCORES } from './abilityScoreUtils'
 import { getFeat } from './featUtils'
+import { allClassEntries, getAllAsiChoices } from './multiclassUtils'
 
 /**
  * Níveis em que cada classe ganha um Incremento no Valor de Habilidade (ASI),
@@ -76,7 +77,8 @@ export function getRaceFeatBonus(draft: CharacterDraft): Record<AbilityScore, nu
  */
 export function getFinalAbilityScores(draft: CharacterDraft): Record<AbilityScore, number> {
   const racial = getRacialBonuses(draft)
-  const asi = getAsiBonuses(draft.asiChoices ?? [])
+  // ASI de TODAS as classes (primária + adicionais) — para multiclasse; single-class é idêntico.
+  const asi = getAsiBonuses(getAllAsiChoices(draft))
   const raceFeat = getRaceFeatBonus(draft)
   const final = {} as Record<AbilityScore, number>
   for (const ab of ALL_ABILITY_SCORES) {
@@ -115,16 +117,22 @@ export function isAsiChoiceComplete(choice: AsiChoice | undefined): boolean {
  * preenchidos de forma válida (respeitando o teto 20). Sem espaços, está completo.
  */
 export function isImprovementsStepComplete(draft: CharacterDraft): boolean {
-  const slots = getAsiSlotCount(draft.class, draft.level ?? 1)
-  const choices = draft.asiChoices ?? []
-  if (choices.length < slots) return false
-  for (let i = 0; i < slots; i++) {
-    if (!isAsiChoiceComplete(choices[i])) return false
+  // Cada classe valida seus próprios espaços de ASI, no nível que tem NELA (multiclasse);
+  // para classe única é uma só entrada no nível total, idêntico ao comportamento anterior.
+  const reached: AsiChoice[] = []
+  for (const entry of allClassEntries(draft)) {
+    const slots = getAsiSlotCount(entry.classId, entry.level)
+    const choices = entry.asiChoices ?? []
+    if (choices.length < slots) return false
+    for (let i = 0; i < slots; i++) {
+      if (!isAsiChoiceComplete(choices[i])) return false
+      reached.push(choices[i])
+    }
   }
-  // valida o teto de 20 considerando o conjunto de escolhas
+  // teto de 20 sobre o conjunto de todas as escolhas alcançadas (todas as classes)
   const racial = getRacialBonuses(draft)
+  const asi = getAsiBonuses(reached)
   for (const ab of ALL_ABILITY_SCORES) {
-    const asi = getAsiBonuses(choices.slice(0, slots))
     const baseWithRacial = (draft.abilityScores[ab] ?? 10) + racial[ab]
     if (baseWithRacial + asi[ab] > Math.max(20, baseWithRacial)) return false
   }

@@ -1,5 +1,6 @@
 import type {
   CharacterDraft,
+  ClassEntry,
   WizardStep,
   AbilityMethod,
   BaseAbilityScores,
@@ -147,6 +148,43 @@ function sanitizeAsiChoices(raw: unknown): AsiChoice[] {
   return out
 }
 
+/** Valida uma classe adicional (multiclasse) importada; null se não referenciar uma classe conhecida. */
+function sanitizeClassEntry(raw: unknown): ClassEntry | null {
+  if (!isRecord(raw)) return null
+  const cls = typeof raw.classId === 'string' ? getClass(raw.classId) : undefined
+  if (!cls) return null
+  const level = toIntInRange(raw.level, 1, 20) ?? 1
+  const hpRolls: number[] = []
+  const hpRollsRaw: unknown[] = Array.isArray(raw.hpRolls) ? raw.hpRolls : []
+  hpRollsRaw.slice(0, level).forEach((value, i) => {
+    const roll = toIntInRange(value, 1, cls.hitDie)
+    if (roll !== null) hpRolls[i] = roll
+  })
+  return {
+    classId: cls.id,
+    level,
+    classChoices: sanitizeClassChoices(raw.classChoices, cls),
+    spellChoices: sanitizeSpellChoices(raw.spellChoices),
+    asiChoices: sanitizeAsiChoices(raw.asiChoices),
+    hpRolls,
+  }
+}
+
+/** Classes adicionais válidas, sem duplicar entre si nem a classe primária. */
+function sanitizeAdditionalClasses(raw: unknown, primaryClassId: string): ClassEntry[] {
+  if (!Array.isArray(raw)) return []
+  const out: ClassEntry[] = []
+  const seen = new Set<string>([primaryClassId])
+  for (const entry of raw) {
+    const parsed = sanitizeClassEntry(entry)
+    if (parsed && !seen.has(parsed.classId)) {
+      seen.add(parsed.classId)
+      out.push(parsed)
+    }
+  }
+  return out
+}
+
 function sanitizeEquipment(raw: unknown): EquipmentDraft {
   if (!isRecord(raw)) return emptyEquipment()
 
@@ -229,6 +267,7 @@ export function sanitizeImportedDraft(raw: unknown): CharacterDraft | null {
   })
 
   const asiChoices = sanitizeAsiChoices(raw.asiChoices)
+  const additionalClasses = cls ? sanitizeAdditionalClasses(raw.additionalClasses, cls.id) : []
 
   return {
     name: raw.name.slice(0, 60),
@@ -239,6 +278,8 @@ export function sanitizeImportedDraft(raw: unknown): CharacterDraft | null {
     class: cls?.id ?? null,
     classChoices: sanitizeClassChoices(raw.classChoices, cls),
     spellChoices: cls ? sanitizeSpellChoices(raw.spellChoices) : { cantrips: [], spells: [] },
+    additionalClasses,
+    multiclass: typeof raw.multiclass === 'boolean' ? raw.multiclass : additionalClasses.length > 0,
     abilityMethod,
     abilityScores,
     rolledValues,

@@ -1,12 +1,38 @@
 import { describe, it, expect } from 'vitest'
 import type { AbilityScore } from '../../types/race'
-import { CLASSES, getClass } from '../classUtils'
+import type { CharacterDraft, ClassEntry } from '../../types/character'
+import { EMPTY_DRAFT } from '../../types/character'
+import { CLASSES, getClass, getAverageHpAtLevel, getRolledHpAtLevel } from '../classUtils'
 import {
   meetsMulticlassPrereq,
   getUnmetPrereqAbilities,
   getCasterProgression,
   MULTICLASS_MIN_SCORE,
+  isMulticlassed,
+  getPrimaryLevel,
+  allClassEntries,
+  getTotalHpAverage,
+  getTotalHpRolled,
+  getHitDicePool,
+  getAllArmorProficiencies,
+  getAllWeaponProficiencies,
+  getAllAsiChoices,
+  getCombinedCasterLevel,
 } from '../multiclassUtils'
+import { getFinalAbilityScores, isImprovementsStepComplete } from '../asiUtils'
+
+function makeDraft(over: Partial<CharacterDraft>): CharacterDraft {
+  return { ...EMPTY_DRAFT, ...over }
+}
+function entry(over: Partial<ClassEntry> & { classId: string; level: number }): ClassEntry {
+  return {
+    classChoices: { ...EMPTY_DRAFT.classChoices },
+    spellChoices: { cantrips: [], spells: [] },
+    asiChoices: [],
+    hpRolls: [],
+    ...over,
+  }
+}
 
 describe('multiclassUtils — pré-requisitos (PHB pág. 166)', () => {
   it('MULTICLASS_MIN_SCORE é 13', () => {
@@ -114,5 +140,129 @@ describe('multiclassUtils — integridade dos dados das 12 classes', () => {
   it('guerreiro multiclasse NÃO concede armadura pesada (só a classe base concede)', () => {
     expect(getClass('fighter')!.armorProficiencies).toContain('heavy')
     expect(getClass('fighter')!.multiclassProficiencies.armor).not.toContain('heavy')
+  })
+})
+
+describe('multiclassUtils — nível e entradas de classe', () => {
+  it('getPrimaryLevel: total menos as adicionais, nunca abaixo de 1', () => {
+    expect(getPrimaryLevel(makeDraft({ class: 'fighter', level: 5 }))).toBe(5)
+    expect(getPrimaryLevel(makeDraft({ class: 'fighter', level: 5, additionalClasses: [entry({ classId: 'wizard', level: 2 })] }))).toBe(3)
+    expect(getPrimaryLevel(makeDraft({ class: 'fighter', level: 3, additionalClasses: [entry({ classId: 'wizard', level: 5 })] }))).toBe(1)
+  })
+
+  it('allClassEntries: primária derivada + adicionais; vazio sem classe', () => {
+    expect(allClassEntries(makeDraft({ class: null }))).toEqual([])
+    const single = allClassEntries(makeDraft({ class: 'fighter', level: 5 }))
+    expect(single).toHaveLength(1)
+    expect(single[0]).toMatchObject({ classId: 'fighter', level: 5 })
+    const multi = allClassEntries(makeDraft({ class: 'fighter', level: 5, additionalClasses: [entry({ classId: 'wizard', level: 2 })] }))
+    expect(multi.map(e => `${e.classId}${e.level}`)).toEqual(['fighter3', 'wizard2'])
+  })
+
+  it('isMulticlassed', () => {
+    expect(isMulticlassed(makeDraft({ class: 'fighter', level: 5 }))).toBe(false)
+    expect(isMulticlassed(makeDraft({ class: 'fighter', level: 5, additionalClasses: [entry({ classId: 'wizard', level: 2 })] }))).toBe(true)
+  })
+})
+
+describe('multiclassUtils — PV em poço', () => {
+  it('classe única equivale a getAverageHpAtLevel / getRolledHpAtLevel', () => {
+    const fighter = getClass('fighter')!
+    const single = makeDraft({ class: 'fighter', level: 5 })
+    expect(getTotalHpAverage(single, 2)).toBe(getAverageHpAtLevel(fighter, 2, 5))
+    const rolled = makeDraft({ class: 'fighter', level: 3, hpRolls: [7, 7] })
+    expect(getTotalHpRolled(rolled, 0)).toBe(getRolledHpAtLevel(fighter, 0, 3, [7, 7]))
+  })
+
+  it('média: 1º nível só da primária no dado máximo; adicionais sempre na média', () => {
+    // Guerreiro 3 (d10: 10 + 2×6) + Mago 2 (d6: 2×4) = 22 + 8 = 30 (CON 0)
+    const d = makeDraft({ class: 'fighter', level: 5, additionalClasses: [entry({ classId: 'wizard', level: 2 })] })
+    expect(getTotalHpAverage(d, 0)).toBe(30)
+  })
+
+  it('rolagem: hpRolls por classe (primária níveis 2..L; adicional 1..L)', () => {
+    // Guerreiro 3 [8,8] (10+8+8=26) + Mago 2 [5,5] (5+5=10) = 36 (CON 0)
+    const d = makeDraft({
+      class: 'fighter', level: 5, hpMethod: 'roll', hpRolls: [8, 8],
+      additionalClasses: [entry({ classId: 'wizard', level: 2, hpRolls: [5, 5] })],
+    })
+    expect(getTotalHpRolled(d, 0)).toBe(36)
+  })
+
+  it('getHitDicePool agrupa por tipo de dado, do maior pro menor', () => {
+    const d = makeDraft({ class: 'fighter', level: 5, additionalClasses: [entry({ classId: 'wizard', level: 2 })] })
+    expect(getHitDicePool(d)).toEqual([{ die: 10, count: 3 }, { die: 6, count: 2 }])
+  })
+})
+
+describe('multiclassUtils — proficiências agregadas', () => {
+  it('armadura: completas da primária + subconjunto de multiclasse das adicionais', () => {
+    // Mago (nenhuma) + Clérigo adicional (leve/média/escudos pela tabela de multiclasse)
+    const d = makeDraft({ class: 'wizard', level: 3, additionalClasses: [entry({ classId: 'cleric', level: 1 })] })
+    expect(getAllArmorProficiencies(d).sort()).toEqual(['light', 'medium', 'shields'])
+    // Guerreiro primário mantém armadura pesada
+    expect(getAllArmorProficiencies(makeDraft({ class: 'fighter', level: 1 }))).toContain('heavy')
+  })
+
+  it('armas: base da primária + subconjunto de multiclasse das adicionais', () => {
+    // Mago (adagas, dardos...) + Bárbaro adicional (simples, marciais pela multiclasse)
+    const d = makeDraft({ class: 'wizard', level: 3, additionalClasses: [entry({ classId: 'barbarian', level: 1 })] })
+    const w = getAllWeaponProficiencies(d)
+    expect(w).toContain('daggers') // base do mago
+    expect(w).toContain('martial') // concedida pelo bárbaro na multiclasse
+  })
+})
+
+describe('multiclassUtils — ASI agregado e nível de conjurador combinado', () => {
+  it('getAllAsiChoices junta primária + adicionais', () => {
+    const d = makeDraft({
+      class: 'fighter', level: 8, asiChoices: [{ kind: 'asi', abilities: ['STR', 'STR'] }],
+      additionalClasses: [entry({ classId: 'wizard', level: 4, asiChoices: [{ kind: 'feat', featId: 'alert' }] })],
+    })
+    expect(getAllAsiChoices(d)).toHaveLength(2)
+    expect(getAllAsiChoices(d)[1]).toEqual({ kind: 'feat', featId: 'alert' })
+  })
+
+  it('nível de conjurador combinado: full×1 + half⌊÷2⌋ + third⌊÷3⌋; pact e none = 0', () => {
+    // Paladino 6 (half→3) / Feiticeiro 4 (full→4) = 7
+    expect(getCombinedCasterLevel(makeDraft({ class: 'paladin', level: 10, additionalClasses: [entry({ classId: 'sorcerer', level: 4 })] }))).toBe(7)
+    // Cavaleiro Arcano nível 6 → third → 2
+    expect(getCombinedCasterLevel(makeDraft({ class: 'fighter', level: 6, classChoices: { ...EMPTY_DRAFT.classChoices, subclass: 'eldritch-knight' } }))).toBe(2)
+    // Guerreiro sem subclasse conjuradora → 0
+    expect(getCombinedCasterLevel(makeDraft({ class: 'fighter', level: 6 }))).toBe(0)
+    // Bruxo (Pacto) não entra no pool combinado → 0
+    expect(getCombinedCasterLevel(makeDraft({ class: 'warlock', level: 5 }))).toBe(0)
+    // "dip" de meio-conjurador nível 1 conta 0: Mago 5 + Patrulheiro 1 = 5
+    expect(getCombinedCasterLevel(makeDraft({ class: 'wizard', level: 6, additionalClasses: [entry({ classId: 'ranger', level: 1 })] }))).toBe(5)
+    // classe única plena = o próprio nível
+    expect(getCombinedCasterLevel(makeDraft({ class: 'wizard', level: 5 }))).toBe(5)
+  })
+})
+
+describe('multiclasse — ASI aplicado e validado por classe', () => {
+  it('getFinalAbilityScores soma o ASI de TODAS as classes', () => {
+    const d = makeDraft({
+      class: 'fighter', level: 8,
+      abilityScores: { STR: 15, DEX: 10, CON: 10, INT: 12, WIS: 10, CHA: 10 },
+      asiChoices: [{ kind: 'asi', abilities: ['STR', 'STR'] }],
+      additionalClasses: [entry({ classId: 'wizard', level: 4, asiChoices: [{ kind: 'asi', abilities: ['INT', 'INT'] }] })],
+    })
+    const final = getFinalAbilityScores(d)
+    expect(final.STR).toBe(17) // +2 do ASI do guerreiro
+    expect(final.INT).toBe(14) // +2 do ASI do mago (antes era ignorado)
+  })
+
+  it('isImprovementsStepComplete valida os espaços de cada classe no nível dela', () => {
+    const base = {
+      class: 'fighter' as const, level: 8,
+      abilityScores: { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 },
+      asiChoices: [{ kind: 'asi' as const, abilities: ['STR', 'DEX'] as AbilityScore[] }], // guerreiro 4 → 1 espaço
+    }
+    // Mago 4 também tem 1 espaço de ASI — sem preencher, incompleto
+    const incomplete = makeDraft({ ...base, additionalClasses: [entry({ classId: 'wizard', level: 4, asiChoices: [] })] })
+    expect(isImprovementsStepComplete(incomplete)).toBe(false)
+    // Preenchido, completo
+    const complete = makeDraft({ ...base, additionalClasses: [entry({ classId: 'wizard', level: 4, asiChoices: [{ kind: 'asi', abilities: ['INT', 'CON'] }] })] })
+    expect(isImprovementsStepComplete(complete)).toBe(true)
   })
 })

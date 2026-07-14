@@ -56,8 +56,25 @@ export type RaceChoiceSelections = {
 
 export type HpMethod = 'average' | 'roll'
 
+/**
+ * Uma classe adicional na multiclasse (além da primária). A classe primária continua nos
+ * campos de topo do draft (`class`, `classChoices`, `spellChoices`, `asiChoices`, `hpRolls`);
+ * estas são as classes "secundárias". `level` é o nível NESTA classe (não o total).
+ * `hpRolls` são as rolagens de PV dos níveis desta classe (método 'roll'); como nenhum nível
+ * de classe secundária usa o dado máximo, o índice i corresponde ao i-ésimo nível dela.
+ */
+export type ClassEntry = {
+  classId: string
+  level: number
+  classChoices: ClassChoiceSelections
+  spellChoices: SpellChoices
+  asiChoices: AsiChoice[]
+  hpRolls: number[]
+}
+
 export type CharacterDraft = {
   name: string
+  /** Nível de personagem TOTAL (orçamento). O nível da classe primária = level − Σ additionalClasses. */
   level: number
   race: string | null
   subrace: string | null
@@ -65,6 +82,10 @@ export type CharacterDraft = {
   class: string | null
   classChoices: ClassChoiceSelections
   spellChoices: SpellChoices
+  /** Classes além da primária (vazio = personagem de classe única). */
+  additionalClasses: ClassEntry[]
+  /** Portão de UX do passo Nome (Fase 3). A mecânica deriva de additionalClasses.length. */
+  multiclass: boolean
   abilityMethod: AbilityMethod | null
   abilityScores: BaseAbilityScores
   rolledValues: number[]
@@ -93,6 +114,8 @@ export const EMPTY_DRAFT: CharacterDraft = {
     progressionChoices: {},
   },
   spellChoices: { ...EMPTY_SPELL_CHOICES },
+  additionalClasses: [],
+  multiclass: false,
   abilityMethod: null,
   abilityScores: { STR: null, DEX: null, CON: null, INT: null, WIS: null, CHA: null },
   rolledValues: [],

@@ -19,6 +19,8 @@ export const COMPLETE_DRAFT: CharacterDraft = {
     progressionChoices: {},
   },
   spellChoices: { cantrips: [], spells: [] },
+  additionalClasses: [],
+  multiclass: false,
   abilityMethod: 'standard-array',
   abilityScores: { STR: 15, DEX: 14, CON: 13, INT: 12, WIS: 10, CHA: 8 },
   rolledValues: [],

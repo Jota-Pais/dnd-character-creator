@@ -4,6 +4,8 @@
 > Objetivo: fechar integralmente a promessa do produto — criação de fichas **níveis 1–20 fiéis ao PHB 2014** — corrigindo primeiro o que está errado no núcleo de nível 1.
 >
 > **Status (2026-07-13): roadmap de build 100% concluído** — Fases 1–16 (D&D 5e + Ordem Paranormal). Desde 2026-07-09 o projeto está em **fase de playtest**: ver `docs/playtest-feedback.md` (tracker item a item) e `PROGRESS.md` (resumo consolidado, seção "Fase de Playtest"). Este arquivo permanece como registro histórico de como cada fase foi decidida e executada — não é mais atualizado fase a fase.
+>
+> **2026-07-14:** implementada a **multiclasse do D&D 5e** (fora do escopo original da V1) — regras em `docs/regras-multiclasse.md`, detalhe em `PROGRESS.md` ("Multiclasse D&D 5e").
 
 ## Fonte da verdade e método de trabalho
 

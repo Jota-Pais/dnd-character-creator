@@ -10,6 +10,17 @@ Desde **2026-07-09** o projeto está em **fase de playtest** com usuários reais
 
 **Próximo passo:** terminar os ajustes finos pendentes do F30 e seguir recebendo/priorizando feedback de playtest. Deploy estático segue adiado até o playtest fechar (Fase 8.3 do `ROADMAP.md`) — sem config de deploy no repo ainda.
 
+## Multiclasse D&D 5e — ✅ CONCLUÍDA (2026-07-14)
+
+Fora do escopo original da V1, implementada a pedido durante o playtest, fiel ao PHB 2014 (cap. 6). Regras digitalizadas em `docs/regras-multiclasse.md`. Modelo **aditivo**: `draft.additionalClasses: ClassEntry[]` sobre os campos existentes — o caminho de **classe única continua byte-a-byte idêntico** (zero regressão), e a UI de multiclasse é opt-in pelo toggle do passo Nome. 6 fases / commits:
+
+- **Dados & tipos:** pré-requisitos de atributo (semântica E/OU), tabela de proficiências de multiclasse, proficiências de armadura/arma por classe (antes ausentes) e `casterProgression` (full/half/third/pact/none; `third` via Cavaleiro Arcano / Trapaceiro Arcano).
+- **Modelo & agregação (`multiclassUtils`, testada):** `draft.level` vira orçamento (nível da primária = total − adicionais); PV em poço (só o 1º nível da classe inicial usa o dado máximo); proficiências agregadas (inicial completa + subconjunto de multiclasse das adicionais); ASI por classe; **nível de conjurador combinado** (pleno ×1 + meio ⌊÷2⌋ + third ⌊÷3⌋; Pacto do Bruxo à parte).
+- **UX (Nome + Classe + Aprimoramentos):** toggle Classe única/Multiclasse; alocador de níveis com "+ adicionar classe" respeitando o orçamento; painel de escolhas por classe; ASI por classe; **pré-requisitos bloqueiam** a finalização (fiel ao livro), avaliados sobre os atributos finais.
+- **Conjuração & ficha:** `SpellStep` com uma seção por classe conjuradora (contagens/atributo próprios) + pool de slots combinado; Revisão e ficha impressa agregam tudo — identidade "Guerreiro 3° / Mago 2° — nível 5", dados de vida `6d10 + 4d6`, CD/ataque por classe, features/recursos/progressão por classe, resistências só da 1ª classe, Ataque Extra não empilha.
+
+Verificado no browser (Edge via Playwright) em cada fase, incluindo smoke de Paladino 6/Feiticeiro 4 (PV 66, slots 4/3/3/1, dois blocos de conjuração CD 15). 631 testes, tsc, lint e build verdes.
+
 ## Fase de Playtest (2026-07-09 → em andamento)
 
 > Tracker completo, item a item (relato do usuário + regra conferida no livro + o que mudou no código): `docs/playtest-feedback.md`. Este resumo agrupa por tema — não duplica o detalhe, só orienta.

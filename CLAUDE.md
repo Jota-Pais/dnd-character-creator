@@ -30,7 +30,7 @@ Toda decisão de produto e design serve a esse objetivo: guiar o iniciante sem t
 
 ## Escopo da V1
 
-- Fichas de **nível 1 a 20** (uma única classe; sem multiclasse)
+- Fichas de **nível 1 a 20**, com **multiclasse no D&D 5e** (PHB 2014, cap. 6; ver `docs/regras-multiclasse.md`)
 - Pontos de vida por dois métodos: **média** (`average`) ou **rolagem** (`roll`) dos dados de vida acima do nível 1
 - Raças e classes do livro básico (PHB 2014)
 - Sistema de magias (truques e magias por nível, slots, CD e bônus de ataque derivados do nível)
@@ -47,7 +47,7 @@ Toda decisão de produto e design serve a esse objetivo: guiar o iniciante sem t
 - Salvar/carregar localmente
 - Exportar/importar ficha como JSON (portabilidade entre dispositivos)
 
-**Fora do escopo da V1:** multiclasse, evolução de personagem em sessão (level up dinâmico / XP), suplementos, raças/classes homebrew.
+**Fora do escopo da V1:** evolução de personagem em sessão (level up dinâmico / XP), suplementos, raças/classes homebrew. (Multiclasse **entrou** no escopo em 2026-07-14, para o D&D 5e.)
 
 ## Estrutura de Pastas
 

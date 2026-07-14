@@ -88,6 +88,17 @@ describe('equipmentUtils', () => {
     expect(hasWeaponProficiency(makeDraft({ class: 'combatant' }), machadinha)).toBe(true)
   })
 
+  it('Ferramenta de Trabalho (origem Operário) dá proficiência só com a arma escolhida', () => {
+    const machadinha = getEquipmentById('machadinha')!
+    const semEscolha = makeDraft({ class: 'occultist', origin: 'laborer' })
+    expect(hasWeaponProficiency(semEscolha, machadinha)).toBe(false)
+    const comEscolha = makeDraft({ class: 'occultist', origin: 'laborer', workToolWeapon: 'machadinha' })
+    expect(hasWeaponProficiency(comEscolha, machadinha)).toBe(true)
+    // Outra arma tática não escolhida continua sem proficiência.
+    const espada = getEquipmentById('espada')!
+    expect(hasWeaponProficiency(comEscolha, espada)).toBe(false)
+  })
+
   it('a Patente limita os itens por categoria (Tabela 3.1)', () => {
     // proteção-pesada é Cat II
     expect(isEquipmentStepComplete(makeDraft({ class: 'combatant', patente: 'recruta', equipmentChoices: ['protecao-pesada'] }))).toBe(false)

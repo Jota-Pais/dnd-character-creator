@@ -8,7 +8,7 @@ import { getOrdemClass } from './classUtils'
 import { getPatente, getCategoryLimit } from './patenteUtils'
 import { getModification } from './modificationUtils'
 import { getCurse, getCurseCategoryDelta, getItemCurses, getSheetAttributes, canApplyCurse, curseChoiceKey } from './curseUtils'
-import { hasClassPower, getFavoriteWeaponReduction, getFavoriteEquipmentReduction, getGrantedRituals, hasCarryCapacityIntellectBonus } from './characterUtils'
+import { hasClassPower, getFavoriteWeaponReduction, getFavoriteEquipmentReduction, getGrantedRituals, hasCarryCapacityIntellectBonus, getWorkToolBonus } from './characterUtils'
 
 export const EQUIPMENTS = equipmentsJson as OrdemEquipment[]
 
@@ -335,6 +335,8 @@ export function hasWeaponProficiency(draft: OrdemCharacterDraft, item: OrdemEqui
   if (item.proficiency === 'heavy' && hasClassPower(draft, 'heavy-weapons')) return true
   if (item.proficiency === 'tactical' && item.weaponCategory === 'fogo' && hasClassPower(draft, 'advanced-ballistics')) return true
   if (item.proficiency === 'tactical' && item.weaponCategory === 'corpo_a_corpo' && hasClassPower(draft, 'urban-ninja')) return true
+  // Ferramenta de Trabalho (origem Operário): "Você sabe usar a arma escolhida" — proficiência só com ela.
+  if (draft.workToolWeapon === item.id && getWorkToolBonus(draft) > 0) return true
   return false
 }
 

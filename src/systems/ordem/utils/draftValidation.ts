@@ -143,5 +143,6 @@ export function sanitizeImportedDraft(parsed: unknown): OrdemCharacterDraft | nu
       : {},
     favoriteWeapon: typeof p.favoriteWeapon === 'string' ? p.favoriteWeapon : null,
     favoriteEquipment: typeof p.favoriteEquipment === 'string' ? p.favoriteEquipment : null,
+    workToolWeapon: typeof p.workToolWeapon === 'string' ? p.workToolWeapon : null,
   }
 }

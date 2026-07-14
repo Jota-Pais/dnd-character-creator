@@ -30,6 +30,7 @@ import {
   getMentalParanormalDamageResistance,
   getOriginMentalDamageResistance,
   hasCarryCapacityIntellectBonus,
+  getWorkToolBonus,
 } from '../characterUtils'
 import { getCursedDerivedStats } from '../curseUtils'
 import { getOrdemClass } from '../classUtils'
@@ -370,6 +371,14 @@ describe('hasCarryCapacityIntellectBonus (Inventário Otimizado, Técnico NEX 10
     expect(hasCarryCapacityIntellectBonus(makeDraft({ class: 'specialist', trilha: 'technician', nex: 10 }))).toBe(true)
     expect(hasCarryCapacityIntellectBonus(makeDraft({ class: 'specialist', trilha: 'technician', nex: 5 }))).toBe(false)
     expect(hasCarryCapacityIntellectBonus(makeDraft({ class: 'specialist', trilha: 'field-medic', nex: 99 }))).toBe(false)
+  })
+})
+
+describe('getWorkToolBonus (Ferramenta de Trabalho, origem Operário)', () => {
+  it('Operário dá +1; outras origens não dão nada', () => {
+    expect(getWorkToolBonus(makeDraft({ origin: 'laborer' }))).toBe(1)
+    expect(getWorkToolBonus(makeDraft({ origin: 'academic' }))).toBe(0)
+    expect(getWorkToolBonus(makeDraft({ origin: null }))).toBe(0)
   })
 })
 

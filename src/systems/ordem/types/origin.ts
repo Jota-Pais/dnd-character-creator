@@ -22,6 +22,12 @@ export type OriginPowerEffects = {
   firearmDamageBonus?: number
   /** Resistência a dano mental igual ao Intelecto (ex.: Eu Já Sabia). */
   mentalDamageResistanceEqualsIntellect?: boolean
+  /**
+   * Bônus em testes de ataque, rolagens de dano e margem de ameaça com UMA arma simples ou
+   * tática escolhida pelo jogador (`draft.workToolWeapon`), que também ganha proficiência
+   * (ex.: Ferramenta de Trabalho +1).
+   */
+  workToolBonus?: number
 }
 
 export type Origin = {

@@ -3,7 +3,7 @@ import { EMPTY_DRAFT } from '../../types/character'
 import type { OrdemCharacterDraft } from '../../types/character'
 import type { OrdemWeapon } from '../../types/equipment'
 import { getEquipmentById } from '../equipmentUtils'
-import { getOrdemWeaponAttack, getWeaponSkillName, formatWeaponSummary, isMelee } from '../ordemWeaponUtils'
+import { getOrdemWeaponAttack, getWeaponSkillName, formatWeaponSummary, isMelee, getUnarmedAttack } from '../ordemWeaponUtils'
 
 function makeDraft(over: Partial<OrdemCharacterDraft>): OrdemCharacterDraft {
   return { ...EMPTY_DRAFT, ...over }
@@ -91,6 +91,40 @@ describe('ordemWeaponUtils', () => {
     expect(getOrdemWeaponAttack(pistola, AGI3_FOR2, ['calibre-grosso']).damage).toBe('2d12 balístico')
     // Perigosa amplia a margem de ameaça: crítico 19 → 17
     expect(getOrdemWeaponAttack(faca, AGI3_FOR2, ['perigosa']).critical).toBe('17')
+  })
+
+  it('Ferramenta de Trabalho (origem Operário): +1 ataque/dano/margem de ameaça só na arma escolhida', () => {
+    const comFerramenta = makeDraft({ attributes: AGI3_FOR2.attributes, origin: 'laborer', workToolWeapon: 'faca' })
+    const a = getOrdemWeaponAttack(faca, comFerramenta, [])
+    expect(a.attackBonus).toBe(1) // destreinado (0) + Ferramenta +1
+    expect(a.damage).toBe('1d4+3 corte') // Força 2 + Ferramenta 1
+    expect(a.critical).toBe('18') // margem 19 → 18
+    // Outra arma (não a escolhida) não ganha nada.
+    const outraArma = getOrdemWeaponAttack(pistola, comFerramenta, [])
+    expect(outraArma.attackBonus).toBe(0)
+    expect(outraArma.damage).toBe('1d12 balístico')
+  })
+})
+
+describe('getUnarmedAttack (Artista Marcial)', () => {
+  it('sem o poder, retorna null', () => {
+    expect(getUnarmedAttack(AGI3_FOR2)).toBeNull()
+  })
+
+  it('com o poder: 1d6 até NEX 34%, 1d8 em NEX 35%+, 1d10 em NEX 70%+', () => {
+    const base = { attributes: AGI3_FOR2.attributes, powerChoices: ['martial-artist'] }
+    expect(getUnarmedAttack(makeDraft({ ...base, nex: 10 }))?.damage).toBe('1d6+2 impacto')
+    expect(getUnarmedAttack(makeDraft({ ...base, nex: 35 }))?.damage).toBe('1d8+2 impacto')
+    expect(getUnarmedAttack(makeDraft({ ...base, nex: 70 }))?.damage).toBe('1d10+2 impacto')
+  })
+
+  it('usa Luta (rola Força), soma Força no dano, e herda Golpe Pesado (+1 dado, "conta como arma")', () => {
+    const draft = makeDraft({ attributes: AGI3_FOR2.attributes, powerChoices: ['martial-artist', 'heavy-blow'], nex: 10 })
+    const a = getUnarmedAttack(draft)!
+    expect(a.name).toBe('Desarmado')
+    expect(a.skill).toBe('Luta')
+    expect(a.rollDice).toBe(2) // Força
+    expect(a.damage).toBe('2d6+2 impacto') // 1d6 + Golpe Pesado (+1 dado) + Força 2
   })
 })
 

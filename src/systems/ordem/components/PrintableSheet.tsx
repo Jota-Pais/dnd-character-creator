@@ -16,7 +16,7 @@ import {
 } from '../utils/equipmentUtils'
 import { getModification } from '../utils/modificationUtils'
 import { getCurse, getCursedDerivedStats, getSheetAttributes, formatCurseElement, formatCurseChoiceDetail, getRitualDt, getRitualPeLimit } from '../utils/curseUtils'
-import { getOrdemWeaponAttack, GRADE_BONUS } from '../utils/ordemWeaponUtils'
+import { getOrdemWeaponAttack, getUnarmedAttack, GRADE_BONUS } from '../utils/ordemWeaponUtils'
 import { getPatente, getCategoryLimit } from '../utils/patenteUtils'
 import type { OrdemEquipment, OrdemWeapon } from '../types/equipment'
 import type { OrdemAttributes } from '../types/character'
@@ -59,12 +59,17 @@ export function PrintableSheet() {
   const equipmentUnits = draft.equipmentChoices
     .map(uid => ({ uid, item: getEquipmentByInstance(uid) }))
     .filter((u): u is { uid: string; item: OrdemEquipment } => Boolean(u.item))
-  const weaponAttacks = equipmentUnits
-    .filter((u): u is { uid: string; item: OrdemWeapon } => u.item.type === 'weapon')
-    .map(({ uid, item }) => ({
-      ...getOrdemWeaponAttack(item, draft, draft.equipmentModifications[uid] ?? [], draft.equipmentCurses[uid] ?? [], getWeaponSkillOverride(draft, uid)),
-      name: getInstanceLabel(draft, uid),
-    }))
+  // Artista Marcial: ataque desarmado (não é item de inventário) some no fim da lista, se houver o poder.
+  const unarmedAttack = getUnarmedAttack(draft)
+  const weaponAttacks = [
+    ...equipmentUnits
+      .filter((u): u is { uid: string; item: OrdemWeapon } => u.item.type === 'weapon')
+      .map(({ uid, item }) => ({
+        ...getOrdemWeaponAttack(item, draft, draft.equipmentModifications[uid] ?? [], draft.equipmentCurses[uid] ?? [], getWeaponSkillOverride(draft, uid)),
+        name: getInstanceLabel(draft, uid),
+      })),
+    ...(unarmedAttack ? [unarmedAttack] : []),
+  ]
   const cursedUnits = equipmentUnits.filter(u => (draft.equipmentCurses[u.uid]?.length ?? 0) > 0)
   // Armas com a maldição Ritualística: o ritual armazenado é listado junto das Habilidades.
   const ritualisticUnits = equipmentUnits.filter(u => (draft.equipmentCurses[u.uid] ?? []).includes('ritualistica'))

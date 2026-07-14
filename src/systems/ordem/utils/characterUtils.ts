@@ -442,3 +442,8 @@ export function getOriginMentalDamageResistance(draft: OrdemCharacterDraft, inte
 export function getEffectivePeLimit(draft: OrdemCharacterDraft): number {
   return getPeLimit(draft.nex) + (getOriginEffects(draft).peLimitBonus ?? 0)
 }
+
+/** Bônus de Ferramenta de Trabalho (origem Operário): +1 em ataque/dano/margem de ameaça — só com a arma escolhida em `draft.workToolWeapon`. */
+export function getWorkToolBonus(draft: OrdemCharacterDraft): number {
+  return getOriginEffects(draft).workToolBonus ?? 0
+}

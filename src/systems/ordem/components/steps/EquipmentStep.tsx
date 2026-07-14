@@ -12,7 +12,7 @@ import {
 } from '../../utils/curseUtils'
 import type { OrdemElement } from '../../types/ritual'
 import { getAvailableRituals, ELEMENT_NAMES } from '../../utils/ritualUtils'
-import { hasClassPower, getFavoriteWeaponReduction, getFavoriteEquipmentReduction } from '../../utils/characterUtils'
+import { hasClassPower, getFavoriteWeaponReduction, getFavoriteEquipmentReduction, getWorkToolBonus } from '../../utils/characterUtils'
 import { isMelee, formatWeaponSummary } from '../../utils/ordemWeaponUtils'
 import { getPatente, PATENTES } from '../../utils/patenteUtils'
 import { isStepComplete } from '../../utils/draftValidation'
@@ -114,6 +114,10 @@ export function EquipmentStep() {
     const equipmentFavoriteReduction = getFavoriteEquipmentReduction(draft)
     const canMarkFavoriteEquipment = item.type !== 'weapon' && equipmentFavoriteReduction > 0
     const isFavoriteEquipment = item.type !== 'weapon' && draft.favoriteEquipment === item.id
+    // Ferramenta de Trabalho (origem Operário): +1 ataque/dano/margem de ameaça numa arma simples ou tática.
+    const workToolBonus = getWorkToolBonus(draft)
+    const canMarkWorkTool = item.type === 'weapon' && item.proficiency !== 'heavy' && workToolBonus > 0
+    const isWorkTool = item.type === 'weapon' && draft.workToolWeapon === item.id
     const displayCat = units.length === 1 ? getDraftInstanceCategory(draft, units[0]) : catalogCategory
 
     const isDisabled = !isSelected && !canAddUnit
@@ -169,6 +173,17 @@ export function EquipmentStep() {
                   : 'border-parchment-800 text-parchment-500 hover:border-gold-800 hover:text-parchment-300'}`}
               >
                 🔧 Favorito{isFavoriteEquipment ? ` (−${CAT_ROMAN[equipmentFavoriteReduction]})` : ''}
+              </button>
+            )}
+            {canMarkWorkTool && (
+              <button
+                onClick={e => { e.stopPropagation(); updateDraft({ workToolWeapon: isWorkTool ? null : item.id }) }}
+                title="Ferramenta de Trabalho (origem Operário): +1 em testes de ataque, rolagens de dano e margem de ameaça com esta arma, e você ganha proficiência com ela"
+                className={`text-xs px-2 py-0.5 rounded border transition-all ${isWorkTool
+                  ? 'bg-gold-900/40 border-gold-700/50 text-gold-300'
+                  : 'border-parchment-800 text-parchment-500 hover:border-gold-800 hover:text-parchment-300'}`}
+              >
+                🛠️ Ferramenta{isWorkTool ? ` (+${workToolBonus})` : ''}
               </button>
             )}
             {item.type === 'weapon' && (

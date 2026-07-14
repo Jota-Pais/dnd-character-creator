@@ -16,7 +16,7 @@ import {
 import { getModification } from '../../utils/modificationUtils'
 import { getCurse, getCursedDerivedStats, getSheetAttributes, formatCurseElement, formatCurseChoiceDetail, getRitualDt, getRitualPeLimit } from '../../utils/curseUtils'
 import type { OrdemEquipment } from '../../types/equipment'
-import { getOrdemWeaponAttack } from '../../utils/ordemWeaponUtils'
+import { getOrdemWeaponAttack, getUnarmedAttack } from '../../utils/ordemWeaponUtils'
 import { getPatente } from '../../utils/patenteUtils'
 import type { OrdemWeapon } from '../../types/equipment'
 
@@ -61,10 +61,15 @@ export function ReviewStep() {
     .map(uid => ({ uid, item: getEquipmentByInstance(uid) }))
     .filter((u): u is { uid: string; item: OrdemEquipment } => Boolean(u.item))
   const weaponUnits = equipmentUnits.filter((u): u is { uid: string; item: OrdemWeapon } => u.item.type === 'weapon')
-  const weaponAttacks = weaponUnits.map(({ uid, item }) => ({
-    ...getOrdemWeaponAttack(item, draft, draft.equipmentModifications[uid] ?? [], draft.equipmentCurses[uid] ?? [], getWeaponSkillOverride(draft, uid)),
-    name: getInstanceLabel(draft, uid),
-  }))
+  // Artista Marcial: ataque desarmado (não é item de inventário) some no fim da lista, se houver o poder.
+  const unarmedAttack = getUnarmedAttack(draft)
+  const weaponAttacks = [
+    ...weaponUnits.map(({ uid, item }) => ({
+      ...getOrdemWeaponAttack(item, draft, draft.equipmentModifications[uid] ?? [], draft.equipmentCurses[uid] ?? [], getWeaponSkillOverride(draft, uid)),
+      name: getInstanceLabel(draft, uid),
+    })),
+    ...(unarmedAttack ? [unarmedAttack] : []),
+  ]
   const cursedUnits = equipmentUnits.filter(u => (draft.equipmentCurses[u.uid]?.length ?? 0) > 0)
   const missingComponents = getMissingRitualComponentElements(draft)
   const showFavoriteRitualPicker = hasFavoredRitualPower(draft) && allKnownRituals.length > 0

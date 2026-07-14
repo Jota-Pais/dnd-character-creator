@@ -271,4 +271,56 @@ describe('App (smoke) — Ordem Paranormal', () => {
     // Faca ocupa 1 espaço; capacidade (1 Força + 3 Intelecto) × 5 = 20.
     expect(screen.getByText(/Equipamento \(1\/20 espaços\)/)).toBeInTheDocument()
   })
+
+  // Ferramenta de Trabalho (origem Operário) soma +1 ataque/dano/margem de ameaça na arma escolhida (Fase 5).
+  function seedLaborerWithWorkTool() {
+    return {
+      ...ORDEM_EMPTY,
+      name: 'Pedreiro',
+      attributes: { agility: 1, strength: 2, intellect: 1, presence: 1, vigor: 1 },
+      origin: 'laborer',
+      class: 'combatant' as const,
+      nex: 5,
+      workToolWeapon: 'machadinha',
+      equipmentChoices: ['machadinha'],
+    }
+  }
+
+  it('Revisão: Ferramenta de Trabalho soma +1 no dano e amplia a margem de ameaça da machadinha', () => {
+    useAppStore.getState().setActiveSystem('ordem')
+    useOrdemStore.setState({ draft: seedLaborerWithWorkTool(), view: 'wizard', currentStep: 'review' })
+    render(<App />)
+    // Dano: Força 2 + Ferramenta 1 = +3. Margem de ameaça: x3 (19-20) → 19/x3 (18-20).
+    expect(screen.getByText(/1d6\+3 corte/)).toBeInTheDocument()
+    expect(screen.getByText(/Crít\. 19\/x3/)).toBeInTheDocument()
+  })
+
+  // Artista Marcial: ataque desarmado aparece em Ataques mesmo sem nenhum item equipado (Fase 5).
+  function seedMartialArtistAt35() {
+    return {
+      ...ORDEM_EMPTY,
+      name: 'Monge',
+      attributes: { agility: 1, strength: 2, intellect: 1, presence: 1, vigor: 1 },
+      origin: 'academic',
+      class: 'combatant' as const,
+      nex: 35,
+      powerChoices: ['martial-artist'],
+    }
+  }
+
+  it('Revisão: Artista Marcial mostra o ataque Desarmado (1d8 em NEX 35%+, com Força)', () => {
+    useAppStore.getState().setActiveSystem('ordem')
+    useOrdemStore.setState({ draft: seedMartialArtistAt35(), view: 'wizard', currentStep: 'review' })
+    render(<App />)
+    expect(screen.getByText('Desarmado')).toBeInTheDocument()
+    expect(screen.getByText(/1d8\+2 impacto/)).toBeInTheDocument()
+  })
+
+  it('Ficha imprimível: Artista Marcial mostra o ataque Desarmado', () => {
+    useAppStore.getState().setActiveSystem('ordem')
+    useOrdemStore.setState({ draft: seedMartialArtistAt35(), view: 'print' })
+    render(<App />)
+    expect(screen.getByText('Desarmado')).toBeInTheDocument()
+    expect(screen.getByText(/1d8\+2 impacto/)).toBeInTheDocument()
+  })
 })

@@ -1,7 +1,7 @@
 import type { OrdemCharacterDraft } from '../types/character'
 import type { OrdemWeapon, OrdemWeaponGrip, OrdemWeaponProficiency, OrdemWeaponCategory } from '../types/equipment'
 import type { SkillGrade } from './characterUtils'
-import { getSkillGrade, hasClassPower, getOriginEffects } from './characterUtils'
+import { getSkillGrade, hasClassPower, getOriginEffects, getWorkToolBonus } from './characterUtils'
 import { getModification } from './modificationUtils'
 import { getCurse, getSheetAttributes } from './curseUtils'
 
@@ -142,7 +142,9 @@ export function getOrdemWeaponAttack(
 
   const mods = modIds.map(getModification).filter((m): m is NonNullable<typeof m> => Boolean(m))
   const curses = curseIds.map(getCurse).filter((c): c is NonNullable<typeof c> => Boolean(c))
-  const attackBonus = GRADE_BONUS[getSkillGrade(draft, skillId)] + mods.reduce((s, m) => s + (m.attackBonus ?? 0), 0)
+  // Ferramenta de Trabalho (origem Operário): +1 em ataque/dano/margem de ameaça, só com a arma escolhida.
+  const workToolBonus = draft.workToolWeapon === weapon.id ? getWorkToolBonus(draft) : 0
+  const attackBonus = GRADE_BONUS[getSkillGrade(draft, skillId)] + workToolBonus + mods.reduce((s, m) => s + (m.attackBonus ?? 0), 0)
   // Poderes de classe com efeito incondicional no dano (F25): Tiro Certeiro (+AGI em armas de
   // disparo), Balística Avançada/Ninja Urbano (+2 em táticas de fogo/corpo a corpo),
   // Golpe Pesado (+1 dado corpo a corpo). E poderes de origem: Mão Pesada (+2 corpo a corpo),
@@ -154,10 +156,10 @@ export function getOrdemWeaponAttack(
     (hasClassPower(draft, 'urban-ninja') && weapon.proficiency === 'tactical' && weapon.weaponCategory === 'corpo_a_corpo' ? 2 : 0) +
     (weapon.weaponCategory === 'corpo_a_corpo' ? (originEffects.meleeDamageBonus ?? 0) : 0) +
     (weapon.weaponCategory === 'fogo' ? (originEffects.firearmDamageBonus ?? 0) : 0)
-  const damageBonus = (melee ? attrs.strength : 0) + powerDamage + mods.reduce((s, m) => s + (m.damageBonus ?? 0), 0)
+  const damageBonus = (melee ? attrs.strength : 0) + powerDamage + workToolBonus + mods.reduce((s, m) => s + (m.damageBonus ?? 0), 0)
   const extraDice = mods.reduce((s, m) => s + (m.damageDice ?? 0), 0) +
     (hasClassPower(draft, 'heavy-blow') && weapon.weaponCategory === 'corpo_a_corpo' ? 1 : 0)
-  const threatMargin = mods.reduce((s, m) => s + (m.threatMargin ?? 0), 0)
+  const threatMargin = workToolBonus + mods.reduce((s, m) => s + (m.threatMargin ?? 0), 0)
   const curseDamage = curses.map(c => c.extraDamage).filter(Boolean).map(d => ` +${d}`).join('')
 
   const typePt = DAMAGE_TYPE_PT[weapon.damageType] ?? weapon.damageType
@@ -174,4 +176,23 @@ export function getOrdemWeaponAttack(
   const range = curses.some(c => c.rangeIncrease) ? increaseRange(weapon.range) : weapon.range
 
   return { name: weapon.name, skill, rollDice, attackBonus, damage, critical, range }
+}
+
+/**
+ * Ataque desarmado do Artista Marcial: 1d6 (1d8 em NEX 35%+, 1d10 em NEX 70%+), letal, e "conta
+ * como arma" — por isso é modelado como uma arma corpo a corpo sintética (sem categoria/espaço,
+ * não é item de inventário) e passa pelo mesmo `getOrdemWeaponAttack`, herdando corretamente
+ * bônus condicionados a "armas corpo a corpo" (Golpe Pesado, Mão Pesada etc.). O tipo de dano
+ * (impacto) é inferido — o livro não especifica; não modela "conta como arma ágil" (nenhuma
+ * regra já implementada depende de uma arma ser "ágil").
+ */
+export function getUnarmedAttack(draft: OrdemCharacterDraft): OrdemWeaponAttack | null {
+  if (!hasClassPower(draft, 'martial-artist')) return null
+  const damage = draft.nex >= 70 ? '1d10' : draft.nex >= 35 ? '1d8' : '1d6'
+  const unarmedWeapon: OrdemWeapon = {
+    id: 'desarmado', name: 'Desarmado', category: 0, spaces: 0, type: 'weapon',
+    proficiency: 'simple', weaponCategory: 'corpo_a_corpo', grip: 'leve',
+    damage, critical: 'x2', range: '-', damageType: 'I',
+  }
+  return { ...getOrdemWeaponAttack(unarmedWeapon, draft, []), name: 'Desarmado' }
 }

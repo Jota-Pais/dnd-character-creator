@@ -132,7 +132,7 @@
     "name": "Operário",
     "description": "Pedreiro, industriário, operador de máquinas em uma fábrica — trabalho braçal que deu uma visão pragmática do mundo.",
     "skillProficiencies": ["fortitude", "profession"],
-    "power": { "name": "Ferramenta de Trabalho", "description": "Escolha uma arma simples ou tática que, a critério do mestre, poderia ser usada como ferramenta em sua profissão (como uma marreta para um pedreiro). Você sabe usar a arma escolhida e recebe +1 em testes de ataque, rolagens de dano e margem de ameaça com ela." },
+    "power": { "name": "Ferramenta de Trabalho", "description": "Escolha uma arma simples ou tática que, a critério do mestre, poderia ser usada como ferramenta em sua profissão (como uma marreta para um pedreiro). Você sabe usar a arma escolhida e recebe +1 em testes de ataque, rolagens de dano e margem de ameaça com ela.", "effects": { "workToolBonus": 1 } },
     "rollRange": [28, 28]
   },
   {

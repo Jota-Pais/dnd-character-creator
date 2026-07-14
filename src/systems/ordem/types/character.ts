@@ -96,6 +96,12 @@ export type OrdemCharacterDraft = {
    * (ver `getFavoriteEquipmentReduction`).
    */
   favoriteEquipment: string | null
+  /**
+   * Id do item de catálogo (arma simples ou tática) escolhido como Ferramenta de Trabalho
+   * (origem Operário): +1 em testes de ataque, rolagens de dano e margem de ameaça com ela
+   * (ver `getWorkToolBonus`). Mesmo esquema de `favoriteWeapon`, mas sem redução de categoria.
+   */
+  workToolWeapon: string | null
 }
 
 export const EMPTY_ATTRIBUTES: OrdemAttributes = {
@@ -133,4 +139,5 @@ export const EMPTY_DRAFT: OrdemCharacterDraft = {
   weaponSkillChoices: {},
   favoriteWeapon: null,
   favoriteEquipment: null,
+  workToolWeapon: null,
 }

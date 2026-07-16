@@ -8,7 +8,7 @@
 
 Desde **2026-07-09** o projeto está em **fase de playtest** com usuários reais. Feedback registrado item a item em `docs/playtest-feedback.md`; **F1–F29 concluídos**, **F30 (redesign visual do módulo Ordem) em andamento** — resumo na seção "Fase de Playtest" abaixo.
 
-**Próximo passo:** terminar os ajustes finos pendentes do F30 e seguir recebendo/priorizando feedback de playtest. Deploy estático segue adiado até o playtest fechar (Fase 8.3 do `ROADMAP.md`) — sem config de deploy no repo ainda.
+**Próximo passo:** terminar os ajustes finos pendentes do F30 e seguir recebendo/priorizando feedback de playtest. Deploy estático (Fase 8.3 do `ROADMAP.md`) foi antecipado pra rodar **durante** o playtest, não depois: CI de lint + testes via GitHub Actions já configurado; falta só o usuário conectar o repositório à Vercel (ação manual) pra publicar a URL de produção.
 
 ## Multiclasse D&D 5e — ✅ CONCLUÍDA (2026-07-14)
 

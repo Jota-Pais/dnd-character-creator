@@ -268,7 +268,7 @@ Decisão de formato: ficha **própria** (não a oficial da WotC), em português,
 | - | ----- | ------- |
 | 8.1 | Gamificação & Usabilidade | ⏩ **Parcialmente adiada.** "Notas para iniciantes" nos cards de raça/classe (badge "⭐ Bom para iniciantes") já existia desde 2026-06-03 — mantido aqui só por precisão histórica, item **já concluído**. Glossário ampliado, medidor de completude e sorteio de bugigangas seguem no Backlog de Polimentos. |
 | 8.2 | Auditoria final contra o livro | ✅ **Concluída (2026-07-08).** Script de auditoria confirmou estatísticas exatas do PHB pt-BR: 9 raças (20 variantes), 12 classes (40 subclasses - removido "Gloom Stalker" extraído por engano), 13 antecedentes, 42 talentos, 361 magias, loja 100% PHB. Tudo verificado. |
-| 8.3 | Deploy estático | ⏩ **Adiado para o Pós-Testes.** (Vercel/Netlify + smoke test do fluxo completo aguardando homologação local com usuários reais) |
+| 8.3 | Deploy estático | 🔄 **Em andamento (2026-07-16).** Decisão: antecipar o deploy pra durante o playtest (não esperar ele fechar), pra playtesters externos deixarem de depender de rodar o app localmente. CI de lint + testes via GitHub Actions (`.github/workflows/ci.yml`) já no repo. Falta: conectar o repositório à Vercel (ação manual do usuário, feita fora do Claude Code) e rodar o smoke test do fluxo completo (dnd5e + ordem) contra a URL de produção. |
 
 ---
 

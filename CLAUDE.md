@@ -19,7 +19,7 @@ Toda decisão de produto e design serve a esse objetivo: guiar o iniciante sem t
 - **SPA front-end pura**, sem backend
 - Persistência local no navegador (localStorage na V1, possivelmente IndexedDB no futuro)
 - **Sistemas Multi-RPG (Arquitetura Modular):** O núcleo da aplicação (`src/core`) é completamente agnóstico de regras de negócio. Todos os dados, regras e telas específicas ficam isolados nos seus respectivos módulos de sistema (ex: `src/systems/dnd5e`).
-- Deploy estático (Vercel/Netlify) quando chegar a hora
+- Deploy estático na Vercel, com CI de lint + testes via GitHub Actions (`.github/workflows/ci.yml`) a cada push/PR na `main`
 - Não sugerir API routes, server actions ou qualquer arquitetura com servidor próprio
 
 ## Versão de D&D

@@ -1,6 +1,6 @@
 # Progresso — D&D Character Creator (+ Ordem Paranormal)
 
-> Atualizado: 2026-07-15
+> Atualizado: 2026-07-16
 
 ## Status atual
 
@@ -38,6 +38,7 @@ Verificado no browser (Edge via Playwright) em cada fase, incluindo smoke de Pal
 - Fonte base do app aumentada (`html { font-size: 112.5% }`, 2026-07-12) e tons de texto secundário (`parchment` 400–700) clareados — legibilidade.
 - 2026-07-13: correção do seletor de perícia de ataque do Ordem (só Ocultismo via Lâmina Maldita, não escolha livre — ajuste ao F24); perícias mostram o atributo do qual derivam (ex. "Atletismo (FOR)"); passo Classe do Ordem explica as fórmulas de PV/PE/SAN com o cálculo por extenso pro NEX atual.
 - 2026-07-13: `DESIGN.md` criado — auditoria do sistema visual (cores, tipografia, radius, spacing, componentes), validada contra o schema oficial do formato (`npx @google/design.md lint`, 0 erros).
+- 2026-07-16: responsividade — `StepIndicator` (compartilhado) ganhou rolagem horizontal própria em vez de vazar a página ou ser cortado pelo `overflow-hidden` do Ordem; `Tooltip` não vaza mais a viewport perto da borda; D&D ganhou um `StepNav` compartilhado (`src/components/wizard/StepNav.tsx`, no molde do que o Ordem já tinha), substituindo 5-6 variações mobile/desktop duplicadas nos 8 passos. Redesenho pra celular de verdade (telas < ~500px) fica pra uma fase futura — o pedido era só não quebrar em janelas menores.
 
 ---
 

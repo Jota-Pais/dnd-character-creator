@@ -392,3 +392,8 @@ Pequenos detalhes, abstrações, gamificação ou ideias de melhoria contínua i
   - Sorteio de bugiganga aleatória na criação do personagem (dado pronto em `trinkets.json`, não consumido em lugar nenhum ainda).
 - **Exportação de PDF — Página de Magias (Grimório):** Como o banco de dados já possui a descrição completa de todas as magias (`spells.json`), uma excelente melhoria seria gerar uma segunda página (anexo) no PDF dedicada exclusivamente a imprimir os textos completos das magias conhecidas do personagem.
 - **Exportação de PDF — Traços de Antecedente:** A ficha atualmente resolve com precisão matemática as proficiências e equipamentos dos antecedentes. Seria uma boa adição considerar imprimir também a "habilidade narrativa" de cada antecedente (ex: "Contato Criminal" do Criminoso) na seção de Traços.
+- **Backlog V2 (fora de escopo até decisão explícita do usuário):**
+  - IndexedDB para fichas múltiplas (hoje localStorage; migrar só se o volume exigir)
+  - Raças e classes homebrew
+  - Suplementos: Xanathar's Guide, Tasha's Cauldron
+  - Domínio próprio pro deploy (hoje no subdomínio gratuito da Vercel)

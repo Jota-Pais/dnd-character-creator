@@ -144,7 +144,11 @@
     margin: 0 !important;
     padding: 0 !important;
   }
-  /* Quebra de página entre as páginas da ficha (ex.: Ordem, formato oficial em 2 páginas). */
-  .page-break { break-after: page; }
-  @page { margin: 1.2cm; }
+  /* Reserva a altura de uma folha pra "página 1" da ficha (ex.: Ordem, formato oficial em 2
+     páginas), sem forçar quebra: com break-after, uma tabela de Ataques longa já transbordava
+     naturalmente pra uma folha extra, e a quebra forçada ainda empurrava a "página 2" pra uma
+     TERCEIRA folha quase em branco. Com min-height, o conteúdo variável simplesmente continua
+     na mesma folha do transbordo em vez de sempre pular uma folha extra. */
+  .page-break { min-height: 270mm; }
+  @page { size: A4; margin: 1.2cm; }
 }

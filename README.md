@@ -2,6 +2,8 @@
 
 Aplicativo web pra criar fichas de RPG de mesa em poucos minutos, mesmo sem conhecer as regras: um assistente guiado conduz cada escolha, calcula tudo sozinho e entrega uma ficha pronta pra imprimir e levar pra mesa.
 
+**🌐 Acesse online:** [dnd-character-creator-gamma.vercel.app](https://dnd-character-creator-gamma.vercel.app/)
+
 ## 🎲 Sistemas
 
 - **D&D 5ª Edição (PHB 2014)** — personagens do nível 1 ao 20, com raças, classes, magias, antecedentes e equipamento do livro básico.
@@ -23,7 +25,7 @@ SPA 100% front-end, sem backend. A arquitetura é modular: o núcleo (`src/core`
 
 ## 🚀 Como Executar
 
-Pré-requisitos: [Node.js](https://nodejs.org/) 18+ e npm.
+Pré-requisitos: [Node.js](https://nodejs.org/) 20+ e npm.
 
 ```bash
 git clone https://github.com/Jota-Pais/dnd-character-creator.git

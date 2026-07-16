@@ -65,7 +65,9 @@ export function Dnd5eApp() {
             🖨 Imprimir / Salvar PDF
           </button>
         </div>
-        <PrintableSheet />
+        <div className="overflow-x-auto print:overflow-visible">
+          <PrintableSheet />
+        </div>
         <p className="no-print max-w-[820px] mx-auto mt-4 text-center text-parchment-700 text-xs">
           Dica: na janela de impressão, escolha "Salvar como PDF" como destino.
         </p>

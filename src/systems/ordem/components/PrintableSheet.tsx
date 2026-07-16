@@ -88,7 +88,7 @@ export function PrintableSheet() {
   const ritualDt = 10 + getPeLimit(draft.nex) + attributes.presence
 
   return (
-    <div className="print-sheet mx-auto max-w-[820px] bg-white text-gray-900 p-8 rounded-lg shadow-lg" style={{ fontFamily: 'Georgia, serif' }}>
+    <div className="print-sheet mx-auto w-[794px] shrink-0 bg-white text-gray-900 p-8 rounded-lg shadow-lg" style={{ fontFamily: 'Georgia, serif' }}>
 
       {/* ═══════════════ PÁGINA 1 ═══════════════ */}
       <div className="page-break">

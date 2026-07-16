@@ -220,7 +220,7 @@ export function PrintableSheet() {
   const isCaster = casters.length > 0
 
   return (
-    <div className="print-sheet mx-auto max-w-[820px] bg-white text-gray-900 p-8 rounded-lg shadow-lg" style={{ fontFamily: 'Georgia, serif' }}>
+    <div className="print-sheet mx-auto w-[794px] shrink-0 bg-white text-gray-900 p-8 rounded-lg shadow-lg" style={{ fontFamily: 'Georgia, serif' }}>
       {/* Cabeçalho */}
       <header className="border-b-2 border-gray-800 pb-3 mb-4">
         <h1 className="text-2xl font-bold">{draft.name.trim() || 'Personagem sem nome'}</h1>

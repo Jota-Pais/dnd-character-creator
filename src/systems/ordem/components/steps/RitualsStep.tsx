@@ -17,7 +17,7 @@ export function RitualsStep() {
 
   if (charClass !== 'occultist') {
     return (
-      <div className="max-w-2xl mx-auto space-y-8 animate-fade-in">
+      <div className="max-w-2xl mx-auto space-y-8 animate-fade-in pb-20">
         <h2 className="text-2xl font-fantasy text-gold-400 mb-6 flex items-center gap-2">
           {STEP_LABELS.rituals}
         </h2>
@@ -48,7 +48,7 @@ export function RitualsStep() {
   const isComplete = isRitualStepComplete(nex, charClass, ritualChoices, ritualElementChoices)
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8 animate-fade-in">
+    <div className="max-w-3xl mx-auto space-y-8 animate-fade-in pb-20">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-fantasy text-gold-400 flex items-center gap-2">
           {STEP_LABELS.rituals}

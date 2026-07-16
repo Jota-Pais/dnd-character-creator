@@ -14,6 +14,7 @@ import {
 import { getAllFeats, getFeat } from '../../utils/featUtils'
 import { getClass } from '../../utils/classUtils'
 import { getPrimaryLevel } from '../../utils/multiclassUtils'
+import { StepNav } from '../../../../components/wizard/StepNav'
 
 const ACCENT = '#c0961a'
 type Mode = 'plus2' | 'split' | 'feat'
@@ -56,7 +57,7 @@ export function ImprovementsStep() {
             {' '}(guerreiro no 6, ladino no 10).
           </p>
         </div>
-        <StepNav canAdvance onPrev={prevStep} onNext={nextStep} />
+        <StepNav canAdvance onPrev={prevStep} onNext={nextStep} accent={ACCENT} />
       </div>
     )
   }
@@ -108,7 +109,7 @@ export function ImprovementsStep() {
         })}
       </div>
 
-      <StepNav canAdvance={canAdvance} onPrev={prevStep} onNext={nextStep} />
+      <StepNav canAdvance={canAdvance} onPrev={prevStep} onNext={nextStep} accent={ACCENT} />
     </div>
   )
 }
@@ -273,27 +274,5 @@ function ModeButton({ active, onClick, children }: { active: boolean; onClick: (
     >
       {children}
     </button>
-  )
-}
-
-function StepNav({ canAdvance, onPrev, onNext }: { canAdvance: boolean; onPrev: () => void; onNext: () => void }) {
-  return (
-    <div className="flex justify-between items-center mt-8">
-      <button onClick={onPrev} className="px-4 py-2 text-parchment-500 hover:text-parchment-300 transition-colors text-sm font-fantasy">
-        ← Voltar
-      </button>
-      <button
-        onClick={onNext}
-        disabled={!canAdvance}
-        className="px-6 py-2 rounded-xl font-fantasy font-bold text-sm tracking-wide transition-all"
-        style={{
-          backgroundColor: canAdvance ? ACCENT : '#3a2614',
-          color: canAdvance ? '#0a0704' : '#5a3e24',
-          cursor: canAdvance ? 'pointer' : 'not-allowed',
-        }}
-      >
-        Continuar ✦
-      </button>
-    </div>
   )
 }

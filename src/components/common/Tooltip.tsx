@@ -41,7 +41,7 @@ export function Tooltip({ term, definition }: Props) {
       {open && (
         <span
           role="tooltip"
-          className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 z-50 w-56 rounded-lg border border-parchment-700 bg-parchment-950 px-3 py-2 text-left text-xs leading-relaxed text-parchment-300 normal-case tracking-normal shadow-xl"
+          className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 z-50 w-56 max-w-[min(14rem,calc(100vw-2rem))] rounded-lg border border-parchment-700 bg-parchment-950 px-3 py-2 text-left text-xs leading-relaxed text-parchment-300 normal-case tracking-normal shadow-xl"
         >
           <span className="mb-0.5 block font-bold text-gold-400">{term}</span>
           {definition}

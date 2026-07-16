@@ -7,6 +7,7 @@ import { StandardArrayPanel } from '../abilities/StandardArrayPanel'
 import { PointBuyPanel } from '../abilities/PointBuyPanel'
 import { RollPanel } from '../abilities/RollPanel'
 import { CustomPanel } from '../abilities/CustomPanel'
+import { StepNav } from '../../../../components/wizard/StepNav'
 
 const ACCENT = '#d4900a'
 
@@ -89,52 +90,7 @@ export function AbilitiesStep() {
         </div>
       )}
 
-      {/* Navegação — mobile (fixo no rodapé) */}
-      <div
-        className="fixed bottom-0 left-0 right-0 border-t border-parchment-900 px-4 py-3 flex justify-between items-center lg:hidden"
-        style={{ backgroundColor: '#0a0704ee', backdropFilter: 'blur(8px)' }}
-      >
-        <button
-          onClick={prevStep}
-          className="px-4 py-2 text-parchment-500 hover:text-parchment-300 transition-colors text-sm font-fantasy"
-        >
-          ← Voltar
-        </button>
-        <button
-          onClick={nextStep}
-          disabled={!canAdvance}
-          className="px-6 py-2 rounded-xl font-fantasy font-bold text-sm tracking-wide transition-all"
-          style={{
-            backgroundColor: canAdvance ? ACCENT : '#3a2614',
-            color: canAdvance ? '#0a0704' : '#5a3e24',
-            cursor: canAdvance ? 'pointer' : 'not-allowed',
-          }}
-        >
-          Continuar ✦
-        </button>
-      </div>
-
-      {/* Navegação — desktop (inline no rodapé do conteúdo) */}
-      <div className="hidden lg:flex justify-between items-center pt-4 border-t border-parchment-900 mt-2">
-        <button
-          onClick={prevStep}
-          className="px-4 py-2 text-parchment-500 hover:text-parchment-300 transition-colors font-fantasy text-sm"
-        >
-          ← Voltar
-        </button>
-        <button
-          onClick={nextStep}
-          disabled={!canAdvance}
-          className="px-6 py-2 rounded-xl font-fantasy font-bold text-sm tracking-wide transition-all"
-          style={{
-            backgroundColor: canAdvance ? ACCENT : '#3a2614',
-            color: canAdvance ? '#0a0704' : '#5a3e24',
-            cursor: canAdvance ? 'pointer' : 'not-allowed',
-          }}
-        >
-          Continuar ✦
-        </button>
-      </div>
+      <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={canAdvance} accent={ACCENT} />
     </div>
   )
 }

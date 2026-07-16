@@ -9,15 +9,15 @@ export function StepIndicator({ steps, currentStepId, onStepClick }: Props) {
   const currentIdx = steps.findIndex(s => s.id === currentStepId)
 
   return (
-    <nav aria-label="Etapas de criação">
-      <ol className="flex items-center gap-0">
+    <nav aria-label="Etapas de criação" className="w-full min-w-0 overflow-x-auto overflow-y-hidden">
+      <ol className="flex items-center gap-0 w-max mx-auto px-1">
         {steps.map((step, idx) => {
           const isDone = idx < currentIdx
           const isActive = idx === currentIdx
           const isClickable = Boolean(onStepClick && step.clickable && !isActive)
 
           return (
-            <li key={step.id} className="flex items-center">
+            <li key={step.id} className="flex items-center shrink-0">
               <button
                 type="button"
                 onClick={() => { if (isClickable) onStepClick?.(step.id) }}

@@ -4,6 +4,7 @@ import { getClass, isActiveCaster } from '../../utils/classUtils'
 import { allClassEntries, getPrimaryLevel } from '../../utils/multiclassUtils'
 import { isStepComplete } from '../../utils/draftValidation'
 import { InfoTooltip } from '../common/InfoTooltip'
+import { StepNav } from '../../../../components/wizard/StepNav'
 import {
   getCantrips,
   getSpellsByLevel,
@@ -61,7 +62,7 @@ export function SpellStep() {
   const multi = casters.length > 1
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 pb-24 lg:pb-0">
+    <div className="flex flex-col lg:flex-row gap-6 pb-24">
 
       {/* ── Lista (seções por classe) ── */}
       <div className="lg:w-3/5">
@@ -108,36 +109,8 @@ export function SpellStep() {
         </div>
       </div>
 
-      {/* ── Nav ── */}
-      <div
-        className="fixed bottom-0 left-0 right-0 border-t border-parchment-900 px-4 py-3 flex justify-between items-center lg:hidden"
-        style={{ backgroundColor: '#0a0704ee', backdropFilter: 'blur(8px)' }}
-      >
-        <button onClick={prevStep} className="px-4 py-2 text-parchment-500 hover:text-parchment-300 text-sm font-fantasy">← Voltar</button>
-        <NavNext canAdvance={canAdvance} onNext={nextStep} />
-      </div>
-      <div className="hidden lg:flex lg:absolute lg:bottom-8 lg:right-8 gap-3">
-        <button onClick={prevStep} className="px-4 py-2 text-parchment-500 hover:text-parchment-300 font-fantasy text-sm">← Voltar</button>
-        <NavNext canAdvance={canAdvance} onNext={nextStep} />
-      </div>
+      <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={canAdvance} accent={ACCENT} />
     </div>
-  )
-}
-
-function NavNext({ canAdvance, onNext }: { canAdvance: boolean; onNext: () => void }) {
-  return (
-    <button
-      onClick={onNext}
-      disabled={!canAdvance}
-      className="px-6 py-2 rounded-xl font-fantasy font-bold text-sm tracking-wide transition-all"
-      style={{
-        backgroundColor: canAdvance ? ACCENT : '#3a2614',
-        color: canAdvance ? '#0a0704' : '#5a3e24',
-        cursor: canAdvance ? 'pointer' : 'not-allowed',
-      }}
-    >
-      Continuar ✦
-    </button>
   )
 }
 

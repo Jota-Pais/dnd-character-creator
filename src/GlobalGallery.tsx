@@ -264,7 +264,7 @@ function CharacterRow({ char, onOpen, onDuplicate, onExport, onDelete }: {
         <p className="font-fantasy font-bold text-base truncate" style={{ color: '#f6ece0' }}>{name}</p>
         <p className="text-[12.5px] truncate" style={{ color: '#b3a094' }}>{subtitle}</p>
       </div>
-      <div className="text-[13px] hidden sm:block" style={{ color: '#cbb8a8' }}>
+      <div className="text-[13px] invisible sm:visible" style={{ color: '#cbb8a8' }}>
         {ui.levelLabel} <span className="font-fantasy font-black text-base" style={{ color: ui.accent }}>{levelValue}</span>
       </div>
       <button

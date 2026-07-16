@@ -75,7 +75,7 @@ export function Dnd5eApp() {
 
   return (
     <div className="min-h-screen">
-      <div className="max-w-6xl mx-auto px-4 pb-28 lg:pb-10">
+      <div className="max-w-6xl mx-auto px-4 pb-24">
 
         {/* Header */}
         <header className="pt-8 pb-6 text-center">

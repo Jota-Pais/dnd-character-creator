@@ -33,6 +33,7 @@ import {
 } from '../../utils/spellUtils'
 import { exportCharacter } from '../../utils/storage'
 import { InfoTooltip } from '../common/InfoTooltip'
+import { StepNav } from '../../../../components/wizard/StepNav'
 import type { TermId } from '../../utils/glossary'
 import type { AbilityScore } from '../../types/race'
 import type { EquipmentOption } from '../../types/equipment'
@@ -810,44 +811,13 @@ export function ReviewStep() {
         </button>
       </div>
 
-      {/* Mobile nav */}
-      <div
-        className="fixed bottom-0 left-0 right-0 border-t border-parchment-900 px-4 py-3 flex justify-between items-center lg:hidden"
-        style={{ backgroundColor: '#0a0704ee', backdropFilter: 'blur(8px)' }}
-      >
-        <button
-          onClick={prevStep}
-          className="px-4 py-2 text-parchment-500 hover:text-parchment-300 transition-colors text-sm font-fantasy"
-        >
-          ← Voltar
-        </button>
-        <button
-          onClick={handleReset}
-          className="px-5 py-2 rounded-xl font-fantasy font-bold text-sm bg-gold-500 text-parchment-950 hover:bg-gold-400 transition-colors"
-        >
-          Concluir ✓
-        </button>
-      </div>
-
-      {/* Desktop nav */}
-      <div className="hidden lg:flex justify-between items-center pt-2 border-t border-parchment-900">
-        <button
-          onClick={prevStep}
-          className="px-4 py-2 text-parchment-500 hover:text-parchment-300 transition-colors font-fantasy text-sm"
-        >
-          ← Voltar
-        </button>
-        <button
-          onClick={handleReset}
-          title="Salva a ficha e volta para a galeria"
-          className="px-5 py-2 rounded-xl font-fantasy font-bold text-sm bg-gold-500 text-parchment-950 hover:bg-gold-400 transition-colors"
-        >
-          Concluir ✓ (voltar à galeria)
-        </button>
-      </div>
-
-      {/* Bottom padding for mobile nav */}
-      <div className="h-16 lg:hidden" />
+      <StepNav
+        onPrev={prevStep}
+        onNext={handleReset}
+        canAdvance
+        nextLabel="Concluir ✓"
+        nextTitle="Salva a ficha e volta para a galeria"
+      />
     </div>
   )
 }

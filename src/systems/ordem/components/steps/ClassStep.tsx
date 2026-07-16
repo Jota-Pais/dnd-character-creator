@@ -76,7 +76,7 @@ export function ClassStep() {
       <div className="lg:w-1/2 xl:w-3/5">
         {selected && stats ? (
           <div className="sticky top-4 space-y-4">
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <Stat label={`PV (NEX ${draft.nex}%)`} value={String(stats.hp)} detail={statBreakdown(selected.hp.initialFlat, selected.hp.perNexFlat, attrs.vigor, 'VIG', tiers)} />
               <Stat label={`PE (NEX ${draft.nex}%)`} value={String(stats.pe)} detail={statBreakdown(selected.pe.initialFlat, selected.pe.perNexFlat, attrs.presence, 'PRE', tiers)} />
               <Stat label="Sanidade" value={String(stats.sanity)} detail={tiers > 0 ? `${selected.sanity.initialFlat} + ${tiers}×${selected.sanity.perNex}` : `${selected.sanity.initialFlat}`} />

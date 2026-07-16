@@ -9,6 +9,7 @@ import {
 import type { BackgroundEquipment, BackgroundEquipmentItem, FixedItem, InventoryItem } from '../../types/equipment'
 import { EquipmentMethodSelector } from '../equipment/EquipmentMethodSelector'
 import { EquipmentChoiceCard } from '../equipment/EquipmentChoiceCard'
+import { StepNav } from '../../../../components/wizard/StepNav'
 
 export function EquipmentStep() {
   const draft = useCharacterStore(state => state.draft)
@@ -143,52 +144,7 @@ export function EquipmentStep() {
         </div>
       )}
 
-      {/* Mobile nav */}
-      <div
-        className="fixed bottom-0 left-0 right-0 border-t border-parchment-900 px-4 py-3 flex justify-between items-center lg:hidden"
-        style={{ backgroundColor: '#0a0704ee', backdropFilter: 'blur(8px)' }}
-      >
-        <button
-          onClick={prevStep}
-          className="px-4 py-2 text-parchment-500 hover:text-parchment-300 transition-colors text-sm font-fantasy"
-        >
-          ← Voltar
-        </button>
-        <button
-          onClick={nextStep}
-          disabled={!canAdvance}
-          className="px-6 py-2 rounded-xl font-fantasy font-bold text-sm tracking-wide transition-all"
-          style={{
-            backgroundColor: canAdvance ? accent : '#3a2614',
-            color: canAdvance ? '#0a0704' : '#5a3e24',
-            cursor: canAdvance ? 'pointer' : 'not-allowed',
-          }}
-        >
-          Continuar ✦
-        </button>
-      </div>
-
-      {/* Desktop nav */}
-      <div className="hidden lg:flex justify-end gap-3 pt-4">
-        <button
-          onClick={prevStep}
-          className="px-4 py-2 text-parchment-500 hover:text-parchment-300 transition-colors font-fantasy text-sm"
-        >
-          ← Voltar
-        </button>
-        <button
-          onClick={nextStep}
-          disabled={!canAdvance}
-          className="px-6 py-2 rounded-xl font-fantasy font-bold text-sm tracking-wide transition-all"
-          style={{
-            backgroundColor: canAdvance ? accent : '#3a2614',
-            color: canAdvance ? '#0a0704' : '#5a3e24',
-            cursor: canAdvance ? 'pointer' : 'not-allowed',
-          }}
-        >
-          Continuar ✦
-        </button>
-      </div>
+      <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={canAdvance} accent={accent} />
     </div>
   )
 }

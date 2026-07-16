@@ -2,7 +2,7 @@ import type { OrdemCharacterDraft } from '../types/character'
 import type { OrdemEquipment } from '../types/equipment'
 import type { OrdemPatente } from '../types/patente'
 import type { OrdemElement } from '../types/ritual'
-import { getRitualById, getRitualSlotsCount } from './ritualUtils'
+import { getRitualById, getRitualSlotsCount, getSlotRitualElement, getGrantedRitualElement } from './ritualUtils'
 import equipmentsJson from '../data/equipments.json'
 import { getOrdemClass } from './classUtils'
 import { getPatente, getCategoryLimit } from './patenteUtils'
@@ -347,16 +347,19 @@ export function hasWeaponProficiency(draft: OrdemCharacterDraft, item: OrdemEqui
  */
 export function getMissingRitualComponentElements(draft: OrdemCharacterDraft): OrdemElement[] {
   if (draft.class !== 'occultist') return []
-  // Rituais escolhidos + concedidos por trilha (ex.: Amaldiçoar Arma via Lâmina Maldita) exigem componentes.
-  const chosenRituals = draft.ritualChoices
-    .slice(0, getRitualSlotsCount(draft.nex))
-    .map(id => (id ? getRitualById(id) : undefined))
-  const grantedRituals = getGrantedRituals(draft).map(g => g.ritual)
   const needed = new Set<OrdemElement>()
-  for (const ritual of [...chosenRituals, ...grantedRituals]) {
-    if (!ritual) continue
-    // Ritual multi-elemento vale pelo elemento escolhido ao aprender (ex.: Amaldiçoar Arma).
-    const element = ritual.elements.length > 1 ? draft.ritualElementChoices[ritual.id] : ritual.elements[0]
+  // Rituais escolhidos pelo jogador — elemento resolvido por slot (rituais multi-elemento como
+  // Amaldiçoar Arma podem ter mais de uma instância, uma por elemento).
+  const chosenSlots = draft.ritualChoices.slice(0, getRitualSlotsCount(draft.nex))
+  chosenSlots.forEach((id, slotIndex) => {
+    const ritual = id ? getRitualById(id) : undefined
+    if (!ritual) return
+    const element = getSlotRitualElement(ritual, slotIndex, draft.ritualElementChoices)
+    if (element && element !== 'fear') needed.add(element)
+  })
+  // Rituais concedidos por trilha (ex.: Amaldiçoar Arma via Lâmina Maldita).
+  for (const { ritual } of getGrantedRituals(draft)) {
+    const element = getGrantedRitualElement(ritual, draft.ritualElementChoices)
     if (element && element !== 'fear') needed.add(element)
   }
   const owned = new Set<OrdemElement | undefined>(draft.equipmentChoices.map(uid => getEquipmentByInstance(uid)?.ritualComponentFor))

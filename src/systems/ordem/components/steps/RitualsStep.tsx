@@ -39,8 +39,8 @@ export function RitualsStep() {
     updateDraft({ ritualChoices: newChoices })
   }
 
-  const handleElement = (ritualId: string, element: OrdemElement) => {
-    updateDraft({ ritualElementChoices: { ...ritualElementChoices, [ritualId]: element } })
+  const handleElement = (slotIndex: number, element: OrdemElement) => {
+    updateDraft({ ritualElementChoices: { ...ritualElementChoices, [slotIndex]: element } })
   }
 
   // Usa o mesmo validador do store (exige slots preenchidos, sem repetição e com o elemento
@@ -75,12 +75,14 @@ export function RitualsStep() {
           // no NEX em que o ritual foi ganho.
           const slotMaxCircle = isInitial ? 1 : getMaxRitualCircle(slotNex)
           // Não é possível conhecer o mesmo ritual duas vezes: exclui os já escolhidos em
-          // outros slots (mantendo sempre a escolha do próprio slot).
+          // outros slots (mantendo sempre a escolha do próprio slot). Exceção: rituais multi-
+          // elemento (ex.: Amaldiçoar Arma) podem ser escolhidos de novo — uma instância por
+          // elemento (FAQ oficial) —, a duplicata real (mesmo elemento 2×) é barrada abaixo.
           const chosenElsewhere = new Set(
             ritualChoices.slice(0, slotCount).filter((id, idx): id is string => Boolean(id) && idx !== i)
           )
           const options = getAvailableRituals(slotMaxCircle as 1|2|3|4)
-            .filter(r => r.id === selectedId || !chosenElsewhere.has(r.id))
+            .filter(r => r.id === selectedId || ritualNeedsElementChoice(r) || !chosenElsewhere.has(r.id))
 
           return (
             <div key={i} className="bg-parchment-950/50 border border-parchment-900 rounded-xl p-5 shadow-sm">
@@ -153,23 +155,26 @@ export function RitualsStep() {
                           <div className="mt-3 pt-3 border-t border-parchment-900/50">
                             <label className="block text-xs font-bold text-gold-500 mb-1.5">
                               Escolha o elemento deste ritual
-                              <span className="font-normal text-parchment-600"> — ele passa a ser só desse elemento (define o tipo do dano)</span>
+                              <span className="font-normal text-parchment-600"> — ele passa a ser só desse elemento (define o tipo do dano). Pode aprender de novo em outro slot, com outro elemento.</span>
                             </label>
                             <div className="flex flex-wrap gap-1.5">
                               {r.elements.map(e => {
-                                const active = ritualElementChoices[r.id] === e
+                                const active = ritualElementChoices[i] === e
+                                const usedElsewhere = !active && ritualChoices.some((otherId, idx) => idx !== i && otherId === r.id && ritualElementChoices[idx] === e)
                                 return (
                                   <button
                                     key={e}
-                                    onClick={() => handleElement(r.id, e)}
-                                    className={`text-xs uppercase tracking-wider font-bold px-2.5 py-1 rounded border transition-all ${active ? ELEMENT_COLORS[e] : 'text-parchment-600 border-parchment-800 hover:border-parchment-600'}`}
+                                    disabled={usedElsewhere}
+                                    title={usedElsewhere ? 'Já usado em outro slot com este ritual' : undefined}
+                                    onClick={() => handleElement(i, e)}
+                                    className={`text-xs uppercase tracking-wider font-bold px-2.5 py-1 rounded border transition-all ${active ? ELEMENT_COLORS[e] : usedElsewhere ? 'text-parchment-800 border-parchment-900 opacity-40 cursor-not-allowed' : 'text-parchment-600 border-parchment-800 hover:border-parchment-600'}`}
                                   >
                                     {ELEMENT_NAMES[e]}
                                   </button>
                                 )
                               })}
                             </div>
-                            {!ritualElementChoices[r.id] && (
+                            {!ritualElementChoices[i] && (
                               <p className="text-red-400/80 text-xs mt-1.5">Escolha um elemento para poder avançar.</p>
                             )}
                           </div>

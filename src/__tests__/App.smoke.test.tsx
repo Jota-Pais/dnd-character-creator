@@ -89,7 +89,9 @@ describe('App (smoke) — Ordem Paranormal', () => {
       nex: 5,
       ritualChoices: [RITUALS[0].id, RITUALS[1].id, RITUALS[2].id],
       // RITUALS[2] = amaldicoar-arma (multi-elemento): exige escolha de elemento (F9).
-      ritualElementChoices: { [RITUALS[2].id]: 'blood' as const },
+      // Chave = índice do slot (não o id do ritual) — permite a mesma instância multi-elemento
+      // em mais de um slot, uma por elemento.
+      ritualElementChoices: { 2: 'blood' as const },
       equipmentChoices: ['faca'],
     }
   }

@@ -280,8 +280,12 @@ export function getWeaponSkillOverride(draft: OrdemCharacterDraft, uid: string):
  * Ritual Predileto (−1 PE no ritual escolhido), Lâmina Maldita (−1 PE no Amaldiçoar Arma) e
  * Tatuagem Ritualística (−1 PE em ritual de alcance pessoal que mira só você). Acumulam
  * (texto do Ritual Predileto); nunca abaixo de 0.
+ *
+ * `ritualElement` é o elemento já resolvido da INSTÂNCIA (ver `getSlotRitualElement`/
+ * `getGrantedRitualElement`) — necessário pra rituais multi-elemento, que podem ser conhecidos
+ * mais de uma vez (uma por elemento). Omitir só é seguro pra rituais de elemento único.
  */
-export function getRitualCost(draft: OrdemCharacterDraft, ritual: OrdemRitual): { cost: number; notes: string[] } {
+export function getRitualCost(draft: OrdemCharacterDraft, ritual: OrdemRitual, ritualElement?: OrdemElement): { cost: number; notes: string[] } {
   let cost = RITUAL_COST[ritual.circle]
   const notes: string[] = []
   if (hasFavoredRitualPower(draft) && draft.favoriteRitual === ritual.id) {
@@ -292,11 +296,11 @@ export function getRitualCost(draft: OrdemCharacterDraft, ritual: OrdemRitual): 
     cost -= 1
     notes.push('Lâmina Maldita −1')
   }
-  // Mestre em Elemento: −1 PE nos rituais do elemento escolhido (multi-elemento usa o escolhido ao aprender).
+  // Mestre em Elemento: −1 PE nos rituais do elemento escolhido (multi-elemento usa o elemento da instância).
   const masterElement = getChosenElementForPower(draft, 'element-master')
   if (masterElement) {
-    const ritualElement = ritual.elements.length > 1 ? draft.ritualElementChoices[ritual.id] : ritual.elements[0]
-    if (ritualElement === masterElement) {
+    const element = ritualElement ?? (ritual.elements.length > 1 ? undefined : ritual.elements[0])
+    if (element === masterElement) {
       cost -= 1
       notes.push('Mestre em Elemento −1')
     }

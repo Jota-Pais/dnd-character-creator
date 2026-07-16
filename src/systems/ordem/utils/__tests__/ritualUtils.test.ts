@@ -116,22 +116,38 @@ describe('escolha de elemento em rituais multi-elemento (F9 — Amaldiçoar Arma
   })
 
   it('isRitualStepComplete exige o elemento escolhido para Amaldiçoar Arma', () => {
-    const choices = ['amaldicoar-arma', 'r2', 'r3'] // 3 slots (NEX 5%)
+    const choices = ['amaldicoar-arma', 'r2', 'r3'] // 3 slots (NEX 5%), amaldicoar-arma no slot 0
     // sem elemento escolhido → incompleto
     expect(isRitualStepComplete(5, 'occultist', choices)).toBe(false)
     expect(isRitualStepComplete(5, 'occultist', choices, {})).toBe(false)
-    // com elemento escolhido → completo
-    expect(isRitualStepComplete(5, 'occultist', choices, { 'amaldicoar-arma': 'blood' })).toBe(true)
+    // com elemento escolhido (chave = índice do slot, não o id do ritual) → completo
+    expect(isRitualStepComplete(5, 'occultist', choices, { 0: 'blood' })).toBe(true)
   })
 
   it('formatRitualElementLabel: multi-elemento mostra só o escolhido; sem escolha, mostra todos', () => {
     // com escolha → só o elemento escolhido
-    expect(formatRitualElementLabel(amaldicoar, { 'amaldicoar-arma': 'blood' })).toBe('Sangue')
+    expect(formatRitualElementLabel(amaldicoar, 'blood')).toBe('Sangue')
     // sem escolha → todos os 4 elementos (independente da ordem no dado)
-    const allLabel = formatRitualElementLabel(amaldicoar, {})
+    const allLabel = formatRitualElementLabel(amaldicoar)
     expect(allLabel.split('/').sort()).toEqual(['Conhecimento', 'Energia', 'Morte', 'Sangue'])
     // ritual de elemento único → sempre o próprio elemento (a escolha não se aplica)
     const soloLabel = formatRitualElementLabel(singleElement)
     expect(soloLabel.includes('/')).toBe(false)
+  })
+
+  it('isRitualStepComplete permite Amaldiçoar Arma em 2 slots, uma por elemento (FAQ oficial)', () => {
+    const choices = ['amaldicoar-arma', 'amaldicoar-arma', 'r3'] // 2 instâncias + 1 ritual comum
+    // elementos diferentes nas 2 instâncias → completo
+    expect(isRitualStepComplete(5, 'occultist', choices, { 0: 'blood', 1: 'death' })).toBe(true)
+    // mesmo elemento nas 2 instâncias → duplicata real, incompleto
+    expect(isRitualStepComplete(5, 'occultist', choices, { 0: 'blood', 1: 'blood' })).toBe(false)
+    // uma das instâncias sem elemento escolhido → incompleto
+    expect(isRitualStepComplete(5, 'occultist', choices, { 0: 'blood' })).toBe(false)
+  })
+
+  it('isRitualStepComplete ainda rejeita repetição de ritual de elemento único', () => {
+    // singleElement não é multi-elemento: repetir o mesmo id continua proibido.
+    const choices = [singleElement.id, singleElement.id, 'r3']
+    expect(isRitualStepComplete(5, 'occultist', choices)).toBe(false)
   })
 })

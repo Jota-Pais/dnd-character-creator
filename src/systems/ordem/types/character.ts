@@ -49,8 +49,12 @@ export type OrdemCharacterDraft = {
   /** Rituais aprendidos (Escolhido pelo Outro Lado): 3 iniciais + 1 a cada aumento de NEX. */
   ritualChoices: (string | null)[]
   /**
-   * Elemento escolhido para rituais multi-elemento (ex.: Amaldiçoar Arma), keyed pelo id do ritual.
-   * O livro: "Quando aprender este ritual, escolha um elemento... o ritual passa a ser do elemento escolhido."
+   * Elemento escolhido para cada INSTÂNCIA de ritual multi-elemento (ex.: Amaldiçoar Arma).
+   * O livro: "Quando aprender este ritual, escolha um elemento... o ritual passa a ser do elemento
+   * escolhido." Por FAQ oficial, um ritual multi-elemento pode ser conhecido mais de uma vez, uma
+   * por elemento — por isso a chave é por INSTÂNCIA, não por id do ritual: índice do slot em
+   * `ritualChoices` (ex. "2") para instâncias escolhidas pelo jogador, ou `granted:<id do ritual>`
+   * para instâncias concedidas por trilha (ver `getSlotRitualElement`/`getGrantedRitualElement`).
    */
   ritualElementChoices: Record<string, OrdemElement>
   /** Atributo aumentado em cada slot alcançado (NEX 20/50/80/95), teto 5. */

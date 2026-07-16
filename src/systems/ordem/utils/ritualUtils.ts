@@ -29,15 +29,36 @@ export function formatElements(elements: OrdemElement[]): string {
 
 /**
  * Rótulo de elemento(s) de um ritual para exibição: se for multi-elemento (ex.: Amaldiçoar Arma)
- * e o jogador já escolheu um elemento, mostra só o escolhido; senão, lista todos.
+ * e a instância já tiver um elemento escolhido, mostra só o escolhido; senão, lista todos.
  */
-export function formatRitualElementLabel(
+export function formatRitualElementLabel(ritual: OrdemRitual, chosenElement?: OrdemElement): string {
+  if (ritual.elements.length > 1 && chosenElement) return ELEMENT_NAMES[chosenElement]
+  return formatElements(ritual.elements)
+}
+
+/**
+ * Elemento de uma instância de ritual escolhida num slot de `ritualChoices`. Rituais multi-
+ * elemento (ex.: Amaldiçoar Arma) podem ser conhecidos mais de uma vez — uma por elemento
+ * (FAQ oficial) —, por isso a escolha é guardada por slot, não por id do ritual.
+ */
+export function getSlotRitualElement(
+  ritual: OrdemRitual,
+  slotIndex: number,
+  ritualElementChoices: Record<string, OrdemElement> = {}
+): OrdemElement | undefined {
+  return ritual.elements.length > 1 ? ritualElementChoices[slotIndex] : ritual.elements[0]
+}
+
+/** Chave de `ritualElementChoices` para um ritual multi-elemento concedido por trilha (fora de slot). */
+export function grantedRitualElementKey(ritualId: string): string {
+  return `granted:${ritualId}`
+}
+
+export function getGrantedRitualElement(
   ritual: OrdemRitual,
   ritualElementChoices: Record<string, OrdemElement> = {}
-): string {
-  const chosen = ritualElementChoices[ritual.id]
-  if (ritual.elements.length > 1 && chosen) return ELEMENT_NAMES[chosen]
-  return formatElements(ritual.elements)
+): OrdemElement | undefined {
+  return ritual.elements.length > 1 ? ritualElementChoices[grantedRitualElementKey(ritual.id)] : ritual.elements[0]
 }
 
 export function getRitualById(id: string): OrdemRitual | undefined {
@@ -87,12 +108,23 @@ export function isRitualStepComplete(
   const active = ritualChoices.slice(0, expectedCount)
   // Todos os slots preenchidos...
   if (active.length !== expectedCount || active.some(id => !id)) return false
-  // ...e sem rituais repetidos (não se conhece o mesmo ritual duas vezes).
-  if (new Set(active as string[]).size !== expectedCount) return false
-  // ...e todo ritual multi-elemento (ex.: Amaldiçoar Arma) precisa ter um elemento escolhido.
-  for (const id of active as string[]) {
+  // ...sem instâncias repetidas: rituais de elemento único não podem repetir; rituais multi-
+  // elemento (ex.: Amaldiçoar Arma) podem ser conhecidos mais de uma vez, uma por elemento
+  // (FAQ oficial) — o que não pode repetir é a combinação ritual+elemento.
+  const seenInstances = new Set<string>()
+  for (let i = 0; i < active.length; i++) {
+    const id = active[i] as string
     const ritual = getRitualById(id)
-    if (ritual && ritualNeedsElementChoice(ritual) && !ritualElementChoices[id]) return false
+    if (ritual && ritualNeedsElementChoice(ritual)) {
+      const element = ritualElementChoices[i]
+      if (!element) return false
+      const instanceKey = `${id}::${element}`
+      if (seenInstances.has(instanceKey)) return false
+      seenInstances.add(instanceKey)
+    } else {
+      if (seenInstances.has(id)) return false
+      seenInstances.add(id)
+    }
   }
   return true
 }

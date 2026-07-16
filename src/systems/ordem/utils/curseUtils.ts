@@ -218,11 +218,15 @@ export function getCursedDerivedStats(
 /**
  * DT para resistir a um ritual conhecido: 10 + limite de PE por rodada + Presença (livro, pág.
  * 121), com os bônus determinísticos: Rituais Eficientes (+5 em TODOS) e Especialista em
- * Elemento (+2 nos rituais do elemento escolhido; multi-elemento usa o escolhido ao aprender).
+ * Elemento (+2 nos rituais do elemento escolhido; multi-elemento usa o elemento da instância).
  * Usa a Presença já com maldições (igual ao resto da ficha), mas o limite de PE BASE (sem
  * Presença Poderosa — essa soma PE por turno pra conjurar, não a dificuldade do ritual em si).
+ *
+ * `ritualElement` é o elemento já resolvido da INSTÂNCIA (ver `getSlotRitualElement`/
+ * `getGrantedRitualElement`) — necessário pra rituais multi-elemento, que podem ser conhecidos
+ * mais de uma vez (uma por elemento). Omitir só é seguro pra rituais de elemento único.
  */
-export function getRitualDt(draft: OrdemCharacterDraft, ritual: OrdemRitual): { dt: number; notes: string[] } {
+export function getRitualDt(draft: OrdemCharacterDraft, ritual: OrdemRitual, ritualElement?: OrdemElement): { dt: number; notes: string[] } {
   let dt = 10 + getPeLimit(draft.nex) + getSheetAttributes(draft).presence
   const notes: string[] = []
   const trilhaBonus = getRitualDtBonusFromTrilha(draft)
@@ -232,8 +236,8 @@ export function getRitualDt(draft: OrdemCharacterDraft, ritual: OrdemRitual): { 
   }
   const specialistElement = getChosenElementForPower(draft, 'element-specialist')
   if (specialistElement) {
-    const ritualElement = ritual.elements.length > 1 ? draft.ritualElementChoices[ritual.id] : ritual.elements[0]
-    if (ritualElement === specialistElement) {
+    const element = ritualElement ?? (ritual.elements.length > 1 ? undefined : ritual.elements[0])
+    if (element === specialistElement) {
       dt += 2
       notes.push('Especialista em Elemento +2')
     }

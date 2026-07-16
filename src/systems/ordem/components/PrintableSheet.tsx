@@ -9,7 +9,7 @@ import {
   getParanormalResistanceBonus, getMentalParanormalDamageResistance, getOriginMentalDamageResistance,
 } from '../utils/characterUtils'
 import { getReachedTrilhaSlots, getPeLimit } from '../utils/progressionUtils'
-import { getRitualById, formatRitualElementLabel, getRitualSlotsCount } from '../utils/ritualUtils'
+import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, getSlotRitualElement, getGrantedRitualElement } from '../utils/ritualUtils'
 import {
   getEquipmentByInstance, getInstanceLabel, getTotalCarryCapacity, getModifiedSpaces, getModifiedDefenseBonus,
   getDraftInstanceCategory,
@@ -20,6 +20,7 @@ import { getOrdemWeaponAttack, getUnarmedAttack, GRADE_BONUS } from '../utils/or
 import { getPatente, getCategoryLimit } from '../utils/patenteUtils'
 import type { OrdemEquipment, OrdemWeapon } from '../types/equipment'
 import type { OrdemAttributes } from '../types/character'
+import type { OrdemRitual } from '../types/ritual'
 
 const CAT_ROMAN = ['0', 'I', 'II', 'III', 'IV']
 const ATTR_ABBREV: Record<keyof OrdemAttributes, string> = {
@@ -52,7 +53,12 @@ export function PrintableSheet() {
   const originMentalDr = getOriginMentalDamageResistance(draft, attributes.intellect)
   // Só o Ocultista conhece rituais; limita aos slots abertos pelo NEX (ver ReviewStep).
   const ritualSlots = draft.class === 'occultist' ? getRitualSlotsCount(draft.nex) : 0
-  const rituals = draft.ritualChoices.slice(0, ritualSlots).filter((r): r is string => Boolean(r)).map(getRitualById).filter(Boolean)
+  // Preserva o índice do slot: rituais multi-elemento (ex.: Amaldiçoar Arma) podem ocupar mais
+  // de um slot, um por elemento (ver `getSlotRitualElement`).
+  const rituals = draft.ritualChoices
+    .slice(0, ritualSlots)
+    .map((id, slotIndex) => (id ? { ritual: getRitualById(id), slotIndex } : null))
+    .filter((e): e is { ritual: OrdemRitual; slotIndex: number } => Boolean(e?.ritual))
   // Rituais aprendidos por features de trilha (ex.: Canalizar o Medo no Conduíte NEX 99%) — bônus, não contam no limite.
   const grantedRituals = draft.class === 'occultist' ? getGrantedRituals(draft) : []
   // Cada entrada de `equipmentChoices` é uma UNIDADE ("revolver", "revolver#2"...), com mods/maldições próprias.
@@ -332,15 +338,15 @@ export function PrintableSheet() {
               </p>
             )}
             <div className="space-y-1.5 mt-2 text-sm">
-              {rituals.map((r, i) => {
-                if (!r) return null
-                const { cost, notes } = getRitualCost(draft, r)
-                const { dt, notes: dtNotes } = getRitualDt(draft, r)
+              {rituals.map(({ ritual: r, slotIndex }) => {
+                const element = getSlotRitualElement(r, slotIndex, draft.ritualElementChoices)
+                const { cost, notes } = getRitualCost(draft, r, element)
+                const { dt, notes: dtNotes } = getRitualDt(draft, r, element)
                 return (
-                  <div key={`${r.id}-${i}`}>
+                  <div key={`${r.id}-${slotIndex}`}>
                     <p>
                       <span className="font-semibold">{r.name}{draft.favoriteRitual === r.id ? ' ★' : ''}</span>
-                      <span className="text-gray-600"> ({formatRitualElementLabel(r, draft.ritualElementChoices)}, {r.circle}º Círculo — custo {cost} PE{notes.length > 0 ? ` (${notes.join(', ')})` : ''}, DT {dt}{dtNotes.length > 0 ? ` (${dtNotes.join(', ')})` : ''})</span>
+                      <span className="text-gray-600"> ({formatRitualElementLabel(r, element)}, {r.circle}º Círculo — custo {cost} PE{notes.length > 0 ? ` (${notes.join(', ')})` : ''}, DT {dt}{dtNotes.length > 0 ? ` (${dtNotes.join(', ')})` : ''})</span>
                       <span className="text-gray-500 text-xs"> — {r.execution}, {r.range}, {r.target}, {r.duration}{r.resistance ? `, ${r.resistance}` : ''}</span>
                     </p>
                     <p className="text-gray-700 text-xs">{r.description}</p>
@@ -348,13 +354,14 @@ export function PrintableSheet() {
                 )
               })}
               {grantedRituals.map(({ ritual: r, source }, i) => {
-                const { cost, notes } = getRitualCost(draft, r)
-                const { dt, notes: dtNotes } = getRitualDt(draft, r)
+                const element = getGrantedRitualElement(r, draft.ritualElementChoices)
+                const { cost, notes } = getRitualCost(draft, r, element)
+                const { dt, notes: dtNotes } = getRitualDt(draft, r, element)
                 return (
                   <div key={`granted-${r.id}-${i}`}>
                     <p>
                       <span className="font-semibold">{r.name}{draft.favoriteRitual === r.id ? ' ★' : ''}</span>
-                      <span className="text-gray-600"> ({formatRitualElementLabel(r, draft.ritualElementChoices)}, {r.circle}º Círculo — custo {cost} PE{notes.length > 0 ? ` (${notes.join(', ')})` : ''}, DT {dt}{dtNotes.length > 0 ? ` (${dtNotes.join(', ')})` : ''})</span>
+                      <span className="text-gray-600"> ({formatRitualElementLabel(r, element)}, {r.circle}º Círculo — custo {cost} PE{notes.length > 0 ? ` (${notes.join(', ')})` : ''}, DT {dt}{dtNotes.length > 0 ? ` (${dtNotes.join(', ')})` : ''})</span>
                       <span className="text-gray-500 text-xs"> — {r.execution}, {r.range}, {r.target}, {r.duration}{r.resistance ? `, ${r.resistance}` : ''}</span>
                     </p>
                     <p className="text-gray-700 text-xs">{r.description} <span className="italic">(concedido pela {source})</span></p>

@@ -8,7 +8,7 @@ import {
   getTrainedSkills, getSkillGrade, hasFavoredRitualPower, hasLaminaMaldita, getRitualCost, hasClassPower, getWeaponSkillOverride, getGrantedRituals, getEffectivePeLimit,
   getParanormalResistanceBonus, getMentalParanormalDamageResistance, getOriginMentalDamageResistance,
 } from '../../utils/characterUtils'
-import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, ritualNeedsElementChoice, ELEMENT_NAMES, ELEMENT_COLORS } from '../../utils/ritualUtils'
+import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, ritualNeedsElementChoice, getSlotRitualElement, getGrantedRitualElement, grantedRitualElementKey, ELEMENT_NAMES, ELEMENT_COLORS } from '../../utils/ritualUtils'
 import {
   getEquipmentByInstance, getInstanceLabel, getTotalCarryCapacity, getModifiedSpaces, getModifiedDefenseBonus, getDraftInstanceCategory,
   getMissingRitualComponentElements,
@@ -16,6 +16,7 @@ import {
 import { getModification } from '../../utils/modificationUtils'
 import { getCurse, getCursedDerivedStats, getSheetAttributes, formatCurseElement, formatCurseChoiceDetail, getRitualDt, getRitualPeLimit } from '../../utils/curseUtils'
 import type { OrdemEquipment } from '../../types/equipment'
+import type { OrdemRitual } from '../../types/ritual'
 import { getOrdemWeaponAttack, getUnarmedAttack } from '../../utils/ordemWeaponUtils'
 import { getPatente } from '../../utils/patenteUtils'
 import type { OrdemWeapon } from '../../types/equipment'
@@ -51,11 +52,20 @@ export function ReviewStep() {
   // Só o Ocultista conhece rituais; limita aos slots realmente abertos pelo NEX (baixar o NEX
   // depois de escolher não deve deixar rituais obsoletos de círculos inacessíveis na ficha).
   const ritualSlots = draft.class === 'occultist' ? getRitualSlotsCount(draft.nex) : 0
-  const rituals = draft.ritualChoices.slice(0, ritualSlots).filter((r): r is string => Boolean(r)).map(getRitualById).filter(Boolean)
+  // Preserva o índice do slot (não filtra antes de mapear): rituais multi-elemento (ex.: Amaldiçoar
+  // Arma) podem ocupar mais de um slot, um por elemento, e o elemento de cada instância é lido
+  // pelo índice do slot em que foi escolhido (ver `getSlotRitualElement`).
+  const rituals = draft.ritualChoices
+    .slice(0, ritualSlots)
+    .map((id, slotIndex) => (id ? { ritual: getRitualById(id), slotIndex } : null))
+    .filter((e): e is { ritual: OrdemRitual; slotIndex: number } => Boolean(e?.ritual))
   // Rituais aprendidos automaticamente por features de trilha (ex.: Canalizar o Medo no Conduíte NEX 99%).
   const grantedRituals = draft.class === 'occultist' ? getGrantedRituals(draft) : []
   // Tudo que o personagem "conhece" (escolhidos + concedidos): base dos pickers de Ritual Predileto / arma Ritualística.
-  const allKnownRituals = [...rituals, ...grantedRituals.map(g => g.ritual)]
+  const allKnownRituals = [...rituals.map(e => e.ritual), ...grantedRituals.map(g => g.ritual)]
+  // Ritual Predileto e "ritual armazenado" guardam só o id (a escolha é do ritual, não da
+  // instância) — dedup pra não repetir a mesma opção duas vezes num ritual multi-elemento.
+  const uniqueKnownRituals = Array.from(new Map(allKnownRituals.map(r => [r.id, r])).values())
   // Cada entrada de `equipmentChoices` é uma UNIDADE ("revolver", "revolver#2"...), com mods/maldições próprias.
   const equipmentUnits = draft.equipmentChoices
     .map(uid => ({ uid, item: getEquipmentByInstance(uid) }))
@@ -213,30 +223,31 @@ export function ReviewStep() {
       {allKnownRituals.length > 0 && (
         <Section title={`Rituais Conhecidos (${allKnownRituals.length})`}>
           <div className="space-y-2">
-            {rituals.map((r, i) => {
-              if (!r) return null
-              const { cost, notes } = getRitualCost(draft, r)
-              const { dt, notes: dtNotes } = getRitualDt(draft, r)
+            {rituals.map(({ ritual: r, slotIndex }) => {
+              const element = getSlotRitualElement(r, slotIndex, draft.ritualElementChoices)
+              const { cost, notes } = getRitualCost(draft, r, element)
+              const { dt, notes: dtNotes } = getRitualDt(draft, r, element)
               return (
-                <p key={`${r.id}-${i}`} className="text-parchment-500 text-xs">
+                <p key={`${r.id}-${slotIndex}`} className="text-parchment-500 text-xs">
                   <span className="font-semibold text-parchment-300">{r.name}</span>{' '}
                   <span className="text-parchment-700">
-                    ({formatRitualElementLabel(r, draft.ritualElementChoices)}, {r.circle}º Círculo — custo {cost} PE{notes.length > 0 ? ` (${notes.join(', ')})` : ''}, DT {dt}{dtNotes.length > 0 ? ` (${dtNotes.join(', ')})` : ''})
+                    ({formatRitualElementLabel(r, element)}, {r.circle}º Círculo — custo {cost} PE{notes.length > 0 ? ` (${notes.join(', ')})` : ''}, DT {dt}{dtNotes.length > 0 ? ` (${dtNotes.join(', ')})` : ''})
                   </span>
                 </p>
               )
             })}
             {grantedRituals.map(({ ritual: r, source }, i) => {
-              const { cost, notes } = getRitualCost(draft, r)
-              const { dt, notes: dtNotes } = getRitualDt(draft, r)
+              const element = getGrantedRitualElement(r, draft.ritualElementChoices)
+              const { cost, notes } = getRitualCost(draft, r, element)
+              const { dt, notes: dtNotes } = getRitualDt(draft, r, element)
               // Rituais concedidos multi-elemento (ex.: Amaldiçoar Arma via Lâmina Maldita) ainda exigem escolher o elemento.
-              const needsElement = ritualNeedsElementChoice(r) && !draft.ritualElementChoices[r.id]
+              const needsElement = ritualNeedsElementChoice(r) && !element
               return (
                 <div key={`granted-${r.id}-${i}`}>
                   <p className="text-parchment-500 text-xs">
                     <span className="font-semibold text-parchment-300">{r.name}</span>{' '}
                     <span className="text-parchment-700">
-                      ({formatRitualElementLabel(r, draft.ritualElementChoices)}, {r.circle}º Círculo — custo {cost} PE{notes.length > 0 ? ` (${notes.join(', ')})` : ''}, DT {dt}{dtNotes.length > 0 ? ` (${dtNotes.join(', ')})` : ''})
+                      ({formatRitualElementLabel(r, element)}, {r.circle}º Círculo — custo {cost} PE{notes.length > 0 ? ` (${notes.join(', ')})` : ''}, DT {dt}{dtNotes.length > 0 ? ` (${dtNotes.join(', ')})` : ''})
                     </span>{' '}
                     <span className="text-gold-600/90">— concedido pela {source}</span>
                   </p>
@@ -246,7 +257,7 @@ export function ReviewStep() {
                       {r.elements.map(el => (
                         <button
                           key={el}
-                          onClick={() => updateDraft({ ritualElementChoices: { ...draft.ritualElementChoices, [r.id]: el } })}
+                          onClick={() => updateDraft({ ritualElementChoices: { ...draft.ritualElementChoices, [grantedRitualElementKey(r.id)]: el } })}
                           className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded border transition-colors ${ELEMENT_COLORS[el]}`}
                         >
                           {ELEMENT_NAMES[el]}
@@ -285,8 +296,8 @@ export function ReviewStep() {
                   className="w-full bg-parchment-950 border border-parchment-800 rounded px-2 py-1 text-parchment-300 text-xs"
                 >
                   <option value="">Escolha o ritual…</option>
-                  {allKnownRituals.map((r, i) => r && (
-                    <option key={`${r.id}-${i}`} value={r.id}>{r.name} ({r.circle}º Círculo)</option>
+                  {uniqueKnownRituals.map(r => (
+                    <option key={r.id} value={r.id}>{r.name} ({r.circle}º Círculo)</option>
                   ))}
                 </select>
               </div>
@@ -312,8 +323,8 @@ export function ReviewStep() {
                         className="flex-1 bg-parchment-950 border border-parchment-800 rounded px-2 py-1 text-parchment-300 text-xs"
                       >
                         <option value="">Nenhum (anotar a lápis na missão)</option>
-                        {allKnownRituals.map((r, i) => r && (
-                          <option key={`${r.id}-${i}`} value={r.id}>{r.name} ({r.circle}º Círculo — {getRitualCost(draft, r).cost} PE)</option>
+                        {uniqueKnownRituals.map(r => (
+                          <option key={r.id} value={r.id}>{r.name} ({r.circle}º Círculo — {getRitualCost(draft, r).cost} PE)</option>
                         ))}
                       </select>
                     </div>

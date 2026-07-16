@@ -390,15 +390,27 @@ describe('componentes ritualísticos (F22) — aviso de rituais sem componentes'
     expect(getMissingRitualComponentElements(equipado)).toEqual([])
   })
 
-  it('ritual multi-elemento conta pelo elemento escolhido ao aprender', () => {
+  it('ritual multi-elemento conta pelo elemento escolhido ao aprender (chave = índice do slot)', () => {
     const draft = makeDraft({
       class: 'occultist',
       nex: 5,
       ritualChoices: ['amaldicoar-arma', 'cicatrizacao', 'decadencia'],
-      ritualElementChoices: { 'amaldicoar-arma': 'blood' },
+      ritualElementChoices: { 0: 'blood' },
       equipmentChoices: ['componentes-ritualisticos-morte'],
     })
     expect(getMissingRitualComponentElements(draft)).toEqual(['blood'])
+  })
+
+  it('Amaldiçoar Arma em 2 slots com elementos diferentes conta os dois elementos', () => {
+    const draft = makeDraft({
+      class: 'occultist',
+      nex: 5,
+      ritualChoices: ['amaldicoar-arma', 'amaldicoar-arma', 'decadencia'],
+      ritualElementChoices: { 0: 'blood', 1: 'knowledge' },
+    })
+    expect(getMissingRitualComponentElements(draft)).toEqual(
+      expect.arrayContaining(['blood', 'knowledge', 'death']),
+    )
   })
 
   it('não-ocultista nunca gera aviso', () => {

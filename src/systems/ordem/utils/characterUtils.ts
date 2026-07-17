@@ -9,6 +9,7 @@ import { getTrilhasByClass, getTrilha } from './trilhaUtils'
 import { getPowersByClass } from './powerUtils'
 import { RITUAL_COST, getRitualById } from './ritualUtils'
 import { getNexIndex, getReachedPowerSlots, getReachedAttributeIncreaseSlots, getReachedSkillGradeSlots, ATTRIBUTE_INCREASE_CAP, TRILHA_FEATURE_NEX, NEX_STEPS, getPeLimit } from './progressionUtils'
+import { getExpansionGrantedClassPowers, getParanormalEffects, getParanormalLearnedRituals } from './paranormalPowerUtils'
 
 export type DerivedStats = {
   hp: number
@@ -202,10 +203,18 @@ export function getPowerSkillPicks(draft: OrdemCharacterDraft): string[] {
     .filter(Boolean)
 }
 
-/** Elemento escolhido pra um poder de elemento (primeira instância preenchida). */
-export function getChosenElementForPower(draft: OrdemCharacterDraft, powerId: string): OrdemElement | null {
+/** Elemento escolhido pra um poder de elemento da PRÓPRIA classe (primeira instância preenchida). */
+export function getOwnChosenElementForPower(draft: OrdemCharacterDraft, powerId: string): OrdemElement | null {
   const slot = getPowerParamSlots(draft).find(s => s.powerId === powerId && (draft.powerParams[s.key] ?? []).length > 0)
   return slot ? ((draft.powerParams[slot.key][0] as OrdemElement) ?? null) : null
+}
+
+/** Elemento escolhido pra um poder de elemento, incluindo os aprendidos via Expansão de Conhecimento. */
+export function getChosenElementForPower(draft: OrdemCharacterDraft, powerId: string): OrdemElement | null {
+  const own = getOwnChosenElementForPower(draft, powerId)
+  if (own) return own
+  const granted = getExpansionGrantedClassPowers(draft).find(g => g.powerId === powerId && g.params.length > 0)
+  return granted ? (granted.params[0] as OrdemElement) : null
 }
 
 /** Todas as instâncias de poderes com parâmetro estão preenchidas? (valida o passo Progressão) */
@@ -219,10 +228,20 @@ export function arePowerParamsComplete(draft: OrdemCharacterDraft): boolean {
 
 // ── Personalização da ficha (F24) ──────────────────────────────────────────────
 
-/** O agente tem um poder de classe (via slots regulares ou Versatilidade)? */
-export function hasClassPower(draft: OrdemCharacterDraft, powerId: string): boolean {
+/** O agente tem um poder de classe da PRÓPRIA classe (via slots regulares ou Versatilidade)? */
+export function hasOwnClassPower(draft: OrdemCharacterDraft, powerId: string): boolean {
   if (draft.powerChoices.includes(powerId)) return true
   return draft.versatilityChoice?.kind === 'power' && draft.versatilityChoice.powerId === powerId
+}
+
+/**
+ * O agente tem um poder de classe, de qualquer via: slots regulares, Versatilidade ou aprendido
+ * de outra classe via Expansão de Conhecimento (poder paranormal)? Usar esta versão nos efeitos
+ * da ficha — assim um poder expandido acende a mesma maquinaria (custos de ritual, dano etc.).
+ */
+export function hasClassPower(draft: OrdemCharacterDraft, powerId: string): boolean {
+  if (hasOwnClassPower(draft, powerId)) return true
+  return getExpansionGrantedClassPowers(draft).some(g => g.powerId === powerId)
 }
 
 /** Tem o poder Ritual Predileto (escolha um ritual conhecido: custo −1 PE)? */
@@ -320,6 +339,11 @@ export type GrantedRitual = {
   ritual: OrdemRitual
   /** Rótulo da fonte que ensinou o ritual (ex.: "Trilha Conduíte" ou "Versatilidade"). */
   source: string
+  /**
+   * Elemento da instância, quando a fonte já o resolveu (rituais do Aprender Ritual). Concedidos
+   * por trilha continuam resolvendo por `ritualElementChoices` (`getGrantedRitualElement`).
+   */
+  element?: OrdemElement
 }
 
 /**
@@ -353,7 +377,7 @@ function getReachedTrilhaFeaturesWithSource(draft: OrdemCharacterDraft): { featu
  * NÃO contam no limite de rituais conhecidos. A lista é deduplicada por id e omite os rituais
  * que o jogador já escolheu manualmente em `ritualChoices` (para não listar o mesmo duas vezes).
  */
-export function getGrantedRituals(draft: OrdemCharacterDraft): GrantedRitual[] {
+export function getTrilhaGrantedRituals(draft: OrdemCharacterDraft): GrantedRitual[] {
   const result: GrantedRitual[] = []
   const seen = new Set<string>()
   for (const { feature, source } of getReachedTrilhaFeaturesWithSource(draft)) {
@@ -366,6 +390,18 @@ export function getGrantedRituals(draft: OrdemCharacterDraft): GrantedRitual[] {
   }
   const chosen = new Set(draft.ritualChoices.filter((id): id is string => Boolean(id)))
   return result.filter(g => !chosen.has(g.ritual.id))
+}
+
+/**
+ * TODOS os rituais concedidos fora dos slots do Ocultista: features de trilha + instâncias
+ * válidas do poder paranormal Aprender Ritual (que também não contam no limite de escolhas do
+ * Ocultista — o limite delas é o Intelecto, validado pelo motor). Duplicatas ritual+elemento
+ * entre as fontes são impedidas pela validação das instâncias, não deduplicadas aqui.
+ */
+export function getGrantedRituals(draft: OrdemCharacterDraft): GrantedRitual[] {
+  const learned = getParanormalLearnedRituals(draft)
+    .map(({ ritual, element, source }) => ({ ritual, source, element }))
+  return [...getTrilhaGrantedRituals(draft), ...learned]
 }
 
 /** Soma dos bônus de DT de rituais concedidos por trilha (ex.: Rituais Eficientes +5). */
@@ -443,9 +479,13 @@ export function getOriginMentalDamageResistance(draft: OrdemCharacterDraft, inte
   return getOriginEffects(draft).mentalDamageResistanceEqualsIntellect ? intellect : 0
 }
 
-/** Limite de PE por turno já com o bônus de origem (ex.: Dedicação +1). */
+/**
+ * Limite de PE por turno já com os bônus de origem (ex.: Dedicação +1) e de poderes paranormais
+ * (Encarar a Morte +1/+3 — o aumento vale "em cenas de ação", exatamente quando o limite de PE
+ * por turno importa, então somar direto é seguro; `getRitualDt` segue usando o limite base).
+ */
 export function getEffectivePeLimit(draft: OrdemCharacterDraft): number {
-  return getPeLimit(draft.nex) + (getOriginEffects(draft).peLimitBonus ?? 0)
+  return getPeLimit(draft.nex) + (getOriginEffects(draft).peLimitBonus ?? 0) + getParanormalEffects(draft).peLimitBonus
 }
 
 /** Bônus de Ferramenta de Trabalho (origem Operário): +1 em ataque/dano/margem de ameaça — só com a arma escolhida em `draft.workToolWeapon`. */

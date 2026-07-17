@@ -11,6 +11,7 @@ import {
 import type { DerivedStats } from './characterUtils'
 import { ELEMENT_NAMES, getRitualById } from './ritualUtils'
 import { getPeLimit } from './progressionUtils'
+import { getParanormalEffects, getParanormalSanityPenalty } from './paranormalPowerUtils'
 
 export const CURSES = cursesJson as OrdemCurse[]
 
@@ -198,20 +199,24 @@ export function getCursedDerivedStats(
     (s, c) => s + (c.attributeBonus?.attribute === 'presence' && c.attributeBonus.noPe ? c.attributeBonus.value : 0),
     0,
   )
+  const paranormal = getParanormalEffects(draft)
   const stats = deriveStats(
     cls,
     { ...sheet, presence: sheet.presence - noPePresence },
     draft.nex,
-    protectionBonus + getCurseDefenseBonus(draft) + getOriginDefenseBonus(draft),
+    protectionBonus + getCurseDefenseBonus(draft) + getOriginDefenseBonus(draft) + paranormal.defenseBonus,
   )
-  // Bônus flat somados sobre a fórmula da classe: maldições + poder de origem (Calejado/Cicatrizes/Dedicação).
-  const hpFlat = curses.reduce((s, c) => s + (c.hpBonus ?? 0), 0) + getOriginHpBonus(draft)
-  const peFlat = curses.reduce((s, c) => s + (c.peBonus ?? 0), 0) + getOriginPeBonus(draft)
+  // Bônus flat somados sobre a fórmula da classe: maldições + poder de origem (Calejado/
+  // Cicatrizes/Dedicação) + poderes paranormais (Sangue de Ferro/Potencial Aprimorado, retroativos).
+  const hpFlat = curses.reduce((s, c) => s + (c.hpBonus ?? 0), 0) + getOriginHpBonus(draft) + paranormal.hpBonus
+  const peFlat = curses.reduce((s, c) => s + (c.peBonus ?? 0), 0) + getOriginPeBonus(draft) + paranormal.peBonus
+  // Transcender suprime o ganho de SAN dos NEX em que foi escolhido; Cultista Arrependido corta
+  // metade da SAN inicial. Clamp em 0 (ocultista cultista com muitos transcends em NEX baixo).
   return {
     ...stats,
     hp: stats.hp + hpFlat,
     pe: stats.pe + peFlat,
-    sanity: stats.sanity + getOriginSanityBonus(draft),
+    sanity: Math.max(0, stats.sanity + getOriginSanityBonus(draft) - getParanormalSanityPenalty(draft, cls)),
   }
 }
 

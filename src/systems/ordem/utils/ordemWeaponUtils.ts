@@ -2,6 +2,7 @@ import type { OrdemCharacterDraft } from '../types/character'
 import type { OrdemWeapon, OrdemWeaponGrip, OrdemWeaponProficiency, OrdemWeaponCategory } from '../types/equipment'
 import type { SkillGrade } from './characterUtils'
 import { getSkillGrade, hasClassPower, getOriginEffects, getWorkToolBonus } from './characterUtils'
+import { getParanormalEffects } from './paranormalPowerUtils'
 import { getModification } from './modificationUtils'
 import { getCurse, getSheetAttributes } from './curseUtils'
 
@@ -170,7 +171,11 @@ export function getOrdemWeaponAttack(
     (hasTrilhaFeature(draft, 'warrior', 10) && melee ? 2 : 0) +
     (hasTrilhaFeature(draft, 'annihilator', 99) && draft.favoriteWeapon === weapon.id ? 2 : 0)
 
-  const threatMargin = workToolBonus + trilhaThreatMargin + mods.reduce((s, m) => s + (m.threatMargin ?? 0), 0)
+  // Golpe de Sorte (poder paranormal): +1 na margem de ameaça em TODOS os ataques
+  // (+1 no multiplicador de crítico com a 2ª escolha por afinidade).
+  const paranormal = getParanormalEffects(draft)
+  const threatMargin = workToolBonus + trilhaThreatMargin + paranormal.threatMarginBonus
+    + mods.reduce((s, m) => s + (m.threatMargin ?? 0), 0)
   const curseDamage = curses.map(c => c.extraDamage).filter(Boolean).map(d => ` +${d}`).join('')
 
   const typePt = DAMAGE_TYPE_PT[weapon.damageType] ?? weapon.damageType
@@ -182,7 +187,7 @@ export function getOrdemWeaponAttack(
   const { threat, mult } = parseCritical(weapon.critical)
   // Predadora: a margem (20 − início + 1) duplica ANTES dos aumentos fixos (ex.: fuzil de caça 19 → 17).
   const doubledThreat = curses.some(c => c.doublesThreat) ? 21 - 2 * (21 - threat) : threat
-  const critical = formatCritical(doubledThreat - threatMargin, mult)
+  const critical = formatCritical(doubledThreat - threatMargin, mult + paranormal.critMultiplierBonus)
 
   const range = curses.some(c => c.rangeIncrease) ? increaseRange(weapon.range) : weapon.range
 

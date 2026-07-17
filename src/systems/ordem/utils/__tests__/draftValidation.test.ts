@@ -147,6 +147,34 @@ describe('getFirstIncompleteStep', () => {
   })
 })
 
+describe('isStepComplete — paranormal', () => {
+  it('sem fontes de transcender e NEX < 50: completo', () => {
+    expect(isStepComplete(makeDraft({}), 'paranormal')).toBe(true)
+  })
+
+  it('Transcender escolhido sem o poder paranormal bloqueia o passo', () => {
+    const draft = makeDraft({ class: 'combatant', nex: 15, powerChoices: ['transcend'] })
+    expect(isStepComplete(draft, 'paranormal')).toBe(false)
+    expect(isStepComplete(
+      makeDraft({ ...draft, paranormalPowerChoices: { 'slot-0': { powerId: 'fortunate' } } }),
+      'paranormal',
+    )).toBe(true)
+  })
+
+  it('NEX ≥ 50 exige o elemento de afinidade, mesmo sem transcends', () => {
+    expect(isStepComplete(makeDraft({ nex: 50 }), 'paranormal')).toBe(false)
+    expect(isStepComplete(makeDraft({ nex: 50, affinityElement: 'death' }), 'paranormal')).toBe(true)
+  })
+
+  it('sub-escolha pendente (Resistir a Elemento sem elemento) bloqueia', () => {
+    const draft = makeDraft({
+      class: 'combatant', nex: 15, powerChoices: ['transcend'],
+      paranormalPowerChoices: { 'slot-0': { powerId: 'resist-element' } },
+    })
+    expect(isStepComplete(draft, 'paranormal')).toBe(false)
+  })
+})
+
 describe('sanitizeImportedDraft', () => {
   it('rejeita entrada nula ou sem os campos mínimos', () => {
     expect(sanitizeImportedDraft(null)).toBeNull()

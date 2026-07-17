@@ -12,6 +12,7 @@ import { OriginStep } from './components/steps/OriginStep'
 import { ClassStep } from './components/steps/ClassStep'
 import { SkillsStep } from './components/steps/SkillsStep'
 import { ProgressionStep } from './components/steps/ProgressionStep'
+import { ParanormalPowersStep } from './components/steps/ParanormalPowersStep'
 import { RitualsStep } from './components/steps/RitualsStep'
 import { EquipmentStep } from './components/steps/EquipmentStep'
 import { ReviewStep } from './components/steps/ReviewStep'
@@ -31,6 +32,7 @@ export const ordemSystem: IRpgSystem = {
         case 'class': component = ClassStep; break
         case 'skills': component = SkillsStep; break
         case 'progression': component = ProgressionStep; break
+        case 'paranormal': component = ParanormalPowersStep; break
         case 'rituals': component = RitualsStep; break
         case 'equipment': component = EquipmentStep; break
         case 'review': component = ReviewStep; break

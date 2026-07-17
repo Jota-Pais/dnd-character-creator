@@ -9,9 +9,11 @@ export type OrdemAttributes = {
   vigor: number
 }
 
-export type WizardStep = 'name' | 'attributes' | 'origin' | 'class' | 'skills' | 'progression' | 'rituals' | 'equipment' | 'review'
+export type WizardStep = 'name' | 'attributes' | 'origin' | 'class' | 'skills' | 'progression' | 'paranormal' | 'rituals' | 'equipment' | 'review'
 
-export const WIZARD_STEPS: WizardStep[] = ['name', 'attributes', 'origin', 'class', 'skills', 'progression', 'rituals', 'equipment', 'review']
+// 'paranormal' fica entre Progressão (onde o Transcender é escolhido) e Rituais (o ritual do
+// Aprender Ritual precisa existir antes do passo de rituais).
+export const WIZARD_STEPS: WizardStep[] = ['name', 'attributes', 'origin', 'class', 'skills', 'progression', 'paranormal', 'rituals', 'equipment', 'review']
 
 export const STEP_LABELS: Record<WizardStep, string> = {
   name: 'Nome',
@@ -20,6 +22,7 @@ export const STEP_LABELS: Record<WizardStep, string> = {
   class: 'Classe',
   skills: 'Perícias',
   progression: 'Progressão',
+  paranormal: 'Poderes Paranormais',
   rituals: 'Rituais',
   equipment: 'Equipamento',
   review: 'Revisão',

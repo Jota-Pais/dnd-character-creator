@@ -1,6 +1,6 @@
 import type { OrdemCharacterDraft, ParanormalPowerChoice, WizardStep } from '../types/character'
 import { EMPTY_DRAFT, WIZARD_STEPS } from '../types/character'
-import { isParanormalElement, isParanormalSourceKey } from './paranormalPowerUtils'
+import { areParanormalChoicesComplete, isParanormalElement, isParanormalSourceKey } from './paranormalPowerUtils'
 import { isValidAttributes } from './attributeUtils'
 import { getOrigin } from './originUtils'
 import { getOrdemClass } from './classUtils'
@@ -76,6 +76,11 @@ export function isStepComplete(draft: OrdemCharacterDraft, step: WizardStep): bo
 
       return true
     }
+
+    case 'paranormal':
+      // Toda fonte ativa de transcender com escolha completa e válida; elemento de afinidade
+      // escolhido a partir de NEX 50% (ver areParanormalChoicesComplete).
+      return areParanormalChoicesComplete(draft)
 
     case 'rituals': {
       if (draft.class !== 'occultist') return true

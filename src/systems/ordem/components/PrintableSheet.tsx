@@ -9,7 +9,11 @@ import {
   getParanormalResistanceBonus, getMentalParanormalDamageResistance, getOriginMentalDamageResistance,
 } from '../utils/characterUtils'
 import { getReachedTrilhaSlots, getPeLimit } from '../utils/progressionUtils'
-import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, getSlotRitualElement, getGrantedRitualElement } from '../utils/ritualUtils'
+import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, getSlotRitualElement, getGrantedRitualElement, ELEMENT_NAMES } from '../utils/ritualUtils'
+import {
+  getAffinityState, getParanormalEffects, getParanormalInstances, getSanityBreakdown, getSourceLabel,
+  isParanormalElement, OPPRESSOR_OF,
+} from '../utils/paranormalPowerUtils'
 import {
   getEquipmentByInstance, getInstanceLabel, getTotalCarryCapacity, getModifiedSpaces, getModifiedDefenseBonus,
   getDraftInstanceCategory,
@@ -46,11 +50,18 @@ export function PrintableSheet() {
   const stats = getCursedDerivedStats(draft, cls, getModifiedDefenseBonus(draft))
   const trilha = draft.trilha ? getTrilha(draft.trilha) : undefined
   const reachedTrilhaFeatures = trilha ? getReachedTrilhaSlots(draft.nex).map(nex => trilha.features.find(f => f.nex === nex)).filter(Boolean) : []
-  const powers = draft.powerChoices.filter((p): p is string => Boolean(p)).map(getPower).filter(Boolean)
-  // Resistências automáticas (Mente Sã/Inabalável da trilha; Eu Já Sabia da origem) — ver seção "Resistências".
+  // O Transcender sai da lista (as instâncias resolvidas entram como "poder paranormal" abaixo).
+  const powers = draft.powerChoices.filter((p): p is string => Boolean(p) && p !== 'transcend').map(getPower).filter(Boolean)
+  const paranormalInstances = getParanormalInstances(draft).filter(i => i.power)
+  const paranormalEffects = getParanormalEffects(draft)
+  const affinity = getAffinityState(draft)
+  const sanityBreakdown = getSanityBreakdown(draft, cls)
+  // Resistências automáticas (Mente Sã/Inabalável da trilha; Eu Já Sabia da origem; Resistir a
+  // Elemento/Precognição dos poderes paranormais) — ver seção "Resistências".
   const paranormalResistanceBonus = getParanormalResistanceBonus(draft)
   const mentalParanormalDr = getMentalParanormalDamageResistance(draft)
   const originMentalDr = getOriginMentalDamageResistance(draft, attributes.intellect)
+  const elementResistances = Object.entries(paranormalEffects.elementResistances) as [keyof typeof ELEMENT_NAMES, number][]
   // Só o Ocultista conhece rituais; limita aos slots abertos pelo NEX (ver ReviewStep).
   const ritualSlots = draft.class === 'occultist' ? getRitualSlotsCount(draft.nex) : 0
   // Preserva o índice do slot: rituais multi-elemento (ex.: Amaldiçoar Arma) podem ocupar mais
@@ -59,8 +70,8 @@ export function PrintableSheet() {
     .slice(0, ritualSlots)
     .map((id, slotIndex) => (id ? { ritual: getRitualById(id), slotIndex } : null))
     .filter((e): e is { ritual: OrdemRitual; slotIndex: number } => Boolean(e?.ritual))
-  // Rituais aprendidos por features de trilha (ex.: Canalizar o Medo no Conduíte NEX 99%) — bônus, não contam no limite.
-  const grantedRituals = draft.class === 'occultist' ? getGrantedRituals(draft) : []
+  // Rituais concedidos (trilha + Aprender Ritual) — bônus, não contam no limite; qualquer classe pode ter.
+  const grantedRituals = getGrantedRituals(draft)
   // Cada entrada de `equipmentChoices` é uma UNIDADE ("revolver", "revolver#2"...), com mods/maldições próprias.
   const equipmentUnits = draft.equipmentChoices
     .map(uid => ({ uid, item: getEquipmentByInstance(uid) }))
@@ -177,6 +188,8 @@ export function PrintableSheet() {
                   const grade = getSkillGrade(draft, skill.id)
                   const trained = trainedSkills.includes(skill.id)
                   const bonus = GRADE_BONUS[grade]
+                  // Bônus fixos de poderes paranormais (Sensitivo, Visão do Oculto, Sangue de Ferro...).
+                  const powerBonus = paranormalEffects.skillBonus[skill.id] ?? 0
                   return (
                     <tr key={skill.id} className={trained ? 'font-bold' : 'text-gray-700'}>
                       <td className="py-[1px]">
@@ -189,7 +202,7 @@ export function PrintableSheet() {
                       </td>
                       <td className="text-center">{attributes[skill.attribute as keyof OrdemAttributes]} <span className="text-[9px] text-gray-500">{ATTR_ABBREV[skill.attribute as keyof OrdemAttributes]}</span></td>
                       <td className="text-center">{bonus > 0 ? `+${bonus}` : '0'}</td>
-                      <td className="text-center"><span className="inline-block border-b border-gray-400 w-8" /></td>
+                      <td className="text-center">{powerBonus > 0 ? `+${powerBonus}` : <span className="inline-block border-b border-gray-400 w-8" />}</td>
                     </tr>
                   )
                 })}
@@ -250,6 +263,42 @@ export function PrintableSheet() {
             {powers.map(p => p && (
               <p key={p.id}><span className="font-semibold">{p.name} (poder).</span> {p.description}</p>
             ))}
+            {paranormalInstances.map(instance => {
+              const power = instance.power!
+              const expansionTarget = instance.choice?.classPowerId ? getPower(instance.choice.classPowerId) : undefined
+              const learnedRitual = instance.choice?.ritualId ? getRitualById(instance.choice.ritualId) : undefined
+              const elementLabel = isParanormalElement(instance.element) ? ` — ${ELEMENT_NAMES[instance.element]}` : ''
+              return (
+                <p key={instance.key}>
+                  <span className="font-semibold">
+                    {power.name} (poder paranormal{elementLabel}{instance.isAffinityCopy ? ', 2ª escolha — Afinidade' : ''}; {getSourceLabel(instance.key)}).
+                  </span>{' '}
+                  {power.description}
+                  {instance.isAffinityCopy && power.affinityDescription && (
+                    <span className="font-semibold"> Afinidade: {power.affinityDescription}</span>
+                  )}
+                  {learnedRitual && <span> Ritual aprendido: <span className="font-semibold">{learnedRitual.name}</span> (descrição na seção Rituais).</span>}
+                  {expansionTarget && (
+                    <span> Poder aprendido: <span className="font-semibold">{expansionTarget.name}.</span> {expansionTarget.description}</span>
+                  )}
+                </p>
+              )
+            })}
+            {affinity.active && affinity.element && (
+              <p>
+                <span className="font-semibold">Afinidade Elemental — {ELEMENT_NAMES[affinity.element]}.</span>{' '}
+                Conjura rituais de {ELEMENT_NAMES[affinity.element]} sem componentes ritualísticos; +ØØ em testes contra
+                efeitos de {ELEMENT_NAMES[affinity.element]} e −ØØ contra efeitos de {ELEMENT_NAMES[OPPRESSOR_OF[affinity.element]]} (elemento
+                opressor); pode aprender rituais que exijam afinidade com o elemento.
+              </p>
+            )}
+            {sanityBreakdown.total > 0 && (
+              <p className="text-[10px] text-gray-500">
+                Sanidade já descontada: −{sanityBreakdown.total}
+                {sanityBreakdown.transcendPenalty > 0 && ` (Transcender ×${sanityBreakdown.transcendCount} — sem o ganho de SAN desses NEX${sanityBreakdown.cultistPenalty > 0 ? '; metade da SAN inicial pela origem' : ''})`}
+                {sanityBreakdown.transcendPenalty === 0 && sanityBreakdown.cultistPenalty > 0 && ' (metade da SAN inicial — Traços do Outro Lado)'}.
+              </p>
+            )}
             {/* Maldições dos itens amaldiçoados entram aqui, junto das habilidades (sem seção própria). */}
             {cursedUnits.map(({ uid }) => (draft.equipmentCurses[uid] ?? []).map(cid => {
               const curse = getCurse(cid)
@@ -287,10 +336,18 @@ export function PrintableSheet() {
           </div>
         </section>
 
-        {(paranormalResistanceBonus > 0 || mentalParanormalDr > 0 || originMentalDr > 0) && (
+        {(paranormalResistanceBonus > 0 || mentalParanormalDr > 0 || originMentalDr > 0 || elementResistances.length > 0 || paranormalEffects.resistanceTestsBonus > 0) && (
           <section className="mb-4">
             <BlackBar>Resistências</BlackBar>
             <div className="space-y-1 mt-2 text-sm">
+              {paranormalEffects.resistanceTestsBonus > 0 && (
+                <p><span className="font-semibold">Testes de resistência: +{paranormalEffects.resistanceTestsBonus}</span> (Precognição).</p>
+              )}
+              {elementResistances.map(([element, value]) => (
+                <p key={element}>
+                  <span className="font-semibold">Resistência a dano de {ELEMENT_NAMES[element]}: {value}</span> (Resistir a Elemento{value > 10 ? ' — Afinidade' : ''}).
+                </p>
+              ))}
               {paranormalResistanceBonus > 0 && (
                 <p><span className="font-semibold">Teste de resistência paranormal: +{paranormalResistanceBonus}</span> (Mente Sã).</p>
               )}
@@ -353,8 +410,8 @@ export function PrintableSheet() {
                   </div>
                 )
               })}
-              {grantedRituals.map(({ ritual: r, source }, i) => {
-                const element = getGrantedRitualElement(r, draft.ritualElementChoices)
+              {grantedRituals.map(({ ritual: r, source, element: sourceElement }, i) => {
+                const element = sourceElement ?? getGrantedRitualElement(r, draft.ritualElementChoices)
                 const { cost, notes } = getRitualCost(draft, r, element)
                 const { dt, notes: dtNotes } = getRitualDt(draft, r, element)
                 return (

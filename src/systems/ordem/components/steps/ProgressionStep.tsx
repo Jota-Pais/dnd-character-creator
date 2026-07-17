@@ -14,6 +14,8 @@ import {
   POWER_PARAM_SPECS,
 } from '../../utils/characterUtils'
 import { hasTrilha, hasVersatility } from '../../utils/progressionUtils'
+import { getParanormalPower } from '../../utils/paranormalPowerUtils'
+import type { ParanormalSourceKey } from '../../types/character'
 import { SKILLS } from '../../utils/skillUtils'
 import { ELEMENT_NAMES, ELEMENT_COLORS } from '../../utils/ritualUtils'
 import type { OrdemElement } from '../../types/ritual'
@@ -191,11 +193,26 @@ function PowerSection({ draft, cls, required, onPick }: {
               {chosen && POWER_PARAM_SPECS[chosen] && (
                 <PowerParamPicker draft={draft} slotKey={`slot-${slot}`} powerId={chosen} />
               )}
+              {chosen === 'transcend' && <TranscendHint draft={draft} sourceKey={`slot-${slot}`} />}
             </div>
           )
         })}
       </div>
     </Section>
+  )
+}
+
+/** Status do Transcender: o poder paranormal em si é escolhido na etapa Poderes Paranormais. */
+function TranscendHint({ draft, sourceKey }: {
+  draft: import('../../types/character').OrdemCharacterDraft
+  sourceKey: ParanormalSourceKey
+}) {
+  const chosen = draft.paranormalPowerChoices[sourceKey]
+  const power = chosen ? getParanormalPower(chosen.powerId) : undefined
+  return power ? (
+    <p className="text-gold-400 text-xs mt-1">✦ Poder paranormal: {power.name} (etapa Poderes Paranormais)</p>
+  ) : (
+    <p className="text-amber-500/90 text-xs mt-1">→ Escolha o poder paranormal na etapa Poderes Paranormais.</p>
   )
 }
 
@@ -369,6 +386,9 @@ function VersatilitySection({ draft, cls, onPick }: {
             />
           ))}
         </div>
+        {choice?.kind === 'power' && choice.powerId === 'transcend' && (
+          <TranscendHint draft={draft} sourceKey="versatility" />
+        )}
       </div>
       <div>
         <p className="text-parchment-700 text-xs mb-1">Ou 1º poder de outra trilha</p>

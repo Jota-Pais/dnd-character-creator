@@ -105,6 +105,18 @@ export function OriginStep() {
                 <span className="font-semibold text-parchment-200 font-fantasy">{selected.power.name}. </span>
                 <span className="text-parchment-500">{selected.power.description}</span>
               </p>
+              {selected.power.effects?.grantsParanormalPower && (
+                <div className="mt-3 pt-3 border-t border-parchment-900/50 space-y-1.5">
+                  <p className="text-xs text-gold-400">
+                    ✦ Você escolherá seu poder paranormal na etapa <strong className="font-fantasy">Poderes Paranormais</strong>.
+                  </p>
+                  {selected.power.effects.halvesStartingSanity && (
+                    <p className="text-xs text-amber-500/90">
+                      ⚠️ Começa com <strong>metade da Sanidade inicial</strong> da classe — a ficha aplica isso automaticamente.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         ) : (

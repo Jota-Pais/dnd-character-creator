@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import { useOrdemStore } from '../../stores/characterStore'
-import { getRitualSlotsCount, getMaxRitualCircle, getAvailableRituals, getRitualSlotNex, isRitualStepComplete, ritualNeedsElementChoice, ELEMENT_NAMES, ELEMENT_COLORS } from '../../utils/ritualUtils'
+import { getRitualSlotsCount, getMaxRitualCircle, getAvailableRituals, getRitualSlotNex, isRitualStepComplete, ritualNeedsElementChoice, getGrantedRitualElement, ELEMENT_NAMES, ELEMENT_COLORS } from '../../utils/ritualUtils'
+import { getGrantedRituals } from '../../utils/characterUtils'
 import { STEP_LABELS } from '../../types/character'
+import type { OrdemCharacterDraft } from '../../types/character'
 import type { OrdemElement } from '../../types/ritual'
 import { StepNav } from '../common/StepNav'
 
 export function RitualsStep() {
   const [openSlot, setOpenSlot] = useState<number | null>(null)
+  const draft = useOrdemStore(state => state.draft)
   const nex = useOrdemStore(state => state.draft.nex)
   const charClass = useOrdemStore(state => state.draft.class)
   const ritualChoices = useOrdemStore(state => state.draft.ritualChoices)
@@ -22,8 +25,11 @@ export function RitualsStep() {
           {STEP_LABELS.rituals}
         </h2>
         <div className="bg-parchment-950 border border-parchment-900 rounded-xl p-8 text-center text-parchment-600">
-          Apenas <strong className="text-gold-500">Ocultistas</strong> recebem rituais na criação de personagem.
+          Apenas <strong className="text-gold-500">Ocultistas</strong> escolhem rituais na criação de personagem.
         </div>
+        {/* Qualquer classe pode ter rituais concedidos (trilha ou o poder paranormal Aprender
+            Ritual) — sem este bloco, um Combatente com Aprender Ritual veria uma tela que mente. */}
+        <GrantedRitualsBlock draft={draft} />
         <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={true} />
       </div>
     )
@@ -190,7 +196,41 @@ export function RitualsStep() {
         })}
       </div>
 
+      <GrantedRitualsBlock draft={draft} />
+
       <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={isComplete} disabledReason="Escolha todos os rituais pendentes" />
+    </div>
+  )
+}
+
+/** Rituais concedidos (features de trilha e Aprender Ritual): read-only, com a fonte de cada um. */
+function GrantedRitualsBlock({ draft }: { draft: OrdemCharacterDraft }) {
+  const granted = getGrantedRituals(draft)
+  if (granted.length === 0) return null
+  return (
+    <div className="space-y-3">
+      <h3 className="text-sm font-bold text-gold-500">Rituais concedidos</h3>
+      <p className="text-parchment-600 text-xs -mt-2">
+        Aprendidos automaticamente por trilha ou pelo poder Aprender Ritual — não contam nos limites acima.
+      </p>
+      {granted.map(g => {
+        const element = g.element ?? getGrantedRitualElement(g.ritual, draft.ritualElementChoices)
+        return (
+          <div key={`${g.ritual.id}-${g.source}-${element ?? 'x'}`} className="p-4 rounded-xl bg-black/40 border border-parchment-900/50">
+            <div className="flex items-center flex-wrap gap-2 mb-1">
+              <span className="font-bold text-parchment-200 font-fantasy">{g.ritual.name}</span>
+              <span className="text-[10px] text-parchment-500 font-bold uppercase tracking-wider">{g.ritual.circle}º C.</span>
+              {(element ? [element] : g.ritual.elements).map(e => (
+                <span key={e} className={`text-[9px] uppercase px-1.5 py-0.5 rounded font-bold ${ELEMENT_COLORS[e]}`}>
+                  {ELEMENT_NAMES[e]}
+                </span>
+              ))}
+              <span className="text-[10px] text-gold-500/90 font-bold">— {g.source}</span>
+            </div>
+            <p className="text-xs text-parchment-500 leading-relaxed line-clamp-3">{g.ritual.description}</p>
+          </div>
+        )
+      })}
     </div>
   )
 }

@@ -413,8 +413,49 @@ describe('componentes ritualísticos (F22) — aviso de rituais sem componentes'
     )
   })
 
-  it('não-ocultista nunca gera aviso', () => {
+  it('não-ocultista sem rituais não gera aviso', () => {
     expect(getMissingRitualComponentElements(makeDraft({ class: 'combatant' }))).toEqual([])
+  })
+
+  it('não-ocultista com ritual via Aprender Ritual também precisa de componentes', () => {
+    const draft = makeDraft({
+      class: 'combatant',
+      nex: 15,
+      powerChoices: ['transcend'],
+      paranormalPowerChoices: { 'slot-0': { powerId: 'learn-ritual', ritualId: 'armadura-de-sangue' } },
+    })
+    expect(getMissingRitualComponentElements(draft)).toEqual(['blood'])
+    const equipado = makeDraft({ ...draft, equipmentChoices: ['componentes-ritualisticos-sangue'] })
+    expect(getMissingRitualComponentElements(equipado)).toEqual([])
+  })
+
+  it('Aprender Ritual multi-elemento conta pelo elemento da fonte (não pela chave granted:)', () => {
+    const draft = makeDraft({
+      class: 'combatant',
+      nex: 15,
+      powerChoices: ['transcend'],
+      paranormalPowerChoices: {
+        'slot-0': { powerId: 'learn-ritual', ritualId: 'amaldicoar-arma', ritualElement: 'blood' },
+      },
+    })
+    expect(getMissingRitualComponentElements(draft)).toEqual(['blood'])
+  })
+
+  it('afinidade ATIVA dispensa componentes do próprio elemento (p. 116)', () => {
+    const base = {
+      class: 'occultist' as const,
+      nex: 60,
+      ritualChoices: ['eletrocussao'], // Energia
+      powerChoices: ['skill-training', 'skill-training', 'skill-training', 'transcend'] as (string | null)[],
+      powerParams: { 'slot-0': ['fighting', 'aim'], 'slot-1': ['stealth', 'crime'], 'slot-2': ['perception', 'tactics'] },
+      paranormalPowerChoices: { 'slot-3': { powerId: 'fortunate' as const } },
+      affinityElement: 'energy' as const,
+    }
+    // Transcender em NEX 60 (pós-50) ativa a afinidade em Energia → componentes dispensados.
+    expect(getMissingRitualComponentElements(makeDraft(base))).toEqual([])
+    // Sem o transcender pós-50 a afinidade fica inativa → aviso volta.
+    const inactive = makeDraft({ ...base, powerChoices: ['transcend', 'skill-training', 'skill-training', 'skill-training'], powerParams: { 'slot-1': ['fighting', 'aim'], 'slot-2': ['stealth', 'crime'], 'slot-3': ['perception', 'tactics'] }, paranormalPowerChoices: { 'slot-0': { powerId: 'fortunate' } } })
+    expect(getMissingRitualComponentElements(inactive)).toEqual(['energy'])
   })
 
   it('componentes ritualísticos são Categoria 0 e ocupam 1 espaço (Tabela 3.10)', () => {

@@ -4,7 +4,7 @@ import type { ParanormalPower } from '../../types/paranormalPower'
 import type { OrdemElement, ParanormalElement } from '../../types/ritual'
 import { PARANORMAL_ELEMENTS } from '../../types/ritual'
 import { useOrdemStore } from '../../stores/characterStore'
-import { ELEMENT_NAMES, ELEMENT_COLORS, getAvailableRituals, getRitualById, ritualNeedsElementChoice } from '../../utils/ritualUtils'
+import { ELEMENT_NAMES, ELEMENT_COLORS, getAvailableRituals, getGrantedRitualElement, getRitualById, getRitualSlotsCount, ritualNeedsElementChoice } from '../../utils/ritualUtils'
 import { ORDEM_CLASSES } from '../../utils/classUtils'
 import { getTrilhaGrantedRituals, POWER_PARAM_SPECS } from '../../utils/characterUtils'
 import {
@@ -71,23 +71,26 @@ function RitualPicker({ draft, sourceKey, choice }: {
   const maxCircle = getLearnRitualMaxCircle(getSourceAcquisitionNex(sourceKey))
   const chosen = choice.ritualId ? getRitualById(choice.ritualId) : undefined
 
-  // Instâncias já ocupadas: rituais escolhidos pelo Ocultista, concedidos por trilha e de outras
-  // fontes de Aprender Ritual. Rituais de elemento único somem da lista; multi-elemento seguem
-  // (pode-se conhecer uma instância por elemento) e a duplicata real é barrada nos chips.
+  // Instâncias já ocupadas: rituais escolhidos pelo Ocultista (só os slots ABERTOS pelo NEX —
+  // padrão slice), concedidos por trilha e de outras fontes de Aprender Ritual. Rituais de
+  // elemento único somem da lista; multi-elemento seguem (pode-se conhecer uma instância por
+  // elemento) e a duplicata real é barrada nos chips.
   const occupiedSingle = new Set<string>()
   const occupiedInstances = new Set<string>()
   const track = (ritualId: string, element: OrdemElement | undefined, multi: boolean) => {
     if (multi) { if (element) occupiedInstances.add(`${ritualId}::${element}`) }
     else occupiedSingle.add(ritualId)
   }
-  draft.ritualChoices.forEach((id, slotIndex) => {
+  const openChoices = draft.class === 'occultist' ? draft.ritualChoices.slice(0, getRitualSlotsCount(draft.nex)) : []
+  openChoices.forEach((id, slotIndex) => {
     if (!id) return
     const ritual = getRitualById(id)
     if (!ritual) return
     track(id, draft.ritualElementChoices[slotIndex], ritual.elements.length > 1)
   })
   for (const granted of getTrilhaGrantedRituals(draft)) {
-    track(granted.ritual.id, granted.ritual.elements[0], granted.ritual.elements.length > 1)
+    const multi = granted.ritual.elements.length > 1
+    track(granted.ritual.id, getGrantedRitualElement(granted.ritual, draft.ritualElementChoices), multi)
   }
   for (const [key, other] of Object.entries(draft.paranormalPowerChoices)) {
     if (key === sourceKey || other?.powerId !== 'learn-ritual' || !other.ritualId) continue
@@ -212,7 +215,8 @@ function ClassPowerPicker({ draft, sourceKey, choice }: {
             <div key={cls.id}>
               <p className="text-[10px] uppercase tracking-wider font-bold text-parchment-500 mb-1">Poderes de {cls.name}</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {options.filter(o => o.power.classIds.includes(cls.id)).map(({ power, available, reasons }) => (
+                {/* Poder de mais de uma classe (ex.: Artista Marcial) aparece só no 1º grupo elegível. */}
+                {options.filter(o => o.power.classIds.filter(c => c !== draft.class)[0] === cls.id).map(({ power, available, reasons }) => (
                   <button
                     key={power.id}
                     onClick={() => {

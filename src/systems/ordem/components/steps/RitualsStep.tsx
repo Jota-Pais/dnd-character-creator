@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useOrdemStore } from '../../stores/characterStore'
 import { getRitualSlotsCount, getMaxRitualCircle, getAvailableRituals, getRitualSlotNex, isRitualStepComplete, ritualNeedsElementChoice, getGrantedRitualElement, ELEMENT_NAMES, ELEMENT_COLORS } from '../../utils/ritualUtils'
 import { getGrantedRituals } from '../../utils/characterUtils'
+import { getParanormalLearnedRituals } from '../../utils/paranormalPowerUtils'
 import { STEP_LABELS } from '../../types/character'
 import type { OrdemCharacterDraft } from '../../types/character'
 import type { OrdemElement } from '../../types/ritual'
@@ -38,6 +39,10 @@ export function RitualsStep() {
   const slotCount = getRitualSlotsCount(nex)
   const maxCircle = getMaxRitualCircle(nex)
   const availableRituals = getAvailableRituals(maxCircle)
+  // Rituais já aprendidos via poder Aprender Ritual — escolher o mesmo aqui criaria uma
+  // duplicata (a instância do poder invalidaria retroativamente na etapa Poderes Paranormais).
+  const learnedRituals = getParanormalLearnedRituals(draft)
+  const learnedSingleIds = new Set(learnedRituals.filter(l => l.ritual.elements.length === 1).map(l => l.ritual.id))
 
   const handleSelect = (index: number, ritualId: string) => {
     const newChoices = [...ritualChoices]
@@ -88,7 +93,7 @@ export function RitualsStep() {
             ritualChoices.slice(0, slotCount).filter((id, idx): id is string => Boolean(id) && idx !== i)
           )
           const options = getAvailableRituals(slotMaxCircle as 1|2|3|4)
-            .filter(r => r.id === selectedId || ritualNeedsElementChoice(r) || !chosenElsewhere.has(r.id))
+            .filter(r => r.id === selectedId || ritualNeedsElementChoice(r) || (!chosenElsewhere.has(r.id) && !learnedSingleIds.has(r.id)))
 
           return (
             <div key={i} className="bg-parchment-950/50 border border-parchment-900 rounded-xl p-5 shadow-sm">
@@ -166,7 +171,10 @@ export function RitualsStep() {
                             <div className="flex flex-wrap gap-1.5">
                               {r.elements.map(e => {
                                 const active = ritualElementChoices[i] === e
-                                const usedElsewhere = !active && ritualChoices.some((otherId, idx) => idx !== i && otherId === r.id && ritualElementChoices[idx] === e)
+                                const usedElsewhere = !active && (
+                                  ritualChoices.some((otherId, idx) => idx !== i && otherId === r.id && ritualElementChoices[idx] === e)
+                                  || learnedRituals.some(l => l.ritual.id === r.id && l.element === e)
+                                )
                                 return (
                                   <button
                                     key={e}

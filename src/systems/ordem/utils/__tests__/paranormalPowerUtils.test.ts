@@ -364,6 +364,32 @@ describe('Aprender Ritual', () => {
     expect(second.problems.some(p => p.includes('Intelecto'))).toBe(true)
   })
 
+  it('escolha de ritual DORMENTE (slot além do NEX) não bloqueia o Aprender Ritual', () => {
+    const draft = makeDraft({
+      class: 'occultist',
+      nex: 15, // 5 slots de ritual abertos — o índice 5 é dormente
+      powerChoices: ['transcend'],
+      ritualChoices: [null, null, null, null, null, 'armadura-de-sangue'],
+      paranormalPowerChoices: { 'slot-0': { powerId: 'learn-ritual', ritualId: 'armadura-de-sangue' } },
+    })
+    const instance = getParanormalInstances(draft).find(i => i.key === 'slot-0')!
+    expect(instance.valid).toBe(true)
+  })
+
+  it('instância INVÁLIDA de Aprender Ritual não consome o limite de Intelecto', () => {
+    const draft = fullTranscendDraft({
+      // Intelecto 1 (atributos default). slot-0: 2º círculo em NEX 15% → inválida por círculo;
+      // slot-1: 1º círculo válida — não pode ser barrada pela vaga "roubada".
+      paranormalPowerChoices: {
+        'slot-0': { powerId: 'learn-ritual', ritualId: 'aprimorar-fisico' },
+        'slot-1': { powerId: 'learn-ritual', ritualId: 'armadura-de-sangue' },
+      },
+    })
+    const [first, second] = getParanormalInstances(draft)
+    expect(first.valid).toBe(false)
+    expect(second.valid).toBe(true)
+  })
+
   it('rituais aprendidos aparecem em getGrantedRituals com a fonte e o elemento', () => {
     const draft = fullTranscendDraft({
       paranormalPowerChoices: { 'slot-0': { powerId: 'learn-ritual', ritualId: 'armadura-de-sangue' } },
@@ -432,6 +458,18 @@ describe('Expansão de Conhecimento', () => {
     })
     const instance = getParanormalInstances(draft).find(i => i.key === 'slot-1')!
     expect(instance.complete).toBe(false)
+  })
+
+  it('Mestre em Elemento fica disponível quando o Especialista veio de Expansão anterior', () => {
+    const draft = fullTranscendDraft({
+      class: 'combatant',
+      paranormalPowerChoices: {
+        ...withKnowledgeBase,
+        'slot-1': { powerId: 'knowledge-expansion', classPowerId: 'element-specialist', classPowerParams: ['blood'] },
+      },
+    })
+    const master = getAvailableExpansionPowers(draft, 'slot-3').find(o => o.power.id === 'element-master')!
+    expect(master.available).toBe(true)
   })
 
   it('getAvailableExpansionPowers exclui poderes da própria classe (e os compartilhados pelas 3)', () => {

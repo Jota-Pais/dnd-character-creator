@@ -9,6 +9,7 @@ import { getPatente, getCategoryLimit } from './patenteUtils'
 import { getModification } from './modificationUtils'
 import { getCurse, getCurseCategoryDelta, getItemCurses, getSheetAttributes, canApplyCurse, curseChoiceKey } from './curseUtils'
 import { hasClassPower, getFavoriteWeaponReduction, getFavoriteEquipmentReduction, getGrantedRituals, hasCarryCapacityIntellectBonus, getWorkToolBonus } from './characterUtils'
+import { getAffinityState } from './paranormalPowerUtils'
 
 export const EQUIPMENTS = equipmentsJson as OrdemEquipment[]
 
@@ -343,25 +344,29 @@ export function hasWeaponProficiency(draft: OrdemCharacterDraft, item: OrdemEqui
 /**
  * Elementos dos rituais conhecidos SEM os componentes ritualísticos correspondentes no loadout.
  * Conjurar exige manipular componentes do elemento (exceto Medo) — sem eles, o ritual não sai
- * (pág. 119). Não bloqueia a ficha; alimenta o aviso no Equipamento/Revisão.
+ * (pág. 119). Vale para QUALQUER conjurador (não-Ocultistas conhecem rituais via trilha ou o
+ * poder Aprender Ritual). A afinidade dispensa os componentes do próprio elemento (pág. 116).
+ * Não bloqueia a ficha; alimenta o aviso no Equipamento/Revisão.
  */
 export function getMissingRitualComponentElements(draft: OrdemCharacterDraft): OrdemElement[] {
-  if (draft.class !== 'occultist') return []
   const needed = new Set<OrdemElement>()
-  // Rituais escolhidos pelo jogador — elemento resolvido por slot (rituais multi-elemento como
-  // Amaldiçoar Arma podem ter mais de uma instância, uma por elemento).
-  const chosenSlots = draft.ritualChoices.slice(0, getRitualSlotsCount(draft.nex))
+  // Rituais escolhidos pelo jogador (só o Ocultista tem slots) — elemento resolvido por slot
+  // (rituais multi-elemento como Amaldiçoar Arma podem ter mais de uma instância, uma por elemento).
+  const chosenSlots = draft.class === 'occultist' ? draft.ritualChoices.slice(0, getRitualSlotsCount(draft.nex)) : []
   chosenSlots.forEach((id, slotIndex) => {
     const ritual = id ? getRitualById(id) : undefined
     if (!ritual) return
     const element = getSlotRitualElement(ritual, slotIndex, draft.ritualElementChoices)
     if (element && element !== 'fear') needed.add(element)
   })
-  // Rituais concedidos por trilha (ex.: Amaldiçoar Arma via Lâmina Maldita).
-  for (const { ritual } of getGrantedRituals(draft)) {
-    const element = getGrantedRitualElement(ritual, draft.ritualElementChoices)
+  // Rituais concedidos: trilha (elemento via granted:<id>) e Aprender Ritual (elemento na fonte).
+  for (const { ritual, element: sourceElement } of getGrantedRituals(draft)) {
+    const element = sourceElement ?? getGrantedRitualElement(ritual, draft.ritualElementChoices)
     if (element && element !== 'fear') needed.add(element)
   }
+  // Afinidade ativa: rituais do elemento afim não precisam de componentes (pág. 116).
+  const affinity = getAffinityState(draft)
+  if (affinity.active && affinity.element) needed.delete(affinity.element)
   const owned = new Set<OrdemElement | undefined>(draft.equipmentChoices.map(uid => getEquipmentByInstance(uid)?.ritualComponentFor))
   return [...needed].filter(el => !owned.has(el))
 }

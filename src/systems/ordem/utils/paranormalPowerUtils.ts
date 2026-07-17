@@ -6,7 +6,7 @@ import type { OrdemElement, OrdemRitual, ParanormalElement } from '../types/ritu
 import { PARANORMAL_ELEMENTS } from '../types/ritual'
 import paranormalPowersData from '../data/paranormal-powers.json'
 import { CLASS_POWERS, getPower } from './powerUtils'
-import { ELEMENT_NAMES, getRitualById, getSlotRitualElement, getGrantedRitualElement } from './ritualUtils'
+import { ELEMENT_NAMES, getRitualById, getRitualSlotsCount, getSlotRitualElement, getGrantedRitualElement } from './ritualUtils'
 import { POWER_SLOT_NEX, VERSATILITY_NEX, getNexIndex, hasVersatility } from './progressionUtils'
 import {
   POWER_PARAM_SPECS,
@@ -152,10 +152,15 @@ function ritualInstanceKey(ritualId: string, element: OrdemElement | undefined):
   return element ? `${ritualId}::${element}` : ritualId
 }
 
-/** Instâncias ritual+elemento já ocupadas fora do motor: escolhas do Ocultista + concedidos por trilha. */
+/**
+ * Instâncias ritual+elemento já ocupadas fora do motor: escolhas do Ocultista (só os slots
+ * ABERTOS pelo NEX — entradas dormentes além deles não fazem parte da ficha, padrão slice)
+ * + concedidos por trilha.
+ */
 function getOccupiedRitualInstanceKeys(draft: OrdemCharacterDraft): Set<string> {
   const keys = new Set<string>()
-  draft.ritualChoices.forEach((id, slotIndex) => {
+  const openChoices = draft.class === 'occultist' ? draft.ritualChoices.slice(0, getRitualSlotsCount(draft.nex)) : []
+  openChoices.forEach((id, slotIndex) => {
     if (!id) return
     const ritual = getRitualById(id)
     if (!ritual) return
@@ -319,11 +324,10 @@ export function getParanormalInstances(draft: OrdemCharacterDraft): ParanormalIn
     }
 
     // Limite do Aprender Ritual: no máximo Intelecto rituais por esta via (excedentes, em ordem).
-    if (power.id === 'learn-ritual') {
-      learnRitualCount += 1
-      if (learnRitualCount > attributes.intellect) {
-        problems.push(`Limite de rituais aprendidos por este poder é igual ao seu Intelecto (${attributes.intellect})`)
-      }
+    // Só instâncias VÁLIDAS consomem o limite — uma escolha inválida (ex.: círculo alto demais)
+    // não pode "roubar" a vaga de uma escolha legal posterior.
+    if (power.id === 'learn-ritual' && learnRitualCount + 1 > attributes.intellect) {
+      problems.push(`Limite de rituais aprendidos por este poder é igual ao seu Intelecto (${attributes.intellect})`)
     }
 
     instance.complete = complete
@@ -336,6 +340,7 @@ export function getParanormalInstances(draft: OrdemCharacterDraft): ParanormalIn
       }
       if (uniquenessKey) copiesByKey.set(uniquenessKey, (copiesByKey.get(uniquenessKey) ?? 0) + 1)
       if (ritualKey) learnedRitualKeys.add(ritualKey)
+      if (power.id === 'learn-ritual') learnRitualCount += 1
       if (power.choice?.kind === 'class-power' && choice.classPowerId) {
         grantedClassPowers.push({ powerId: choice.classPowerId, params: (choice.classPowerParams ?? []).filter(Boolean) })
       }
@@ -474,9 +479,12 @@ export function getAvailableExpansionPowers(draft: OrdemCharacterDraft, key: Par
           ?? (grantedSoFar.find(g => g.powerId === id && g.params.length > 0)?.params[0] as OrdemElement | undefined)
           ?? null,
         elementCounts,
-        // O elemento do próprio alvo (ex.: Mestre em Elemento) ainda não foi escolhido no catálogo;
-        // o pré-requisito sameElementParam é re-validado na instância após a sub-escolha.
-        chosenElement: getOwnChosenElementForPower(draft, 'element-specialist'),
+        // O elemento do próprio alvo (ex.: Mestre em Elemento) ainda não foi escolhido no catálogo:
+        // assume otimisticamente o elemento do Especialista em Elemento já possuído (próprio OU
+        // aprendido por Expansão anterior); o sameElementParam é re-validado na instância.
+        chosenElement: getOwnChosenElementForPower(draft, 'element-specialist')
+          ?? (grantedSoFar.find(g => g.powerId === 'element-specialist' && g.params.length > 0)?.params[0] as OrdemElement | undefined)
+          ?? null,
       }
       const reasons = formatUnmetPrereqs(getUnmetPrereqs(power.prereqs, ctx), ctx)
       if (grantedElsewhere.includes(power.id)) reasons.push('Já aprendido por outra Expansão de Conhecimento')

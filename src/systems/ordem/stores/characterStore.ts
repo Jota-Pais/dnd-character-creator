@@ -161,8 +161,15 @@ export const useOrdemStore = create<CharacterStore>((set, get) => ({
   setPowerChoice: (slotIndex, powerId) =>
     set(state => {
       const choices = [...state.draft.powerChoices]
+      const changed = choices[slotIndex] !== powerId
       choices[slotIndex] = powerId
-      return { draft: { ...state.draft, powerChoices: choices } }
+      if (!changed) return { draft: { ...state.draft, powerChoices: choices } }
+      // Trocar o poder do slot descarta os parâmetros da instância antiga — senão um
+      // skill-training→element-specialist herda 2 perícias num spec de 1 elemento e
+      // arePowerParamsComplete nunca valida o passo.
+      const powerParams = { ...state.draft.powerParams }
+      delete powerParams[`slot-${slotIndex}`]
+      return { draft: { ...state.draft, powerChoices: choices, powerParams } }
     }),
 
   setAttributeIncreaseChoice: (slotIndex, attribute) =>
@@ -180,7 +187,15 @@ export const useOrdemStore = create<CharacterStore>((set, get) => ({
     }),
 
   setVersatilityChoice: (choice) =>
-    set(state => ({ draft: { ...state.draft, versatilityChoice: choice } })),
+    set(state => {
+      const prev = state.draft.versatilityChoice
+      const samePower = prev?.kind === 'power' && choice?.kind === 'power' && prev.powerId === choice.powerId
+      if (samePower) return { draft: { ...state.draft, versatilityChoice: choice } }
+      // Mesma limpeza do setPowerChoice, para a instância 'versatility'.
+      const powerParams = { ...state.draft.powerParams }
+      delete powerParams['versatility']
+      return { draft: { ...state.draft, versatilityChoice: choice, powerParams } }
+    }),
 
   // Trocar o poder da instância zera as sub-escolhas (sub-escolha de outro poder nunca
   // sobrevive à troca); null remove a entrada da fonte.

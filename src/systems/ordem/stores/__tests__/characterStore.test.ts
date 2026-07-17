@@ -87,3 +87,50 @@ describe('useOrdemStore — escolhas de poder paranormal', () => {
     expect(useOrdemStore.getState().draft.paranormalPowerChoices['slot-3']).toBeUndefined()
   })
 })
+
+describe('useOrdemStore — powerParams órfãos ao trocar o poder', () => {
+  beforeEach(() => {
+    useOrdemStore.getState().newCharacter()
+  })
+
+  it('trocar o poder do slot descarta os parâmetros da instância antiga', () => {
+    const store = useOrdemStore.getState()
+    store.setPowerChoice(0, 'skill-training')
+    store.updateDraft({ powerParams: { 'slot-0': ['fighting', 'aim'] } })
+
+    store.setPowerChoice(0, 'element-specialist')
+    expect(useOrdemStore.getState().draft.powerParams['slot-0']).toBeUndefined()
+  })
+
+  it('re-selecionar o mesmo poder do slot preserva os parâmetros', () => {
+    const store = useOrdemStore.getState()
+    store.setPowerChoice(0, 'skill-training')
+    store.updateDraft({ powerParams: { 'slot-0': ['fighting', 'aim'] } })
+
+    store.setPowerChoice(0, 'skill-training')
+    expect(useOrdemStore.getState().draft.powerParams['slot-0']).toEqual(['fighting', 'aim'])
+  })
+
+  it('só limpa os parâmetros do próprio slot', () => {
+    const store = useOrdemStore.getState()
+    store.setPowerChoice(0, 'skill-training')
+    store.setPowerChoice(1, 'element-specialist')
+    store.updateDraft({ powerParams: { 'slot-0': ['fighting', 'aim'], 'slot-1': ['blood'] } })
+
+    store.setPowerChoice(0, 'transcend')
+    expect(useOrdemStore.getState().draft.powerParams).toEqual({ 'slot-1': ['blood'] })
+  })
+
+  it('trocar o poder da Versatilidade descarta os parâmetros da instância versatility', () => {
+    const store = useOrdemStore.getState()
+    store.setVersatilityChoice({ kind: 'power', powerId: 'skill-training' })
+    store.updateDraft({ powerParams: { versatility: ['fighting', 'aim'] } })
+
+    store.setVersatilityChoice({ kind: 'power', powerId: 'element-specialist' })
+    expect(useOrdemStore.getState().draft.powerParams['versatility']).toBeUndefined()
+
+    store.updateDraft({ powerParams: { versatility: ['blood'] } })
+    store.setVersatilityChoice({ kind: 'trilha', trilhaId: 'conduit' })
+    expect(useOrdemStore.getState().draft.powerParams['versatility']).toBeUndefined()
+  })
+})

@@ -1,5 +1,6 @@
-import type { OrdemCharacterDraft, WizardStep } from '../types/character'
+import type { OrdemCharacterDraft, ParanormalPowerChoice, WizardStep } from '../types/character'
 import { EMPTY_DRAFT, WIZARD_STEPS } from '../types/character'
+import { isParanormalElement, isParanormalSourceKey } from './paranormalPowerUtils'
 import { isValidAttributes } from './attributeUtils'
 import { getOrigin } from './originUtils'
 import { getOrdemClass } from './classUtils'
@@ -144,5 +145,34 @@ export function sanitizeImportedDraft(parsed: unknown): OrdemCharacterDraft | nu
     favoriteWeapon: typeof p.favoriteWeapon === 'string' ? p.favoriteWeapon : null,
     favoriteEquipment: typeof p.favoriteEquipment === 'string' ? p.favoriteEquipment : null,
     workToolWeapon: typeof p.workToolWeapon === 'string' ? p.workToolWeapon : null,
+    paranormalPowerChoices: sanitizeParanormalChoices(p.paranormalPowerChoices),
+    affinityElement: isParanormalElement(p.affinityElement) ? p.affinityElement : null,
   }
+}
+
+const ORDEM_ELEMENT_IDS = ['blood', 'death', 'energy', 'knowledge', 'fear']
+
+/** Descarta entradas malformadas; ids desconhecidos ficam (a instância invalida com motivo, sem crash). */
+function sanitizeParanormalChoices(value: unknown): OrdemCharacterDraft['paranormalPowerChoices'] {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+  const out: OrdemCharacterDraft['paranormalPowerChoices'] = {}
+  for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+    if (!isParanormalSourceKey(key)) continue
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) continue
+    const c = entry as Partial<ParanormalPowerChoice>
+    if (typeof c.powerId !== 'string') continue
+    out[key] = {
+      powerId: c.powerId,
+      ...(typeof c.ritualId === 'string' ? { ritualId: c.ritualId } : {}),
+      ...(typeof c.ritualElement === 'string' && ORDEM_ELEMENT_IDS.includes(c.ritualElement)
+        ? { ritualElement: c.ritualElement }
+        : {}),
+      ...(isParanormalElement(c.element) ? { element: c.element } : {}),
+      ...(typeof c.classPowerId === 'string' ? { classPowerId: c.classPowerId } : {}),
+      ...(Array.isArray(c.classPowerParams)
+        ? { classPowerParams: c.classPowerParams.filter((s): s is string => typeof s === 'string') }
+        : {}),
+    }
+  }
+  return out
 }

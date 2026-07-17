@@ -1,5 +1,6 @@
 import { create } from 'zustand'
-import type { OrdemAttributes, OrdemCharacterDraft, WizardStep } from '../types/character'
+import type { OrdemAttributes, OrdemCharacterDraft, ParanormalPowerChoice, ParanormalSourceKey, WizardStep } from '../types/character'
+import type { ParanormalElement } from '../types/ritual'
 import { WIZARD_STEPS, EMPTY_DRAFT } from '../types/character'
 import { loadLibrary, saveCharacterEntry, deleteCharacterEntry, newId, type SavedCharacter } from '../utils/storage'
 import { getFirstIncompleteStep, isStepComplete } from '../utils/draftValidation'
@@ -37,6 +38,9 @@ type CharacterStore = {
   setAttributeIncreaseChoice: (slotIndex: number, attribute: keyof OrdemAttributes) => void
   setSkillGradeChoice: (slotIndex: number, skillIds: string[]) => void
   setVersatilityChoice: (choice: OrdemCharacterDraft['versatilityChoice']) => void
+  setParanormalPowerChoice: (sourceKey: ParanormalSourceKey, powerId: string | null) => void
+  setParanormalSubChoice: (sourceKey: ParanormalSourceKey, sub: Partial<Omit<ParanormalPowerChoice, 'powerId'>>) => void
+  setAffinityElement: (element: ParanormalElement | null) => void
   updateDraft: (partial: Partial<OrdemCharacterDraft>) => void
 
   nextStep: () => void
@@ -133,6 +137,11 @@ export const useOrdemStore = create<CharacterStore>((set, get) => ({
         // anteriores para não vazar rituais numa ficha de não-conjurador.
         ritualChoices: [],
         ritualElementChoices: {},
+        // Poderes paranormais de slots/Versatilidade pertencem à classe descartada; o da
+        // origem (Traços do Outro Lado) sobrevive. `affinityElement` depende só de NEX.
+        paranormalPowerChoices: state.draft.paranormalPowerChoices.origin
+          ? { origin: state.draft.paranormalPowerChoices.origin }
+          : {},
       },
     })),
 
@@ -172,6 +181,31 @@ export const useOrdemStore = create<CharacterStore>((set, get) => ({
 
   setVersatilityChoice: (choice) =>
     set(state => ({ draft: { ...state.draft, versatilityChoice: choice } })),
+
+  // Trocar o poder da instância zera as sub-escolhas (sub-escolha de outro poder nunca
+  // sobrevive à troca); null remove a entrada da fonte.
+  setParanormalPowerChoice: (sourceKey, powerId) =>
+    set(state => {
+      const choices = { ...state.draft.paranormalPowerChoices }
+      if (powerId === null) delete choices[sourceKey]
+      else choices[sourceKey] = { powerId }
+      return { draft: { ...state.draft, paranormalPowerChoices: choices } }
+    }),
+
+  setParanormalSubChoice: (sourceKey, sub) =>
+    set(state => {
+      const current = state.draft.paranormalPowerChoices[sourceKey]
+      if (!current) return {}
+      return {
+        draft: {
+          ...state.draft,
+          paranormalPowerChoices: { ...state.draft.paranormalPowerChoices, [sourceKey]: { ...current, ...sub } },
+        },
+      }
+    }),
+
+  setAffinityElement: (element) =>
+    set(state => ({ draft: { ...state.draft, affinityElement: element } })),
 
   updateDraft: (partial) =>
     set(state => ({ draft: { ...state.draft, ...partial } })),

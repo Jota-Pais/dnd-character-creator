@@ -41,4 +41,49 @@ describe('useOrdemStore — setClass', () => {
     expect(draft.powerChoices).toEqual([])
     expect(draft.trilha).toBeNull()
   })
+
+  it('trocar de classe limpa poderes paranormais de slots/Versatilidade, mas preserva o da origem e a afinidade', () => {
+    const store = useOrdemStore.getState()
+    store.setClass('occultist')
+    store.setParanormalPowerChoice('slot-0', 'iron-blood')
+    store.setParanormalPowerChoice('versatility', 'fortunate')
+    store.setParanormalPowerChoice('origin', 'sensitive')
+    store.setAffinityElement('death')
+
+    store.setClass('combatant')
+    const draft = useOrdemStore.getState().draft
+    expect(draft.paranormalPowerChoices).toEqual({ origin: { powerId: 'sensitive' } })
+    expect(draft.affinityElement).toBe('death')
+  })
+})
+
+describe('useOrdemStore — escolhas de poder paranormal', () => {
+  beforeEach(() => {
+    useOrdemStore.getState().newCharacter()
+  })
+
+  it('trocar o poder da instância zera as sub-escolhas', () => {
+    const store = useOrdemStore.getState()
+    store.setParanormalPowerChoice('slot-0', 'resist-element')
+    store.setParanormalSubChoice('slot-0', { element: 'blood' })
+    expect(useOrdemStore.getState().draft.paranormalPowerChoices['slot-0']).toEqual({
+      powerId: 'resist-element',
+      element: 'blood',
+    })
+
+    store.setParanormalPowerChoice('slot-0', 'learn-ritual')
+    expect(useOrdemStore.getState().draft.paranormalPowerChoices['slot-0']).toEqual({ powerId: 'learn-ritual' })
+  })
+
+  it('setParanormalPowerChoice(null) remove a entrada da fonte', () => {
+    const store = useOrdemStore.getState()
+    store.setParanormalPowerChoice('slot-1', 'fortunate')
+    store.setParanormalPowerChoice('slot-1', null)
+    expect(useOrdemStore.getState().draft.paranormalPowerChoices['slot-1']).toBeUndefined()
+  })
+
+  it('setParanormalSubChoice numa fonte sem escolha é no-op', () => {
+    useOrdemStore.getState().setParanormalSubChoice('slot-3', { element: 'death' })
+    expect(useOrdemStore.getState().draft.paranormalPowerChoices['slot-3']).toBeUndefined()
+  })
 })

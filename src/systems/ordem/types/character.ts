@@ -1,4 +1,4 @@
-import type { OrdemElement } from './ritual'
+import type { OrdemElement, ParanormalElement } from './ritual'
 import type { OrdemPatenteId } from './patente'
 
 export type OrdemAttributes = {
@@ -28,6 +28,27 @@ export const STEP_LABELS: Record<WizardStep, string> = {
 export type VersatilityChoice =
   | { kind: 'power'; powerId: string }
   | { kind: 'trilha'; trilhaId: string }
+
+/**
+ * Instância-fonte de um transcender (evento que concede poder paranormal): o slot do poder de
+ * classe Transcender ('slot-0'..'slot-5'), a Versatilidade que escolheu Transcender, ou o poder
+ * de origem Traços do Outro Lado ('origin'). Ordem cronológica de aquisição em
+ * `PARANORMAL_SOURCE_ORDER` (paranormalPowerUtils).
+ */
+export type ParanormalSourceKey = 'origin' | 'versatility' | `slot-${number}`
+
+/** Poder paranormal escolhido numa instância-fonte, com as sub-escolhas que o poder exigir. */
+export type ParanormalPowerChoice = {
+  powerId: string
+  /** Aprender Ritual: ritual escolhido (e o elemento, quando o ritual é multi-elemento). */
+  ritualId?: string
+  ritualElement?: OrdemElement
+  /** Resistir a Elemento: elemento escolhido. */
+  element?: ParanormalElement
+  /** Expansão de Conhecimento: poder de classe de OUTRA classe (e os params dele, se tiver escolha embutida). */
+  classPowerId?: string
+  classPowerParams?: string[]
+}
 
 export type OrdemCharacterDraft = {
   name: string
@@ -106,6 +127,18 @@ export type OrdemCharacterDraft = {
    * (ver `getWorkToolBonus`). Mesmo esquema de `favoriteWeapon`, mas sem redução de categoria.
    */
   workToolWeapon: string | null
+  /**
+   * Poder paranormal escolhido por instância-fonte de transcender. Entradas de fontes que
+   * deixaram de existir (baixou NEX, trocou o poder do slot) ficam dormentes — só as fontes
+   * ativas são exigidas/aplicadas (padrão slice, como `powerChoices`/`powerParams`).
+   */
+  paranormalPowerChoices: Partial<Record<ParanormalSourceKey, ParanormalPowerChoice>>
+  /**
+   * Elemento de conexão escolhido ao atingir NEX 50% (Afinidade Elemental, p. 116). Inerte
+   * abaixo de NEX 50%. A afinidade só ATIVA na primeira vez que o agente transcende a partir
+   * de NEX 50% (ver `getAffinityState`).
+   */
+  affinityElement: ParanormalElement | null
 }
 
 export const EMPTY_ATTRIBUTES: OrdemAttributes = {
@@ -144,4 +177,6 @@ export const EMPTY_DRAFT: OrdemCharacterDraft = {
   favoriteWeapon: null,
   favoriteEquipment: null,
   workToolWeapon: null,
+  paranormalPowerChoices: {},
+  affinityElement: null,
 }

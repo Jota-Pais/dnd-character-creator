@@ -176,3 +176,60 @@ describe('sanitizeImportedDraft', () => {
     expect(result?.class).toBeNull()
   })
 })
+
+describe('sanitizeImportedDraft — poderes paranormais', () => {
+  const base = {
+    name: 'Bianca',
+    attributes: { agility: 1, strength: 1, intellect: 1, presence: 1, vigor: 1 },
+  }
+
+  it('draft antigo (sem os campos novos) importa com defaults', () => {
+    const result = sanitizeImportedDraft(base)
+    expect(result?.paranormalPowerChoices).toEqual({})
+    expect(result?.affinityElement).toBeNull()
+  })
+
+  it('mantém escolhas bem-formadas com sub-escolhas', () => {
+    const result = sanitizeImportedDraft({
+      ...base,
+      paranormalPowerChoices: {
+        'slot-0': { powerId: 'iron-blood' },
+        'slot-1': { powerId: 'resist-element', element: 'death' },
+        versatility: { powerId: 'learn-ritual', ritualId: 'amaldicoar-arma', ritualElement: 'blood' },
+        origin: { powerId: 'knowledge-expansion', classPowerId: 'element-specialist', classPowerParams: ['energy'] },
+      },
+      affinityElement: 'death',
+    })
+    expect(result?.paranormalPowerChoices).toEqual({
+      'slot-0': { powerId: 'iron-blood' },
+      'slot-1': { powerId: 'resist-element', element: 'death' },
+      versatility: { powerId: 'learn-ritual', ritualId: 'amaldicoar-arma', ritualElement: 'blood' },
+      origin: { powerId: 'knowledge-expansion', classPowerId: 'element-specialist', classPowerParams: ['energy'] },
+    })
+    expect(result?.affinityElement).toBe('death')
+  })
+
+  it('descarta entradas malformadas e valores corrompidos', () => {
+    const result = sanitizeImportedDraft({
+      ...base,
+      paranormalPowerChoices: {
+        'slot-0': { powerId: 42 }, // powerId não-string
+        'slot-1': 'iron-blood', // entrada não-objeto
+        'chave-invalida': { powerId: 'iron-blood' }, // fonte desconhecida
+        'slot-2': { powerId: 'resist-element', element: 'fear' }, // Medo não é elegível
+        versatility: { powerId: 'learn-ritual', classPowerParams: ['ok', 7, null] },
+      },
+      affinityElement: 'fear',
+    })
+    expect(result?.paranormalPowerChoices).toEqual({
+      'slot-2': { powerId: 'resist-element' },
+      versatility: { powerId: 'learn-ritual', classPowerParams: ['ok'] },
+    })
+    expect(result?.affinityElement).toBeNull()
+  })
+
+  it('paranormalPowerChoices não-objeto vira {}', () => {
+    expect(sanitizeImportedDraft({ ...base, paranormalPowerChoices: ['x'] })?.paranormalPowerChoices).toEqual({})
+    expect(sanitizeImportedDraft({ ...base, paranormalPowerChoices: 'x' })?.paranormalPowerChoices).toEqual({})
+  })
+})

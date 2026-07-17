@@ -96,6 +96,7 @@
     "classId": "specialist",
     "description": "Treinado em técnicas de primeiros socorros e tratamento de emergência, acostumado com o campo de batalha e a tomar decisões rápidas no meio do caos.",
     "requirement": "Treinado em Medicina",
+    "requiredTrainedSkill": "medicine",
     "features": [
       { "nex": 10, "name": "Paramédico", "description": "Use uma ação padrão e 2 PE para curar 2d10 pontos de vida de um aliado adjacente. Cura +1d10 PV adicionais em NEX 40%, 65% e 99%, gastando +1 PE por dado adicional." },
       { "nex": 40, "name": "Equipe de Trauma", "description": "Use uma ação padrão e 2 PE para remover uma condição negativa (exceto morrendo) de um aliado adjacente." },

@@ -38,5 +38,7 @@ export type Trilha = {
   classId: OrdemClassId
   description: string
   requirement: string | null
+  /** Perícia que precisa estar treinada para escolher a trilha, quando houver. */
+  requiredTrainedSkill?: string
   features: TrilhaFeature[]
 }

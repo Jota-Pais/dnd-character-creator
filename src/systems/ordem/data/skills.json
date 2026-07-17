@@ -12,7 +12,7 @@
   { "id": "stealth", "name": "Furtividade", "attribute": "agility", "trainedOnly": false, "loadPenalty": true },
   { "id": "initiative", "name": "Iniciativa", "attribute": "agility", "trainedOnly": false, "loadPenalty": false },
   { "id": "intimidation", "name": "Intimidação", "attribute": "presence", "trainedOnly": false, "loadPenalty": false },
-  { "id": "insight", "name": "Intuição", "attribute": "intellect", "trainedOnly": false, "loadPenalty": false },
+  { "id": "insight", "name": "Intuição", "attribute": "presence", "trainedOnly": false, "loadPenalty": false },
   { "id": "investigation", "name": "Investigação", "attribute": "intellect", "trainedOnly": false, "loadPenalty": false },
   { "id": "fighting", "name": "Luta", "attribute": "strength", "trainedOnly": false, "loadPenalty": false },
   { "id": "medicine", "name": "Medicina", "attribute": "intellect", "trainedOnly": false, "loadPenalty": false },

@@ -10,6 +10,8 @@ import {
   getRequiredAttributeIncreaseSlots,
   getRequiredSkillGradeSlots,
   arePowerParamsComplete,
+  areClassPowerChoicesValid,
+  isTrilhaChoiceValid,
 } from './characterUtils'
 import { hasTrilha, hasVersatility } from './progressionUtils'
 import { isRitualStepComplete } from './ritualUtils'
@@ -55,10 +57,11 @@ export function isStepComplete(draft: OrdemCharacterDraft, step: WizardStep): bo
       const cls = getOrdemClass(draft.class)
       if (!cls) return false
 
-      if (hasTrilha(draft.nex) && !draft.trilha) return false
+      if (hasTrilha(draft.nex) && (!draft.trilha || !isTrilhaChoiceValid(draft, cls, draft.trilha))) return false
 
       const requiredPowers = getRequiredPowerSlots(draft.nex)
       if (!countFilled(draft.powerChoices, requiredPowers)) return false
+      if (!areClassPowerChoicesValid(draft, cls)) return false
 
       const requiredAttrIncreases = getRequiredAttributeIncreaseSlots(draft.nex)
       if (!countFilled(draft.attributeIncreaseChoices, requiredAttrIncreases)) return false
@@ -69,6 +72,8 @@ export function isStepComplete(draft: OrdemCharacterDraft, step: WizardStep): bo
       if (gradeSlotsFilled !== requiredGradeSlots) return false
 
       if (hasVersatility(draft.nex) && !draft.versatilityChoice) return false
+      if (hasVersatility(draft.nex) && draft.versatilityChoice?.kind === 'trilha'
+        && !isTrilhaChoiceValid(draft, cls, draft.versatilityChoice.trilhaId)) return false
 
       // Poderes com escolha embutida (Treinamento em Perícia, Especialista/Mestre em Elemento)
       // precisam dos parâmetros preenchidos (F27).

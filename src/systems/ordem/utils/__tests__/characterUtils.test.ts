@@ -482,7 +482,11 @@ describe('getAvailablePowerOptions', () => {
 
   it('com slotIndex, isenta a própria escolha do slot da exclusão (senão o slot nunca aparece marcado)', () => {
     const combatant = getOrdemClass('combatant')!
-    const draft = makeDraft({ class: 'combatant', powerChoices: ['heavy-weapons', 'heavy-blow'] })
+    const draft = makeDraft({
+      class: 'combatant',
+      attributes: { agility: 1, strength: 2, intellect: 1, presence: 1, vigor: 1 },
+      powerChoices: ['heavy-weapons', 'heavy-blow'],
+    })
 
     // Slot 0 (escolheu heavy-weapons): a própria escolha continua na lista dele.
     const slot0Options = getAvailablePowerOptions(draft, combatant, 0)
@@ -502,12 +506,45 @@ describe('getAvailablePowerOptions', () => {
     const options = getAvailablePowerOptions(draft, combatant)
     expect(options.find(p => p.id === 'heavy-weapons')).toBeUndefined()
   })
+
+  it('filtra pré-requisitos de atributo, NEX, perícia e poder anterior no instante da aquisição', () => {
+    const combatant = getOrdemClass('combatant')!
+    const initial = makeDraft({ class: 'combatant', nex: 15 })
+    const initialOptions = getAvailablePowerOptions(initial, combatant, 0)
+    expect(initialOptions.find(p => p.id === 'heavy-weapons')).toBeUndefined()
+    expect(initialOptions.find(p => p.id === 'heavy-armor-proficiency')).toBeUndefined()
+    expect(initialOptions.find(p => p.id === 'sure-shot')).toBeUndefined()
+
+    const at30 = makeDraft({
+      class: 'combatant', nex: 30,
+      attributes: { agility: 1, strength: 2, intellect: 1, presence: 1, vigor: 1 },
+      classChoiceGroupPicks: ['fighting', 'fortitude'],
+      powerChoices: ['heavy-weapons'],
+    })
+    expect(getAvailablePowerOptions(at30, combatant, 1).find(p => p.id === 'heavy-armor-proficiency')).toBeDefined()
+
+    const at45 = makeDraft({
+      ...at30,
+      nex: 45,
+      powerChoices: ['heavy-weapons', 'heavy-armor-proficiency'],
+    })
+    expect(getAvailablePowerOptions(at45, combatant, 2).find(p => p.id === 'war-tank')).toBeDefined()
+  })
 })
 
 describe('getAvailableTrilhaOptions / getAvailableVersatilityTrilhaOptions', () => {
   it('lista as 5 trilhas da classe', () => {
     const combatant = getOrdemClass('combatant')!
-    expect(getAvailableTrilhaOptions(combatant)).toHaveLength(5)
+    expect(getAvailableTrilhaOptions(makeDraft({ class: 'combatant' }), combatant)).toHaveLength(5)
+  })
+
+  it('exige Medicina treinada para escolher Médico de Campo', () => {
+    const specialist = getOrdemClass('specialist')!
+    const withoutMedicine = makeDraft({ class: 'specialist' })
+    expect(getAvailableTrilhaOptions(withoutMedicine, specialist).find(t => t.id === 'field-medic')).toBeUndefined()
+
+    const withMedicine = makeDraft({ class: 'specialist', classFreeSkillChoices: ['medicine'] })
+    expect(getAvailableTrilhaOptions(withMedicine, specialist).find(t => t.id === 'field-medic')).toBeDefined()
   })
 
   it('versatilidade exclui a trilha já escolhida', () => {

@@ -89,18 +89,18 @@ describe('isStepComplete — progression', () => {
     const semPoder = makeDraft({ class: 'combatant', nex: 15, trilha: 'annihilator' })
     expect(isStepComplete(semPoder, 'progression')).toBe(false)
 
-    const comPoder = makeDraft({ class: 'combatant', nex: 15, trilha: 'annihilator', powerChoices: ['heavy-weapons'] })
+    const comPoder = makeDraft({ class: 'combatant', nex: 15, trilha: 'annihilator', powerChoices: ['heavy-blow'] })
     expect(isStepComplete(comPoder, 'progression')).toBe(true)
   })
 
   it('NEX 20% exige também 1 aumento de atributo', () => {
     const semAumento = makeDraft({
-      class: 'combatant', nex: 20, trilha: 'annihilator', powerChoices: ['heavy-weapons'],
+      class: 'combatant', nex: 20, trilha: 'annihilator', powerChoices: ['heavy-blow'],
     })
     expect(isStepComplete(semAumento, 'progression')).toBe(false)
 
     const comAumento = makeDraft({
-      class: 'combatant', nex: 20, trilha: 'annihilator', powerChoices: ['heavy-weapons'],
+      class: 'combatant', nex: 20, trilha: 'annihilator', powerChoices: ['heavy-blow'],
       attributeIncreaseChoices: ['vigor'],
     })
     expect(isStepComplete(comAumento, 'progression')).toBe(true)
@@ -111,7 +111,7 @@ describe('isStepComplete — progression', () => {
     const base = {
       class: 'combatant' as const, nex: 35,
       trilha: 'annihilator',
-      powerChoices: ['heavy-weapons', 'heavy-blow'],
+      powerChoices: ['heavy-blow', 'tireless'],
       attributeIncreaseChoices: ['vigor' as const],
       attributes: { agility: 1, strength: 1, intellect: 2, presence: 1, vigor: 1 }, // 1+2=3 perícias por slot
     }
@@ -127,7 +127,7 @@ describe('isStepComplete — progression', () => {
     const base = {
       class: 'combatant' as const, nex: 50,
       trilha: 'annihilator',
-      powerChoices: ['heavy-weapons', 'heavy-blow', 'tireless'],
+      powerChoices: ['heavy-blow', 'tireless', 'athletic-readiness'],
       attributeIncreaseChoices: ['vigor' as const, 'vigor' as const],
       attributes: { agility: 1, strength: 1, intellect: 0, presence: 1, vigor: 1 }, // 1+0=1 perícia por slot
       skillGradeChoices: [['fighting']],
@@ -135,8 +135,18 @@ describe('isStepComplete — progression', () => {
     const semVersatilidade = makeDraft(base)
     expect(isStepComplete(semVersatilidade, 'progression')).toBe(false)
 
-    const comVersatilidade = makeDraft({ ...base, versatilityChoice: { kind: 'power' as const, powerId: 'sure-shot' } })
+    const comVersatilidade = makeDraft({ ...base, versatilityChoice: { kind: 'power' as const, powerId: 'opportunity-attack' } })
     expect(isStepComplete(comVersatilidade, 'progression')).toBe(true)
+  })
+
+  it('bloqueia poder sem pré-requisito e trilha Médico de Campo sem Medicina treinada', () => {
+    const invalidPower = makeDraft({
+      class: 'combatant', nex: 15, trilha: 'annihilator', powerChoices: ['heavy-weapons'],
+    })
+    expect(isStepComplete(invalidPower, 'progression')).toBe(false)
+
+    const invalidTrilha = makeDraft({ class: 'specialist', nex: 10, trilha: 'field-medic' })
+    expect(isStepComplete(invalidTrilha, 'progression')).toBe(false)
   })
 })
 

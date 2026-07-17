@@ -123,7 +123,7 @@ function Chip({ label, active, disabled, onClick }: { label: string; active: boo
 }
 
 function TrilhaSection({ draft, cls, onSelect }: { draft: import('../../types/character').OrdemCharacterDraft; cls: import('../../types/class').OrdemClass; onSelect: (id: string) => void }) {
-  const options = getAvailableTrilhaOptions(cls)
+  const options = getAvailableTrilhaOptions(draft, cls)
 
   return (
     <Section title="Trilha (NEX 10%)">

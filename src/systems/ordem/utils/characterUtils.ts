@@ -8,8 +8,9 @@ import { getOrdemClass, getFreeSkillChoiceCount } from './classUtils'
 import { getTrilhasByClass, getTrilha } from './trilhaUtils'
 import { getPowersByClass } from './powerUtils'
 import { RITUAL_COST, getRitualById } from './ritualUtils'
-import { getNexIndex, getReachedPowerSlots, getReachedAttributeIncreaseSlots, getReachedSkillGradeSlots, ATTRIBUTE_INCREASE_CAP, TRILHA_FEATURE_NEX, NEX_STEPS, getPeLimit } from './progressionUtils'
+import { getNexIndex, getReachedPowerSlots, getReachedAttributeIncreaseSlots, getReachedSkillGradeSlots, ATTRIBUTE_INCREASE_CAP, POWER_SLOT_NEX, TRILHA_FEATURE_NEX, VERSATILITY_NEX, NEX_STEPS, getPeLimit, hasVersatility } from './progressionUtils'
 import { getExpansionGrantedClassPowers, getParanormalEffects, getParanormalLearnedRituals } from './paranormalPowerUtils'
+import { getUnmetPrereqs, type PrereqContext } from './prereqUtils'
 
 export type DerivedStats = {
   hp: number
@@ -119,6 +120,17 @@ export function getEffectiveAttributes(draft: OrdemCharacterDraft): OrdemCharact
   return effective
 }
 
+/** Atributos efetivos no instante de uma escolha de progressão (sem aumentos de NEX futuros). */
+function getEffectiveAttributesAtNex(draft: OrdemCharacterDraft, nex: number): OrdemCharacterDraft['attributes'] {
+  const effective = { ...draft.attributes }
+  for (let i = 0; i < draft.attributeIncreaseChoices.length; i++) {
+    if (getReachedAttributeIncreaseSlots(nex)[i] === undefined) break
+    const attr = draft.attributeIncreaseChoices[i]
+    if (attr) effective[attr] = Math.min(ATTRIBUTE_INCREASE_CAP, effective[attr] + 1)
+  }
+  return effective
+}
+
 export function getRequiredPowerSlots(nex: number): number {
   return getReachedPowerSlots(nex).length
 }
@@ -131,26 +143,95 @@ export function getRequiredSkillGradeSlots(nex: number): number {
   return getReachedSkillGradeSlots(nex).length
 }
 
-/**
- * Poderes de classe disponíveis para um slot: da lista da classe, excluindo os já escolhidos em
- * OUTROS slots (a menos que repetíveis). Passar `slotIndex` isenta a própria escolha do slot da
- * exclusão, senão o poder some da lista assim que é escolhido e o slot nunca aparece marcado.
- * Sem `slotIndex` (ex.: Versatilidade, que guarda a escolha fora de `powerChoices`), exclui
- * qualquer poder já escolhido em algum slot regular.
- */
-export function getAvailablePowerOptions(draft: OrdemCharacterDraft, cls: OrdemClass, slotIndex?: number) {
-  const chosenElsewhere = draft.powerChoices.filter((p, i): p is string => Boolean(p) && i !== slotIndex)
-  return getPowersByClass(cls.id).filter(power => power.repeatable || !chosenElsewhere.includes(power.id))
+function getPowerAcquisitionNex(slotIndex?: number): number {
+  return slotIndex === undefined ? VERSATILITY_NEX : POWER_SLOT_NEX[slotIndex] ?? Infinity
 }
 
-/** Trilhas disponíveis pra escolher em NEX 10% (todas as 5 da classe). */
-export function getAvailableTrilhaOptions(cls: OrdemClass): Trilha[] {
-  return getTrilhasByClass(cls.id)
+/** Poderes de classe já adquiridos antes de um NEX específico, com seus parâmetros. */
+function getPriorClassPowerChoices(draft: OrdemCharacterDraft, acquisitionNex: number): { id: string; params: string[] }[] {
+  const choices = draft.powerChoices.flatMap((id, index) => {
+    if (!id || POWER_SLOT_NEX[index] >= acquisitionNex) return []
+    return [{ id, params: (draft.powerParams[`slot-${index}`] ?? []).filter(Boolean) }]
+  })
+  if (VERSATILITY_NEX < acquisitionNex && draft.versatilityChoice?.kind === 'power') {
+    choices.push({
+      id: draft.versatilityChoice.powerId,
+      params: (draft.powerParams.versatility ?? []).filter(Boolean),
+    })
+  }
+  return choices
+}
+
+/** Perícias disponíveis no instante da escolha, incluindo Treinamento em Perícia anterior. */
+function getTrainedSkillsAtNex(draft: OrdemCharacterDraft, acquisitionNex: number): string[] {
+  const powerPicks = getPriorClassPowerChoices(draft, acquisitionNex)
+    .filter(choice => choice.id === 'skill-training')
+    .flatMap(choice => choice.params)
+  return dedupe([...getTrainedSkillsWithoutPowerPicks(draft), ...powerPicks])
+}
+
+function getClassPowerPrereqContext(draft: OrdemCharacterDraft, acquisitionNex: number): PrereqContext {
+  const priorPowers = getPriorClassPowerChoices(draft, acquisitionNex)
+  return {
+    attributes: getEffectiveAttributesAtNex(draft, acquisitionNex),
+    acquisitionNex,
+    trainedSkills: getTrainedSkillsAtNex(draft, acquisitionNex),
+    hasClassPower: powerId => priorPowers.some(choice => choice.id === powerId),
+    getClassPowerElement: powerId => {
+      const choice = priorPowers.find(entry => entry.id === powerId)
+      return (choice?.params[0] as OrdemElement | undefined) ?? null
+    },
+    elementCounts: {},
+  }
+}
+
+/**
+ * Poderes de classe disponíveis para uma escolha, respeitando pré-requisitos no NEX em que ela
+ * foi adquirida. Poderes posteriores não podem suprir um pré-requisito anterior.
+ */
+export function getAvailablePowerOptions(draft: OrdemCharacterDraft, cls: OrdemClass, slotIndex?: number) {
+  const acquisitionNex = getPowerAcquisitionNex(slotIndex)
+  const prereqContext = getClassPowerPrereqContext(draft, acquisitionNex)
+  // Exclusão de duplicatas: qualquer poder não-repetível já escolhido em OUTRO slot
+  const chosenElsewhere = draft.powerChoices.filter((p, i): p is string => Boolean(p) && i !== slotIndex)
+  return getPowersByClass(cls.id).filter(power =>
+    (power.repeatable || !chosenElsewhere.includes(power.id))
+    && getUnmetPrereqs(power.prereqs, prereqContext).length === 0,
+  )
+}
+
+/** A trilha pertence à classe e seus pré-requisitos de perícia foram atendidos? */
+export function isTrilhaChoiceValid(draft: OrdemCharacterDraft, cls: OrdemClass, trilhaId: string): boolean {
+  const trilha = getTrilha(trilhaId)
+  return Boolean(
+    trilha
+    && trilha.classId === cls.id
+    && (!trilha.requiredTrainedSkill || getTrainedSkills(draft).includes(trilha.requiredTrainedSkill)),
+  )
+}
+
+/** Trilhas disponíveis pra escolher em NEX 10%, já filtradas pelos pré-requisitos. */
+export function getAvailableTrilhaOptions(draft: OrdemCharacterDraft, cls: OrdemClass): Trilha[] {
+  return getTrilhasByClass(cls.id).filter(trilha => isTrilhaChoiceValid(draft, cls, trilha.id))
 }
 
 /** Trilhas alternativas pra Versatilidade (NEX 50%) — qualquer trilha da classe que não seja a escolhida. */
 export function getAvailableVersatilityTrilhaOptions(draft: OrdemCharacterDraft, cls: OrdemClass): Trilha[] {
-  return getTrilhasByClass(cls.id).filter(t => t.id !== draft.trilha)
+  return getAvailableTrilhaOptions(draft, cls).filter(t => t.id !== draft.trilha)
+}
+
+/** Todas as escolhas de poderes de classe e Versatilidade atendem os requisitos de aquisição. */
+export function areClassPowerChoicesValid(draft: OrdemCharacterDraft, cls: OrdemClass): boolean {
+  const requiredSlots = getRequiredPowerSlots(draft.nex)
+  for (let index = 0; index < requiredSlots; index++) {
+    const powerId = draft.powerChoices[index]
+    if (!powerId || !getAvailablePowerOptions(draft, cls, index).some(power => power.id === powerId)) return false
+  }
+
+  if (hasVersatility(draft.nex) && draft.versatilityChoice?.kind === 'power') {
+    return getAvailablePowerOptions(draft, cls).some(power => power.id === draft.versatilityChoice?.powerId)
+  }
+  return true
 }
 
 /** Perícias elegíveis pra um slot de Grau de Treinamento: qualquer perícia treinada que ainda não virou expert. */

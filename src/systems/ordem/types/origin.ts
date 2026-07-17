@@ -28,6 +28,14 @@ export type OriginPowerEffects = {
    * (ex.: Ferramenta de Trabalho +1).
    */
   workToolBonus?: number
+  /** Concede um poder paranormal à escolha na criação (Cultista Arrependido, "Traços do Outro Lado"). */
+  grantsParanormalPower?: boolean
+  /**
+   * Começa o jogo com metade da Sanidade da classe (Cultista Arrependido). Regra do projeto
+   * (2026-07-17): metade APENAS da SAN inicial (NEX 0%, `cls.sanity.initialFlat`); os ganhos
+   * por degrau de NEX entram integrais. Ocultista NEX 5%: 20+5 → 10+5 = 15.
+   */
+  halvesStartingSanity?: boolean
 }
 
 export type Origin = {

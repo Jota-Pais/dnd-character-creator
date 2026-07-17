@@ -60,7 +60,7 @@
     "name": "Cultista Arrependido",
     "description": "Fez parte de um culto paranormal. Algo abriu seus olhos e agora luta pelo lado certo — embora carregue traços de sua vida pregressa.",
     "skillProficiencies": ["occultism", "religion"],
-    "power": { "name": "Traços do Outro Lado", "description": "Você possui um poder paranormal à sua escolha. Porém, começa o jogo com metade da Sanidade normal para sua classe." },
+    "power": { "name": "Traços do Outro Lado", "description": "Você possui um poder paranormal à sua escolha. Porém, começa o jogo com metade da Sanidade normal para sua classe.", "effects": { "grantsParanormalPower": true, "halvesStartingSanity": true } },
     "rollRange": [18, 18]
   },
   {

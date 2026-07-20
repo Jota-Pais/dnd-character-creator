@@ -20,6 +20,7 @@ import {
   getCategorySlotAllocation,
   getMissingRitualComponentElements,
   getCatalogCategory,
+  getEquipmentDamageResistances,
   EQUIPMENTS,
 } from '../equipmentUtils'
 import { getPatente } from '../patenteUtils'
@@ -278,6 +279,43 @@ describe('poderes com efeito mecânico no equipamento (F25)', () => {
     // Com proteção leve, o poder não faz nada.
     const comLeve = makeDraft({ powerChoices: ['war-tank'], equipmentChoices: ['protecao-leve'] })
     expect(getModifiedDefenseBonus(comLeve)).toBe(getModifiedDefenseBonus(makeDraft({ equipmentChoices: ['protecao-leve'] })))
+  })
+
+  it('getEquipmentDamageResistances: RD base da Proteção Pesada e do Traje Hazmat', () => {
+    expect(getEquipmentDamageResistances(makeDraft({ equipmentChoices: ['protecao-pesada'] })))
+      .toEqual([{ source: 'Proteção Pesada', label: 'balístico, corte, impacto e perfuração', value: 2 }])
+    expect(getEquipmentDamageResistances(makeDraft({ equipmentChoices: ['traje-hazmat'] })))
+      .toEqual([{ source: 'Traje Hazmat', label: 'químico', value: 10 }])
+    // Proteção Leve não tem RD nenhuma.
+    expect(getEquipmentDamageResistances(makeDraft({ equipmentChoices: ['protecao-leve'] }))).toEqual([])
+  })
+
+  it('Blindada substitui (não soma) a RD da proteção pesada para 5', () => {
+    const draft = makeDraft({
+      equipmentChoices: ['protecao-pesada'],
+      equipmentModifications: { 'protecao-pesada': ['blindada'] },
+    })
+    expect(getEquipmentDamageResistances(draft)).toEqual([
+      { source: 'Proteção Pesada', label: 'balístico, corte, impacto e perfuração', value: 5 },
+    ])
+  })
+
+  it('Tanque de Guerra soma +2 na RD da proteção pesada, com ou sem Blindada', () => {
+    const semBlindada = makeDraft({ powerChoices: ['war-tank'], equipmentChoices: ['protecao-pesada'] })
+    expect(getEquipmentDamageResistances(semBlindada)[0].value).toBe(4) // 2 + 2
+    const comBlindada = makeDraft({
+      powerChoices: ['war-tank'],
+      equipmentChoices: ['protecao-pesada'],
+      equipmentModifications: { 'protecao-pesada': ['blindada'] },
+    })
+    expect(getEquipmentDamageResistances(comBlindada)[0].value).toBe(7) // 5 (Blindada) + 2
+  })
+
+  it('maldição Cinética dá RD 2 em proteção leve ou 5 em proteção pesada', () => {
+    const leve = makeDraft({ equipmentChoices: ['protecao-leve'], equipmentCurses: { 'protecao-leve': ['cinetica'] } })
+    expect(getEquipmentDamageResistances(leve)).toEqual([{ source: 'Proteção Leve — maldição Cinética', label: 'geral', value: 2 }])
+    const pesada = makeDraft({ equipmentChoices: ['protecao-pesada'], equipmentCurses: { 'protecao-pesada': ['cinetica'] } })
+    expect(getEquipmentDamageResistances(pesada)).toContainEqual({ source: 'Proteção Pesada — maldição Cinética', label: 'geral', value: 5 })
   })
 
   it('proficiência via poder: Armamento Pesado destrava armas pesadas', () => {

@@ -29,6 +29,7 @@ import {
   getParanormalResistanceBonus,
   getMentalParanormalDamageResistance,
   getOriginMentalDamageResistance,
+  getConditionalDamageResistances,
   hasCarryCapacityIntellectBonus,
   getWorkToolBonus,
 } from '../characterUtils'
@@ -363,6 +364,17 @@ describe('Resistências (Grupo D): Mente Sã, Inabalável, Eu Já Sabia', () => 
     const draft = makeDraft({ class: 'occultist', trilha: 'intuitive', nex: 65, origin: 'conspiracy-theorist' })
     expect(getMentalParanormalDamageResistance(draft)).toBe(10)
     expect(getOriginMentalDamageResistance(draft, 3)).toBe(3)
+  })
+
+  it('Casca Grossa (Tropa de Choque NEX 10%): RD igual ao Vigor, condicional a "ao bloquear"', () => {
+    const draft = makeDraft({ class: 'combatant', trilha: 'shock-trooper', nex: 10, attributes: { agility: 1, strength: 1, intellect: 1, presence: 1, vigor: 3 } })
+    expect(getConditionalDamageResistances(draft)).toEqual([{ name: 'Casca Grossa', value: 'vigor', condition: 'ao bloquear' }])
+    expect(getConditionalDamageResistances(makeDraft({ class: 'combatant', trilha: 'shock-trooper', nex: 5 }))).toEqual([])
+  })
+
+  it('Inquebrável (Tropa de Choque NEX 99%): RD 5 fixa, condicional a "enquanto estiver machucado"', () => {
+    const draft = makeDraft({ class: 'combatant', trilha: 'shock-trooper', nex: 99 })
+    expect(getConditionalDamageResistances(draft)).toContainEqual({ name: 'Inquebrável', value: 5, condition: 'enquanto estiver machucado' })
   })
 })
 

@@ -20,7 +20,7 @@
   { "id": "explosiva", "name": "Explosiva", "effect": "Aumenta o dano em +2d6.", "target": "ammunition" },
 
   { "id": "antibombas", "name": "Antibombas", "effect": "+5 em testes de resistência contra efeitos de área. Só em proteção pesada.", "target": "protection-heavy" },
-  { "id": "blindada", "name": "Blindada", "effect": "Aumenta a resistência a dano para 5 e o espaço ocupado em 1. Só em proteção pesada.", "target": "protection-heavy", "spaceDelta": 1 },
+  { "id": "blindada", "name": "Blindada", "effect": "Aumenta a resistência a dano para 5 e o espaço ocupado em 1. Só em proteção pesada.", "target": "protection-heavy", "spaceDelta": 1, "damageResistanceOverride": 5 },
   { "id": "discreta-protecao", "name": "Discreta", "effect": "Reduz o espaço em 1 e dá +5 em Crime para ocultar (permite o teste destreinado). Só em proteção leve.", "target": "protection-light", "spaceDelta": -1, "excludes": ["reforcada"] },
   { "id": "reforcada", "name": "Reforçada", "effect": "Aumenta a Defesa fornecida em +2 e o espaço ocupado em 1.", "target": "protection-any", "defenseBonus": 2, "spaceDelta": 1, "excludes": ["discreta-protecao"] },
 

@@ -23,6 +23,8 @@ export type OrdemCurse = {
   effect: string
   /** Bônus incondicional de Defesa (Repulsora/Cinética/Letárgica +2, Defesa +5). */
   defenseBonus?: number
+  /** Resistência a dano concedida pela maldição, quando difere por peso da proteção (Cinética: 2 leve / 5 pesada). */
+  damageResistanceByWeight?: { light: number; heavy: number }
   /**
    * Bônus incondicional de atributo (Carisma, Sagacidade, Destreza, Disposição, Pujança).
    * `noPe`: o aumento de Presença NÃO fornece PE adicionais (ressalva do livro pro Carisma).

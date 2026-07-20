@@ -116,6 +116,7 @@
     "element": "energy",
     "target": "protection-any",
     "defenseBonus": 2,
+    "damageResistanceByWeight": { "light": 2, "heavy": 5 },
     "effect": "A proteção produz uma barreira invisível que desvia ataques, concedendo +2 em Defesa e resistência a dano 2 (para proteção leve) ou 5 (para proteção pesada)."
   },
   {

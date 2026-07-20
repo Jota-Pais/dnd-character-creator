@@ -11,6 +11,10 @@ export interface OrdemEquipmentBase {
   description?: string;
   /** Bônus à capacidade de carga concedido pelo item (ex.: Mochila Militar = +2 espaços). */
   carryBonus?: number;
+  /** Resistência a dano incondicional concedida pelo item (ex.: Proteção Pesada 2, Traje Hazmat 10). */
+  damageResistance?: number;
+  /** Tipos de dano cobertos pela `damageResistance` (ex.: "balístico, corte, impacto e perfuração"). */
+  damageResistanceLabel?: string;
   /** Item Paranormal (Tabela 3.10) — exibido em seção própria no passo de Equipamento. */
   paranormal?: boolean;
   /** Componentes ritualísticos: elemento cujos rituais este kit permite conjurar. */

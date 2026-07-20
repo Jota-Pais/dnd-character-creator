@@ -6,7 +6,7 @@ import { getTrilha } from '../../utils/trilhaUtils'
 import { getPower } from '../../utils/powerUtils'
 import {
   getTrainedSkills, getSkillGrade, hasFavoredRitualPower, hasLaminaMaldita, getRitualCost, hasClassPower, getWeaponSkillOverride, getGrantedRituals, getEffectivePeLimit,
-  getParanormalResistanceBonus, getMentalParanormalDamageResistance, getOriginMentalDamageResistance,
+  getParanormalResistanceBonus, getMentalParanormalDamageResistance, getOriginMentalDamageResistance, getConditionalDamageResistances,
 } from '../../utils/characterUtils'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, ritualNeedsElementChoice, getSlotRitualElement, getGrantedRitualElement, grantedRitualElementKey, ELEMENT_NAMES, ELEMENT_COLORS } from '../../utils/ritualUtils'
 import {
@@ -15,7 +15,7 @@ import {
 } from '../../utils/paranormalPowerUtils'
 import {
   getEquipmentByInstance, getInstanceLabel, getTotalCarryCapacity, getModifiedSpaces, getModifiedDefenseBonus, getDraftInstanceCategory,
-  getMissingRitualComponentElements,
+  getMissingRitualComponentElements, getEquipmentDamageResistances,
 } from '../../utils/equipmentUtils'
 import { getModification } from '../../utils/modificationUtils'
 import { getCurse, getCursedDerivedStats, getSheetAttributes, formatCurseElement, formatCurseChoiceDetail, getRitualDt, getRitualPeLimit } from '../../utils/curseUtils'
@@ -61,6 +61,8 @@ export function ReviewStep() {
   const mentalParanormalDr = getMentalParanormalDamageResistance(draft)
   const originMentalDr = getOriginMentalDamageResistance(draft, attributes.intellect)
   const elementResistances = Object.entries(paranormalEffects.elementResistances) as [keyof typeof ELEMENT_NAMES, number][]
+  const equipmentResistances = getEquipmentDamageResistances(draft)
+  const conditionalResistances = getConditionalDamageResistances(draft)
   // Só o Ocultista conhece rituais; limita aos slots realmente abertos pelo NEX (baixar o NEX
   // depois de escolher não deve deixar rituais obsoletos de círculos inacessíveis na ficha).
   const ritualSlots = draft.class === 'occultist' ? getRitualSlotsCount(draft.nex) : 0
@@ -255,9 +257,24 @@ export function ReviewStep() {
         </Section>
       )}
 
-      {(paranormalResistanceBonus > 0 || mentalParanormalDr > 0 || originMentalDr > 0 || elementResistances.length > 0 || paranormalEffects.resistanceTestsBonus > 0) && (
+      {(paranormalResistanceBonus > 0 || mentalParanormalDr > 0 || originMentalDr > 0 || elementResistances.length > 0
+        || paranormalEffects.resistanceTestsBonus > 0 || equipmentResistances.length > 0 || conditionalResistances.length > 0) && (
         <Section title="Resistências">
           <div className="space-y-1.5">
+            {equipmentResistances.map((r, i) => (
+              <p key={`eq-${i}`} className="text-parchment-500 text-xs">
+                <span className="font-semibold text-parchment-300">Resistência a dano {r.label}: {r.value}</span>
+                {' '}<span className="text-gold-600/90">({r.source})</span>
+              </p>
+            ))}
+            {conditionalResistances.map((r, i) => (
+              <p key={`cond-${i}`} className="text-parchment-500 text-xs">
+                <span className="font-semibold text-parchment-300">
+                  Resistência a dano {r.value === 'vigor' ? attributes.vigor : r.value}
+                </span>
+                {' '}<span className="text-gold-600/90">({r.name}, {r.condition})</span>
+              </p>
+            ))}
             {paranormalEffects.resistanceTestsBonus > 0 && (
               <p className="text-parchment-500 text-xs">
                 <span className="font-semibold text-parchment-300">Testes de resistência: +{paranormalEffects.resistanceTestsBonus}</span>

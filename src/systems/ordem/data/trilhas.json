@@ -58,10 +58,10 @@
     "description": "Duro na queda. Treinou o corpo para resistir a traumas físicos, tornando-se praticamente inquebrável, por isso não teme se colocar entre seus aliados e o perigo.",
     "requirement": null,
     "features": [
-      { "nex": 10, "name": "Casca Grossa", "description": "Você recebe +1 PV para cada 5% de NEX e, quando faz um bloqueio, soma seu Vigor na resistência a dano recebida." },
+      { "nex": 10, "name": "Casca Grossa", "description": "Você recebe +1 PV para cada 5% de NEX e, quando faz um bloqueio, soma seu Vigor na resistência a dano recebida.", "effects": { "conditionalDamageResistance": { "value": "vigor", "condition": "ao bloquear" } } },
       { "nex": 40, "name": "Cai Dentro", "description": "Sempre que um oponente em alcance curto ataca um de seus aliados, gaste uma reação e 1 PE para que esse oponente faça um teste de Vontade (DT Vig); se falhar, deve atacar você em vez de seu aliado." },
       { "nex": 65, "name": "Duro de Matar", "description": "Ao sofrer dano não paranormal, gaste uma reação e 2 PE para reduzir esse dano à metade. Em NEX 85%, também funciona contra dano paranormal." },
-      { "nex": 99, "name": "Inquebrável", "description": "Enquanto estiver machucado, recebe +10 na Defesa e resistência a dano 5. Enquanto estiver morrendo, não fica indefeso e ainda pode realizar ações (segue as regras de morte normalmente)." }
+      { "nex": 99, "name": "Inquebrável", "description": "Enquanto estiver machucado, recebe +10 na Defesa e resistência a dano 5. Enquanto estiver morrendo, não fica indefeso e ainda pode realizar ações (segue as regras de morte normalmente).", "effects": { "conditionalDamageResistance": { "value": 5, "condition": "enquanto estiver machucado" } } }
     ]
   },
   {

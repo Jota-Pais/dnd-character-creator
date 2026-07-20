@@ -16,6 +16,18 @@ export type TrilhaFeatureEffects = {
   mentalAndParanormalDamageResistance?: number
   /** Soma Intelecto à Força para o cálculo de capacidade de carga (Inventário Otimizado). */
   carryCapacityAddsIntellect?: boolean
+  /**
+   * Exceção à regra "só permanente": resistência a dano condicional, mas relevante o bastante
+   * pra listar na seção Resistências com a condição explícita (ex.: Casca Grossa — RD = Vigor
+   * "ao bloquear", Inquebrável — RD fixa "enquanto machucado"). Nunca somada a um total; cada
+   * uma aparece como uma linha própria com sua condição.
+   */
+  conditionalDamageResistance?: {
+    /** Valor fixo, OU 'vigor' pra usar o atributo Vigor do personagem como valor. */
+    value: number | 'vigor'
+    /** Descrição curta da condição de gatilho (ex.: "ao bloquear", "enquanto estiver machucado"). */
+    condition: string
+  }
 }
 
 export type TrilhaFeature = {

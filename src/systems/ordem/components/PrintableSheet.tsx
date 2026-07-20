@@ -6,7 +6,7 @@ import { getTrilha } from '../utils/trilhaUtils'
 import { getPower } from '../utils/powerUtils'
 import {
   getTrainedSkills, getSkillGrade, getRitualCost, hasClassPower, getWeaponSkillOverride, getGrantedRituals, getEffectivePeLimit,
-  getParanormalResistanceBonus, getMentalParanormalDamageResistance, getOriginMentalDamageResistance,
+  getParanormalResistanceBonus, getMentalParanormalDamageResistance, getOriginMentalDamageResistance, getConditionalDamageResistances,
 } from '../utils/characterUtils'
 import { getReachedTrilhaSlots, getPeLimit } from '../utils/progressionUtils'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, getSlotRitualElement, getGrantedRitualElement, ELEMENT_NAMES } from '../utils/ritualUtils'
@@ -16,7 +16,7 @@ import {
 } from '../utils/paranormalPowerUtils'
 import {
   getEquipmentByInstance, getInstanceLabel, getTotalCarryCapacity, getModifiedSpaces, getModifiedDefenseBonus,
-  getDraftInstanceCategory,
+  getDraftInstanceCategory, getEquipmentDamageResistances,
 } from '../utils/equipmentUtils'
 import { getModification } from '../utils/modificationUtils'
 import { getCurse, getCursedDerivedStats, getSheetAttributes, formatCurseElement, formatCurseChoiceDetail, getRitualDt, getRitualPeLimit } from '../utils/curseUtils'
@@ -62,6 +62,17 @@ export function PrintableSheet() {
   const mentalParanormalDr = getMentalParanormalDamageResistance(draft)
   const originMentalDr = getOriginMentalDamageResistance(draft, attributes.intellect)
   const elementResistances = Object.entries(paranormalEffects.elementResistances) as [keyof typeof ELEMENT_NAMES, number][]
+  const equipmentResistances = getEquipmentDamageResistances(draft)
+  const conditionalResistances = getConditionalDamageResistances(draft)
+  // Resumo compacto pro quadro de Combate (página 1) — o detalhe completo, com a fonte de cada
+  // uma, fica na seção "Resistências" (página 2).
+  const resistanceSummary = [
+    ...equipmentResistances.map(r => `${r.label} ${r.value}`),
+    ...elementResistances.map(([element, value]) => `${ELEMENT_NAMES[element]} ${value}`),
+    ...(mentalParanormalDr > 0 ? [`Mental/Paranormal ${mentalParanormalDr}`] : []),
+    ...(originMentalDr > 0 ? [`Mental ${originMentalDr}`] : []),
+    ...conditionalResistances.map(r => `${r.value === 'vigor' ? attributes.vigor : r.value} (${r.condition})`),
+  ].join(', ')
   // Só o Ocultista conhece rituais; limita aos slots abertos pelo NEX (ver ReviewStep).
   const ritualSlots = draft.class === 'occultist' ? getRitualSlotsCount(draft.nex) : 0
   // Preserva o índice do slot: rituais multi-elemento (ex.: Amaldiçoar Arma) podem ocupar mais
@@ -165,8 +176,12 @@ export function PrintableSheet() {
                   : '—'}
               </p>
               <p className="flex items-baseline gap-1">
-                <span className="font-bold uppercase text-[10px]">Resistências:</span>
-                <span className="flex-1 border-b border-gray-400 min-h-[1em]" />
+                <span className="font-bold uppercase text-[10px]">Resistências:</span>{' '}
+                {resistanceSummary ? (
+                  <span>{resistanceSummary}</span>
+                ) : (
+                  <span className="flex-1 border-b border-gray-400 min-h-[1em]" />
+                )}
               </p>
             </section>
           </div>
@@ -336,10 +351,20 @@ export function PrintableSheet() {
           </div>
         </section>
 
-        {(paranormalResistanceBonus > 0 || mentalParanormalDr > 0 || originMentalDr > 0 || elementResistances.length > 0 || paranormalEffects.resistanceTestsBonus > 0) && (
+        {(paranormalResistanceBonus > 0 || mentalParanormalDr > 0 || originMentalDr > 0 || elementResistances.length > 0
+          || paranormalEffects.resistanceTestsBonus > 0 || equipmentResistances.length > 0 || conditionalResistances.length > 0) && (
           <section className="mb-4">
             <BlackBar>Resistências</BlackBar>
             <div className="space-y-1 mt-2 text-sm">
+              {equipmentResistances.map((r, i) => (
+                <p key={`eq-${i}`}><span className="font-semibold">Resistência a dano {r.label}: {r.value}</span> ({r.source}).</p>
+              ))}
+              {conditionalResistances.map((r, i) => (
+                <p key={`cond-${i}`}>
+                  <span className="font-semibold">Resistência a dano {r.value === 'vigor' ? attributes.vigor : r.value}</span>
+                  {' '}({r.name}, {r.condition}).
+                </p>
+              ))}
               {paranormalEffects.resistanceTestsBonus > 0 && (
                 <p><span className="font-semibold">Testes de resistência: +{paranormalEffects.resistanceTestsBonus}</span> (Precognição).</p>
               )}

@@ -192,6 +192,39 @@ export function getModifiedDefenseBonus(draft: OrdemCharacterDraft): number {
   }, 0)
 }
 
+export type EquipmentDamageResistanceEntry = { source: string; label: string; value: number }
+
+/**
+ * Resistências a dano concedidas por itens de equipamento (Proteção Pesada, Traje Hazmat) e pela
+ * maldição Cinética em proteções — uma entrada por fonte, sem somar tipos de dano diferentes
+ * entre si (balístico ≠ químico). Inclui a substituição da Blindada (RD → 5, não soma) e o +2 do
+ * Tanque de Guerra na proteção pesada.
+ */
+export function getEquipmentDamageResistances(draft: OrdemCharacterDraft): EquipmentDamageResistanceEntry[] {
+  const entries: EquipmentDamageResistanceEntry[] = []
+  for (const uid of draft.equipmentChoices) {
+    const item = getEquipmentByInstance(uid)
+    if (!item) continue
+    if (item.damageResistance) {
+      let value = item.damageResistance
+      if (item.type === 'protection') {
+        const override = itemMods(draft, uid).reduce((max, mid) => Math.max(max, getModification(mid)?.damageResistanceOverride ?? 0), 0)
+        if (override > 0) value = override
+        if (item.id === 'protecao-pesada' && hasClassPower(draft, 'war-tank')) value += 2
+      }
+      entries.push({ source: getInstanceLabel(draft, uid), label: item.damageResistanceLabel ?? 'geral', value })
+    }
+    if (item.type === 'protection') {
+      const cinetica = getItemCurses(draft, uid).map(getCurse).find(c => c?.damageResistanceByWeight)
+      if (cinetica?.damageResistanceByWeight) {
+        const value = item.id === 'protecao-pesada' ? cinetica.damageResistanceByWeight.heavy : cinetica.damageResistanceByWeight.light
+        entries.push({ source: `${getInstanceLabel(draft, uid)} — maldição Cinética`, label: 'geral', value })
+      }
+    }
+  }
+  return entries
+}
+
 /** Quantas unidades escolhidas têm a categoria EFETIVA (base + modificações + maldições) igual a `category`. */
 export function getEffectiveCategoryCount(draft: OrdemCharacterDraft, category: number): number {
   return draft.equipmentChoices.reduce((acc, uid) => {

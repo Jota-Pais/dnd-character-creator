@@ -19,6 +19,8 @@ export type OrdemModification = {
   spaceDelta?: number
   /** Bônus de Defesa (ex.: Reforçada +2), aplicado a proteções. */
   defenseBonus?: number
+  /** Substitui (não soma) a resistência a dano da proteção por este valor (Blindada → 5). */
+  damageResistanceOverride?: number
   /** Bônus no teste de ataque da arma (Certeira/Alongada +2). */
   attackBonus?: number
   /** Bônus fixo na rolagem de dano (Cruel +2). */

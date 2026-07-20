@@ -573,6 +573,8 @@
     "spaces": 5,
     "type": "protection",
     "defenseBonus": 10,
+    "damageResistance": 2,
+    "damageResistanceLabel": "balístico, corte, impacto e perfuração",
     "description": "Equipamento de forças especiais (capacete e colete de kevlar em várias camadas). Fornece +10 na Defesa e resistência a balístico/corte/impacto/perfuração 2, mas impõe –5 em perícias que sofrem penalidade de carga."
   },
   {
@@ -800,6 +802,8 @@
     "category": 1,
     "spaces": 2,
     "type": "general",
+    "damageResistance": 10,
+    "damageResistanceLabel": "químico",
     "description": "Roupa impermeável que cobre o corpo inteiro. Fornece +5 em testes de resistência contra efeitos ambientais e resistência a químico 10."
   },
   {

@@ -508,6 +508,22 @@ export function getMentalParanormalDamageResistance(draft: OrdemCharacterDraft):
     .reduce((s, { feature }) => s + (feature.effects?.mentalAndParanormalDamageResistance ?? 0), 0)
 }
 
+export type ConditionalDamageResistance = { name: string; value: number | 'vigor'; condition: string }
+
+/**
+ * Resistências a dano condicionais de features de trilha (ex.: Casca Grossa "ao bloquear",
+ * Inquebrável "enquanto machucado") — nunca somadas num total, cada uma é listada com sua
+ * própria condição na seção Resistências.
+ */
+export function getConditionalDamageResistances(draft: OrdemCharacterDraft): ConditionalDamageResistance[] {
+  const result: ConditionalDamageResistance[] = []
+  for (const { feature } of getReachedTrilhaFeaturesWithSource(draft)) {
+    const cdr = feature.effects?.conditionalDamageResistance
+    if (cdr) result.push({ name: feature.name, ...cdr })
+  }
+  return result
+}
+
 /** Tem Inventário Otimizado (Técnico NEX 10%): soma Intelecto à Força pro cálculo de carga? */
 export function hasCarryCapacityIntellectBonus(draft: OrdemCharacterDraft): boolean {
   return getReachedTrilhaFeaturesWithSource(draft).some(({ feature }) => feature.effects?.carryCapacityAddsIntellect)

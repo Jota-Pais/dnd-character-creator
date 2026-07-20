@@ -132,7 +132,7 @@ function SourceCard({ instance, open, onOpen, onClose, onPick }: {
         <div className="p-4 rounded-xl bg-black/40 border border-parchment-900/50 relative group">
           <button
             onClick={onOpen}
-            className="absolute top-3 right-3 px-3 py-1 bg-parchment-900 text-parchment-200 hover:bg-parchment-800 text-xs font-bold rounded shadow-sm opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+            className="absolute top-3 right-3 px-3 py-1 bg-parchment-900 text-parchment-200 hover:bg-parchment-800 text-xs font-bold rounded shadow-sm transition-colors"
           >
             Trocar
           </button>

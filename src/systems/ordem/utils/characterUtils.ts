@@ -229,7 +229,9 @@ export function areClassPowerChoicesValid(draft: OrdemCharacterDraft, cls: Ordem
   }
 
   if (hasVersatility(draft.nex) && draft.versatilityChoice?.kind === 'power') {
-    return getAvailablePowerOptions(draft, cls).some(power => power.id === draft.versatilityChoice?.powerId)
+    // Extraído da closure: dentro do callback o narrowing da união se perde (TS 6).
+    const versatilityPowerId = draft.versatilityChoice.powerId
+    return getAvailablePowerOptions(draft, cls).some(power => power.id === versatilityPowerId)
   }
   return true
 }

@@ -12,6 +12,8 @@ import {
   getParanormalLearnedRituals,
   getParanormalEffects,
   getLearnRitualMaxCircle,
+  getLearnRitualSlots,
+  areLearnRitualSlotsComplete,
   getTranscendCount,
   getSanityBreakdown,
   areParanormalChoicesComplete,
@@ -315,11 +317,24 @@ describe('Aprender Ritual', () => {
     ])
   })
 
-  it('ritual multi-elemento exige a escolha do elemento', () => {
-    const incomplete = fullTranscendDraft({
+  it('ritual e elemento pendentes NÃO travam o passo dos poderes (a pendência é da etapa Rituais)', () => {
+    const noRitual = makeDraft({
+      class: 'combatant', nex: 15, powerChoices: ['transcend'],
+      paranormalPowerChoices: { 'slot-0': { powerId: 'learn-ritual' } },
+    })
+    const pending = getParanormalInstances(noRitual).find(i => i.key === 'slot-0')!
+    expect(pending.complete).toBe(true)
+    expect(pending.valid).toBe(true)
+    expect(pending.element).toBeNull() // sem ritual, não conta para pré-requisito de elemento
+    expect(areParanormalChoicesComplete(noRitual)).toBe(true)
+    expect(areLearnRitualSlotsComplete(noRitual)).toBe(false)
+
+    // Ritual multi-elemento sem o elemento escolhido: mesma divisão de responsabilidade.
+    const noElement = fullTranscendDraft({
       paranormalPowerChoices: { 'slot-0': { powerId: 'learn-ritual', ritualId: 'amaldicoar-arma' } },
     })
-    expect(getParanormalInstances(incomplete).find(i => i.key === 'slot-0')!.complete).toBe(false)
+    expect(getParanormalInstances(noElement).find(i => i.key === 'slot-0')!.element).toBeNull()
+    expect(areLearnRitualSlotsComplete(noElement)).toBe(false)
 
     const complete = fullTranscendDraft({
       paranormalPowerChoices: { 'slot-0': { powerId: 'learn-ritual', ritualId: 'amaldicoar-arma', ritualElement: 'energy' } },
@@ -327,6 +342,25 @@ describe('Aprender Ritual', () => {
     const instance = getParanormalInstances(complete).find(i => i.key === 'slot-0')!
     expect(instance.valid).toBe(true)
     expect(instance.element).toBe('energy')
+    expect(areLearnRitualSlotsComplete(complete)).toBe(true)
+  })
+
+  it('cada instância vira um slot na etapa Rituais, com a fonte e o teto de círculo da aquisição', () => {
+    const draft = fullTranscendDraft({
+      attributes: { agility: 1, strength: 1, intellect: 2, presence: 2, vigor: 2 },
+      paranormalPowerChoices: {
+        'slot-0': { powerId: 'learn-ritual' }, // NEX 15% → até 1º círculo, ainda sem ritual
+        'slot-2': { powerId: 'learn-ritual', ritualId: 'aprimorar-fisico' }, // NEX 45% → até 2º
+      },
+    })
+    expect(getLearnRitualSlots(draft)).toEqual([
+      expect.objectContaining({
+        key: 'slot-0', maxCircle: 1, sourceLabel: 'Transcender — poder de NEX 15%',
+        ritual: null, element: null, complete: false,
+      }),
+      expect.objectContaining({ key: 'slot-2', maxCircle: 2, element: 'blood', complete: true }),
+    ])
+    expect(areLearnRitualSlotsComplete(draft)).toBe(false)
   })
 
   it('deduplica contra os rituais escolhidos pelo Ocultista (mesma instância ritual+elemento)', () => {

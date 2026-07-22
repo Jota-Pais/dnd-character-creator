@@ -1,48 +1,82 @@
 import { useState } from 'react'
 import { useOrdemStore } from '../../stores/characterStore'
-import { getRitualSlotsCount, getMaxRitualCircle, getAvailableRituals, getRitualSlotNex, isRitualStepComplete, ritualNeedsElementChoice, getGrantedRitualElement, ELEMENT_NAMES, ELEMENT_COLORS } from '../../utils/ritualUtils'
-import { getGrantedRituals } from '../../utils/characterUtils'
-import { getParanormalLearnedRituals } from '../../utils/paranormalPowerUtils'
+import { getRitualSlotsCount, getMaxRitualCircle, getAvailableRituals, getRitualSlotNex, getSlotRitualElement, ritualNeedsElementChoice, getGrantedRitualElement, getRitualById, ELEMENT_NAMES, ELEMENT_COLORS } from '../../utils/ritualUtils'
+import { getTrilhaGrantedRituals } from '../../utils/characterUtils'
+import { getLearnRitualSlots, type LearnRitualSlot } from '../../utils/paranormalPowerUtils'
+import { isStepComplete } from '../../utils/draftValidation'
 import { STEP_LABELS } from '../../types/character'
 import type { OrdemCharacterDraft } from '../../types/character'
-import type { OrdemElement } from '../../types/ritual'
+import type { OrdemElement, OrdemRitualCircle } from '../../types/ritual'
 import { StepNav } from '../common/StepNav'
+import { RitualSlotCard } from '../rituals/RitualSlotCard'
+
+/** Dono de uma instância ritual+elemento já conhecida — usado para não oferecer duplicatas. */
+type Occupancy = { owner: string; ritualId: string; element: OrdemElement | undefined }
 
 export function RitualsStep() {
-  const [openSlot, setOpenSlot] = useState<number | null>(null)
+  // Chave do slot aberto: 'slot:<i>' (Ocultista) ou 'learn:<sourceKey>' (Aprender Ritual).
+  const [openSlot, setOpenSlot] = useState<string | null>(null)
   const draft = useOrdemStore(state => state.draft)
   const nex = useOrdemStore(state => state.draft.nex)
   const charClass = useOrdemStore(state => state.draft.class)
   const ritualChoices = useOrdemStore(state => state.draft.ritualChoices)
   const ritualElementChoices = useOrdemStore(state => state.draft.ritualElementChoices)
   const updateDraft = useOrdemStore(state => state.updateDraft)
+  const setParanormalSubChoice = useOrdemStore(state => state.setParanormalSubChoice)
   const nextStep = useOrdemStore(state => state.nextStep)
   const prevStep = useOrdemStore(state => state.prevStep)
 
-  if (charClass !== 'occultist') {
-    return (
-      <div className="max-w-2xl mx-auto space-y-8 animate-fade-in pb-20">
-        <h2 className="text-2xl font-fantasy text-gold-400 mb-6 flex items-center gap-2">
-          {STEP_LABELS.rituals}
-        </h2>
-        <div className="bg-parchment-950 border border-parchment-900 rounded-xl p-8 text-center text-parchment-600">
-          Apenas <strong className="text-gold-500">Ocultistas</strong> escolhem rituais na criação de personagem.
-        </div>
-        {/* Qualquer classe pode ter rituais concedidos (trilha ou o poder paranormal Aprender
-            Ritual) — sem este bloco, um Combatente com Aprender Ritual veria uma tela que mente. */}
-        <GrantedRitualsBlock draft={draft} />
-        <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={true} />
-      </div>
-    )
+  const isOccultist = charClass === 'occultist'
+  const slotCount = isOccultist ? getRitualSlotsCount(nex) : 0
+  const maxCircle = getMaxRitualCircle(nex)
+  const learnSlots = getLearnRitualSlots(draft)
+
+  // Instâncias ritual+elemento já conhecidas, com a fonte de cada uma: slots do Ocultista
+  // (só os ABERTOS pelo NEX — padrão slice), slots do Aprender Ritual e rituais de trilha.
+  // Um slot nunca conta contra si mesmo, por isso a lista guarda o dono.
+  const occupancies: Occupancy[] = []
+  ritualChoices.slice(0, slotCount).forEach((id, i) => {
+    const ritual = id ? getRitualById(id) : undefined
+    if (!id || !ritual) return
+    occupancies.push({ owner: `slot:${i}`, ritualId: id, element: getSlotRitualElement(ritual, i, ritualElementChoices) })
+  })
+  for (const slot of learnSlots) {
+    if (!slot.ritual) continue
+    occupancies.push({ owner: `learn:${slot.key}`, ritualId: slot.ritual.id, element: slot.element ?? undefined })
+  }
+  for (const granted of getTrilhaGrantedRituals(draft)) {
+    occupancies.push({
+      owner: `granted:${granted.ritual.id}`,
+      ritualId: granted.ritual.id,
+      element: getGrantedRitualElement(granted.ritual, ritualElementChoices),
+    })
   }
 
-  const slotCount = getRitualSlotsCount(nex)
-  const maxCircle = getMaxRitualCircle(nex)
-  const availableRituals = getAvailableRituals(maxCircle)
-  // Rituais já aprendidos via poder Aprender Ritual — escolher o mesmo aqui criaria uma
-  // duplicata (a instância do poder invalidaria retroativamente na etapa Poderes Paranormais).
-  const learnedRituals = getParanormalLearnedRituals(draft)
-  const learnedSingleIds = new Set(learnedRituals.filter(l => l.ritual.elements.length === 1).map(l => l.ritual.id))
+  /** Rituais de elemento único já conhecidos por OUTRA fonte — somem da lista de opções. */
+  const singleOccupiedBy = (owner: string): Set<string> => {
+    const set = new Set<string>()
+    for (const o of occupancies) {
+      if (o.owner === owner) continue
+      const ritual = getRitualById(o.ritualId)
+      if (ritual && !ritualNeedsElementChoice(ritual)) set.add(o.ritualId)
+    }
+    return set
+  }
+
+  /** Instâncias ritual+elemento de OUTRA fonte — o chip daquele elemento fica travado. */
+  const instanceOccupiedBy = (owner: string): Set<string> => {
+    const set = new Set<string>()
+    for (const o of occupancies) {
+      if (o.owner === owner || !o.element) continue
+      set.add(`${o.ritualId}::${o.element}`)
+    }
+    return set
+  }
+
+  const optionsFor = (owner: string, circle: OrdemRitualCircle, selectedId: string | null | undefined) => {
+    const occupied = singleOccupiedBy(owner)
+    return getAvailableRituals(circle).filter(r => r.id === selectedId || ritualNeedsElementChoice(r) || !occupied.has(r.id))
+  }
 
   const handleSelect = (index: number, ritualId: string) => {
     const newChoices = [...ritualChoices]
@@ -54,9 +88,10 @@ export function RitualsStep() {
     updateDraft({ ritualElementChoices: { ...ritualElementChoices, [slotIndex]: element } })
   }
 
-  // Usa o mesmo validador do store (exige slots preenchidos, sem repetição e com o elemento
-  // escolhido para rituais multi-elemento), para o botão "Avançar" não divergir do gate de nextStep.
-  const isComplete = isRitualStepComplete(nex, charClass, ritualChoices, ritualElementChoices)
+  const canAdvance = isStepComplete(draft, 'rituals')
+  const disabledReason = learnSlots.some(s => !s.complete)
+    ? 'Escolha o ritual concedido pelo poder Aprender Ritual'
+    : 'Escolha todos os rituais pendentes'
 
   return (
     <div className="max-w-3xl mx-auto space-y-8 animate-fade-in pb-20">
@@ -64,162 +99,136 @@ export function RitualsStep() {
         <h2 className="text-2xl font-fantasy text-gold-400 flex items-center gap-2">
           {STEP_LABELS.rituals}
         </h2>
-        <span className="text-sm font-fantasy text-parchment-500 bg-parchment-900 px-3 py-1 rounded-full border border-parchment-800 shadow-inner">
-          Círculo Máx: {maxCircle}º
-        </span>
+        {isOccultist && (
+          <span className="text-sm font-fantasy text-parchment-500 bg-parchment-900 px-3 py-1 rounded-full border border-parchment-800 shadow-inner">
+            Círculo Máx: {maxCircle}º
+          </span>
+        )}
       </div>
-      
-      <p className="text-parchment-400 text-sm mb-6 leading-relaxed bg-parchment-950/30 p-4 rounded-xl border border-parchment-900">
-        Como <strong className="text-gold-500 font-fantasy">Ocultista (Escolhido pelo Outro Lado)</strong>,
-        você aprende 3 rituais iniciais, e ganha +1 ritual a cada NEX alcançado.
-        Os círculos que você pode escolher são limitados pelo seu NEX.
-      </p>
 
-      <div className="space-y-6">
-        {Array.from({ length: slotCount }).map((_, i) => {
-          const selectedId = ritualChoices[i]
-          const isInitial = i < 3
-          const slotNex = getRitualSlotNex(i)
-          const label = isInitial ? `Ritual Inicial ${i + 1}` : `Ritual NEX ${slotNex}%`
+      {isOccultist ? (
+        <p className="text-parchment-400 text-sm mb-6 leading-relaxed bg-parchment-950/30 p-4 rounded-xl border border-parchment-900">
+          Como <strong className="text-gold-500 font-fantasy">Ocultista (Escolhido pelo Outro Lado)</strong>,
+          você aprende 3 rituais iniciais, e ganha +1 ritual a cada NEX alcançado.
+          Os círculos que você pode escolher são limitados pelo seu NEX.
+        </p>
+      ) : (
+        // Qualquer classe pode ter rituais (trilha ou o poder paranormal Aprender Ritual) — sem
+        // este aviso, um Combatente com Aprender Ritual veria uma tela que mente.
+        <div className="bg-parchment-950 border border-parchment-900 rounded-xl p-8 text-center text-parchment-600">
+          Apenas <strong className="text-gold-500">Ocultistas</strong> escolhem rituais na criação de personagem.
+        </div>
+      )}
 
-          // Ocultista começa com 3 de 1º círculo. Os demais são limitados pelo círculo conjurável
-          // no NEX em que o ritual foi ganho.
-          const slotMaxCircle = isInitial ? 1 : getMaxRitualCircle(slotNex)
-          // Não é possível conhecer o mesmo ritual duas vezes: exclui os já escolhidos em
-          // outros slots (mantendo sempre a escolha do próprio slot). Exceção: rituais multi-
-          // elemento (ex.: Amaldiçoar Arma) podem ser escolhidos de novo — uma instância por
-          // elemento (FAQ oficial) —, a duplicata real (mesmo elemento 2×) é barrada abaixo.
-          const chosenElsewhere = new Set(
-            ritualChoices.slice(0, slotCount).filter((id, idx): id is string => Boolean(id) && idx !== i)
-          )
-          const options = getAvailableRituals(slotMaxCircle as 1|2|3|4)
-            .filter(r => r.id === selectedId || ritualNeedsElementChoice(r) || (!chosenElsewhere.has(r.id) && !learnedSingleIds.has(r.id)))
+      {isOccultist && (
+        <div className="space-y-6">
+          {Array.from({ length: slotCount }).map((_, i) => {
+            const selectedId = ritualChoices[i]
+            const isInitial = i < 3
+            const slotNex = getRitualSlotNex(i)
+            const owner = `slot:${i}`
+            // Ocultista começa com 3 de 1º círculo. Os demais são limitados pelo círculo
+            // conjurável no NEX em que o ritual foi ganho.
+            const slotMaxCircle = (isInitial ? 1 : getMaxRitualCircle(slotNex)) as OrdemRitualCircle
+            const usedInstances = instanceOccupiedBy(owner)
 
-          return (
-            <div key={i} className="bg-parchment-950/50 border border-parchment-900 rounded-xl p-5 shadow-sm">
-              <label className="block text-sm font-bold text-gold-500 mb-3 flex items-center justify-between">
-                <span>{label}</span>
-                <span className="text-xs font-normal text-parchment-600">Até {slotMaxCircle}º Círculo</span>
-              </label>
-              
-              <div className="mt-1">
-                {openSlot === i ? (
-                  <div className="space-y-4">
-                    <button onClick={() => setOpenSlot(null)} className="text-xs font-bold font-fantasy text-red-400 hover:text-red-300">
-                      ✕ Cancelar seleção
-                    </button>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                      {options.map(r => (
-                        <button
-                          key={r.id}
-                          onClick={() => { handleSelect(i, r.id); setOpenSlot(null) }}
-                          className={`text-left p-4 rounded-xl border transition-colors ${selectedId === r.id ? 'bg-red-950/20 border-red-900' : 'bg-parchment-950/80 border-parchment-800 hover:border-gold-500 hover:bg-parchment-900/50'}`}
-                        >
-                          <div className="flex items-start justify-between mb-2">
-                            <span className="font-fantasy text-gold-400 font-bold text-lg leading-none">{r.name}</span>
-                            <span className="text-[10px] text-parchment-500 font-bold uppercase tracking-wider">{r.circle}º C.</span>
-                          </div>
-                          <div className="flex gap-1.5 mb-2">
-                            {r.elements.map(e => (
-                               <span key={e} className={`text-[9px] uppercase px-1.5 py-0.5 rounded font-bold ${ELEMENT_COLORS[e]}`}>{ELEMENT_NAMES[e]}</span>
-                            ))}
-                          </div>
-                          <p className="text-xs text-parchment-400 line-clamp-3 leading-relaxed">{r.description}</p>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ) : !selectedId ? (
-                  <button
-                    onClick={() => setOpenSlot(i)}
-                    className="w-full py-6 rounded-xl border-2 border-dashed border-parchment-800 hover:border-gold-500/50 hover:bg-parchment-900/20 text-parchment-500 hover:text-gold-400 font-fantasy text-lg transition-all"
-                  >
-                    + Escolher Ritual
-                  </button>
-                ) : (
-                  <div className="p-4 rounded-xl bg-black/40 border border-parchment-900/50 relative group">
-                    <button
-                      onClick={() => setOpenSlot(i)}
-                      className="absolute top-3 right-3 px-3 py-1 bg-parchment-900 text-parchment-200 hover:bg-parchment-800 text-xs font-bold rounded shadow-sm transition-colors"
-                    >
-                      Trocar
-                    </button>
-                    {(() => {
-                      const r = availableRituals.find(x => x.id === selectedId)
-                      if (!r) return null
-                      return (
-                        <div className="text-sm">
-                          <div className="flex items-center flex-wrap gap-2 mb-2 pr-16">
-                            <span className="font-bold text-parchment-200 text-lg">{r.name}</span>
-                            {r.elements.map(e => (
-                              <span key={e} className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded border ${ELEMENT_COLORS[e]}`}>
-                                {ELEMENT_NAMES[e]}
-                              </span>
-                            ))}
-                          </div>
-                          <p className="text-parchment-500 text-xs mb-3 leading-relaxed">
-                          Execução: {r.execution} · Alcance: {r.range} · Alvo: {r.target} · Duração: {r.duration}
-                          {r.resistance && ` · Resistência: ${r.resistance}`}
-                        </p>
-                        <p className="text-parchment-500 leading-relaxed">{r.description}</p>
-                        {ritualNeedsElementChoice(r) && (
-                          <div className="mt-3 pt-3 border-t border-parchment-900/50">
-                            <label className="block text-xs font-bold text-gold-500 mb-1.5">
-                              Escolha o elemento deste ritual
-                              <span className="font-normal text-parchment-600"> — ele passa a ser só desse elemento (define o tipo do dano). Pode aprender de novo em outro slot, com outro elemento.</span>
-                            </label>
-                            <div className="flex flex-wrap gap-1.5">
-                              {r.elements.map(e => {
-                                const active = ritualElementChoices[i] === e
-                                const usedElsewhere = !active && (
-                                  ritualChoices.some((otherId, idx) => idx !== i && otherId === r.id && ritualElementChoices[idx] === e)
-                                  || learnedRituals.some(l => l.ritual.id === r.id && l.element === e)
-                                )
-                                return (
-                                  <button
-                                    key={e}
-                                    disabled={usedElsewhere}
-                                    title={usedElsewhere ? 'Já usado em outro slot com este ritual' : undefined}
-                                    onClick={() => handleElement(i, e)}
-                                    className={`text-xs uppercase tracking-wider font-bold px-2.5 py-1 rounded border transition-all ${active ? ELEMENT_COLORS[e] : usedElsewhere ? 'text-parchment-800 border-parchment-900 opacity-40 cursor-not-allowed' : 'text-parchment-600 border-parchment-800 hover:border-parchment-600'}`}
-                                  >
-                                    {ELEMENT_NAMES[e]}
-                                  </button>
-                                )
-                              })}
-                            </div>
-                            {!ritualElementChoices[i] && (
-                              <p className="text-red-400/80 text-xs mt-1.5">Escolha um elemento para poder avançar.</p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })()}
-                </div>
-              )}
-              </div>
-            </div>
-          )
-        })}
-      </div>
+            return (
+              <RitualSlotCard
+                key={i}
+                label={isInitial ? `Ritual Inicial ${i + 1}` : `Ritual NEX ${slotNex}%`}
+                hint={`Até ${slotMaxCircle}º Círculo`}
+                options={optionsFor(owner, slotMaxCircle, selectedId)}
+                selectedId={selectedId}
+                selectedElement={ritualElementChoices[i]}
+                open={openSlot === owner}
+                onOpen={() => setOpenSlot(owner)}
+                onClose={() => setOpenSlot(null)}
+                onSelect={id => { handleSelect(i, id); setOpenSlot(null) }}
+                onElement={element => handleElement(i, element)}
+                isElementUsed={element => usedInstances.has(`${selectedId}::${element}`)}
+              />
+            )
+          })}
+        </div>
+      )}
+
+      <LearnRitualSlots
+        slots={learnSlots}
+        openSlot={openSlot}
+        setOpenSlot={setOpenSlot}
+        optionsFor={optionsFor}
+        instanceOccupiedBy={instanceOccupiedBy}
+        onSelect={(key, ritualId) => setParanormalSubChoice(key, { ritualId, ritualElement: undefined })}
+        onElement={(key, element) => setParanormalSubChoice(key, { ritualElement: element })}
+      />
 
       <GrantedRitualsBlock draft={draft} />
 
-      <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={isComplete} disabledReason="Escolha todos os rituais pendentes" />
+      <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={canAdvance} disabledReason={disabledReason} />
     </div>
   )
 }
 
-/** Rituais concedidos (features de trilha e Aprender Ritual): read-only, com a fonte de cada um. */
+/**
+ * Rituais concedidos pelo poder paranormal Aprender Ritual: um slot por escolha do poder, com o
+ * teto de círculo do NEX em que ele foi adquirido. Escreve direto na instância do poder
+ * (`paranormalPowerChoices`), então a etapa Poderes Paranormais reflete a escolha na hora.
+ */
+function LearnRitualSlots({ slots, openSlot, setOpenSlot, optionsFor, instanceOccupiedBy, onSelect, onElement }: {
+  slots: LearnRitualSlot[]
+  openSlot: string | null
+  setOpenSlot: (key: string | null) => void
+  optionsFor: (owner: string, circle: OrdemRitualCircle, selectedId: string | null | undefined) => ReturnType<typeof getAvailableRituals>
+  instanceOccupiedBy: (owner: string) => Set<string>
+  onSelect: (key: LearnRitualSlot['key'], ritualId: string) => void
+  onElement: (key: LearnRitualSlot['key'], element: OrdemElement) => void
+}) {
+  if (slots.length === 0) return null
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-sm font-bold text-gold-500">Rituais do poder Aprender Ritual</h3>
+        <p className="text-parchment-600 text-xs mt-1 leading-relaxed">
+          Cada escolha do poder paranormal <strong className="text-parchment-400">Aprender Ritual</strong> concede
+          um ritual aqui — ele não conta nos limites do Ocultista, e o círculo máximo é o do NEX em que o poder foi adquirido.
+        </p>
+      </div>
+      {slots.map(slot => {
+        const owner = `learn:${slot.key}`
+        const selectedId = slot.ritual?.id ?? null
+        const usedInstances = instanceOccupiedBy(owner)
+        return (
+          <RitualSlotCard
+            key={slot.key}
+            label={slot.sourceLabel}
+            hint={`Até ${slot.maxCircle}º Círculo`}
+            note="Concedido pelo poder paranormal Aprender Ritual."
+            options={optionsFor(owner, slot.maxCircle, selectedId)}
+            selectedId={selectedId}
+            selectedElement={slot.element ?? undefined}
+            open={openSlot === owner}
+            onOpen={() => setOpenSlot(owner)}
+            onClose={() => setOpenSlot(null)}
+            onSelect={id => { onSelect(slot.key, id); setOpenSlot(null) }}
+            onElement={element => onElement(slot.key, element)}
+            isElementUsed={element => usedInstances.has(`${selectedId}::${element}`)}
+          />
+        )
+      })}
+    </div>
+  )
+}
+
+/** Rituais concedidos por features de trilha: read-only, com a fonte de cada um. */
 function GrantedRitualsBlock({ draft }: { draft: OrdemCharacterDraft }) {
-  const granted = getGrantedRituals(draft)
+  // Só trilha: os do Aprender Ritual são slots editáveis acima, e apareceriam duas vezes aqui.
+  const granted = getTrilhaGrantedRituals(draft)
   if (granted.length === 0) return null
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-bold text-gold-500">Rituais concedidos</h3>
       <p className="text-parchment-600 text-xs -mt-2">
-        Aprendidos automaticamente por trilha ou pelo poder Aprender Ritual — não contam nos limites acima.
+        Aprendidos automaticamente pela sua trilha — não contam nos limites acima.
       </p>
       {granted.map(g => {
         const element = g.element ?? getGrantedRitualElement(g.ritual, draft.ritualElementChoices)

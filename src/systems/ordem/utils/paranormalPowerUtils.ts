@@ -232,28 +232,28 @@ export function getParanormalInstances(draft: OrdemCharacterDraft): ParanormalIn
 
     // Sub-escolha exigida pelo poder.
     if (power.choice?.kind === 'element' && !choice.element) complete = false
+    // O ritual do Aprender Ritual é escolhido na ETAPA RITUAIS — o poder concede um slot lá, como
+    // o Transcender concede um poder paranormal aqui. Por isso a ausência dele NÃO deixa a
+    // instância incompleta: a pendência é cobrada pelo gate daquele passo (getLearnRitualSlots).
+    // Enquanto o ritual não existe, o poder não conta para elemento nenhum nos pré-requisitos.
     let ritualKey: string | null = null
-    if (power.choice?.kind === 'ritual') {
-      if (!choice.ritualId) complete = false
+    if (power.choice?.kind === 'ritual' && choice.ritualId) {
+      const ritual = getRitualById(choice.ritualId)
+      if (!ritual) problems.push('Ritual desconhecido')
       else {
-        const ritual = getRitualById(choice.ritualId)
-        if (!ritual) problems.push('Ritual desconhecido')
-        else {
-          const isMulti = ritual.elements.length > 1
-          if (isMulti && !choice.ritualElement) complete = false
-          if (isMulti && choice.ritualElement && !ritual.elements.includes(choice.ritualElement)) {
-            problems.push('Elemento indisponível para este ritual')
-          }
-          const maxCircle = getLearnRitualMaxCircle(acquisitionNex)
-          if (ritual.circle > maxCircle) {
-            problems.push(`Ritual de ${ritual.circle}º círculo — nesta escolha (NEX ${acquisitionNex}%) o máximo é o ${maxCircle}º`)
-          }
-          const element = isMulti ? choice.ritualElement : ritual.elements[0]
-          if (element) {
-            ritualKey = ritualInstanceKey(ritual.id, element)
-            if (occupiedRituals.has(ritualKey) || learnedRitualKeys.has(ritualKey)) {
-              problems.push('Ritual já conhecido por outra fonte')
-            }
+        const isMulti = ritual.elements.length > 1
+        if (isMulti && choice.ritualElement && !ritual.elements.includes(choice.ritualElement)) {
+          problems.push('Elemento indisponível para este ritual')
+        }
+        const maxCircle = getLearnRitualMaxCircle(acquisitionNex)
+        if (ritual.circle > maxCircle) {
+          problems.push(`Ritual de ${ritual.circle}º círculo — nesta escolha (NEX ${acquisitionNex}%) o máximo é o ${maxCircle}º`)
+        }
+        const element = isMulti ? choice.ritualElement : ritual.elements[0]
+        if (element) {
+          ritualKey = ritualInstanceKey(ritual.id, element)
+          if (occupiedRituals.has(ritualKey) || learnedRitualKeys.has(ritualKey)) {
+            problems.push('Ritual já conhecido por outra fonte')
           }
         }
       }
@@ -546,6 +546,54 @@ export type ParanormalLearnedRitual = {
   /** Elemento da instância (multi-elemento usa o escolhido; único usa o do ritual). */
   element: OrdemElement
   source: string
+}
+
+/** Slot de ritual concedido por uma instância de Aprender Ritual, resolvido na etapa Rituais. */
+export type LearnRitualSlot = {
+  key: ParanormalSourceKey
+  acquisitionNex: number
+  /** Rótulo da fonte do transcender que concedeu o poder (ex.: "Transcender — poder de NEX 45%"). */
+  sourceLabel: string
+  /** Teto de círculo desta escolha, pelo NEX de aquisição do poder (p. 114). */
+  maxCircle: 1 | 2 | 3
+  ritual: OrdemRitual | null
+  /** Elemento da instância: o escolhido nos multi-elemento, o único nos demais. */
+  element: OrdemElement | null
+  /** Ritual escolhido — e o elemento também, quando o ritual é multi-elemento. */
+  complete: boolean
+}
+
+/**
+ * Um slot por instância de Aprender Ritual, para a etapa Rituais. Espelha o Transcender (poder
+ * de classe que concede uma escolha na etapa SEGUINTE): o ritual é escolhido junto do resto dos
+ * rituais da ficha, com o mesmo card, em vez de num catálogo aninhado dentro do card do poder.
+ */
+export function getLearnRitualSlots(draft: OrdemCharacterDraft): LearnRitualSlot[] {
+  const slots: LearnRitualSlot[] = []
+  for (const instance of getParanormalInstances(draft)) {
+    if (instance.power?.id !== 'learn-ritual') continue
+    const ritual = instance.choice?.ritualId ? getRitualById(instance.choice.ritualId) ?? null : null
+    const element = !ritual
+      ? null
+      : ritual.elements.length > 1
+        ? instance.choice?.ritualElement ?? null
+        : ritual.elements[0]
+    slots.push({
+      key: instance.key,
+      acquisitionNex: instance.acquisitionNex,
+      sourceLabel: getSourceLabel(instance.key),
+      maxCircle: getLearnRitualMaxCircle(instance.acquisitionNex),
+      ritual,
+      element,
+      complete: Boolean(ritual && element),
+    })
+  }
+  return slots
+}
+
+/** Gate da etapa Rituais para o Aprender Ritual — vale para QUALQUER classe, não só Ocultista. */
+export function areLearnRitualSlotsComplete(draft: OrdemCharacterDraft): boolean {
+  return getLearnRitualSlots(draft).every(slot => slot.complete)
 }
 
 /** Rituais das instâncias VÁLIDAS de Aprender Ritual (não contam no limite do Ocultista, p. 119). */

@@ -1,6 +1,11 @@
 import type { OrdemCharacterDraft, ParanormalPowerChoice, WizardStep } from '../types/character'
 import { EMPTY_DRAFT, WIZARD_STEPS } from '../types/character'
-import { areParanormalChoicesComplete, isParanormalElement, isParanormalSourceKey } from './paranormalPowerUtils'
+import {
+  areLearnRitualSlotsComplete,
+  areParanormalChoicesComplete,
+  isParanormalElement,
+  isParanormalSourceKey,
+} from './paranormalPowerUtils'
 import { isValidAttributes } from './attributeUtils'
 import { getOrigin } from './originUtils'
 import { getOrdemClass } from './classUtils'
@@ -88,6 +93,8 @@ export function isStepComplete(draft: OrdemCharacterDraft, step: WizardStep): bo
       return areParanormalChoicesComplete(draft)
 
     case 'rituals': {
+      // Os rituais do poder Aprender Ritual são escolhidos aqui (qualquer classe pode ter o poder).
+      if (!areLearnRitualSlotsComplete(draft)) return false
       if (draft.class !== 'occultist') return true
       return isRitualStepComplete(draft.nex, draft.class, draft.ritualChoices, draft.ritualElementChoices)
     }

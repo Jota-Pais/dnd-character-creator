@@ -215,6 +215,39 @@ describe('sanitizeImportedDraft', () => {
   })
 })
 
+describe('isStepComplete — rituals', () => {
+  /** Combatente NEX 15% com Transcender: qualquer classe pode ter o poder Aprender Ritual. */
+  const withLearnRitual = (choice: OrdemCharacterDraft['paranormalPowerChoices']) => makeDraft({
+    class: 'combatant',
+    nex: 15,
+    powerChoices: ['transcend'],
+    paranormalPowerChoices: choice,
+  })
+
+  it('não-ocultista sem Aprender Ritual: nada a escolher', () => {
+    expect(isStepComplete(makeDraft({ class: 'combatant' }), 'rituals')).toBe(true)
+  })
+
+  it('não-ocultista com Aprender Ritual: o ritual concedido é exigido aqui', () => {
+    expect(isStepComplete(withLearnRitual({ 'slot-0': { powerId: 'learn-ritual' } }), 'rituals')).toBe(false)
+    expect(isStepComplete(
+      withLearnRitual({ 'slot-0': { powerId: 'learn-ritual', ritualId: 'armadura-de-sangue' } }),
+      'rituals',
+    )).toBe(true)
+  })
+
+  it('ritual multi-elemento concedido exige também o elemento', () => {
+    expect(isStepComplete(
+      withLearnRitual({ 'slot-0': { powerId: 'learn-ritual', ritualId: 'amaldicoar-arma' } }),
+      'rituals',
+    )).toBe(false)
+    expect(isStepComplete(
+      withLearnRitual({ 'slot-0': { powerId: 'learn-ritual', ritualId: 'amaldicoar-arma', ritualElement: 'blood' } }),
+      'rituals',
+    )).toBe(true)
+  })
+})
+
 describe('sanitizeImportedDraft — poderes paranormais', () => {
   const base = {
     name: 'Bianca',

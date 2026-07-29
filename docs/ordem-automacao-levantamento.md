@@ -334,6 +334,17 @@ perícias) — marcados em `skills.json` no campo `kit`:
 | medicina | Medicina | em toda a perícia |
 | eletrônica | Tecnologia | no uso operar dispositivo |
 
+São **só esses quatro** — verificado: a palavra "kit" aparece em 15 linhas no livro, as 28 descrições
+de perícia estão todas no extract (não é caso de texto faltando, como aconteceu com os explosivos) e
+nenhuma outra perícia exige ferramenta sob outro nome. O que confunde é a Tabela 3.8 ter um único
+item genérico "Kit de perícia" em vez de quatro itens distintos: o ITEM é genérico, a lista de quem
+PEDE kit é curta.
+
+Decisão do usuário (2026-07-29): o seletor oferece **apenas as 4 perícias oficiais**, não as 28. Um
+jogador novo que vê a lista inteira gasta item e espaço num "kit de Atletismo" que o livro nunca
+pede; com 4 opções e o escopo à mostra, a escolha ensina a regra. Se algum dia isso precisar abrir
+para qualquer perícia (latitude de mestre), o ponto único é `getKitSkillOptions`.
+
 Cada unidade de **Kit de Perícia** escolhe qual é o seu kit, e a modificação **Instrumental** faz um
 acessório valer como kit — com escolha PRÓPRIA, porque o livro diz "um kit de perícia específico,
 escolhido ao aplicar esta modificação" (p. 64). A escolha é independente da perícia que o acessório

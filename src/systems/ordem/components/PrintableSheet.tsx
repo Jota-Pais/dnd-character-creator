@@ -5,7 +5,7 @@ import { SKILLS } from '../utils/skillUtils'
 import { getTrilha } from '../utils/trilhaUtils'
 import { getPower } from '../utils/powerUtils'
 import {
-  getTrainedSkills, getSkillGrade, getRitualCost, hasClassPower, getWeaponSkillOverride, getGrantedRituals, getEffectivePeLimit,
+  getTrainedSkills, getSkillGrade, getRitualCost, hasClassPower, getGrantedRituals, getEffectivePeLimit,
   getParanormalResistanceBonus, getMentalParanormalDamageResistance, getOriginMentalDamageResistance, getConditionalDamageResistances,
 } from '../utils/characterUtils'
 import { getReachedTrilhaSlots, getPeLimit } from '../utils/progressionUtils'
@@ -20,9 +20,9 @@ import {
 } from '../utils/equipmentUtils'
 import { getModification } from '../utils/modificationUtils'
 import { getCurse, getCursedDerivedStats, getSheetAttributes, formatCurseElement, formatCurseChoiceDetail, getRitualDt, getRitualPeLimit } from '../utils/curseUtils'
-import { getOrdemWeaponAttack, getUnarmedAttack, GRADE_BONUS } from '../utils/ordemWeaponUtils'
+import { getSheetWeaponAttacks, GRADE_BONUS } from '../utils/ordemWeaponUtils'
 import { getPatente, getCategoryLimit } from '../utils/patenteUtils'
-import type { OrdemEquipment, OrdemWeapon } from '../types/equipment'
+import type { OrdemEquipment } from '../types/equipment'
 import type { OrdemAttributes } from '../types/character'
 import type { OrdemRitual } from '../types/ritual'
 
@@ -87,17 +87,8 @@ export function PrintableSheet() {
   const equipmentUnits = draft.equipmentChoices
     .map(uid => ({ uid, item: getEquipmentByInstance(uid) }))
     .filter((u): u is { uid: string; item: OrdemEquipment } => Boolean(u.item))
-  // Artista Marcial: ataque desarmado (não é item de inventário) some no fim da lista, se houver o poder.
-  const unarmedAttack = getUnarmedAttack(draft)
-  const weaponAttacks = [
-    ...equipmentUnits
-      .filter((u): u is { uid: string; item: OrdemWeapon } => u.item.type === 'weapon')
-      .map(({ uid, item }) => ({
-        ...getOrdemWeaponAttack(item, draft, draft.equipmentModifications[uid] ?? [], draft.equipmentCurses[uid] ?? [], getWeaponSkillOverride(draft, uid)),
-        name: getInstanceLabel(draft, uid),
-      })),
-    ...(unarmedAttack ? [unarmedAttack] : []),
-  ]
+  // Uma linha por arma (ou por variante de munição carregada) + o ataque desarmado no fim.
+  const weaponAttacks = getSheetWeaponAttacks(draft)
   const cursedUnits = equipmentUnits.filter(u => (draft.equipmentCurses[u.uid]?.length ?? 0) > 0)
   // Armas com a maldição Ritualística: o ritual armazenado é listado junto das Habilidades.
   const ritualisticUnits = equipmentUnits.filter(u => (draft.equipmentCurses[u.uid] ?? []).includes('ritualistica'))

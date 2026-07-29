@@ -25,6 +25,19 @@ export type OrdemWeaponProficiency = 'simple' | 'tactical' | 'heavy';
 export type OrdemWeaponGrip = 'leve' | 'uma_mao' | 'duas_maos';
 export type OrdemWeaponCategory = 'corpo_a_corpo' | 'arremesso' | 'disparo' | 'fogo';
 
+/**
+ * Munição que a arma consome (Tabela 3.4). Cada tipo serve um grupo fechado de armas — uma
+ * espingarda não dispara balas curtas —, então as modificações de munição (Dum dum, Explosiva)
+ * só alcançam as armas do mesmo tipo (ver `getWeaponAmmoVariants`).
+ */
+export type OrdemAmmoId =
+  | 'municao-flechas'
+  | 'municao-balas-curtas'
+  | 'municao-balas-longas'
+  | 'municao-cartuchos'
+  | 'municao-foguete'
+  | 'municao-combustivel';
+
 export interface OrdemWeapon extends OrdemEquipmentBase {
   type: 'weapon';
   proficiency: OrdemWeaponProficiency;
@@ -34,6 +47,8 @@ export interface OrdemWeapon extends OrdemEquipmentBase {
   critical: string;
   range: string;
   damageType: string;
+  /** Munição consumida; ausente nas armas corpo a corpo e de arremesso. */
+  ammo?: OrdemAmmoId;
 }
 
 export interface OrdemProtection extends OrdemEquipmentBase {

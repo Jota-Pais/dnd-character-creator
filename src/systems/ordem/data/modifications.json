@@ -16,8 +16,8 @@
 
   { "id": "tatica", "name": "Tática", "effect": "Pode sacar a arma como uma ação livre.", "target": "weapon-any" },
 
-  { "id": "dum-dum", "name": "Dum dum", "effect": "+2 no multiplicador de crítico.", "target": "ammunition" },
-  { "id": "explosiva", "name": "Explosiva", "effect": "Aumenta o dano em +2d6.", "target": "ammunition" },
+  { "id": "dum-dum", "name": "Dum dum", "effect": "+2 no multiplicador de crítico.", "target": "ammunition", "critMultiplierBonus": 2 },
+  { "id": "explosiva", "name": "Explosiva", "effect": "Aumenta o dano em +2d6.", "target": "ammunition", "extraDamage": "2d6" },
 
   { "id": "antibombas", "name": "Antibombas", "effect": "+5 em testes de resistência contra efeitos de área. Só em proteção pesada.", "target": "protection-heavy" },
   { "id": "blindada", "name": "Blindada", "effect": "Aumenta a resistência a dano para 5 e o espaço ocupado em 1. Só em proteção pesada.", "target": "protection-heavy", "spaceDelta": 1, "damageResistanceOverride": 5 },

@@ -1,10 +1,11 @@
 import type { OrdemCharacterDraft } from '../types/character'
 import type { OrdemWeapon, OrdemWeaponGrip, OrdemWeaponProficiency, OrdemWeaponCategory } from '../types/equipment'
 import type { SkillGrade } from './characterUtils'
-import { getSkillGrade, hasClassPower, getOriginEffects, getWorkToolBonus } from './characterUtils'
+import { getSkillGrade, hasClassPower, getOriginEffects, getWorkToolBonus, getWeaponSkillOverride } from './characterUtils'
 import { getParanormalEffects } from './paranormalPowerUtils'
 import { getModification } from './modificationUtils'
 import { getCurse, getSheetAttributes } from './curseUtils'
+import { getEquipmentByInstance, getInstanceLabel, instanceItemId } from './equipmentUtils'
 
 /** Bônus fixo por grau de treinamento (livro, Cap. 2). */
 export const GRADE_BONUS: Record<SkillGrade, number> = {
@@ -138,6 +139,7 @@ export function getOrdemWeaponAttack(
   modIds: string[],
   curseIds: string[] = [],
   skillOverride?: AttackSkillChoice,
+  ammoModIds: string[] = [],
 ): OrdemWeaponAttack {
   const attrs = getSheetAttributes(draft)
   const melee = isMelee(weapon)
@@ -147,7 +149,9 @@ export function getOrdemWeaponAttack(
   const skill = ATTACK_SKILLS[skillId].name
   const rollDice = attrs[ATTACK_SKILLS[skillId].attribute]
 
-  const mods = modIds.map(getModification).filter((m): m is NonNullable<typeof m> => Boolean(m))
+  // Modificações da ARMA e da MUNIÇÃO usada entram no mesmo bolo de números: a munição só chega
+  // aqui se for do tipo que a arma consome (ver `getWeaponAmmoVariants`).
+  const mods = [...modIds, ...ammoModIds].map(getModification).filter((m): m is NonNullable<typeof m> => Boolean(m))
   const curses = curseIds.map(getCurse).filter((c): c is NonNullable<typeof c> => Boolean(c))
   // Ferramenta de Trabalho (origem Operário): +1 em ataque/dano/margem de ameaça, só com a arma escolhida.
   const workToolBonus = draft.workToolWeapon === weapon.id ? getWorkToolBonus(draft) : 0
@@ -176,22 +180,96 @@ export function getOrdemWeaponAttack(
   const paranormal = getParanormalEffects(draft)
   const threatMargin = workToolBonus + trilhaThreatMargin + paranormal.threatMarginBonus
     + mods.reduce((s, m) => s + (m.threatMargin ?? 0), 0)
-  const curseDamage = curses.map(c => c.extraDamage).filter(Boolean).map(d => ` +${d}`).join('')
+  // Dano extra com dado próprio: munição Explosiva (+2d6) e maldições (Lancinante/Erosiva +1d8).
+  const extraDamage = [...mods, ...curses].map(m => m.extraDamage).filter(Boolean).map(d => ` +${d}`).join('')
 
   const typePt = DAMAGE_TYPE_PT[weapon.damageType] ?? weapon.damageType
   const dmgMatch = String(weapon.damage).match(/^(\d+)d(\d+)/)
   const damage = (dmgMatch
     ? `${parseInt(dmgMatch[1], 10) + extraDice}d${dmgMatch[2]}${damageBonus !== 0 ? signed(damageBonus) : ''} ${typePt}`
-    : `${weapon.damage}${damageBonus !== 0 ? ` ${signed(damageBonus)}` : ''} ${typePt}`) + curseDamage
+    : `${weapon.damage}${damageBonus !== 0 ? ` ${signed(damageBonus)}` : ''} ${typePt}`) + extraDamage
 
   const { threat, mult } = parseCritical(weapon.critical)
   // Predadora: a margem (20 − início + 1) duplica ANTES dos aumentos fixos (ex.: fuzil de caça 19 → 17).
   const doubledThreat = curses.some(c => c.doublesThreat) ? 21 - 2 * (21 - threat) : threat
-  const critical = formatCritical(doubledThreat - threatMargin, mult + paranormal.critMultiplierBonus)
+  // Multiplicador de crítico: Golpe de Sorte com afinidade (+1) e munição Dum dum (+2).
+  const multBonus = paranormal.critMultiplierBonus + mods.reduce((s, m) => s + (m.critMultiplierBonus ?? 0), 0)
+  const critical = formatCritical(doubledThreat - threatMargin, mult + multBonus)
 
   const range = curses.some(c => c.rangeIncrease) ? increaseRange(weapon.range) : weapon.range
 
   return { name: weapon.name, skill, rollDice, attackBonus, damage, critical, range }
+}
+
+// ── Munição: uma linha de ataque por variante carregada ────────────────────────
+
+export type WeaponAmmoVariant = {
+  /** Unidade de munição representante da variante (a 1ª do loadout com essa combinação de mods). */
+  uid: string
+  /** Ids das modificações desta munição (vazio = munição comum). */
+  modIds: string[]
+  /** Rótulo pro nome do ataque (ex.: "Balas Curtas" ou "Balas Curtas — Dum dum"). */
+  label: string
+}
+
+/**
+ * Variantes de munição do loadout que ESTA arma pode disparar — a compatibilidade é pelo tipo
+ * (`weapon.ammo`, Tabela 3.4), então uma espingarda nunca herda o Dum dum de balas curtas.
+ * Duas unidades da mesma munição com modificações diferentes viram duas variantes (e duas linhas
+ * de ataque); unidades com a mesma combinação de mods são deduplicadas. Munição comum vem
+ * primeiro, pra o ataque "normal" abrir a lista.
+ *
+ * Devolve vazio quando a arma não usa munição (corpo a corpo/arremesso) ou quando o agente não
+ * requisitou munição compatível — nesse caso a ficha mostra a linha única da arma, sem rótulo.
+ */
+export function getWeaponAmmoVariants(draft: OrdemCharacterDraft, weapon: OrdemWeapon): WeaponAmmoVariant[] {
+  if (!weapon.ammo) return []
+  const bySignature = new Map<string, WeaponAmmoVariant>()
+  for (const uid of draft.equipmentChoices) {
+    if (instanceItemId(uid) !== weapon.ammo) continue
+    const ammo = getEquipmentByInstance(uid)
+    if (!ammo) continue
+    const modIds = draft.equipmentModifications[uid] ?? []
+    const signature = [...modIds].sort().join('|')
+    if (bySignature.has(signature)) continue
+    const modNames = modIds.map(id => getModification(id)?.name).filter(Boolean)
+    bySignature.set(signature, {
+      uid,
+      modIds,
+      label: modNames.length > 0 ? `${ammo.name} — ${modNames.join(', ')}` : ammo.name,
+    })
+  }
+  return [...bySignature.values()].sort((a, b) => a.modIds.length - b.modIds.length)
+}
+
+/**
+ * Todas as linhas de ataque da ficha, na ordem em que aparecem na Revisão e no PDF: uma por
+ * arma requisitada (ou uma por variante de munição compatível, quando o agente carrega munições
+ * diferentes) e o ataque desarmado no fim. Fonte única pra Revisão e PDF não divergirem.
+ */
+export function getSheetWeaponAttacks(draft: OrdemCharacterDraft): OrdemWeaponAttack[] {
+  const attacks: OrdemWeaponAttack[] = []
+  for (const uid of draft.equipmentChoices) {
+    const item = getEquipmentByInstance(uid)
+    if (!item || item.type !== 'weapon') continue
+    const name = getInstanceLabel(draft, uid)
+    const modIds = draft.equipmentModifications[uid] ?? []
+    const curseIds = draft.equipmentCurses[uid] ?? []
+    const skillOverride = getWeaponSkillOverride(draft, uid)
+    const variants = getWeaponAmmoVariants(draft, item)
+    if (variants.length === 0) {
+      attacks.push({ ...getOrdemWeaponAttack(item, draft, modIds, curseIds, skillOverride), name })
+      continue
+    }
+    for (const variant of variants) {
+      attacks.push({
+        ...getOrdemWeaponAttack(item, draft, modIds, curseIds, skillOverride, variant.modIds),
+        name: `${name} (${variant.label})`,
+      })
+    }
+  }
+  attacks.push(getUnarmedAttack(draft))
+  return attacks
 }
 
 /**

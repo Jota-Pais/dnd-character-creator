@@ -117,6 +117,7 @@
     "critical": "x3",
     "range": "Médio",
     "damageType": "P",
+    "ammo": "municao-flechas",
     "description": "Arco — arma de disparo à distância."
   },
   {
@@ -132,6 +133,7 @@
     "critical": "19",
     "range": "Médio",
     "damageType": "P",
+    "ammo": "municao-flechas",
     "description": "Besta — arma de disparo à distância."
   },
   {
@@ -147,6 +149,7 @@
     "critical": "18",
     "range": "Curto",
     "damageType": "B",
+    "ammo": "municao-balas-curtas",
     "description": "Pistola — arma de fogo de disparo curto."
   },
   {
@@ -162,6 +165,7 @@
     "critical": "19/x3",
     "range": "Curto",
     "damageType": "B",
+    "ammo": "municao-balas-curtas",
     "description": "Revólver — arma de fogo de disparo curto."
   },
   {
@@ -177,6 +181,7 @@
     "critical": "19/x3",
     "range": "Médio",
     "damageType": "B",
+    "ammo": "municao-balas-longas",
     "description": "Fuzil de caça — arma de fogo de disparo longo."
   },
   {
@@ -387,6 +392,7 @@
     "critical": "x3",
     "range": "Médio",
     "damageType": "P",
+    "ammo": "municao-flechas",
     "description": "Arco composto — arco reforçado, de maior potência."
   },
   {
@@ -402,6 +408,7 @@
     "critical": "19",
     "range": "Médio",
     "damageType": "P",
+    "ammo": "municao-flechas",
     "description": "Balestra — besta pesada de disparo."
   },
   {
@@ -417,6 +424,7 @@
     "critical": "19/x3",
     "range": "Curto",
     "damageType": "B",
+    "ammo": "municao-balas-curtas",
     "description": "Submetralhadora — arma de fogo automática de disparo curto."
   },
   {
@@ -432,6 +440,7 @@
     "critical": "x3",
     "range": "Curto",
     "damageType": "B",
+    "ammo": "municao-cartuchos",
     "description": "Espingarda — arma de fogo de dispersão, a curta distância."
   },
   {
@@ -447,6 +456,7 @@
     "critical": "19/x3",
     "range": "Médio",
     "damageType": "B",
+    "ammo": "municao-balas-longas",
     "description": "Fuzil de assalto — arma de fogo automática de disparo longo."
   },
   {
@@ -462,6 +472,7 @@
     "critical": "19/x3",
     "range": "Longo",
     "damageType": "B",
+    "ammo": "municao-balas-longas",
     "description": "Fuzil de precisão — rifle de longo alcance para tiro preciso."
   },
   {
@@ -477,6 +488,7 @@
     "critical": "x2",
     "range": "Médio",
     "damageType": "I",
+    "ammo": "municao-foguete",
     "description": "Bazuca — lançador de foguetes explosivo."
   },
   {
@@ -492,6 +504,7 @@
     "critical": "x2",
     "range": "Curto",
     "damageType": "Fogo",
+    "ammo": "municao-combustivel",
     "description": "Lança-chamas — projeta um jato de fogo à frente."
   },
   {
@@ -507,6 +520,7 @@
     "critical": "19/x3",
     "range": "Médio",
     "damageType": "B",
+    "ammo": "municao-balas-longas",
     "description": "Metralhadora — arma de fogo automática pesada."
   },
   {

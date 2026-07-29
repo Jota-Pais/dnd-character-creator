@@ -2,8 +2,11 @@ import { describe, it, expect } from 'vitest'
 import { EMPTY_DRAFT } from '../../types/character'
 import type { OrdemCharacterDraft } from '../../types/character'
 import type { OrdemWeapon } from '../../types/equipment'
-import { getEquipmentById } from '../equipmentUtils'
-import { getOrdemWeaponAttack, getWeaponSkillName, formatWeaponSummary, isMelee, getUnarmedAttack } from '../ordemWeaponUtils'
+import { getEquipmentById, EQUIPMENTS } from '../equipmentUtils'
+import {
+  getOrdemWeaponAttack, getWeaponSkillName, formatWeaponSummary, isMelee, getUnarmedAttack,
+  getWeaponAmmoVariants, getSheetWeaponAttacks,
+} from '../ordemWeaponUtils'
 
 function makeDraft(over: Partial<OrdemCharacterDraft>): OrdemCharacterDraft {
   return { ...EMPTY_DRAFT, ...over }
@@ -152,5 +155,107 @@ describe('resumo de arma pro card de escolha (getWeaponSkillName / formatWeaponS
   it('lança-chamas: Pontaria, arma de fogo, alcance curto, duas mãos, proficiência pesada', () => {
     const lancaChamas = getEquipmentById('lanca-chamas') as OrdemWeapon
     expect(formatWeaponSummary(lancaChamas)).toBe('Pontaria · arma de fogo · alcance Curto · duas mãos · proficiência pesada')
+  })
+})
+
+describe('munição: variantes e linhas de ataque', () => {
+  const atirador = (over: Partial<OrdemCharacterDraft> = {}) => makeDraft({
+    attributes: { agility: 3, strength: 2, intellect: 1, presence: 1, vigor: 1 },
+    ...over,
+  })
+
+  it('toda arma de disparo/fogo do catálogo declara a munição que consome; nenhuma corpo a corpo declara', () => {
+    for (const item of EQUIPMENTS) {
+      if (item.type !== 'weapon') continue
+      const ranged = item.weaponCategory === 'disparo' || item.weaponCategory === 'fogo'
+      expect(Boolean(item.ammo), `${item.id}`).toBe(ranged)
+    }
+  })
+
+  it('sem munição no loadout, a arma rende uma linha só, sem rótulo', () => {
+    const draft = atirador({ equipmentChoices: ['pistola'] })
+    expect(getWeaponAmmoVariants(draft, pistola)).toEqual([])
+    const attacks = getSheetWeaponAttacks(draft)
+    expect(attacks.map(a => a.name)).toEqual(['Pistola', 'Desarmado'])
+  })
+
+  it('munição comum rende uma linha com o nome da munição', () => {
+    const draft = atirador({ equipmentChoices: ['pistola', 'municao-balas-curtas'] })
+    expect(getSheetWeaponAttacks(draft).map(a => a.name)).toEqual(['Pistola (Balas Curtas)', 'Desarmado'])
+  })
+
+  it('munição comum + munição modificada rendem DUAS linhas, a comum primeiro', () => {
+    const draft = atirador({
+      equipmentChoices: ['pistola', 'municao-balas-curtas', 'municao-balas-curtas#2'],
+      equipmentModifications: { 'municao-balas-curtas#2': ['dum-dum'] },
+    })
+    const attacks = getSheetWeaponAttacks(draft)
+    expect(attacks.map(a => a.name)).toEqual([
+      'Pistola (Balas Curtas)',
+      'Pistola (Balas Curtas — Dum dum)',
+      'Desarmado',
+    ])
+    // Dum dum: +2 no multiplicador de crítico (pistola é 18/x2 → 18/x4).
+    expect(attacks[0].critical).toBe('18')
+    expect(attacks[1].critical).toBe('18/x4')
+  })
+
+  it('respeita o tipo de munição: Dum dum em balas curtas não afeta a espingarda (cartuchos)', () => {
+    const espingarda = getEquipmentById('espingarda') as OrdemWeapon
+    const draft = atirador({
+      equipmentChoices: ['espingarda', 'municao-cartuchos', 'municao-balas-curtas'],
+      equipmentModifications: { 'municao-balas-curtas': ['dum-dum'] },
+    })
+    expect(getWeaponAmmoVariants(draft, espingarda).map(v => v.label)).toEqual(['Cartuchos'])
+    const attacks = getSheetWeaponAttacks(draft)
+    expect(attacks.map(a => a.name)).toEqual(['Espingarda (Cartuchos)', 'Desarmado'])
+    expect(attacks[0].critical).toBe('x3') // sem o +2 do Dum dum
+  })
+
+  it('munição Explosiva soma +2d6 no dano da arma compatível', () => {
+    const draft = atirador({
+      equipmentChoices: ['fuzil-assalto', 'municao-balas-longas'],
+      equipmentModifications: { 'municao-balas-longas': ['explosiva'] },
+    })
+    const attack = getSheetWeaponAttacks(draft)[0]
+    expect(attack.name).toBe('Fuzil de Assalto (Balas Longas — Explosiva)')
+    expect(attack.damage).toBe('2d10 balístico +2d6')
+  })
+
+  it('unidades de munição com os MESMOS mods viram uma variante só', () => {
+    const draft = atirador({
+      equipmentChoices: ['pistola', 'municao-balas-curtas', 'municao-balas-curtas#2'],
+      equipmentModifications: {
+        'municao-balas-curtas': ['dum-dum'],
+        'municao-balas-curtas#2': ['dum-dum'],
+      },
+    })
+    expect(getSheetWeaponAttacks(draft).map(a => a.name)).toEqual([
+      'Pistola (Balas Curtas — Dum dum)',
+      'Desarmado',
+    ])
+  })
+
+  it('duas unidades da MESMA arma cruzam com as variantes de munição (2 armas × 2 munições = 4 linhas)', () => {
+    const draft = atirador({
+      equipmentChoices: ['pistola', 'pistola#2', 'municao-balas-curtas', 'municao-balas-curtas#2'],
+      equipmentModifications: { 'municao-balas-curtas#2': ['dum-dum'] },
+    })
+    expect(getSheetWeaponAttacks(draft).map(a => a.name)).toEqual([
+      'Pistola #1 (Balas Curtas)',
+      'Pistola #1 (Balas Curtas — Dum dum)',
+      'Pistola #2 (Balas Curtas)',
+      'Pistola #2 (Balas Curtas — Dum dum)',
+      'Desarmado',
+    ])
+  })
+
+  it('arma corpo a corpo ignora munição no loadout', () => {
+    const draft = atirador({
+      equipmentChoices: ['faca', 'municao-balas-curtas'],
+      equipmentModifications: { 'municao-balas-curtas': ['dum-dum'] },
+    })
+    expect(getWeaponAmmoVariants(draft, faca)).toEqual([])
+    expect(getSheetWeaponAttacks(draft).map(a => a.name)).toEqual(['Faca', 'Desarmado'])
   })
 })

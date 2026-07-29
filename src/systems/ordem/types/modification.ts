@@ -29,6 +29,10 @@ export type OrdemModification = {
   damageDice?: number
   /** Amplia a margem de ameaça: reduz o início da faixa de crítico em N (Perigosa/Mira Laser +2). */
   threatMargin?: number
+  /** Bônus no multiplicador de crítico (munição Dum dum +2). */
+  critMultiplierBonus?: number
+  /** Dano extra com dado próprio, somado à direita do dano da arma (munição Explosiva "+2d6"). */
+  extraDamage?: string
   /** Modificações que não podem coexistir na mesma peça (ex.: Reforçada × Discreta). */
   excludes?: string[]
 }

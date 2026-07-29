@@ -289,14 +289,35 @@ Combatente com Vigor 3 em NEX 55% teria DT 18. Mas a **Tabela 1.2** dá limite d
 55% → 10 + 11 + 3 = **24**. O 18 corresponde ao limite do NEX 25% (5). O projeto segue a Tabela 1.2,
 que é a regra; o exemplo parece erro de edição. Vale para `getRitualDt` e `getSheetExplosives`.
 
+### Acessórios e a regra de não-acúmulo (p. 63)
+
+`utensilio` e `vestimenta` concedem "+2 numa perícia à escolha, definida ao adquirir". A escolha
+agora existe por UNIDADE, na etapa Equipamento (`accessorySkillChoices`), com Luta e Pontaria fora:
+
+- `aprimorado` sobe o bônus do item para **+5**
+- `funcao-adicional` abre um **segundo** slot de perícia (+2)
+- a etapa fica pendente enquanto um acessório requisitado não tiver perícia definida
+
+**"Bônus fornecidos por itens não são cumulativos"** (p. 63): o agregador marca bônus de item como
+`nonCumulative`, e `getSkillBonusTotal` soma as habilidades normalmente mas usa só o **MAIOR** bônus
+de item. Bônus de item continua somando com bônus de habilidade — o não-acúmulo é entre itens. A
+penalidade de carga da Proteção Pesada nunca é marcada, então soma sempre (é penalidade, não bônus
+concorrente).
+
+Pegar dois itens na mesma perícia é **permitido** (nada no livro proíbe): a etapa não bloqueia, e o
+passo de Equipamento mostra um aviso explícito nomeando a perícia, as fontes e qual valor a ficha
+vai usar.
+
+Ressalva do livro ainda não modelada: "você pode receber os bônus de no máximo **duas vestimentas**
+ao mesmo tempo".
+
 ### Gaps que sobraram (deliberadamente)
 
-- **Acessórios** (`utensilio`/`vestimenta`): "+2 numa perícia à escolha" e as mods `aprimorado` /
-  `funcao-adicional` seguem sem escolha modelada. É a próxima escolha-que-gera-escolha a fazer, na
-  etapa Equipamento. O livro ainda ressalva que bônus de itens **não** acumulam entre si (p. 63),
-  o que o agregador precisará respeitar.
 - **Kit de Perícia**: não se escolhe de qual perícia é o kit, então a ficha não sinaliza as perícias
   que sofreriam −5 sem ele.
+- **Aprimorado duas vezes**: o livro permite escolhê-la uma segunda vez quando o item tem Função
+  Adicional, mas o motor de modificações não aceita a mesma modificação duas vezes na mesma peça —
+  hoje o Aprimorado vale para o slot do próprio item.
 - **Remendão** (Técnico NEX 40%): "equipamentos de investigação têm categoria reduzida em I" — falta
   a tag de "equipamento de investigação" no catálogo.
 - Habilidades ativadas em jogo (~65 itens) continuam só com a descrição, e está correto: não há

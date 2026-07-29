@@ -161,6 +161,9 @@ export function sanitizeImportedDraft(parsed: unknown): OrdemCharacterDraft | nu
     equipmentCurseChoices: p.equipmentCurseChoices && typeof p.equipmentCurseChoices === 'object' && !Array.isArray(p.equipmentCurseChoices)
       ? p.equipmentCurseChoices
       : {},
+    accessorySkillChoices: p.accessorySkillChoices && typeof p.accessorySkillChoices === 'object' && !Array.isArray(p.accessorySkillChoices)
+      ? p.accessorySkillChoices
+      : {},
     powerParams: p.powerParams && typeof p.powerParams === 'object' && !Array.isArray(p.powerParams)
       ? p.powerParams
       : {},

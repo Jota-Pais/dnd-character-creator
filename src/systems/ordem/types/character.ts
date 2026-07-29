@@ -116,6 +116,13 @@ export type OrdemCharacterDraft = {
   /** Escolhas de parâmetro de maldição ("uid:curseId" → elemento ou ritual de 1º círculo). */
   equipmentCurseChoices: Record<string, string>
   /**
+   * Perícias que cada acessório (Utensílio/Vestimenta) beneficia, por unidade: índice 0 é a
+   * perícia do próprio item, índice 1 é a da modificação Função Adicional. Luta e Pontaria não
+   * valem (ressalva do livro). Bônus de ITENS não acumulam entre si (p. 63) — a ficha usa o
+   * maior deles; ver `getAccessorySkillBonuses`.
+   */
+  accessorySkillChoices: Record<string, string[]>
+  /**
    * Parâmetros de poderes com escolha embutida, por slot ("slot-0".."slot-5" ou "versatility"):
    * Treinamento em Perícia → 2 ids de perícia; Especialista/Mestre em Elemento → 1 elemento.
    */
@@ -189,6 +196,7 @@ export const EMPTY_DRAFT: OrdemCharacterDraft = {
   equipmentModifications: {},
   equipmentCurses: {},
   equipmentCurseChoices: {},
+  accessorySkillChoices: {},
   powerParams: {},
   utilityBackpackItem: null,
   favoriteRitual: null,

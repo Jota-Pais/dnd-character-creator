@@ -21,7 +21,7 @@ import {
 } from '../../utils/paranormalPowerUtils'
 import {
   getEquipmentByInstance, getInstanceLabel, getTotalCarryCapacity, getModifiedSpaces, getModifiedDefenseBonus, getDraftInstanceCategory,
-  getMissingRitualComponentElements, getEquipmentDamageResistances,
+  getMissingRitualComponentElements, getEquipmentDamageResistances, formatAccessorySkills,
 } from '../../utils/equipmentUtils'
 import { getModification } from '../../utils/modificationUtils'
 import { getCurse, getCursedDerivedStats, getSheetAttributes, formatCurseElement, formatCurseChoiceDetail, getRitualDt, getRitualPeLimit } from '../../utils/curseUtils'
@@ -560,11 +560,13 @@ export function ReviewStep() {
               const mods = draft.equipmentModifications[uid] ?? []
               const curses = draft.equipmentCurses[uid] ?? []
               const effCat = getDraftInstanceCategory(draft, uid)
+              const accessorySkills = formatAccessorySkills(draft, uid)
               return (
                 <p key={uid} className="text-parchment-500 text-xs">
                   <span className="font-semibold text-parchment-300">{getInstanceLabel(draft, uid)}</span> <span className="text-parchment-700">(Cat {CAT_ROMAN[effCat]}, {item.spaces} esp.)</span>
                   {item.type === 'weapon' && ` — ${item.damage} ${item.damageType} (Crítico: ${item.critical})`}
                   {item.type === 'protection' && ` — Defesa +${item.defenseBonus}`}
+                  {accessorySkills && ` — ${accessorySkills}`}
                   {mods.length > 0 && (
                     <span className="text-gold-600"> · Mods: {mods.map(m => getModification(m)?.name).filter(Boolean).join(', ')}</span>
                   )}

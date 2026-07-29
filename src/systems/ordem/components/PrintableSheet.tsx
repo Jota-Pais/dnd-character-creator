@@ -20,7 +20,7 @@ import {
 } from '../utils/paranormalPowerUtils'
 import {
   getEquipmentByInstance, getInstanceLabel, getTotalCarryCapacity, getModifiedSpaces, getModifiedDefenseBonus,
-  getDraftInstanceCategory, getEquipmentDamageResistances,
+  getDraftInstanceCategory, getEquipmentDamageResistances, formatAccessorySkills,
 } from '../utils/equipmentUtils'
 import { getModification } from '../utils/modificationUtils'
 import { getCurse, getCursedDerivedStats, getSheetAttributes, formatCurseElement, formatCurseChoiceDetail, getRitualDt, getRitualPeLimit } from '../utils/curseUtils'
@@ -560,6 +560,9 @@ export function PrintableSheet() {
                   <tr key={uid} className="border-b border-gray-300 align-top">
                     <td className="pr-2 py-0.5">
                       <span className="font-semibold">{getInstanceLabel(draft, uid)}</span>
+                      {formatAccessorySkills(draft, uid) && (
+                        <span className="text-gray-700"> · {formatAccessorySkills(draft, uid)}</span>
+                      )}
                       {mods.length > 0 && <span className="text-gray-600"> · Mods: {mods.map(m => getModification(m)?.name).filter(Boolean).join(', ')}</span>}
                       {curses.length > 0 && <span className="text-gray-600"> · Maldições: {curses.map(c => getCurse(c)?.name).filter(Boolean).join(', ')}</span>}
                       {item.description && <p className="text-[10px] text-gray-500">{item.description}</p>}

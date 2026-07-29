@@ -462,6 +462,37 @@ describe('Bônus de perícia de todas as fontes', () => {
     expect(getSkillsWithUnconditionalBonus(draft)).toEqual(['initiative'])
   })
 
+  it('bônus de ITENS não acumulam: entra só o maior (p. 63)', () => {
+    const draft = makeDraft({
+      class: 'combatant',
+      equipmentChoices: ['utensilio', 'vestimenta'],
+      equipmentModifications: { utensilio: ['aprimorado'] }, // +5
+      accessorySkillChoices: { utensilio: ['diplomacy'], vestimenta: ['diplomacy'] }, // +2
+    })
+    // +5 e +2 na mesma perícia → 5, não 7.
+    expect(getSkillBonusTotal(draft, 'diplomacy')).toBe(5)
+  })
+
+  it('bônus de item soma com bônus de HABILIDADE (o não-acúmulo é só entre itens)', () => {
+    const draft = makeDraft({
+      class: 'combatant', nex: 15,
+      powerChoices: ['transcend'],
+      paranormalPowerChoices: { 'slot-0': { powerId: 'sensitive' } }, // +5 Diplomacia (habilidade)
+      equipmentChoices: ['utensilio'],
+      accessorySkillChoices: { utensilio: ['diplomacy'] }, // +2 (item)
+    })
+    expect(getSkillBonusTotal(draft, 'diplomacy')).toBe(7)
+  })
+
+  it('a penalidade de carga soma sempre, mesmo com bônus de item na mesma perícia', () => {
+    const draft = makeDraft({
+      class: 'combatant',
+      equipmentChoices: ['protecao-pesada', 'utensilio'],
+      accessorySkillChoices: { utensilio: ['crime'] }, // Crime tem penalidade de carga
+    })
+    expect(getSkillBonusTotal(draft, 'crime')).toBe(2 - 5)
+  })
+
   it('poder de outra classe via Expansão de Conhecimento também traz o bônus', () => {
     const draft = makeDraft({
       class: 'combatant',

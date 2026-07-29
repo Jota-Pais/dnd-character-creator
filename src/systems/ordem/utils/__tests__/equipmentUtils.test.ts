@@ -13,6 +13,11 @@ import {
   hasProtectionProficiency,
   hasItemProficiency,
   getLoadPenaltySkillBonuses,
+  getAccessorySkillSlots,
+  getAccessorySkillOptions,
+  areAccessorySkillChoicesComplete,
+  getNonCumulativeSkillConflicts,
+  formatAccessorySkills,
   getEquipmentById,
   getEffectiveCategory,
   getModifiedSpaces,
@@ -537,6 +542,87 @@ describe('hasProtectionProficiency', () => {
 
   it('itens gerais não exigem proficiência', () => {
     expect(hasItemProficiency(makeDraft({ class: 'occultist' }), getEquipmentById('corda')!)).toBe(true)
+  })
+})
+
+describe('Acessórios: escolha de perícia e não-acúmulo (p. 63)', () => {
+  it('Utensílio e Vestimenta abrem um slot de perícia cada; outros itens não', () => {
+    const draft = makeDraft({ equipmentChoices: ['utensilio', 'vestimenta', 'corda', 'kit-pericia'] })
+    expect(getAccessorySkillSlots(draft).map(s => s.uid)).toEqual(['utensilio', 'vestimenta'])
+    expect(getAccessorySkillSlots(draft).every(s => s.value === 2)).toBe(true)
+  })
+
+  it('Luta e Pontaria não são opções', () => {
+    expect(getAccessorySkillOptions()).not.toContain('fighting')
+    expect(getAccessorySkillOptions()).not.toContain('aim')
+    expect(getAccessorySkillOptions()).toContain('diplomacy')
+  })
+
+  it('Aprimorado sobe o bônus do item para +5', () => {
+    const draft = makeDraft({
+      equipmentChoices: ['utensilio'],
+      equipmentModifications: { utensilio: ['aprimorado'] },
+    })
+    expect(getAccessorySkillSlots(draft)[0].value).toBe(5)
+  })
+
+  it('Função Adicional abre um segundo slot de +2', () => {
+    const draft = makeDraft({
+      equipmentChoices: ['utensilio'],
+      equipmentModifications: { utensilio: ['funcao-adicional'] },
+    })
+    const slots = getAccessorySkillSlots(draft)
+    expect(slots).toHaveLength(2)
+    expect(slots[1].index).toBe(1)
+    expect(slots[1].value).toBe(2)
+  })
+
+  it('a etapa fica incompleta enquanto a perícia do acessório não é escolhida', () => {
+    const semEscolha = makeDraft({ class: 'combatant', equipmentChoices: ['utensilio'] })
+    expect(areAccessorySkillChoicesComplete(semEscolha)).toBe(false)
+    expect(isEquipmentStepComplete(semEscolha)).toBe(false)
+
+    const comEscolha = makeDraft({
+      class: 'combatant',
+      equipmentChoices: ['utensilio'],
+      accessorySkillChoices: { utensilio: ['diplomacy'] },
+    })
+    expect(areAccessorySkillChoicesComplete(comEscolha)).toBe(true)
+    expect(isEquipmentStepComplete(comEscolha)).toBe(true)
+  })
+
+  it('dois itens na mesma perícia são PERMITIDOS, mas contam como conflito de não-acúmulo', () => {
+    const draft = makeDraft({
+      class: 'combatant',
+      // Aprimorado sobe o Utensílio pra Cat II — precisa de uma Patente com vaga nessa categoria.
+      patente: 'agente-especial',
+      equipmentChoices: ['utensilio', 'vestimenta'],
+      equipmentModifications: { utensilio: ['aprimorado'] }, // +5
+      accessorySkillChoices: { utensilio: ['diplomacy'], vestimenta: ['diplomacy'] },
+    })
+    // O não-acúmulo NÃO bloqueia a ficha: o agente pode carregar os dois itens.
+    expect(isEquipmentStepComplete(draft)).toBe(true)
+    expect(getNonCumulativeSkillConflicts(draft)).toEqual([
+      { skillId: 'diplomacy', sources: ['Utensílio', 'Vestimenta'], applied: 5 },
+    ])
+  })
+
+  it('perícias diferentes não geram conflito', () => {
+    const draft = makeDraft({
+      equipmentChoices: ['utensilio', 'vestimenta'],
+      accessorySkillChoices: { utensilio: ['diplomacy'], vestimenta: ['athletics'] },
+    })
+    expect(getNonCumulativeSkillConflicts(draft)).toEqual([])
+  })
+
+  it('formatAccessorySkills descreve os bônus da unidade', () => {
+    const draft = makeDraft({
+      equipmentChoices: ['utensilio'],
+      equipmentModifications: { utensilio: ['aprimorado', 'funcao-adicional'] },
+      accessorySkillChoices: { utensilio: ['diplomacy', 'technology'] },
+    })
+    expect(formatAccessorySkills(draft, 'utensilio')).toBe('+5 Diplomacia, +2 Tecnologia')
+    expect(formatAccessorySkills(draft, 'corda')).toBe('')
   })
 })
 

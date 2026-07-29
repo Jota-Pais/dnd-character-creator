@@ -7,7 +7,9 @@ import { getPower } from './powerUtils'
 import { getPatente } from './patenteUtils'
 import { getReachedTrilhaFeaturesWithSource, hasClassPower, getOriginEffects } from './characterUtils'
 import { getExpansionGrantedClassPowers, getParanormalInstances } from './paranormalPowerUtils'
-import { getLoadPenaltySkillBonuses, getEquipmentByInstance, getInstanceLabel } from './equipmentUtils'
+import {
+  getLoadPenaltySkillBonuses, getAccessorySkillBonuses, getEquipmentByInstance, getInstanceLabel,
+} from './equipmentUtils'
 import { getSheetAttributes } from './curseUtils'
 import { getPeLimit } from './progressionUtils'
 
@@ -27,10 +29,16 @@ import { getPeLimit } from './progressionUtils'
 export type SheetSkillBonus = {
   skillId: string
   value: number
-  /** Nome da habilidade que concede (ex.: "Gatuno", "Hacker"). */
+  /** Nome da habilidade ou do item que concede (ex.: "Gatuno", "Hacker", "Utensílio"). */
   source: string
   /** Condição de aplicação; ausente = incondicional (soma no total da perícia). */
   condition?: string
+  /**
+   * Bônus que não acumula com outros do mesmo grupo: "bônus fornecidos por itens não são
+   * cumulativos" (p. 63). Numa perícia com vários deles, só o MAIOR entra no total — os demais
+   * ficam listados como redundantes. Penalidades (ex.: carga) nunca são marcadas, pra sempre somarem.
+   */
+  nonCumulative?: boolean
 }
 
 /** Poderes de classe que o agente possui, por qualquer via, com os dados do catálogo. */
@@ -77,18 +85,23 @@ export function getSheetSkillBonuses(draft: OrdemCharacterDraft): SheetSkillBonu
     const effects = instance.isAffinityCopy ? instance.power.affinityEffects : instance.power.effects
     if (effects) push(instance.power.name, effects.skillBonus, effects.conditionalSkillBonus)
   }
+  out.push(...getAccessorySkillBonuses(draft))
   out.push(...getLoadPenaltySkillBonuses(draft))
   return out
 }
 
 /**
- * Soma dos bônus INCONDICIONAIS numa perícia — o número que entra na coluna da ficha. Inclui a
- * penalidade de carga da Proteção Pesada (−5), que é um bônus negativo como qualquer outro.
+ * Bônus INCONDICIONAIS numa perícia — o número que entra na coluna da ficha.
+ *
+ * Habilidades somam entre si; bônus de ITEM não ("bônus fornecidos por itens não são cumulativos",
+ * p. 63), então entra só o MAIOR deles. A penalidade de carga da Proteção Pesada é somada sempre,
+ * porque é penalidade, não bônus concorrente.
  */
 export function getSkillBonusTotal(draft: OrdemCharacterDraft, skillId: string): number {
-  return getSheetSkillBonuses(draft)
-    .filter(b => b.skillId === skillId && !b.condition)
-    .reduce((s, b) => s + b.value, 0)
+  const applicable = getSheetSkillBonuses(draft).filter(b => b.skillId === skillId && !b.condition)
+  const cumulative = applicable.filter(b => !b.nonCumulative).reduce((s, b) => s + b.value, 0)
+  const bestItem = applicable.filter(b => b.nonCumulative).reduce((max, b) => Math.max(max, b.value), 0)
+  return cumulative + bestItem
 }
 
 /** Perícias com bônus incondicional (positivo ou negativo), pra listar as não treinadas afetadas. */

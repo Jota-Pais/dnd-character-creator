@@ -5,7 +5,9 @@ import {
   EQUIPMENTS, getTotalCarryCapacity, getModifiedSpaces, getDraftInstanceCategory, getCatalogCategory,
   hasItemProficiency, instanceItemId, newInstanceUid, getInstanceLabel,
   fitsWithAdjustedCounts, getCategorySlotAllocation, getMissingRitualComponentElements,
+  getAccessorySkillSlots, getAccessorySkillOptions, getNonCumulativeSkillConflicts,
 } from '../../utils/equipmentUtils'
+import { getSkillName } from '../../utils/skillUtils'
 import { getAvailableModifications, canApplyModification, isModifiable } from '../../utils/modificationUtils'
 import {
   getAvailableCurses, canApplyCurse, isCursable, getCurseCategoryDelta, curseChoiceKey, formatCurseElement, getSheetAttributes,
@@ -48,6 +50,11 @@ export function EquipmentStep() {
   const general = EQUIPMENTS.filter(i => i.type !== 'weapon' && i.type !== 'protection' && !i.paranormal)
   // Rituais conhecidos cujos componentes ritualísticos não estão no loadout (aviso, não bloqueia).
   const missingComponents = getMissingRitualComponentElements(draft)
+  // Acessórios: perícia a escolher por unidade, e o aviso de "bônus de itens não acumulam" (p. 63).
+  const accessorySlots = getAccessorySkillSlots(draft)
+  const accessorySkillOptions = getAccessorySkillOptions()
+  const skillConflicts = getNonCumulativeSkillConflicts(draft)
+  const pendingAccessorySkills = accessorySlots.filter(s => !s.skillId).length
 
   const addUnit = (itemId: string) => {
     const uid = newInstanceUid(draft.equipmentChoices, itemId)
@@ -63,13 +70,26 @@ export function EquipmentStep() {
     const curseChoices = Object.fromEntries(
       Object.entries(draft.equipmentCurseChoices).filter(([k]) => !k.startsWith(`${uid}:`)),
     )
+    const accessorySkills = { ...draft.accessorySkillChoices }
+    delete accessorySkills[uid]
     updateDraft({
       equipmentChoices: draft.equipmentChoices.filter(c => c !== uid),
       equipmentModifications: mods,
       equipmentCurses: curses,
       equipmentCurseChoices: curseChoices,
+      accessorySkillChoices: accessorySkills,
       ...(draft.utilityBackpackItem === uid ? { utilityBackpackItem: null } : {}),
     })
+  }
+
+  const setAccessorySkill = (uid: string, index: number, skillId: string) => {
+    const current = [...(draft.accessorySkillChoices[uid] ?? [])]
+    if (skillId) current[index] = skillId
+    else delete current[index]
+    const updated = { ...draft.accessorySkillChoices }
+    if (current.filter(Boolean).length === 0) delete updated[uid]
+    else updated[uid] = current
+    updateDraft({ accessorySkillChoices: updated })
   }
 
   const toggleModification = (uid: string, modId: string) => {
@@ -229,6 +249,8 @@ export function EquipmentStep() {
             const appliedCurses = draft.equipmentCurses[uid] ?? []
             const unitCat = getDraftInstanceCategory(draft, uid)
             const editable = isModifiable(item) || isCursable(item)
+            // Slots de perícia deste acessório (Utensílio/Vestimenta, +1 com Função Adicional).
+            const unitAccessorySlots = accessorySlots.filter(s => s.uid === uid)
             const canBackpack = hasClassPower(draft, 'utility-backpack') && item.type !== 'weapon'
             const isBackpacked = draft.utilityBackpackItem === uid
             return (
@@ -256,6 +278,30 @@ export function EquipmentStep() {
                     >
                       ✕ remover
                     </button>
+                  </div>
+                )}
+
+                {unitAccessorySlots.length > 0 && (
+                  <div className="mb-2 space-y-1">
+                    {unitAccessorySlots.map(slot => (
+                      <div key={slot.index} className="flex items-center gap-2">
+                        <span className="text-xs text-parchment-600 shrink-0">
+                          {slot.index === 1 ? 'Função adicional:' : 'Concede'} +{slot.value} em
+                        </span>
+                        <select
+                          value={slot.skillId ?? ''}
+                          onChange={e => setAccessorySkill(uid, slot.index, e.target.value)}
+                          className={`flex-1 bg-parchment-950 border rounded px-2 py-1 text-parchment-300 text-xs ${
+                            slot.skillId ? 'border-parchment-800' : 'border-amber-700/60'
+                          }`}
+                        >
+                          <option value="">Escolha a perícia…</option>
+                          {accessorySkillOptions.map(sid => (
+                            <option key={sid} value={sid}>{getSkillName(sid)}</option>
+                          ))}
+                        </select>
+                      </div>
+                    ))}
                   </div>
                 )}
 
@@ -510,6 +556,26 @@ export function EquipmentStep() {
 
         <div>
           <h3 className="font-fantasy text-xl text-parchment-300 border-b border-parchment-900/50 pb-2 mb-4">Equipamento Geral</h3>
+          {skillConflicts.length > 0 && (
+            <div className="mb-4 p-3 rounded-lg border border-amber-700/50 bg-amber-950/30 text-amber-300 text-sm">
+              ⚠️ <strong>Bônus de itens não se acumulam</strong> (livro, pág. 63). Você tem mais de um item
+              beneficiando a mesma perícia — pode ficar com todos, mas na mesa vale só o maior:
+              <ul className="mt-1.5 space-y-0.5">
+                {skillConflicts.map(c => (
+                  <li key={c.skillId}>
+                    <strong>{getSkillName(c.skillId)}</strong>: {c.sources.join(' + ')} —{' '}
+                    a ficha usa <strong>+{c.applied}</strong>.
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {pendingAccessorySkills > 0 && (
+            <div className="mb-4 p-3 rounded-lg border border-amber-700/50 bg-amber-950/30 text-amber-300 text-sm">
+              ⚠️ Escolha a perícia {pendingAccessorySkills > 1 ? `dos ${pendingAccessorySkills} acessórios` : 'do acessório'} que
+              você requisitou — o bônus é definido ao adquirir o item.
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {general.map(renderItem)}
           </div>

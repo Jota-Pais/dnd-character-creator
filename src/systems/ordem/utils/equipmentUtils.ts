@@ -10,7 +10,7 @@ import { getModification } from './modificationUtils'
 import { getCurse, getCurseCategoryDelta, getItemCurses, getSheetAttributes, canApplyCurse, curseChoiceKey } from './curseUtils'
 import { hasClassPower, getFavoriteWeaponReduction, getFavoriteEquipmentReduction, getGrantedRituals, hasCarryCapacityIntellectBonus, getWorkToolBonus, hasTrilhaFeature } from './characterUtils'
 import { getAffinityState } from './paranormalPowerUtils'
-import { SKILLS } from './skillUtils'
+import { SKILLS, getSkillName } from './skillUtils'
 
 export const EQUIPMENTS = equipmentsJson as OrdemEquipment[]
 
@@ -356,6 +356,10 @@ export function isEquipmentStepComplete(draft: OrdemCharacterDraft): boolean {
   // Maldições precisam ser válidas (alvo, oposição de elementos, parâmetros escolhidos).
   if (!areCursesValid(draft)) return false
 
+  // Acessórios precisam ter a perícia definida ("definida ao adquirir") — sem ela, o bônus não
+  // existe na ficha. Bônus repetido entre itens NÃO invalida: só não acumula (ver o aviso na UI).
+  if (!areAccessorySkillChoicesComplete(draft)) return false
+
   // Proficiência de arma NÃO bloqueia: o livro permite possuir uma arma sem proficiência (com
   // penalidade ao usá-la). A UI apenas sinaliza "Sem Proficiência" — ver `hasWeaponProficiency`.
   return true
@@ -403,6 +407,110 @@ export function hasItemProficiency(draft: OrdemCharacterDraft, item: OrdemEquipm
   if (item.type === 'weapon') return hasWeaponProficiency(draft, item)
   if (item.type === 'protection') return hasProtectionProficiency(draft, item)
   return true
+}
+
+// ── Acessórios que concedem bônus de perícia (Utensílio / Vestimenta) ──────────
+
+/** Itens que concedem "+2 numa perícia à escolha, definida ao adquirir" (p. 63). */
+const SKILL_BONUS_ACCESSORIES = ['utensilio', 'vestimenta']
+
+/** Perícias que um acessório nunca pode beneficiar (ressalva do livro). */
+const ACCESSORY_FORBIDDEN_SKILLS = ['fighting', 'aim']
+
+export type AccessorySkillSlot = {
+  uid: string
+  /** Nome da unidade pra exibição (ex.: "Utensílio #2"). */
+  label: string
+  /** 0 = perícia do próprio item; 1 = perícia da modificação Função Adicional. */
+  index: number
+  skillId: string | null
+  /** Valor do bônus deste slot: +2, ou +5 quando a unidade tem a modificação Aprimorado. */
+  value: number
+}
+
+/** Perícias que um acessório pode beneficiar: todas, menos Luta e Pontaria. */
+export function getAccessorySkillOptions(): string[] {
+  return SKILLS.map(s => s.id).filter(id => !ACCESSORY_FORBIDDEN_SKILLS.includes(id))
+}
+
+/**
+ * Slots de escolha de perícia dos acessórios do loadout: um por Utensílio/Vestimenta, mais um
+ * quando a unidade tem a modificação Função Adicional ("concede +2 a uma perícia adicional").
+ *
+ * A modificação Aprimorado sobe o bônus do item para +5. O livro permite escolhê-la uma segunda
+ * vez para a Função Adicional, mas o motor de modificações não aceita a mesma modificação duas
+ * vezes na mesma peça — então aqui o Aprimorado vale para o slot do próprio item.
+ */
+export function getAccessorySkillSlots(draft: OrdemCharacterDraft): AccessorySkillSlot[] {
+  const slots: AccessorySkillSlot[] = []
+  for (const uid of draft.equipmentChoices) {
+    if (!SKILL_BONUS_ACCESSORIES.includes(instanceItemId(uid))) continue
+    const mods = itemMods(draft, uid)
+    const chosen = draft.accessorySkillChoices[uid] ?? []
+    const label = getInstanceLabel(draft, uid)
+    slots.push({ uid, label, index: 0, skillId: chosen[0] ?? null, value: mods.includes('aprimorado') ? 5 : 2 })
+    if (mods.includes('funcao-adicional')) {
+      slots.push({ uid, label, index: 1, skillId: chosen[1] ?? null, value: 2 })
+    }
+  }
+  return slots
+}
+
+/**
+ * Bônus de perícia concedidos pelos acessórios do loadout. Marcados como NÃO cumulativos: "bônus
+ * fornecidos por itens não são cumulativos" (p. 63) — dois itens na mesma perícia rendem o
+ * benefício de um só, e a ficha usa o maior (ver `getSkillBonusTotal`).
+ */
+export function getAccessorySkillBonuses(
+  draft: OrdemCharacterDraft,
+): { skillId: string; value: number; source: string; nonCumulative: true }[] {
+  return getAccessorySkillSlots(draft)
+    .filter((slot): slot is AccessorySkillSlot & { skillId: string } => Boolean(slot.skillId))
+    .map(slot => ({
+      skillId: slot.skillId,
+      value: slot.value,
+      source: slot.index === 1 ? `${slot.label} (função adicional)` : slot.label,
+      nonCumulative: true as const,
+    }))
+}
+
+/**
+ * Bônus de perícia de uma unidade de acessório, pra exibir na linha do inventário
+ * (ex.: "+5 Diplomacia, +2 Tecnologia"). String vazia quando a unidade não é acessório de perícia
+ * ou ainda não teve a perícia escolhida.
+ */
+export function formatAccessorySkills(draft: OrdemCharacterDraft, uid: string): string {
+  return getAccessorySkillSlots(draft)
+    .filter(slot => slot.uid === uid && slot.skillId)
+    .map(slot => `+${slot.value} ${getSkillName(slot.skillId as string)}`)
+    .join(', ')
+}
+
+/** Todos os acessórios do loadout já têm a perícia escolhida? */
+export function areAccessorySkillChoicesComplete(draft: OrdemCharacterDraft): boolean {
+  return getAccessorySkillSlots(draft).every(slot => Boolean(slot.skillId))
+}
+
+/**
+ * Perícias em que DOIS OU MAIS itens concedem bônus — o jogador pode fazer isso (nada no livro
+ * proíbe), mas os bônus não somam: só o maior vale. Alimenta o aviso do passo de Equipamento.
+ */
+export function getNonCumulativeSkillConflicts(
+  draft: OrdemCharacterDraft,
+): { skillId: string; sources: string[]; applied: number }[] {
+  const bySkill = new Map<string, { sources: string[]; applied: number }>()
+  for (const bonus of getAccessorySkillBonuses(draft)) {
+    const entry = bySkill.get(bonus.skillId)
+    if (entry) {
+      entry.sources.push(bonus.source)
+      entry.applied = Math.max(entry.applied, bonus.value)
+    } else {
+      bySkill.set(bonus.skillId, { sources: [bonus.source], applied: bonus.value })
+    }
+  }
+  return [...bySkill.entries()]
+    .filter(([, entry]) => entry.sources.length > 1)
+    .map(([skillId, entry]) => ({ skillId, sources: entry.sources, applied: entry.applied }))
 }
 
 /**

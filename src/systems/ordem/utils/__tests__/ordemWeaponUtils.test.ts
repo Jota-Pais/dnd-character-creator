@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { EMPTY_DRAFT } from '../../types/character'
 import type { OrdemCharacterDraft } from '../../types/character'
 import type { OrdemWeapon } from '../../types/equipment'
-import { getEquipmentById, EQUIPMENTS } from '../equipmentUtils'
+import { getEquipmentById, EQUIPMENTS, hasWeaponProficiency } from '../equipmentUtils'
 import {
   getOrdemWeaponAttack, getWeaponSkillName, formatWeaponSummary, isMelee, getUnarmedAttack,
   getWeaponAmmoVariants, getSheetWeaponAttacks,
@@ -155,6 +155,39 @@ describe('resumo de arma pro card de escolha (getWeaponSkillName / formatWeaponS
   it('lança-chamas: Pontaria, arma de fogo, alcance curto, duas mãos, proficiência pesada', () => {
     const lancaChamas = getEquipmentById('lanca-chamas') as OrdemWeapon
     expect(formatWeaponSummary(lancaChamas)).toBe('Pontaria · arma de fogo · alcance Curto · duas mãos · proficiência pesada')
+  })
+})
+
+describe('Mira de Elite (Atirador de Elite NEX 10%)', () => {
+  const fuzilAssalto = getEquipmentById('fuzil-assalto') as OrdemWeapon // balas longas, 2d10
+  const espingarda = getEquipmentById('espingarda') as OrdemWeapon      // cartuchos, 4d6
+  const atirador = (over: Partial<OrdemCharacterDraft> = {}) => makeDraft({
+    class: 'specialist',
+    trilha: 'elite-marksman',
+    nex: 10,
+    attributes: { agility: 2, strength: 1, intellect: 3, presence: 1, vigor: 1 },
+    ...over,
+  })
+
+  it('soma o Intelecto no dano das armas de balas longas', () => {
+    expect(getOrdemWeaponAttack(fuzilAssalto, atirador(), []).damage).toBe('2d10+3 balístico')
+  })
+
+  it('não afeta arma de outra munição', () => {
+    expect(getOrdemWeaponAttack(espingarda, atirador(), []).damage).toBe('4d6 balístico')
+  })
+
+  it('não vale antes do NEX 10% nem em outra trilha', () => {
+    expect(getOrdemWeaponAttack(fuzilAssalto, atirador({ nex: 5 }), []).damage).toBe('2d10 balístico')
+    expect(getOrdemWeaponAttack(fuzilAssalto, atirador({ trilha: 'infiltrator' }), []).damage).toBe('2d10 balístico')
+  })
+
+  it('concede proficiência com as armas de balas longas (fuzil de assalto é tática)', () => {
+    expect(hasWeaponProficiency(atirador(), fuzilAssalto)).toBe(true)
+    // Metralhadora é pesada e também usa balas longas.
+    expect(hasWeaponProficiency(atirador(), getEquipmentById('metralhadora') as OrdemWeapon)).toBe(true)
+    // Espingarda é tática de cartuchos: Especialista sem o poder segue sem proficiência.
+    expect(hasWeaponProficiency(atirador(), espingarda)).toBe(false)
   })
 })
 

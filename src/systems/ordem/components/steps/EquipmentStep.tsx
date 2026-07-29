@@ -3,7 +3,7 @@ import { STEP_LABELS } from '../../types/character'
 import type { OrdemEquipment } from '../../types/equipment'
 import {
   EQUIPMENTS, getTotalCarryCapacity, getModifiedSpaces, getDraftInstanceCategory, getCatalogCategory,
-  hasWeaponProficiency, instanceItemId, newInstanceUid, getInstanceLabel,
+  hasItemProficiency, instanceItemId, newInstanceUid, getInstanceLabel,
   fitsWithAdjustedCounts, getCategorySlotAllocation, getMissingRitualComponentElements,
 } from '../../utils/equipmentUtils'
 import { getAvailableModifications, canApplyModification, isModifiable } from '../../utils/modificationUtils'
@@ -104,8 +104,9 @@ export function EquipmentStep() {
     // (trilha Aniquilador), senão uma arma acima do limite nunca ficaria requisitável pra marcar.
     const catalogCategory = getCatalogCategory(draft, item)
     const canAddUnit = catalogCategory === 0 || fitsWithAdjustedCounts(draft, patente, { [catalogCategory]: 1 })
-    // Proficiência de arma NÃO bloqueia — apenas sinaliza (você pode requisitar, mas com penalidade).
-    const noProficiency = !hasWeaponProficiency(draft, item)
+    // Proficiência (arma ou proteção) NÃO bloqueia — apenas sinaliza (o livro permite requisitar
+    // sem proficiência, com penalidade ao usar).
+    const noProficiency = !hasItemProficiency(draft, item)
     // Arma Favorita (trilha Aniquilador, NEX 10%+): reduz a categoria da arma escolhida.
     const favoriteReduction = getFavoriteWeaponReduction(draft)
     const canMarkFavorite = item.type === 'weapon' && favoriteReduction > 0

@@ -6,9 +6,11 @@ import { getTrilha } from '../utils/trilhaUtils'
 import { getPower } from '../utils/powerUtils'
 import {
   getTrainedSkills, getSkillGrade, getRitualCost, hasClassPower, getGrantedRituals, getEffectivePeLimit, getExpertSkills, getExpertDie,
-  getSkillBonusTotal, getConditionalSkillBonuses,
   getParanormalResistanceBonus, getMentalParanormalDamageResistance, getOriginMentalDamageResistance, getConditionalDamageResistances,
 } from '../utils/characterUtils'
+import {
+  getSkillBonusTotal, getConditionalSkillBonuses, getConditionalDefenseBonuses, getExtraDamageDiceNotes,
+} from '../utils/sheetEffects'
 import { getReachedTrilhaSlots, getPeLimit } from '../utils/progressionUtils'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, getSlotRitualElement, getGrantedRitualElement, ELEMENT_NAMES } from '../utils/ritualUtils'
 import {
@@ -95,6 +97,9 @@ export function PrintableSheet() {
   const expertDie = getExpertDie(draft.nex)
   // Bônus de perícia que só valem numa situação (Hacker, Envolto em Mistério, Acalentar...).
   const conditionalSkillBonuses = getConditionalSkillBonuses(draft)
+  // Defesa condicional e dados de dano extra já resolvidos pelo NEX (Ataque Furtivo).
+  const conditionalDefense = getConditionalDefenseBonuses(draft)
+  const extraDamageDice = getExtraDamageDiceNotes(draft)
   const cursedUnits = equipmentUnits.filter(u => (draft.equipmentCurses[u.uid]?.length ?? 0) > 0)
   // Armas com a maldição Ritualística: o ritual armazenado é listado junto das Habilidades.
   const ritualisticUnits = equipmentUnits.filter(u => (draft.equipmentCurses[u.uid] ?? []).includes('ritualistica'))
@@ -161,6 +166,11 @@ export function PrintableSheet() {
                 <p className="text-[9px] uppercase font-bold text-gray-600">Defesa</p>
                 <p className="text-2xl font-bold leading-none">{stats.defense}</p>
                 <p className="text-[9px] text-gray-500 mt-1">= 10 + AGI + Equip. + Outros</p>
+                {conditionalDefense.map((d, i) => (
+                  <p key={i} className="text-[9px] text-gray-600 mt-0.5">
+                    +{d.value}{d.appliesToResistanceTests && ' (e em resist.)'} {d.condition} — {d.source}.
+                  </p>
+                ))}
               </div>
               <CurrentStat label="SAN · Sanidade" value={stats.sanity} />
             </section>
@@ -251,6 +261,13 @@ export function PrintableSheet() {
               </tr>
             </thead>
             <tbody>
+              {extraDamageDice.map(d => (
+                <tr key={d.source}>
+                  <td colSpan={5} className="text-[10px] font-semibold pb-0.5">
+                    {d.source}: +{d.dice} de dano no seu NEX (condições em Habilidades).
+                  </td>
+                </tr>
+              ))}
               {weaponAttacks.map((a, i) => (
                 <tr key={`${a.name}-${i}`} className="border-b border-gray-300">
                   <td className="pr-2 py-0.5 font-semibold">{a.name}</td>

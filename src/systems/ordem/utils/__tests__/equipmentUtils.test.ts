@@ -10,6 +10,9 @@ import {
   getTotalCarryCapacity,
   isEquipmentStepComplete,
   hasWeaponProficiency,
+  hasProtectionProficiency,
+  hasItemProficiency,
+  getLoadPenaltySkillBonuses,
   getEquipmentById,
   getEffectiveCategory,
   getModifiedSpaces,
@@ -24,6 +27,7 @@ import {
   EQUIPMENTS,
 } from '../equipmentUtils'
 import { getPatente } from '../patenteUtils'
+import { SKILLS } from '../skillUtils'
 
 function makeDraft(over: Partial<OrdemCharacterDraft>): OrdemCharacterDraft {
   return { ...EMPTY_DRAFT, ...over }
@@ -503,5 +507,55 @@ describe('componentes ritualísticos (F22) — aviso de rituais sem componentes'
       expect(item.spaces).toBe(1)
       expect(item.paranormal).toBe(true)
     }
+  })
+})
+
+describe('hasProtectionProficiency', () => {
+  const leve = getEquipmentById('protecao-leve')!
+  const pesada = getEquipmentById('protecao-pesada')!
+  const escudo = getEquipmentById('escudo')!
+
+  it('as 3 classes têm proteção leve; nenhuma tem pesada de saída', () => {
+    for (const cls of ['combatant', 'specialist'] as const) {
+      expect(hasProtectionProficiency(makeDraft({ class: cls }), leve)).toBe(true)
+      expect(hasProtectionProficiency(makeDraft({ class: cls }), pesada)).toBe(false)
+    }
+    // Ocultista não tem proficiência com proteção alguma.
+    expect(hasProtectionProficiency(makeDraft({ class: 'occultist' }), leve)).toBe(false)
+  })
+
+  it('o poder Proteção Pesada concede a categoria pesada', () => {
+    const draft = makeDraft({ class: 'combatant', nex: 30, powerChoices: ['heavy-armor-proficiency'] })
+    expect(hasProtectionProficiency(draft, pesada)).toBe(true)
+  })
+
+  it('o Escudo conta como proteção pesada para fins de proficiência', () => {
+    expect(hasProtectionProficiency(makeDraft({ class: 'combatant' }), escudo)).toBe(false)
+    const comPoder = makeDraft({ class: 'combatant', nex: 30, powerChoices: ['heavy-armor-proficiency'] })
+    expect(hasProtectionProficiency(comPoder, escudo)).toBe(true)
+  })
+
+  it('itens gerais não exigem proficiência', () => {
+    expect(hasItemProficiency(makeDraft({ class: 'occultist' }), getEquipmentById('corda')!)).toBe(true)
+  })
+})
+
+describe('getLoadPenaltySkillBonuses (Proteção Pesada)', () => {
+  it('sem proteção pesada equipada, nenhuma penalidade', () => {
+    expect(getLoadPenaltySkillBonuses(makeDraft({ equipmentChoices: ['protecao-leve'] }))).toEqual([])
+  })
+
+  it('com proteção pesada, −5 em todas as perícias com penalidade de carga', () => {
+    const penalties = getLoadPenaltySkillBonuses(makeDraft({ equipmentChoices: ['protecao-pesada'] }))
+    expect(penalties.length).toBe(SKILLS.filter(s => s.loadPenalty).length)
+    expect(penalties.every(p => p.value === -5 && p.source === 'Proteção Pesada')).toBe(true)
+    // Crime tem penalidade de carga; Ocultismo não.
+    expect(penalties.map(p => p.skillId)).toContain('crime')
+    expect(penalties.map(p => p.skillId)).not.toContain('occultism')
+  })
+
+  it('vale também para uma segunda unidade da proteção pesada (uid com sufixo)', () => {
+    expect(getLoadPenaltySkillBonuses(makeDraft({ equipmentChoices: ['protecao-leve', 'protecao-pesada#2'] })).length)
+      .toBeGreaterThan(0)
   })
 })

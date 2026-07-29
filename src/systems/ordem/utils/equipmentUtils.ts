@@ -8,8 +8,9 @@ import { getOrdemClass } from './classUtils'
 import { getPatente, getCategoryLimit } from './patenteUtils'
 import { getModification } from './modificationUtils'
 import { getCurse, getCurseCategoryDelta, getItemCurses, getSheetAttributes, canApplyCurse, curseChoiceKey } from './curseUtils'
-import { hasClassPower, getFavoriteWeaponReduction, getFavoriteEquipmentReduction, getGrantedRituals, hasCarryCapacityIntellectBonus, getWorkToolBonus } from './characterUtils'
+import { hasClassPower, getFavoriteWeaponReduction, getFavoriteEquipmentReduction, getGrantedRituals, hasCarryCapacityIntellectBonus, getWorkToolBonus, hasTrilhaFeature } from './characterUtils'
 import { getAffinityState } from './paranormalPowerUtils'
+import { SKILLS } from './skillUtils'
 
 export const EQUIPMENTS = equipmentsJson as OrdemEquipment[]
 
@@ -360,6 +361,14 @@ export function isEquipmentStepComplete(draft: OrdemCharacterDraft): boolean {
   return true
 }
 
+/**
+ * A arma usa balas longas (fuzis e metralhadoras)? É o recorte da Mira de Elite (Atirador de
+ * Elite NEX 10%): proficiência com essas armas e +Intelecto nas rolagens de dano com elas.
+ */
+export function usesLongBullets(item: OrdemEquipment): boolean {
+  return item.type === 'weapon' && item.ammo === 'municao-balas-longas'
+}
+
 /** Se o agente tem proficiência com a arma — pela classe ou por poderes (apenas informativo, não bloqueia). */
 export function hasWeaponProficiency(draft: OrdemCharacterDraft, item: OrdemEquipment): boolean {
   if (item.type !== 'weapon' || !draft.class) return true
@@ -369,9 +378,42 @@ export function hasWeaponProficiency(draft: OrdemCharacterDraft, item: OrdemEqui
   if (item.proficiency === 'heavy' && hasClassPower(draft, 'heavy-weapons')) return true
   if (item.proficiency === 'tactical' && item.weaponCategory === 'fogo' && hasClassPower(draft, 'advanced-ballistics')) return true
   if (item.proficiency === 'tactical' && item.weaponCategory === 'corpo_a_corpo' && hasClassPower(draft, 'urban-ninja')) return true
+  // Mira de Elite (Atirador de Elite NEX 10%): armas de fogo que usam balas longas.
+  if (usesLongBullets(item) && hasTrilhaFeature(draft, 'elite-marksman', 10)) return true
   // Ferramenta de Trabalho (origem Operário): "Você sabe usar a arma escolhida" — proficiência só com ela.
   if (draft.workToolWeapon === item.id && getWorkToolBonus(draft) > 0) return true
   return false
+}
+
+/**
+ * Se o agente tem proficiência com a proteção. O Escudo "conta como proteção pesada para fins de
+ * proficiência" (descrição do item), e o poder Proteção Pesada concede a categoria pesada.
+ * Informativo, como nas armas: o livro permite vestir sem proficiência, com penalidade.
+ */
+export function hasProtectionProficiency(draft: OrdemCharacterDraft, item: OrdemEquipment): boolean {
+  if (item.type !== 'protection' || !draft.class) return true
+  const weight: 'light' | 'heavy' = item.isShield || item.id === 'protecao-pesada' ? 'heavy' : 'light'
+  const cls = getOrdemClass(draft.class)
+  if (cls?.armorProficiencies.includes(weight)) return true
+  return weight === 'heavy' && hasClassPower(draft, 'heavy-armor-proficiency')
+}
+
+/** Proficiência com o item, seja arma ou proteção (itens gerais não exigem proficiência). */
+export function hasItemProficiency(draft: OrdemCharacterDraft, item: OrdemEquipment): boolean {
+  if (item.type === 'weapon') return hasWeaponProficiency(draft, item)
+  if (item.type === 'protection') return hasProtectionProficiency(draft, item)
+  return true
+}
+
+/**
+ * Perícias que sofrem −5 pela penalidade de carga da Proteção Pesada equipada (descrição do
+ * item; as perícias afetadas são as marcadas com `loadPenalty` em skills.json). Devolvido como
+ * bônus NEGATIVO incondicional, pra entrar no total da perícia junto dos demais.
+ */
+export function getLoadPenaltySkillBonuses(draft: OrdemCharacterDraft): { skillId: string; value: number; source: string }[] {
+  const wearsHeavy = draft.equipmentChoices.some(uid => instanceItemId(uid) === 'protecao-pesada')
+  if (!wearsHeavy) return []
+  return SKILLS.filter(s => s.loadPenalty).map(s => ({ skillId: s.id, value: -5, source: 'Proteção Pesada' }))
 }
 
 /**

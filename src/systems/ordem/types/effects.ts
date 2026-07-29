@@ -18,3 +18,15 @@ export type ConditionalSkillBonus = {
   /** Condição do livro, em português, pra exibir junto do número (ex.: "para invadir sistemas"). */
   condition: string
 }
+
+/**
+ * Bônus de Defesa que só vale numa situação (ex.: Inquebrável +10 "enquanto estiver machucado").
+ * Não entra no valor de Defesa da ficha — vira linha própria com a condição, do mesmo jeito que
+ * a resistência a dano condicional.
+ */
+export type ConditionalDefenseBonus = {
+  value: number
+  condition: string
+  /** O mesmo bônus também vale em testes de resistência (ex.: Reflexos Defensivos). */
+  appliesToResistanceTests?: boolean
+}

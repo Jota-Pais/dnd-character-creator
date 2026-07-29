@@ -3,15 +3,13 @@ import type { OrdemClass } from '../types/class'
 import type { Trilha, TrilhaFeature } from '../types/trilha'
 import type { OrdemRitual, OrdemElement, OrdemRitualCircle } from '../types/ritual'
 import type { OriginPowerEffects } from '../types/origin'
-import type { ClassPower } from '../types/power'
-import type { ConditionalSkillBonus } from '../types/effects'
 import { getOrigin } from './originUtils'
 import { getOrdemClass, getFreeSkillChoiceCount } from './classUtils'
 import { getTrilhasByClass, getTrilha } from './trilhaUtils'
-import { getPowersByClass, getPower } from './powerUtils'
+import { getPowersByClass } from './powerUtils'
 import { RITUAL_COST, getRitualById, RITUAL_CIRCLE_NEX, bonusRitualElementKey } from './ritualUtils'
 import { getNexIndex, getReachedPowerSlots, getReachedAttributeIncreaseSlots, getReachedSkillGradeSlots, ATTRIBUTE_INCREASE_CAP, POWER_SLOT_NEX, TRILHA_FEATURE_NEX, VERSATILITY_NEX, NEX_STEPS, getPeLimit, hasVersatility } from './progressionUtils'
-import { getExpansionGrantedClassPowers, getParanormalEffects, getParanormalLearnedRituals, getParanormalInstances } from './paranormalPowerUtils'
+import { getExpansionGrantedClassPowers, getParanormalEffects, getParanormalLearnedRituals } from './paranormalPowerUtils'
 import { getUnmetPrereqs, type PrereqContext } from './prereqUtils'
 
 export type DerivedStats = {
@@ -109,90 +107,6 @@ export function getRequiredFreeSkillCount(draft: OrdemCharacterDraft, cls: Ordem
 export function getFixedSkillOverlapWithOrigin(draft: OrdemCharacterDraft, cls: OrdemClass): string[] {
   const origin = getOriginSkills(draft)
   return cls.skills.fixed.filter(id => origin.includes(id))
-}
-
-// ── Bônus de perícia de todas as fontes (origem, classe, trilha, poder paranormal) ──
-
-export type SheetSkillBonus = {
-  skillId: string
-  value: number
-  /** Nome da habilidade que concede (ex.: "Gatuno", "Hacker"). */
-  source: string
-  /** Condição de aplicação; ausente = incondicional (soma no total da perícia). */
-  condition?: string
-}
-
-/** Poderes de classe que o agente possui, por qualquer via, com os dados do catálogo. */
-function getOwnedClassPowers(draft: OrdemCharacterDraft): ClassPower[] {
-  const ids = new Set<string>()
-  for (const id of draft.powerChoices) if (id) ids.add(id)
-  if (draft.versatilityChoice?.kind === 'power') ids.add(draft.versatilityChoice.powerId)
-  for (const granted of getExpansionGrantedClassPowers(draft)) ids.add(granted.powerId)
-  return [...ids].map(getPower).filter((p): p is ClassPower => Boolean(p))
-}
-
-/**
- * TODOS os bônus de perícia da ficha, com a fonte de cada um — origem, poderes de classe,
- * features de trilha alcançadas e poderes paranormais. Os incondicionais somam no total da
- * perícia (`getSkillBonusTotal`); os condicionais aparecem como linha própria com a condição,
- * porque somá-los seria mentir (o +5 do Hacker não vale em todo teste de Tecnologia).
- */
-export function getSheetSkillBonuses(draft: OrdemCharacterDraft): SheetSkillBonus[] {
-  const out: SheetSkillBonus[] = []
-  const push = (
-    source: string,
-    flat: Record<string, number> | undefined,
-    conditional: ConditionalSkillBonus[] | undefined,
-  ) => {
-    for (const [skillId, value] of Object.entries(flat ?? {})) out.push({ skillId, value, source })
-    for (const entry of conditional ?? []) {
-      for (const skillId of entry.skills) {
-        out.push({ skillId, value: entry.value, source, condition: entry.condition })
-      }
-    }
-  }
-
-  const origin = draft.origin ? getOrigin(draft.origin) : undefined
-  if (origin?.power.effects) {
-    push(origin.power.name, origin.power.effects.skillBonus, origin.power.effects.conditionalSkillBonus)
-  }
-  for (const power of getOwnedClassPowers(draft)) {
-    push(power.name, power.effects?.skillBonus, power.effects?.conditionalSkillBonus)
-  }
-  for (const { feature } of getReachedTrilhaFeaturesWithSource(draft)) {
-    push(feature.name, feature.effects?.skillBonus, feature.effects?.conditionalSkillBonus)
-  }
-  for (const instance of getParanormalInstances(draft)) {
-    if (!instance.valid || !instance.power) continue
-    const effects = instance.isAffinityCopy ? instance.power.affinityEffects : instance.power.effects
-    if (effects) push(instance.power.name, effects.skillBonus, effects.conditionalSkillBonus)
-  }
-  return out
-}
-
-/** Soma dos bônus INCONDICIONAIS numa perícia — o número que entra na coluna da ficha. */
-export function getSkillBonusTotal(draft: OrdemCharacterDraft, skillId: string): number {
-  return getSheetSkillBonuses(draft)
-    .filter(b => b.skillId === skillId && !b.condition)
-    .reduce((s, b) => s + b.value, 0)
-}
-
-/** Perícias com bônus incondicional, para listar as que não são treinadas mas têm bônus. */
-export function getSkillsWithUnconditionalBonus(draft: OrdemCharacterDraft): string[] {
-  return dedupe(getSheetSkillBonuses(draft).filter(b => !b.condition).map(b => b.skillId))
-}
-
-/** Bônus condicionais, agrupados por condição+fonte pra virar uma linha por habilidade. */
-export function getConditionalSkillBonuses(draft: OrdemCharacterDraft): { source: string; condition: string; value: number; skillIds: string[] }[] {
-  const groups = new Map<string, { source: string; condition: string; value: number; skillIds: string[] }>()
-  for (const bonus of getSheetSkillBonuses(draft)) {
-    if (!bonus.condition) continue
-    const key = `${bonus.source}::${bonus.condition}::${bonus.value}`
-    const group = groups.get(key)
-    if (group) group.skillIds.push(bonus.skillId)
-    else groups.set(key, { source: bonus.source, condition: bonus.condition, value: bonus.value, skillIds: [bonus.skillId] })
-  }
-  return [...groups.values()]
 }
 
 // ── Perito (habilidade do Especialista) ────────────────────────────────────────
@@ -467,6 +381,17 @@ export function hasFavoredRitualPower(draft: OrdemCharacterDraft): boolean {
 }
 
 /**
+ * O agente alcançou a feature de uma trilha específica? Vale pela trilha própria (NEX alcançado)
+ * ou pela Versatilidade (NEX 50%), que concede só a 1ª feature (NEX 10%) de outra trilha.
+ */
+export function hasTrilhaFeature(draft: OrdemCharacterDraft, trilhaId: string, nex: number): boolean {
+  if (draft.trilha === trilhaId && draft.nex >= nex) return true
+  return nex === TRILHA_FEATURE_NEX[0]
+    && draft.versatilityChoice?.kind === 'trilha'
+    && draft.versatilityChoice.trilhaId === trilhaId
+}
+
+/**
  * Tem a habilidade Lâmina Maldita (trilha Lâmina Paranormal, NEX 10%)? Também vale quando
  * a Versatilidade concedeu o 1º poder dessa trilha. Efeitos: Amaldiçoar Arma custa −1 PE
  * se já o conhece, e os ataques com a arma amaldiçoada podem usar Ocultismo.
@@ -568,7 +493,7 @@ export type GrantedRitual = {
  * (NEX 10%) de outra trilha, se a Versatilidade (NEX 50%) a concedeu. Base compartilhada por
  * `getGrantedRituals` e pelos getters de efeito de trilha (DT de ritual, limite de PE...).
  */
-function getReachedTrilhaFeaturesWithSource(draft: OrdemCharacterDraft): ReachedTrilhaFeature[] {
+export function getReachedTrilhaFeaturesWithSource(draft: OrdemCharacterDraft): ReachedTrilhaFeature[] {
   const result: ReachedTrilhaFeature[] = []
   const trilha = draft.trilha ? getTrilha(draft.trilha) : undefined
   if (trilha) {
@@ -589,7 +514,7 @@ function getReachedTrilhaFeaturesWithSource(draft: OrdemCharacterDraft): Reached
   return result
 }
 
-type ReachedTrilhaFeature = {
+export type ReachedTrilhaFeature = {
   feature: TrilhaFeature
   /** Rótulo da fonte, pra exibição (ex.: "Trilha Graduado", "Versatilidade"). */
   source: string

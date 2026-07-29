@@ -1,11 +1,11 @@
 import type { OrdemCharacterDraft } from '../types/character'
 import type { OrdemWeapon, OrdemWeaponGrip, OrdemWeaponProficiency, OrdemWeaponCategory } from '../types/equipment'
 import type { SkillGrade } from './characterUtils'
-import { getSkillGrade, hasClassPower, getOriginEffects, getWorkToolBonus, getWeaponSkillOverride } from './characterUtils'
+import { getSkillGrade, hasClassPower, getOriginEffects, getWorkToolBonus, getWeaponSkillOverride, hasTrilhaFeature } from './characterUtils'
 import { getParanormalEffects } from './paranormalPowerUtils'
 import { getModification } from './modificationUtils'
 import { getCurse, getSheetAttributes } from './curseUtils'
-import { getEquipmentByInstance, getInstanceLabel, instanceItemId } from './equipmentUtils'
+import { getEquipmentByInstance, getInstanceLabel, instanceItemId, usesLongBullets } from './equipmentUtils'
 
 /** Bônus fixo por grau de treinamento (livro, Cap. 2). */
 export const GRADE_BONUS: Record<SkillGrade, number> = {
@@ -119,12 +119,6 @@ function increaseRange(range: string): string {
   return idx >= 0 && idx < RANGE_ORDER.length - 1 ? RANGE_ORDER[idx + 1] : range
 }
 
-function hasTrilhaFeature(draft: OrdemCharacterDraft, trilhaId: string, nex: number): boolean {
-  if (draft.trilha === trilhaId && draft.nex >= nex) return true
-  if (nex === 10 && draft.versatilityChoice?.kind === 'trilha' && draft.versatilityChoice.trilhaId === trilhaId) return true
-  return false
-}
-
 /**
  * Ataque de uma arma do Ordem: perícia (Luta/Pontaria) e seu bônus de treino, número de d20
  * (atributo-base, já com bônus de acessórios amaldiçoados), dano (com Força para corpo a corpo)
@@ -159,12 +153,13 @@ export function getOrdemWeaponAttack(
   // Poderes de classe com efeito incondicional no dano (F25): Tiro Certeiro (+AGI em armas de
   // disparo), Balística Avançada/Ninja Urbano (+2 em táticas de fogo/corpo a corpo),
   // Golpe Pesado (+1 dado corpo a corpo). E poderes de origem: Mão Pesada (+2 corpo a corpo),
-  // Para Bellum (+2 armas de fogo).
+  // Para Bellum (+2 armas de fogo). Da trilha: Mira de Elite (+INT nas armas de balas longas).
   const originEffects = getOriginEffects(draft)
   const powerDamage =
     (hasClassPower(draft, 'sure-shot') && weapon.weaponCategory === 'disparo' ? attrs.agility : 0) +
     (hasClassPower(draft, 'advanced-ballistics') && weapon.proficiency === 'tactical' && weapon.weaponCategory === 'fogo' ? 2 : 0) +
     (hasClassPower(draft, 'urban-ninja') && weapon.proficiency === 'tactical' && weapon.weaponCategory === 'corpo_a_corpo' ? 2 : 0) +
+    (usesLongBullets(weapon) && hasTrilhaFeature(draft, 'elite-marksman', 10) ? attrs.intellect : 0) +
     (weapon.weaponCategory === 'corpo_a_corpo' ? (originEffects.meleeDamageBonus ?? 0) : 0) +
     (weapon.weaponCategory === 'fogo' ? (originEffects.firearmDamageBonus ?? 0) : 0)
   const damageBonus = (melee ? attrs.strength : 0) + powerDamage + workToolBonus + mods.reduce((s, m) => s + (m.damageBonus ?? 0), 0)

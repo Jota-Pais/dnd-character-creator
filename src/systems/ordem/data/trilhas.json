@@ -61,7 +61,7 @@
       { "nex": 10, "name": "Casca Grossa", "description": "Você recebe +1 PV para cada 5% de NEX e, quando faz um bloqueio, soma seu Vigor na resistência a dano recebida.", "effects": { "hpPerNexStep": 1, "conditionalDamageResistance": { "value": "vigor", "condition": "ao bloquear" } } },
       { "nex": 40, "name": "Cai Dentro", "description": "Sempre que um oponente em alcance curto ataca um de seus aliados, gaste uma reação e 1 PE para que esse oponente faça um teste de Vontade (DT Vig); se falhar, deve atacar você em vez de seu aliado." },
       { "nex": 65, "name": "Duro de Matar", "description": "Ao sofrer dano não paranormal, gaste uma reação e 2 PE para reduzir esse dano à metade. Em NEX 85%, também funciona contra dano paranormal." },
-      { "nex": 99, "name": "Inquebrável", "description": "Enquanto estiver machucado, recebe +10 na Defesa e resistência a dano 5. Enquanto estiver morrendo, não fica indefeso e ainda pode realizar ações (segue as regras de morte normalmente).", "effects": { "conditionalDamageResistance": { "value": 5, "condition": "enquanto estiver machucado" } } }
+      { "nex": 99, "name": "Inquebrável", "description": "Enquanto estiver machucado, recebe +10 na Defesa e resistência a dano 5. Enquanto estiver morrendo, não fica indefeso e ainda pode realizar ações (segue as regras de morte normalmente).", "effects": { "conditionalDamageResistance": { "value": 5, "condition": "enquanto estiver machucado" }, "conditionalDefenseBonus": [{ "value": 10, "condition": "enquanto estiver machucado" }] } }
     ]
   },
   {
@@ -84,7 +84,7 @@
     "description": "Perito em infiltração, sabe neutralizar alvos desprevenidos sem causar alarde. Combina talento acrobático, destreza manual e conhecimento técnico.",
     "requirement": null,
     "features": [
-      { "nex": 10, "name": "Ataque Furtivo", "description": "Uma vez por rodada, quando atinge um alvo desprevenido com um ataque corpo a corpo ou em alcance curto, ou um alvo que esteja flanqueando, pode gastar 1 PE para causar +1d6 pontos de dano do mesmo tipo da arma. +2d6 em NEX 40%, +3d6 em NEX 65%, +4d6 em NEX 99%." },
+      { "nex": 10, "name": "Ataque Furtivo", "description": "Uma vez por rodada, quando atinge um alvo desprevenido com um ataque corpo a corpo ou em alcance curto, ou um alvo que esteja flanqueando, pode gastar 1 PE para causar +1d6 pontos de dano do mesmo tipo da arma. +2d6 em NEX 40%, +3d6 em NEX 65%, +4d6 em NEX 99%.", "effects": { "extraDamageDiceByNex": [{ "nex": 10, "dice": "1d6" }, { "nex": 40, "dice": "2d6" }, { "nex": 65, "dice": "3d6" }, { "nex": 99, "dice": "4d6" }] } },
       { "nex": 40, "name": "Gatuno", "description": "Você recebe +5 em Atletismo e Crime e pode percorrer seu deslocamento normal ao se esconder, sem penalidade.", "effects": { "skillBonus": { "athletics": 5, "crime": 5 } } },
       { "nex": 65, "name": "Assassinar", "description": "Gaste uma ação de movimento e 3 PE para analisar um alvo em alcance curto: até o fim de seu próximo turno, seu primeiro Ataque Furtivo que causar dano a ele tem os dados de dano extras dobrados; se causar dano, o alvo fica inconsciente ou morrendo, à sua escolha (Fortitude DT Agi evita)." },
       { "nex": 99, "name": "Sombra Fugaz", "description": "Quando faz um teste de Furtividade após atacar ou fazer outra ação chamativa, pode gastar 3 PE para não sofrer a penalidade de −15 no teste." }

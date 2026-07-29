@@ -7,8 +7,12 @@ import { getPower } from '../../utils/powerUtils'
 import {
   getTrainedSkills, getSkillGrade, hasFavoredRitualPower, hasLaminaMaldita, getRitualCost, hasClassPower, getGrantedRituals, getEffectivePeLimit,
   getParanormalResistanceBonus, getMentalParanormalDamageResistance, getOriginMentalDamageResistance, getConditionalDamageResistances,
-  getExpertSkills, getExpertDie, getSkillBonusTotal, getSkillsWithUnconditionalBonus, getConditionalSkillBonuses,
+  getExpertSkills, getExpertDie,
 } from '../../utils/characterUtils'
+import {
+  getSkillBonusTotal, getSkillsWithUnconditionalBonus, getConditionalSkillBonuses,
+  getConditionalDefenseBonuses, getExtraDamageDiceNotes,
+} from '../../utils/sheetEffects'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, ritualNeedsElementChoice, getSlotRitualElement, getGrantedRitualElement, grantedRitualElementKey, ELEMENT_NAMES, ELEMENT_COLORS } from '../../utils/ritualUtils'
 import {
   getAffinityState, getParanormalEffects, getParanormalInstances, getSanityBreakdown, getSourceLabel,
@@ -110,6 +114,10 @@ export function ReviewStep() {
   const expertDie = getExpertDie(draft.nex)
   // Bônus de perícia que só valem numa situação (Hacker, Envolto em Mistério, Acalentar...).
   const conditionalSkillBonuses = getConditionalSkillBonuses(draft)
+  // Defesa condicional (Reflexos Defensivos, Inquebrável, Campo Protetor) e dados de dano extra
+  // já resolvidos pelo NEX (Ataque Furtivo) — ficam fora dos números somados da ficha.
+  const conditionalDefense = getConditionalDefenseBonuses(draft)
+  const extraDamageDice = getExtraDamageDiceNotes(draft)
 
   function handleExport() {
     exportCharacter(draft)
@@ -137,6 +145,19 @@ export function ReviewStep() {
         )}
         {' · '}Deslocamento: <span className="text-parchment-400 font-semibold">9m</span>
       </p>
+      {conditionalDefense.length > 0 && (
+        <p className="text-center text-parchment-600 text-xs">
+          {conditionalDefense.map((d, i) => (
+            <span key={i}>
+              {i > 0 && ' · '}
+              <span className="text-parchment-400 font-semibold">
+                Defesa{d.appliesToResistanceTests && ' e testes de resistência'} +{d.value}
+              </span>{' '}
+              <span className="text-gold-600/90">({d.source}, {d.condition})</span>
+            </span>
+          ))}
+        </p>
+      )}
       {sanityBreakdown.total > 0 && (
         <p className="text-center text-parchment-600 text-xs">
           Sanidade <span className="text-amber-500/90 font-semibold">−{sanityBreakdown.total}</span>
@@ -478,6 +499,11 @@ export function ReviewStep() {
       {weaponAttacks.length > 0 && (
         <Section title="Ataques">
           <p className="text-parchment-700 text-xs mb-2">Role a quantidade de d20 indicada e use o melhor + o bônus.</p>
+          {extraDamageDice.map(d => (
+            <p key={d.source} className="text-gold-500/90 text-xs mb-2">
+              ✨ <strong>{d.source}:</strong> +{d.dice} de dano no seu NEX (condições na descrição da trilha).
+            </p>
+          ))}
           <div className="space-y-1">
             {weaponAttacks.map((a, i) => (
               <p key={`${a.name}-${i}`} className="text-parchment-500 text-xs">

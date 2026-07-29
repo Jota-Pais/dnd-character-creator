@@ -40,11 +40,15 @@ import {
   getExpertSkillOptions,
   getExpertSkills,
   isExpertChoiceComplete,
+} from '../characterUtils'
+import {
   getSheetSkillBonuses,
   getSkillBonusTotal,
   getSkillsWithUnconditionalBonus,
   getConditionalSkillBonuses,
-} from '../characterUtils'
+  getConditionalDefenseBonuses,
+  getExtraDamageDiceNotes,
+} from '../sheetEffects'
 import { bonusRitualElementKey } from '../ritualUtils'
 import { getCursedDerivedStats } from '../curseUtils'
 import { getOrdemClass } from '../classUtils'
@@ -467,6 +471,33 @@ describe('Bônus de perícia de todas as fontes', () => {
       },
     })
     expect(getConditionalSkillBonuses(draft).map(b => b.source)).toContain('Hacker')
+  })
+})
+
+describe('Defesa condicional e dados de dano por NEX', () => {
+  it('Reflexos Defensivos: +5 em Defesa e em testes de resistência, com a condição', () => {
+    const draft = makeDraft({ class: 'combatant', powerChoices: ['defensive-reflexes'] })
+    expect(getConditionalDefenseBonuses(draft)).toEqual([
+      { value: 5, condition: 'contra inimigos em alcance curto', appliesToResistanceTests: true, source: 'Reflexos Defensivos' },
+    ])
+  })
+
+  it('Inquebrável (Tropa de Choque NEX 99%): +10 na Defesa enquanto machucado', () => {
+    const draft = makeDraft({ class: 'combatant', trilha: 'shock-trooper', nex: 99 })
+    expect(getConditionalDefenseBonuses(draft)).toContainEqual({
+      value: 10, condition: 'enquanto estiver machucado', source: 'Inquebrável',
+    })
+    // Em NEX 65% a feature ainda não foi alcançada.
+    expect(getConditionalDefenseBonuses(makeDraft({ class: 'combatant', trilha: 'shock-trooper', nex: 65 }))).toEqual([])
+  })
+
+  it('Ataque Furtivo (Infiltrador): o dado resolve pelo NEX, sem mostrar a escada', () => {
+    const at = (nex: number) => getExtraDamageDiceNotes(makeDraft({ class: 'specialist', trilha: 'infiltrator', nex }))
+    expect(at(10)).toEqual([{ source: 'Ataque Furtivo', dice: '1d6' }])
+    expect(at(40)).toEqual([{ source: 'Ataque Furtivo', dice: '2d6' }])
+    expect(at(65)).toEqual([{ source: 'Ataque Furtivo', dice: '3d6' }])
+    expect(at(99)).toEqual([{ source: 'Ataque Furtivo', dice: '4d6' }])
+    expect(at(5)).toEqual([])
   })
 })
 

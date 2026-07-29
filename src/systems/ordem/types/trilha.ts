@@ -1,6 +1,6 @@
 import type { OrdemClassId } from './class'
 import type { OrdemRitualCircle } from './ritual'
-import type { ConditionalSkillBonus } from './effects'
+import type { ConditionalSkillBonus, ConditionalDefenseBonus } from './effects'
 
 /**
  * Efeitos mecânicos estruturados de uma feature de trilha que a ficha aplica automaticamente.
@@ -16,6 +16,13 @@ export type TrilhaFeatureEffects = {
   hpPerNexStep?: number
   /** Bônus fixo e INCONDICIONAL em perícias (ex.: Gatuno +5 em Atletismo e Crime). */
   skillBonus?: Record<string, number>
+  /** Bônus de Defesa condicional (ex.: Inquebrável +10 enquanto machucado). */
+  conditionalDefenseBonus?: ConditionalDefenseBonus[]
+  /**
+   * Dados de dano extra que escalam com o NEX (Ataque Furtivo +1d6 → +4d6). Vence o maior degrau
+   * já alcançado; a ficha mostra só ele, como nota na seção de Ataques.
+   */
+  extraDamageDiceByNex?: { nex: number; dice: string }[]
   /** Bônus em perícias válido só numa situação. */
   conditionalSkillBonus?: ConditionalSkillBonus[]
   /** DT para resistir a TODOS os rituais do conjurador (ex.: Rituais Eficientes +5). */

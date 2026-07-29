@@ -1,0 +1,150 @@
+import type { OrdemCharacterDraft } from '../types/character'
+import type { ClassPower } from '../types/power'
+import type { ConditionalSkillBonus, ConditionalDefenseBonus } from '../types/effects'
+import { getOrigin } from './originUtils'
+import { getPower } from './powerUtils'
+import { getReachedTrilhaFeaturesWithSource } from './characterUtils'
+import { getExpansionGrantedClassPowers, getParanormalInstances } from './paranormalPowerUtils'
+import { getLoadPenaltySkillBonuses } from './equipmentUtils'
+
+/**
+ * Agregador dos efeitos que a ficha EXIBE somados, atravessando as quatro famílias de habilidade
+ * (origem, classe, trilha e poder paranormal) e o equipamento. Fica num módulo próprio, e não em
+ * `characterUtils`, porque precisa ler o loadout (`equipmentUtils`) — que por sua vez lê
+ * `characterUtils`. Nada importa este módulo além da UI, então não há ciclo.
+ *
+ * Regra geral: efeito INCONDICIONAL entra no número da ficha; efeito CONDICIONAL vira linha
+ * própria com a condição, porque somá-lo seria mentir (o +5 do Hacker não vale em todo teste de
+ * Tecnologia, o +10 do Inquebrável só vale machucado).
+ */
+
+// ── Bônus de perícia ───────────────────────────────────────────────────────────
+
+export type SheetSkillBonus = {
+  skillId: string
+  value: number
+  /** Nome da habilidade que concede (ex.: "Gatuno", "Hacker"). */
+  source: string
+  /** Condição de aplicação; ausente = incondicional (soma no total da perícia). */
+  condition?: string
+}
+
+/** Poderes de classe que o agente possui, por qualquer via, com os dados do catálogo. */
+function getOwnedClassPowers(draft: OrdemCharacterDraft): ClassPower[] {
+  const ids = new Set<string>()
+  for (const id of draft.powerChoices) if (id) ids.add(id)
+  if (draft.versatilityChoice?.kind === 'power') ids.add(draft.versatilityChoice.powerId)
+  for (const granted of getExpansionGrantedClassPowers(draft)) ids.add(granted.powerId)
+  return [...ids].map(getPower).filter((p): p is ClassPower => Boolean(p))
+}
+
+/**
+ * TODOS os bônus de perícia da ficha, com a fonte de cada um — origem, poderes de classe
+ * (inclusive os aprendidos por Expansão de Conhecimento), features de trilha alcançadas, poderes
+ * paranormais e a penalidade de carga da Proteção Pesada (bônus negativo).
+ */
+export function getSheetSkillBonuses(draft: OrdemCharacterDraft): SheetSkillBonus[] {
+  const out: SheetSkillBonus[] = []
+  const push = (
+    source: string,
+    flat: Record<string, number> | undefined,
+    conditional: ConditionalSkillBonus[] | undefined,
+  ) => {
+    for (const [skillId, value] of Object.entries(flat ?? {})) out.push({ skillId, value, source })
+    for (const entry of conditional ?? []) {
+      for (const skillId of entry.skills) {
+        out.push({ skillId, value: entry.value, source, condition: entry.condition })
+      }
+    }
+  }
+
+  const origin = draft.origin ? getOrigin(draft.origin) : undefined
+  if (origin?.power.effects) {
+    push(origin.power.name, origin.power.effects.skillBonus, origin.power.effects.conditionalSkillBonus)
+  }
+  for (const power of getOwnedClassPowers(draft)) {
+    push(power.name, power.effects?.skillBonus, power.effects?.conditionalSkillBonus)
+  }
+  for (const { feature } of getReachedTrilhaFeaturesWithSource(draft)) {
+    push(feature.name, feature.effects?.skillBonus, feature.effects?.conditionalSkillBonus)
+  }
+  for (const instance of getParanormalInstances(draft)) {
+    if (!instance.valid || !instance.power) continue
+    const effects = instance.isAffinityCopy ? instance.power.affinityEffects : instance.power.effects
+    if (effects) push(instance.power.name, effects.skillBonus, effects.conditionalSkillBonus)
+  }
+  out.push(...getLoadPenaltySkillBonuses(draft))
+  return out
+}
+
+/**
+ * Soma dos bônus INCONDICIONAIS numa perícia — o número que entra na coluna da ficha. Inclui a
+ * penalidade de carga da Proteção Pesada (−5), que é um bônus negativo como qualquer outro.
+ */
+export function getSkillBonusTotal(draft: OrdemCharacterDraft, skillId: string): number {
+  return getSheetSkillBonuses(draft)
+    .filter(b => b.skillId === skillId && !b.condition)
+    .reduce((s, b) => s + b.value, 0)
+}
+
+/** Perícias com bônus incondicional (positivo ou negativo), pra listar as não treinadas afetadas. */
+export function getSkillsWithUnconditionalBonus(draft: OrdemCharacterDraft): string[] {
+  return [...new Set(getSheetSkillBonuses(draft).filter(b => !b.condition).map(b => b.skillId))]
+}
+
+/** Bônus condicionais, agrupados por fonte+condição+valor pra virar uma linha por habilidade. */
+export function getConditionalSkillBonuses(
+  draft: OrdemCharacterDraft,
+): { source: string; condition: string; value: number; skillIds: string[] }[] {
+  const groups = new Map<string, { source: string; condition: string; value: number; skillIds: string[] }>()
+  for (const bonus of getSheetSkillBonuses(draft)) {
+    if (!bonus.condition) continue
+    const key = `${bonus.source}::${bonus.condition}::${bonus.value}`
+    const group = groups.get(key)
+    if (group) group.skillIds.push(bonus.skillId)
+    else groups.set(key, { source: bonus.source, condition: bonus.condition, value: bonus.value, skillIds: [bonus.skillId] })
+  }
+  return [...groups.values()]
+}
+
+// ── Defesa condicional ─────────────────────────────────────────────────────────
+
+export type SheetConditionalDefense = ConditionalDefenseBonus & { source: string }
+
+/**
+ * Bônus de Defesa condicionais de todas as fontes (Reflexos Defensivos, Inquebrável, Campo
+ * Protetor). Ficam FORA do valor de Defesa da ficha — cada um é uma linha com a condição.
+ */
+export function getConditionalDefenseBonuses(draft: OrdemCharacterDraft): SheetConditionalDefense[] {
+  const out: SheetConditionalDefense[] = []
+  for (const power of getOwnedClassPowers(draft)) {
+    for (const entry of power.effects?.conditionalDefenseBonus ?? []) out.push({ ...entry, source: power.name })
+  }
+  for (const { feature } of getReachedTrilhaFeaturesWithSource(draft)) {
+    for (const entry of feature.effects?.conditionalDefenseBonus ?? []) out.push({ ...entry, source: feature.name })
+  }
+  for (const instance of getParanormalInstances(draft)) {
+    if (!instance.valid || !instance.power) continue
+    const effects = instance.isAffinityCopy ? instance.power.affinityEffects : instance.power.effects
+    for (const entry of effects?.conditionalDefenseBonus ?? []) out.push({ ...entry, source: instance.power.name })
+  }
+  return out
+}
+
+// ── Dados de dano extra escalonados por NEX ────────────────────────────────────
+
+/**
+ * Dados de dano extra escalonados por NEX já resolvidos no NEX atual (Ataque Furtivo do
+ * Infiltrador: +1d6 em 10%, +2d6 em 40%, +3d6 em 65%, +4d6 em 99%). Vence o maior degrau
+ * alcançado — a ficha mostra o dado de agora, não a escada inteira.
+ */
+export function getExtraDamageDiceNotes(draft: OrdemCharacterDraft): { source: string; dice: string }[] {
+  const out: { source: string; dice: string }[] = []
+  for (const { feature } of getReachedTrilhaFeaturesWithSource(draft)) {
+    const steps = feature.effects?.extraDamageDiceByNex
+    if (!steps) continue
+    const reached = steps.filter(s => s.nex <= draft.nex)
+    if (reached.length > 0) out.push({ source: feature.name, dice: reached[reached.length - 1].dice })
+  }
+  return out
+}

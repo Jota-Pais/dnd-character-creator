@@ -84,6 +84,7 @@
     "affinityDescription": "Você recebe +5 em Reflexo e, quando passa em um teste de Reflexo que reduziria o dano à metade, em vez disso não sofre nenhum dano.",
     "prerequisite": "Energia 1",
     "prereqs": [{ "kind": "elementCount", "element": "energy", "count": 1 }],
+    "effects": { "conditionalDefenseBonus": [{ "value": 5, "condition": "ao usar a ação esquiva" }] },
     "affinityEffects": { "skillBonus": { "reflexes": 5 } }
   },
   {

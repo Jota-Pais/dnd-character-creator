@@ -1,6 +1,6 @@
 import type { ParanormalElement } from './ritual'
 import type { OrdemPowerPrereq } from './prereq'
-import type { ConditionalSkillBonus } from './effects'
+import type { ConditionalSkillBonus, ConditionalDefenseBonus } from './effects'
 
 /**
  * Efeitos mecânicos estruturados de um poder paranormal que a ficha aplica automaticamente
@@ -10,6 +10,8 @@ import type { ConditionalSkillBonus } from './effects'
 export type ParanormalPowerEffects = {
   /** Bônus fixo em Defesa (ex.: Precognição +2). */
   defenseBonus?: number
+  /** Bônus de Defesa condicional (ex.: Campo Protetor +5 ao esquivar, Reflexos Defensivos +5). */
+  conditionalDefenseBonus?: ConditionalDefenseBonus[]
   /** Bônus em TODOS os testes de resistência (ex.: Precognição +2) — nota na ficha. */
   resistanceTestsBonus?: number
   /** PV extra por degrau de NEX, retroativo (ex.: Sangue de Ferro +2). */

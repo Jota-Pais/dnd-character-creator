@@ -1,5 +1,6 @@
 import type { ParanormalElement } from './ritual'
 import type { OrdemPowerPrereq } from './prereq'
+import type { ConditionalSkillBonus } from './effects'
 
 /**
  * Efeitos mecânicos estruturados de um poder paranormal que a ficha aplica automaticamente
@@ -21,8 +22,10 @@ export type ParanormalPowerEffects = {
   threatMarginBonus?: number
   /** Bônus no multiplicador de crítico dos ataques (Golpe de Sorte com afinidade). */
   critMultiplierBonus?: number
-  /** Bônus fixo em perícias, por id (ex.: Sensitivo +5 em diplomacy/intimidation/insight). */
+  /** Bônus fixo e INCONDICIONAL em perícias, por id (ex.: Sensitivo +5 em diplomacy/intimidation/insight). */
   skillBonus?: Record<string, number>
+  /** Bônus em perícias válido só numa situação (ex.: Hacker +5 em Tecnologia para invadir sistemas). */
+  conditionalSkillBonus?: ConditionalSkillBonus[]
   /** Resistência a dano do elemento ESCOLHIDO no param (só Resistir a Elemento: 10). */
   chosenElementResistance?: number
 }

@@ -40,6 +40,10 @@ import {
   getExpertSkillOptions,
   getExpertSkills,
   isExpertChoiceComplete,
+  getSheetSkillBonuses,
+  getSkillBonusTotal,
+  getSkillsWithUnconditionalBonus,
+  getConditionalSkillBonuses,
 } from '../characterUtils'
 import { bonusRitualElementKey } from '../ritualUtils'
 import { getCursedDerivedStats } from '../curseUtils'
@@ -384,6 +388,85 @@ describe('Resistências (Grupo D): Mente Sã, Inabalável, Eu Já Sabia', () => 
   it('Inquebrável (Tropa de Choque NEX 99%): RD 5 fixa, condicional a "enquanto estiver machucado"', () => {
     const draft = makeDraft({ class: 'combatant', trilha: 'shock-trooper', nex: 99 })
     expect(getConditionalDamageResistances(draft)).toContainEqual({ name: 'Inquebrável', value: 5, condition: 'enquanto estiver machucado' })
+  })
+})
+
+describe('Bônus de perícia de todas as fontes', () => {
+  it('Gatuno (Infiltrador NEX 40%): +5 incondicional em Atletismo e Crime', () => {
+    const draft = makeDraft({ class: 'specialist', trilha: 'infiltrator', nex: 40 })
+    expect(getSkillBonusTotal(draft, 'athletics')).toBe(5)
+    expect(getSkillBonusTotal(draft, 'crime')).toBe(5)
+    // Antes do NEX da feature, nada.
+    expect(getSkillBonusTotal(makeDraft({ class: 'specialist', trilha: 'infiltrator', nex: 10 }), 'athletics')).toBe(0)
+  })
+
+  it('Iniciativa Aprimorada (Operações Especiais NEX 10%): +5 incondicional em Iniciativa', () => {
+    const draft = makeDraft({ class: 'combatant', trilha: 'special-operations', nex: 10 })
+    expect(getSkillBonusTotal(draft, 'initiative')).toBe(5)
+  })
+
+  it('bônus condicionais NÃO somam no total da perícia', () => {
+    const draft = makeDraft({ class: 'specialist', powerChoices: ['hacker'] })
+    expect(getSkillBonusTotal(draft, 'technology')).toBe(0)
+    expect(getConditionalSkillBonuses(draft)).toEqual([
+      { source: 'Hacker', condition: 'para invadir sistemas', value: 5, skillIds: ['technology'] },
+    ])
+  })
+
+  it('Envolto em Mistério agrupa as 2 perícias numa linha só', () => {
+    const draft = makeDraft({ class: 'occultist', powerChoices: ['shrouded-in-mystery'] })
+    expect(getConditionalSkillBonuses(draft)).toEqual([
+      {
+        source: 'Envolto em Mistério',
+        condition: 'contra quem não é treinado em Ocultismo',
+        value: 5,
+        skillIds: ['deception', 'intimidation'],
+      },
+    ])
+  })
+
+  it('Acalentar (origem Religioso): +5 em Religião só para acalmar', () => {
+    const draft = makeDraft({ origin: 'religious' })
+    expect(getSkillBonusTotal(draft, 'religion')).toBe(0)
+    expect(getConditionalSkillBonuses(draft)).toEqual([
+      { source: 'Acalentar', condition: 'para acalmar', value: 5, skillIds: ['religion'] },
+    ])
+  })
+
+  it('poderes paranormais continuam entrando no total (Sensitivo +5 em 3 perícias)', () => {
+    const draft = makeDraft({
+      class: 'combatant', nex: 15,
+      powerChoices: ['transcend'],
+      paranormalPowerChoices: { 'slot-0': { powerId: 'sensitive' } },
+    })
+    expect(getSkillBonusTotal(draft, 'diplomacy')).toBe(5)
+    expect(getSkillBonusTotal(draft, 'intimidation')).toBe(5)
+    expect(getSkillBonusTotal(draft, 'insight')).toBe(5)
+  })
+
+  it('fontes diferentes na mesma perícia somam, e a lista traz a fonte de cada uma', () => {
+    // Iniciativa Aprimorada (+5 Iniciativa) e o poder de classe Hacker (condicional).
+    const draft = makeDraft({
+      class: 'combatant', trilha: 'special-operations', nex: 10,
+      powerChoices: ['skill-training'],
+    })
+    const sources = getSheetSkillBonuses(draft).map(b => b.source)
+    expect(sources).toContain('Iniciativa Aprimorada')
+    expect(getSkillsWithUnconditionalBonus(draft)).toEqual(['initiative'])
+  })
+
+  it('poder de outra classe via Expansão de Conhecimento também traz o bônus', () => {
+    const draft = makeDraft({
+      class: 'combatant',
+      nex: 30,
+      powerChoices: ['transcend', 'transcend'],
+      classFreeSkillChoices: ['technology'], // pré-requisito do Hacker
+      paranormalPowerChoices: {
+        'slot-0': { powerId: 'sensitive' }, // dá Conhecimento 1 para a Expansão
+        'slot-1': { powerId: 'knowledge-expansion', classPowerId: 'hacker' },
+      },
+    })
+    expect(getConditionalSkillBonuses(draft).map(b => b.source)).toContain('Hacker')
   })
 })
 

@@ -6,6 +6,7 @@ import { getTrilha } from '../utils/trilhaUtils'
 import { getPower } from '../utils/powerUtils'
 import {
   getTrainedSkills, getSkillGrade, getRitualCost, hasClassPower, getGrantedRituals, getEffectivePeLimit, getExpertSkills, getExpertDie,
+  getSkillBonusTotal, getConditionalSkillBonuses,
   getParanormalResistanceBonus, getMentalParanormalDamageResistance, getOriginMentalDamageResistance, getConditionalDamageResistances,
 } from '../utils/characterUtils'
 import { getReachedTrilhaSlots, getPeLimit } from '../utils/progressionUtils'
@@ -92,6 +93,8 @@ export function PrintableSheet() {
   // Perito (Especialista): as 2 perícias escolhidas e o dado extra já resolvido pelo NEX.
   const expertSkills = getExpertSkills(draft)
   const expertDie = getExpertDie(draft.nex)
+  // Bônus de perícia que só valem numa situação (Hacker, Envolto em Mistério, Acalentar...).
+  const conditionalSkillBonuses = getConditionalSkillBonuses(draft)
   const cursedUnits = equipmentUnits.filter(u => (draft.equipmentCurses[u.uid]?.length ?? 0) > 0)
   // Armas com a maldição Ritualística: o ritual armazenado é listado junto das Habilidades.
   const ritualisticUnits = equipmentUnits.filter(u => (draft.equipmentCurses[u.uid] ?? []).includes('ritualistica'))
@@ -197,8 +200,9 @@ export function PrintableSheet() {
                   const grade = getSkillGrade(draft, skill.id)
                   const trained = trainedSkills.includes(skill.id)
                   const bonus = GRADE_BONUS[grade]
-                  // Bônus fixos de poderes paranormais (Sensitivo, Visão do Oculto, Sangue de Ferro...).
-                  const powerBonus = paranormalEffects.skillBonus[skill.id] ?? 0
+                  // Bônus incondicionais de qualquer fonte (Sensitivo, Sangue de Ferro, Gatuno,
+                  // Iniciativa Aprimorada...). Os condicionais vão na nota abaixo da tabela.
+                  const powerBonus = getSkillBonusTotal(draft, skill.id)
                   return (
                     <tr key={skill.id} className={trained ? 'font-bold' : 'text-gray-700'}>
                       <td className="py-[1px]">
@@ -220,6 +224,16 @@ export function PrintableSheet() {
             <p className="text-[9px] text-gray-500 mt-1">
               + Penalidade de carga. * Somente treinada. Role os d20 indicados e use o melhor + bônus.
             </p>
+            {conditionalSkillBonuses.length > 0 && (
+              <div className="mt-1 text-[9px] text-gray-600 space-y-0.5">
+                <p className="font-semibold">Bônus condicionais (não somados na coluna Outros):</p>
+                {conditionalSkillBonuses.map((b, i) => (
+                  <p key={i}>
+                    {b.skillIds.map(sid => getSkillName(sid)).join(' e ')} +{b.value} — {b.source}, {b.condition}.
+                  </p>
+                ))}
+              </div>
+            )}
           </section>
         </div>
 

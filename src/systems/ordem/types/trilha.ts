@@ -1,5 +1,6 @@
 import type { OrdemClassId } from './class'
 import type { OrdemRitualCircle } from './ritual'
+import type { ConditionalSkillBonus } from './effects'
 
 /**
  * Efeitos mecânicos estruturados de uma feature de trilha que a ficha aplica automaticamente.
@@ -13,6 +14,10 @@ export type TrilhaFeatureEffects = {
    * degraus alcançados, não só os posteriores à aquisição da feature.
    */
   hpPerNexStep?: number
+  /** Bônus fixo e INCONDICIONAL em perícias (ex.: Gatuno +5 em Atletismo e Crime). */
+  skillBonus?: Record<string, number>
+  /** Bônus em perícias válido só numa situação. */
+  conditionalSkillBonus?: ConditionalSkillBonus[]
   /** DT para resistir a TODOS os rituais do conjurador (ex.: Rituais Eficientes +5). */
   allRitualDtBonus?: number
   /** Soma a Presença ao limite de PE por turno, mas só para conjurar rituais (Presença Poderosa). */

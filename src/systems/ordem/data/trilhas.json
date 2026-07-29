@@ -45,7 +45,7 @@
     "description": "Combatente eficaz, com ações calculadas e otimizadas, sempre antevendo os movimentos inimigos e se posicionando da maneira mais inteligente no campo de batalha.",
     "requirement": null,
     "features": [
-      { "nex": 10, "name": "Iniciativa Aprimorada", "description": "Você recebe +5 em Iniciativa e uma ação de movimento adicional na primeira rodada." },
+      { "nex": 10, "name": "Iniciativa Aprimorada", "description": "Você recebe +5 em Iniciativa e uma ação de movimento adicional na primeira rodada.", "effects": { "skillBonus": { "initiative": 5 } } },
       { "nex": 40, "name": "Ataque Extra", "description": "Uma vez por rodada, quando faz um ataque, pode gastar 2 PE para fazer um ataque adicional." },
       { "nex": 65, "name": "Surto de Adrenalina", "description": "Uma vez por rodada, pode gastar 5 PE para realizar uma ação padrão ou de movimento adicional." },
       { "nex": 99, "name": "Sempre Alerta", "description": "Você recebe uma ação padrão adicional no início de cada cena de combate." }
@@ -85,7 +85,7 @@
     "requirement": null,
     "features": [
       { "nex": 10, "name": "Ataque Furtivo", "description": "Uma vez por rodada, quando atinge um alvo desprevenido com um ataque corpo a corpo ou em alcance curto, ou um alvo que esteja flanqueando, pode gastar 1 PE para causar +1d6 pontos de dano do mesmo tipo da arma. +2d6 em NEX 40%, +3d6 em NEX 65%, +4d6 em NEX 99%." },
-      { "nex": 40, "name": "Gatuno", "description": "Você recebe +5 em Atletismo e Crime e pode percorrer seu deslocamento normal ao se esconder, sem penalidade." },
+      { "nex": 40, "name": "Gatuno", "description": "Você recebe +5 em Atletismo e Crime e pode percorrer seu deslocamento normal ao se esconder, sem penalidade.", "effects": { "skillBonus": { "athletics": 5, "crime": 5 } } },
       { "nex": 65, "name": "Assassinar", "description": "Gaste uma ação de movimento e 3 PE para analisar um alvo em alcance curto: até o fim de seu próximo turno, seu primeiro Ataque Furtivo que causar dano a ele tem os dados de dano extras dobrados; se causar dano, o alvo fica inconsciente ou morrendo, à sua escolha (Fortitude DT Agi evita)." },
       { "nex": 99, "name": "Sombra Fugaz", "description": "Quando faz um teste de Furtividade após atacar ou fazer outra ação chamativa, pode gastar 3 PE para não sofrer a penalidade de −15 no teste." }
     ]

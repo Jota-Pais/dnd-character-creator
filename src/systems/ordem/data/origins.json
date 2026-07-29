@@ -148,7 +148,7 @@
     "name": "Religioso",
     "description": "Devoto ou sacerdote de uma fé, dedicado a auxiliar pessoas com problemas espirituais.",
     "skillProficiencies": ["religion", "willpower"],
-    "power": { "name": "Acalentar", "description": "Você recebe +5 em testes de Religião para acalmar. Além disso, quando acalma uma pessoa, ela recebe um número de pontos de Sanidade igual a 1d6 + a sua Presença." },
+    "power": { "name": "Acalentar", "description": "Você recebe +5 em testes de Religião para acalmar. Além disso, quando acalma uma pessoa, ela recebe um número de pontos de Sanidade igual a 1d6 + a sua Presença.", "effects": { "conditionalSkillBonus": [{ "skills": ["religion"], "value": 5, "condition": "para acalmar" }] } },
     "rollRange": [31, 31]
   },
   {

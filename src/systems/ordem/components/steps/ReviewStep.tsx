@@ -1,13 +1,13 @@
 import { useOrdemStore } from '../../stores/characterStore'
 import { getOrigin } from '../../utils/originUtils'
 import { getOrdemClass } from '../../utils/classUtils'
-import { formatSkillWithAttribute } from '../../utils/skillUtils'
+import { formatSkillWithAttribute, getSkillName } from '../../utils/skillUtils'
 import { getTrilha } from '../../utils/trilhaUtils'
 import { getPower } from '../../utils/powerUtils'
 import {
   getTrainedSkills, getSkillGrade, hasFavoredRitualPower, hasLaminaMaldita, getRitualCost, hasClassPower, getGrantedRituals, getEffectivePeLimit,
   getParanormalResistanceBonus, getMentalParanormalDamageResistance, getOriginMentalDamageResistance, getConditionalDamageResistances,
-  getExpertSkills, getExpertDie,
+  getExpertSkills, getExpertDie, getSkillBonusTotal, getSkillsWithUnconditionalBonus, getConditionalSkillBonuses,
 } from '../../utils/characterUtils'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, ritualNeedsElementChoice, getSlotRitualElement, getGrantedRitualElement, grantedRitualElementKey, ELEMENT_NAMES, ELEMENT_COLORS } from '../../utils/ritualUtils'
 import {
@@ -108,6 +108,8 @@ export function ReviewStep() {
   // Perito (Especialista): as 2 perícias escolhidas e o dado extra já resolvido pelo NEX.
   const expertSkills = getExpertSkills(draft)
   const expertDie = getExpertDie(draft.nex)
+  // Bônus de perícia que só valem numa situação (Hacker, Envolto em Mistério, Acalentar...).
+  const conditionalSkillBonuses = getConditionalSkillBonuses(draft)
 
   function handleExport() {
     exportCharacter(draft)
@@ -547,24 +549,37 @@ export function ReviewStep() {
         <div className="flex flex-wrap gap-1.5">
           {trainedSkills.map(sid => {
             const grade = getSkillGrade(draft, sid)
-            const powerBonus = paranormalEffects.skillBonus[sid]
+            const bonus = getSkillBonusTotal(draft, sid)
             return (
               <span key={sid} className="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-gold-900/30 text-gold-400">
-                {formatSkillWithAttribute(sid)}{grade !== 'treinado' && ` · ${grade}`}{powerBonus ? ` +${powerBonus}` : ''}
+                {formatSkillWithAttribute(sid)}{grade !== 'treinado' && ` · ${grade}`}{bonus ? ` +${bonus}` : ''}
               </span>
             )
           })}
-          {/* Bônus de poder paranormal em perícias NÃO treinadas (ex.: +5 Fortitude do Sangue de Ferro). */}
-          {Object.entries(paranormalEffects.skillBonus)
-            .filter(([sid]) => !trainedSkills.includes(sid))
-            .map(([sid, bonus]) => (
+          {/* Bônus incondicionais em perícias NÃO treinadas (ex.: +5 Fortitude do Sangue de Ferro). */}
+          {getSkillsWithUnconditionalBonus(draft)
+            .filter(sid => !trainedSkills.includes(sid))
+            .map(sid => (
               <span key={sid} className="px-2 py-0.5 rounded-md text-xs font-mono font-bold border border-gold-900 text-gold-600">
-                {formatSkillWithAttribute(sid)} +{bonus} (poder)
+                {formatSkillWithAttribute(sid)} +{getSkillBonusTotal(draft, sid)} (habilidade)
               </span>
             ))}
         </div>
         {upgradedSkills.length === 0 && trainedSkills.length > 0 && (
           <p className="text-parchment-700 text-xs mt-2">Todas treinadas — nenhuma subiu de grau ainda.</p>
+        )}
+        {conditionalSkillBonuses.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-parchment-900/50 space-y-1">
+            <p className="text-parchment-600 text-xs">Bônus que valem só em situações específicas (não somados acima):</p>
+            {conditionalSkillBonuses.map((b, i) => (
+              <p key={i} className="text-parchment-500 text-xs">
+                <span className="font-semibold text-parchment-300">
+                  {b.skillIds.map(getSkillName).join(' e ')} +{b.value}
+                </span>{' '}
+                <span className="text-gold-600/90">({b.source}, {b.condition})</span>
+              </p>
+            ))}
+          </div>
         )}
       </Section>
 

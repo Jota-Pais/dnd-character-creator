@@ -1,3 +1,5 @@
+import type { ConditionalSkillBonus } from './effects'
+
 /**
  * Efeitos mecânicos estruturados de um poder de origem que a ficha aplica automaticamente.
  * Só os efeitos PERMANENTES/flat entram aqui; poderes ativados em jogo (ex.: "gaste 2 PE para
@@ -6,6 +8,10 @@
 export type OriginPowerEffects = {
   /** Bônus fixo em Defesa (ex.: Patrulha +2). */
   defenseBonus?: number
+  /** Bônus fixo e INCONDICIONAL em perícias. */
+  skillBonus?: Record<string, number>
+  /** Bônus em perícias válido só numa situação (ex.: Acalentar +5 em Religião para acalmar). */
+  conditionalSkillBonus?: ConditionalSkillBonus[]
   /** PV extra por degrau de NEX alcançado (ex.: Calejado +1 por 5% de NEX). */
   hpPerNexStep?: number
   /** Sanidade extra por degrau de NEX (ex.: Cicatrizes Psicológicas +1 por 5% de NEX). */

@@ -28,9 +28,14 @@ export type OrdemClass = {
   }
   weaponProficiencies: ('simple' | 'tactical' | 'heavy')[]
   armorProficiencies: ('light' | 'heavy')[]
+  /**
+   * Habilidade da classe. `scalingByNex` traz o patamar de cada degrau em texto curto, pra ficha
+   * mostrar só o alcançado em vez da tabela inteira (ex.: Ataque Especial "3 PE para +10").
+   */
   classAbility: {
     name: string
     description: string
+    scalingByNex?: { nex: number; note: string }[]
   }
   /** Base da fórmula do Grau de Treinamento (NEX 35%/70%): quantidade = skillGradeCount + Intelecto. */
   skillGradeCount: number

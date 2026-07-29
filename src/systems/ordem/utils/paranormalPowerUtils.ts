@@ -492,6 +492,11 @@ export function getAvailableExpansionPowers(draft: OrdemCharacterDraft, key: Par
     })
 }
 
+/** O agente possui um poder paranormal específico, por qualquer fonte de transcender válida? */
+export function hasParanormalPower(draft: OrdemCharacterDraft, powerId: string): boolean {
+  return getParanormalInstances(draft).some(i => i.valid && i.power?.id === powerId)
+}
+
 // ── Efeitos agregados (aplicados na ficha) ──────────────────────────────────────
 
 export type AggregatedParanormalEffects = {

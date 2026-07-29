@@ -12,7 +12,7 @@
     "name": "Agente de Saúde",
     "description": "Profissional da saúde (enfermeiro, farmacêutico, médico, psicólogo, socorrista), treinado no atendimento e cuidado de pessoas.",
     "skillProficiencies": ["insight", "medicine"],
-    "power": { "name": "Técnica Medicinal", "description": "Sempre que cura um personagem, você adiciona seu Intelecto no total de PV curados." },
+    "power": { "name": "Técnica Medicinal", "description": "Sempre que cura um personagem, você adiciona seu Intelecto no total de PV curados.", "effects": { "healingBonusEqualsIntellect": true } },
     "rollRange": [9, 10]
   },
   {
@@ -108,7 +108,7 @@
     "name": "Magnata",
     "description": "Possui muito dinheiro ou patrimônio — herdeiro de família antiga ligada ao oculto, ou empreendedor bem-sucedido.",
     "skillProficiencies": ["diplomacy", "piloting"],
-    "power": { "name": "Patrocinador da Ordem", "description": "Seu limite de crédito é sempre considerado um acima do atual." },
+    "power": { "name": "Patrocinador da Ordem", "description": "Seu limite de crédito é sempre considerado um acima do atual.", "effects": { "creditLimitSteps": 1 } },
     "rollRange": [25, 25]
   },
   {

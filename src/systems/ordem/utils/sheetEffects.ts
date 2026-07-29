@@ -1,9 +1,11 @@
 import type { OrdemCharacterDraft } from '../types/character'
 import type { ClassPower } from '../types/power'
+import type { OrdemClass } from '../types/class'
 import type { ConditionalSkillBonus, ConditionalDefenseBonus } from '../types/effects'
 import { getOrigin } from './originUtils'
 import { getPower } from './powerUtils'
-import { getReachedTrilhaFeaturesWithSource, hasClassPower } from './characterUtils'
+import { getPatente } from './patenteUtils'
+import { getReachedTrilhaFeaturesWithSource, hasClassPower, getOriginEffects } from './characterUtils'
 import { getExpansionGrantedClassPowers, getParanormalInstances } from './paranormalPowerUtils'
 import { getLoadPenaltySkillBonuses, getEquipmentByInstance, getInstanceLabel } from './equipmentUtils'
 import { getSheetAttributes } from './curseUtils'
@@ -179,6 +181,64 @@ export function getSheetExplosives(draft: OrdemCharacterDraft): SheetExplosive[]
       range: item.range,
       resistance,
     })
+  }
+  return out
+}
+
+// ── Notas com valores já resolvidos ────────────────────────────────────────────
+
+/** Ordem dos limites de crédito da Tabela 3.1, pro Patrocinador da Ordem subir um degrau. */
+const CREDIT_LEVELS = ['Baixo', 'Médio', 'Alto', 'Ilimitado']
+
+/**
+ * Limite de crédito efetivo: o da Patente, subido pelos degraus que a origem conceder
+ * (Patrocinador da Ordem, do Magnata: "sempre considerado um acima do atual"). Teto em Ilimitado.
+ */
+export function getEffectiveCreditLimit(draft: OrdemCharacterDraft): { level: string; source: string | null } {
+  const base = getPatente(draft.patente).credit
+  const steps = getOriginEffects(draft).creditLimitSteps ?? 0
+  if (steps <= 0) return { level: base, source: null }
+  const index = CREDIT_LEVELS.indexOf(base)
+  if (index < 0) return { level: base, source: null }
+  const raised = CREDIT_LEVELS[Math.min(CREDIT_LEVELS.length - 1, index + steps)]
+  const origin = draft.origin ? getOrigin(draft.origin) : undefined
+  return { level: raised, source: origin?.power.name ?? null }
+}
+
+/**
+ * Notas de habilidade com o valor do NEX/atributo já substituído, pra ficha não imprimir a
+ * escada inteira nem deixar o jogador fazendo conta: habilidade de classe (Ataque Especial),
+ * features de trilha com `noteByNex` (Paramédico, Discurso Motivador) e poderes de classe com
+ * valor derivado de atributo (Criar Selo = Presença).
+ */
+export function getResolvedAbilityNotes(draft: OrdemCharacterDraft, cls: OrdemClass | undefined): { source: string; note: string }[] {
+  const out: { source: string; note: string }[] = []
+  const attrs = getSheetAttributes(draft)
+
+  const scaling = cls?.classAbility.scalingByNex?.filter(s => s.nex <= draft.nex) ?? []
+  if (scaling.length > 0 && cls) {
+    out.push({ source: cls.classAbility.name, note: `no seu NEX: ${scaling[scaling.length - 1].note}` })
+  }
+  for (const { feature } of getReachedTrilhaFeaturesWithSource(draft)) {
+    const reached = feature.effects?.noteByNex?.filter(s => s.nex <= draft.nex) ?? []
+    if (reached.length > 0) out.push({ source: feature.name, note: `no seu NEX: ${reached[reached.length - 1].note}` })
+  }
+  // Criar Selo: "número máximo de selos criados igual à sua Presença".
+  if (hasClassPower(draft, 'create-seal')) {
+    out.push({ source: 'Criar Selo', note: `pode manter até ${attrs.presence} selos criados (Presença)` })
+  }
+  // Técnica Medicinal (origem Agente de Saúde): +Intelecto no total de PV curados.
+  if (getOriginEffects(draft).healingBonusEqualsIntellect) {
+    out.push({ source: 'Técnica Medicinal', note: `some +${attrs.intellect} (Intelecto) no total de PV que curar` })
+  }
+  // Ferramentas Paranormais: ativa os itens paranormais do loadout sem gastar PE.
+  if (hasClassPower(draft, 'paranormal-tools')) {
+    const paranormalItems = draft.equipmentChoices
+      .map(uid => getEquipmentByInstance(uid))
+      .filter(item => item?.paranormal)
+    if (paranormalItems.length > 0) {
+      out.push({ source: 'Ferramentas Paranormais', note: 'ativa os itens paranormais do inventário sem pagar o custo em PE' })
+    }
   }
   return out
 }

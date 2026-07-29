@@ -15,6 +15,7 @@ import { getAvailableRituals, ELEMENT_NAMES, ELEMENT_COLORS } from '../../utils/
 import { hasClassPower, getFavoriteWeaponReduction, getFavoriteEquipmentReduction, getWorkToolBonus } from '../../utils/characterUtils'
 import { isMelee, formatWeaponSummary } from '../../utils/ordemWeaponUtils'
 import { getPatente, PATENTES } from '../../utils/patenteUtils'
+import { getEffectiveCreditLimit } from '../../utils/sheetEffects'
 import { isStepComplete } from '../../utils/draftValidation'
 import { StepNav } from '../common/StepNav'
 
@@ -35,6 +36,8 @@ export function EquipmentStep() {
   const isOverCapacity = currentSpaces > capacity
 
   const patente = getPatente(draft.patente)
+  // Patrocinador da Ordem (origem Magnata) sobe o limite de crédito um degrau.
+  const credit = getEffectiveCreditLimit(draft)
   // Alocação das unidades nas vagas da Patente (item menor pode ocupar vaga maior — F21).
   const slotAllocation = getCategorySlotAllocation(draft, patente)
   const accessibleSlots = slotAllocation.filter(s => s.limit > 0)
@@ -442,8 +445,9 @@ export function EquipmentStep() {
             : 'nenhuma categoria acima de 0'}. Um item de categoria menor pode ocupar uma vaga de categoria maior.
         </p>
         <p className="text-parchment-700 text-xs mb-4">
-          Crédito para compras de missão: <strong className="text-parchment-500">{patente.credit}</strong> (uso na mesa, não afeta a criação).
-          Seu limite de peso depende da Força ({strength}).
+          Crédito para compras de missão: <strong className="text-parchment-500">{credit.level}</strong>
+          {credit.source && <span className="text-gold-600/90"> (um degrau acima pelo {credit.source})</span>}
+          {' '}(uso na mesa, não afeta a criação). Seu limite de peso depende da Força ({strength}).
         </p>
 
         <div className="flex flex-wrap gap-3">

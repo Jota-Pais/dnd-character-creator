@@ -49,6 +49,8 @@ import {
   getConditionalDefenseBonuses,
   getExtraDamageDiceNotes,
   getSheetExplosives,
+  getResolvedAbilityNotes,
+  getEffectiveCreditLimit,
 } from '../sheetEffects'
 import { bonusRitualElementKey } from '../ritualUtils'
 import { getCursedDerivedStats } from '../curseUtils'
@@ -472,6 +474,57 @@ describe('Bônus de perícia de todas as fontes', () => {
       },
     })
     expect(getConditionalSkillBonuses(draft).map(b => b.source)).toContain('Hacker')
+  })
+})
+
+describe('Notas com valores resolvidos', () => {
+  it('Ataque Especial mostra só o patamar do NEX atual', () => {
+    const combatant = getOrdemClass('combatant')!
+    const at = (nex: number) => getResolvedAbilityNotes(makeDraft({ class: 'combatant', nex }), combatant)
+      .find(n => n.source === 'Ataque Especial')?.note
+    expect(at(5)).toBe('no seu NEX: até 2 PE para +5')
+    expect(at(25)).toBe('no seu NEX: até 3 PE para +10')
+    expect(at(55)).toBe('no seu NEX: até 4 PE para +15')
+    expect(at(99)).toBe('no seu NEX: até 5 PE para +20')
+  })
+
+  it('Paramédico (Médico de Campo) resolve os dados de cura pelo NEX', () => {
+    const cls = getOrdemClass('specialist')!
+    const at = (nex: number) => getResolvedAbilityNotes(
+      makeDraft({ class: 'specialist', trilha: 'field-medic', nex, classFreeSkillChoices: ['medicine'] }), cls,
+    ).find(n => n.source === 'Paramédico')?.note
+    expect(at(10)).toBe('no seu NEX: cura 2d10 PV por 2 PE')
+    expect(at(65)).toBe('no seu NEX: cura até 4d10 PV por 4 PE')
+  })
+
+  it('Criar Selo resolve o máximo de selos pela Presença', () => {
+    const cls = getOrdemClass('occultist')!
+    const draft = makeDraft({
+      class: 'occultist', powerChoices: ['create-seal'],
+      attributes: { agility: 1, strength: 1, intellect: 1, presence: 4, vigor: 1 },
+    })
+    expect(getResolvedAbilityNotes(draft, cls).find(n => n.source === 'Criar Selo')?.note)
+      .toBe('pode manter até 4 selos criados (Presença)')
+  })
+
+  it('Técnica Medicinal resolve o bônus de cura pelo Intelecto', () => {
+    const cls = getOrdemClass('specialist')!
+    const draft = makeDraft({
+      class: 'specialist', origin: 'healthcare-worker',
+      attributes: { agility: 1, strength: 1, intellect: 3, presence: 1, vigor: 1 },
+    })
+    expect(getResolvedAbilityNotes(draft, cls).find(n => n.source === 'Técnica Medicinal')?.note)
+      .toBe('some +3 (Intelecto) no total de PV que curar')
+  })
+
+  it('Patrocinador da Ordem (Magnata) sobe o limite de crédito um degrau', () => {
+    // Recruta = Baixo → Médio.
+    expect(getEffectiveCreditLimit(makeDraft({ origin: 'tycoon', patente: 'recruta' })))
+      .toEqual({ level: 'Médio', source: 'Patrocinador da Ordem' })
+    // Sem a origem, o crédito é o da Patente.
+    expect(getEffectiveCreditLimit(makeDraft({ patente: 'recruta' }))).toEqual({ level: 'Baixo', source: null })
+    // Teto: Ilimitado não sobe mais.
+    expect(getEffectiveCreditLimit(makeDraft({ origin: 'tycoon', patente: 'agente-elite' })).level).toBe('Ilimitado')
   })
 })
 

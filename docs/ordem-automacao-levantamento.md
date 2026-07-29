@@ -4,6 +4,11 @@ Data: 2026-07-29. Objetivo: mapear, habilidade por habilidade, o que a ficha **j
 automaticamente** e o que ainda **só existe como texto**, para chegar em "ao terminar o wizard, a
 ficha está 100% pronta pra mesa".
 
+> **Estado: gaps fechados em 2026-07-29.** As tabelas abaixo são o diagnóstico ORIGINAL (o "antes").
+> Os 37 gaps foram implementados no branch `feat/ordem-automacao-efeitos` — ver a seção
+> [Resolução](#resolução-2026-07-29) no fim do documento, que registra o que virou automático,
+> os dois rulings de regra e uma inconsistência achada no livro.
+
 ## Legenda
 
 | | Significado |
@@ -225,3 +230,74 @@ classe. Sugestão em 3 movimentos:
 Ordem sugerida de implementação: **P0.1–P0.3** (erros de número/escolha) → **P1** (canal de bônus de
 perícia condicional, que sozinho fecha 10 gaps) → **P3** (dados de munição/investigação) → **P0.5–10**
 → **P2** (notas resolvidas).
+
+---
+
+## Resolução (2026-07-29)
+
+Implementado no branch `feat/ordem-automacao-efeitos`, em 6 commits. 862 testes.
+
+### Arquitetura final
+
+`utils/sheetEffects.ts` é o agregador único que a Revisão e o PDF leem: atravessa origem, poderes
+de classe (inclusive os aprendidos por Expansão de Conhecimento), features de trilha alcançadas,
+poderes paranormais e o loadout. Vive em módulo próprio porque precisa ler `equipmentUtils`, que já
+lê `characterUtils` — o módulo separado evita o ciclo.
+
+`types/effects.ts` guarda os tipos de efeito compartilhados pelas quatro famílias
+(`ConditionalSkillBonus`, `ConditionalDefenseBonus`), pra não divergirem.
+
+**Regra de ouro adotada:** efeito INCONDICIONAL entra no número da ficha; efeito CONDICIONAL vira
+linha própria com a condição. Somar o +5 do Hacker em todo teste de Tecnologia, ou o +10 do
+Inquebrável fora de "machucado", seria mentir na ficha.
+
+### Fechado por severidade
+
+| Gap | Como ficou |
+|---|---|
+| Casca Grossa | `hpPerNexStep` em `TrilhaFeatureEffects`, retroativo — eram até 20 PV a menos |
+| Saber Ampliado + Grimório | slots próprios na etapa Rituais, círculo travado pela feature |
+| Perito | `expertSkillChoices` na etapa Perícias, com custo/dado resolvidos pelo NEX |
+| Munição | `OrdemWeapon.ammo` + uma linha de ataque por variante compatível carregada |
+| Mods de munição | Dum dum (+2 multiplicador) e Explosiva (+2d6) chegam na arma certa |
+| Mira de Elite | +Intelecto no dano e proficiência com as armas de balas longas |
+| Máquina de Matar | +1 dado do mesmo tipo (ruling do usuário) |
+| Ataque Furtivo | dado resolvido pelo NEX (+1d6 → +4d6) |
+| Proficiência de proteção | passou a existir: classe + poder, com o Escudo contando como pesada |
+| Penalidade de carga | −5 da Proteção Pesada nas perícias marcadas, no total da perícia |
+| Explosivos | seção própria com dano, área e DT (10 + limite de PE + atributo, p. 80) |
+| Bônus de perícia (P1) | canal único; Gatuno e Iniciativa Aprimorada somam, Hacker/Envolto em Mistério/Identificação Paranormal/Acalentar viram linha com a condição |
+| Defesa condicional | Reflexos Defensivos, Inquebrável e Campo Protetor, cada um com sua condição |
+| Notas resolvidas (P2) | Ataque Especial, Paramédico, Discurso Motivador, Criar Selo (= Presença), Técnica Medicinal (= Intelecto), Ferramentas Paranormais |
+| Crédito do Magnata | Patrocinador da Ordem sobe um degrau (Baixo → Médio…), com teto em Ilimitado |
+| Arma de Sangue | linha de ataque como arma sintética, igual ao Desarmado do Artista Marcial |
+
+### Rulings de regra
+
+1. **"Aumenta o dano em um passo" (Máquina de Matar)** — o livro usa a expressão mas não define a
+   escala de passos de dano em lugar algum (para alcance ele explicita, para dano não). Decisão do
+   usuário: um passo = **mais um dado do mesmo tipo**, como Golpe Pesado e Calibre Grosso já fazem
+   (katana 1d10 → 2d10).
+2. **Intelecto do Grimório Ritualístico** — "rituais igual ao seu Intelecto" é medido no **NEX 40%**,
+   quando a feature é recebida: o Aumento de Atributo do NEX 20% conta, o do 50% não. Escolhido por
+   estabilidade — slot que aparece sozinho depois confunde.
+
+### Inconsistência no livro (registrada, não "corrigida")
+
+A p. 80 define **DT de teste de resistência = 10 + limite de PE + atributo** e dá o exemplo: um
+Combatente com Vigor 3 em NEX 55% teria DT 18. Mas a **Tabela 1.2** dá limite de PE **11** no NEX
+55% → 10 + 11 + 3 = **24**. O 18 corresponde ao limite do NEX 25% (5). O projeto segue a Tabela 1.2,
+que é a regra; o exemplo parece erro de edição. Vale para `getRitualDt` e `getSheetExplosives`.
+
+### Gaps que sobraram (deliberadamente)
+
+- **Acessórios** (`utensilio`/`vestimenta`): "+2 numa perícia à escolha" e as mods `aprimorado` /
+  `funcao-adicional` seguem sem escolha modelada. É a próxima escolha-que-gera-escolha a fazer, na
+  etapa Equipamento. O livro ainda ressalva que bônus de itens **não** acumulam entre si (p. 63),
+  o que o agregador precisará respeitar.
+- **Kit de Perícia**: não se escolhe de qual perícia é o kit, então a ficha não sinaliza as perícias
+  que sofreriam −5 sem ele.
+- **Remendão** (Técnico NEX 40%): "equipamentos de investigação têm categoria reduzida em I" — falta
+  a tag de "equipamento de investigação" no catálogo.
+- Habilidades ativadas em jogo (~65 itens) continuam só com a descrição, e está correto: não há
+  número a pré-calcular em "gaste 2 PE para reagir".

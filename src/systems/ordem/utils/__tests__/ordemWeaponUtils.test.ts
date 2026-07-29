@@ -5,7 +5,7 @@ import type { OrdemWeapon } from '../../types/equipment'
 import { getEquipmentById, EQUIPMENTS, hasWeaponProficiency } from '../equipmentUtils'
 import {
   getOrdemWeaponAttack, getWeaponSkillName, formatWeaponSummary, isMelee, getUnarmedAttack,
-  getWeaponAmmoVariants, getSheetWeaponAttacks,
+  getWeaponAmmoVariants, getSheetWeaponAttacks, getBloodWeaponAttack,
 } from '../ordemWeaponUtils'
 
 function makeDraft(over: Partial<OrdemCharacterDraft>): OrdemCharacterDraft {
@@ -155,6 +155,31 @@ describe('resumo de arma pro card de escolha (getWeaponSkillName / formatWeaponS
   it('lança-chamas: Pontaria, arma de fogo, alcance curto, duas mãos, proficiência pesada', () => {
     const lancaChamas = getEquipmentById('lanca-chamas') as OrdemWeapon
     expect(formatWeaponSummary(lancaChamas)).toBe('Pontaria · arma de fogo · alcance Curto · duas mãos · proficiência pesada')
+  })
+})
+
+describe('Arma de Sangue (poder paranormal)', () => {
+  const comArmaDeSangue = makeDraft({
+    class: 'combatant', nex: 15,
+    attributes: { agility: 1, strength: 3, intellect: 1, presence: 1, vigor: 1 },
+    powerChoices: ['transcend'],
+    paranormalPowerChoices: { 'slot-0': { powerId: 'blood-weapon' } },
+  })
+
+  it('entra na lista de ataques como arma corpo a corpo leve de 1d6 de Sangue', () => {
+    const attack = getBloodWeaponAttack(comArmaDeSangue)!
+    expect(attack.name).toBe('Arma de Sangue')
+    expect(attack.skill).toBe('Luta')
+    expect(attack.damage).toBe('1d6+3 Sangue') // soma Força, como toda arma corpo a corpo
+  })
+
+  it('não aparece sem o poder', () => {
+    expect(getBloodWeaponAttack(makeDraft({ class: 'combatant' }))).toBeNull()
+    expect(getSheetWeaponAttacks(makeDraft({ class: 'combatant' })).map(a => a.name)).toEqual(['Desarmado'])
+  })
+
+  it('aparece na lista da ficha, antes do desarmado', () => {
+    expect(getSheetWeaponAttacks(comArmaDeSangue).map(a => a.name)).toEqual(['Arma de Sangue', 'Desarmado'])
   })
 })
 

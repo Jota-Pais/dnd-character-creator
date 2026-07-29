@@ -28,6 +28,10 @@ export type OriginPowerEffects = {
   firearmDamageBonus?: number
   /** Resistência a dano mental igual ao Intelecto (ex.: Eu Já Sabia). */
   mentalDamageResistanceEqualsIntellect?: boolean
+  /** Soma o Intelecto no total de PV curados (Técnica Medicinal, origem Agente de Saúde). */
+  healingBonusEqualsIntellect?: boolean
+  /** Sobe o limite de crédito em N degraus (Patrocinador da Ordem, origem Magnata: +1). */
+  creditLimitSteps?: number
   /**
    * Bônus em testes de ataque, rolagens de dano e margem de ameaça com UMA arma simples ou
    * tática escolhida pelo jogador (`draft.workToolWeapon`), que também ganha proficiência

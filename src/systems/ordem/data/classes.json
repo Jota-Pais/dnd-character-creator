@@ -18,7 +18,13 @@
     "armorProficiencies": ["light"],
     "classAbility": {
       "name": "Ataque Especial",
-      "description": "Quando faz um ataque, pode gastar 2 PE para receber +5 no teste de ataque ou na rolagem de dano. Conforme avança de NEX, pode gastar mais PE para mais bônus de +5 (3 PE/+10 em NEX 25%, 4 PE/+15 em NEX 55%, 5 PE/+20 em NEX 85%)."
+      "description": "Quando faz um ataque, pode gastar 2 PE para receber +5 no teste de ataque ou na rolagem de dano. Conforme avança de NEX, pode gastar mais PE para mais bônus de +5 (3 PE/+10 em NEX 25%, 4 PE/+15 em NEX 55%, 5 PE/+20 em NEX 85%).",
+      "scalingByNex": [
+        { "nex": 5, "note": "até 2 PE para +5" },
+        { "nex": 25, "note": "até 3 PE para +10" },
+        { "nex": 55, "note": "até 4 PE para +15" },
+        { "nex": 85, "note": "até 5 PE para +20" }
+      ]
     },
     "skillGradeCount": 1
   },

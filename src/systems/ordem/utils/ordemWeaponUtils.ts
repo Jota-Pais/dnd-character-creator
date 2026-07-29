@@ -2,7 +2,7 @@ import type { OrdemCharacterDraft } from '../types/character'
 import type { OrdemWeapon, OrdemWeaponGrip, OrdemWeaponProficiency, OrdemWeaponCategory } from '../types/equipment'
 import type { SkillGrade } from './characterUtils'
 import { getSkillGrade, hasClassPower, getOriginEffects, getWorkToolBonus, getWeaponSkillOverride, hasTrilhaFeature } from './characterUtils'
-import { getParanormalEffects } from './paranormalPowerUtils'
+import { getParanormalEffects, hasParanormalPower } from './paranormalPowerUtils'
 import { getModification } from './modificationUtils'
 import { getCurse, getSheetAttributes } from './curseUtils'
 import { getEquipmentByInstance, getInstanceLabel, instanceItemId, usesLongBullets } from './equipmentUtils'
@@ -266,8 +266,29 @@ export function getSheetWeaponAttacks(draft: OrdemCharacterDraft): OrdemWeaponAt
       })
     }
   }
+  const bloodWeapon = getBloodWeaponAttack(draft)
+  if (bloodWeapon) attacks.push(bloodWeapon)
   attacks.push(getUnarmedAttack(draft))
   return attacks
+}
+
+/**
+ * Arma de Sangue (poder paranormal): garras/chifres/lâmina de sangue cristalizado que contam como
+ * "arma simples leve que você não precisa empunhar" e causam 1d6 de dano de Sangue. É modelada
+ * como arma sintética (igual ao Desarmado do Artista Marcial), então herda os bônus de arma
+ * corpo a corpo da ficha. Não é item de inventário — não ocupa espaço nem vaga de Patente.
+ *
+ * Custa 2 PE e uma ação de movimento pra manifestar (dura a cena); com a afinidade ela se torna
+ * permanente. Em ambos os casos a linha de ataque é a mesma, então a ficha sempre a mostra.
+ */
+export function getBloodWeaponAttack(draft: OrdemCharacterDraft): OrdemWeaponAttack | null {
+  if (!hasParanormalPower(draft, 'blood-weapon')) return null
+  const weapon: OrdemWeapon = {
+    id: 'arma-de-sangue', name: 'Arma de Sangue', category: 0, spaces: 0, type: 'weapon',
+    proficiency: 'simple', weaponCategory: 'corpo_a_corpo', grip: 'leve',
+    damage: '1d6', critical: 'x2', range: '-', damageType: 'Sangue',
+  }
+  return { ...getOrdemWeaponAttack(weapon, draft, []), name: 'Arma de Sangue' }
 }
 
 /**

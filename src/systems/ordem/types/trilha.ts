@@ -23,6 +23,11 @@ export type TrilhaFeatureEffects = {
    * já alcançado; a ficha mostra só ele, como nota na seção de Ataques.
    */
   extraDamageDiceByNex?: { nex: number; dice: string }[]
+  /**
+   * Efeito da feature no NEX atual, em texto curto (ex.: Paramédico "cura 3d10 gastando 4 PE").
+   * Vence o maior degrau alcançado — a ficha mostra o patamar de agora, não a escada inteira.
+   */
+  noteByNex?: { nex: number; note: string }[]
   /** Bônus em perícias válido só numa situação. */
   conditionalSkillBonus?: ConditionalSkillBonus[]
   /** DT para resistir a TODOS os rituais do conjurador (ex.: Rituais Eficientes +5). */

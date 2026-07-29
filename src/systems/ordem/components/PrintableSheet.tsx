@@ -10,7 +10,7 @@ import {
 } from '../utils/characterUtils'
 import {
   getSkillBonusTotal, getConditionalSkillBonuses, getConditionalDefenseBonuses, getExtraDamageDiceNotes,
-  getSheetExplosives,
+  getSheetExplosives, getResolvedAbilityNotes, getEffectiveCreditLimit,
 } from '../utils/sheetEffects'
 import { getReachedTrilhaSlots, getPeLimit } from '../utils/progressionUtils'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, getSlotRitualElement, getGrantedRitualElement, ELEMENT_NAMES } from '../utils/ritualUtils'
@@ -103,6 +103,9 @@ export function PrintableSheet() {
   const extraDamageDice = getExtraDamageDiceNotes(draft)
   // Explosivos com a DT do teste de resistência já calculada (10 + limite de PE + atributo).
   const explosives = getSheetExplosives(draft)
+  // Notas com valor resolvido pelo NEX/atributo (Ataque Especial, Paramédico, Criar Selo...).
+  const resolvedNotes = getResolvedAbilityNotes(draft, cls)
+  const credit = getEffectiveCreditLimit(draft)
   const cursedUnits = equipmentUnits.filter(u => (draft.equipmentCurses[u.uid]?.length ?? 0) > 0)
   // Armas com a maldição Ritualística: o ritual armazenado é listado junto das Habilidades.
   const ritualisticUnits = equipmentUnits.filter(u => (draft.equipmentCurses[u.uid] ?? []).includes('ritualistica'))
@@ -341,6 +344,9 @@ export function PrintableSheet() {
                 Gaste {expertDie.pe} PE para somar +{expertDie.die} no teste dessas perícias (no seu NEX).
               </p>
             )}
+            {resolvedNotes.map((n, i) => (
+              <p key={i}><span className="font-semibold">{n.source}:</span> {n.note}.</p>
+            ))}
             {reachedTrilhaFeatures.map(f => f && (
               <p key={f.name}><span className="font-semibold">{f.name} (trilha {trilha?.name}, NEX {f.nex}%).</span> {f.description}</p>
             ))}
@@ -532,7 +538,10 @@ export function PrintableSheet() {
               <span className="font-bold uppercase text-[10px]">Limite de Itens:</span>{' '}
               {[1, 2, 3, 4].map(c => `${CAT_ROMAN[c]}: ${getCategoryLimit(patente, c) || '—'}`).join(' · ')}
             </span>
-            <span><span className="font-bold uppercase text-[10px]">Limite de Crédito:</span> {patente.credit}</span>
+            <span>
+              <span className="font-bold uppercase text-[10px]">Limite de Crédito:</span> {credit.level}
+              {credit.source && <span className="text-gray-600"> ({credit.source})</span>}
+            </span>
             <span><span className="font-bold uppercase text-[10px]">Carga Máx.:</span> {getModifiedSpaces(draft)}/{getTotalCarryCapacity(draft)}</span>
           </div>
           <table className="w-full text-xs mt-2">

@@ -12,6 +12,7 @@ import {
 import {
   getSkillBonusTotal, getSkillsWithUnconditionalBonus, getConditionalSkillBonuses,
   getConditionalDefenseBonuses, getExtraDamageDiceNotes, getSheetExplosives,
+  getResolvedAbilityNotes,
 } from '../../utils/sheetEffects'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, ritualNeedsElementChoice, getSlotRitualElement, getGrantedRitualElement, grantedRitualElementKey, ELEMENT_NAMES, ELEMENT_COLORS } from '../../utils/ritualUtils'
 import {
@@ -120,6 +121,8 @@ export function ReviewStep() {
   const extraDamageDice = getExtraDamageDiceNotes(draft)
   // Explosivos com a DT do teste de resistência já calculada (10 + limite de PE + atributo).
   const explosives = getSheetExplosives(draft)
+  // Notas com valor resolvido pelo NEX/atributo (Ataque Especial, Paramédico, Criar Selo...).
+  const resolvedNotes = getResolvedAbilityNotes(draft, cls)
 
   function handleExport() {
     exportCharacter(draft)
@@ -203,6 +206,11 @@ export function ReviewStep() {
             {expertDie.pe} PE para somar +{expertDie.die} no teste (no seu NEX).
           </p>
         )}
+        {resolvedNotes.map((n, i) => (
+          <p key={i} className="text-gold-500/90 text-xs mt-2">
+            ✨ <strong>{n.source}:</strong> {n.note}.
+          </p>
+        ))}
       </Section>
 
       {trilha && reachedTrilhaFeatures.length > 0 && (

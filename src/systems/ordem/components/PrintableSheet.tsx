@@ -1,11 +1,11 @@
 import { useOrdemStore } from '../stores/characterStore'
 import { getOrigin } from '../utils/originUtils'
 import { getOrdemClass } from '../utils/classUtils'
-import { SKILLS } from '../utils/skillUtils'
+import { SKILLS, getSkillName } from '../utils/skillUtils'
 import { getTrilha } from '../utils/trilhaUtils'
 import { getPower } from '../utils/powerUtils'
 import {
-  getTrainedSkills, getSkillGrade, getRitualCost, hasClassPower, getGrantedRituals, getEffectivePeLimit,
+  getTrainedSkills, getSkillGrade, getRitualCost, hasClassPower, getGrantedRituals, getEffectivePeLimit, getExpertSkills, getExpertDie,
   getParanormalResistanceBonus, getMentalParanormalDamageResistance, getOriginMentalDamageResistance, getConditionalDamageResistances,
 } from '../utils/characterUtils'
 import { getReachedTrilhaSlots, getPeLimit } from '../utils/progressionUtils'
@@ -89,6 +89,9 @@ export function PrintableSheet() {
     .filter((u): u is { uid: string; item: OrdemEquipment } => Boolean(u.item))
   // Uma linha por arma (ou por variante de munição carregada) + o ataque desarmado no fim.
   const weaponAttacks = getSheetWeaponAttacks(draft)
+  // Perito (Especialista): as 2 perícias escolhidas e o dado extra já resolvido pelo NEX.
+  const expertSkills = getExpertSkills(draft)
+  const expertDie = getExpertDie(draft.nex)
   const cursedUnits = equipmentUnits.filter(u => (draft.equipmentCurses[u.uid]?.length ?? 0) > 0)
   // Armas com a maldição Ritualística: o ritual armazenado é listado junto das Habilidades.
   const ritualisticUnits = equipmentUnits.filter(u => (draft.equipmentCurses[u.uid] ?? []).includes('ritualistica'))
@@ -263,6 +266,14 @@ export function PrintableSheet() {
               <p><span className="font-semibold">{origin.power.name} (origem).</span> {origin.power.description}</p>
             )}
             <p><span className="font-semibold">{cls.classAbility.name} ({cls.name}).</span> {cls.classAbility.description}</p>
+            {expertSkills.length > 0 && (
+              <p>
+                <span className="font-semibold">
+                  Perito em {expertSkills.map(sid => getSkillName(sid)).join(' e ')}.
+                </span>{' '}
+                Gaste {expertDie.pe} PE para somar +{expertDie.die} no teste dessas perícias (no seu NEX).
+              </p>
+            )}
             {reachedTrilhaFeatures.map(f => f && (
               <p key={f.name}><span className="font-semibold">{f.name} (trilha {trilha?.name}, NEX {f.nex}%).</span> {f.description}</p>
             ))}

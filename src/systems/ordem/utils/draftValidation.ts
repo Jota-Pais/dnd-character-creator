@@ -18,6 +18,7 @@ import {
   areClassPowerChoicesValid,
   isTrilhaChoiceValid,
   areBonusRitualSlotsComplete,
+  isExpertChoiceComplete,
 } from './characterUtils'
 import { hasTrilha, hasVersatility } from './progressionUtils'
 import { isRitualStepComplete } from './ritualUtils'
@@ -55,7 +56,9 @@ export function isStepComplete(draft: OrdemCharacterDraft, step: WizardStep): bo
       const groupsFilled = draft.classChoiceGroupPicks.length === cls.skills.choiceGroups.length
         && draft.classChoiceGroupPicks.every(pick => Boolean(pick))
       const freeCount = getRequiredFreeSkillCount(draft, cls)
-      return groupsFilled && draft.classFreeSkillChoices.length === freeCount
+      if (!groupsFilled || draft.classFreeSkillChoices.length !== freeCount) return false
+      // Perito (Especialista): 2 perícias treinadas, exceto Luta e Pontaria.
+      return isExpertChoiceComplete(draft)
     }
 
     case 'progression': {
@@ -134,6 +137,7 @@ export function sanitizeImportedDraft(parsed: unknown): OrdemCharacterDraft | nu
     class: p.class === 'combatant' || p.class === 'specialist' || p.class === 'occultist' ? p.class : null,
     classChoiceGroupPicks: Array.isArray(p.classChoiceGroupPicks) ? p.classChoiceGroupPicks : [],
     classFreeSkillChoices: Array.isArray(p.classFreeSkillChoices) ? p.classFreeSkillChoices : [],
+    expertSkillChoices: Array.isArray(p.expertSkillChoices) ? p.expertSkillChoices : [],
     trilha: typeof p.trilha === 'string' ? p.trilha : null,
     powerChoices: Array.isArray(p.powerChoices) ? p.powerChoices : [],
     attributeIncreaseChoices: Array.isArray(p.attributeIncreaseChoices) ? p.attributeIncreaseChoices : [],

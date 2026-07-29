@@ -66,6 +66,12 @@ export type OrdemCharacterDraft = {
   classChoiceGroupPicks: (string | null)[]
   /** Perícias de escolha livre da classe (quantidade = freeChoiceBase + Intelecto). */
   classFreeSkillChoices: string[]
+  /**
+   * As 2 perícias do Perito (habilidade do Especialista): perícias TREINADAS, exceto Luta e
+   * Pontaria, em que ele pode gastar PE para somar um dado extra que cresce com o NEX
+   * (ver `getExpertDie`). Vazio nas outras classes.
+   */
+  expertSkillChoices: string[]
   /** Trilha escolhida em NEX 10% (uma das 5 trilhas da classe). */
   trilha: string | null
   /** Poderes de classe escolhidos, um por slot alcançado (Tabela 1.3/1.4/1.5: NEX 15/30/45/60/75/90). */
@@ -169,6 +175,7 @@ export const EMPTY_DRAFT: OrdemCharacterDraft = {
   class: null,
   classChoiceGroupPicks: [],
   classFreeSkillChoices: [],
+  expertSkillChoices: [],
   trilha: null,
   powerChoices: [],
   ritualChoices: [],

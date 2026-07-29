@@ -7,6 +7,7 @@ import { getPower } from '../../utils/powerUtils'
 import {
   getTrainedSkills, getSkillGrade, hasFavoredRitualPower, hasLaminaMaldita, getRitualCost, hasClassPower, getGrantedRituals, getEffectivePeLimit,
   getParanormalResistanceBonus, getMentalParanormalDamageResistance, getOriginMentalDamageResistance, getConditionalDamageResistances,
+  getExpertSkills, getExpertDie,
 } from '../../utils/characterUtils'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, ritualNeedsElementChoice, getSlotRitualElement, getGrantedRitualElement, grantedRitualElementKey, ELEMENT_NAMES, ELEMENT_COLORS } from '../../utils/ritualUtils'
 import {
@@ -104,6 +105,9 @@ export function ReviewStep() {
     updateDraft({ weaponSkillChoices: choices })
   }
   const upgradedSkills = trainedSkills.filter(sid => getSkillGrade(draft, sid) !== 'treinado')
+  // Perito (Especialista): as 2 perícias escolhidas e o dado extra já resolvido pelo NEX.
+  const expertSkills = getExpertSkills(draft)
+  const expertDie = getExpertDie(draft.nex)
 
   function handleExport() {
     exportCharacter(draft)
@@ -168,6 +172,12 @@ export function ReviewStep() {
         <p className="text-parchment-500 text-xs mt-2">
           <span className="font-semibold text-parchment-300">{cls.classAbility.name}.</span> {cls.classAbility.description}
         </p>
+        {expertSkills.length > 0 && (
+          <p className="text-gold-500/90 text-xs mt-2">
+            ✨ <strong>Perito em {expertSkills.map(formatSkillWithAttribute).join(' e ')}</strong> — gaste{' '}
+            {expertDie.pe} PE para somar +{expertDie.die} no teste (no seu NEX).
+          </p>
+        )}
       </Section>
 
       {trilha && reachedTrilhaFeatures.length > 0 && (

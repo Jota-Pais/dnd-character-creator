@@ -7,6 +7,11 @@ import {
   getAvailableFreeSkillOptions,
   getRequiredFreeSkillCount,
   getFixedSkillOverlapWithOrigin,
+  hasExpertAbility,
+  getExpertSkillOptions,
+  getExpertSkills,
+  getExpertDie,
+  EXPERT_SKILL_COUNT,
 } from '../../utils/characterUtils'
 import { isStepComplete } from '../../utils/draftValidation'
 import { StepNav } from '../common/StepNav'
@@ -15,6 +20,7 @@ export function SkillsStep() {
   const draft = useOrdemStore(state => state.draft)
   const setChoiceGroupPick = useOrdemStore(state => state.setChoiceGroupPick)
   const setFreeSkillChoices = useOrdemStore(state => state.setFreeSkillChoices)
+  const updateDraft = useOrdemStore(state => state.updateDraft)
   const nextStep = useOrdemStore(state => state.nextStep)
   const prevStep = useOrdemStore(state => state.prevStep)
 
@@ -28,12 +34,24 @@ export function SkillsStep() {
   const fixedOverlap = getFixedSkillOverlapWithOrigin(draft, cls)
   const allSkillIds = SKILLS.map(s => s.id)
 
+  const expertOptions = getExpertSkillOptions(draft)
+  const expertSkills = getExpertSkills(draft)
+  const expertDie = getExpertDie(draft.nex)
+
   function toggleFreeSkill(skillId: string) {
     const current = draft.classFreeSkillChoices
     if (current.includes(skillId)) {
       setFreeSkillChoices(current.filter(id => id !== skillId))
     } else if (current.length < requiredFree) {
       setFreeSkillChoices([...current, skillId])
+    }
+  }
+
+  function toggleExpertSkill(skillId: string) {
+    if (expertSkills.includes(skillId)) {
+      updateDraft({ expertSkillChoices: expertSkills.filter(id => id !== skillId) })
+    } else if (expertSkills.length < EXPERT_SKILL_COUNT) {
+      updateDraft({ expertSkillChoices: [...expertSkills, skillId] })
     }
   }
 
@@ -115,6 +133,39 @@ export function SkillsStep() {
               )
             })}
           </div>
+        </div>
+      )}
+
+      {hasExpertAbility(draft) && (
+        <div className="rounded-xl border border-gold-900/60 bg-parchment-950/60 p-4 mb-3">
+          <SectionTitle>
+            Perito ({expertSkills.length}/{Math.min(EXPERT_SKILL_COUNT, expertOptions.length)})
+          </SectionTitle>
+          <p className="text-parchment-500 text-xs mb-3 -mt-1 leading-relaxed">
+            Sua habilidade de <strong className="text-gold-500">Especialista</strong>: escolha 2 perícias
+            treinadas (exceto Luta e Pontaria) nas quais você pode gastar{' '}
+            <strong className="text-parchment-300">{expertDie.pe} PE para somar +{expertDie.die}</strong> no teste.
+            O dado cresce com o NEX.
+          </p>
+          {expertOptions.length === 0 ? (
+            <p className="text-amber-400/90 text-xs">Escolha suas perícias treinadas acima primeiro.</p>
+          ) : (
+            <div className="flex flex-wrap gap-1.5">
+              {expertOptions.map(sid => {
+                const active = expertSkills.includes(sid)
+                const disabled = !active && expertSkills.length >= EXPERT_SKILL_COUNT
+                return (
+                  <Chip
+                    key={sid}
+                    label={formatSkillWithAttribute(sid)}
+                    active={active}
+                    disabled={disabled}
+                    onClick={() => toggleExpertSkill(sid)}
+                  />
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
 

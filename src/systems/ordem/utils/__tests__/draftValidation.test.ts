@@ -64,8 +64,19 @@ describe('isStepComplete — skills', () => {
       class: 'specialist',
       attributes: { agility: 1, strength: 1, intellect: 0, presence: 1, vigor: 1 },
       classFreeSkillChoices: ['medicine', 'technology', 'science', 'crime', 'stealth', 'perception', 'piloting'],
+      // O Perito (habilidade da classe) exige 2 perícias treinadas.
+      expertSkillChoices: ['medicine', 'technology'],
     })
     expect(isStepComplete(draft, 'skills')).toBe(true)
+  })
+
+  it('especialista com as perícias livres prontas, mas sem o Perito, fica incompleto', () => {
+    const draft = makeDraft({
+      class: 'specialist',
+      attributes: { agility: 1, strength: 1, intellect: 0, presence: 1, vigor: 1 },
+      classFreeSkillChoices: ['medicine', 'technology', 'science', 'crime', 'stealth', 'perception', 'piloting'],
+    })
+    expect(isStepComplete(draft, 'skills')).toBe(false)
   })
 })
 

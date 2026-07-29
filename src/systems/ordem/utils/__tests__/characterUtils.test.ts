@@ -35,6 +35,11 @@ import {
   getTrilhaHpBonus,
   getBonusRitualSlots,
   areBonusRitualSlotsComplete,
+  hasExpertAbility,
+  getExpertDie,
+  getExpertSkillOptions,
+  getExpertSkills,
+  isExpertChoiceComplete,
 } from '../characterUtils'
 import { bonusRitualElementKey } from '../ritualUtils'
 import { getCursedDerivedStats } from '../curseUtils'
@@ -379,6 +384,58 @@ describe('Resistências (Grupo D): Mente Sã, Inabalável, Eu Já Sabia', () => 
   it('Inquebrável (Tropa de Choque NEX 99%): RD 5 fixa, condicional a "enquanto estiver machucado"', () => {
     const draft = makeDraft({ class: 'combatant', trilha: 'shock-trooper', nex: 99 })
     expect(getConditionalDamageResistances(draft)).toContainEqual({ name: 'Inquebrável', value: 5, condition: 'enquanto estiver machucado' })
+  })
+})
+
+describe('Perito (habilidade do Especialista)', () => {
+  // Especialista: 7 escolhas livres + Intelecto; aqui bastam algumas treinadas.
+  const especialista = (over: Partial<OrdemCharacterDraft> = {}) => makeDraft({
+    class: 'specialist',
+    classFreeSkillChoices: ['athletics', 'crime', 'fighting', 'aim'],
+    ...over,
+  })
+
+  it('só o Especialista tem a habilidade', () => {
+    expect(hasExpertAbility(especialista())).toBe(true)
+    expect(hasExpertAbility(makeDraft({ class: 'combatant' }))).toBe(false)
+    expect(hasExpertAbility(makeDraft({ class: 'occultist' }))).toBe(false)
+  })
+
+  it('o dado e o custo crescem com o NEX (Tabela 1.4)', () => {
+    expect(getExpertDie(5)).toEqual({ pe: 2, die: '1d6' })
+    expect(getExpertDie(20)).toEqual({ pe: 2, die: '1d6' })
+    expect(getExpertDie(25)).toEqual({ pe: 3, die: '1d8' })
+    expect(getExpertDie(55)).toEqual({ pe: 4, die: '1d10' })
+    expect(getExpertDie(85)).toEqual({ pe: 5, die: '1d12' })
+    expect(getExpertDie(99)).toEqual({ pe: 5, die: '1d12' })
+  })
+
+  it('as opções são as perícias TREINADAS, sem Luta e Pontaria', () => {
+    const options = getExpertSkillOptions(especialista())
+    expect(options).toContain('athletics')
+    expect(options).toContain('crime')
+    expect(options).not.toContain('fighting')
+    expect(options).not.toContain('aim')
+  })
+
+  it('exige as 2 escolhas para completar a etapa de perícias', () => {
+    expect(isExpertChoiceComplete(especialista())).toBe(false)
+    expect(isExpertChoiceComplete(especialista({ expertSkillChoices: ['athletics'] }))).toBe(false)
+    expect(isExpertChoiceComplete(especialista({ expertSkillChoices: ['athletics', 'crime'] }))).toBe(true)
+  })
+
+  it('as outras classes não têm nada a preencher', () => {
+    expect(isExpertChoiceComplete(makeDraft({ class: 'combatant' }))).toBe(true)
+    expect(getExpertSkills(makeDraft({ class: 'combatant', expertSkillChoices: ['athletics'] }))).toEqual([])
+  })
+
+  it('escolha que deixou de ser treinada (ou é Luta/Pontaria) é descartada', () => {
+    // 'stealth' não está mais entre as treinadas → sai.
+    const draft = especialista({ expertSkillChoices: ['athletics', 'stealth'] })
+    expect(getExpertSkills(draft)).toEqual(['athletics'])
+    expect(isExpertChoiceComplete(draft)).toBe(false)
+    // Luta nunca vale, mesmo treinada.
+    expect(getExpertSkills(especialista({ expertSkillChoices: ['fighting', 'crime'] }))).toEqual(['crime'])
   })
 })
 

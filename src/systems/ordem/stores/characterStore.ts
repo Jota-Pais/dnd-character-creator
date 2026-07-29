@@ -128,6 +128,8 @@ export const useOrdemStore = create<CharacterStore>((set, get) => ({
         class: classId,
         classChoiceGroupPicks: [],
         classFreeSkillChoices: [],
+        // Perito é habilidade do Especialista — trocar de classe descarta as perícias escolhidas.
+        expertSkillChoices: [],
         trilha: null,
         powerChoices: [],
         attributeIncreaseChoices: [],

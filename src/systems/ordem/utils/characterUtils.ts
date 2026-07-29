@@ -109,6 +109,54 @@ export function getFixedSkillOverlapWithOrigin(draft: OrdemCharacterDraft, cls: 
   return cls.skills.fixed.filter(id => origin.includes(id))
 }
 
+// ── Perito (habilidade do Especialista) ────────────────────────────────────────
+
+/** Perícias que o Perito nunca pode escolher (ressalva da habilidade). */
+const EXPERT_FORBIDDEN_SKILLS = ['fighting', 'aim']
+
+/** Quantas perícias o Perito escolhe. */
+export const EXPERT_SKILL_COUNT = 2
+
+/** O agente tem a habilidade Perito? (só o Especialista, desde a criação) */
+export function hasExpertAbility(draft: OrdemCharacterDraft): boolean {
+  return draft.class === 'specialist'
+}
+
+/**
+ * Dado extra e custo do Perito no NEX atual: 2 PE/+1d6 até NEX 20%, 3 PE/+1d8 em 25%,
+ * 4 PE/+1d10 em 55% e 5 PE/+1d12 em 85% (habilidade Eclético e Perito, Tabela 1.4).
+ */
+export function getExpertDie(nex: number): { pe: number; die: string } {
+  if (nex >= 85) return { pe: 5, die: '1d12' }
+  if (nex >= 55) return { pe: 4, die: '1d10' }
+  if (nex >= 25) return { pe: 3, die: '1d8' }
+  return { pe: 2, die: '1d6' }
+}
+
+/** Perícias elegíveis pro Perito: as treinadas, menos Luta e Pontaria. */
+export function getExpertSkillOptions(draft: OrdemCharacterDraft): string[] {
+  return getTrainedSkills(draft).filter(id => !EXPERT_FORBIDDEN_SKILLS.includes(id))
+}
+
+/** As perícias do Perito que continuam válidas (ainda treinadas e permitidas). */
+export function getExpertSkills(draft: OrdemCharacterDraft): string[] {
+  if (!hasExpertAbility(draft)) return []
+  const eligible = getExpertSkillOptions(draft)
+  return draft.expertSkillChoices.filter(id => eligible.includes(id))
+}
+
+/**
+ * As 2 perícias do Perito estão escolhidas e válidas? Trocar as perícias treinadas pode
+ * invalidar uma escolha antiga (ela deixa de ser treinada) — por isso valida contra as opções.
+ */
+export function isExpertChoiceComplete(draft: OrdemCharacterDraft): boolean {
+  if (!hasExpertAbility(draft)) return true
+  // Com menos perícias treinadas elegíveis que o exigido (ficha em construção), não travar.
+  const available = getExpertSkillOptions(draft).length
+  const required = Math.min(EXPERT_SKILL_COUNT, available)
+  return getExpertSkills(draft).length === required
+}
+
 // ── Progressão por NEX (trilha, poderes, aumento de atributo, grau de treinamento, versatilidade) ──
 
 /** Atributos base + os aumentos de Aumento de Atributo já escolhidos (teto 5 por atributo). */

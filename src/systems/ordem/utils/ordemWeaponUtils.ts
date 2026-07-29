@@ -163,8 +163,11 @@ export function getOrdemWeaponAttack(
     (weapon.weaponCategory === 'corpo_a_corpo' ? (originEffects.meleeDamageBonus ?? 0) : 0) +
     (weapon.weaponCategory === 'fogo' ? (originEffects.firearmDamageBonus ?? 0) : 0)
   const damageBonus = (melee ? attrs.strength : 0) + powerDamage + workToolBonus + mods.reduce((s, m) => s + (m.damageBonus ?? 0), 0)
+  // Máquina de Matar (Aniquilador NEX 99%): "o dano aumenta em um passo" — ruling do usuário
+  // (2026-07-29): um passo = mais um dado do mesmo tipo, igual a Golpe Pesado e Calibre Grosso.
   const extraDice = mods.reduce((s, m) => s + (m.damageDice ?? 0), 0) +
-    (hasClassPower(draft, 'heavy-blow') && weapon.weaponCategory === 'corpo_a_corpo' ? 1 : 0)
+    (hasClassPower(draft, 'heavy-blow') && weapon.weaponCategory === 'corpo_a_corpo' ? 1 : 0) +
+    (hasTrilhaFeature(draft, 'annihilator', 99) && draft.favoriteWeapon === weapon.id ? 1 : 0)
 
   const trilhaThreatMargin =
     (hasTrilhaFeature(draft, 'warrior', 10) && melee ? 2 : 0) +

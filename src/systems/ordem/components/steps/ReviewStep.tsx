@@ -11,7 +11,7 @@ import {
 } from '../../utils/characterUtils'
 import {
   getSkillBonusTotal, getSkillsWithUnconditionalBonus, getConditionalSkillBonuses,
-  getConditionalDefenseBonuses, getExtraDamageDiceNotes,
+  getConditionalDefenseBonuses, getExtraDamageDiceNotes, getSheetExplosives,
 } from '../../utils/sheetEffects'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, ritualNeedsElementChoice, getSlotRitualElement, getGrantedRitualElement, grantedRitualElementKey, ELEMENT_NAMES, ELEMENT_COLORS } from '../../utils/ritualUtils'
 import {
@@ -118,6 +118,8 @@ export function ReviewStep() {
   // já resolvidos pelo NEX (Ataque Furtivo) — ficam fora dos números somados da ficha.
   const conditionalDefense = getConditionalDefenseBonuses(draft)
   const extraDamageDice = getExtraDamageDiceNotes(draft)
+  // Explosivos com a DT do teste de resistência já calculada (10 + limite de PE + atributo).
+  const explosives = getSheetExplosives(draft)
 
   function handleExport() {
     exportCharacter(draft)
@@ -511,6 +513,31 @@ export function ReviewStep() {
                 <span className="text-parchment-700">
                   {a.skill} {a.rollDice}d20 <span className="text-gold-500">{a.attackBonus >= 0 ? `+${a.attackBonus}` : a.attackBonus}</span>
                   {' · '}{a.damage} · Crít. {a.critical}{a.range && a.range !== '-' ? ` · ${a.range}` : ''}
+                </span>
+              </p>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {explosives.length > 0 && (
+        <Section title="Explosivos">
+          <p className="text-parchment-700 text-xs mb-2">
+            Ação padrão para arremessar num ponto do alcance; afeta a área toda (sem teste de ataque).
+          </p>
+          <div className="space-y-1">
+            {explosives.map(e => (
+              <p key={e.uid} className="text-parchment-500 text-xs">
+                <span className="font-semibold text-parchment-300">{e.name}</span>{' '}
+                <span className="text-parchment-700">
+                  {e.range} · {e.area}
+                  {e.damage && ` · ${e.damage}`}
+                  {e.resistance && (
+                    <> · {e.resistance.skill} DT {e.resistance.dt}
+                      {e.resistance.notes.length > 0 && ` (${e.resistance.notes.join(', ')})`}
+                      {' '}— {e.resistance.effect}
+                    </>
+                  )}
                 </span>
               </p>
             ))}

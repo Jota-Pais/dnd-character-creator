@@ -58,7 +58,35 @@ export interface OrdemProtection extends OrdemEquipmentBase {
 }
 
 export interface OrdemGeneralItem extends OrdemEquipmentBase {
-  type: 'general' | 'explosive' | 'accessory';
+  type: 'general' | 'accessory';
 }
 
-export type OrdemEquipment = OrdemWeapon | OrdemProtection | OrdemGeneralItem;
+/**
+ * Explosivo (Tabela 3.8, p. 64). Arremessado num PONTO em alcance médio — não há teste de
+ * ataque contra a Defesa de ninguém, por isso não entra na tabela de Ataques: o que a ficha
+ * precisa é o dano, a área e a DT do teste de resistência (ver `getExplosiveDt`).
+ */
+export interface OrdemExplosive extends OrdemEquipmentBase {
+  type: 'explosive';
+  /** Dano em dados, quando o explosivo causa dano (a granada de fumaça não causa). */
+  damage?: string;
+  /** Tipo de dano por extenso (ex.: "perfuração", "fogo"). */
+  damageType?: string;
+  /** Área afetada (ex.: "raio de 6m", "cone de 6m"). */
+  area: string;
+  /** Alcance do arremesso/detonação (ex.: "Médio", "Longo"). */
+  range: string;
+  /**
+   * Teste de resistência permitido, quando houver. `attribute` é o atributo do AGENTE que
+   * compõe a DT ("DT Agi" / "DT Int" no livro) — a DT é 10 + limite de PE + esse atributo (p. 80).
+   */
+  resistance?: {
+    /** Perícia do teste, por extenso (ex.: "Reflexos", "Fortitude"). */
+    skill: string;
+    attribute: 'agility' | 'strength' | 'intellect' | 'presence' | 'vigor';
+    /** O que o sucesso faz (ex.: "reduz o dano à metade"). */
+    effect: string;
+  };
+}
+
+export type OrdemEquipment = OrdemWeapon | OrdemProtection | OrdemGeneralItem | OrdemExplosive;

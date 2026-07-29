@@ -158,6 +158,30 @@ describe('resumo de arma pro card de escolha (getWeaponSkillName / formatWeaponS
   })
 })
 
+describe('Máquina de Matar (Aniquilador NEX 99%)', () => {
+  const katana = getEquipmentById('katana') as OrdemWeapon // 1d10, crít 19
+  const aniquilador = (over: Partial<OrdemCharacterDraft> = {}) => makeDraft({
+    class: 'combatant', trilha: 'annihilator', nex: 99, favoriteWeapon: 'katana',
+    attributes: { agility: 1, strength: 2, intellect: 1, presence: 1, vigor: 1 },
+    ...over,
+  })
+
+  it('soma um dado do mesmo tipo na arma favorita, e +2 na margem de ameaça', () => {
+    const a = getOrdemWeaponAttack(katana, aniquilador(), [])
+    expect(a.damage).toBe('2d10+2 corte') // 1d10 → 2d10, +Força 2
+    expect(a.critical).toBe('17') // 19 − 2 (Máquina de Matar)
+  })
+
+  it('não afeta arma que não é a favorita', () => {
+    const a = getOrdemWeaponAttack(katana, aniquilador({ favoriteWeapon: 'espada' }), [])
+    expect(a.damage).toBe('1d10+2 corte')
+  })
+
+  it('só vale em NEX 99% (em 65% a arma favorita segue com o dado original)', () => {
+    expect(getOrdemWeaponAttack(katana, aniquilador({ nex: 65 }), []).damage).toBe('1d10+2 corte')
+  })
+})
+
 describe('Mira de Elite (Atirador de Elite NEX 10%)', () => {
   const fuzilAssalto = getEquipmentById('fuzil-assalto') as OrdemWeapon // balas longas, 2d10
   const espingarda = getEquipmentById('espingarda') as OrdemWeapon      // cartuchos, 4d6

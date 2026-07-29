@@ -10,6 +10,7 @@ import {
 } from '../utils/characterUtils'
 import {
   getSkillBonusTotal, getConditionalSkillBonuses, getConditionalDefenseBonuses, getExtraDamageDiceNotes,
+  getSheetExplosives,
 } from '../utils/sheetEffects'
 import { getReachedTrilhaSlots, getPeLimit } from '../utils/progressionUtils'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, getSlotRitualElement, getGrantedRitualElement, ELEMENT_NAMES } from '../utils/ritualUtils'
@@ -100,6 +101,8 @@ export function PrintableSheet() {
   // Defesa condicional e dados de dano extra já resolvidos pelo NEX (Ataque Furtivo).
   const conditionalDefense = getConditionalDefenseBonuses(draft)
   const extraDamageDice = getExtraDamageDiceNotes(draft)
+  // Explosivos com a DT do teste de resistência já calculada (10 + limite de PE + atributo).
+  const explosives = getSheetExplosives(draft)
   const cursedUnits = equipmentUnits.filter(u => (draft.equipmentCurses[u.uid]?.length ?? 0) > 0)
   // Armas com a maldição Ritualística: o ritual armazenado é listado junto das Habilidades.
   const ritualisticUnits = equipmentUnits.filter(u => (draft.equipmentCurses[u.uid] ?? []).includes('ritualistica'))
@@ -286,6 +289,39 @@ export function PrintableSheet() {
             </tbody>
           </table>
         </section>
+
+        {explosives.length > 0 && (
+          <section className="mt-3">
+            <BlackBar>Explosivos</BlackBar>
+            <table className="w-full text-xs mt-1">
+              <thead>
+                <tr className="text-gray-500 text-left text-[9px] uppercase">
+                  <th className="font-semibold pr-2">Item</th>
+                  <th className="font-semibold pr-2">Alcance / Área</th>
+                  <th className="font-semibold pr-2">Dano</th>
+                  <th className="font-semibold">Resistência</th>
+                </tr>
+              </thead>
+              <tbody>
+                {explosives.map(e => (
+                  <tr key={e.uid} className="border-b border-gray-300 align-top">
+                    <td className="pr-2 py-0.5 font-semibold">{e.name}</td>
+                    <td className="pr-2 py-0.5">{e.range} · {e.area}</td>
+                    <td className="pr-2 py-0.5">{e.damage ?? '—'}</td>
+                    <td className="py-0.5">
+                      {e.resistance
+                        ? `${e.resistance.skill} DT ${e.resistance.dt} — ${e.resistance.effect}`
+                        : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="text-[9px] text-gray-500 mt-1">
+              Ação padrão para arremessar num ponto do alcance; afeta a área toda (sem teste de ataque).
+            </p>
+          </section>
+        )}
       </div>
 
       {/* ═══════════════ PÁGINA 2 ═══════════════ */}

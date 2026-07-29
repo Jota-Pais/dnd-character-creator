@@ -3,9 +3,11 @@ import type { ClassPower } from '../types/power'
 import type { ConditionalSkillBonus, ConditionalDefenseBonus } from '../types/effects'
 import { getOrigin } from './originUtils'
 import { getPower } from './powerUtils'
-import { getReachedTrilhaFeaturesWithSource } from './characterUtils'
+import { getReachedTrilhaFeaturesWithSource, hasClassPower } from './characterUtils'
 import { getExpansionGrantedClassPowers, getParanormalInstances } from './paranormalPowerUtils'
-import { getLoadPenaltySkillBonuses } from './equipmentUtils'
+import { getLoadPenaltySkillBonuses, getEquipmentByInstance, getInstanceLabel } from './equipmentUtils'
+import { getSheetAttributes } from './curseUtils'
+import { getPeLimit } from './progressionUtils'
 
 /**
  * Agregador dos efeitos que a ficha EXIBE somados, atravessando as quatro famílias de habilidade
@@ -127,6 +129,56 @@ export function getConditionalDefenseBonuses(draft: OrdemCharacterDraft): SheetC
     if (!instance.valid || !instance.power) continue
     const effects = instance.isAffinityCopy ? instance.power.affinityEffects : instance.power.effects
     for (const entry of effects?.conditionalDefenseBonus ?? []) out.push({ ...entry, source: instance.power.name })
+  }
+  return out
+}
+
+// ── Explosivos ─────────────────────────────────────────────────────────────────
+
+export type SheetExplosive = {
+  uid: string
+  name: string
+  /** Dano em dados com o tipo (ex.: "8d6 perfuração"); null quando o explosivo não causa dano. */
+  damage: string | null
+  area: string
+  range: string
+  /** Teste de resistência com a DT já calculada; null quando o explosivo não permite teste. */
+  resistance: { skill: string; dt: number; effect: string; notes: string[] } | null
+}
+
+/**
+ * Explosivos do loadout com a DT já resolvida. A regra da p. 80 vale para itens: a DT é
+ * 10 + limite de PE + o atributo indicado na descrição do item ("DT Agi" nas granadas, "DT Int"
+ * na mina). O poder Perito em Explosivos soma o Intelecto por cima.
+ *
+ * Usa o limite de PE BASE (Tabela 1.2), como `getRitualDt` — bônus de limite por turno
+ * (Dedicação, Encarar a Morte) não mexem na dificuldade do efeito.
+ */
+export function getSheetExplosives(draft: OrdemCharacterDraft): SheetExplosive[] {
+  const attrs = getSheetAttributes(draft)
+  const expert = hasClassPower(draft, 'explosives-expert')
+  const out: SheetExplosive[] = []
+  for (const uid of draft.equipmentChoices) {
+    const item = getEquipmentByInstance(uid)
+    if (!item || item.type !== 'explosive') continue
+    let resistance: SheetExplosive['resistance'] = null
+    if (item.resistance) {
+      const notes: string[] = []
+      let dt = 10 + getPeLimit(draft.nex) + attrs[item.resistance.attribute]
+      if (expert) {
+        dt += attrs.intellect
+        notes.push(`Perito em Explosivos +${attrs.intellect}`)
+      }
+      resistance = { skill: item.resistance.skill, dt, effect: item.resistance.effect, notes }
+    }
+    out.push({
+      uid,
+      name: getInstanceLabel(draft, uid),
+      damage: item.damage ? `${item.damage} ${item.damageType ?? ''}`.trim() : null,
+      area: item.area,
+      range: item.range,
+      resistance,
+    })
   }
   return out
 }

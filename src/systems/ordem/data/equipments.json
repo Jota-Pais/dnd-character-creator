@@ -631,6 +631,9 @@
     "category": 0,
     "spaces": 1,
     "type": "explosive",
+    "area": "raio de 6m",
+    "range": "Médio",
+    "resistance": {"skill":"Fortitude","attribute":"agility","effect":"reduz para ofuscado e surdo por 1 rodada"},
     "description": "Flashbang: cria um estouro barulhento e luminoso. Arremesse em alcance médio (raio de 6m); seres na área ficam atordoados por 1 rodada (Fortitude reduz para ofuscado e surdo)."
   },
   {
@@ -639,6 +642,11 @@
     "category": 1,
     "spaces": 1,
     "type": "explosive",
+    "damage": "8d6",
+    "damageType": "perfuração",
+    "area": "raio de 6m",
+    "range": "Médio",
+    "resistance": {"skill":"Reflexos","attribute":"agility","effect":"reduz o dano à metade"},
     "description": "Espalha fragmentos perfurantes. Arremesse em alcance médio (raio de 6m); seres na área sofrem 8d6 de perfuração (Reflexos reduz à metade)."
   },
   {
@@ -647,6 +655,8 @@
     "category": 0,
     "spaces": 1,
     "type": "explosive",
+    "area": "raio de 6m",
+    "range": "Médio",
     "description": "Produz fumaça espessa e escura (raio de 6m); seres na área ficam cegos e sob camuflagem total. Dura 2 rodadas."
   },
   {
@@ -655,6 +665,11 @@
     "category": 1,
     "spaces": 1,
     "type": "explosive",
+    "damage": "6d6",
+    "damageType": "fogo",
+    "area": "raio de 6m",
+    "range": "Médio",
+    "resistance": {"skill":"Reflexos","attribute":"agility","effect":"reduz o dano à metade e evita a condição em chamas"},
     "description": "Espalha labaredas incandescentes (raio de 6m); seres na área sofrem 6d6 de fogo e ficam em chamas (Reflexos reduz o dano e evita as chamas)."
   },
   {
@@ -663,6 +678,11 @@
     "category": 1,
     "spaces": 1,
     "type": "explosive",
+    "damage": "12d6",
+    "damageType": "perfuração",
+    "area": "cone de 6m",
+    "range": "Longo",
+    "resistance": {"skill":"Reflexos","attribute":"intellect","effect":"reduz o dano à metade"},
     "description": "Mina detonada por controle remoto (a até alcance longo). Dispara centenas de bolas de aço num cone de 6m, causando 12d6 de perfuração (Reflexos reduz à metade). Instalar exige uma ação completa e um teste de Tática (DT 15)."
   },
   {

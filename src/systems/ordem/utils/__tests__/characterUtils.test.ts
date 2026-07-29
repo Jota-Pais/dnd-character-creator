@@ -48,6 +48,7 @@ import {
   getConditionalSkillBonuses,
   getConditionalDefenseBonuses,
   getExtraDamageDiceNotes,
+  getSheetExplosives,
 } from '../sheetEffects'
 import { bonusRitualElementKey } from '../ritualUtils'
 import { getCursedDerivedStats } from '../curseUtils'
@@ -471,6 +472,50 @@ describe('Bônus de perícia de todas as fontes', () => {
       },
     })
     expect(getConditionalSkillBonuses(draft).map(b => b.source)).toContain('Hacker')
+  })
+})
+
+describe('getSheetExplosives (DT = 10 + limite de PE + atributo, p. 80)', () => {
+  const agi3int2 = { agility: 3, strength: 1, intellect: 2, presence: 1, vigor: 1 }
+
+  it('granada de fragmentação: Reflexos DT Agi, com dano e área', () => {
+    // NEX 25% → limite de PE 5 (Tabela 1.2); Agilidade 3 → DT 18.
+    const draft = makeDraft({ class: 'specialist', nex: 25, attributes: agi3int2, equipmentChoices: ['granada-fragmentacao'] })
+    expect(getSheetExplosives(draft)).toEqual([{
+      uid: 'granada-fragmentacao',
+      name: 'Granada de Fragmentação',
+      damage: '8d6 perfuração',
+      area: 'raio de 6m',
+      range: 'Médio',
+      resistance: { skill: 'Reflexos', dt: 18, effect: 'reduz o dano à metade', notes: [] },
+    }])
+  })
+
+  it('mina antipessoal usa DT Int, não DT Agi', () => {
+    const draft = makeDraft({ class: 'specialist', nex: 25, attributes: agi3int2, equipmentChoices: ['mina-antipessoal'] })
+    expect(getSheetExplosives(draft)[0].resistance?.dt).toBe(10 + 5 + 2) // Intelecto 2
+  })
+
+  it('granada de fumaça não permite teste de resistência nem causa dano', () => {
+    const draft = makeDraft({ class: 'specialist', nex: 25, attributes: agi3int2, equipmentChoices: ['granada-fumaca'] })
+    expect(getSheetExplosives(draft)[0].resistance).toBeNull()
+    expect(getSheetExplosives(draft)[0].damage).toBeNull()
+  })
+
+  it('Perito em Explosivos soma o Intelecto na DT, com a nota da fonte', () => {
+    const draft = makeDraft({
+      class: 'specialist', nex: 25, attributes: agi3int2,
+      powerChoices: ['explosives-expert'],
+      equipmentChoices: ['granada-fragmentacao'],
+    })
+    const resistance = getSheetExplosives(draft)[0].resistance!
+    expect(resistance.dt).toBe(10 + 5 + 3 + 2) // limite + Agi + Intelecto
+    expect(resistance.notes).toEqual(['Perito em Explosivos +2'])
+  })
+
+  it('itens que não são explosivos ficam de fora', () => {
+    const draft = makeDraft({ class: 'specialist', equipmentChoices: ['pistola', 'corda'] })
+    expect(getSheetExplosives(draft)).toEqual([])
   })
 })
 

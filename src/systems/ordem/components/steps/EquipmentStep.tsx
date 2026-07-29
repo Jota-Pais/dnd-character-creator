@@ -5,10 +5,11 @@ import {
   EQUIPMENTS, getTotalCarryCapacity, getModifiedSpaces, getDraftInstanceCategory, getCatalogCategory,
   hasItemProficiency, instanceItemId, newInstanceUid, getInstanceLabel,
   fitsWithAdjustedCounts, getCategorySlotAllocation, getMissingRitualComponentElements,
-  getAccessorySkillSlots, getAccessorySkillOptions, getNonCumulativeSkillConflicts,
+  getAccessorySkillSlots, getAccessorySkillOptions, getNonCumulativeSkillConflicts, getWornVestimentas,
+  getEquipmentByInstance,
 } from '../../utils/equipmentUtils'
 import { getSkillName } from '../../utils/skillUtils'
-import { getAvailableModifications, canApplyModification, isModifiable } from '../../utils/modificationUtils'
+import { getAvailableModifications, canApplyModification, isModifiable, countApplied } from '../../utils/modificationUtils'
 import {
   getAvailableCurses, canApplyCurse, isCursable, getCurseCategoryDelta, curseChoiceKey, formatCurseElement, getSheetAttributes,
 } from '../../utils/curseUtils'
@@ -55,6 +56,8 @@ export function EquipmentStep() {
   const accessorySkillOptions = getAccessorySkillOptions()
   const skillConflicts = getNonCumulativeSkillConflicts(draft)
   const pendingAccessorySkills = accessorySlots.filter(s => !s.skillId).length
+  // Vestimentas além do limite de duas: carregadas, mas com o bônus inativo (p. 63).
+  const inactiveVestimentas = getWornVestimentas(draft).inactive
 
   const addUnit = (itemId: string) => {
     const uid = newInstanceUid(draft.equipmentChoices, itemId)
@@ -92,9 +95,18 @@ export function EquipmentStep() {
     updateDraft({ accessorySkillChoices: updated })
   }
 
+  /**
+   * Aplica/remove a modificação. A maioria alterna aplicada/não aplicada; as repetíveis (só o
+   * Aprimorado, com Função Adicional) ciclam 0 → 1 → 2 → 0, pra caber num clique só.
+   */
   const toggleModification = (uid: string, modId: string) => {
+    const item = getEquipmentByInstance(uid)
+    if (!item) return
     const current = draft.equipmentModifications[uid] ?? []
-    const next = current.includes(modId) ? current.filter(m => m !== modId) : [...current, modId]
+    const count = countApplied(current, modId)
+    const canAddMore = canApplyModification(item, current, modId)
+    const nextCount = canAddMore ? count + 1 : 0
+    const next = [...current.filter(m => m !== modId), ...Array<string>(nextCount).fill(modId)]
     const updated = { ...draft.equipmentModifications }
     if (next.length === 0) delete updated[uid]
     else updated[uid] = next
@@ -312,24 +324,26 @@ export function EquipmentStep() {
                     </p>
                     <div className="flex flex-wrap gap-1">
                       {getAvailableModifications(item).map(mod => {
-                        const applied = appliedMods.includes(mod.id)
+                        const count = countApplied(appliedMods, mod.id)
+                        const applied = count > 0
                         // Aplicar sobe a categoria efetiva em 1 → a unidade precisa continuar cabendo nas vagas.
                         const newCat = unitCat + 1
                         const fitsPatente = newCat <= 4 && fitsWithAdjustedCounts(draft, patente, { [unitCat]: -1, [newCat]: 1 })
-                        const addable = applied || (canApplyModification(item, appliedMods, mod.id) && fitsPatente)
+                        const canAddMore = canApplyModification(item, appliedMods, mod.id) && fitsPatente
+                        const addable = applied || canAddMore
                         return (
                           <button
                             key={mod.id}
                             onClick={() => { if (addable) toggleModification(uid, mod.id) }}
                             disabled={!addable}
-                            title={mod.effect}
+                            title={canAddMore && applied ? `${mod.effect} (clique para aplicar uma 2ª vez)` : mod.effect}
                             className={`text-xs px-2 py-0.5 rounded border transition-all ${applied
                               ? 'bg-gold-900/40 border-gold-700/50 text-gold-300'
                               : addable
                                 ? 'border-parchment-800 text-parchment-500 hover:border-gold-800 hover:text-parchment-300'
                                 : 'border-parchment-900/40 text-parchment-800 cursor-not-allowed'}`}
                           >
-                            {mod.name}
+                            {mod.name}{count > 1 && ` ×${count}`}
                           </button>
                         )
                       })}
@@ -338,7 +352,9 @@ export function EquipmentStep() {
                       <ul className="mt-1.5 space-y-0.5">
                         {getAvailableModifications(item).filter(m => appliedMods.includes(m.id)).map(m => (
                           <li key={m.id} className="text-xs text-gold-600/90">
-                            <span className="font-semibold">{m.name}:</span> {m.effect}
+                            <span className="font-semibold">
+                              {m.name}{countApplied(appliedMods, m.id) > 1 && ` ×${countApplied(appliedMods, m.id)}`}:
+                            </span> {m.effect}
                           </li>
                         ))}
                       </ul>
@@ -568,6 +584,14 @@ export function EquipmentStep() {
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+          {inactiveVestimentas.length > 0 && (
+            <div className="mb-4 p-3 rounded-lg border border-amber-700/50 bg-amber-950/30 text-amber-300 text-sm">
+              ⚠️ Você só recebe o bônus de <strong>duas vestimentas ao mesmo tempo</strong> (livro, pág. 63).
+              Pode carregar todas — vestir ou despir é uma ação completa, então a troca é na mesa —, mas a ficha
+              conta as duas de maior bônus. Fora agora:{' '}
+              <strong>{inactiveVestimentas.map(uid => getInstanceLabel(draft, uid)).join(', ')}</strong>.
             </div>
           )}
           {pendingAccessorySkills > 0 && (

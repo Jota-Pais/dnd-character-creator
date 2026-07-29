@@ -35,4 +35,12 @@ export type OrdemModification = {
   extraDamage?: string
   /** Modificações que não podem coexistir na mesma peça (ex.: Reforçada × Discreta). */
   excludes?: string[]
+  /**
+   * Exceção à regra "cada modificação só pode ser aplicada ao mesmo acessório uma vez": esta pode
+   * ser aplicada uma SEGUNDA vez quando a peça também tiver a modificação indicada. Só o
+   * Aprimorado usa isso — "se o item tiver função adicional, esta modificação poderá ser escolhida
+   * uma segunda vez para esta função" (p. 64). Cada aplicação conta como uma modificação para a
+   * categoria do item.
+   */
+  repeatableWith?: string
 }

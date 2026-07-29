@@ -6,7 +6,7 @@ import { getRitualById, getRitualSlotsCount, getSlotRitualElement, getGrantedRit
 import equipmentsJson from '../data/equipments.json'
 import { getOrdemClass } from './classUtils'
 import { getPatente, getCategoryLimit } from './patenteUtils'
-import { getModification } from './modificationUtils'
+import { getModification, getEffectiveModIds, countApplied } from './modificationUtils'
 import { getCurse, getCurseCategoryDelta, getItemCurses, getSheetAttributes, canApplyCurse, curseChoiceKey } from './curseUtils'
 import { hasClassPower, getFavoriteWeaponReduction, getFavoriteEquipmentReduction, getGrantedRituals, hasCarryCapacityIntellectBonus, getWorkToolBonus, hasTrilhaFeature } from './characterUtils'
 import { getAffinityState } from './paranormalPowerUtils'
@@ -102,8 +102,13 @@ export function getEquippedDefenseBonus(choices: string[]): number {
 
 // ── Efeitos das modificações (Fase B) ──────────────────────────────────────────
 
+/**
+ * Modificações EFETIVAS da unidade — já sem aplicações repetidas além do limite (ver
+ * `getEffectiveModIds`). Todo cálculo que dependa de modificação passa por aqui: categoria,
+ * espaços, Defesa, resistência e o bônus de perícia dos acessórios.
+ */
 function itemMods(draft: OrdemCharacterDraft, uid: string): string[] {
-  return draft.equipmentModifications[uid] ?? []
+  return getEffectiveModIds(draft.equipmentModifications[uid] ?? [])
 }
 
 /**
@@ -448,12 +453,42 @@ export function getAccessorySkillSlots(draft: OrdemCharacterDraft): AccessorySki
     const mods = itemMods(draft, uid)
     const chosen = draft.accessorySkillChoices[uid] ?? []
     const label = getInstanceLabel(draft, uid)
-    slots.push({ uid, label, index: 0, skillId: chosen[0] ?? null, value: mods.includes('aprimorado') ? 5 : 2 })
+    // Aprimorado sobe o bônus do slot para +5: a 1ª aplicação vale para a perícia do item, a 2ª
+    // (permitida só com Função Adicional) para a perícia adicional.
+    const aprimorado = countApplied(mods, 'aprimorado')
+    slots.push({ uid, label, index: 0, skillId: chosen[0] ?? null, value: aprimorado >= 1 ? 5 : 2 })
     if (mods.includes('funcao-adicional')) {
-      slots.push({ uid, label, index: 1, skillId: chosen[1] ?? null, value: 2 })
+      slots.push({ uid, label, index: 1, skillId: chosen[1] ?? null, value: aprimorado >= 2 ? 5 : 2 })
     }
   }
   return slots
+}
+
+/** Quantas vestimentas fornecem bônus ao mesmo tempo (p. 63). */
+export const MAX_WORN_VESTIMENTAS = 2
+
+/**
+ * Quais vestimentas do loadout têm o bônus ATIVO: "você pode receber os bônus de no máximo duas
+ * vestimentas ao mesmo tempo" (p. 63). Requisitar mais é permitido — vestir e despir é uma ação
+ * completa, então a troca acontece na mesa —, mas a ficha só pode somar duas.
+ *
+ * Decisão do projeto: valem as duas de MAIOR bônus (empate pela ordem do loadout), que é o que o
+ * agente naturalmente vestiria. As demais aparecem no aviso, pra ficar claro que estão inertes.
+ */
+export function getWornVestimentas(draft: OrdemCharacterDraft): { active: string[]; inactive: string[] } {
+  const slots = getAccessorySkillSlots(draft)
+  const uids = draft.equipmentChoices.filter(uid => instanceItemId(uid) === 'vestimenta')
+  const ranked = uids
+    .map((uid, order) => ({
+      uid,
+      order,
+      best: slots.filter(s => s.uid === uid).reduce((max, s) => Math.max(max, s.value), 0),
+    }))
+    .sort((a, b) => b.best - a.best || a.order - b.order)
+  return {
+    active: ranked.slice(0, MAX_WORN_VESTIMENTAS).map(v => v.uid),
+    inactive: ranked.slice(MAX_WORN_VESTIMENTAS).map(v => v.uid),
+  }
 }
 
 /**
@@ -464,8 +499,11 @@ export function getAccessorySkillSlots(draft: OrdemCharacterDraft): AccessorySki
 export function getAccessorySkillBonuses(
   draft: OrdemCharacterDraft,
 ): { skillId: string; value: number; source: string; nonCumulative: true }[] {
+  // Vestimentas além do limite de duas ficam inertes e não entram na ficha (p. 63).
+  const inertes = new Set(getWornVestimentas(draft).inactive)
   return getAccessorySkillSlots(draft)
     .filter((slot): slot is AccessorySkillSlot & { skillId: string } => Boolean(slot.skillId))
+    .filter(slot => !inertes.has(slot.uid))
     .map(slot => ({
       skillId: slot.skillId,
       value: slot.value,
@@ -480,10 +518,14 @@ export function getAccessorySkillBonuses(
  * ou ainda não teve a perícia escolhida.
  */
 export function formatAccessorySkills(draft: OrdemCharacterDraft, uid: string): string {
-  return getAccessorySkillSlots(draft)
+  const bonuses = getAccessorySkillSlots(draft)
     .filter(slot => slot.uid === uid && slot.skillId)
     .map(slot => `+${slot.value} ${getSkillName(slot.skillId as string)}`)
     .join(', ')
+  if (!bonuses) return ''
+  // Vestimenta além do limite de duas: o bônus existe no item, mas não está ativo.
+  const inert = getWornVestimentas(draft).inactive.includes(uid)
+  return inert ? `${bonuses} (inativo — só duas vestimentas por vez)` : bonuses
 }
 
 /** Todos os acessórios do loadout já têm a perícia escolhida? */

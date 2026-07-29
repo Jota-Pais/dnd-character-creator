@@ -18,6 +18,8 @@ import {
   areAccessorySkillChoicesComplete,
   getNonCumulativeSkillConflicts,
   formatAccessorySkills,
+  getAccessorySkillBonuses,
+  getWornVestimentas,
   getEquipmentById,
   getEffectiveCategory,
   getModifiedSpaces,
@@ -33,6 +35,7 @@ import {
 } from '../equipmentUtils'
 import { getPatente } from '../patenteUtils'
 import { SKILLS } from '../skillUtils'
+import { canApplyModification } from '../modificationUtils'
 
 function makeDraft(over: Partial<OrdemCharacterDraft>): OrdemCharacterDraft {
   return { ...EMPTY_DRAFT, ...over }
@@ -613,6 +616,105 @@ describe('Acessórios: escolha de perícia e não-acúmulo (p. 63)', () => {
       accessorySkillChoices: { utensilio: ['diplomacy'], vestimenta: ['athletics'] },
     })
     expect(getNonCumulativeSkillConflicts(draft)).toEqual([])
+  })
+
+  it('Aprimorado pode ser aplicado 2x com Função Adicional, e o 2º sobe o slot adicional pra +5', () => {
+    const item = getEquipmentById('utensilio')!
+    // Sem Função Adicional, o Aprimorado não repete.
+    expect(canApplyModification(item, ['aprimorado'], 'aprimorado')).toBe(false)
+    // Com Função Adicional, repete uma vez só.
+    expect(canApplyModification(item, ['aprimorado', 'funcao-adicional'], 'aprimorado')).toBe(true)
+    expect(canApplyModification(item, ['aprimorado', 'aprimorado', 'funcao-adicional'], 'aprimorado')).toBe(false)
+
+    const draft = makeDraft({
+      patente: 'oficial-operacoes',
+      equipmentChoices: ['utensilio'],
+      equipmentModifications: { utensilio: ['aprimorado', 'funcao-adicional', 'aprimorado'] },
+    })
+    expect(getAccessorySkillSlots(draft).map(s => s.value)).toEqual([5, 5])
+  })
+
+  it('2º Aprimorado órfão (sem Função Adicional) é ignorado em tudo, inclusive na categoria', () => {
+    const draft = makeDraft({
+      patente: 'oficial-operacoes',
+      equipmentChoices: ['utensilio'],
+      equipmentModifications: { utensilio: ['aprimorado', 'aprimorado'] },
+    })
+    // Só um Aprimorado vale: +5 num slot, e categoria I + 1 modificação = II (não III).
+    expect(getAccessorySkillSlots(draft).map(s => s.value)).toEqual([5])
+    expect(getDraftInstanceCategory(draft, 'utensilio')).toBe(2)
+  })
+
+  it('cada aplicação do Aprimorado cobra categoria (Utensílio I + 3 mods = IV)', () => {
+    const draft = makeDraft({
+      patente: 'agente-elite',
+      equipmentChoices: ['utensilio'],
+      equipmentModifications: { utensilio: ['aprimorado', 'funcao-adicional', 'aprimorado'] },
+    })
+    expect(getDraftInstanceCategory(draft, 'utensilio')).toBe(4)
+  })
+
+  it('só duas vestimentas fornecem bônus ao mesmo tempo; as demais ficam inativas', () => {
+    const draft = makeDraft({
+      patente: 'oficial-operacoes',
+      equipmentChoices: ['vestimenta', 'vestimenta#2', 'vestimenta#3'],
+      accessorySkillChoices: {
+        vestimenta: ['diplomacy'],
+        'vestimenta#2': ['athletics'],
+        'vestimenta#3': ['crime'],
+      },
+    })
+    const worn = getWornVestimentas(draft)
+    expect(worn.active).toHaveLength(2)
+    expect(worn.inactive).toEqual(['vestimenta#3'])
+    // A 3ª não entra no total da ficha.
+    expect(getAccessorySkillBonuses(draft).map(b => b.skillId)).toEqual(['diplomacy', 'athletics'])
+  })
+
+  it('valem as vestimentas de MAIOR bônus (a Aprimorada entra na frente)', () => {
+    const draft = makeDraft({
+      patente: 'agente-elite',
+      equipmentChoices: ['vestimenta', 'vestimenta#2', 'vestimenta#3'],
+      equipmentModifications: { 'vestimenta#3': ['aprimorado'] }, // +5
+      accessorySkillChoices: {
+        vestimenta: ['diplomacy'],
+        'vestimenta#2': ['athletics'],
+        'vestimenta#3': ['crime'],
+      },
+    })
+    const worn = getWornVestimentas(draft)
+    expect(worn.active).toContain('vestimenta#3')
+    expect(worn.inactive).toEqual(['vestimenta#2']) // empate em +2 resolve pela ordem
+  })
+
+  it('o limite de vestimentas não afeta utensílios', () => {
+    const draft = makeDraft({
+      patente: 'agente-elite',
+      equipmentChoices: ['utensilio', 'utensilio#2', 'utensilio#3'],
+      accessorySkillChoices: {
+        utensilio: ['diplomacy'],
+        'utensilio#2': ['athletics'],
+        'utensilio#3': ['crime'],
+      },
+    })
+    expect(getWornVestimentas(draft).inactive).toEqual([])
+    expect(getAccessorySkillBonuses(draft)).toHaveLength(3)
+  })
+
+  it('vestimenta inativa não bloqueia a ficha, e a linha do item avisa', () => {
+    const draft = makeDraft({
+      class: 'combatant',
+      patente: 'oficial-operacoes',
+      equipmentChoices: ['vestimenta', 'vestimenta#2', 'vestimenta#3'],
+      accessorySkillChoices: {
+        vestimenta: ['diplomacy'],
+        'vestimenta#2': ['athletics'],
+        'vestimenta#3': ['crime'],
+      },
+    })
+    expect(isEquipmentStepComplete(draft)).toBe(true)
+    expect(formatAccessorySkills(draft, 'vestimenta#3')).toBe('+2 Crime (inativo — só duas vestimentas por vez)')
+    expect(formatAccessorySkills(draft, 'vestimenta')).toBe('+2 Diplomacia')
   })
 
   it('formatAccessorySkills descreve os bônus da unidade', () => {

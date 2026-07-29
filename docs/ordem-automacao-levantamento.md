@@ -308,16 +308,24 @@ Pegar dois itens na mesma perícia é **permitido** (nada no livro proíbe): a e
 passo de Equipamento mostra um aviso explícito nomeando a perícia, as fontes e qual valor a ficha
 vai usar.
 
-Ressalva do livro ainda não modelada: "você pode receber os bônus de no máximo **duas vestimentas**
-ao mesmo tempo".
+**Limite de duas vestimentas** ("você pode receber os bônus de no máximo duas vestimentas ao mesmo
+tempo", p. 63): requisitar mais é permitido — vestir/despir é uma ação completa, então a troca é na
+mesa —, mas só duas contam na ficha. Decisão do projeto: valem as **duas de maior bônus** (empate
+pela ordem do loadout), que é o que o agente naturalmente vestiria; as demais aparecem no aviso e
+na linha do item como "inativo". Se algum dia isso precisar ser escolha do jogador, o lugar é um
+marcador de "vestindo" por unidade na etapa Equipamento.
+
+**Aprimorado duas vezes:** `repeatableWith` na modificação modela a exceção do livro — o Aprimorado
+pode ser aplicado uma 2ª vez quando a peça tem Função Adicional, e aí a 2ª aplicação sobe o slot
+adicional para +5. Cada aplicação cobra categoria (Utensílio I + 3 mods = IV). No card, o botão
+cicla 0 → 1 → 2 → 0 e mostra "×2". `getEffectiveModIds` descarta aplicações além do limite, então um
+2º Aprimorado que perdeu a Função Adicional deixa de valer em TODOS os cálculos — inclusive na
+categoria —, sem precisar de limpeza na UI ou migração de save.
 
 ### Gaps que sobraram (deliberadamente)
 
 - **Kit de Perícia**: não se escolhe de qual perícia é o kit, então a ficha não sinaliza as perícias
   que sofreriam −5 sem ele.
-- **Aprimorado duas vezes**: o livro permite escolhê-la uma segunda vez quando o item tem Função
-  Adicional, mas o motor de modificações não aceita a mesma modificação duas vezes na mesma peça —
-  hoje o Aprimorado vale para o slot do próprio item.
 - **Remendão** (Técnico NEX 40%): "equipamentos de investigação têm categoria reduzida em I" — falta
   a tag de "equipamento de investigação" no catálogo.
 - Habilidades ativadas em jogo (~65 itens) continuam só com a descrição, e está correto: não há

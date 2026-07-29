@@ -24,7 +24,7 @@
   { "id": "discreta-protecao", "name": "Discreta", "effect": "Reduz o espaço em 1 e dá +5 em Crime para ocultar (permite o teste destreinado). Só em proteção leve.", "target": "protection-light", "spaceDelta": -1, "excludes": ["reforcada"] },
   { "id": "reforcada", "name": "Reforçada", "effect": "Aumenta a Defesa fornecida em +2 e o espaço ocupado em 1.", "target": "protection-any", "defenseBonus": 2, "spaceDelta": 1, "excludes": ["discreta-protecao"] },
 
-  { "id": "aprimorado", "name": "Aprimorado", "effect": "O bônus de perícia concedido pelo acessório aumenta para +5.", "target": "accessory" },
+  { "id": "aprimorado", "name": "Aprimorado", "effect": "O bônus de perícia concedido pelo acessório aumenta para +5. Se o item tiver Função Adicional, pode ser escolhida uma segunda vez para essa função.", "target": "accessory", "repeatableWith": "funcao-adicional" },
   { "id": "discreto-acessorio", "name": "Discreto", "effect": "Reduz o espaço em 1, dá +5 em Crime para ocultar e permite o teste destreinado.", "target": "accessory", "spaceDelta": -1 },
   { "id": "funcao-adicional", "name": "Função Adicional", "effect": "O acessório concede +2 em uma perícia adicional à sua escolha.", "target": "accessory" },
   { "id": "instrumental", "name": "Instrumental", "effect": "O acessório pode ser usado como um kit de perícia específico.", "target": "accessory" }

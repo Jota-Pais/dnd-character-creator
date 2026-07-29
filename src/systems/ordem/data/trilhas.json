@@ -58,7 +58,7 @@
     "description": "Duro na queda. Treinou o corpo para resistir a traumas físicos, tornando-se praticamente inquebrável, por isso não teme se colocar entre seus aliados e o perigo.",
     "requirement": null,
     "features": [
-      { "nex": 10, "name": "Casca Grossa", "description": "Você recebe +1 PV para cada 5% de NEX e, quando faz um bloqueio, soma seu Vigor na resistência a dano recebida.", "effects": { "conditionalDamageResistance": { "value": "vigor", "condition": "ao bloquear" } } },
+      { "nex": 10, "name": "Casca Grossa", "description": "Você recebe +1 PV para cada 5% de NEX e, quando faz um bloqueio, soma seu Vigor na resistência a dano recebida.", "effects": { "hpPerNexStep": 1, "conditionalDamageResistance": { "value": "vigor", "condition": "ao bloquear" } } },
       { "nex": 40, "name": "Cai Dentro", "description": "Sempre que um oponente em alcance curto ataca um de seus aliados, gaste uma reação e 1 PE para que esse oponente faça um teste de Vontade (DT Vig); se falhar, deve atacar você em vez de seu aliado." },
       { "nex": 65, "name": "Duro de Matar", "description": "Ao sofrer dano não paranormal, gaste uma reação e 2 PE para reduzir esse dano à metade. Em NEX 85%, também funciona contra dano paranormal." },
       { "nex": 99, "name": "Inquebrável", "description": "Enquanto estiver machucado, recebe +10 na Defesa e resistência a dano 5. Enquanto estiver morrendo, não fica indefeso e ainda pode realizar ações (segue as regras de morte normalmente).", "effects": { "conditionalDamageResistance": { "value": 5, "condition": "enquanto estiver machucado" } } }
@@ -163,8 +163,8 @@
     "description": "Foca seus estudos em se tornar um conjurador versátil e poderoso, conhecendo mais rituais que os outros ocultistas e sendo capaz de torná-los mais difíceis de resistir.",
     "requirement": null,
     "features": [
-      { "nex": 10, "name": "Saber Ampliado", "description": "Você aprende um ritual de 1º círculo. Toda vez que ganha acesso a um novo círculo, aprende um ritual adicional daquele círculo. Esses rituais não contam no seu limite de rituais conhecidos." },
-      { "nex": 40, "name": "Grimório Ritualístico", "description": "Cria um grimório especial que armazena rituais: aprende uma quantidade de rituais de 1º ou 2º círculo igual ao seu Intelecto (não contam no limite). Ao ganhar acesso a um novo círculo, pode incluir um novo ritual desse círculo. Precisa de uma ação completa para relembrar um ritual do grimório antes de conjurá-lo; o grimório ocupa 1 espaço (pode ser replicado com uma semana de trabalho se perdido)." },
+      { "nex": 10, "name": "Saber Ampliado", "description": "Você aprende um ritual de 1º círculo. Toda vez que ganha acesso a um novo círculo, aprende um ritual adicional daquele círculo. Esses rituais não contam no seu limite de rituais conhecidos.", "effects": { "grantsRitualSlots": { "baseCount": 1, "baseCircles": [1], "perNewCircle": true } } },
+      { "nex": 40, "name": "Grimório Ritualístico", "description": "Cria um grimório especial que armazena rituais: aprende uma quantidade de rituais de 1º ou 2º círculo igual ao seu Intelecto (não contam no limite). Ao ganhar acesso a um novo círculo, pode incluir um novo ritual desse círculo. Precisa de uma ação completa para relembrar um ritual do grimório antes de conjurá-lo; o grimório ocupa 1 espaço (pode ser replicado com uma semana de trabalho se perdido).", "effects": { "grantsRitualSlots": { "baseCount": "intellect", "baseCircles": [1, 2], "perNewCircle": true } } },
       { "nex": 65, "name": "Rituais Eficientes", "description": "A DT para resistir a todos os seus rituais aumenta em +5.", "effects": { "allRitualDtBonus": 5 } },
       { "nex": 99, "name": "Conhecendo o Medo", "description": "Você aprende o ritual Conhecendo o Medo.", "grantsRitual": "conhecendo-o-medo" }
     ]

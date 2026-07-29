@@ -72,6 +72,18 @@ export function getMaxRitualCircle(nex: number): OrdemRitualCircle {
   return 1
 }
 
+/**
+ * NEX em que cada círculo é liberado (Escolhido pelo Outro Lado) — o inverso de
+ * `getMaxRitualCircle`. Usado pelas features que concedem "um ritual a cada novo círculo"
+ * (Saber Ampliado, Grimório Ritualístico) para saber quais círculos vieram DEPOIS da feature.
+ */
+export const RITUAL_CIRCLE_NEX: Record<OrdemRitualCircle, number> = { 1: 5, 2: 25, 3: 55, 4: 85 }
+
+/** Chave de `ritualElementChoices` para um slot de ritual bônus de trilha (ver `getBonusRitualSlots`). */
+export function bonusRitualElementKey(slotKey: string): string {
+  return `bonus:${slotKey}`
+}
+
 export function getRitualSlotsCount(nex: number): number {
   // Escolhido pelo Outro Lado: 3 iniciais (NEX 5%) + 1 por NEX ganho acima de 5%.
   return 3 + Math.max(0, getNexIndex(nex) - 1)

@@ -17,6 +17,7 @@ import {
   arePowerParamsComplete,
   areClassPowerChoicesValid,
   isTrilhaChoiceValid,
+  areBonusRitualSlotsComplete,
 } from './characterUtils'
 import { hasTrilha, hasVersatility } from './progressionUtils'
 import { isRitualStepComplete } from './ritualUtils'
@@ -95,6 +96,8 @@ export function isStepComplete(draft: OrdemCharacterDraft, step: WizardStep): bo
     case 'rituals': {
       // Os rituais do poder Aprender Ritual são escolhidos aqui (qualquer classe pode ter o poder).
       if (!areLearnRitualSlotsComplete(draft)) return false
+      // Slots bônus de trilha (Saber Ampliado / Grimório Ritualístico, do Graduado).
+      if (!areBonusRitualSlotsComplete(draft)) return false
       if (draft.class !== 'occultist') return true
       return isRitualStepComplete(draft.nex, draft.class, draft.ritualChoices, draft.ritualElementChoices)
     }
@@ -139,6 +142,9 @@ export function sanitizeImportedDraft(parsed: unknown): OrdemCharacterDraft | nu
     ritualChoices: Array.isArray(p.ritualChoices) ? p.ritualChoices : [],
     ritualElementChoices: p.ritualElementChoices && typeof p.ritualElementChoices === 'object' && !Array.isArray(p.ritualElementChoices)
       ? p.ritualElementChoices
+      : {},
+    bonusRitualChoices: p.bonusRitualChoices && typeof p.bonusRitualChoices === 'object' && !Array.isArray(p.bonusRitualChoices)
+      ? p.bonusRitualChoices
       : {},
     patente: isValidPatente(p.patente) ? p.patente : 'recruta',
     equipmentChoices: Array.isArray(p.equipmentChoices) ? p.equipmentChoices : [],

@@ -7,6 +7,7 @@ import type { OrdemElement, OrdemRitual } from '../types/ritual'
 import {
   getEffectiveAttributes, deriveStats, getOriginHpBonus, getOriginPeBonus, getOriginSanityBonus, getOriginDefenseBonus,
   getEffectivePeLimit, getRitualDtBonusFromTrilha, hasRitualPeLimitBonusFromPresence, getChosenElementForPower,
+  getTrilhaHpBonus,
 } from './characterUtils'
 import type { DerivedStats } from './characterUtils'
 import { ELEMENT_NAMES, getRitualById } from './ritualUtils'
@@ -207,8 +208,10 @@ export function getCursedDerivedStats(
     protectionBonus + getCurseDefenseBonus(draft) + getOriginDefenseBonus(draft) + paranormal.defenseBonus,
   )
   // Bônus flat somados sobre a fórmula da classe: maldições + poder de origem (Calejado/
-  // Cicatrizes/Dedicação) + poderes paranormais (Sangue de Ferro/Potencial Aprimorado, retroativos).
-  const hpFlat = curses.reduce((s, c) => s + (c.hpBonus ?? 0), 0) + getOriginHpBonus(draft) + paranormal.hpBonus
+  // Cicatrizes/Dedicação) + poderes paranormais (Sangue de Ferro/Potencial Aprimorado, retroativos)
+  // + features de trilha (Casca Grossa, também retroativa).
+  const hpFlat = curses.reduce((s, c) => s + (c.hpBonus ?? 0), 0) + getOriginHpBonus(draft)
+    + paranormal.hpBonus + getTrilhaHpBonus(draft)
   const peFlat = curses.reduce((s, c) => s + (c.peBonus ?? 0), 0) + getOriginPeBonus(draft) + paranormal.peBonus
   // Transcender suprime o ganho de SAN dos NEX em que foi escolhido; Cultista Arrependido corta
   // metade da SAN inicial. Clamp em 0 (ocultista cultista com muitos transcends em NEX baixo).

@@ -137,6 +137,8 @@ export const useOrdemStore = create<CharacterStore>((set, get) => ({
         // anteriores para não vazar rituais numa ficha de não-conjurador.
         ritualChoices: [],
         ritualElementChoices: {},
+        // Idem pros slots bônus de trilha (Saber Ampliado / Grimório): a trilha foi descartada.
+        bonusRitualChoices: {},
         // Poderes paranormais de slots/Versatilidade pertencem à classe descartada; o da
         // origem (Traços do Outro Lado) sobrevive. `affinityElement` depende só de NEX.
         paranormalPowerChoices: state.draft.paranormalPowerChoices.origin

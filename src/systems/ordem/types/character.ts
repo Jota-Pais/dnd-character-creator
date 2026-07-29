@@ -81,6 +81,14 @@ export type OrdemCharacterDraft = {
    * para instâncias concedidas por trilha (ver `getSlotRitualElement`/`getGrantedRitualElement`).
    */
   ritualElementChoices: Record<string, OrdemElement>
+  /**
+   * Rituais dos slots BÔNUS de trilha (Saber Ampliado e Grimório Ritualístico, do Graduado),
+   * por chave de slot (ver `getBonusRitualSlots`). Não contam no limite de rituais conhecidos.
+   * O elemento das instâncias multi-elemento fica em `ritualElementChoices` sob
+   * `bonusRitualElementKey(chave)`. Slots que deixaram de existir (baixou o NEX, trocou a
+   * trilha) ficam dormentes — padrão dos demais mapas de escolha.
+   */
+  bonusRitualChoices: Record<string, string>
   /** Atributo aumentado em cada slot alcançado (NEX 20/50/80/95), teto 5. */
   attributeIncreaseChoices: (keyof OrdemAttributes | null)[]
   /** Um array de perícias por slot de Grau de Treinamento alcançado (NEX 35/70). */
@@ -165,6 +173,7 @@ export const EMPTY_DRAFT: OrdemCharacterDraft = {
   powerChoices: [],
   ritualChoices: [],
   ritualElementChoices: {},
+  bonusRitualChoices: {},
   attributeIncreaseChoices: [],
   skillGradeChoices: [],
   versatilityChoice: null,

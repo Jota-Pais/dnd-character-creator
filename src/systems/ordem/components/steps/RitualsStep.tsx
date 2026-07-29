@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useOrdemStore } from '../../stores/characterStore'
-import { getRitualSlotsCount, getMaxRitualCircle, getAvailableRituals, getRitualSlotNex, getSlotRitualElement, ritualNeedsElementChoice, getGrantedRitualElement, getRitualById, ELEMENT_NAMES, ELEMENT_COLORS } from '../../utils/ritualUtils'
-import { getTrilhaGrantedRituals } from '../../utils/characterUtils'
+import { getRitualSlotsCount, getMaxRitualCircle, getAvailableRituals, getRitualSlotNex, getSlotRitualElement, ritualNeedsElementChoice, getGrantedRitualElement, getRitualById, bonusRitualElementKey, ELEMENT_NAMES, ELEMENT_COLORS } from '../../utils/ritualUtils'
+import { getTrilhaGrantedRituals, getBonusRitualSlots, type BonusRitualSlot } from '../../utils/characterUtils'
 import { getLearnRitualSlots, type LearnRitualSlot } from '../../utils/paranormalPowerUtils'
 import { isStepComplete } from '../../utils/draftValidation'
 import { STEP_LABELS } from '../../types/character'
@@ -30,6 +30,7 @@ export function RitualsStep() {
   const slotCount = isOccultist ? getRitualSlotsCount(nex) : 0
   const maxCircle = getMaxRitualCircle(nex)
   const learnSlots = getLearnRitualSlots(draft)
+  const bonusSlots = getBonusRitualSlots(draft)
 
   // Instâncias ritual+elemento já conhecidas, com a fonte de cada uma: slots do Ocultista
   // (só os ABERTOS pelo NEX — padrão slice), slots do Aprender Ritual e rituais de trilha.
@@ -50,6 +51,10 @@ export function RitualsStep() {
       ritualId: granted.ritual.id,
       element: getGrantedRitualElement(granted.ritual, ritualElementChoices),
     })
+  }
+  for (const slot of bonusSlots) {
+    if (!slot.ritual) continue
+    occupancies.push({ owner: `bonus:${slot.key}`, ritualId: slot.ritual.id, element: slot.element ?? undefined })
   }
 
   /** Rituais de elemento único já conhecidos por OUTRA fonte — somem da lista de opções. */
@@ -78,6 +83,12 @@ export function RitualsStep() {
     return getAvailableRituals(circle).filter(r => r.id === selectedId || ritualNeedsElementChoice(r) || !occupied.has(r.id))
   }
 
+  /** Igual ao `optionsFor`, mas para slots travados em círculos EXATOS (Saber Ampliado / Grimório). */
+  const optionsForCircles = (owner: string, circles: OrdemRitualCircle[], selectedId: string | null | undefined) => {
+    const max = Math.max(...circles) as OrdemRitualCircle
+    return optionsFor(owner, max, selectedId).filter(r => circles.includes(r.circle))
+  }
+
   const handleSelect = (index: number, ritualId: string) => {
     const newChoices = [...ritualChoices]
     newChoices[index] = ritualId
@@ -88,10 +99,26 @@ export function RitualsStep() {
     updateDraft({ ritualElementChoices: { ...ritualElementChoices, [slotIndex]: element } })
   }
 
+  const handleBonusSelect = (key: string, ritualId: string) => {
+    // Trocar o ritual do slot invalida o elemento antigo — some com ele pra não vazar escolha.
+    const elements = { ...ritualElementChoices }
+    delete elements[bonusRitualElementKey(key)]
+    updateDraft({
+      bonusRitualChoices: { ...draft.bonusRitualChoices, [key]: ritualId },
+      ritualElementChoices: elements,
+    })
+  }
+
+  const handleBonusElement = (key: string, element: OrdemElement) => {
+    updateDraft({ ritualElementChoices: { ...ritualElementChoices, [bonusRitualElementKey(key)]: element } })
+  }
+
   const canAdvance = isStepComplete(draft, 'rituals')
   const disabledReason = learnSlots.some(s => !s.complete)
     ? 'Escolha o ritual concedido pelo poder Aprender Ritual'
-    : 'Escolha todos os rituais pendentes'
+    : bonusSlots.some(s => !s.complete)
+      ? 'Escolha os rituais concedidos pela sua trilha'
+      : 'Escolha todos os rituais pendentes'
 
   return (
     <div className="max-w-3xl mx-auto space-y-8 animate-fade-in pb-20">
@@ -162,6 +189,16 @@ export function RitualsStep() {
         onElement={(key, element) => setParanormalSubChoice(key, { ritualElement: element })}
       />
 
+      <BonusRitualSlots
+        slots={bonusSlots}
+        openSlot={openSlot}
+        setOpenSlot={setOpenSlot}
+        optionsForCircles={optionsForCircles}
+        instanceOccupiedBy={instanceOccupiedBy}
+        onSelect={handleBonusSelect}
+        onElement={handleBonusElement}
+      />
+
       <GrantedRitualsBlock draft={draft} />
 
       <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={canAdvance} disabledReason={disabledReason} />
@@ -215,6 +252,68 @@ function LearnRitualSlots({ slots, openSlot, setOpenSlot, optionsFor, instanceOc
           />
         )
       })}
+    </div>
+  )
+}
+
+/**
+ * Rituais bônus escolhidos pelo jogador por conta de features de trilha (Saber Ampliado e
+ * Grimório Ritualístico, do Graduado). Mesmo padrão do Aprender Ritual: um slot por concessão,
+ * com o círculo travado pela feature e sem consumir o limite de rituais do Ocultista.
+ */
+function BonusRitualSlots({ slots, openSlot, setOpenSlot, optionsForCircles, instanceOccupiedBy, onSelect, onElement }: {
+  slots: BonusRitualSlot[]
+  openSlot: string | null
+  setOpenSlot: (key: string | null) => void
+  optionsForCircles: (owner: string, circles: OrdemRitualCircle[], selectedId: string | null | undefined) => ReturnType<typeof getAvailableRituals>
+  instanceOccupiedBy: (owner: string) => Set<string>
+  onSelect: (key: string, ritualId: string) => void
+  onElement: (key: string, element: OrdemElement) => void
+}) {
+  if (slots.length === 0) return null
+  // Agrupa por feature: "Saber Ampliado" e "Grimório Ritualístico" viram blocos separados.
+  const byFeature = slots.reduce<Record<string, BonusRitualSlot[]>>((acc, slot) => {
+    (acc[slot.sourceLabel] ??= []).push(slot)
+    return acc
+  }, {})
+  return (
+    <div className="space-y-6">
+      {Object.entries(byFeature).map(([label, featureSlots]) => (
+        <div key={label} className="space-y-4">
+          <div>
+            <h3 className="text-sm font-bold text-gold-500">{label}</h3>
+            <p className="text-parchment-600 text-xs mt-1 leading-relaxed">
+              Rituais extras concedidos pela sua trilha — <strong className="text-parchment-400">não contam</strong> no
+              seu limite de rituais conhecidos. Cada slot é travado no círculo indicado.
+            </p>
+          </div>
+          {featureSlots.map(slot => {
+            const owner = `bonus:${slot.key}`
+            const selectedId = slot.ritual?.id ?? null
+            const usedInstances = instanceOccupiedBy(owner)
+            const hint = slot.circles.length > 1
+              ? `${slot.circles[0]}º ou ${slot.circles[slot.circles.length - 1]}º Círculo`
+              : `${slot.circles[0]}º Círculo`
+            return (
+              <RitualSlotCard
+                key={slot.key}
+                label={slot.featureName}
+                hint={hint}
+                note={`Concedido pela trilha (${slot.featureName}).`}
+                options={optionsForCircles(owner, slot.circles, selectedId)}
+                selectedId={selectedId}
+                selectedElement={slot.element ?? undefined}
+                open={openSlot === owner}
+                onOpen={() => setOpenSlot(owner)}
+                onClose={() => setOpenSlot(null)}
+                onSelect={id => { onSelect(slot.key, id); setOpenSlot(null) }}
+                onElement={element => onElement(slot.key, element)}
+                isElementUsed={element => usedInstances.has(`${selectedId}::${element}`)}
+              />
+            )
+          })}
+        </div>
+      ))}
     </div>
   )
 }

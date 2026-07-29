@@ -32,7 +32,11 @@ import {
   getConditionalDamageResistances,
   hasCarryCapacityIntellectBonus,
   getWorkToolBonus,
+  getTrilhaHpBonus,
+  getBonusRitualSlots,
+  areBonusRitualSlotsComplete,
 } from '../characterUtils'
+import { bonusRitualElementKey } from '../ritualUtils'
 import { getCursedDerivedStats } from '../curseUtils'
 import { getOrdemClass } from '../classUtils'
 import { SKILLS } from '../skillUtils'
@@ -375,6 +379,107 @@ describe('Resistências (Grupo D): Mente Sã, Inabalável, Eu Já Sabia', () => 
   it('Inquebrável (Tropa de Choque NEX 99%): RD 5 fixa, condicional a "enquanto estiver machucado"', () => {
     const draft = makeDraft({ class: 'combatant', trilha: 'shock-trooper', nex: 99 })
     expect(getConditionalDamageResistances(draft)).toContainEqual({ name: 'Inquebrável', value: 5, condition: 'enquanto estiver machucado' })
+  })
+})
+
+describe('getBonusRitualSlots (Graduado: Saber Ampliado + Grimório Ritualístico)', () => {
+  const scholar = (nex: number, overrides: Partial<OrdemCharacterDraft> = {}) =>
+    makeDraft({ class: 'occultist', trilha: 'scholar', nex, ...overrides })
+
+  it('Saber Ampliado (NEX 10%) abre 1 slot de 1º círculo', () => {
+    const slots = getBonusRitualSlots(scholar(10))
+    expect(slots).toHaveLength(1)
+    expect(slots[0].circles).toEqual([1])
+    expect(slots[0].featureName).toBe('Saber Ampliado')
+  })
+
+  it('não abre nada antes do NEX da feature', () => {
+    expect(getBonusRitualSlots(scholar(5))).toEqual([])
+  })
+
+  it('abre +1 slot por círculo liberado depois da feature (2º/3º/4º)', () => {
+    expect(getBonusRitualSlots(scholar(25)).map(s => s.circles)).toEqual([[1], [2]])
+    // NEX 55%: 1º + 2º + 3º do Saber Ampliado; o Grimório (NEX 40%) traz INT slots + o 3º.
+    const at55 = getBonusRitualSlots(scholar(55, { attributes: { agility: 1, strength: 1, intellect: 2, presence: 1, vigor: 1 } }))
+    expect(at55.filter(s => s.featureName === 'Saber Ampliado').map(s => s.circles)).toEqual([[1], [2], [3]])
+    expect(at55.filter(s => s.featureName === 'Grimório Ritualístico').map(s => s.circles))
+      .toEqual([[1, 2], [1, 2], [3]])
+  })
+
+  it('Grimório Ritualístico usa o Intelecto no NEX em que a feature foi recebida (40%)', () => {
+    const base = { agility: 1, strength: 1, intellect: 2, presence: 1, vigor: 1 }
+    // Aumento de Atributo do NEX 20% em Intelecto conta (veio antes do NEX 40%).
+    const comAumento = scholar(40, { attributes: base, attributeIncreaseChoices: ['intellect'] })
+    expect(getBonusRitualSlots(comAumento).filter(s => s.featureName === 'Grimório Ritualístico')).toHaveLength(3)
+    // Aumento do NEX 50% NÃO conta (veio depois da feature).
+    const depois = scholar(50, { attributes: base, attributeIncreaseChoices: [null, 'intellect'] })
+    expect(getBonusRitualSlots(depois).filter(s => s.featureName === 'Grimório Ritualístico')).toHaveLength(2)
+  })
+
+  it('a Versatilidade (NEX 50%) concede Saber Ampliado só com os círculos posteriores ao 50%', () => {
+    const draft = makeDraft({
+      class: 'occultist', trilha: 'conduit', nex: 85,
+      versatilityChoice: { kind: 'trilha', trilhaId: 'scholar' },
+    })
+    // 1º (base) + 3º (NEX 55%) + 4º (NEX 85%); o 2º foi liberado no NEX 25%, antes da feature.
+    expect(getBonusRitualSlots(draft).map(s => s.circles)).toEqual([[1], [3], [4]])
+  })
+
+  it('resolve o ritual e o elemento escolhidos, e ignora ritual fora do círculo do slot', () => {
+    const key = 'scholar-10-base-0'
+    const ok = scholar(10, { bonusRitualChoices: { [key]: 'amaldicoar-arma' } })
+    expect(getBonusRitualSlots(ok)[0].ritual?.id).toBe('amaldicoar-arma')
+    // Multi-elemento sem elemento escolhido = incompleto.
+    expect(getBonusRitualSlots(ok)[0].complete).toBe(false)
+    expect(areBonusRitualSlotsComplete(ok)).toBe(false)
+
+    const comElemento = scholar(10, {
+      bonusRitualChoices: { [key]: 'amaldicoar-arma' },
+      ritualElementChoices: { [bonusRitualElementKey(key)]: 'blood' },
+    })
+    expect(getBonusRitualSlots(comElemento)[0].complete).toBe(true)
+    expect(areBonusRitualSlotsComplete(comElemento)).toBe(true)
+
+    // Ritual de 2º círculo num slot travado no 1º é descartado.
+    const foraDoCirculo = scholar(10, { bonusRitualChoices: { [key]: 'aprimorar-fisico' } })
+    expect(getBonusRitualSlots(foraDoCirculo)[0].ritual).toBeNull()
+  })
+
+  it('os rituais dos slots bônus entram em getGrantedRituals com a fonte', () => {
+    const key = 'scholar-10-base-0'
+    const draft = scholar(10, { bonusRitualChoices: { [key]: 'armadura-de-sangue' } })
+    const entry = getGrantedRituals(draft).find(g => g.ritual.id === 'armadura-de-sangue')
+    expect(entry?.source).toBe('Saber Ampliado (Trilha Graduado)')
+    expect(entry?.element).toBe('blood')
+  })
+})
+
+describe('getTrilhaHpBonus (Casca Grossa, Tropa de Choque NEX 10%)', () => {
+  it('+1 PV por degrau de NEX alcançado, retroativo', () => {
+    // NEX 10% = 2 degraus desde o 0% (0→5→10).
+    expect(getTrilhaHpBonus(makeDraft({ class: 'combatant', trilha: 'shock-trooper', nex: 10 }))).toBe(2)
+    // NEX 99% = 20 degraus.
+    expect(getTrilhaHpBonus(makeDraft({ class: 'combatant', trilha: 'shock-trooper', nex: 99 }))).toBe(20)
+  })
+
+  it('só conta a partir do NEX da feature e só na trilha certa', () => {
+    expect(getTrilhaHpBonus(makeDraft({ class: 'combatant', trilha: 'shock-trooper', nex: 5 }))).toBe(0)
+    expect(getTrilhaHpBonus(makeDraft({ class: 'combatant', trilha: 'warrior', nex: 99 }))).toBe(0)
+  })
+
+  it('a Versatilidade (NEX 50%) que concede Casca Grossa também dá o PV', () => {
+    const draft = makeDraft({
+      class: 'combatant', trilha: 'warrior', nex: 50,
+      versatilityChoice: { kind: 'trilha', trilhaId: 'shock-trooper' },
+    })
+    expect(getTrilhaHpBonus(draft)).toBe(10)
+  })
+
+  it('entra no PV final da ficha', () => {
+    const cls = getOrdemClass('combatant')!
+    const base = makeDraft({ class: 'combatant', trilha: 'warrior', nex: 10 })
+    const cascaGrossa = makeDraft({ class: 'combatant', trilha: 'shock-trooper', nex: 10 })
+    expect(getCursedDerivedStats(cascaGrossa, cls).hp - getCursedDerivedStats(base, cls).hp).toBe(2)
   })
 })
 

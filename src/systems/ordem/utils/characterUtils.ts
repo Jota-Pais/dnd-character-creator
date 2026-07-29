@@ -1,13 +1,13 @@
 import type { OrdemCharacterDraft } from '../types/character'
 import type { OrdemClass } from '../types/class'
 import type { Trilha, TrilhaFeature } from '../types/trilha'
-import type { OrdemRitual, OrdemElement } from '../types/ritual'
+import type { OrdemRitual, OrdemElement, OrdemRitualCircle } from '../types/ritual'
 import type { OriginPowerEffects } from '../types/origin'
 import { getOrigin } from './originUtils'
 import { getOrdemClass, getFreeSkillChoiceCount } from './classUtils'
 import { getTrilhasByClass, getTrilha } from './trilhaUtils'
 import { getPowersByClass } from './powerUtils'
-import { RITUAL_COST, getRitualById } from './ritualUtils'
+import { RITUAL_COST, getRitualById, RITUAL_CIRCLE_NEX, bonusRitualElementKey } from './ritualUtils'
 import { getNexIndex, getReachedPowerSlots, getReachedAttributeIncreaseSlots, getReachedSkillGradeSlots, ATTRIBUTE_INCREASE_CAP, POWER_SLOT_NEX, TRILHA_FEATURE_NEX, VERSATILITY_NEX, NEX_STEPS, getPeLimit, hasVersatility } from './progressionUtils'
 import { getExpansionGrantedClassPowers, getParanormalEffects, getParanormalLearnedRituals } from './paranormalPowerUtils'
 import { getUnmetPrereqs, type PrereqContext } from './prereqUtils'
@@ -434,23 +434,34 @@ export type GrantedRitual = {
  * (NEX 10%) de outra trilha, se a Versatilidade (NEX 50%) a concedeu. Base compartilhada por
  * `getGrantedRituals` e pelos getters de efeito de trilha (DT de ritual, limite de PE...).
  */
-function getReachedTrilhaFeaturesWithSource(draft: OrdemCharacterDraft): { feature: TrilhaFeature; source: string }[] {
-  const result: { feature: TrilhaFeature; source: string }[] = []
+function getReachedTrilhaFeaturesWithSource(draft: OrdemCharacterDraft): ReachedTrilhaFeature[] {
+  const result: ReachedTrilhaFeature[] = []
   const trilha = draft.trilha ? getTrilha(draft.trilha) : undefined
   if (trilha) {
     for (const feature of trilha.features.filter(f => f.nex <= draft.nex)) {
-      result.push({ feature, source: `Trilha ${trilha.name}` })
+      result.push({ feature, source: `Trilha ${trilha.name}`, trilhaId: trilha.id, acquisitionNex: feature.nex })
     }
   }
   if (draft.versatilityChoice?.kind === 'trilha') {
     const versTrilha = getTrilha(draft.versatilityChoice.trilhaId)
     if (versTrilha) {
       for (const feature of versTrilha.features.filter(f => f.nex <= TRILHA_FEATURE_NEX[0])) {
-        result.push({ feature, source: 'Versatilidade' })
+        // A Versatilidade concede a feature no NEX 50%, não no NEX 10% dela — o que importa para
+        // "a cada NOVO círculo" (Saber Ampliado) é quando o agente de fato recebeu a feature.
+        result.push({ feature, source: 'Versatilidade', trilhaId: versTrilha.id, acquisitionNex: VERSATILITY_NEX })
       }
     }
   }
   return result
+}
+
+type ReachedTrilhaFeature = {
+  feature: TrilhaFeature
+  /** Rótulo da fonte, pra exibição (ex.: "Trilha Graduado", "Versatilidade"). */
+  source: string
+  trilhaId: string
+  /** NEX em que o agente recebeu esta feature (o da feature, ou 50% se veio da Versatilidade). */
+  acquisitionNex: number
 }
 
 /**
@@ -478,13 +489,101 @@ export function getTrilhaGrantedRituals(draft: OrdemCharacterDraft): GrantedRitu
 /**
  * TODOS os rituais concedidos fora dos slots do Ocultista: features de trilha + instâncias
  * válidas do poder paranormal Aprender Ritual (que também não contam no limite de escolhas do
- * Ocultista — o limite delas é o Intelecto, validado pelo motor). Duplicatas ritual+elemento
- * entre as fontes são impedidas pela validação das instâncias, não deduplicadas aqui.
+ * Ocultista — o limite delas é o Intelecto, validado pelo motor) + os slots bônus de trilha
+ * (Saber Ampliado / Grimório Ritualístico). Duplicatas ritual+elemento entre as fontes são
+ * impedidas pela validação das instâncias, não deduplicadas aqui.
  */
 export function getGrantedRituals(draft: OrdemCharacterDraft): GrantedRitual[] {
   const learned = getParanormalLearnedRituals(draft)
     .map(({ ritual, element, source }) => ({ ritual, source, element }))
-  return [...getTrilhaGrantedRituals(draft), ...learned]
+  const bonus = getBonusRitualSlots(draft).flatMap(slot =>
+    slot.ritual ? [{ ritual: slot.ritual, source: slot.sourceLabel, element: slot.element ?? undefined }] : [],
+  )
+  return [...getTrilhaGrantedRituals(draft), ...learned, ...bonus]
+}
+
+// ── Slots de ritual bônus de trilha (Saber Ampliado / Grimório Ritualístico) ────
+
+export type BonusRitualSlot = {
+  /** Chave estável do slot em `draft.bonusRitualChoices` (ex.: "scholar-10-circle-2"). */
+  key: string
+  /** Rótulo da fonte pra ficha e PDF (ex.: "Saber Ampliado (Trilha Graduado)"). */
+  sourceLabel: string
+  featureName: string
+  /** Círculos aceitos neste slot (os base da feature, ou o círculo recém-liberado). */
+  circles: OrdemRitualCircle[]
+  ritual: OrdemRitual | null
+  /** Elemento da instância: o escolhido nos multi-elemento, o único nos demais. */
+  element: OrdemElement | null
+  /** Ritual escolhido — e o elemento também, quando o ritual é multi-elemento. */
+  complete: boolean
+}
+
+/**
+ * Slots de ritual bônus abertos pelas features de trilha alcançadas (hoje só o Graduado):
+ * os `baseCount` slots da aquisição (quantidade fixa, ou igual ao Intelecto no NEX em que a
+ * feature foi recebida) + 1 slot por círculo liberado DEPOIS dela, travado naquele círculo.
+ * Não contam no limite de rituais conhecidos; o jogador escolhe cada um na etapa Rituais.
+ */
+export function getBonusRitualSlots(draft: OrdemCharacterDraft): BonusRitualSlot[] {
+  const slots: BonusRitualSlot[] = []
+  for (const { feature, source, trilhaId, acquisitionNex } of getReachedTrilhaFeaturesWithSource(draft)) {
+    const spec = feature.effects?.grantsRitualSlots
+    if (!spec) continue
+    const sourceLabel = `${feature.name} (${source})`
+    const baseCount = spec.baseCount === 'intellect'
+      ? getEffectiveAttributesAtNex(draft, acquisitionNex).intellect
+      : spec.baseCount
+    const prefix = `${trilhaId}-${feature.nex}`
+    for (let i = 0; i < baseCount; i++) {
+      slots.push(makeBonusSlot(draft, `${prefix}-base-${i}`, sourceLabel, feature.name, spec.baseCircles))
+    }
+    if (spec.perNewCircle) {
+      // "Toda vez que ganha acesso a um novo círculo": só os círculos liberados APÓS a feature.
+      for (const circle of RITUAL_CIRCLES) {
+        const circleNex = RITUAL_CIRCLE_NEX[circle]
+        if (circleNex <= acquisitionNex || circleNex > draft.nex) continue
+        slots.push(makeBonusSlot(draft, `${prefix}-circle-${circle}`, sourceLabel, feature.name, [circle]))
+      }
+    }
+  }
+  return slots
+}
+
+const RITUAL_CIRCLES: OrdemRitualCircle[] = [1, 2, 3, 4]
+
+function makeBonusSlot(
+  draft: OrdemCharacterDraft,
+  key: string,
+  sourceLabel: string,
+  featureName: string,
+  circles: OrdemRitualCircle[],
+): BonusRitualSlot {
+  const chosenId = draft.bonusRitualChoices[key]
+  const ritual = chosenId ? getRitualById(chosenId) ?? null : null
+  // Um ritual fora dos círculos do slot (NEX baixou, trilha trocada) não vale a escolha.
+  const valid = ritual && circles.includes(ritual.circle) ? ritual : null
+  const element = !valid
+    ? null
+    : valid.elements.length > 1
+      ? draft.ritualElementChoices[bonusRitualElementKey(key)] ?? null
+      : valid.elements[0]
+  return { key, sourceLabel, featureName, circles, ritual: valid, element, complete: Boolean(valid && element) }
+}
+
+/** Todos os slots de ritual bônus abertos estão preenchidos (com elemento, quando exigido)? */
+export function areBonusRitualSlotsComplete(draft: OrdemCharacterDraft): boolean {
+  return getBonusRitualSlots(draft).every(slot => slot.complete)
+}
+
+/**
+ * PV extra concedido por features de trilha alcançadas (ex.: Casca Grossa +1 por degrau de NEX).
+ * Retroativo em todos os degraus alcançados, como `getOriginHpBonus` e o Sangue de Ferro.
+ */
+export function getTrilhaHpBonus(draft: OrdemCharacterDraft): number {
+  const perStep = getReachedTrilhaFeaturesWithSource(draft)
+    .reduce((s, { feature }) => s + (feature.effects?.hpPerNexStep ?? 0), 0)
+  return perStep * getNexIndex(draft.nex)
 }
 
 /** Soma dos bônus de DT de rituais concedidos por trilha (ex.: Rituais Eficientes +5). */

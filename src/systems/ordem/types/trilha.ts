@@ -1,4 +1,5 @@
 import type { OrdemClassId } from './class'
+import type { OrdemRitualCircle } from './ritual'
 
 /**
  * Efeitos mecânicos estruturados de uma feature de trilha que a ficha aplica automaticamente.
@@ -6,6 +7,12 @@ import type { OrdemClassId } from './class'
  * dobrar a área") ficam só na `description`. Ver os getters em `characterUtils`/`curseUtils`.
  */
 export type TrilhaFeatureEffects = {
+  /**
+   * PV extra por degrau de NEX alcançado, retroativo (ex.: Casca Grossa +1 por 5% de NEX) —
+   * mesma convenção de `hpPerNexStep` da origem e dos poderes paranormais: conta todos os
+   * degraus alcançados, não só os posteriores à aquisição da feature.
+   */
+  hpPerNexStep?: number
   /** DT para resistir a TODOS os rituais do conjurador (ex.: Rituais Eficientes +5). */
   allRitualDtBonus?: number
   /** Soma a Presença ao limite de PE por turno, mas só para conjurar rituais (Presença Poderosa). */
@@ -16,6 +23,22 @@ export type TrilhaFeatureEffects = {
   mentalAndParanormalDamageResistance?: number
   /** Soma Intelecto à Força para o cálculo de capacidade de carga (Inventário Otimizado). */
   carryCapacityAddsIntellect?: boolean
+  /**
+   * Slots de ritual BÔNUS que o jogador escolhe (Saber Ampliado e Grimório Ritualístico, trilha
+   * Graduado). Não contam no limite de rituais conhecidos — são slots próprios na etapa Rituais,
+   * ao lado dos do Aprender Ritual (ver `getBonusRitualSlots`).
+   */
+  grantsRitualSlots?: {
+    /** Quantos slots ao adquirir a feature: número fixo, ou 'intellect' (= Intelecto do agente). */
+    baseCount: number | 'intellect'
+    /** Círculos aceitos nos slots base (ex.: [1] no Saber Ampliado, [1, 2] no Grimório). */
+    baseCircles: OrdemRitualCircle[]
+    /**
+     * "Toda vez que ganha acesso a um novo círculo, aprende um ritual adicional daquele círculo":
+     * +1 slot por círculo liberado DEPOIS da aquisição da feature, travado naquele círculo.
+     */
+    perNewCircle?: boolean
+  }
   /**
    * Exceção à regra "só permanente": resistência a dano condicional, mas relevante o bastante
    * pra listar na seção Resistências com a condição explícita (ex.: Casca Grossa — RD = Vigor

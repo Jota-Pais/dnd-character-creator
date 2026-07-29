@@ -1,7 +1,7 @@
 import { useOrdemStore } from '../stores/characterStore'
 import { getOrigin } from '../utils/originUtils'
 import { getOrdemClass } from '../utils/classUtils'
-import { SKILLS, getSkillName } from '../utils/skillUtils'
+import { SKILLS, getSkillName, getSkillKitName, getSkillKitScope } from '../utils/skillUtils'
 import { getTrilha } from '../utils/trilhaUtils'
 import { getPower } from '../utils/powerUtils'
 import {
@@ -21,6 +21,7 @@ import {
 import {
   getEquipmentByInstance, getInstanceLabel, getTotalCarryCapacity, getModifiedSpaces, getModifiedDefenseBonus,
   getDraftInstanceCategory, getEquipmentDamageResistances, formatAccessorySkills,
+  getKitSkills, getSkillsMissingKit, hasKitForSkill, formatKitSkill,
 } from '../utils/equipmentUtils'
 import { getModification } from '../utils/modificationUtils'
 import { getCurse, getCursedDerivedStats, getSheetAttributes, formatCurseElement, formatCurseChoiceDetail, getRitualDt, getRitualPeLimit } from '../utils/curseUtils'
@@ -106,6 +107,9 @@ export function PrintableSheet() {
   // Notas com valor resolvido pelo NEX/atributo (Ataque Especial, Paramédico, Criar Selo...).
   const resolvedNotes = getResolvedAbilityNotes(draft, cls)
   const credit = getEffectiveCreditLimit(draft)
+  // Kits registrados e perícias sem kit — a ficha informa, mas não aplica o −5 (decisão do mestre).
+  const kitSkills = getKitSkills(draft)
+  const skillsMissingKit = getSkillsMissingKit(draft)
   const cursedUnits = equipmentUnits.filter(u => (draft.equipmentCurses[u.uid]?.length ?? 0) > 0)
   // Armas com a maldição Ritualística: o ritual armazenado é listado junto das Habilidades.
   const ritualisticUnits = equipmentUnits.filter(u => (draft.equipmentCurses[u.uid] ?? []).includes('ritualistica'))
@@ -225,6 +229,7 @@ export function PrintableSheet() {
                         {skill.name}
                         {skill.trainedOnly ? '*' : ''}
                         {skill.loadPenalty ? '+' : ''}
+                        {skill.kit ? (hasKitForSkill(draft, skill.id) ? '⚒✓' : '⚒') : ''}
                         {grade !== 'destreinado' && grade !== 'treinado' && (
                           <span className="text-[9px] text-gray-500 font-normal"> ({grade})</span>
                         )}
@@ -238,8 +243,25 @@ export function PrintableSheet() {
               </tbody>
             </table>
             <p className="text-[9px] text-gray-500 mt-1">
-              + Penalidade de carga. * Somente treinada. Role os d20 indicados e use o melhor + bônus.
+              + Penalidade de carga. * Somente treinada. ⚒ Exige kit (✓ você tem). Role os d20 indicados e use o melhor + bônus.
             </p>
+            {(kitSkills.length > 0 || skillsMissingKit.length > 0) && (
+              <div className="mt-1 text-[9px] text-gray-600 space-y-0.5">
+                {kitSkills.length > 0 && (
+                  <p>
+                    <span className="font-semibold">Kits:</span>{' '}
+                    {kitSkills.map(k => `${getSkillKitName(k.skillId)} (${k.source})`).join(' · ')}.
+                  </p>
+                )}
+                {skillsMissingKit.length > 0 && (
+                  <p>
+                    <span className="font-semibold">Sem kit:</span>{' '}
+                    {skillsMissingKit.map(sid => `${getSkillName(sid)} — ${getSkillKitScope(sid)}`).join(' · ')}.
+                    {' '}O mestre decide se o teste exigia o kit; quando exigir, são −5.
+                  </p>
+                )}
+              </div>
+            )}
             {conditionalSkillBonuses.length > 0 && (
               <div className="mt-1 text-[9px] text-gray-600 space-y-0.5">
                 <p className="font-semibold">Bônus condicionais (não somados na coluna Outros):</p>
@@ -562,6 +584,9 @@ export function PrintableSheet() {
                       <span className="font-semibold">{getInstanceLabel(draft, uid)}</span>
                       {formatAccessorySkills(draft, uid) && (
                         <span className="text-gray-700"> · {formatAccessorySkills(draft, uid)}</span>
+                      )}
+                      {formatKitSkill(draft, uid) && (
+                        <span className="text-gray-700"> · {formatKitSkill(draft, uid)}</span>
                       )}
                       {mods.length > 0 && <span className="text-gray-600"> · Mods: {mods.map(m => getModification(m)?.name).filter(Boolean).join(', ')}</span>}
                       {curses.length > 0 && <span className="text-gray-600"> · Maldições: {curses.map(c => getCurse(c)?.name).filter(Boolean).join(', ')}</span>}

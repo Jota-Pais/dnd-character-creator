@@ -11,6 +11,17 @@ export function getSkillName(id: string): string {
   return getSkill(id)?.name ?? id
 }
 
+/** Nome do kit que a perícia exige, capitalizado (ex.: "Kit de medicina"); vazio se não exigir. */
+export function getSkillKitName(id: string): string {
+  const kit = getSkill(id)?.kit
+  return kit ? `Kit de ${kit.name}` : ''
+}
+
+/** Em que usos da perícia o kit é exigido (ex.: "nos usos arrombar e sabotar"). */
+export function getSkillKitScope(id: string): string {
+  return getSkill(id)?.kit?.scope ?? ''
+}
+
 const ATTR_ABBREV: Record<string, string> = {
   agility: 'AGI',
   strength: 'FOR',

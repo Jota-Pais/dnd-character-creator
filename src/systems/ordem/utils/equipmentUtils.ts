@@ -365,6 +365,9 @@ export function isEquipmentStepComplete(draft: OrdemCharacterDraft): boolean {
   // existe na ficha. Bônus repetido entre itens NÃO invalida: só não acumula (ver o aviso na UI).
   if (!areAccessorySkillChoicesComplete(draft)) return false
 
+  // Kits precisam saber de qual perícia são ("existe um kit para cada perícia que exige o item").
+  if (!areKitChoicesComplete(draft)) return false
+
   // Proficiência de arma NÃO bloqueia: o livro permite possuir uma arma sem proficiência (com
   // penalidade ao usá-la). A UI apenas sinaliza "Sem Proficiência" — ver `hasWeaponProficiency`.
   return true
@@ -553,6 +556,80 @@ export function getNonCumulativeSkillConflicts(
   return [...bySkill.entries()]
     .filter(([, entry]) => entry.sources.length > 1)
     .map(([skillId, entry]) => ({ skillId, sources: entry.sources, applied: entry.applied }))
+}
+
+// ── Kits de perícia ────────────────────────────────────────────────────────────
+
+export type KitSlot = {
+  uid: string
+  /** Nome da unidade pra exibição (ex.: "Kit de Perícia #2"). */
+  label: string
+  /** 'kit' = unidade de Kit de Perícia; 'instrumental' = acessório com a modificação Instrumental. */
+  kind: 'kit' | 'instrumental'
+  skillId: string | null
+}
+
+/** Perícias que exigem kit (p. 40): as únicas que fazem sentido como escolha de kit. */
+export function getKitSkillOptions(): string[] {
+  return SKILLS.filter(s => s.kit).map(s => s.id)
+}
+
+/**
+ * Kits que o agente carrega, um slot por unidade: cada Kit de Perícia requisitado e cada acessório
+ * com a modificação Instrumental ("o acessório pode ser usado como um kit de perícia específico,
+ * escolhido ao aplicar esta modificação", p. 64).
+ *
+ * A escolha do kit é INDEPENDENTE da perícia que o acessório bonifica — um utensílio pode dar +2
+ * em Atualidades e funcionar como kit de eletrônica (o exemplo do "smartphone hacker" do livro).
+ */
+export function getKitSlots(draft: OrdemCharacterDraft): KitSlot[] {
+  const slots: KitSlot[] = []
+  for (const uid of draft.equipmentChoices) {
+    const isKit = instanceItemId(uid) === 'kit-pericia'
+    const isInstrumental = itemMods(draft, uid).includes('instrumental')
+    if (!isKit && !isInstrumental) continue
+    slots.push({
+      uid,
+      label: getInstanceLabel(draft, uid),
+      kind: isKit ? 'kit' : 'instrumental',
+      skillId: draft.kitSkillChoices[uid] ?? null,
+    })
+  }
+  return slots
+}
+
+/** Perícias cobertas por um kit que o agente carrega, com a fonte de cada uma. */
+export function getKitSkills(draft: OrdemCharacterDraft): { skillId: string; source: string }[] {
+  return getKitSlots(draft)
+    .filter((slot): slot is KitSlot & { skillId: string } => Boolean(slot.skillId))
+    .map(slot => ({ skillId: slot.skillId, source: slot.label }))
+}
+
+/** O agente tem kit para esta perícia? */
+export function hasKitForSkill(draft: OrdemCharacterDraft, skillId: string): boolean {
+  return getKitSkills(draft).some(k => k.skillId === skillId)
+}
+
+/**
+ * Perícias que exigem kit e para as quais o agente NÃO tem um. A ficha só informa: o −5 fica a
+ * critério do mestre, porque o livro amarra a exigência a usos específicos da perícia (arrombar,
+ * disfarce, operar dispositivo), não à perícia inteira — exceto em Medicina.
+ */
+export function getSkillsMissingKit(draft: OrdemCharacterDraft): string[] {
+  return getKitSkillOptions().filter(id => !hasKitForSkill(draft, id))
+}
+
+/** Todos os kits do loadout já têm a perícia definida? */
+export function areKitChoicesComplete(draft: OrdemCharacterDraft): boolean {
+  return getKitSlots(draft).every(slot => Boolean(slot.skillId))
+}
+
+/** Descrição do kit de uma unidade pra linha do inventário (ex.: "kit de medicina"). */
+export function formatKitSkill(draft: OrdemCharacterDraft, uid: string): string {
+  const slot = getKitSlots(draft).find(s => s.uid === uid && s.skillId)
+  if (!slot) return ''
+  const skill = SKILLS.find(s => s.id === slot.skillId)
+  return skill?.kit ? `kit de ${skill.kit.name}` : ''
 }
 
 /**

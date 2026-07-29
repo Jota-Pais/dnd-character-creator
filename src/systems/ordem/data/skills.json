@@ -5,9 +5,9 @@
   { "id": "athletics", "name": "Atletismo", "attribute": "strength", "trainedOnly": false, "loadPenalty": false },
   { "id": "current-affairs", "name": "Atualidades", "attribute": "intellect", "trainedOnly": false, "loadPenalty": false },
   { "id": "science", "name": "Ciências", "attribute": "intellect", "trainedOnly": true, "loadPenalty": false },
-  { "id": "crime", "name": "Crime", "attribute": "agility", "trainedOnly": true, "loadPenalty": true },
+  { "id": "crime", "name": "Crime", "attribute": "agility", "trainedOnly": true, "loadPenalty": true, "kit": { "name": "ladrão", "scope": "nos usos arrombar e sabotar" } },
   { "id": "diplomacy", "name": "Diplomacia", "attribute": "presence", "trainedOnly": false, "loadPenalty": false },
-  { "id": "deception", "name": "Enganação", "attribute": "presence", "trainedOnly": false, "loadPenalty": false },
+  { "id": "deception", "name": "Enganação", "attribute": "presence", "trainedOnly": false, "loadPenalty": false, "kit": { "name": "disfarces", "scope": "no uso disfarce" } },
   { "id": "fortitude", "name": "Fortitude", "attribute": "vigor", "trainedOnly": false, "loadPenalty": false },
   { "id": "stealth", "name": "Furtividade", "attribute": "agility", "trainedOnly": false, "loadPenalty": true },
   { "id": "initiative", "name": "Iniciativa", "attribute": "agility", "trainedOnly": false, "loadPenalty": false },
@@ -15,7 +15,7 @@
   { "id": "insight", "name": "Intuição", "attribute": "presence", "trainedOnly": false, "loadPenalty": false },
   { "id": "investigation", "name": "Investigação", "attribute": "intellect", "trainedOnly": false, "loadPenalty": false },
   { "id": "fighting", "name": "Luta", "attribute": "strength", "trainedOnly": false, "loadPenalty": false },
-  { "id": "medicine", "name": "Medicina", "attribute": "intellect", "trainedOnly": false, "loadPenalty": false },
+  { "id": "medicine", "name": "Medicina", "attribute": "intellect", "trainedOnly": false, "loadPenalty": false, "kit": { "name": "medicina", "scope": "em toda a perícia" } },
   { "id": "occultism", "name": "Ocultismo", "attribute": "intellect", "trainedOnly": true, "loadPenalty": false },
   { "id": "perception", "name": "Percepção", "attribute": "presence", "trainedOnly": false, "loadPenalty": false },
   { "id": "piloting", "name": "Pilotagem", "attribute": "agility", "trainedOnly": true, "loadPenalty": false },
@@ -25,6 +25,6 @@
   { "id": "religion", "name": "Religião", "attribute": "presence", "trainedOnly": true, "loadPenalty": false },
   { "id": "survival", "name": "Sobrevivência", "attribute": "intellect", "trainedOnly": false, "loadPenalty": false },
   { "id": "tactics", "name": "Tática", "attribute": "intellect", "trainedOnly": true, "loadPenalty": false },
-  { "id": "technology", "name": "Tecnologia", "attribute": "intellect", "trainedOnly": true, "loadPenalty": false },
+  { "id": "technology", "name": "Tecnologia", "attribute": "intellect", "trainedOnly": true, "loadPenalty": false, "kit": { "name": "eletrônica", "scope": "no uso operar dispositivo" } },
   { "id": "willpower", "name": "Vontade", "attribute": "presence", "trainedOnly": false, "loadPenalty": false }
 ]

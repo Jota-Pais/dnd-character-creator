@@ -20,6 +20,13 @@ import {
   formatAccessorySkills,
   getAccessorySkillBonuses,
   getWornVestimentas,
+  getKitSlots,
+  getKitSkillOptions,
+  getKitSkills,
+  hasKitForSkill,
+  getSkillsMissingKit,
+  areKitChoicesComplete,
+  formatKitSkill,
   getEquipmentById,
   getEffectiveCategory,
   getModifiedSpaces,
@@ -36,6 +43,7 @@ import {
 import { getPatente } from '../patenteUtils'
 import { SKILLS } from '../skillUtils'
 import { canApplyModification } from '../modificationUtils'
+import { getSkillBonusTotal } from '../sheetEffects'
 
 function makeDraft(over: Partial<OrdemCharacterDraft>): OrdemCharacterDraft {
   return { ...EMPTY_DRAFT, ...over }
@@ -725,6 +733,85 @@ describe('Acessórios: escolha de perícia e não-acúmulo (p. 63)', () => {
     })
     expect(formatAccessorySkills(draft, 'utensilio')).toBe('+5 Diplomacia, +2 Tecnologia')
     expect(formatAccessorySkills(draft, 'corda')).toBe('')
+  })
+})
+
+describe('Kits de perícia', () => {
+  it('as opções são só as 4 perícias que exigem kit no livro', () => {
+    expect(getKitSkillOptions().sort()).toEqual(['crime', 'deception', 'medicine', 'technology'])
+  })
+
+  it('cada Kit de Perícia requisitado abre um slot', () => {
+    const draft = makeDraft({ equipmentChoices: ['kit-pericia', 'kit-pericia#2', 'corda'] })
+    expect(getKitSlots(draft).map(s => s.uid)).toEqual(['kit-pericia', 'kit-pericia#2'])
+    expect(getKitSlots(draft).every(s => s.kind === 'kit')).toBe(true)
+  })
+
+  it('acessório com Instrumental também vira kit, com escolha própria', () => {
+    const draft = makeDraft({
+      patente: 'agente-especial',
+      equipmentChoices: ['utensilio'],
+      equipmentModifications: { utensilio: ['instrumental'] },
+      // A perícia do kit é independente da que o utensílio bonifica (exemplo do livro:
+      // "smartphone hacker" dá +2 em Atualidades e funciona como kit de eletrônica).
+      accessorySkillChoices: { utensilio: ['current-affairs'] },
+      kitSkillChoices: { utensilio: 'technology' },
+    })
+    const slots = getKitSlots(draft)
+    expect(slots).toHaveLength(1)
+    expect(slots[0].kind).toBe('instrumental')
+    expect(getKitSkills(draft)).toEqual([{ skillId: 'technology', source: 'Utensílio' }])
+    // O bônus de perícia do acessório segue sendo o dele, não o do kit.
+    expect(getAccessorySkillBonuses(draft).map(b => b.skillId)).toEqual(['current-affairs'])
+  })
+
+  it('a etapa fica incompleta enquanto o kit não tem perícia definida', () => {
+    const semEscolha = makeDraft({ class: 'combatant', equipmentChoices: ['kit-pericia'] })
+    expect(areKitChoicesComplete(semEscolha)).toBe(false)
+    expect(isEquipmentStepComplete(semEscolha)).toBe(false)
+
+    const comEscolha = makeDraft({
+      class: 'combatant',
+      equipmentChoices: ['kit-pericia'],
+      kitSkillChoices: { 'kit-pericia': 'medicine' },
+    })
+    expect(areKitChoicesComplete(comEscolha)).toBe(true)
+    expect(isEquipmentStepComplete(comEscolha)).toBe(true)
+  })
+
+  it('hasKitForSkill e getSkillsMissingKit refletem o loadout', () => {
+    const draft = makeDraft({
+      equipmentChoices: ['kit-pericia'],
+      kitSkillChoices: { 'kit-pericia': 'medicine' },
+    })
+    expect(hasKitForSkill(draft, 'medicine')).toBe(true)
+    expect(hasKitForSkill(draft, 'crime')).toBe(false)
+    expect(getSkillsMissingKit(draft).sort()).toEqual(['crime', 'deception', 'technology'])
+  })
+
+  it('o kit NÃO concede bônus de perícia — só registra a ferramenta', () => {
+    const draft = makeDraft({
+      equipmentChoices: ['kit-pericia'],
+      kitSkillChoices: { 'kit-pericia': 'medicine' },
+    })
+    expect(getAccessorySkillBonuses(draft)).toEqual([])
+    expect(getSkillBonusTotal(draft, 'medicine')).toBe(0)
+  })
+
+  it('estar sem kit não aplica penalidade nem invalida a ficha', () => {
+    const draft = makeDraft({ class: 'combatant', equipmentChoices: ['corda'] })
+    expect(getSkillsMissingKit(draft)).toHaveLength(4)
+    expect(getSkillBonusTotal(draft, 'medicine')).toBe(0)
+    expect(isEquipmentStepComplete(draft)).toBe(true)
+  })
+
+  it('formatKitSkill descreve o kit da unidade', () => {
+    const draft = makeDraft({
+      equipmentChoices: ['kit-pericia'],
+      kitSkillChoices: { 'kit-pericia': 'crime' },
+    })
+    expect(formatKitSkill(draft, 'kit-pericia')).toBe('kit de ladrão')
+    expect(formatKitSkill(draft, 'corda')).toBe('')
   })
 })
 

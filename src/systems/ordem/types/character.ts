@@ -123,6 +123,16 @@ export type OrdemCharacterDraft = {
    */
   accessorySkillChoices: Record<string, string[]>
   /**
+   * Perícia de cada kit que o agente carrega, por unidade: "existe um kit de perícia para cada
+   * perícia que exige este item" (p. 63). Vale para as unidades de Kit de Perícia e para os
+   * acessórios com a modificação Instrumental ("um kit de perícia específico, escolhido ao aplicar
+   * esta modificação", p. 64).
+   *
+   * A ficha só REGISTRA o kit; o −5 de estar sem ele não é aplicado — quem decide se aquele teste
+   * exigia o kit é o mestre. Ver `getKitSlots`.
+   */
+  kitSkillChoices: Record<string, string>
+  /**
    * Parâmetros de poderes com escolha embutida, por slot ("slot-0".."slot-5" ou "versatility"):
    * Treinamento em Perícia → 2 ids de perícia; Especialista/Mestre em Elemento → 1 elemento.
    */
@@ -197,6 +207,7 @@ export const EMPTY_DRAFT: OrdemCharacterDraft = {
   equipmentCurses: {},
   equipmentCurseChoices: {},
   accessorySkillChoices: {},
+  kitSkillChoices: {},
   powerParams: {},
   utilityBackpackItem: null,
   favoriteRitual: null,

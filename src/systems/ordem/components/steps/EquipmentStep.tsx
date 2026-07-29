@@ -6,9 +6,9 @@ import {
   hasItemProficiency, instanceItemId, newInstanceUid, getInstanceLabel,
   fitsWithAdjustedCounts, getCategorySlotAllocation, getMissingRitualComponentElements,
   getAccessorySkillSlots, getAccessorySkillOptions, getNonCumulativeSkillConflicts, getWornVestimentas,
-  getEquipmentByInstance,
+  getEquipmentByInstance, getKitSlots, getKitSkillOptions,
 } from '../../utils/equipmentUtils'
-import { getSkillName } from '../../utils/skillUtils'
+import { getSkillName, getSkillKitName } from '../../utils/skillUtils'
 import { getAvailableModifications, canApplyModification, isModifiable, countApplied } from '../../utils/modificationUtils'
 import {
   getAvailableCurses, canApplyCurse, isCursable, getCurseCategoryDelta, curseChoiceKey, formatCurseElement, getSheetAttributes,
@@ -58,6 +58,10 @@ export function EquipmentStep() {
   const pendingAccessorySkills = accessorySlots.filter(s => !s.skillId).length
   // Vestimentas além do limite de duas: carregadas, mas com o bônus inativo (p. 63).
   const inactiveVestimentas = getWornVestimentas(draft).inactive
+  // Kits: um slot por Kit de Perícia e por acessório com Instrumental.
+  const kitSlots = getKitSlots(draft)
+  const kitSkillOptions = getKitSkillOptions()
+  const pendingKits = kitSlots.filter(s => !s.skillId).length
 
   const addUnit = (itemId: string) => {
     const uid = newInstanceUid(draft.equipmentChoices, itemId)
@@ -75,7 +79,10 @@ export function EquipmentStep() {
     )
     const accessorySkills = { ...draft.accessorySkillChoices }
     delete accessorySkills[uid]
+    const kitSkills = { ...draft.kitSkillChoices }
+    delete kitSkills[uid]
     updateDraft({
+      kitSkillChoices: kitSkills,
       equipmentChoices: draft.equipmentChoices.filter(c => c !== uid),
       equipmentModifications: mods,
       equipmentCurses: curses,
@@ -83,6 +90,13 @@ export function EquipmentStep() {
       accessorySkillChoices: accessorySkills,
       ...(draft.utilityBackpackItem === uid ? { utilityBackpackItem: null } : {}),
     })
+  }
+
+  const setKitSkill = (uid: string, skillId: string) => {
+    const updated = { ...draft.kitSkillChoices }
+    if (skillId) updated[uid] = skillId
+    else delete updated[uid]
+    updateDraft({ kitSkillChoices: updated })
   }
 
   const setAccessorySkill = (uid: string, index: number, skillId: string) => {
@@ -263,6 +277,8 @@ export function EquipmentStep() {
             const editable = isModifiable(item) || isCursable(item)
             // Slots de perícia deste acessório (Utensílio/Vestimenta, +1 com Função Adicional).
             const unitAccessorySlots = accessorySlots.filter(s => s.uid === uid)
+            // Kit desta unidade (Kit de Perícia, ou acessório com a modificação Instrumental).
+            const unitKitSlot = kitSlots.find(s => s.uid === uid)
             const canBackpack = hasClassPower(draft, 'utility-backpack') && item.type !== 'weapon'
             const isBackpacked = draft.utilityBackpackItem === uid
             return (
@@ -290,6 +306,28 @@ export function EquipmentStep() {
                     >
                       ✕ remover
                     </button>
+                  </div>
+                )}
+
+                {unitKitSlot && (
+                  <div className="mb-2 flex items-center gap-2">
+                    <span className="text-xs text-parchment-600 shrink-0">
+                      {unitKitSlot.kind === 'instrumental' ? 'Funciona como kit de' : 'Kit de'}
+                    </span>
+                    <select
+                      value={unitKitSlot.skillId ?? ''}
+                      onChange={e => setKitSkill(uid, e.target.value)}
+                      className={`flex-1 bg-parchment-950 border rounded px-2 py-1 text-parchment-300 text-xs ${
+                        unitKitSlot.skillId ? 'border-parchment-800' : 'border-amber-700/60'
+                      }`}
+                    >
+                      <option value="">Escolha o kit…</option>
+                      {kitSkillOptions.map(sid => (
+                        <option key={sid} value={sid}>
+                          {getSkillKitName(sid)} ({getSkillName(sid)})
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 )}
 
@@ -598,6 +636,12 @@ export function EquipmentStep() {
             <div className="mb-4 p-3 rounded-lg border border-amber-700/50 bg-amber-950/30 text-amber-300 text-sm">
               ⚠️ Escolha a perícia {pendingAccessorySkills > 1 ? `dos ${pendingAccessorySkills} acessórios` : 'do acessório'} que
               você requisitou — o bônus é definido ao adquirir o item.
+            </div>
+          )}
+          {pendingKits > 0 && (
+            <div className="mb-4 p-3 rounded-lg border border-amber-700/50 bg-amber-950/30 text-amber-300 text-sm">
+              ⚠️ Diga de qual perícia {pendingKits > 1 ? `são os ${pendingKits} kits` : 'é o kit'} que você
+              requisitou — existe um kit para cada perícia que exige ferramentas.
             </div>
           )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

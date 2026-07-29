@@ -322,10 +322,31 @@ cicla 0 → 1 → 2 → 0 e mostra "×2". `getEffectiveModIds` descarta aplicaç
 2º Aprimorado que perdeu a Função Adicional deixa de valer em TODOS os cálculos — inclusive na
 categoria —, sem precisar de limpeza na UI ou migração de save.
 
-### Gaps que sobraram (deliberadamente)
+### Kits de perícia
 
-- **Kit de Perícia**: não se escolhe de qual perícia é o kit, então a ficha não sinaliza as perícias
-  que sofreriam −5 sem ele.
+O livro nomeia quatro kits, cada um ligado a usos específicos de uma perícia (p. 40 e descrições das
+perícias) — marcados em `skills.json` no campo `kit`:
+
+| Kit | Perícia | Exigido |
+|---|---|---|
+| ladrão | Crime | nos usos arrombar e sabotar |
+| disfarces | Enganação | no uso disfarce |
+| medicina | Medicina | em toda a perícia |
+| eletrônica | Tecnologia | no uso operar dispositivo |
+
+Cada unidade de **Kit de Perícia** escolhe qual é o seu kit, e a modificação **Instrumental** faz um
+acessório valer como kit — com escolha PRÓPRIA, porque o livro diz "um kit de perícia específico,
+escolhido ao aplicar esta modificação" (p. 64). A escolha é independente da perícia que o acessório
+bonifica: o exemplo do "smartphone hacker" do próprio livro dá +2 em Atualidades e funciona como kit
+de eletrônica.
+
+**O −5 de estar sem o kit NÃO é aplicado** (decisão do usuário, 2026-07-29): o livro amarra a
+exigência a usos da perícia, não à perícia inteira (exceto Medicina), então quem decide se aquele
+teste pedia o kit é o mestre. A ficha só informa — marca as perícias que exigem kit (⚒, com ✓ quando
+o agente tem), lista os kits que ele carrega e as perícias sem kit com o escopo de cada uma. O kit
+também não concede bônus nenhum: só registra a ferramenta.
+
+### Gaps que sobraram (deliberadamente)
 - **Remendão** (Técnico NEX 40%): "equipamentos de investigação têm categoria reduzida em I" — falta
   a tag de "equipamento de investigação" no catálogo.
 - Habilidades ativadas em jogo (~65 itens) continuam só com a descrição, e está correto: não há

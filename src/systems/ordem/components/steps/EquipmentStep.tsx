@@ -8,7 +8,9 @@ import {
   getAccessorySkillSlots, getAccessorySkillOptions, getNonCumulativeSkillConflicts, getWornVestimentas,
   getEquipmentByInstance, getKitSlots, getKitSkillOptions,
   getLoadState, OVERLOAD_DEFENSE_PENALTY, OVERLOAD_SKILL_PENALTY, OVERLOAD_SPEED_PENALTY_METERS,
+  getElementChoiceSlots, getEquipmentElementOptions,
 } from '../../utils/equipmentUtils'
+import type { ParanormalElement } from '../../types/ritual'
 import { getSkillName, getSkillKitName } from '../../utils/skillUtils'
 import { getAvailableModifications, canApplyModification, isModifiable, countApplied } from '../../utils/modificationUtils'
 import {
@@ -63,6 +65,10 @@ export function EquipmentStep() {
   const kitSlots = getKitSlots(draft)
   const kitSkillOptions = getKitSkillOptions()
   const pendingKits = kitSlots.filter(s => !s.skillId).length
+  // Itens paranormais nomeados "de (Elemento)": Amarras e Scanner.
+  const elementSlots = getElementChoiceSlots(draft)
+  const elementOptions = getEquipmentElementOptions()
+  const pendingElements = elementSlots.filter(s => !s.element).length
   // Proteção sem proficiência: −ØØ em Força e Agilidade (p. 62), penalidade ampla o bastante
   // pra merecer aviso próprio no passo, não só o rótulo no card do item.
   const unproficientProtections = getUnproficientProtections(draft)
@@ -86,8 +92,11 @@ export function EquipmentStep() {
     delete accessorySkills[uid]
     const kitSkills = { ...draft.kitSkillChoices }
     delete kitSkills[uid]
+    const itemElements = { ...draft.equipmentElementChoices }
+    delete itemElements[uid]
     updateDraft({
       kitSkillChoices: kitSkills,
+      equipmentElementChoices: itemElements,
       equipmentChoices: draft.equipmentChoices.filter(c => c !== uid),
       equipmentModifications: mods,
       equipmentCurses: curses,
@@ -95,6 +104,13 @@ export function EquipmentStep() {
       accessorySkillChoices: accessorySkills,
       ...(draft.utilityBackpackItem === uid ? { utilityBackpackItem: null } : {}),
     })
+  }
+
+  const setItemElement = (uid: string, element: string) => {
+    const updated = { ...draft.equipmentElementChoices }
+    if (element) updated[uid] = element as ParanormalElement
+    else delete updated[uid]
+    updateDraft({ equipmentElementChoices: updated })
   }
 
   const setKitSkill = (uid: string, skillId: string) => {
@@ -284,6 +300,8 @@ export function EquipmentStep() {
             const unitAccessorySlots = accessorySlots.filter(s => s.uid === uid)
             // Kit desta unidade (Kit de Perícia, ou acessório com a modificação Instrumental).
             const unitKitSlot = kitSlots.find(s => s.uid === uid)
+            // Itens "de (Elemento)": Amarras e Scanner de Manifestação Paranormal.
+            const unitElementSlot = elementSlots.find(s => s.uid === uid)
             const canBackpack = hasClassPower(draft, 'utility-backpack') && item.type !== 'weapon'
             const isBackpacked = draft.utilityBackpackItem === uid
             return (
@@ -311,6 +329,28 @@ export function EquipmentStep() {
                     >
                       ✕ remover
                     </button>
+                  </div>
+                )}
+
+                {unitElementSlot && (
+                  <div className="mb-2 flex items-center gap-1.5 flex-wrap">
+                    <span className="text-xs text-parchment-600 shrink-0">Elemento deste item:</span>
+                    {elementOptions.map(el => (
+                      <button
+                        key={el}
+                        onClick={() => setItemElement(uid, unitElementSlot.element === el ? '' : el)}
+                        className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded border transition-colors ${
+                          unitElementSlot.element === el
+                            ? ELEMENT_COLORS[el]
+                            : 'border-parchment-800 text-parchment-600 hover:border-parchment-600'
+                        }`}
+                      >
+                        {ELEMENT_NAMES[el]}
+                      </button>
+                    ))}
+                    {!unitElementSlot.element && (
+                      <span className="text-amber-400/90 text-xs">escolha pendente</span>
+                    )}
                   </div>
                 )}
 
@@ -601,6 +641,14 @@ export function EquipmentStep() {
 
         <div>
           <h3 className="font-fantasy text-xl text-parchment-300 border-b border-parchment-900/50 pb-2 mb-4">Itens Paranormais</h3>
+          {pendingElements > 0 && (
+            <div className="mb-4 p-3 rounded-lg border border-amber-700/50 bg-amber-950/30 text-amber-300 text-sm">
+              ⚠️ Escolha o elemento {pendingElements > 1 ? `dos ${pendingElements} itens` : 'do item'} que
+              você requisitou — o livro nomeia esses itens como "de (Elemento)" porque o efeito depende
+              dele: as Amarras só imobilizam criaturas vulneráveis ao elemento que as compõe, e o
+              Scanner detecta apenas manifestações do elemento escolhido.
+            </div>
+          )}
           {missingComponents.length > 0 && (
             <div className="mb-4 p-3 rounded-lg border border-amber-700/50 bg-amber-950/30 text-amber-300 text-sm">
               ⚠️ Você conhece rituais de <strong>{missingComponents.map(el => ELEMENT_NAMES[el]).join(' e ')}</strong>, mas

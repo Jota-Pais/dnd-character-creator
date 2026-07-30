@@ -906,6 +906,7 @@
     "spaces": 1,
     "type": "general",
     "paranormal": true,
+    "needsElementChoice": true,
     "description": "Cordas ou correntes feitas de um elemento Paranormal (escolha ao requisitar), preparadas para imobilizar criaturas do Outro Lado vulneráveis a ele. Armadilha: gasta as amarras, uma ação completa e 2 PE — armadilha de 3×3m; criatura que atravessar faz Reflexos (DT Int) ou fica imóvel até o fim da cena (mesmo passando, é terreno difícil). Laçar: ação padrão e 1 PE — criatura em alcance curto faz Vontade (DT Agi) ou fica paralisada até o início do próximo turno dela (manter custa 1 PE por rodada)."
   },
   {
@@ -942,6 +943,7 @@
     "spaces": 1,
     "type": "general",
     "paranormal": true,
+    "needsElementChoice": true,
     "description": "Dispositivo com objetos amaldiçoados e sigilos, sintonizado num elemento (escolha ao requisitar). Ativar é uma ação padrão; enquanto ativo consome 1 PE por rodada e indica a direção de todas as manifestações paranormais ativas do elemento (rituais, criaturas, itens amaldiçoados) em alcance longo — inclusive criaturas que tenham o elemento como complemento."
   }
 ]

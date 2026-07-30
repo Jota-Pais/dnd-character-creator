@@ -19,6 +19,14 @@ export interface OrdemEquipmentBase {
   paranormal?: boolean;
   /** Componentes ritualísticos: elemento cujos rituais este kit permite conjurar. */
   ritualComponentFor?: 'knowledge' | 'energy' | 'death' | 'blood';
+  /**
+   * O item é de um elemento escolhido ao requisitar — o livro o nomeia com o placeholder
+   * "(Elemento)" e o efeito depende dele (Amarras só imobilizam criaturas vulneráveis ao elemento
+   * que as compõe; o Scanner detecta manifestações do elemento escolhido). O elemento escolhido
+   * fica em `draft.equipmentElementChoices` por unidade, e o nome resolve na ficha
+   * ("Amarras de Sangue") — ver `getInstanceLabel`.
+   */
+  needsElementChoice?: boolean;
 }
 
 export type OrdemWeaponProficiency = 'simple' | 'tactical' | 'heavy';

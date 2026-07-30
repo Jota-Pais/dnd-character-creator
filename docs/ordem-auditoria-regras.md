@@ -496,3 +496,19 @@ seja trivial de derivar do PV total que já está impresso ao lado.
 
 Para um agente com 34 PV, machucado é 16 PV ou menos. Hoje o jogador faz essa conta no meio do
 combate, com três efeitos dependendo dela.
+
+## Correções da quarta rodada (2026-07-30)
+
+**I1 — escolha de elemento por unidade.** `needsElementChoice` marca os dois itens, e o elemento
+escolhido vive em `draft.equipmentElementChoices` por UNIDADE — dá pra carregar Amarras de Sangue e
+Amarras de Morte ao mesmo tempo, como um ritual multi-elemento pode ser conhecido em dois elementos.
+São os 4 elementos paranormais (não há versão de Medo, como não há Componentes Ritualísticos de Medo).
+
+O detalhe que fecha a coisa: **`getInstanceLabel` resolve o placeholder**, então "Amarras de
+(Elemento)" vira "Amarras de Sangue" em todo lugar de uma vez — inventário, avisos, PDF —, e a
+etapa fica pendente enquanto a escolha não é feita, com os chips de elemento no card do item.
+
+**I2 — limiar de machucado na ficha.** `getWoundedThreshold(maxHp)` = `ceil(PV/2) − 1`, o maior valor
+que ainda é "menos da metade". Aparece embaixo do PV na Revisão ("machucado com 16 ou menos") e no
+quadro de PV do PDF. Com 35 PV o limiar é 17, e com 34 é 16 — o arredondamento importa, e tem teste
+para os dois casos.

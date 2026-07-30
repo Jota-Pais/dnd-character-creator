@@ -20,6 +20,16 @@ export type DerivedStats = {
 }
 
 /**
+ * PV a partir dos quais o agente está **machucado**: "se estiver com menos da metade de seus PV
+ * totais" (p. 94). Devolve o maior valor que ainda conta como machucado — com 34 PV totais, metade
+ * é 17, e machucado é 16 ou menos. A condição não penaliza por si, mas quatro habilidades dependem
+ * dela (Inquebrável, Sangue Fervente, Sangue Vivo, Resgate), então a ficha mostra o número.
+ */
+export function getWoundedThreshold(maxHp: number): number {
+  return Math.ceil(maxHp / 2) - 1
+}
+
+/**
  * PV/PE/Sanidade no NEX do personagem — cresce a cada degrau alcançado desde NEX 5% (Tabelas 1.3/1.4/1.5).
  * Defesa = 10 + Agilidade + bônus de proteção equipada (livro pág. 43); `protectionBonus` vem da(s)
  * proteção(ões) do loadout (ver `getEquippedDefenseBonus`). `attributes` deve ser o efetivo (com aumentos de NEX).

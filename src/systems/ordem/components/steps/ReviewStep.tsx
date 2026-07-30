@@ -7,7 +7,7 @@ import { getPower } from '../../utils/powerUtils'
 import {
   getTrainedSkills, getSkillGrade, hasFavoredRitualPower, hasLaminaMaldita, getRitualCost, hasClassPower, getGrantedRituals, getEffectivePeLimit,
   getParanormalResistanceBonus, getMentalParanormalDamageResistance, getOriginMentalDamageResistance, getConditionalDamageResistances,
-  getExpertSkills, getExpertDie,
+  getExpertSkills, getExpertDie, getWoundedThreshold,
 } from '../../utils/characterUtils'
 import {
   getSkillBonusTotal, getSkillsWithUnconditionalBonus, getConditionalSkillBonuses,
@@ -147,7 +147,7 @@ export function ReviewStep() {
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <Stat label="Pontos de Vida" value={String(stats.hp)} />
+        <Stat label="Pontos de Vida" value={String(stats.hp)} hint={`machucado com ${getWoundedThreshold(stats.hp)} ou menos`} />
         <Stat label="Pontos de Esforço" value={String(stats.pe)} />
         <Stat label="Sanidade" value={String(stats.sanity)} />
         <Stat label="Defesa" value={String(stats.defense)} />
@@ -730,11 +730,12 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <div className="rounded-xl border border-parchment-900 bg-parchment-950/60 p-3 text-center">
       <p className="text-parchment-700 text-xs uppercase tracking-wide">{label}</p>
       <p className="text-gold-400 font-fantasy font-bold text-xl">{value}</p>
+      {hint && <p className="text-parchment-700 text-[10px] mt-0.5">{hint}</p>}
     </div>
   )
 }

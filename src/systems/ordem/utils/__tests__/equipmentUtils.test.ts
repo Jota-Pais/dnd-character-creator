@@ -15,6 +15,10 @@ import {
   getLoadPenaltySkillBonuses,
   getLoadState,
   isOverloaded,
+  getElementChoiceSlots,
+  getEquipmentElementOptions,
+  areEquipmentElementChoicesComplete,
+  getInstanceLabel,
   getAccessorySkillSlots,
   getAccessorySkillOptions,
   areAccessorySkillChoicesComplete,
@@ -773,6 +777,67 @@ describe('Acessórios: escolha de perícia e não-acúmulo (p. 63)', () => {
     })
     expect(formatAccessorySkills(draft, 'utensilio')).toBe('+5 Diplomacia, +2 Tecnologia')
     expect(formatAccessorySkills(draft, 'corda')).toBe('')
+  })
+})
+
+describe('Itens paranormais "de (Elemento)"', () => {
+  it('só Amarras e Scanner exigem a escolha — os Componentes já são um item por elemento', () => {
+    const needs = EQUIPMENTS.filter(e => e.needsElementChoice).map(e => e.id).sort()
+    expect(needs).toEqual(['amarras-elemento', 'scanner-manifestacao-paranormal'])
+  })
+
+  it('oferece os 4 elementos paranormais, sem Medo', () => {
+    expect(getEquipmentElementOptions().sort()).toEqual(['blood', 'death', 'energy', 'knowledge'])
+  })
+
+  it('o nome resolve o placeholder com o elemento escolhido', () => {
+    const semEscolha = makeDraft({ patente: 'agente-especial', equipmentChoices: ['amarras-elemento'] })
+    expect(getInstanceLabel(semEscolha, 'amarras-elemento')).toBe('Amarras de (Elemento)')
+
+    const comEscolha = makeDraft({
+      patente: 'agente-especial',
+      equipmentChoices: ['amarras-elemento'],
+      equipmentElementChoices: { 'amarras-elemento': 'blood' },
+    })
+    expect(getInstanceLabel(comEscolha, 'amarras-elemento')).toBe('Amarras de Sangue')
+  })
+
+  it('a escolha é por UNIDADE: dá pra carregar Amarras de dois elementos', () => {
+    const draft = makeDraft({
+      patente: 'oficial-operacoes',
+      equipmentChoices: ['amarras-elemento', 'amarras-elemento#2'],
+      equipmentElementChoices: { 'amarras-elemento': 'blood', 'amarras-elemento#2': 'death' },
+    })
+    expect(getInstanceLabel(draft, 'amarras-elemento')).toBe('Amarras de Sangue #1')
+    expect(getInstanceLabel(draft, 'amarras-elemento#2')).toBe('Amarras de Morte #2')
+    expect(areEquipmentElementChoicesComplete(draft)).toBe(true)
+  })
+
+  it('a etapa fica incompleta enquanto o elemento não é escolhido', () => {
+    const semEscolha = makeDraft({
+      class: 'combatant', patente: 'agente-especial',
+      equipmentChoices: ['scanner-manifestacao-paranormal'],
+    })
+    expect(areEquipmentElementChoicesComplete(semEscolha)).toBe(false)
+    expect(isEquipmentStepComplete(semEscolha)).toBe(false)
+
+    const comEscolha = makeDraft({
+      class: 'combatant', patente: 'agente-especial',
+      equipmentChoices: ['scanner-manifestacao-paranormal'],
+      equipmentElementChoices: { 'scanner-manifestacao-paranormal': 'energy' },
+    })
+    expect(isEquipmentStepComplete(comEscolha)).toBe(true)
+    expect(getInstanceLabel(comEscolha, 'scanner-manifestacao-paranormal'))
+      .toBe('Scanner de Manifestação Paranormal de Energia')
+  })
+
+  it('item sem placeholder não abre slot de elemento', () => {
+    const draft = makeDraft({
+      patente: 'agente-especial',
+      equipmentChoices: ['componentes-ritualisticos-sangue', 'corda'],
+    })
+    expect(getElementChoiceSlots(draft)).toEqual([])
+    expect(areEquipmentElementChoicesComplete(draft)).toBe(true)
   })
 })
 

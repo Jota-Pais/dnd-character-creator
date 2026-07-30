@@ -133,6 +133,13 @@ export type OrdemCharacterDraft = {
    */
   kitSkillChoices: Record<string, string>
   /**
+   * Elemento de cada unidade de item paranormal que o livro nomeia com "(Elemento)" — Amarras e
+   * Scanner de Manifestação Paranormal. Escolhido ao requisitar, entre os 4 elementos paranormais
+   * (não há versão de Medo, como não há Componentes Ritualísticos de Medo). Resolve o nome do item
+   * na ficha; ver `getInstanceLabel` e `getElementChoiceSlots`.
+   */
+  equipmentElementChoices: Record<string, ParanormalElement>
+  /**
    * Parâmetros de poderes com escolha embutida, por slot ("slot-0".."slot-5" ou "versatility"):
    * Treinamento em Perícia → 2 ids de perícia; Especialista/Mestre em Elemento → 1 elemento.
    */
@@ -208,6 +215,7 @@ export const EMPTY_DRAFT: OrdemCharacterDraft = {
   equipmentCurseChoices: {},
   accessorySkillChoices: {},
   kitSkillChoices: {},
+  equipmentElementChoices: {},
   powerParams: {},
   utilityBackpackItem: null,
   favoriteRitual: null,

@@ -33,6 +33,7 @@ import {
   hasCarryCapacityIntellectBonus,
   getWorkToolBonus,
   getTrilhaHpBonus,
+  getWoundedThreshold,
   getBonusRitualSlots,
   areBonusRitualSlotsComplete,
   hasExpertAbility,
@@ -518,6 +519,17 @@ describe('Bônus de perícia de todas as fontes', () => {
       },
     })
     expect(getConditionalSkillBonuses(draft).map(b => b.source)).toContain('Hacker')
+  })
+})
+
+describe('getWoundedThreshold (condição machucado, p. 94)', () => {
+  it('é o maior PV que ainda conta como "menos da metade dos PV totais"', () => {
+    // 34 PV: metade é 17, então machucado é 16 ou menos.
+    expect(getWoundedThreshold(34)).toBe(16)
+    // Ímpar: 35 PV, metade 17,5 → 17 ainda é menos da metade.
+    expect(getWoundedThreshold(35)).toBe(17)
+    expect(getWoundedThreshold(20)).toBe(9)
+    expect(getWoundedThreshold(1)).toBe(0)
   })
 })
 

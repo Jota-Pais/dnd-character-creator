@@ -2,7 +2,9 @@ import type { OrdemCharacterDraft } from '../types/character'
 import type { OrdemEquipment } from '../types/equipment'
 import type { OrdemPatente } from '../types/patente'
 import type { OrdemElement } from '../types/ritual'
-import { getRitualById, getRitualSlotsCount, getSlotRitualElement, getGrantedRitualElement } from './ritualUtils'
+import { getRitualById, getRitualSlotsCount, getSlotRitualElement, getGrantedRitualElement, ELEMENT_NAMES } from './ritualUtils'
+import { PARANORMAL_ELEMENTS } from '../types/ritual'
+import type { ParanormalElement } from '../types/ritual'
 import equipmentsJson from '../data/equipments.json'
 import { getOrdemClass } from './classUtils'
 import { getPatente, getCategoryLimit } from './patenteUtils'
@@ -41,12 +43,21 @@ export function newInstanceUid(choices: string[], itemId: string): string {
   return `${itemId}#${n}`
 }
 
-/** Nome de exibição de uma unidade: "Revólver" (única) ou "Revólver #2" (duplicatas). */
+/**
+ * Nome de exibição de uma unidade: "Revólver" (única) ou "Revólver #2" (duplicatas). Nos itens que
+ * o livro nomeia com "(Elemento)", o placeholder é substituído pelo elemento escolhido — "Amarras
+ * de (Elemento)" vira "Amarras de Sangue". Sem escolha, o placeholder fica à vista de propósito.
+ */
 export function getInstanceLabel(draft: OrdemCharacterDraft, uid: string): string {
   const item = getEquipmentByInstance(uid)
   if (!item) return uid
+  let name = item.name
+  if (item.needsElementChoice) {
+    const element = draft.equipmentElementChoices[uid]
+    if (element) name = name.replace(/\(Elemento\)/i, ELEMENT_NAMES[element])
+  }
   const same = draft.equipmentChoices.filter(c => instanceItemId(c) === item.id)
-  return same.length > 1 ? `${item.name} #${same.indexOf(uid) + 1}` : item.name
+  return same.length > 1 ? `${name} #${same.indexOf(uid) + 1}` : name
 }
 
 /** Capacidade de carga base pela Força: 5 espaços por ponto (2 se Força 0). */
@@ -413,6 +424,9 @@ export function isEquipmentStepComplete(draft: OrdemCharacterDraft): boolean {
   // Kits precisam saber de qual perícia são ("existe um kit para cada perícia que exige o item").
   if (!areKitChoicesComplete(draft)) return false
 
+  // Amarras e Scanner são "de (Elemento)": sem a escolha, o nome fica com o placeholder na ficha.
+  if (!areEquipmentElementChoicesComplete(draft)) return false
+
   // Proficiência de arma NÃO bloqueia: o livro permite possuir uma arma sem proficiência (com
   // penalidade ao usá-la). A UI apenas sinaliza "Sem Proficiência" — ver `hasWeaponProficiency`.
   return true
@@ -601,6 +615,40 @@ export function getNonCumulativeSkillConflicts(
   return [...bySkill.entries()]
     .filter(([, entry]) => entry.sources.length > 1)
     .map(([skillId, entry]) => ({ skillId, sources: entry.sources, applied: entry.applied }))
+}
+
+// ── Itens paranormais com elemento à escolha ("(Elemento)") ────────────────────
+
+export type ElementChoiceSlot = {
+  uid: string
+  /** Nome já com o elemento resolvido, ou com o placeholder quando ainda não escolhido. */
+  label: string
+  element: ParanormalElement | null
+}
+
+/** Elementos disponíveis: os 4 paranormais — o livro não tem versão de Medo desses itens. */
+export function getEquipmentElementOptions(): ParanormalElement[] {
+  return [...PARANORMAL_ELEMENTS]
+}
+
+/**
+ * Unidades do loadout que precisam de um elemento escolhido — hoje Amarras de (Elemento) e Scanner
+ * de Manifestação Paranormal de (Elemento). Mesmo esquema do elemento de um ritual multi-elemento:
+ * a escolha é por UNIDADE, então dá pra carregar Amarras de Sangue e Amarras de Morte.
+ */
+export function getElementChoiceSlots(draft: OrdemCharacterDraft): ElementChoiceSlot[] {
+  return draft.equipmentChoices
+    .filter(uid => getEquipmentByInstance(uid)?.needsElementChoice)
+    .map(uid => ({
+      uid,
+      label: getInstanceLabel(draft, uid),
+      element: draft.equipmentElementChoices[uid] ?? null,
+    }))
+}
+
+/** Todos os itens que exigem elemento já têm o seu? */
+export function areEquipmentElementChoicesComplete(draft: OrdemCharacterDraft): boolean {
+  return getElementChoiceSlots(draft).every(slot => slot.element !== null)
 }
 
 // ── Kits de perícia ────────────────────────────────────────────────────────────

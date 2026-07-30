@@ -7,7 +7,6 @@ import { getPower } from '../utils/powerUtils'
 import {
   getTrainedSkills, getSkillGrade, getRitualCost, hasClassPower, getGrantedRituals, getEffectivePeLimit, getExpertSkills, getExpertDie,
   getParanormalResistanceBonus, getMentalParanormalDamageResistance, getOriginMentalDamageResistance, getConditionalDamageResistances,
-  getWoundedThreshold, getDisturbedThreshold,
 } from '../utils/characterUtils'
 import {
   getSkillBonusTotal, getConditionalSkillBonuses, getConditionalDefenseBonuses, getExtraDamageDiceNotes,
@@ -170,11 +169,7 @@ export function PrintableSheet() {
             </section>
 
             <section className="grid grid-cols-2 gap-1.5">
-              <CurrentStat
-                label="PV · Pontos de Vida"
-                value={stats.hp}
-                note={`Machucado: ${getWoundedThreshold(stats.hp)} ou menos`}
-              />
+              <CurrentStat label="PV · Pontos de Vida" value={stats.hp} />
               <CurrentStat label="PE · Pontos de Esforço" value={stats.pe} />
             </section>
 
@@ -192,11 +187,7 @@ export function PrintableSheet() {
                   </p>
                 ))}
               </div>
-              <CurrentStat
-                label="SAN · Sanidade"
-                value={stats.sanity}
-                note={`Perturbado: ${getDisturbedThreshold(stats.sanity)} ou menos`}
-              />
+              <CurrentStat label="SAN · Sanidade" value={stats.sanity} />
             </section>
 
             <section className="text-xs space-y-1">
@@ -708,7 +699,7 @@ function SmallStat({ label, value }: { label: string; value: string }) {
   )
 }
 
-function CurrentStat({ label, value, note }: { label: string; value: number; note?: string }) {
+function CurrentStat({ label, value }: { label: string; value: number }) {
   return (
     <div className="border-2 border-gray-900 rounded p-2">
       <p className="text-[9px] uppercase font-bold text-gray-600">{label}</p>
@@ -716,7 +707,6 @@ function CurrentStat({ label, value, note }: { label: string; value: number; not
       <p className="text-[10px] text-gray-600 mt-1">
         Atuais: <span className="inline-block border-b border-gray-500 w-14" />
       </p>
-      {note && <p className="text-[9px] text-gray-600">{note}</p>}
     </div>
   )
 }

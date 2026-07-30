@@ -509,9 +509,14 @@ O detalhe que fecha a coisa: **`getInstanceLabel` resolve o placeholder**, entã
 etapa fica pendente enquanto a escolha não é feita, com os chips de elemento no card do item.
 
 **I2 — limiar de machucado na ficha.** `getWoundedThreshold(maxHp)` = `ceil(PV/2) − 1`, o maior valor
-que ainda é "menos da metade". Aparece embaixo do PV na Revisão ("machucado com 16 ou menos") e no
-quadro de PV do PDF. Com 35 PV o limiar é 17, e com 34 é 16 — o arredondamento importa, e tem teste
-para os dois casos.
+que ainda é "menos da metade". Aparecia embaixo do PV na Revisão ("machucado com 16 ou menos") e no
+quadro de PV do PDF.
+
+> **Revertido em 2026-07-30, por decisão do usuário.** "Todo mundo sabe olhar pra própria vida e
+> sabe se tá abaixo da metade ou não" — a linha era ruído numa ficha que já imprime o PV total e tem
+> campo em branco para o PV atual. A função e o teste foram removidos junto com a exibição. Vale
+> igualmente para o limiar de perturbado da quinta rodada (L4). **Se algum dia voltar, o motivo terá
+> de ser outro** (por exemplo, a ficha passar a rastrear PV atuais), não o cálculo em si.
 
 ---
 
@@ -572,15 +577,20 @@ Proteção Elemental (10 no elemento escolhido) e Escudo Mental (mental 10) vivi
 efeito — enquanto **a mesma regra** vinda do poder paranormal *Resistir a Elemento* já alimentava
 `elementResistances` e aparecia no quadro de Resistências. Metade das fontes contava, metade não.
 
-### L4 — Limiar de "perturbado" ausente (P2)
+### L4 — Limiar de "perturbado" ausente (P2) — **descartado**
 
 **Livro (p. 95):** "Perturbado. Se estiver com **menos da metade de sua Sanidade total**, você está
 perturbado. Por si só, essa condição não causa penalidades, mas serve de pré-requisito para certas
 habilidades e efeitos." É o texto de *machucado*, palavra por palavra, trocando PV por SAN.
 
-A quarta rodada colocou o limiar de machucado embaixo do PV (I2); a Sanidade ficou sem o equivalente,
-embora perturbado seja o gatilho da Tabela 5.1 — o efeito de insanidade que se rola na primeira vez
-que fica perturbado numa cena.
+A quarta rodada colocou o limiar de machucado embaixo do PV (I2); a Sanidade ficou sem o equivalente.
+
+> **Descartado em 2026-07-30, por decisão do usuário — junto com o de machucado (I2).** O jogador vê
+> o próprio PV/SAN e sabe se está abaixo da metade; imprimir a conta é ruído. Diferença de peso entre
+> os dois, registrada na hora da decisão: *machucado* tem quatro habilidades penduradas nele
+> (Inquebrável, Sangue Fervente, Sangue Vivo, Resgate), enquanto **nenhuma** habilidade do nosso
+> conteúdo depende de *perturbado* — ele só serve ao gatilho da Tabela 5.1 e a efeitos de criaturas,
+> que são do lado do mestre. Mesmo assim, os dois saíram.
 
 ### L5 — Três itens perderam a DT na digitalização (P2)
 
@@ -637,7 +647,7 @@ da p. 80 — seguimos a tabela.
 | **L1** | `CURSE_ALLOWED_PATENTES` + `canPatenteUseCursedItems`; `areCursesValid` reprova quando a Patente não libera, então a etapa trava. No card, os botões de maldição ficam desabilitados com a razão no `title` e um aviso acima; **remover** continua liberado, para consertar save antigo ou Patente rebaixada depois. `getCursesBlockedByPatente` nomeia as unidades no aviso da etapa |
 | **L2** | `getUnitCursePrice`/`formatUnitCursePrice` (agregado por elemento, cumulativo) e `getCursePriceNote` (por maldição). Aparece como observação curta na descrição de cada maldição no card do Equipamento, ao lado do nome do item na Revisão e em linha própria no PDF. Medo não tem preço — a p. 145 define só os quatro elementos |
 | **L3** | Campos `elementResistance`/`mentalResistance` nas 6 maldições e `getCurseResistances`, que entra no quadro de Resistências (Revisão e PDF) e no resumo da página 1, com a fonte nomeada. Bônus iguais em itens diferentes contam uma vez (p. 144), mas Proteção Elemental de elementos diferentes são fontes distintas |
-| **L4** | `getDisturbedThreshold(maxSanity)` = `ceil(SAN/2) − 1`, embaixo da Sanidade na Revisão e no quadro de SAN do PDF, espelhando o de machucado. Um teste amarra as duas funções: mesmo texto no livro, mesma conta |
+| **L4** | ~~limiar de perturbado na ficha~~ — **descartado na revisão do usuário**, que aproveitou para tirar também o de machucado (I2). Nenhuma função nova sobrou: `getDisturbedThreshold` e `getWoundedThreshold` foram removidas, com os testes e as duas exibições |
 | **L5** | Os três textos recuperaram o "DT Agi", e `resolveDtInText` troca a sigla pelo número já calculado ("DT Vig" → "DT 18 — Vig") nas descrições que a ficha imprime: habilidades de origem/classe/trilha/poderes, maldições e itens. `getAbilityDt` centraliza a fórmula da p. 80, que `getSheetExplosives` passou a usar |
 | **L6** | `flatDamageBonus` na arma sintética do Desarmado (+1 com Soqueira no loadout); `modAppliesTo` passou a aceitar a Soqueira nas modificações corpo a corpo; e `getUnarmedAttack` repassa as modificações dela para a linha, com a fonte anotada |
 | **L7/L8** | As duas descrições completadas com as cláusulas que faltavam |
@@ -653,7 +663,7 @@ Aumento de Atributo.
 
 ### Testes de regressão
 
-Trinta e uma travas novas, mirando a classe do erro:
+Vinte e nove travas novas (as duas dos limiares saíram com a decisão acima), mirando a classe do erro:
 
 - **Patente × maldição**: as 5 patentes; e o caso que prova que a regra não é redundante (escudo Cat 0
   amaldiçoado → Cat II cabe na vaga do Operador, mas o livro proíbe)
@@ -661,7 +671,6 @@ Trinta e uma travas novas, mirando a classe do erro:
   elementos diferentes no mesmo item; escolha pendente e Medo sem preço
 - **Resistências**: as duas fontes (elemental e mental), não-acúmulo da mesma maldição em dois itens,
   Proteção Elemental de elementos diferentes como fontes distintas, e maldição em item não requisitado
-- **Perturbado**: paridade da SAN e igualdade com `getWoundedThreshold` (o livro usa o mesmo texto)
 - **DT**: a fórmula, várias DTs no mesmo texto, DT numérica intocada, e o atributo lido COM maldições
 - **Soqueira**: o +1, o repasse de modificações, a nota da fonte, e o catálogo aceitando as mods certas
 - **Dados**: as cláusulas de Eloquência e Cai Dentro, a sigla de DT preservada nas features, e uma

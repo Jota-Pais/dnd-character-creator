@@ -33,8 +33,6 @@ import {
   hasCarryCapacityIntellectBonus,
   getWorkToolBonus,
   getTrilhaHpBonus,
-  getWoundedThreshold,
-  getDisturbedThreshold,
   getBonusRitualSlots,
   areBonusRitualSlotsComplete,
   hasExpertAbility,
@@ -525,22 +523,6 @@ describe('Bônus de perícia de todas as fontes', () => {
   })
 })
 
-describe('getDisturbedThreshold (condição perturbado, p. 95)', () => {
-  it('é o maior valor de SAN que ainda conta como "menos da metade da Sanidade total"', () => {
-    // O livro define perturbado com o mesmo texto de machucado, trocando PV por SAN.
-    expect(getDisturbedThreshold(20)).toBe(9)
-    expect(getDisturbedThreshold(21)).toBe(10)
-    expect(getDisturbedThreshold(12)).toBe(5)
-    expect(getDisturbedThreshold(1)).toBe(0)
-  })
-
-  it('usa a mesma conta de machucado (o texto do livro é idêntico)', () => {
-    for (const total of [1, 12, 16, 20, 21, 34, 35, 60]) {
-      expect(getDisturbedThreshold(total)).toBe(getWoundedThreshold(total))
-    }
-  })
-})
-
 describe('resolveDtInText (DT de habilidades, p. 80)', () => {
   it('troca a sigla pelo número: 10 + limite de PE + atributo', () => {
     const draft = makeDraft({
@@ -578,17 +560,6 @@ describe('resolveDtInText (DT de habilidades, p. 80)', () => {
       equipmentCurses: { utensilio: ['carisma'] },
     })
     expect(getAbilityDt(comCarisma, 'presence')).toBe(getAbilityDt(semCarisma, 'presence') + 1)
-  })
-})
-
-describe('getWoundedThreshold (condição machucado, p. 94)', () => {
-  it('é o maior PV que ainda conta como "menos da metade dos PV totais"', () => {
-    // 34 PV: metade é 17, então machucado é 16 ou menos.
-    expect(getWoundedThreshold(34)).toBe(16)
-    // Ímpar: 35 PV, metade 17,5 → 17 ainda é menos da metade.
-    expect(getWoundedThreshold(35)).toBe(17)
-    expect(getWoundedThreshold(20)).toBe(9)
-    expect(getWoundedThreshold(1)).toBe(0)
   })
 })
 

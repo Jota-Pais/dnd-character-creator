@@ -40,6 +40,84 @@ describe('rituals.json — integridade dos dados extraídos do livro', () => {
     const r = RITUALS.find(x => x.id === 'amaldicoar-arma')
     expect(r?.elements.sort()).toEqual(['blood', 'death', 'energy', 'knowledge'])
   })
+
+  // A digitalização cortava valores na quebra de linha do stat block do livro, deixando coisas
+  // como "Fortitude reduz" (sem o "à metade") impressas na ficha. Estes três testes travam a
+  // classe do erro, não só os casos que já foram corrigidos.
+
+  it('nenhum campo do stat block termina em conector solto ou pontuação', () => {
+    // "Fortitude reduz", "até chegar ao solo ou", "Vontade parcial," — todos truncados.
+    const DANGLING = /(\s(?:ou|e|de|da|do|à|a|em|para|reduz|com)|[,;:])$/i
+    for (const r of RITUALS) {
+      for (const field of ['execution', 'range', 'target', 'duration', 'resistance'] as const) {
+        const value = r[field]
+        if (!value) continue
+        expect(DANGLING.test(value), `${r.name} · ${field} = "${value}"`).toBe(false)
+      }
+    }
+  })
+
+  it('nenhum campo tem palavra quebrada pelo OCR do PDF', () => {
+    // O extract do livro parte palavras no meio ("Forti tude", "instantâ nea", "ilimita do"):
+    // quando isso vaza pro dado, sai partido na ficha.
+    const BROKEN = /\b(Forti|Vonta|Refle|Resistên|Resis|Dura|Execu|Alcan|instantâ|ilimita|pes|sustenta)\s/i
+    for (const r of RITUALS) {
+      for (const field of ['execution', 'range', 'target', 'duration', 'resistance'] as const) {
+        expect(BROKEN.test(r[field] ?? ''), `${r.name} · ${field} = "${r[field]}"`).toBe(false)
+      }
+    }
+  })
+
+  // Execução e alcance têm vocabulário FECHADO no livro — a allowlist é uma trava bem mais forte
+  // que padrão de texto, e pega qualquer valor estranho de uma vez.
+  it('execução usa só os valores do livro', () => {
+    const VALID = ['livre', 'movimento', 'padrão', 'completa', 'reação']
+    for (const r of RITUALS) {
+      expect(VALID, `${r.name}: "${r.execution}"`).toContain(r.execution)
+    }
+  })
+
+  it('alcance usa só os valores do livro', () => {
+    const VALID = ['pessoal', 'toque', 'curto', 'médio', 'longo', 'extremo', 'ilimitado', '1,5m', 'médio ou toque']
+    for (const r of RITUALS) {
+      expect(VALID, `${r.name}: "${r.range}"`).toContain(r.range)
+    }
+  })
+
+  it('todo termo de resistência diz o que o sucesso faz', () => {
+    // O livro sempre qualifica: anula, parcial, reduz à metade, desacredita... Um campo com só o
+    // nome da perícia ("Fortitude") não informa nada ao jogador.
+    const BARE_SKILL = /^(Fortitude|Reflexos|Vontade)$/
+    for (const r of RITUALS) {
+      if (!r.resistance) continue
+      expect(BARE_SKILL.test(r.resistance.trim()), `${r.name}: "${r.resistance}"`).toBe(false)
+    }
+  })
+
+  it('os campos corrigidos contra o livro (p. 122-160) seguem completos', () => {
+    const expected: Record<string, Partial<Record<'duration' | 'resistance', string>>> = {
+      'canalizar-o-medo': { duration: 'permanente até ser descarregada' },
+      'compreensao-paranormal': { resistance: 'Vontade anula (veja texto)' },
+      'convocar-o-algoz': { resistance: 'Vontade parcial, Fortitude parcial' },
+      decadencia: { resistance: 'Fortitude reduz à metade' },
+      'desacelerar-impacto': { duration: 'até chegar ao solo ou cena, o que vier primeiro' },
+      'eco-espiral': { resistance: 'Fortitude reduz à metade' },
+      hemofagia: { resistance: 'Fortitude reduz à metade' },
+      'invadir-mente': { duration: 'instantânea ou 1 dia', resistance: 'Vontade parcial ou nenhuma' },
+      'mergulho-mental': { resistance: 'Vontade parcial (veja texto)' },
+      'miasma-entropico': { resistance: 'Fortitude parcial (veja texto)' },
+      paradoxo: { resistance: 'Fortitude reduz à metade' },
+      'vinculo-de-sangue': { resistance: 'Fortitude anula' },
+      'vomitar-pestes': { resistance: 'Reflexos reduz à metade' },
+    }
+    for (const [id, fields] of Object.entries(expected)) {
+      const r = RITUALS.find(x => x.id === id)
+      expect(r, id).toBeDefined()
+      for (const [field, value] of Object.entries(fields)) {
+        expect(r![field as 'duration' | 'resistance'], `${id}.${field}`).toBe(value)
+      }
+    }
+  })
 })
 
 describe('ritualUtils', () => {

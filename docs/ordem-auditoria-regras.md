@@ -366,3 +366,36 @@ verificáveis contra o personagem: a ficha poderia dizer **quais versões ele j�
 
 Estruturar isso significaria extrair de cada descrição os degraus (nome, custo extra, círculo
 mínimo, exige afinidade) — trabalho de dados considerável, e a decisão de fazer ou não é do usuário.
+
+**Decisão do usuário (2026-07-30): não estruturar.** O texto do livro já diz "+3 PE" / "+5 PE" em
+cada degrau, e os rituais continuam mostrando todas as versões na descrição. Sem mudança.
+
+## Correções da terceira rodada (2026-07-30)
+
+**19 campos de stat block corrigidos em 17 rituais** (13 da tabela da H1, mais 6 encontrados
+depois). Os seis extras apareceram porque os testes de regressão são mais rígidos que o script de
+auditoria: o script comparava normalizando espaços, então `"instantâ nea"` batia com `instantânea` do
+livro e passava — mas o dado quebrado é o que a ficha imprime.
+
+| Ritual | Campo | Era | Virou |
+|---|---|---|---|
+| Vomitar Pestes | resistência | `Reflexos reduz` | `Reflexos reduz à metade` |
+| Convocação Instantânea | alcance | `ilimita do` | `ilimitado` |
+| Decadência, Eletrocussão, Hemofagia, Lâmina do Medo | duração | `instantâ nea` | `instantânea` |
+
+**Três suspeitos que estavam CERTOS** e não foram tocados, porque o livro é assim mesmo:
+Perturbação (`Vontade (anula)`, com parênteses), Poeira da Podridão (`Fortitude (veja texto)`) e
+Deflagração de Energia (stat block sem linha de Duração).
+
+### Testes de regressão
+
+Cinco travas novas em `ritualUtils.test.ts`, mirando a *classe* do erro e não só os casos corrigidos:
+
+- nenhum campo termina em conector solto ou pontuação (`Fortitude reduz`, `Vontade parcial,`)
+- nenhum campo tem palavra partida pelo OCR (`Forti tude`, `instantâ nea`, `ilimita do`)
+- **execução** e **alcance** têm vocabulário fechado no livro, então viraram allowlist — trava bem
+  mais forte que padrão de texto
+- todo termo de resistência diz o que o sucesso faz (um `Fortitude` sozinho não informa nada)
+- os 19 valores corrigidos, um a um
+
+Foram esses testes que acharam os 6 casos extras.

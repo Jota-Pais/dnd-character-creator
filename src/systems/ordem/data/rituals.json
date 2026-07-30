@@ -138,7 +138,7 @@
     "execution": "padrão",
     "range": "toque",
     "target": "1 pessoa",
-    "duration": "permanente até ser",
+    "duration": "permanente até ser descarregada",
     "resistance": "",
     "description": "descarregada Você transfere parte de seu poder para outra pessoa. Escolha um ritual de até 3º círculo que você conheça; o alvo pode conjurar este ritual em sua forma básica uma vez, sem pagar seu custo em PE (mas pode usar formas avançadas gastando seus próprios PE para isso). Até o ritual transferido ser conjurado, seus PE máximos diminuem em um valor igual ao custo dele."
   },
@@ -223,7 +223,7 @@
     "range": "toque",
     "target": "1 ser ou objeto",
     "duration": "cena",
-    "resistance": "Vontade anula",
+    "resistance": "Vontade anula (veja texto)",
     "description": "(veja texto) O ritual confere a você compreensão sobrenatural da linguagem. Se tocar um objeto contendo informação (ou livro, um dispositivo com uma gravação...), você entende as palavras mesmo que não conheça seu idioma, contanto que se trate de um idioma humano (não funciona com símbolos ou sigilos paranormais). Se tocar uma pessoa, pode se comunicar com ela como se falassem um idioma em comum. Se tocar um ser não inteligente, como um animal, pode perceber seus sentimentos básicos, como medo ou felicidade. Um alvo involuntário tem direito a um teste de Vontade. Discente (+2 PE): muda o alcance para “curto” e o alvo para “alvos escolhidos”. Você pode entender todos os alvos afetados. Requer 2º círculo. Verdadeiro (+5 PE): muda o alcance para “pessoal” e o alvo para “você”. Em vez do normal, você pode falar, entender e escrever qualquer idioma humano. Requer 3º círculo."
   },
   {
@@ -304,7 +304,7 @@
       "energy"
     ],
     "execution": "padrão",
-    "range": "ilimita do",
+    "range": "ilimitado",
     "target": "1 objeto de até 2 espaços",
     "duration": "instantânea",
     "resistance": "Vontade anula",
@@ -321,7 +321,7 @@
     "range": "1,5m",
     "target": "1 pessoa",
     "duration": "sustentada",
-    "resistance": "Vontade parcial,",
+    "resistance": "Vontade parcial, Fortitude parcial",
     "description": "Fortitude parcial Usando os medos subconscientes do alvo, você manipula a espiral da Morte para criar uma imagem daquilo que ele mais teme. Apenas a própria vítima vê o algoz com nitidez; outros seres presentes (incluindo você) enxergam apenas um vulto sombrio. O algoz surge adjacente a você. No fim de cada turno seu, ele flutua 12m em direção à vítima. Se o algoz terminar o turno em alcance curto da vítima, ela deve fazer um teste de Vontade; se falhar, ficará abalada. Se o algoz terminar o turno adjacente à vítima, ela deve fazer um teste de Fortitude. Se falhar, sofre um colapso e fica com 0 PV. Se passar, sofre 6d6 pontos de dano de Morte (este dano não pode reduzir o alvo a menos de 1 PV). O algoz persegue o alvo implacavelmente, mesmo além do alcance do ritual. Ele é incorpóreo e imune a dano e só desaparece se deixar o alvo morrendo ou se for dissipado."
   },
   {
@@ -348,8 +348,8 @@
     "execution": "padrão",
     "range": "toque",
     "target": "1 ser",
-    "duration": "instantâ nea",
-    "resistance": "Fortitude reduz",
+    "duration": "instantânea",
+    "resistance": "Fortitude reduz à metade",
     "description": "à metade Espirais de trevas envolvem sua mão e definham o alvo, que sofre 2d8+2 pontos de dano de Morte. Discente (+2 PE): muda a resistência para “nenhuma” e o dano para 3d8+3. Como parte da execução do ritual, você transfere as espirais para uma arma e faz um ataque corpo a corpo contra o alvo com esta arma. Se acertar, causa o dano da arma e do ritual, somados. Verdadeiro (+5 PE): muda o alcance para “pessoal” o alvo para “área: explosão com 6m de raio” e o dano para 8d8+8. As espirais afetam todos os seres na área. Requer 3º círculo."
   },
   {
@@ -390,7 +390,7 @@
     "execution": "reação",
     "range": "curto",
     "target": "1 ser ou objetos somando até 10 espaços",
-    "duration": "até chegar ao solo ou",
+    "duration": "até chegar ao solo ou cena, o que vier primeiro",
     "resistance": "",
     "description": "cena, o que vier primeiro O alvo cai lentamente. A velocidade da queda é reduzida para 18m por rodada — o suficiente para não causar dano. Como conjurar este ritual é uma reação, você pode conjurá-lo rápido o bastante para salvar a si ou um aliado de quedas inesperadas. Se o alvo for um projétil — como um disparo de arma ou um objeto largado do alto de um prédio —, o ritual faz com que ele cause metade do dano normal, devido à lentidão. Este ritual só funciona em alvos em queda livre ou similar; não pode frear um golpe de faca ou o mergulho rasante de um atacante voador. Discente (+3 PE): aumenta o total de alvos para seres ou objetos somando até 100 espaços."
   },
@@ -489,7 +489,7 @@
     "range": "curto",
     "target": "1 ser",
     "duration": "até 2 rodadas",
-    "resistance": "Fortitude reduz",
+    "resistance": "Fortitude reduz à metade",
     "description": "à metade Você manifesta em suas mãos uma pequena cópia do alvo feita de cinzas. No início de cada um de seus turnos, você pode gastar uma ação padrão para se manter concentrado ou uma ação livre para descarregar o efeito. Se descarregar, a cópia explode e o alvo sofre dano de Morte igual a quantidade de dano que sofreu desde que o ritual foi conjurado (Fortitude reduz à metade). Se você não descarregar até a segunda rodada após conjurá-lo, ele é dissipado. Discente (+3 PE): muda a duração para “até 3 rodadas”. Se você não descarregar até a terceira rodada após conjurá-lo, ele é dissipado. Verdadeiro (+7 PE): muda a ação necessária para se concentrar para movimento e o alvo para até 5 seres. Requer 4º círculo e afinidade."
   },
   {
@@ -502,7 +502,7 @@
     "execution": "padrão",
     "range": "curto",
     "target": "1 ser ou objeto",
-    "duration": "instantâ nea",
+    "duration": "instantânea",
     "resistance": "Fortitude parcial",
     "description": "Você manifesta e dispara uma corrente elétrica contra o alvo, que sofre 3d6 pontos de dano de eletricidade e fica vulnerável por uma rodada. Se passar no teste de resistência, sofre apenas metade do dano e evita a condição. Se usado contra objetos eletrônicos, este ritual causa o dobro de dano e ignora resistência. Discente (+2 PE): muda o alvo para “área: linha de 30m”. Você dispara um poderoso raio que causa 6d6 pontos de dano de Energia em todos os seres e objetos li vres na área. Requer 2º círculo. Verdadeiro (+5 PE): muda a área para “alvos escolhidos”. Em vez do normal, você dispara vários relâmpagos, um para cada alvo escolhido, causando 8d6 pontos de dano de Energia em cada. Requer 3º círculo."
   },
@@ -628,8 +628,8 @@
     "execution": "padrão",
     "range": "toque",
     "target": "1 ser",
-    "duration": "instantâ nea",
-    "resistance": "Fortitude reduz",
+    "duration": "instantânea",
+    "resistance": "Fortitude reduz à metade",
     "description": "à metade Você arranca o sangue do corpo do alvo através de pele dele, causando 6d6 pontos de dano de Sangue. Você então absorve esse sangue, recuperando pontos de vida iguais à metade do dano causado. Discente (+3 PE): muda a resistência para “nenhuma”. Como parte da execução do ritual, você pode usar uma arma em vez das mãos para fazer um ataque corpo a corpo contra o alvo. Se acertar, causa o dano do ataque e do ritual, recuperando pontos de vida em quantidade igual à metade do dano total causado. Verdadeiro (+7 PE): muda o alcance para “pessoal”, o alvo para “você” e a duração para “cena”. Em vez do normal, a cada rodada você pode gastar uma ação padrão para tocar 1 ser e causar 4d6 pontos de dano de Sangue. Você recupera pontos de vida iguais à metade do dano causado. Requer 4º círculo."
   },
   {
@@ -656,8 +656,8 @@
     "execution": "padrão",
     "range": "médio ou toque",
     "target": "1 ser ou 2 pessoas voluntárias",
-    "duration": "instantânea",
-    "resistance": "",
+    "duration": "instantânea ou 1 dia",
+    "resistance": "Vontade parcial ou nenhuma",
     "description": "ou 1 dia Resistência: Vontade parcial ou nenhuma Quando conjura este ritual, você gera um dos efeitos a seguir, a sua escolha: rajada mental (usa os primeiros parâmetros do cabeçalho acima) ou ligação telepática (usa os segundos parâmetros). Rajada Mental: você infecta a mente do alvo com o Conhecimento proibido do Outro Lado, dilacerando o cérebro dele. O alvo sofre 6d6 pontos de dano de Energia e fica atordoado por uma rodada. Se passar no teste de Vontade, sofre metade do dano e não fica atordoado. Um mesmo alvo só pode ficar atordoado por este ritual uma vez por cena. Ligação Telepática: você cria um elo mental entre duas pessoas (você pode ser uma delas), que podem se comunicar independente da distância pela duração do ritual (1 dia). Discente (+3 PE): se escolhar rajada mental, aumenta o dano para 10d6. Se escolher ligação telepática, em vez do normal, você cria um elo mental que permite que você veja e ouça pelos sentidos do alvo, gastando uma ação de movimento para se concentrar. Um alvo involuntário pode fazer um teste de Vontade para suprimir o ritual por uma hora. Requer 3º círculo. Verdadeiro (+ 7 PE): se escolher rajada mental, aumenta o dano para 10d6 e muda o alvo para todos ose seres escolhidos dentro do alcance. Se escolher ligação telepática, você pode criar um vínculo mental entre até 5 pessoas."
   },
   {
@@ -684,7 +684,7 @@
     "execution": "padrão",
     "range": "toque",
     "target": "1 ser",
-    "duration": "instantâ nea",
+    "duration": "instantânea",
     "resistance": "Fortitude parcial",
     "description": "Você manifesta uma lâmina impossível, que pode ser descrita apenas como uma “fenda na Realidade”, com a qual golpeia um alvo adjacente. Se o alvo falhar no teste de Fortitude, seus PV são reduzidos a 0 e ele fica morrendo; se passar, sofre 10d8 pontos de dano de Medo (ignora todas as resistências) e fica apavorado por uma rodada. Se uma pessoa ficar morrendo pela Lâmina do Medo e sobreviver, o ferimento causado pelo ritual passa a se transformar constantemente, jamais cicatrizando e fazendo com que a pessoa passe a viver em dor constante. Aprender este ritual requer um poder de trilha específico."
   },
@@ -741,7 +741,7 @@
     "range": "toque",
     "target": "1 pessoa",
     "duration": "sustentada",
-    "resistance": "Vontade parcial",
+    "resistance": "Vontade parcial (veja texto)",
     "description": "(veja texto) Você mergulha nos pensamentos do alvo, para descobrir informações sobre ele. Durante o mergulho, você fica desprevenido. No início de cada turno seu que estiver sustentando o efeito e tocando o alvo, ele deve fazer um teste de Vontade. Se falhar, deve responder uma pergunta sua da melhor maneira possível, sendo incapaz de mentir ou omitir fatos. O que exatamente você descobre depende do mestre: talvez você não descubra tudo que há para saber, mas ganhe pistas para continuar a investigação. Verdadeiro (+4 PE): muda a execução para 1 dia, o alcance para ilimitado e adiciona como componente ritualístico uma cuba de ouro cheia d’água e uma máscara (acessório de categoria II). Você pode realizar o mergulho mental à distância, submergindo seu rosto mascarado na água enquanto mentaliza o alvo. Para que esse ritual funcione, você precisa ter alguma informação sobre o alvo, como nome completo, e um objeto pessoal ou fotografia. Requer 4º círculo."
   },
   {
@@ -755,7 +755,7 @@
     "range": "médio",
     "target": "nuvem com 6m de raio",
     "duration": "instantânea",
-    "resistance": "Forti tude parcial",
+    "resistance": "Fortitude parcial (veja texto)",
     "description": "(veja texto) Cria uma explosão de emanações tóxicas. Seres na área sofrem 4d8 pontos de dano químico e ficam enjoados por 1 rodada. Se passarem na resistência, sofrem metade do dano e não ficam enjoados. Discente (+3 PE): muda o dano para 6d8 de Morte. Verdadeiro (+7 PE): muda a duração para 3 rodadas. Um ser que inicie seu turno dentro da área sofre o dano novamente. Requer 3º círculo."
   },
   {
@@ -811,7 +811,7 @@
     "range": "médio",
     "target": "esfera com 6m de raio",
     "duration": "instantânea",
-    "resistance": "Fortitude reduz",
+    "resistance": "Fortitude reduz à metade",
     "description": "à metade O ritual cria uma poderosa implosão de distorção temporal contraditória, causando 6d6 pontos de dano de Morte em todos os seres na área. Discente (+3 PE): muda a área para “efeito: esfera com tamanho Médio” e a duração para cena. Em vez do normal, cria uma esfera de emanações espirais sibilantes com 1,5m de diâmetro que causa 4d6 pontos de dano de Morte a qualquer ser no mesmo espaço. Você pode gastar uma ação de movimento para fazer a esfera voar 9m em qualquer direção. Um ser só pode sofrer dano da esfera uma vez por rodada. Verdadeiro (+7 PE): muda o dano para 13d6. Seres reduzidos a 0 PV pelo dano do Paradoxo devem fazer um teste de Fortitude. Se falharam, são reduzidas a cinzas (morrem imediatamente). Requer 4º círculo."
   },
   {
@@ -1105,7 +1105,7 @@
     "range": "curto",
     "target": "1 ser",
     "duration": "cena",
-    "resistance": "Fortitude",
+    "resistance": "Fortitude anula",
     "description": "anula Você manifesta um símbolo de Sangue no seu corpo e no corpo do alvo. Sempre que você sofrer dano, o alvo deve fazer um teste de Fortitude. Se ele falhar, você sofre apenas metade do dano e ele sofre a metade restante. Você pode conjurar o ritual com efeito inverso, fazendo com que você receba metade de todo o dano que o alvo receberia. Alvos voluntários não precisam fazer testes de resistência."
   },
   {
@@ -1119,7 +1119,7 @@
     "range": "médio",
     "target": "1 enxame Grande (quadrado de 3m)",
     "duration": "sustentada",
-    "resistance": "Reflexos reduz",
+    "resistance": "Reflexos reduz à metade",
     "description": "à metade Você vomita um enxame de pequenas criaturas de Sangue, que surge em um ponto adjacente a sua escolha. O enxame pode passar pelo espaço de outros seres e não impede que outros seres entrem no espaço dele. No final de cada um de seus turnos, o enxame causa 5d12 pontos de dano de sangue a qualquer ser no espaço dele (Reflexos reduz à metade). Você pode gastar uma ação de movimento para mover o enxame com deslocamento de 12m. Discente (+2 PE): além do normal, um alvo que falhe no teste de Reflexos fica agarrada (o enxame escala e cobre o corpo dele). O alvo pode gastar uma ação padrão e fazer um teste de Acrobacia ou Atletismo para escapar. Se você mover o enxame, o alvo fica livre. Verdadeiro (+5 PE): o enxame vira Enorme (cubo de 6m de lado), ganha deslocamento de voo 18m e passa a ocupar um cubo ao invés de um quadrado."
   },
   {

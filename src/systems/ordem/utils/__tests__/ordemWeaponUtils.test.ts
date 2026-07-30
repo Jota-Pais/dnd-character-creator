@@ -142,6 +142,50 @@ describe('getUnarmedAttack (Artista Marcial)', () => {
   })
 })
 
+describe('Soqueira no ataque desarmado (p. 66)', () => {
+  const comSoqueira = (over: Partial<OrdemCharacterDraft> = {}) => makeDraft({
+    attributes: AGI3_FOR2.attributes,
+    equipmentChoices: ['soqueira'],
+    ...over,
+  })
+
+  it('soma +1 nas rolagens de dano desarmado', () => {
+    // Sem soqueira: 1d3+2 (Força 2). Com ela: +1.
+    expect(getUnarmedAttack(AGI3_FOR2).damage).toBe('1d3+2 I (não letal)')
+    expect(getUnarmedAttack(comSoqueira()).damage).toBe('1d3+3 I (não letal)')
+  })
+
+  it('aplica as modificações DELA nos ataques desarmados', () => {
+    const draft = comSoqueira({ equipmentModifications: { soqueira: ['cruel', 'certeira'] } })
+    const a = getUnarmedAttack(draft)
+    // Cruel +2 no dano (soma com o +1 da soqueira e a Força 2) e Certeira +2 no ataque.
+    expect(a.damage).toBe('1d3+5 I (não letal)')
+    expect(a.attackBonus).toBe(2)
+  })
+
+  it('aceita modificações de arma corpo a corpo no catálogo (o livro permite explicitamente)', () => {
+    const soqueira = getEquipmentById('soqueira')!
+    const ids = getAvailableModifications(soqueira).map(m => m.id)
+    expect(ids).toContain('cruel')
+    expect(ids).toContain('certeira')
+    expect(ids).toContain('perigosa')
+    // Não é arma de fogo: nada de Calibre Grosso.
+    expect(ids).not.toContain('calibre-grosso')
+  })
+
+  it('anota a fonte na linha do Desarmado, e só quando a soqueira está no loadout', () => {
+    expect(getUnarmedAttack(comSoqueira()).notes.some(n => n.includes('Soqueira'))).toBe(true)
+    expect(getUnarmedAttack(AGI3_FOR2).notes.some(n => n.includes('Soqueira'))).toBe(false)
+  })
+
+  it('não muda o dado nem o tipo do desarmado (a soqueira não é arma própria)', () => {
+    const a = getUnarmedAttack(comSoqueira())
+    expect(a.skill).toBe('Luta')
+    expect(a.damage).toContain('1d3')
+    expect(a.damage).toContain('não letal')
+  })
+})
+
 describe('resumo de arma pro card de escolha (getWeaponSkillName / formatWeaponSummary)', () => {
   it('getWeaponSkillName segue a mesma regra do teste de ataque', () => {
     expect(getWeaponSkillName(faca)).toBe('Luta')

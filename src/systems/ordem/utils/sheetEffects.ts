@@ -186,6 +186,45 @@ export function getConditionalDefenseBonuses(draft: OrdemCharacterDraft): SheetC
   return out
 }
 
+// ── DT de habilidades e itens (p. 80) ──────────────────────────────────────────
+
+/**
+ * DT de um teste de resistência forçado pelo agente: **10 + limite de PE por rodada + atributo**
+ * (p. 80). Usa o limite BASE (Tabela 1.2): bônus de limite por turno (Dedicação, Encarar a Morte)
+ * dão mais PE para gastar, não deixam os efeitos mais difíceis de resistir.
+ *
+ * O livro escreve essa DT como "DT Agi" / "DT Vig" no texto das habilidades e dos itens; é a mesma
+ * fórmula que `getRitualDt` usa com Presença.
+ */
+export function getAbilityDt(draft: OrdemCharacterDraft, attribute: keyof ReturnType<typeof getSheetAttributes>): number {
+  return 10 + getPeLimit(draft.nex) + getSheetAttributes(draft)[attribute]
+}
+
+/** Siglas de atributo como o livro as escreve nas DTs, e o atributo correspondente. */
+const DT_ABBREV: Record<string, keyof ReturnType<typeof getSheetAttributes>> = {
+  Agi: 'agility',
+  For: 'strength',
+  Int: 'intellect',
+  Pre: 'presence',
+  Vig: 'vigor',
+}
+
+/**
+ * Troca as DTs escritas em sigla pelo número já calculado: "Reflexos (DT Agi)" → "Reflexos (DT 18
+ * — Agi)". O livro deixa a conta para o jogador em toda habilidade e item que force um teste de
+ * resistência (Cai Dentro, Assassinar, Taser, Amarras...), e a ficha já resolve a mesma fórmula
+ * para explosivos e rituais — resolver no texto cobre o resto sem precisar estruturar cada caso.
+ *
+ * Mantém a sigla à mostra para o jogador saber de onde vem o número (e conferir se mudou de
+ * atributo depois de um Aumento).
+ */
+export function resolveDtInText(draft: OrdemCharacterDraft, text: string): string {
+  return text.replace(/DT (Agi|For|Int|Pre|Vig)\b/g, (_match, abbrev: string) => {
+    const attribute = DT_ABBREV[abbrev]
+    return `DT ${getAbilityDt(draft, attribute)} — ${abbrev}`
+  })
+}
+
 // ── Explosivos ─────────────────────────────────────────────────────────────────
 
 export type SheetExplosive = {
@@ -217,7 +256,7 @@ export function getSheetExplosives(draft: OrdemCharacterDraft): SheetExplosive[]
     let resistance: SheetExplosive['resistance'] = null
     if (item.resistance) {
       const notes: string[] = []
-      let dt = 10 + getPeLimit(draft.nex) + attrs[item.resistance.attribute]
+      let dt = getAbilityDt(draft, item.resistance.attribute)
       if (expert) {
         dt += attrs.intellect
         notes.push(`Perito em Explosivos +${attrs.intellect}`)

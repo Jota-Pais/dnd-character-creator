@@ -15,6 +15,7 @@ import { getSkillName, getSkillKitName } from '../../utils/skillUtils'
 import { getAvailableModifications, canApplyModification, isModifiable, countApplied } from '../../utils/modificationUtils'
 import {
   getAvailableCurses, canApplyCurse, isCursable, getCurseCategoryDelta, curseChoiceKey, formatCurseElement, getSheetAttributes,
+  canPatenteUseCursedItems, getCursePriceNote, getCursesBlockedByPatente,
 } from '../../utils/curseUtils'
 import type { OrdemElement } from '../../types/ritual'
 import { getAvailableRituals, ELEMENT_NAMES, ELEMENT_COLORS } from '../../utils/ritualUtils'
@@ -72,6 +73,10 @@ export function EquipmentStep() {
   // Proteção sem proficiência: −ØØ em Força e Agilidade (p. 62), penalidade ampla o bastante
   // pra merecer aviso próprio no passo, não só o rótulo no card do item.
   const unproficientProtections = getUnproficientProtections(draft)
+  // Itens amaldiçoados exigem Patente de Agente Especial ou acima (p. 144). `blockedCurses` cobre
+  // o save antigo (ou a Patente rebaixada depois de amaldiçoar), que trava a etapa até ser desfeito.
+  const curseAllowed = canPatenteUseCursedItems(draft.patente)
+  const blockedCurses = getCursesBlockedByPatente(draft)
   const load = getLoadState(draft)
 
   const addUnit = (itemId: string) => {
@@ -450,19 +455,27 @@ export function EquipmentStep() {
                     <p className={`text-xs text-parchment-600 mb-1 ${isModifiable(item) ? 'mt-2' : ''}`}>
                       Maldições <span className="text-parchment-700">(itens amaldiçoados: a 1ª sobe a categoria em II, as seguintes em I; elementos opressores não se combinam no mesmo item)</span>
                     </p>
+                    {!curseAllowed && (
+                      <p className="text-xs text-amber-500/90 mb-1">
+                        Sua Patente não requisita itens amaldiçoados: o livro (pág. 144) os libera apenas para
+                        Agente Especial, Oficial de Operações e Agente de Elite — independentemente da categoria do item.
+                      </p>
+                    )}
                     <div className="flex flex-wrap gap-1">
                       {getAvailableCurses(item).map(curse => {
                         const applied = appliedCurses.includes(curse.id)
                         // Adicionar leva a categoria (sem teto) pra: base + mods + delta das maldições com mais uma.
                         const newCat = item.category + appliedMods.length + getCurseCategoryDelta(appliedCurses.length + 1)
                         const fitsPatente = newCat <= 4 && fitsWithAdjustedCounts(draft, patente, { [unitCat]: -1, [newCat]: 1 })
-                        const addable = applied || (canApplyCurse(item, appliedCurses, curse.id, draft.equipmentCurseChoices, uid) && fitsPatente)
+                        // Remover continua permitido mesmo sem Patente (é como se corrige um save antigo).
+                        const addable = applied
+                          || (curseAllowed && canApplyCurse(item, appliedCurses, curse.id, draft.equipmentCurseChoices, uid) && fitsPatente)
                         return (
                           <button
                             key={curse.id}
                             onClick={() => { if (addable) toggleCurse(uid, curse.id) }}
                             disabled={!addable}
-                            title={curse.effect}
+                            title={curseAllowed ? curse.effect : 'Patente insuficiente para itens amaldiçoados (pág. 144)'}
                             className={`text-xs px-2 py-0.5 rounded border transition-all ${applied
                               ? 'bg-purple-900/40 border-purple-600/50 text-purple-300'
                               : addable
@@ -480,6 +493,10 @@ export function EquipmentStep() {
                         {getAvailableCurses(item).filter(c => appliedCurses.includes(c.id)).map(c => (
                           <li key={c.id} className="text-xs text-purple-400/90">
                             <span className="font-semibold">{c.name} ({formatCurseElement(c, uid, draft.equipmentCurseChoices)}):</span> {c.effect}
+                            {/* O preço da maldição (pág. 145): cumulativo, por maldição do elemento. */}
+                            {getCursePriceNote(c, uid, draft.equipmentCurseChoices) && (
+                              <span className="text-amber-500/80"> Preço: {getCursePriceNote(c, uid, draft.equipmentCurseChoices)}.</span>
+                            )}
                             {c.choice === 'element' && (
                               <div className="mt-1 flex flex-wrap gap-1.5">
                                 {(CURSE_ELEMENT_OPTIONS[c.id] ?? []).map(el => (
@@ -677,6 +694,14 @@ export function EquipmentStep() {
             <div className="mb-4 p-3 rounded-lg border-2 border-red-600 bg-red-950/40 text-red-200 text-sm">
               🚫 <strong>Carga impossível</strong> — {load.spaces} espaços, e o teto é {load.max} (o dobro da
               capacidade). Remova itens para continuar.
+            </div>
+          )}
+          {blockedCurses.length > 0 && (
+            <div className="mb-4 p-3 rounded-lg border border-red-700/60 bg-red-950/30 text-red-300 text-sm">
+              ⛔ <strong>Sua Patente não requisita itens amaldiçoados</strong> (livro, pág. 144): eles são liberados
+              apenas para Agente Especial, Oficial de Operações e Agente de Elite, independentemente da categoria.
+              Remova as maldições de <strong>{blockedCurses.map(uid => getInstanceLabel(draft, uid)).join(', ')}</strong>{' '}
+              ou suba a Patente para seguir.
             </div>
           )}
           {unproficientProtections.length > 0 && (

@@ -34,6 +34,7 @@ import {
   getWorkToolBonus,
   getTrilhaHpBonus,
   getWoundedThreshold,
+  getDisturbedThreshold,
   getBonusRitualSlots,
   areBonusRitualSlotsComplete,
   hasExpertAbility,
@@ -52,6 +53,8 @@ import {
   getSheetExplosives,
   getResolvedAbilityNotes,
   getEffectiveCreditLimit,
+  resolveDtInText,
+  getAbilityDt,
 } from '../sheetEffects'
 import { bonusRitualElementKey } from '../ritualUtils'
 import { getCursedDerivedStats } from '../curseUtils'
@@ -519,6 +522,62 @@ describe('Bônus de perícia de todas as fontes', () => {
       },
     })
     expect(getConditionalSkillBonuses(draft).map(b => b.source)).toContain('Hacker')
+  })
+})
+
+describe('getDisturbedThreshold (condição perturbado, p. 95)', () => {
+  it('é o maior valor de SAN que ainda conta como "menos da metade da Sanidade total"', () => {
+    // O livro define perturbado com o mesmo texto de machucado, trocando PV por SAN.
+    expect(getDisturbedThreshold(20)).toBe(9)
+    expect(getDisturbedThreshold(21)).toBe(10)
+    expect(getDisturbedThreshold(12)).toBe(5)
+    expect(getDisturbedThreshold(1)).toBe(0)
+  })
+
+  it('usa a mesma conta de machucado (o texto do livro é idêntico)', () => {
+    for (const total of [1, 12, 16, 20, 21, 34, 35, 60]) {
+      expect(getDisturbedThreshold(total)).toBe(getWoundedThreshold(total))
+    }
+  })
+})
+
+describe('resolveDtInText (DT de habilidades, p. 80)', () => {
+  it('troca a sigla pelo número: 10 + limite de PE + atributo', () => {
+    const draft = makeDraft({
+      class: 'combatant', nex: 25,
+      attributes: { agility: 1, strength: 1, intellect: 1, presence: 1, vigor: 3 },
+    })
+    // NEX 25% → limite de PE 5 (Tabela 1.2); Vigor 3 → DT 18.
+    expect(resolveDtInText(draft, 'teste de Vontade (DT Vig)')).toBe('teste de Vontade (DT 18 — Vig)')
+    expect(getAbilityDt(draft, 'vigor')).toBe(18)
+  })
+
+  it('resolve mais de uma DT no mesmo texto, cada uma com seu atributo', () => {
+    const draft = makeDraft({
+      nex: 5,
+      attributes: { agility: 3, strength: 1, intellect: 2, presence: 1, vigor: 1 },
+    })
+    // NEX 5% → limite 1. Agi 3 → 14; Int 2 → 13.
+    expect(resolveDtInText(draft, 'Reflexos (DT Int) ou Vontade (DT Agi)'))
+      .toBe('Reflexos (DT 13 — Int) ou Vontade (DT 14 — Agi)')
+  })
+
+  it('não mexe em DT numérica que o livro já dá fechada', () => {
+    const draft = makeDraft({ nex: 5 })
+    expect(resolveDtInText(draft, 'teste de Atualidades (DT 20)')).toBe('teste de Atualidades (DT 20)')
+  })
+
+  it('usa o atributo COM maldições (a ficha inteira usa)', () => {
+    const semCarisma = makeDraft({
+      nex: 5, attributes: { agility: 1, strength: 1, intellect: 1, presence: 2, vigor: 1 },
+    })
+    const comCarisma = makeDraft({
+      ...semCarisma,
+      patente: 'agente-elite',
+      equipmentChoices: ['utensilio'],
+      equipmentCurses: { utensilio: ['carisma'] },
+    })
+    expect(getAbilityDt(comCarisma, 'presence')).toBe(getAbilityDt(semCarisma, 'presence') + 1)
   })
 })
 

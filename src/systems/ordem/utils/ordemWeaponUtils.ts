@@ -221,7 +221,7 @@ export function getOrdemWeaponAttack(
   const strengthLikeDamage = addsStrengthToDamage(weapon)
     ? attrs[canUseAgility ? attackAttribute : 'strength']
     : 0
-  const damageBonus = strengthLikeDamage + powerDamage + workToolBonus
+  const damageBonus = strengthLikeDamage + powerDamage + workToolBonus + (weapon.flatDamageBonus ?? 0)
     + mods.reduce((s, m) => s + (m.damageBonus ?? 0), 0)
   // Máquina de Matar (Aniquilador NEX 99%): "o dano aumenta em um passo" — ruling do usuário
   // (2026-07-29): um passo = mais um dado do mesmo tipo, igual a Golpe Pesado e Calibre Grosso.
@@ -443,8 +443,10 @@ export function getBloodWeaponAttack(draft: OrdemCharacterDraft): OrdemWeaponAtt
  * 1d10 em NEX 70%+), letal, e "conta como arma" — por isso é modelado como uma arma corpo a corpo
  * sintética (sem categoria/espaço, não é item de inventário) e passa pelo mesmo `getOrdemWeaponAttack`,
  * herdando corretamente bônus condicionados a "armas corpo a corpo" (Golpe Pesado, Mão Pesada etc.).
- * O tipo de dano (impacto) é inferido; não modela "conta como arma ágil" (nenhuma regra já
- * implementada depende de uma arma ser "ágil").
+ *
+ * A **Soqueira** (p. 66) entra aqui: "fornece +1 em rolagens de dano desarmado. Uma soqueira pode
+ * receber modificações de armas corpo a corpo e aplica os efeitos de suas modificações em seus
+ * ataques desarmados" — então o item também empresta as próprias modificações a esta linha.
  */
 export function getUnarmedAttack(draft: OrdemCharacterDraft): OrdemWeaponAttack {
   const isMartialArtist = hasClassPower(draft, 'martial-artist')
@@ -454,12 +456,21 @@ export function getUnarmedAttack(draft: OrdemCharacterDraft): OrdemWeaponAttack 
     damageType = 'I'
     damage = draft.nex >= 70 ? '1d10' : draft.nex >= 35 ? '1d8' : '1d6'
   }
+  // Só a primeira soqueira conta: o bônus é do ataque desarmado, não por unidade carregada.
+  const knuckleUid = draft.equipmentChoices.find(uid => getEquipmentByInstance(uid)?.id === 'soqueira')
+  const knuckleMods = knuckleUid ? (draft.equipmentModifications[knuckleUid] ?? []) : []
   const unarmedWeapon: OrdemWeapon = {
     id: 'desarmado', name: 'Desarmado', category: 0, spaces: 0, type: 'weapon',
     proficiency: 'simple', weaponCategory: 'corpo_a_corpo', grip: 'leve',
     damage, critical: 'x2', range: '-', damageType,
     // "Contam como armas ágeis": com Artista Marcial o desarmado pode usar Agilidade (p. 26/29).
     agile: isMartialArtist,
+    flatDamageBonus: knuckleUid ? 1 : 0,
   }
-  return { ...getOrdemWeaponAttack(unarmedWeapon, draft, []), name: 'Desarmado' }
+  const attack = getOrdemWeaponAttack(unarmedWeapon, draft, knuckleMods)
+  return {
+    ...attack,
+    name: 'Desarmado',
+    notes: knuckleUid ? [...attack.notes, 'com Soqueira: +1 no dano e as modificações dela valem aqui'] : attack.notes,
+  }
 }

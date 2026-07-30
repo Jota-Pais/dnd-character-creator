@@ -77,6 +77,11 @@ export interface OrdemWeapon extends OrdemEquipmentBase {
    */
   addsStrengthDamage?: boolean;
   /**
+   * Bônus fixo de dano embutido na própria arma. Usado pelo ataque desarmado quando o agente
+   * carrega uma Soqueira: "fornece +1 em rolagens de dano desarmado" (p. 66).
+   */
+  flatDamageBonus?: number;
+  /**
    * Regras próprias da arma que a ficha exibe junto do ataque (área, alcance, recarga). Só texto
    * fixo; regras que dependem do personagem são resolvidas em `getWeaponRuleNotes`.
    */

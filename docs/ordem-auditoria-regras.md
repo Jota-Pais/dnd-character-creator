@@ -512,3 +512,158 @@ etapa fica pendente enquanto a escolha não é feita, com os chips de elemento n
 que ainda é "menos da metade". Aparece embaixo do PV na Revisão ("machucado com 16 ou menos") e no
 quadro de PV do PDF. Com 35 PV o limiar é 17, e com 34 é 16 — o arredondamento importa, e tem teste
 para os dois casos.
+
+---
+
+# Quinta rodada (2026-07-30)
+
+O método mudou. As quatro rodadas anteriores perguntavam "o que temos está certo?"; esta perguntou
+**"o que o livro tem e nós não temos?"** — cobertura inversa, por script, comparando o CONJUNTO de
+habilidades do livro com o dos dados, em vez de cada dado nosso contra o livro. Foi assim que as
+áreas cobertas "de um lado só" finalmente fecharam.
+
+## Conferido e correto
+
+| Área | Verificação | Situação |
+|---|---|---|
+| **60 habilidades de trilha** (15 × 4) | cobertura nos DOIS sentidos + NEX + ordem + texto | ✅ nenhuma falta, nenhuma inventada, nenhum NEX trocado |
+| **45 poderes de classe** | idem, extraindo os bullets do capítulo 1 | ✅ exatamente 45 nos dois lados |
+| **22 poderes paranormais** | cobertura, pré-requisitos e afinidade | ✅ 2 gerais + 5 por elemento |
+| **34 maldições** | cobertura por seção (12 armas / 10 proteções / 12 acessórios) e textos | ✅ |
+| **26 origens** | perícias e poder, contra as **descrições** (não a Tabela 1.1 — ver abaixo) | ✅ |
+| **28 perícias** | Tabela 2.1 mais os 4 kits e o escopo de cada um | ✅ |
+| **Tabela 3.7** (modificações de proteção) | 4 modificações — **nunca auditada antes** | ✅ inclusive "só em pesada/leve" e o conflito Reforçada × Discreta |
+| **Tabela 3.9** (modificações de acessório) | 4 modificações — **nunca auditada antes** | ✅ |
+| Regra transversal das modificações | "cada modificação aumenta a categoria do item em I" (p. 62, 64 e 65) | ✅ `getEffectiveCategory` |
+| **79 equipamentos** | todo número da nossa descrição tem respaldo no trecho do livro | ✅ (2 falsos positivos: o +5/+10 de Defesa vem da Tabela 3.6) |
+| Itens amaldiçoados (p. 144) | elementos opressores, categoria +II/+I, bônus iguais não acumulam | ✅ |
+| Condições citadas nos dados | as 24 existem no livro com o sentido que usamos | ✅ |
+
+**Sangue de Ferro deixou de ser ponto cego.** A terceira rodada registrou que o extract cortava a
+descrição em "Você recebe +2 pon-" e que o poder era inverificável por aqui. O texto **está** no
+extract, deslocado para dentro do bloco do Surto Temporal (quebra de coluna): "+2 pontos de vida por
+NEX… em NEX 50%, recebe 20 PV… Afinidade: +5 em Fortitude e imune a venenos e doenças". Confere
+integralmente com a nossa descrição e com `hpPerNexStep: 2`. A limitação registrada lá está fechada.
+
+## Problemas encontrados
+
+### L1 — Itens amaldiçoados ignoravam a restrição de Patente (P1)
+
+**Livro (p. 144):** "Independentemente de suas categorias, itens amaldiçoados são liberados apenas
+para **agentes especiais, oficiais de operações e agentes de elite**."
+
+Só as vagas por categoria eram checadas. E a restrição **não** é redundante com elas: o Escudo é
+categoria 0, então com uma maldição vira categoria II — que cabe na única vaga de categoria II do
+**Operador**. Um Operador conseguia sair de missão com um escudo amaldiçoado.
+
+### L2 — "O preço da maldição" não existia no app (P2)
+
+**Livro (p. 145):** cada maldição impõe uma penalidade **cumulativa** conforme o elemento — a cada
+falha em teste do atributo ligado a ele, 2 pontos de Sanidade por maldição: Conhecimento→Intelecto,
+Energia→Agilidade, Morte→Presença, Sangue→Força ou Vigor.
+
+É o contrapeso permanente de carregar esses itens, é inteiramente derivável do loadout, e não
+aparecia em lugar nenhum — nem na etapa de Equipamento, nem na ficha.
+
+### L3 — Resistências de maldição não chegavam à ficha (P2)
+
+Profética (Conhecimento 10), Voltaica (Energia 10), Repulsiva (Morte 10), Regenerativa (Sangue 10),
+Proteção Elemental (10 no elemento escolhido) e Escudo Mental (mental 10) viviam só no texto do
+efeito — enquanto **a mesma regra** vinda do poder paranormal *Resistir a Elemento* já alimentava
+`elementResistances` e aparecia no quadro de Resistências. Metade das fontes contava, metade não.
+
+### L4 — Limiar de "perturbado" ausente (P2)
+
+**Livro (p. 95):** "Perturbado. Se estiver com **menos da metade de sua Sanidade total**, você está
+perturbado. Por si só, essa condição não causa penalidades, mas serve de pré-requisito para certas
+habilidades e efeitos." É o texto de *machucado*, palavra por palavra, trocando PV por SAN.
+
+A quarta rodada colocou o limiar de machucado embaixo do PV (I2); a Sanidade ficou sem o equivalente,
+embora perturbado seja o gatilho da Tabela 5.1 — o efeito de insanidade que se rola na primeira vez
+que fica perturbado numa cena.
+
+### L5 — Três itens perderam a DT na digitalização (P2)
+
+Taser, Spray de Pimenta e Pistola de Dardos diziam "(Fortitude evita)"; o livro diz "(Fortitude **DT
+Agi** evita)". Sem a sigla, o jogador não sabe qual é a dificuldade — e a ficha já resolvia essa mesma
+fórmula (p. 80) para explosivos e rituais.
+
+O gap era maior que os três itens: *Cai Dentro* ("DT Vig"), *Assassinar* ("DT Agi"), as Amarras (duas
+DTs na mesma descrição) e o Emissor de Pulsos também deixavam a conta para a mesa.
+
+### L6 — Soqueira não fazia nada (P2)
+
+**Livro (p. 66):** "fornece +1 em rolagens de dano desarmado. Uma soqueira pode receber modificações
+de armas corpo a corpo e **aplica os efeitos de suas modificações em seus ataques desarmados**."
+
+Nenhuma das três partes existia: o +1 não entrava na linha do Desarmado (que a ficha calcula, com
+Artista Marcial, Golpe Pesado e Mão Pesada), o item não aceitava modificações no catálogo
+(`modAppliesTo` exigia `type === 'weapon'`) e portanto não havia o que repassar.
+
+### L7 / L8 — Duas cláusulas perdidas na condensação (P3)
+
+- **Eloquência** (Negociador NEX 10%) cortava "um alvo hostil ou envolvido em combate recebe +5 no
+  teste de resistência e tem direito a um novo teste por rodada" e "quem passar fica imune por um dia".
+- **Cai Dentro** (Tropa de Choque NEX 40%) cortava "só funciona se você puder ser efetivamente
+  atacado" e "um oponente que passe no teste não pode ser afetado até o final da cena".
+
+## Contradições internas do livro (registradas, sem mudança de código)
+
+Somam-se às três já registradas (o exemplo de DT da p. 80, o atributo-base da Intuição e
+Câmara/Câmera):
+
+**4. A Tabela 1.1 tem 6 nomes de poder de origem desatualizados** em relação às descrições das
+p. 17-21, que são o texto de regra:
+
+| Origem | Tabela 1.1 | Descrição (e nossos dados) |
+|---|---|---|
+| Militar | "+1 de dano à distância" | **Para Bellum** (+2 com armas de fogo) |
+| Operário | "Ferramentas da Profissão" | **Ferramenta de Trabalho** |
+| Religioso | "Exorcismo" | **Acalentar** |
+| T.I. | "Computação Avançada" | **Motor de Busca** |
+| Trabalhador Rural | "Trilhas e Rumos" | **Desbravador** |
+| Universitário | "Empenho" | **Dedicação** |
+
+Parece uma revisão de edição que não voltou à tabela. Seguimos as descrições.
+
+**5. O exemplo do Perito (p. 29) contradiz a Tabela 1.4.** O texto diz "em NEX 55%, pode gastar 4 PE
+para receber +1d12"; a tabela dá **4 PE / +1d10** em 55%, e +1d12 só em 85%. Mesmo padrão do deslize
+da p. 80 — seguimos a tabela.
+
+## Correções da quinta rodada (2026-07-30)
+
+| Achado | O que mudou |
+|---|---|
+| **L1** | `CURSE_ALLOWED_PATENTES` + `canPatenteUseCursedItems`; `areCursesValid` reprova quando a Patente não libera, então a etapa trava. No card, os botões de maldição ficam desabilitados com a razão no `title` e um aviso acima; **remover** continua liberado, para consertar save antigo ou Patente rebaixada depois. `getCursesBlockedByPatente` nomeia as unidades no aviso da etapa |
+| **L2** | `getUnitCursePrice`/`formatUnitCursePrice` (agregado por elemento, cumulativo) e `getCursePriceNote` (por maldição). Aparece como observação curta na descrição de cada maldição no card do Equipamento, ao lado do nome do item na Revisão e em linha própria no PDF. Medo não tem preço — a p. 145 define só os quatro elementos |
+| **L3** | Campos `elementResistance`/`mentalResistance` nas 6 maldições e `getCurseResistances`, que entra no quadro de Resistências (Revisão e PDF) e no resumo da página 1, com a fonte nomeada. Bônus iguais em itens diferentes contam uma vez (p. 144), mas Proteção Elemental de elementos diferentes são fontes distintas |
+| **L4** | `getDisturbedThreshold(maxSanity)` = `ceil(SAN/2) − 1`, embaixo da Sanidade na Revisão e no quadro de SAN do PDF, espelhando o de machucado. Um teste amarra as duas funções: mesmo texto no livro, mesma conta |
+| **L5** | Os três textos recuperaram o "DT Agi", e `resolveDtInText` troca a sigla pelo número já calculado ("DT Vig" → "DT 18 — Vig") nas descrições que a ficha imprime: habilidades de origem/classe/trilha/poderes, maldições e itens. `getAbilityDt` centraliza a fórmula da p. 80, que `getSheetExplosives` passou a usar |
+| **L6** | `flatDamageBonus` na arma sintética do Desarmado (+1 com Soqueira no loadout); `modAppliesTo` passou a aceitar a Soqueira nas modificações corpo a corpo; e `getUnarmedAttack` repassa as modificações dela para a linha, com a fonte anotada |
+| **L7/L8** | As duas descrições completadas com as cláusulas que faltavam |
+
+### Por que resolver a DT no texto, em vez de estruturar campo por campo
+
+Estruturar exigiria um campo por caso e ainda assim não cobriria as **Amarras**, que impõem dois
+testes diferentes (Reflexos DT Int e Vontade DT Agi) na mesma descrição. O livro escreve essas DTs
+sempre no mesmo formato fechado — "DT" seguido da sigla do atributo —, então uma substituição no ponto
+de exibição alcança todos os casos de uma vez, inclusive os que vierem depois. A sigla continua
+visível ("DT 18 — Vig") para o jogador saber de onde veio o número e conferir se mudou depois de um
+Aumento de Atributo.
+
+### Testes de regressão
+
+Trinta e uma travas novas, mirando a classe do erro:
+
+- **Patente × maldição**: as 5 patentes; e o caso que prova que a regra não é redundante (escudo Cat 0
+  amaldiçoado → Cat II cabe na vaga do Operador, mas o livro proíbe)
+- **Preço**: o mapa elemento→atributo; cumulatividade (duas maldições do mesmo elemento = 4 SAN);
+  elementos diferentes no mesmo item; escolha pendente e Medo sem preço
+- **Resistências**: as duas fontes (elemental e mental), não-acúmulo da mesma maldição em dois itens,
+  Proteção Elemental de elementos diferentes como fontes distintas, e maldição em item não requisitado
+- **Perturbado**: paridade da SAN e igualdade com `getWoundedThreshold` (o livro usa o mesmo texto)
+- **DT**: a fórmula, várias DTs no mesmo texto, DT numérica intocada, e o atributo lido COM maldições
+- **Soqueira**: o +1, o repasse de modificações, a nota da fonte, e o catálogo aceitando as mods certas
+- **Dados**: as cláusulas de Eloquência e Cai Dentro, a sigla de DT preservada nas features, e uma
+  trava genérica — nenhum item IMPÕE teste de resistência sem dizer a DT (explosivos de fora, porque
+  a DT deles vive no campo estruturado `resistance`)

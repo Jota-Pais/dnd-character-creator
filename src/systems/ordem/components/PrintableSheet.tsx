@@ -7,11 +7,11 @@ import { getPower } from '../utils/powerUtils'
 import {
   getTrainedSkills, getSkillGrade, getRitualCost, hasClassPower, getGrantedRituals, getEffectivePeLimit, getExpertSkills, getExpertDie,
   getParanormalResistanceBonus, getMentalParanormalDamageResistance, getOriginMentalDamageResistance, getConditionalDamageResistances,
-  getWoundedThreshold,
+  getWoundedThreshold, getDisturbedThreshold,
 } from '../utils/characterUtils'
 import {
   getSkillBonusTotal, getConditionalSkillBonuses, getConditionalDefenseBonuses, getExtraDamageDiceNotes,
-  getSheetExplosives, getResolvedAbilityNotes, getEffectiveCreditLimit, getSkillDicePool,
+  getSheetExplosives, getResolvedAbilityNotes, getEffectiveCreditLimit, getSkillDicePool, resolveDtInText,
 } from '../utils/sheetEffects'
 import { formatDicePool, ATTRIBUTE_ABBREV as ATTR_ABBREV } from '../utils/attributeUtils'
 import { getReachedTrilhaSlots, getPeLimit } from '../utils/progressionUtils'
@@ -27,7 +27,10 @@ import {
   getLoadState, OVERLOAD_DEFENSE_PENALTY, OVERLOAD_SPEED_PENALTY_METERS,
 } from '../utils/equipmentUtils'
 import { getModification } from '../utils/modificationUtils'
-import { getCurse, getCursedDerivedStats, getSheetAttributes, formatCurseElement, formatCurseChoiceDetail, getRitualDt, getRitualPeLimit } from '../utils/curseUtils'
+import {
+  getCurse, getCursedDerivedStats, getSheetAttributes, formatCurseElement, formatCurseChoiceDetail,
+  getRitualDt, getRitualPeLimit, getCurseResistances, formatUnitCursePrice,
+} from '../utils/curseUtils'
 import { getSheetWeaponAttacks, GRADE_BONUS } from '../utils/ordemWeaponUtils'
 import { getPatente, getCategoryLimit } from '../utils/patenteUtils'
 import type { OrdemEquipment } from '../types/equipment'
@@ -64,11 +67,14 @@ export function PrintableSheet() {
   const originMentalDr = getOriginMentalDamageResistance(draft, attributes.intellect)
   const elementResistances = Object.entries(paranormalEffects.elementResistances) as [keyof typeof ELEMENT_NAMES, number][]
   const equipmentResistances = getEquipmentDamageResistances(draft)
+  // Resistências vindas de maldições (elemental e mental) — fonte própria, como as do equipamento.
+  const curseResistances = getCurseResistances(draft)
   const conditionalResistances = getConditionalDamageResistances(draft)
   // Resumo compacto pro quadro de Combate (página 1) — o detalhe completo, com a fonte de cada
   // uma, fica na seção "Resistências" (página 2).
   const resistanceSummary = [
     ...equipmentResistances.map(r => `${r.label} ${r.value}`),
+    ...curseResistances.map(r => `${r.label} ${r.value}`),
     ...elementResistances.map(([element, value]) => `${ELEMENT_NAMES[element]} ${value}`),
     ...(mentalParanormalDr > 0 ? [`Mental/Paranormal ${mentalParanormalDr}`] : []),
     ...(originMentalDr > 0 ? [`Mental ${originMentalDr}`] : []),
@@ -186,7 +192,11 @@ export function PrintableSheet() {
                   </p>
                 ))}
               </div>
-              <CurrentStat label="SAN · Sanidade" value={stats.sanity} />
+              <CurrentStat
+                label="SAN · Sanidade"
+                value={stats.sanity}
+                note={`Perturbado: ${getDisturbedThreshold(stats.sanity)} ou menos`}
+              />
             </section>
 
             <section className="text-xs space-y-1">
@@ -378,10 +388,11 @@ export function PrintableSheet() {
         <section className="mb-4">
           <BlackBar>Habilidades / Poderes</BlackBar>
           <div className="space-y-1.5 mt-2 text-sm">
+            {/* `resolveDtInText` troca as DTs em sigla pelo número (ex.: Cai Dentro "DT Vig" → "DT 18 — Vig"). */}
             {origin && (
-              <p><span className="font-semibold">{origin.power.name} (origem).</span> {origin.power.description}</p>
+              <p><span className="font-semibold">{origin.power.name} (origem).</span> {resolveDtInText(draft, origin.power.description)}</p>
             )}
-            <p><span className="font-semibold">{cls.classAbility.name} ({cls.name}).</span> {cls.classAbility.description}</p>
+            <p><span className="font-semibold">{cls.classAbility.name} ({cls.name}).</span> {resolveDtInText(draft, cls.classAbility.description)}</p>
             {expertSkills.length > 0 && (
               <p>
                 <span className="font-semibold">
@@ -394,10 +405,10 @@ export function PrintableSheet() {
               <p key={i}><span className="font-semibold">{n.source}:</span> {n.note}.</p>
             ))}
             {reachedTrilhaFeatures.map(f => f && (
-              <p key={f.name}><span className="font-semibold">{f.name} (trilha {trilha?.name}, NEX {f.nex}%).</span> {f.description}</p>
+              <p key={f.name}><span className="font-semibold">{f.name} (trilha {trilha?.name}, NEX {f.nex}%).</span> {resolveDtInText(draft, f.description)}</p>
             ))}
             {powers.map(p => p && (
-              <p key={p.id}><span className="font-semibold">{p.name} (poder).</span> {p.description}</p>
+              <p key={p.id}><span className="font-semibold">{p.name} (poder).</span> {resolveDtInText(draft, p.description)}</p>
             ))}
             {paranormalInstances.map(instance => {
               const power = instance.power!
@@ -409,13 +420,13 @@ export function PrintableSheet() {
                   <span className="font-semibold">
                     {power.name} (poder paranormal{elementLabel}{instance.isAffinityCopy ? ', 2ª escolha — Afinidade' : ''}; {getSourceLabel(instance.key)}).
                   </span>{' '}
-                  {power.description}
+                  {resolveDtInText(draft, power.description)}
                   {instance.isAffinityCopy && power.affinityDescription && (
                     <span className="font-semibold"> Afinidade: {power.affinityDescription}</span>
                   )}
                   {learnedRitual && <span> Ritual aprendido: <span className="font-semibold">{learnedRitual.name}</span> (descrição na seção Rituais).</span>}
                   {expansionTarget && (
-                    <span> Poder aprendido: <span className="font-semibold">{expansionTarget.name}.</span> {expansionTarget.description}</span>
+                    <span> Poder aprendido: <span className="font-semibold">{expansionTarget.name}.</span> {resolveDtInText(draft, expansionTarget.description)}</span>
                   )}
                 </p>
               )
@@ -445,7 +456,7 @@ export function PrintableSheet() {
                   <span className="font-semibold">
                     {curse.name} — {getInstanceLabel(draft, uid)} ({formatCurseElement(curse, uid, draft.equipmentCurseChoices)}{detail ? ` — ${detail}` : ''}).
                   </span>{' '}
-                  {curse.effect}
+                  {resolveDtInText(draft, curse.effect)}
                 </p>
               )
             }))}
@@ -464,21 +475,35 @@ export function PrintableSheet() {
                 </p>
               )
             })}
+            {/* O preço da maldição (pág. 145): cumulativo por maldição do elemento, item a item. */}
+            {cursedUnits.map(({ uid }) => {
+              const price = formatUnitCursePrice(draft, uid)
+              return price ? (
+                <p key={`price-${uid}`} className="text-[11px]">
+                  <span className="font-semibold">Preço da maldição — {getInstanceLabel(draft, uid)}:</span> {price}.
+                </p>
+              ) : null
+            })}
             {cursedUnits.length > 0 && (
               <p className="text-[10px] text-gray-500">
                 Bônus de maldições iguais em itens diferentes não se acumulam. Os bônus fixos (Defesa, atributos, PV/PE) já estão somados na ficha.
+                O preço, ao contrário, é cumulativo: conta cada maldição.
               </p>
             )}
           </div>
         </section>
 
         {(paranormalResistanceBonus > 0 || mentalParanormalDr > 0 || originMentalDr > 0 || elementResistances.length > 0
-          || paranormalEffects.resistanceTestsBonus > 0 || equipmentResistances.length > 0 || conditionalResistances.length > 0) && (
+          || paranormalEffects.resistanceTestsBonus > 0 || equipmentResistances.length > 0 || conditionalResistances.length > 0
+          || curseResistances.length > 0) && (
           <section className="mb-4">
             <BlackBar>Resistências</BlackBar>
             <div className="space-y-1 mt-2 text-sm">
               {equipmentResistances.map((r, i) => (
                 <p key={`eq-${i}`}><span className="font-semibold">Resistência a dano {r.label}: {r.value}</span> ({r.source}).</p>
+              ))}
+              {curseResistances.map((r, i) => (
+                <p key={`curse-${i}`}><span className="font-semibold">Resistência a dano {r.label}: {r.value}</span> ({r.source}).</p>
               ))}
               {conditionalResistances.map((r, i) => (
                 <p key={`cond-${i}`}>
@@ -617,7 +642,7 @@ export function PrintableSheet() {
                       )}
                       {mods.length > 0 && <span className="text-gray-600"> · Mods: {mods.map(m => getModification(m)?.name).filter(Boolean).join(', ')}</span>}
                       {curses.length > 0 && <span className="text-gray-600"> · Maldições: {curses.map(c => getCurse(c)?.name).filter(Boolean).join(', ')}</span>}
-                      {item.description && <p className="text-[10px] text-gray-500">{item.description}</p>}
+                      {item.description && <p className="text-[10px] text-gray-500">{resolveDtInText(draft, item.description)}</p>}
                     </td>
                     <td className="text-center py-0.5">{CAT_ROMAN[getDraftInstanceCategory(draft, uid)]}</td>
                     <td className="text-center py-0.5">{item.spaces}</td>

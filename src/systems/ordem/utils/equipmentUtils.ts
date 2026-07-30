@@ -9,7 +9,10 @@ import equipmentsJson from '../data/equipments.json'
 import { getOrdemClass } from './classUtils'
 import { getPatente, getCategoryLimit } from './patenteUtils'
 import { getModification, getEffectiveModIds, countApplied } from './modificationUtils'
-import { getCurse, getCurseCategoryDelta, getItemCurses, getSheetAttributes, canApplyCurse, curseChoiceKey } from './curseUtils'
+import {
+  getCurse, getCurseCategoryDelta, getItemCurses, getSheetAttributes, canApplyCurse, curseChoiceKey,
+  getCursesBlockedByPatente,
+} from './curseUtils'
 import { hasClassPower, getFavoriteWeaponReduction, getFavoriteEquipmentReduction, getGrantedRituals, hasCarryCapacityIntellectBonus, getWorkToolBonus, hasTrilhaFeature } from './characterUtils'
 import { getAffinityState } from './paranormalPowerUtils'
 import { SKILLS, getSkillName } from './skillUtils'
@@ -385,9 +388,13 @@ export function getCategorySlotAllocation(draft: OrdemCharacterDraft, patente: O
 
 /**
  * As maldições aplicadas são estruturalmente válidas? (alvo certo, sem duplicatas, sem
- * elementos opressores no mesmo item, e com o parâmetro escolhido quando exigido).
+ * elementos opressores no mesmo item, com o parâmetro escolhido quando exigido, e com a Patente
+ * que o livro exige para requisitar item amaldiçoado).
  */
 export function areCursesValid(draft: OrdemCharacterDraft): boolean {
+  // "Independentemente de suas categorias, itens amaldiçoados são liberados apenas para agentes
+  // especiais, oficiais de operações e agentes de elite" (pág. 144).
+  if (getCursesBlockedByPatente(draft).length > 0) return false
   for (const uid of draft.equipmentChoices) {
     const item = getEquipmentByInstance(uid)
     const curses = getItemCurses(draft, uid)

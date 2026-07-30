@@ -7,12 +7,12 @@ import { getPower } from '../../utils/powerUtils'
 import {
   getTrainedSkills, getSkillGrade, hasFavoredRitualPower, hasLaminaMaldita, getRitualCost, hasClassPower, getGrantedRituals, getEffectivePeLimit,
   getParanormalResistanceBonus, getMentalParanormalDamageResistance, getOriginMentalDamageResistance, getConditionalDamageResistances,
-  getExpertSkills, getExpertDie, getWoundedThreshold,
+  getExpertSkills, getExpertDie, getWoundedThreshold, getDisturbedThreshold,
 } from '../../utils/characterUtils'
 import {
   getSkillBonusTotal, getSkillsWithUnconditionalBonus, getConditionalSkillBonuses,
   getConditionalDefenseBonuses, getExtraDamageDiceNotes, getSheetExplosives,
-  getResolvedAbilityNotes,
+  getResolvedAbilityNotes, resolveDtInText,
 } from '../../utils/sheetEffects'
 import { formatDicePool, ATTRIBUTE_ABBREV as ATTR_ABBREV } from '../../utils/attributeUtils'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, ritualNeedsElementChoice, getSlotRitualElement, getGrantedRitualElement, grantedRitualElementKey, ELEMENT_NAMES, ELEMENT_COLORS } from '../../utils/ritualUtils'
@@ -27,7 +27,10 @@ import {
   getLoadState, OVERLOAD_DEFENSE_PENALTY, OVERLOAD_SKILL_PENALTY, OVERLOAD_SPEED_PENALTY_METERS,
 } from '../../utils/equipmentUtils'
 import { getModification } from '../../utils/modificationUtils'
-import { getCurse, getCursedDerivedStats, getSheetAttributes, formatCurseElement, formatCurseChoiceDetail, getRitualDt, getRitualPeLimit } from '../../utils/curseUtils'
+import {
+  getCurse, getCursedDerivedStats, getSheetAttributes, formatCurseElement, formatCurseChoiceDetail,
+  getRitualDt, getRitualPeLimit, getCurseResistances, formatUnitCursePrice,
+} from '../../utils/curseUtils'
 import type { OrdemEquipment } from '../../types/equipment'
 import type { OrdemRitual } from '../../types/ritual'
 import { getSheetWeaponAttacks } from '../../utils/ordemWeaponUtils'
@@ -72,6 +75,9 @@ export function ReviewStep() {
   const elementResistances = Object.entries(paranormalEffects.elementResistances) as [keyof typeof ELEMENT_NAMES, number][]
   const equipmentResistances = getEquipmentDamageResistances(draft)
   const conditionalResistances = getConditionalDamageResistances(draft)
+  // Resistências das maldições equipadas (Profética/Voltaica/Repulsiva/Regenerativa/Proteção
+  // Elemental e Escudo Mental) — fonte própria, ao lado das do poder Resistir a Elemento.
+  const curseResistances = getCurseResistances(draft)
   // Só o Ocultista conhece rituais; limita aos slots realmente abertos pelo NEX (baixar o NEX
   // depois de escolher não deve deixar rituais obsoletos de círculos inacessíveis na ficha).
   const ritualSlots = draft.class === 'occultist' ? getRitualSlotsCount(draft.nex) : 0
@@ -149,7 +155,7 @@ export function ReviewStep() {
       <div className="grid grid-cols-2 gap-3">
         <Stat label="Pontos de Vida" value={String(stats.hp)} hint={`machucado com ${getWoundedThreshold(stats.hp)} ou menos`} />
         <Stat label="Pontos de Esforço" value={String(stats.pe)} />
-        <Stat label="Sanidade" value={String(stats.sanity)} />
+        <Stat label="Sanidade" value={String(stats.sanity)} hint={`perturbado com ${getDisturbedThreshold(stats.sanity)} ou menos`} />
         <Stat label="Defesa" value={String(stats.defense)} />
       </div>
       <p className="text-center text-parchment-600 text-xs">
@@ -214,7 +220,8 @@ export function ReviewStep() {
         <Section title="Origem">
           <p className="text-parchment-200 font-fantasy font-semibold text-sm">{origin.name}</p>
           <p className="text-parchment-500 text-xs mt-1">
-            <span className="font-semibold">{origin.power.name}.</span> {origin.power.description}
+            {/* `resolveDtInText` resolve as DTs escritas em sigla ("DT Vig" → "DT 18 — Vig"). */}
+            <span className="font-semibold">{origin.power.name}.</span> {resolveDtInText(draft, origin.power.description)}
           </p>
         </Section>
       )}
@@ -223,7 +230,7 @@ export function ReviewStep() {
         <p className="text-parchment-200 font-fantasy font-semibold text-sm">{cls.name}</p>
         <p className="text-parchment-500 text-xs mt-1">{cls.description}</p>
         <p className="text-parchment-500 text-xs mt-2">
-          <span className="font-semibold text-parchment-300">{cls.classAbility.name}.</span> {cls.classAbility.description}
+          <span className="font-semibold text-parchment-300">{cls.classAbility.name}.</span> {resolveDtInText(draft, cls.classAbility.description)}
         </p>
         {expertSkills.length > 0 && (
           <p className="text-gold-500/90 text-xs mt-2">
@@ -243,7 +250,7 @@ export function ReviewStep() {
           <div className="space-y-2">
             {reachedTrilhaFeatures.map(f => f && (
               <p key={f.name} className="text-parchment-500 text-xs">
-                <span className="font-semibold text-parchment-300">NEX {f.nex}% – {f.name}.</span> {f.description}
+                <span className="font-semibold text-parchment-300">NEX {f.nex}% – {f.name}.</span> {resolveDtInText(draft, f.description)}
               </p>
             ))}
           </div>
@@ -255,7 +262,7 @@ export function ReviewStep() {
           <div className="space-y-2">
             {powers.map(p => p && (
               <p key={p.id} className="text-parchment-500 text-xs">
-                <span className="font-semibold text-parchment-300">{p.name}.</span> {p.description}
+                <span className="font-semibold text-parchment-300">{p.name}.</span> {resolveDtInText(draft, p.description)}
               </p>
             ))}
           </div>
@@ -285,7 +292,7 @@ export function ReviewStep() {
                     )}
                     <span className="text-gold-600/90">— {getSourceLabel(instance.key)}</span>
                   </p>
-                  <p className="text-parchment-500 mt-0.5">{power.description}</p>
+                  <p className="text-parchment-500 mt-0.5">{resolveDtInText(draft, power.description)}</p>
                   {instance.isAffinityCopy && power.affinityDescription && (
                     <p className="text-gold-400 mt-0.5">✦ Afinidade: {power.affinityDescription}</p>
                   )}
@@ -297,7 +304,7 @@ export function ReviewStep() {
                   {expansionTarget && (
                     <p className="text-parchment-600 mt-0.5">
                       Poder de outra classe: <span className="text-parchment-400 font-semibold">{expansionTarget.name}.</span>{' '}
-                      <span className="text-parchment-500">{expansionTarget.description}</span>
+                      <span className="text-parchment-500">{resolveDtInText(draft, expansionTarget.description)}</span>
                       {instance.choice?.classPowerParams?.[0] && isParanormalElement(instance.choice.classPowerParams[0]) && (
                         <span className="text-parchment-600"> (elemento: {ELEMENT_NAMES[instance.choice.classPowerParams[0] as keyof typeof ELEMENT_NAMES]})</span>
                       )}
@@ -319,11 +326,18 @@ export function ReviewStep() {
       )}
 
       {(paranormalResistanceBonus > 0 || mentalParanormalDr > 0 || originMentalDr > 0 || elementResistances.length > 0
-        || paranormalEffects.resistanceTestsBonus > 0 || equipmentResistances.length > 0 || conditionalResistances.length > 0) && (
+        || paranormalEffects.resistanceTestsBonus > 0 || equipmentResistances.length > 0 || conditionalResistances.length > 0
+        || curseResistances.length > 0) && (
         <Section title="Resistências">
           <div className="space-y-1.5">
             {equipmentResistances.map((r, i) => (
               <p key={`eq-${i}`} className="text-parchment-500 text-xs">
+                <span className="font-semibold text-parchment-300">Resistência a dano {r.label}: {r.value}</span>
+                {' '}<span className="text-gold-600/90">({r.source})</span>
+              </p>
+            ))}
+            {curseResistances.map((r, i) => (
+              <p key={`curse-${i}`} className="text-parchment-500 text-xs">
                 <span className="font-semibold text-parchment-300">Resistência a dano {r.label}: {r.value}</span>
                 {' '}<span className="text-gold-600/90">({r.source})</span>
               </p>
@@ -624,24 +638,31 @@ export function ReviewStep() {
             Bônus de maldições iguais em itens diferentes não se acumulam. Os bônus fixos (Defesa, atributos, PV/PE) já estão somados na ficha.
           </p>
           <div className="space-y-3">
-            {cursedUnits.map(({ uid }) => (
-              <div key={uid}>
-                <p className="text-purple-300 font-fantasy font-semibold text-sm">{getInstanceLabel(draft, uid)}</p>
-                {(draft.equipmentCurses[uid] ?? []).map(cid => {
-                  const curse = getCurse(cid)
-                  if (!curse) return null
-                  const detail = formatCurseChoiceDetail(curse, uid, draft.equipmentCurseChoices)
-                  return (
-                    <p key={cid} className="text-parchment-500 text-xs mt-1">
-                      <span className="font-semibold text-purple-400">
-                        {curse.name} ({formatCurseElement(curse, uid, draft.equipmentCurseChoices)}{detail ? ` — ${detail}` : ''}).
-                      </span>{' '}
-                      {curse.effect}
-                    </p>
-                  )
-                })}
-              </div>
-            ))}
+            {cursedUnits.map(({ uid }) => {
+              const price = formatUnitCursePrice(draft, uid)
+              return (
+                <div key={uid}>
+                  <p className="text-purple-300 font-fantasy font-semibold text-sm">
+                    {getInstanceLabel(draft, uid)}
+                    {/* O preço da maldição (pág. 145), somado por elemento neste item. */}
+                    {price && <span className="text-amber-500/90 font-normal text-xs"> · Preço: {price}</span>}
+                  </p>
+                  {(draft.equipmentCurses[uid] ?? []).map(cid => {
+                    const curse = getCurse(cid)
+                    if (!curse) return null
+                    const detail = formatCurseChoiceDetail(curse, uid, draft.equipmentCurseChoices)
+                    return (
+                      <p key={cid} className="text-parchment-500 text-xs mt-1">
+                        <span className="font-semibold text-purple-400">
+                          {curse.name} ({formatCurseElement(curse, uid, draft.equipmentCurseChoices)}{detail ? ` — ${detail}` : ''}).
+                        </span>{' '}
+                        {resolveDtInText(draft, curse.effect)}
+                      </p>
+                    )
+                  })}
+                </div>
+              )
+            })}
           </div>
         </Section>
       )}

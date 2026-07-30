@@ -815,7 +815,7 @@
     "category": 1,
     "spaces": 1,
     "type": "general",
-    "description": "Dispara dardos com um poderoso sonífero. Um ser acertado fica inconsciente até o fim da cena (Fortitude reduz para desprevenido e lento por 1 rodada). Vem com 2 dardos."
+    "description": "Dispara dardos com um poderoso sonífero. Um ser acertado fica inconsciente até o fim da cena (Fortitude DT Agi reduz para desprevenido e lento por 1 rodada). Vem com 2 dardos."
   },
   {
     "id": "pistola-sinalizadora",
@@ -839,7 +839,7 @@
     "category": 1,
     "spaces": 1,
     "type": "general",
-    "description": "Dispara um composto químico que causa dor e lacrimejo. Gaste uma ação padrão para atingir um ser adjacente, cegando-o por 1d4 rodadas (Fortitude evita). A carga dura dois usos."
+    "description": "Dispara um composto químico que causa dor e lacrimejo. Gaste uma ação padrão para atingir um ser adjacente, cegando-o por 1d4 rodadas (Fortitude DT Agi evita). A carga dura dois usos."
   },
   {
     "id": "taser",
@@ -847,7 +847,7 @@
     "category": 1,
     "spaces": 1,
     "type": "general",
-    "description": "Dispositivo de eletrochoque. Gaste uma ação padrão para atingir um ser adjacente: ele sofre 1d6 de eletricidade e fica atordoado por 1 rodada (Fortitude evita). A bateria dura dois usos."
+    "description": "Dispositivo de eletrochoque. Gaste uma ação padrão para atingir um ser adjacente: ele sofre 1d6 de eletricidade e fica atordoado por 1 rodada (Fortitude DT Agi evita). A bateria dura dois usos."
   },
   {
     "id": "traje-hazmat",

@@ -101,6 +101,7 @@
     "name": "Profética",
     "element": "knowledge",
     "target": "protection-any",
+    "elementResistance": 10,
     "effect": "A proteção concede vislumbres de um possível futuro imediato. Você recebe resistência a Conhecimento 10 e pode gastar 2 PE para rolar novamente um teste de resistência, uma vez."
   },
   {
@@ -131,6 +132,7 @@
     "name": "Voltaica",
     "element": "energy",
     "target": "protection-any",
+    "elementResistance": 10,
     "effect": "Você recebe resistência a Energia 10 e pode gastar uma ação de movimento e 2 PE para fazer a proteção emitir arcos de Energia até o fim da cena. Se fizer isso, no fim de cada um de seus turnos você causa 1d6 pontos de dano de Energia em todos os seres adjacentes."
   },
   {
@@ -146,6 +148,7 @@
     "name": "Repulsiva",
     "element": "death",
     "target": "protection-any",
+    "elementResistance": 10,
     "effect": "Você recebe resistência a Morte 10 e pode gastar uma ação de movimento e 2 PE para cobrir seu corpo com uma camada de lodo escuro até o final da cena. Se fizer isso, qualquer ser que o ataque em corpo a corpo sofre 2d8 pontos de dano de Morte."
   },
   {
@@ -153,6 +156,7 @@
     "name": "Regenerativa",
     "element": "blood",
     "target": "protection-any",
+    "elementResistance": 10,
     "effect": "A proteção melhora sua capacidade de resistência e regeneração. Você recebe resistência a Sangue 10 e pode gastar uma ação de movimento e 1 PE para recuperar 1d12 pontos de vida."
   },
   {
@@ -183,6 +187,7 @@
     "name": "Escudo Mental",
     "element": "knowledge",
     "target": "accessory-wear",
+    "mentalResistance": 10,
     "effect": "O acessório gera uma barreira psíquica. Você recebe resistência mental 10."
   },
   {
@@ -254,6 +259,7 @@
     "element": "varies",
     "target": "accessory-wear",
     "choice": "element",
+    "elementResistance": 10,
     "effect": "Você recebe resistência 10 contra um elemento. Este acessório conta como um item do elemento contra o qual fornece resistência (por exemplo, um utensílio de proteção elemental contra Energia é um item de Energia)."
   }
 ]

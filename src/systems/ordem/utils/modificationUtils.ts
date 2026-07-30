@@ -14,6 +14,10 @@ export function modAppliesTo(mod: OrdemModification, item: OrdemEquipment): bool
     case 'weapon-any':
       return item.type === 'weapon'
     case 'weapon-melee-ranged':
+      // A Soqueira não é arma de inventário, mas "pode receber modificações de armas corpo a corpo
+      // e aplica os efeitos de suas modificações em seus ataques desarmados" (p. 66) — ver
+      // `getUnarmedAttack`, que repassa essas modificações para a linha do Desarmado.
+      if (item.id === 'soqueira') return true
       return item.type === 'weapon' && ['corpo_a_corpo', 'arremesso', 'disparo'].includes(item.weaponCategory)
     case 'weapon-firearm':
       if (item.type !== 'weapon' || item.weaponCategory !== 'fogo') return false

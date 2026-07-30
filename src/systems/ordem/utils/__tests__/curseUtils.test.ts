@@ -17,6 +17,13 @@ import {
   formatCurseChoiceDetail,
   getRitualDt,
   getRitualPeLimit,
+  canPatenteUseCursedItems,
+  getCursesBlockedByPatente,
+  formatCursePriceAttributes,
+  getUnitCursePrice,
+  formatUnitCursePrice,
+  getCursePriceNote,
+  getCurseResistances,
 } from '../curseUtils'
 import {
   getEquipmentById, getEffectiveCategory, isEquipmentStepComplete, areCursesValid, getDraftInstanceCategory,
@@ -331,5 +338,146 @@ describe('getRitualPeLimit', () => {
       attributes: { agility: 1, strength: 1, intellect: 1, presence: 3, vigor: 1 },
     })
     expect(getRitualPeLimit(draft)).toBe(getEffectivePeLimit(draft) + 3)
+  })
+})
+
+// ── 5ª rodada da auditoria ─────────────────────────────────────────────────────
+
+describe('Patente exigida pra itens amaldiçoados (pág. 144)', () => {
+  it('libera só Agente Especial, Oficial de Operações e Agente de Elite', () => {
+    expect(canPatenteUseCursedItems('recruta')).toBe(false)
+    expect(canPatenteUseCursedItems('operador')).toBe(false)
+    expect(canPatenteUseCursedItems('agente-especial')).toBe(true)
+    expect(canPatenteUseCursedItems('oficial-operacoes')).toBe(true)
+    expect(canPatenteUseCursedItems('agente-elite')).toBe(true)
+  })
+
+  it('é restrição SEPARADA das vagas: o escudo Cat 0 amaldiçoado cabe na vaga Cat II do Operador, mas o livro proíbe', () => {
+    const base = {
+      equipmentChoices: ['escudo'],
+      equipmentCurses: { escudo: ['cinetica'] },
+    }
+    // Cat 0 + 1ª maldição (+II) = Cat II, e o Operador TEM uma vaga de Cat II.
+    expect(getDraftInstanceCategory(makeDraft(base), 'escudo')).toBe(2)
+    const operador = makeDraft({ ...base, patente: 'operador' })
+    expect(getCursesBlockedByPatente(operador)).toEqual(['escudo'])
+    expect(areCursesValid(operador)).toBe(false)
+    expect(isEquipmentStepComplete(operador)).toBe(false)
+    // Mesma ficha, Patente que o livro libera: passa.
+    const especial = makeDraft({ ...base, patente: 'agente-especial' })
+    expect(getCursesBlockedByPatente(especial)).toEqual([])
+    expect(isEquipmentStepComplete(especial)).toBe(true)
+  })
+
+  it('sem maldição, Patente baixa não é bloqueada', () => {
+    const draft = makeDraft({ patente: 'recruta', equipmentChoices: ['faca'] })
+    expect(getCursesBlockedByPatente(draft)).toEqual([])
+    expect(isEquipmentStepComplete(draft)).toBe(true)
+  })
+})
+
+describe('o preço da maldição (pág. 145)', () => {
+  it('mapeia cada elemento ao atributo que o livro cobra', () => {
+    expect(formatCursePriceAttributes('knowledge')).toBe('Intelecto')
+    expect(formatCursePriceAttributes('energy')).toBe('Agilidade')
+    expect(formatCursePriceAttributes('death')).toBe('Presença')
+    expect(formatCursePriceAttributes('blood')).toBe('Força ou Vigor')
+  })
+
+  it('uma maldição de Conhecimento cobra 2 SAN por falha em teste de Intelecto', () => {
+    const draft = makeDraft({
+      patente: 'agente-elite',
+      equipmentChoices: ['revolver'],
+      equipmentCurses: { revolver: ['senciente'] },
+    })
+    expect(getUnitCursePrice(draft, 'revolver')).toEqual([
+      { element: 'knowledge', sanity: 2, attributes: 'Intelecto' },
+    ])
+    expect(formatUnitCursePrice(draft, 'revolver')).toBe('−2 SAN a cada falha em teste de Intelecto')
+  })
+
+  it('é CUMULATIVO: duas maldições do mesmo elemento no item cobram 4 SAN', () => {
+    const draft = makeDraft({
+      patente: 'agente-elite',
+      equipmentChoices: ['revolver'],
+      equipmentCurses: { revolver: ['senciente', 'ritualistica'] },
+    })
+    expect(getUnitCursePrice(draft, 'revolver')).toEqual([
+      { element: 'knowledge', sanity: 4, attributes: 'Intelecto' },
+    ])
+  })
+
+  it('elementos diferentes no mesmo item cobram em atributos diferentes', () => {
+    const draft = makeDraft({
+      patente: 'agente-elite',
+      equipmentChoices: ['revolver'],
+      // Conhecimento + Sangue não são opressores entre si (o ciclo é Sangue→Conhecimento... ),
+      // então precisam coexistir num item só se `canApplyCurse` permitir; aqui só medimos o preço.
+      equipmentCurses: { revolver: ['senciente', 'lancinante'] },
+    })
+    const price = getUnitCursePrice(draft, 'revolver')
+    expect(price.map(p => p.element).sort()).toEqual(['blood', 'knowledge'])
+    expect(price.every(p => p.sanity === 2)).toBe(true)
+  })
+
+  it('Proteção Elemental sem elemento escolhido não tem preço definido', () => {
+    const curse = getCurse('protecao-elemental')!
+    expect(getCursePriceNote(curse, 'utensilio', {})).toBeNull()
+    expect(getCursePriceNote(curse, 'utensilio', { 'utensilio:protecao-elemental': 'death' }))
+      .toBe('−2 SAN a cada falha em teste de Presença')
+  })
+
+  it('Medo não tem preço (a p. 145 define só os quatro elementos)', () => {
+    const curse = getCurse('protecao-elemental')!
+    expect(getCursePriceNote(curse, 'utensilio', { 'utensilio:protecao-elemental': 'fear' })).toBeNull()
+  })
+})
+
+describe('resistências concedidas por maldições', () => {
+  it('Profética dá resistência 10 ao Conhecimento; Escudo Mental, 10 mental', () => {
+    const draft = makeDraft({
+      patente: 'agente-elite',
+      equipmentChoices: ['protecao-leve', 'utensilio'],
+      equipmentCurses: { 'protecao-leve': ['profetica'], utensilio: ['escudo-mental'] },
+    })
+    expect(getCurseResistances(draft)).toEqual([
+      { label: 'Conhecimento', value: 10, source: 'maldição Profética' },
+      { label: 'mental', value: 10, source: 'maldição Escudo Mental' },
+    ])
+  })
+
+  it('a mesma maldição em dois itens vale uma vez (bônus não acumulam, pág. 144)', () => {
+    const draft = makeDraft({
+      patente: 'agente-elite',
+      equipmentChoices: ['utensilio', 'vestimenta'],
+      equipmentCurses: { utensilio: ['escudo-mental'], vestimenta: ['escudo-mental'] },
+    })
+    expect(getCurseResistances(draft)).toHaveLength(1)
+  })
+
+  it('Proteção Elemental de elementos diferentes são bônus distintos', () => {
+    const draft = makeDraft({
+      patente: 'agente-elite',
+      equipmentChoices: ['utensilio', 'vestimenta'],
+      equipmentCurses: { utensilio: ['protecao-elemental'], vestimenta: ['protecao-elemental'] },
+      equipmentCurseChoices: {
+        'utensilio:protecao-elemental': 'blood',
+        'vestimenta:protecao-elemental': 'fear',
+      },
+    })
+    // Inclui o Medo: o livro dá resistência "contra um elemento", sem excluí-lo.
+    expect(getCurseResistances(draft)).toEqual([
+      { label: 'Sangue', value: 10, source: 'maldição Proteção Elemental' },
+      { label: 'Medo', value: 10, source: 'maldição Proteção Elemental' },
+    ])
+  })
+
+  it('maldição em item NÃO requisitado não concede resistência', () => {
+    const draft = makeDraft({
+      patente: 'agente-elite',
+      equipmentChoices: [],
+      equipmentCurses: { 'protecao-leve': ['profetica'] },
+    })
+    expect(getCurseResistances(draft)).toEqual([])
   })
 })

@@ -939,3 +939,30 @@ describe('getLoadPenaltySkillBonuses (Proteção Pesada)', () => {
       .toBeGreaterThan(0)
   })
 })
+
+describe('DT dos itens que forçam teste de resistência (5ª rodada da auditoria)', () => {
+  // A digitalização tinha perdido o "DT Agi" destes três, deixando só "(Fortitude evita)" — o que
+  // esconde do jogador QUAL é a dificuldade. A ficha resolve o número por `resolveDtInText`.
+  it.each([
+    ['taser', 'DT Agi'],
+    ['spray-pimenta', 'DT Agi'],
+    ['pistola-dardos', 'DT Agi'],
+  ])('%s traz a DT em sigla na descrição', (id, dt) => {
+    expect(getEquipmentById(id)!.description).toContain(dt)
+  })
+
+  it('nenhum item IMPÕE teste de resistência sem dizer a DT', () => {
+    // "Impor" = o item força um teste em outro ser ("Fortitude evita", "faz Reflexos"). Fica de
+    // fora quem só CONCEDE bônus no próprio teste (Máscara de Gás: "+10 em Fortitude") e os
+    // explosivos, cuja DT vive no campo estruturado `resistance` (ver `getSheetExplosives`).
+    const imposes = (d: string) =>
+      /\b(Fortitude|Reflexos|Vontade)\b[^.)]*\b(evita|reduz|anula|parcial)\b/i.test(d)
+      || /\bfaz\b[^.]*\b(Fortitude|Reflexos|Vontade)\b/i.test(d)
+    const semDt = EQUIPMENTS.filter(item => {
+      const d = item.description ?? ''
+      if ('resistance' in item && item.resistance) return false
+      return imposes(d) && !/DT/.test(d)
+    })
+    expect(semDt.map(i => i.name)).toEqual([])
+  })
+})

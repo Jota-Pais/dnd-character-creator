@@ -1,6 +1,9 @@
 import cursesJson from '../data/curses.json'
-import type { OrdemCurse } from '../types/curse'
+import type { OrdemCurse, CurseElement } from '../types/curse'
 import type { OrdemCharacterDraft, OrdemAttributes } from '../types/character'
+import type { AttributeId } from '../types/attribute'
+import type { OrdemPatenteId } from '../types/patente'
+import { getAttribute } from './attributeUtils'
 import type { OrdemClass } from '../types/class'
 import type { OrdemEquipment } from '../types/equipment'
 import type { OrdemElement, OrdemRitual } from '../types/ritual'
@@ -40,6 +43,32 @@ export function areOpposingElements(a: OrdemElement | null, b: OrdemElement | nu
 /** Chave das escolhas de parâmetro de maldição (elemento/ritual) em `equipmentCurseChoices`, por UNIDADE. */
 export function curseChoiceKey(uid: string, curseId: string): string {
   return `${uid}:${curseId}`
+}
+
+/**
+ * Patentes que podem requisitar itens amaldiçoados: "independentemente de suas categorias, itens
+ * amaldiçoados são liberados apenas para agentes especiais, oficiais de operações e agentes de
+ * elite" (pág. 144). É uma restrição SEPARADA das vagas por categoria — sem ela, um Operador
+ * poderia amaldiçoar um item de categoria 0 (o escudo) e caber na sua única vaga de categoria II.
+ */
+export const CURSE_ALLOWED_PATENTES: OrdemPatenteId[] = ['agente-especial', 'oficial-operacoes', 'agente-elite']
+
+export function canPatenteUseCursedItems(patenteId: OrdemPatenteId): boolean {
+  return CURSE_ALLOWED_PATENTES.includes(patenteId)
+}
+
+/** Unidades do loadout que têm ao menos uma maldição aplicada. */
+export function getCursedUnitIds(draft: OrdemCharacterDraft): string[] {
+  return draft.equipmentChoices.filter(uid => (draft.equipmentCurses[uid] ?? []).length > 0)
+}
+
+/**
+ * Itens amaldiçoados que a Patente atual não libera — vazio quando a Patente permite. Serve tanto
+ * pra travar a aplicação de novas maldições quanto pra acusar um save feito antes da trava (ou com
+ * a Patente rebaixada depois).
+ */
+export function getCursesBlockedByPatente(draft: OrdemCharacterDraft): string[] {
+  return canPatenteUseCursedItems(draft.patente) ? [] : getCursedUnitIds(draft)
 }
 
 /**
@@ -162,6 +191,114 @@ export function getUniqueEquippedCurses(draft: OrdemCharacterDraft): OrdemCurse[
     for (const curseId of draft.equipmentCurses[uid] ?? []) ids.add(curseId)
   }
   return [...ids].map(getCurse).filter((c): c is OrdemCurse => Boolean(c))
+}
+
+// ── O preço da maldição (pág. 145) ─────────────────────────────────────────────
+
+/**
+ * "As forças que alimentam estes itens são impregnadas com um elemento específico, e impõem ao
+ * usuário uma penalidade **cumulativa**": a cada falha em teste do atributo ligado ao elemento,
+ * 2 pontos de Sanidade por maldição daquele elemento nos seus itens (pág. 145).
+ *
+ * Cumulativo é literal — ao contrário dos BÔNUS, que não se acumulam entre itens
+ * (`getUniqueEquippedCurses`), o preço conta cada maldição, inclusive duas iguais em itens
+ * diferentes.
+ */
+export const CURSE_PRICE_ATTRIBUTES: Record<Exclude<CurseElement, 'varies'>, AttributeId[]> = {
+  knowledge: ['intellect'],
+  energy: ['agility'],
+  death: ['presence'],
+  blood: ['strength', 'vigor'],
+}
+
+export const SANITY_PER_CURSE = 2
+
+/** Nomes dos atributos afetados pelo preço de um elemento, já em texto ("Força ou Vigor"). */
+export function formatCursePriceAttributes(element: Exclude<CurseElement, 'varies'>): string {
+  const names = CURSE_PRICE_ATTRIBUTES[element].map(id => getAttribute(id)?.name ?? id)
+  return names.join(' ou ')
+}
+
+/**
+ * Preço de UMA maldição, pra acompanhar a descrição dela na ficha. Null quando o elemento ainda
+ * não foi escolhido (Proteção Elemental sem escolha) — sem elemento não há preço definido.
+ */
+export function getCursePriceNote(
+  curse: OrdemCurse,
+  uid: string,
+  curseChoices: Record<string, string>,
+): string | null {
+  const element = getAppliedCurseElement(curse, uid, curseChoices)
+  if (!element || element === 'fear') return null
+  return `−${SANITY_PER_CURSE} SAN a cada falha em teste de ${formatCursePriceAttributes(element)}`
+}
+
+export type CursePriceEntry = { element: Exclude<CurseElement, 'varies'>; sanity: number; attributes: string }
+
+/** Preço acumulado de uma unidade, agrupado por elemento (duas maldições do mesmo elemento somam). */
+export function getUnitCursePrice(draft: OrdemCharacterDraft, uid: string): CursePriceEntry[] {
+  const perElement = new Map<Exclude<CurseElement, 'varies'>, number>()
+  for (const curseId of getItemCurses(draft, uid)) {
+    const curse = getCurse(curseId)
+    if (!curse) continue
+    const element = getAppliedCurseElement(curse, uid, draft.equipmentCurseChoices)
+    if (!element || element === 'fear') continue
+    perElement.set(element, (perElement.get(element) ?? 0) + SANITY_PER_CURSE)
+  }
+  return [...perElement].map(([element, sanity]) => ({
+    element,
+    sanity,
+    attributes: formatCursePriceAttributes(element),
+  }))
+}
+
+/** Preço de uma unidade em uma linha ("−2 SAN a cada falha em teste de Intelecto"). */
+export function formatUnitCursePrice(draft: OrdemCharacterDraft, uid: string): string | null {
+  const entries = getUnitCursePrice(draft, uid)
+  if (!entries.length) return null
+  return entries.map(e => `−${e.sanity} SAN a cada falha em teste de ${e.attributes}`).join('; ')
+}
+
+// ── Resistências concedidas por maldições ──────────────────────────────────────
+
+export type CurseResistanceEntry = { label: string; value: number; source: string }
+
+/**
+ * Resistências a dano das maldições equipadas: elemental (Profética, Voltaica, Repulsiva,
+ * Regenerativa e Proteção Elemental — 10 contra o elemento da maldição) e mental (Escudo Mental).
+ * Entram como fontes próprias, ao lado das do poder paranormal Resistir a Elemento, seguindo a
+ * regra de que resistências de fontes diferentes acumulam (ver `getOriginMentalDamageResistance`).
+ *
+ * Usa `getUniqueEquippedCurses` por item, porque aqui são BÔNUS — "bônus de itens amaldiçoados não
+ * se acumulam" (pág. 144): a mesma maldição em dois itens vale uma vez.
+ */
+export function getCurseResistances(draft: OrdemCharacterDraft): CurseResistanceEntry[] {
+  const out: CurseResistanceEntry[] = []
+  const seen = new Set<string>()
+  for (const uid of draft.equipmentChoices) {
+    for (const curseId of getItemCurses(draft, uid)) {
+      const curse = getCurse(curseId)
+      if (!curse) continue
+      const element = getAppliedCurseElement(curse, uid, draft.equipmentCurseChoices)
+      // A chave inclui o elemento: Proteção Elemental de Sangue e de Morte são bônus distintos.
+      const key = `${curseId}:${element ?? '-'}`
+      if (seen.has(key)) continue
+      // Aqui o Medo entra: a Proteção Elemental protege contra "um elemento", e o livro não o
+      // exclui (ao contrário do preço da maldição, que a p. 145 define só para os quatro).
+      if (curse.elementResistance && element) {
+        seen.add(key)
+        out.push({
+          label: ELEMENT_NAMES[element],
+          value: curse.elementResistance,
+          source: `maldição ${curse.name}`,
+        })
+      } else if (curse.mentalResistance) {
+        seen.add(key)
+        out.push({ label: 'mental', value: curse.mentalResistance, source: `maldição ${curse.name}` })
+      }
+    }
+  }
+  return out
 }
 
 /**

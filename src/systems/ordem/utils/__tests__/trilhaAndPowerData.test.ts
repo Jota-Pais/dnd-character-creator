@@ -97,6 +97,30 @@ describe('CLASS_POWERS — integridade estrutural', () => {
   })
 })
 
+describe('cláusulas que a condensação do texto tinha perdido (5ª rodada da auditoria)', () => {
+  const feature = (trilhaId: string, nex: number) =>
+    TRILHAS.find(t => t.id === trilhaId)!.features.find(f => f.nex === nex)!
+
+  it('Eloquência traz o +5 do alvo hostil, o novo teste por rodada e a imunidade de um dia', () => {
+    const { description } = feature('negotiator', 10)
+    expect(description).toContain('+5 no teste de resistência')
+    expect(description).toContain('novo teste por rodada')
+    expect(description).toContain('imune a este efeito por um dia')
+  })
+
+  it('Cai Dentro traz a exigência de ser atacável e a imunidade até o fim da cena', () => {
+    const { description } = feature('shock-trooper', 40)
+    expect(description).toContain('alcance do ataque')
+    expect(description).toContain('até o final da cena')
+  })
+
+  it('as features que forçam teste de resistência mantêm a DT em sigla, pra ficha resolver', () => {
+    // `resolveDtInText` depende desse formato: "DT Vig" / "DT Agi" (ver sheetEffects).
+    expect(feature('shock-trooper', 40).description).toMatch(/DT Vig/)
+    expect(feature('infiltrator', 65).description).toMatch(/DT Agi/)
+  })
+})
+
 describe('classAbility e skillGradeCount — presentes nas 3 classes', () => {
   it('toda classe tem classAbility com nome e descrição', () => {
     for (const cls of ORDEM_CLASSES) {

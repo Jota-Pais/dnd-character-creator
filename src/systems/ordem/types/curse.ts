@@ -39,6 +39,14 @@ export type OrdemCurse = {
   /** Predadora: duplica a margem de ameaça (aplicada ANTES de aumentos fixos) e sobe o alcance. */
   doublesThreat?: boolean
   rangeIncrease?: boolean
+  /**
+   * Resistência a dano contra o ELEMENTO da maldição (Profética, Voltaica, Repulsiva e
+   * Regenerativa: 10 contra o próprio elemento; Proteção Elemental: 10 contra o elemento
+   * escolhido — que também é o elemento efetivo da maldição, ver `getAppliedCurseElement`).
+   */
+  elementResistance?: number
+  /** Resistência a dano mental (Escudo Mental: 10). */
+  mentalResistance?: number
   /** Escolha exigida ao aplicar: 'element' (Antielemento, Proteção Elemental) ou 'ritual1' (Conjuração). */
   choice?: 'element' | 'ritual1'
 }

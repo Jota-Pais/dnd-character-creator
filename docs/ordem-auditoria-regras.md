@@ -399,3 +399,41 @@ Cinco travas novas em `ritualUtils.test.ts`, mirando a *classe* do erro e não s
 - os 19 valores corrigidos, um a um
 
 Foram esses testes que acharam os 6 casos extras.
+
+### Passada nas descrições (2026-07-30)
+
+O `Forti tude` levantou a suspeita de que a digitalização tinha vindo de cópia direta do PDF, e que
+a mesma classe de artefato poderia estar nos textos. Três verificações:
+
+**1. As 81 descrições de ritual são fiéis ao livro — 100%.** Comparação por continência: o texto do
+livro sem lixo de paginação e com a hifenização de fim de linha juntada, tudo normalizado sem
+espaços nem acentos, tem que CONTER a nossa descrição. As 81 passaram. O artefato estava confinado
+aos campos do stat block (já corrigidos), não ao corpo do texto.
+
+**2. Varredura de artefato de OCR nos 12 arquivos de dados** (rituais, poderes de classe, trilhas,
+origens, poderes paranormais, maldições, equipamentos, perícias, classes, patentes, modificações,
+atributos), procurando hífen solto no meio de palavra (`"modi- ficação"`), espaço duplo, quebra de
+linha vazada, marca d'água do PDF e raízes que o OCR costuma partir: **limpo**. O único acerto foi
+falso positivo ("Você **modifica s**ua aparência").
+
+**3. Fidelidade numérica das descrições de habilidade** — 45 poderes de classe, 60 features de
+trilha, 26 poderes de origem, 22 paranormais e 34 maldições. Como nossos textos são condensados (não
+literais), o teste foi: todo número, dado e custo que aparece no NOSSO texto tem que existir no
+trecho correspondente do livro. **Nenhuma divergência real.** Quatro sinalizações, todas resolvidas:
+
+- *Faro para Pistas* e *Ritualística*: falha do localizador — pegou a Tabela 1.1 num caso e o poder
+  de classe "Tatuagem Ritualística" no outro (colisão de nome com a maldição "Ritualística")
+- *Conjuração* e *Ritualística*: nosso texto é o do livro **mais** um parêntese que nós acrescentamos
+  explicitando os custos da Tabela 5.2 (1/3/6/10 PE) — acréscimo correto, conferido na 1ª rodada
+- *Sangue de Ferro*: ver a limitação abaixo
+
+### Limitação do extract (não é bug nosso)
+
+O `docs/_book-extracts/ordem-paranormal.txt` tem pelo menos um ponto onde a quebra de página comeu
+texto do corpo: a descrição de **Sangue de Ferro** termina em "Você recebe +2 pon-" e a linha
+seguinte já é o capítulo RITUAIS. O resto do poder não está no extract, então nossa descrição dele
+**não pode ser verificada por aqui** — ela é consistente e paralela à do Potencial Aprimorado (que é
+verificável), mas conferir de verdade exige a página do PDF.
+
+Vale como recado geral: "conferido contra o extract" não é o mesmo que "conferido contra o livro
+impresso" nos pontos onde o extract perdeu conteúdo.

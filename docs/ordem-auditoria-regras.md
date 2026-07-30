@@ -302,3 +302,67 @@ Nove testes antigos falharam ao aplicar a G1, todos porque usavam a **faca** (qu
 Agilidade 3 / Força 2 — o número mudou porque a regra mudou. Os que testavam a regra BASE de corpo a
 corpo passaram a usar o machete (não ágil); os demais tiveram a expectativa atualizada com o motivo
 no comentário.
+
+---
+
+# Terceira rodada (2026-07-30)
+
+Áreas restantes: os **81 rituais em detalhe** (a primeira rodada só conferiu a contagem), os poderes
+paranormais e as tabelas de equipamento geral. Os stat blocks dos rituais foram comparados campo a
+campo com o livro por script, normalizando os cortes de palavra do extract do PDF ("Vonta de",
+"Forti tude", "pes soal").
+
+## Conferido e correto nesta rodada
+
+| Área | Situação |
+|---|---|
+| Os 81 rituais: círculo, elementos, execução, alcance e alvo | ✅ nenhuma divergência |
+| Pré-requisitos dos poderes paranormais (10 dos 22 têm) | ✅ Conhecimento/Energia/Morte/Sangue com as contagens certas |
+| Semântica do `elementCount` | ✅ "Morte 2" exige **dois outros** poderes de Morte — a contagem só acumula depois da instância ser validada, como a p. 114 manda |
+| Unicidade dos poderes paranormais | ✅ "só pode escolher cada poder uma vez", exceto Aprender Ritual e a 2ª cópia por afinidade |
+| Tabela 3.8 (27 itens gerais, acessórios e explosivos): categoria e espaços | ✅ inclusive a Mochila Militar, cujo `*` no livro é 0 espaço |
+| Chamas do Caos sem linha de Resistência | ✅ o livro realmente não tem — foi falso positivo do meu primeiro script |
+
+## Problemas encontrados
+
+### H1 — 13 campos de stat block de ritual truncados ou vazios (P1)
+
+A digitalização cortou valores nas quebras de linha do livro. Em 12 rituais, o que a ficha imprime
+está incompleto:
+
+| Ritual | Campo | Nosso | Livro |
+|---|---|---|---|
+| Canalizar o Medo | duração | `permanente até ser` | `permanente até ser descarregada` |
+| Compreensão Paranormal | resistência | `Vontade anula` | `Vontade anula (veja texto)` |
+| Convocar o Algoz | resistência | `Vontade parcial,` | `Vontade parcial, Fortitude parcial` |
+| Decadência | resistência | `Fortitude reduz` | `Fortitude reduz à metade` |
+| Desacelerar Impacto | duração | `até chegar ao solo ou` | `até chegar ao solo ou cena, o que vier primeiro` |
+| Eco Espiral | resistência | `Fortitude reduz` | `Fortitude reduz à metade` |
+| Hemofagia | resistência | `Fortitude reduz` | `Fortitude reduz à metade` |
+| Invadir Mente | duração | `instantânea` | `instantânea ou 1 dia` |
+| Invadir Mente | resistência | *(vazio)* | `Vontade parcial ou nenhuma` |
+| Mergulho Mental | resistência | `Vontade parcial` | `Vontade parcial (veja texto)` |
+| Miasma Entrópico | resistência | `Forti tude parcial` | `Fortitude parcial (veja texto)` |
+| Paradoxo | resistência | `Fortitude reduz` | `Fortitude reduz à metade` |
+| Vínculo de Sangue | resistência | `Fortitude` | `Fortitude anula` |
+
+**Por que importa:** a Revisão e o PDF imprimem a resistência de cada ritual conhecido. "Fortitude
+reduz", sem o "à metade", não diz ao jogador o que um sucesso faz; "Vínculo de Sangue: Fortitude"
+esconde que o teste **anula** o ritual. E `Forti tude` é um erro visível na ficha.
+
+O `Forti tude` mostra que parte da digitalização veio de cópia direta do PDF, então a mesma classe de
+erro pode existir nas 81 **descrições** — que este script não compara (só os campos do stat block).
+
+### H2 — Discente e Verdadeiro só existem como texto (P2, decisão pendente)
+
+Praticamente todo ritual tem versões avançadas: "Discente (+2 PE): muda o bônus de dano para +2d6.
+Requer 2º círculo." / "Verdadeiro (+5 PE): ... Requer 3º círculo e afinidade." Hoje isso vive dentro
+da `description`, como texto corrido.
+
+A ficha calcula o custo base com todas as reduções (Ritual Predileto −1, Mestre em Elemento −1,
+Tatuagem Ritualística −1), mas não os custos avançados — então quem quiser conjurar um Discente
+refaz a conta na mesa. E os requisitos ("Requer 3º círculo", "Requer 4º círculo e afinidade") são
+verificáveis contra o personagem: a ficha poderia dizer **quais versões ele já pode usar**.
+
+Estruturar isso significaria extrair de cada descrição os degraus (nome, custo extra, círculo
+mínimo, exige afinidade) — trabalho de dados considerável, e a decisão de fazer ou não é do usuário.

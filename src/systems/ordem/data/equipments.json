@@ -12,6 +12,7 @@
     "critical": "19",
     "range": "Curto",
     "damageType": "C",
+    "agile": true,
     "description": "Faca de combate — arma branca leve e perfurante."
   },
   {
@@ -42,6 +43,7 @@
     "critical": "x3",
     "range": "-",
     "damageType": "P",
+    "agile": true,
     "description": "Punhal — arma branca leve, ágil e perfurante."
   },
   {
@@ -102,6 +104,8 @@
     "critical": "x2",
     "range": "-",
     "damageType": "I",
+    "agile": true,
+    "rules": ["Conta como arma de uma mão e leve para Combater com Duas Armas e poderes similares."],
     "description": "Cajado — bastão longo empunhado com as duas mãos."
   },
   {
@@ -133,6 +137,7 @@
     "critical": "19",
     "range": "Médio",
     "damageType": "P",
+    "rules": ["Exige uma ação de movimento para recarregar a cada disparo."],
     "ammo": "municao-flechas",
     "description": "Besta — arma de disparo à distância."
   },
@@ -212,6 +217,7 @@
     "critical": "x2",
     "range": "-",
     "damageType": "I",
+    "agile": true,
     "description": "Nunchaku — arma de concussão ágil."
   },
   {
@@ -227,6 +233,7 @@
     "critical": "x2",
     "range": "-",
     "damageType": "I",
+    "rules": ["+2 em testes para desarmar e derrubar."],
     "description": "Corrente — arma de concussão flexível, com alcance."
   },
   {
@@ -257,6 +264,7 @@
     "critical": "18",
     "range": "-",
     "damageType": "C",
+    "agile": true,
     "description": "Florete — espada fina e ágil, de lâmina cortante (Tabela 3.3: dano de corte)."
   },
   {
@@ -332,6 +340,7 @@
     "critical": "19",
     "range": "-",
     "damageType": "C",
+    "agile": true,
     "description": "Katana — espada de lâmina curva e afiada."
   },
   {
@@ -377,6 +386,8 @@
     "critical": "x2",
     "range": "-",
     "damageType": "C",
+    "attackPenalty": 2,
+    "rules": ["Ao rolar 6 num dado de dano, role um dado de dano adicional.","Ligar a motosserra gasta uma ação de movimento."],
     "description": "Moto-serra — ferramenta de corte usada como arma, empunhada com as duas mãos."
   },
   {
@@ -392,6 +403,7 @@
     "critical": "x3",
     "range": "Médio",
     "damageType": "P",
+    "addsStrengthDamage": true,
     "ammo": "municao-flechas",
     "description": "Arco composto — arco reforçado, de maior potência."
   },
@@ -408,6 +420,7 @@
     "critical": "19",
     "range": "Médio",
     "damageType": "P",
+    "rules": ["Exige uma ação de movimento para recarregar a cada disparo."],
     "ammo": "municao-flechas",
     "description": "Balestra — besta pesada de disparo."
   },
@@ -424,6 +437,7 @@
     "critical": "19/x3",
     "range": "Curto",
     "damageType": "B",
+    "automatic": true,
     "ammo": "municao-balas-curtas",
     "description": "Submetralhadora — arma de fogo automática de disparo curto."
   },
@@ -440,6 +454,7 @@
     "critical": "x3",
     "range": "Curto",
     "damageType": "B",
+    "rules": ["Causa apenas metade do dano em alcance médio ou maior."],
     "ammo": "municao-cartuchos",
     "description": "Espingarda — arma de fogo de dispersão, a curta distância."
   },
@@ -456,6 +471,7 @@
     "critical": "19/x3",
     "range": "Médio",
     "damageType": "B",
+    "automatic": true,
     "ammo": "municao-balas-longas",
     "description": "Fuzil de assalto — arma de fogo automática de disparo longo."
   },
@@ -488,6 +504,7 @@
     "critical": "x2",
     "range": "Médio",
     "damageType": "I",
+    "rules": ["Causa o dano no alvo e em todos os seres num raio de 3m (estes têm Reflexos, DT Agi, para metade).","Pode ser disparada num ponto em alcance médio, sem teste de ataque — mas então não acerta ninguém diretamente.","Exige uma ação de movimento para recarregar a cada disparo."],
     "ammo": "municao-foguete",
     "description": "Bazuca — lançador de foguetes explosivo."
   },
@@ -504,6 +521,7 @@
     "critical": "x2",
     "range": "Curto",
     "damageType": "Fogo",
+    "rules": ["Atinge todos os seres numa linha de 1,5m de largura em alcance curto (um único teste de ataque contra a Defesa de cada um); os atingidos ficam em chamas."],
     "ammo": "municao-combustivel",
     "description": "Lança-chamas — projeta um jato de fogo à frente."
   },
@@ -520,6 +538,7 @@
     "critical": "19/x3",
     "range": "Médio",
     "damageType": "B",
+    "automatic": true,
     "ammo": "municao-balas-longas",
     "description": "Metralhadora — arma de fogo automática pesada."
   },

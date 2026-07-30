@@ -8,7 +8,7 @@
   { "id": "calibre-grosso", "name": "Calibre Grosso", "effect": "Aumenta o dano em mais um dado do mesmo tipo.", "target": "weapon-firearm", "damageDice": 1 },
   { "id": "compensador", "name": "Compensador", "effect": "Anula a penalidade por disparar em rajadas.", "target": "weapon-firearm" },
   { "id": "discreta-fogo", "name": "Discreta", "effect": "+5 em testes de ocultar a arma e reduz o espaço em 1.", "target": "weapon-firearm", "spaceDelta": -1 },
-  { "id": "ferrolho-automatico", "name": "Ferrolho Automático", "effect": "A arma se torna automática (pode disparar em rajadas).", "target": "weapon-firearm" },
+  { "id": "ferrolho-automatico", "name": "Ferrolho Automático", "effect": "A arma se torna automática (pode disparar em rajadas).", "target": "weapon-firearm", "excludesAutomatic": true },
   { "id": "mira-laser", "name": "Mira Laser", "effect": "+2 na margem de ameaça.", "target": "weapon-firearm", "threatMargin": 2 },
   { "id": "mira-telescopica", "name": "Mira Telescópica", "effect": "Aumenta o alcance da arma e o alcance da habilidade Ataque Furtivo.", "target": "weapon-firearm" },
   { "id": "silenciador", "name": "Silenciador", "effect": "Reduz as penalidades em Furtividade ao disparar a arma.", "target": "weapon-firearm" },

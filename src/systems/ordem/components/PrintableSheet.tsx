@@ -12,7 +12,7 @@ import {
   getSkillBonusTotal, getConditionalSkillBonuses, getConditionalDefenseBonuses, getExtraDamageDiceNotes,
   getSheetExplosives, getResolvedAbilityNotes, getEffectiveCreditLimit, getSkillDicePool,
 } from '../utils/sheetEffects'
-import { formatDicePool } from '../utils/attributeUtils'
+import { formatDicePool, ATTRIBUTE_ABBREV as ATTR_ABBREV } from '../utils/attributeUtils'
 import { getReachedTrilhaSlots, getPeLimit } from '../utils/progressionUtils'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, getSlotRitualElement, getGrantedRitualElement, ELEMENT_NAMES } from '../utils/ritualUtils'
 import {
@@ -34,13 +34,6 @@ import type { OrdemAttributes } from '../types/character'
 import type { OrdemRitual } from '../types/ritual'
 
 const CAT_ROMAN = ['0', 'I', 'II', 'III', 'IV']
-const ATTR_ABBREV: Record<keyof OrdemAttributes, string> = {
-  agility: 'AGI',
-  strength: 'FOR',
-  intellect: 'INT',
-  presence: 'PRE',
-  vigor: 'VIG',
-}
 
 /**
  * Ficha imprimível no formato da Ficha de Agente oficial (sem a arte), em DUAS páginas:
@@ -308,11 +301,12 @@ export function PrintableSheet() {
                   </td>
                 </tr>
               ))}
-              {weaponAttacks.map((a, i) => (
+              {weaponAttacks.flatMap((a, i) => [
                 <tr key={`${a.name}-${i}`} className="border-b border-gray-300">
                   <td className="pr-2 py-0.5 font-semibold">{a.name}</td>
                   <td className="pr-2 py-0.5">
-                    {a.skill} {formatDicePool({ dice: a.rollDice, mode: a.rollMode })}{' '}
+                    {a.skill} ({ATTR_ABBREV[a.attributeUsed]}){' '}
+                    {formatDicePool({ dice: a.rollDice, mode: a.rollMode })}{' '}
                     <strong>{a.attackBonus >= 0 ? `+${a.attackBonus}` : a.attackBonus}</strong>
                     {a.dicePenaltyNotes.length > 0 && (
                       <span className="text-[9px] text-gray-600"> ({a.dicePenaltyNotes.join(', ')})</span>
@@ -321,8 +315,15 @@ export function PrintableSheet() {
                   <td className="pr-2 py-0.5">{a.damage}</td>
                   <td className="pr-2 py-0.5">{a.critical}</td>
                   <td className="py-0.5">{a.range}</td>
-                </tr>
-              ))}
+                </tr>,
+                ...(a.notes.length > 0 ? [(
+                  <tr key={`${a.name}-${i}-notes`} className="border-b border-gray-300">
+                    <td colSpan={5} className="text-[9px] text-gray-600 pb-0.5">
+                      {a.notes.join(' ')}
+                    </td>
+                  </tr>
+                )] : []),
+              ])}
               {/* Linhas em branco pra anotar na mesa */}
               {Array.from({ length: Math.max(0, 3 - weaponAttacks.length) }).map((_, i) => (
                 <tr key={`blank-${i}`} className="border-b border-gray-300">

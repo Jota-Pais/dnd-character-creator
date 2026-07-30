@@ -49,6 +49,30 @@ export interface OrdemWeapon extends OrdemEquipmentBase {
   damageType: string;
   /** Munição consumida; ausente nas armas corpo a corpo e de arremesso. */
   ammo?: OrdemAmmoId;
+  /**
+   * Arma ágil (p. 59): "permite que você aplique sua Agilidade em vez de sua Força em testes de
+   * ataque e rolagens de dano realizadas com elas". São seis — faca, punhal, cajado, nunchaku,
+   * florete e katana — e o ataque desarmado com o poder Artista Marcial.
+   */
+  agile?: boolean;
+  /**
+   * Arma automática (p. 59): pode disparar rajada (−Ø no ataque por +1 dado de dano). A rajada em
+   * si é decisão de jogo, não da ficha; o campo existe para o jogador SABER que a arma é
+   * automática e para não oferecerem a ela a modificação Ferrolho Automático.
+   */
+  automatic?: boolean;
+  /** Penalidade fixa nos testes de ataque com esta arma (motosserra: −2, por ser desajeitada). */
+  attackPenalty?: number;
+  /**
+   * Soma Força nas rolagens de dano mesmo sendo arma de disparo — exceção do Arco Composto
+   * ("ao contrário de outras armas de disparo", p. 58).
+   */
+  addsStrengthDamage?: boolean;
+  /**
+   * Regras próprias da arma que a ficha exibe junto do ataque (área, alcance, recarga). Só texto
+   * fixo; regras que dependem do personagem são resolvidas em `getWeaponRuleNotes`.
+   */
+  rules?: string[];
 }
 
 export interface OrdemProtection extends OrdemEquipmentBase {

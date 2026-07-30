@@ -33,6 +33,13 @@ export type OrdemWeaponAttack = {
   rollDice: number
   /** 'worst' quando vale o PIOR resultado (atributo 0, ou penalidade que zerou o pool). */
   rollMode: DicePool['mode']
+  /**
+   * Atributo que dá os dados e o bônus de dano deste ataque. Normalmente o da perícia (Força na
+   * Luta, Agilidade na Pontaria), mas numa arma ágil pode ser Agilidade num teste de Luta (p. 59).
+   */
+  attributeUsed: 'agility' | 'strength' | 'intellect' | 'presence' | 'vigor'
+  /** Regras próprias da arma, já resolvidas pelo personagem quando dependem dele. */
+  notes: string[]
   /** Por que o pool foi penalizado, pra ficha explicar (ex.: "arma sem proficiência −ØØ"). */
   dicePenaltyNotes: string[]
   /** Bônus no teste de ataque (treino + modificações). */
@@ -58,6 +65,7 @@ export function isMelee(weapon: OrdemWeapon): boolean {
  * não somam atributo nenhum (p. 56).
  */
 export function addsStrengthToDamage(weapon: OrdemWeapon): boolean {
+  if (weapon.addsStrengthDamage) return true // exceção do Arco Composto (p. 58)
   return weapon.weaponCategory === 'corpo_a_corpo' || weapon.weaponCategory === 'arremesso'
 }
 
@@ -126,6 +134,9 @@ export function formatWeaponSummary(weapon: OrdemWeapon): string {
   const parts = [getWeaponSkillName(weapon), WEAPON_CATEGORY_PT[weapon.weaponCategory]]
   if (weapon.range !== '-') parts.push(`alcance ${weapon.range}`)
   parts.push(GRIP_PT[weapon.grip], `proficiência ${PROFICIENCY_PT[weapon.proficiency]}`)
+  // Propriedades que mudam como a arma é usada, visíveis já na escolha do equipamento.
+  if (weapon.agile) parts.push('ágil')
+  if (weapon.automatic) parts.push('automática')
   return parts.join(' · ')
 }
 
@@ -159,7 +170,14 @@ export function getOrdemWeaponAttack(
   // (ex.: Ocultismo via Lâmina Maldita). O dano corpo a corpo segue somando Força.
   const skillId: AttackSkillChoice = skillOverride ?? (melee ? 'fighting' : 'aim')
   const skill = ATTACK_SKILLS[skillId].name
-  const attackAttribute = ATTACK_SKILLS[skillId].attribute
+  // Arma ágil (p. 59): pode aplicar Agilidade em vez de Força — no teste de ataque E no dano. Como
+  // as duas trocam juntas, o maior atributo é sempre a escolha ótima (não há trade-off a decidir),
+  // então a ficha usa o melhor e informa qual em `attributeUsed`. Só vale quando o teste é de Luta:
+  // o ataque por Ocultismo (Lâmina Maldita) usa Intelecto e não entra nessa troca.
+  const canUseAgility = Boolean(weapon.agile) && skillId === 'fighting'
+  const attackAttribute = canUseAgility && attrs.agility > attrs.strength
+    ? 'agility'
+    : ATTACK_SKILLS[skillId].attribute
   // Penalidades em DADOS que valem para o teste de ataque, somadas antes de resolver o pool:
   // arma sem proficiência (–ØØ no ataque, p. 56) e proteção sem proficiência (–ØØ em testes de
   // Força/Agilidade, p. 62 — não atinge o ataque por Ocultismo, que é Intelecto).
@@ -182,7 +200,10 @@ export function getOrdemWeaponAttack(
   const curses = curseIds.map(getCurse).filter((c): c is NonNullable<typeof c> => Boolean(c))
   // Ferramenta de Trabalho (origem Operário): +1 em ataque/dano/margem de ameaça, só com a arma escolhida.
   const workToolBonus = draft.workToolWeapon === weapon.id ? getWorkToolBonus(draft) : 0
-  const attackBonus = GRADE_BONUS[getSkillGrade(draft, skillId)] + workToolBonus + mods.reduce((s, m) => s + (m.attackBonus ?? 0), 0)
+  // Penalidade fixa da própria arma (motosserra −2, por ser desajeitada — p. 59).
+  const attackBonus = GRADE_BONUS[getSkillGrade(draft, skillId)] + workToolBonus
+    - (weapon.attackPenalty ?? 0)
+    + mods.reduce((s, m) => s + (m.attackBonus ?? 0), 0)
   // Poderes de classe com efeito incondicional no dano (F25): Tiro Certeiro (+AGI em armas de
   // disparo), Balística Avançada/Ninja Urbano (+2 em táticas de fogo/corpo a corpo),
   // Golpe Pesado (+1 dado corpo a corpo). E poderes de origem: Mão Pesada (+2 corpo a corpo),
@@ -195,8 +216,12 @@ export function getOrdemWeaponAttack(
     (usesLongBullets(weapon) && hasTrilhaFeature(draft, 'elite-marksman', 10) ? attrs.intellect : 0) +
     (weapon.weaponCategory === 'corpo_a_corpo' ? (originEffects.meleeDamageBonus ?? 0) : 0) +
     (weapon.weaponCategory === 'fogo' ? (originEffects.firearmDamageBonus ?? 0) : 0)
-  // Força entra no dano de corpo a corpo E de arremesso (p. 56) — mas o TESTE do arremesso é Pontaria.
-  const damageBonus = (addsStrengthToDamage(weapon) ? attrs.strength : 0) + powerDamage + workToolBonus
+  // Força entra no dano de corpo a corpo E de arremesso (p. 56) — mas o TESTE do arremesso é
+  // Pontaria. Numa arma ágil, o atributo do dano é o mesmo do ataque (`attackAttribute`).
+  const strengthLikeDamage = addsStrengthToDamage(weapon)
+    ? attrs[canUseAgility ? attackAttribute : 'strength']
+    : 0
+  const damageBonus = strengthLikeDamage + powerDamage + workToolBonus
     + mods.reduce((s, m) => s + (m.damageBonus ?? 0), 0)
   // Máquina de Matar (Aniquilador NEX 99%): "o dano aumenta em um passo" — ruling do usuário
   // (2026-07-29): um passo = mais um dado do mesmo tipo, igual a Golpe Pesado e Calibre Grosso.
@@ -232,9 +257,43 @@ export function getOrdemWeaponAttack(
   const range = curses.some(c => c.rangeIncrease) ? increaseRange(weapon.range) : weapon.range
 
   return {
-    name: weapon.name, skill, rollDice: pool.dice, rollMode: pool.mode, dicePenaltyNotes,
+    name: weapon.name, skill, rollDice: pool.dice, rollMode: pool.mode, attributeUsed: attackAttribute,
+    dicePenaltyNotes, notes: getWeaponRuleNotes(weapon, draft),
     attackBonus, damage, critical, range,
   }
+}
+
+/**
+ * Regras próprias da arma para a ficha: o texto fixo de `weapon.rules` mais as que dependem do
+ * personagem e por isso só podem ser resolvidas aqui (p. 58-59):
+ *
+ * - **Metralhadora**: exige Força 4 ou apoiar em tripé; sem isso, −5 nos ataques.
+ * - **Fuzil de Precisão**: +5 na margem de ameaça ao mirar, se veterano em Pontaria.
+ * - **Katana**: pode ser empunhada com uma mão, se veterano em Luta.
+ * - **Arma automática**: pode disparar rajada (−Ø no ataque por +1 dado de dano) — a rajada é
+ *   decisão de jogo, a ficha só avisa que a arma é automática.
+ */
+export function getWeaponRuleNotes(weapon: OrdemWeapon, draft: OrdemCharacterDraft): string[] {
+  const notes = [...(weapon.rules ?? [])]
+  const attrs = getSheetAttributes(draft)
+
+  if (weapon.automatic) {
+    notes.push('Automática: pode disparar rajada (−Ø no ataque para +1 dado de dano).')
+  }
+  if (weapon.id === 'metralhadora' && attrs.strength < 4) {
+    notes.push(`Com Força ${attrs.strength} (menos de 4), exige apoiar em tripé com uma ação de movimento — sem isso, −5 nos ataques.`)
+  }
+  if (weapon.id === 'fuzil-precisao' && isVeteranOrBetter(getSkillGrade(draft, 'aim'))) {
+    notes.push('Veterano em Pontaria: ao mirar, +5 na margem de ameaça deste ataque.')
+  }
+  if (weapon.id === 'katana' && isVeteranOrBetter(getSkillGrade(draft, 'fighting'))) {
+    notes.push('Veterano em Luta: pode empunhar a katana com uma mão.')
+  }
+  return notes
+}
+
+function isVeteranOrBetter(grade: SkillGrade): boolean {
+  return grade === 'veterano' || grade === 'expert'
 }
 
 // ── Munição: uma linha de ataque por variante carregada ────────────────────────
@@ -399,6 +458,8 @@ export function getUnarmedAttack(draft: OrdemCharacterDraft): OrdemWeaponAttack 
     id: 'desarmado', name: 'Desarmado', category: 0, spaces: 0, type: 'weapon',
     proficiency: 'simple', weaponCategory: 'corpo_a_corpo', grip: 'leve',
     damage, critical: 'x2', range: '-', damageType,
+    // "Contam como armas ágeis": com Artista Marcial o desarmado pode usar Agilidade (p. 26/29).
+    agile: isMartialArtist,
   }
   return { ...getOrdemWeaponAttack(unarmedWeapon, draft, []), name: 'Desarmado' }
 }

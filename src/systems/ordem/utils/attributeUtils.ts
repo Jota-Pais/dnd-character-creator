@@ -17,6 +17,15 @@ export function getAttributeSum(attributes: OrdemAttributes): number {
   return attributes.agility + attributes.strength + attributes.intellect + attributes.presence + attributes.vigor
 }
 
+/** Siglas dos atributos, como aparecem na ficha. */
+export const ATTRIBUTE_ABBREV: Record<AttributeId, string> = {
+  agility: 'AGI',
+  strength: 'FOR',
+  intellect: 'INT',
+  presence: 'PRE',
+  vigor: 'VIG',
+}
+
 /** Quantos d20 se rola e se vale o melhor ou o pior resultado. */
 export type DicePool = { dice: number; mode: 'best' | 'worst' }
 

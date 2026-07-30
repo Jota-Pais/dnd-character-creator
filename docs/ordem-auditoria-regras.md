@@ -175,6 +175,8 @@ Versatilidade ou Expansão de Conhecimento.
 
 # Segunda rodada (2026-07-30)
 
+> **Estado: corrigido.** Ver **Correções da segunda rodada** no fim.
+
 Áreas que a primeira rodada não tinha coberto: Tabela 2.1 (perícias), pré-requisitos dos poderes de
 classe, Tabela 3.5 (modificações de arma) e — o filão principal — a seção **"Habilidades de Armas"**
 e as **descrições individuais das armas** (p. 58-61), que carregam regras que a Tabela 3.3 não mostra.
@@ -274,4 +276,29 @@ diz **INTUIÇÃO (PRE)**.
 Nossos dados usam **Presença**, e é a leitura defensável: a descrição diz "mede sua empatia e sexto
 sentido"; Percepção também é Presença; e o poder paranormal **Sensitivo** concede "+5 em Diplomacia,
 Intimidação e Intuição" — um trio coerente de perícias de Presença. A célula da tabela parece ser o
-deslize. Sem mudança de código.
+deslize. Sem mudança de código. **Confirmado pelo usuário (2026-07-30): Intuição é com Presença.**
+
+---
+
+## Correções da segunda rodada (2026-07-30)
+
+| Achado | O que mudou |
+|---|---|
+| **G1** | Campo `agile` nas seis armas do livro (faca, punhal, cajado, nunchaku, florete, katana) e no desarmado quando há Artista Marcial. O ataque usa o **melhor** entre Força e Agilidade — no pool de dados **e** no bônus de dano —, e a ficha mostra qual atributo em `attributeUsed` ("Luta (AGI) 4d20"). O ataque por Ocultismo (Lâmina Maldita) fica fora da troca, porque é Intelecto |
+| **G2** | `addsStrengthDamage` no Arco Composto: soma Força no dano apesar de ser arma de disparo |
+| **G3** | `attackPenalty: 2` na motosserra, descontada do bônus de ataque; o dado extra ao rolar 6 e a ação para ligar viraram notas |
+| **G4** | `automatic` nas três armas automáticas, visível no resumo do card e como nota na ficha ("pode disparar rajada: −Ø por +1 dado"). A modificação Ferrolho Automático deixa de ser oferecida a elas (`excludesAutomatic`). A rajada em si não é modelada, por decisão do usuário |
+| **G5** | Nota da metralhadora, só quando a Força é menor que 4: exige apoiar em tripé, senão −5 |
+| **G6** | Nota do fuzil de precisão, só quando veterano ou expert em Pontaria: +5 na margem ao mirar |
+| **G7** | Nota da katana (uma mão, se veterano em Luta) e do cajado (conta como uma mão e leve para Combater com Duas Armas) |
+| **G8** | Notas de espingarda (metade do dano em alcance médio+), lança-chamas (linha de 1,5m), bazuca (raio de 3m, disparo em ponto) e recarga de besta/balestra/bazuca. Também a corrente (+2 para desarmar e derrubar) |
+
+**Decisão de UX na G1:** o livro diz "permitem que você aplique", o que é escolha do jogador por
+ataque. A ficha usa o melhor atributo automaticamente porque ataque e dano trocam **juntos** — não há
+trade-off a decidir, o maior é sempre ótimo. Mas o atributo aparece na linha ("Luta (AGI)"), pra a
+regra não ficar escondida e o jogador poder optar diferente na mesa.
+
+Nove testes antigos falharam ao aplicar a G1, todos porque usavam a **faca** (que é ágil) com
+Agilidade 3 / Força 2 — o número mudou porque a regra mudou. Os que testavam a regra BASE de corpo a
+corpo passaram a usar o machete (não ágil); os demais tiveram a expectativa atualizada com o motivo
+no comentário.

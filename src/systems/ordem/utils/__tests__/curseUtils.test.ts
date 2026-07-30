@@ -166,8 +166,9 @@ describe('maldições de arma nos ataques', () => {
   const AGI3_FOR2 = makeDraft({ attributes: { agility: 3, strength: 2, intellect: 1, presence: 1, vigor: 1 } })
 
   it('Lancinante adiciona +1d8 Sangue ao dano', () => {
+    // A faca é ágil (p. 59): com Agi 3 > For 2, o atributo do dano é a Agilidade.
     const a = getOrdemWeaponAttack(faca as OrdemWeapon, AGI3_FOR2, [], ['lancinante'])
-    expect(a.damage).toBe('1d4+2 corte +1d8 Sangue')
+    expect(a.damage).toBe('1d4+3 corte +1d8 Sangue')
   })
 
   it('Predadora duplica a margem de ameaça (fuzil de caça 19 → 17, exemplo do livro) e sobe o alcance', () => {

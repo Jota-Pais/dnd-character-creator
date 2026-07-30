@@ -43,4 +43,9 @@ export type OrdemModification = {
    * categoria do item.
    */
   repeatableWith?: string
+  /**
+   * Não se aplica a armas que já são automáticas (Ferrolho Automático numa submetralhadora seria
+   * redundante — ela já dispara rajada, p. 59).
+   */
+  excludesAutomatic?: boolean
 }

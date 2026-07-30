@@ -16,7 +16,9 @@ export function modAppliesTo(mod: OrdemModification, item: OrdemEquipment): bool
     case 'weapon-melee-ranged':
       return item.type === 'weapon' && ['corpo_a_corpo', 'arremesso', 'disparo'].includes(item.weaponCategory)
     case 'weapon-firearm':
-      return item.type === 'weapon' && item.weaponCategory === 'fogo'
+      if (item.type !== 'weapon' || item.weaponCategory !== 'fogo') return false
+      // Ferrolho Automático não se aplica a arma que já é automática (p. 59).
+      return !(mod.excludesAutomatic && item.automatic)
     case 'ammunition':
       return item.id.startsWith('municao-')
     case 'protection-any':

@@ -1,5 +1,6 @@
 import type { Skill } from '../types/skill'
 import skillsData from '../data/skills.json'
+import { ATTRIBUTE_ABBREV } from './attributeUtils'
 
 export const SKILLS: Skill[] = skillsData as Skill[]
 
@@ -22,18 +23,10 @@ export function getSkillKitScope(id: string): string {
   return getSkill(id)?.kit?.scope ?? ''
 }
 
-const ATTR_ABBREV: Record<string, string> = {
-  agility: 'AGI',
-  strength: 'FOR',
-  intellect: 'INT',
-  presence: 'PRE',
-  vigor: 'VIG',
-}
-
 /** Sigla do atributo-base da perícia (AGI/FOR/INT/PRE/VIG). */
 export function getSkillAttributeAbbrev(id: string): string {
   const skill = getSkill(id)
-  return skill ? ATTR_ABBREV[skill.attribute] ?? '' : ''
+  return skill ? ATTRIBUTE_ABBREV[skill.attribute] ?? '' : ''
 }
 
 /** Rótulo da perícia com o atributo de que ela deriva, ex.: "Atletismo (FOR)". */

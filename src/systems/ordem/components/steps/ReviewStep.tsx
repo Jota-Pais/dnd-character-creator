@@ -14,7 +14,7 @@ import {
   getConditionalDefenseBonuses, getExtraDamageDiceNotes, getSheetExplosives,
   getResolvedAbilityNotes,
 } from '../../utils/sheetEffects'
-import { formatDicePool } from '../../utils/attributeUtils'
+import { formatDicePool, ATTRIBUTE_ABBREV as ATTR_ABBREV } from '../../utils/attributeUtils'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, ritualNeedsElementChoice, getSlotRitualElement, getGrantedRitualElement, grantedRitualElementKey, ELEMENT_NAMES, ELEMENT_COLORS } from '../../utils/ritualUtils'
 import {
   getAffinityState, getParanormalEffects, getParanormalInstances, getSanityBreakdown, getSourceLabel,
@@ -547,13 +547,17 @@ export function ReviewStep() {
               <p key={`${a.name}-${i}`} className="text-parchment-500 text-xs">
                 <span className="font-semibold text-parchment-300">{a.name}</span>{' '}
                 <span className="text-parchment-700">
-                  {a.skill} {formatDicePool({ dice: a.rollDice, mode: a.rollMode })}{' '}
+                  {a.skill} ({ATTR_ABBREV[a.attributeUsed]}){' '}
+                  {formatDicePool({ dice: a.rollDice, mode: a.rollMode })}{' '}
                   <span className="text-gold-500">{a.attackBonus >= 0 ? `+${a.attackBonus}` : a.attackBonus}</span>
                   {' · '}{a.damage} · Crít. {a.critical}{a.range && a.range !== '-' ? ` · ${a.range}` : ''}
                 </span>
                 {a.dicePenaltyNotes.length > 0 && (
                   <span className="text-amber-400/90"> ({a.dicePenaltyNotes.join(', ')})</span>
                 )}
+                {a.notes.map(note => (
+                  <span key={note} className="block text-parchment-600 pl-3">↳ {note}</span>
+                ))}
               </p>
             ))}
           </div>

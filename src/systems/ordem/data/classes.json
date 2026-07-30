@@ -43,8 +43,12 @@
     "weaponProficiencies": ["simple"],
     "armorProficiencies": ["light"],
     "classAbility": {
-      "name": "Eclético e Perito",
-      "description": "Eclético: em teste de qualquer perícia, pode gastar 2 PE para receber os benefícios de ser treinado nela. Perito: escolhe 2 perícias treinadas (exceto Luta/Pontaria); pode gastar PE para somar +1dX no teste, dado que cresce com o NEX (2 PE/+1d6 em NEX 5%, 3 PE/+1d8 em NEX 25%, 4 PE/+1d10 em NEX 55%, 5 PE/+1d12 em NEX 85%)."
+      "name": "Eclético, Perito e Engenhosidade",
+      "description": "Eclético: em teste de qualquer perícia, pode gastar 2 PE para receber os benefícios de ser treinado nela. Perito: escolhe 2 perícias treinadas (exceto Luta/Pontaria); pode gastar PE para somar +1dX no teste, dado que cresce com o NEX (2 PE/+1d6 em NEX 5%, 3 PE/+1d8 em NEX 25%, 4 PE/+1d10 em NEX 55%, 5 PE/+1d12 em NEX 85%). Engenhosidade: em NEX 40%, ao usar o Eclético pode gastar +2 PE para receber os benefícios de ser veterano na perícia; em NEX 75%, +4 PE para os de expert.",
+      "scalingByNex": [
+        { "nex": 40, "note": "com o Eclético, +2 PE extras dão os benefícios de veterano (Engenhosidade)" },
+        { "nex": 75, "note": "com o Eclético, +2 PE dão veterano ou +4 PE dão expert (Engenhosidade)" }
+      ]
     },
     "skillGradeCount": 5
   },

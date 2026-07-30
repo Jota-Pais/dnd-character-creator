@@ -487,10 +487,23 @@ describe('Bônus de perícia de todas as fontes', () => {
   it('a penalidade de carga soma sempre, mesmo com bônus de item na mesma perícia', () => {
     const draft = makeDraft({
       class: 'combatant',
+      // Força 2 → capacidade 10: a proteção pesada (5) + utensílio (1) cabem sem sobrecarga,
+      // pra o teste isolar a penalidade da Proteção Pesada.
+      attributes: { agility: 1, strength: 2, intellect: 1, presence: 1, vigor: 1 },
       equipmentChoices: ['protecao-pesada', 'utensilio'],
       accessorySkillChoices: { utensilio: ['crime'] }, // Crime tem penalidade de carga
     })
     expect(getSkillBonusTotal(draft, 'crime')).toBe(2 - 5)
+  })
+
+  it('sobrecarga acumula com a penalidade da Proteção Pesada nas perícias de carga', () => {
+    const draft = makeDraft({
+      class: 'combatant',
+      // Força 1 → capacidade 5; proteção pesada (5) + utensílio (1) = 6 → sobrecarregado.
+      equipmentChoices: ['protecao-pesada', 'utensilio'],
+      accessorySkillChoices: { utensilio: ['crime'] },
+    })
+    expect(getSkillBonusTotal(draft, 'crime')).toBe(2 - 5 - 5)
   })
 
   it('poder de outra classe via Expansão de Conhecimento também traz o bônus', () => {

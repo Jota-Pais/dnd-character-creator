@@ -9,9 +9,12 @@ import { getReachedTrilhaFeaturesWithSource, hasClassPower, getOriginEffects } f
 import { getExpansionGrantedClassPowers, getParanormalInstances } from './paranormalPowerUtils'
 import {
   getLoadPenaltySkillBonuses, getAccessorySkillBonuses, getEquipmentByInstance, getInstanceLabel,
+  hasProtectionProficiency,
 } from './equipmentUtils'
 import { getSheetAttributes } from './curseUtils'
 import { getPeLimit } from './progressionUtils'
+import { getDicePool, NO_PROFICIENCY_DICE_PENALTY, type DicePool } from './attributeUtils'
+import { getSkill } from './skillUtils'
 
 /**
  * Agregador dos efeitos que a ficha EXIBE somados, atravessando as quatro famílias de habilidade
@@ -122,6 +125,41 @@ export function getConditionalSkillBonuses(
     else groups.set(key, { source: bonus.source, condition: bonus.condition, value: bonus.value, skillIds: [bonus.skillId] })
   }
   return [...groups.values()]
+}
+
+// ── Penalidades em DADOS (proficiência) ────────────────────────────────────────
+
+/**
+ * Proteções equipadas com as quais o agente NÃO tem proficiência. "Se você usar uma proteção com a
+ * qual não seja proficiente, sofre –ØØ em testes baseados em Força ou Agilidade" (p. 62).
+ */
+export function getUnproficientProtections(draft: OrdemCharacterDraft): string[] {
+  return draft.equipmentChoices.filter(uid => {
+    const item = getEquipmentByInstance(uid)
+    return item?.type === 'protection' && !hasProtectionProficiency(draft, item)
+  })
+}
+
+/**
+ * Penalidade em DADOS nos testes de um atributo. Hoje a única fonte é a proteção sem proficiência
+ * (–ØØ em Força e Agilidade); não acumula por peça, porque a penalidade é da condição de "estar
+ * usando proteção sem proficiência", não de cada proteção separada.
+ */
+export function getAttributeDicePenalty(
+  draft: OrdemCharacterDraft,
+  attribute: 'agility' | 'strength' | 'intellect' | 'presence' | 'vigor',
+): number {
+  if (attribute !== 'strength' && attribute !== 'agility') return 0
+  return getUnproficientProtections(draft).length > 0 ? NO_PROFICIENCY_DICE_PENALTY : 0
+}
+
+/** Pool de d20 de uma perícia na ficha, já com atributo 0 e a penalidade de proteção. */
+export function getSkillDicePool(draft: OrdemCharacterDraft, skillId: string): DicePool {
+  const skill = getSkill(skillId)
+  if (!skill) return { dice: 1, mode: 'best' }
+  const attribute = skill.attribute as 'agility' | 'strength' | 'intellect' | 'presence' | 'vigor'
+  const attrs = getSheetAttributes(draft)
+  return getDicePool(attrs[attribute], getAttributeDicePenalty(draft, attribute))
 }
 
 // ── Defesa condicional ─────────────────────────────────────────────────────────

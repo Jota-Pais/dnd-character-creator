@@ -10,8 +10,9 @@ import {
 } from '../utils/characterUtils'
 import {
   getSkillBonusTotal, getConditionalSkillBonuses, getConditionalDefenseBonuses, getExtraDamageDiceNotes,
-  getSheetExplosives, getResolvedAbilityNotes, getEffectiveCreditLimit,
+  getSheetExplosives, getResolvedAbilityNotes, getEffectiveCreditLimit, getSkillDicePool,
 } from '../utils/sheetEffects'
+import { formatDicePool } from '../utils/attributeUtils'
 import { getReachedTrilhaSlots, getPeLimit } from '../utils/progressionUtils'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, getSlotRitualElement, getGrantedRitualElement, ELEMENT_NAMES } from '../utils/ritualUtils'
 import {
@@ -19,9 +20,10 @@ import {
   isParanormalElement, OPPRESSOR_OF,
 } from '../utils/paranormalPowerUtils'
 import {
-  getEquipmentByInstance, getInstanceLabel, getTotalCarryCapacity, getModifiedSpaces, getModifiedDefenseBonus,
+  getEquipmentByInstance, getInstanceLabel, getModifiedDefenseBonus,
   getDraftInstanceCategory, getEquipmentDamageResistances, formatAccessorySkills,
   getKitSkills, getSkillsMissingKit, hasKitForSkill, formatKitSkill,
+  getLoadState, OVERLOAD_DEFENSE_PENALTY, OVERLOAD_SPEED_PENALTY_METERS,
 } from '../utils/equipmentUtils'
 import { getModification } from '../utils/modificationUtils'
 import { getCurse, getCursedDerivedStats, getSheetAttributes, formatCurseElement, formatCurseChoiceDetail, getRitualDt, getRitualPeLimit } from '../utils/curseUtils'
@@ -110,6 +112,7 @@ export function PrintableSheet() {
   // Kits registrados e perícias sem kit — a ficha informa, mas não aplica o −5 (decisão do mestre).
   const kitSkills = getKitSkills(draft)
   const skillsMissingKit = getSkillsMissingKit(draft)
+  const load = getLoadState(draft)
   const cursedUnits = equipmentUnits.filter(u => (draft.equipmentCurses[u.uid]?.length ?? 0) > 0)
   // Armas com a maldição Ritualística: o ritual armazenado é listado junto das Habilidades.
   const ritualisticUnits = equipmentUnits.filter(u => (draft.equipmentCurses[u.uid] ?? []).includes('ritualistica'))
@@ -163,7 +166,7 @@ export function PrintableSheet() {
             <section className="grid grid-cols-3 gap-1.5">
               <SmallStat label="NEX" value={`${draft.nex}%`} />
               <SmallStat label="PE / Rodada" value={String(getEffectivePeLimit(draft))} />
-              <SmallStat label="Desl." value="9m" />
+              <SmallStat label="Desl." value={`${9 - (load.overloaded ? OVERLOAD_SPEED_PENALTY_METERS : 0)}m`} />
             </section>
 
             <section className="grid grid-cols-2 gap-1.5">
@@ -176,6 +179,9 @@ export function PrintableSheet() {
                 <p className="text-[9px] uppercase font-bold text-gray-600">Defesa</p>
                 <p className="text-2xl font-bold leading-none">{stats.defense}</p>
                 <p className="text-[9px] text-gray-500 mt-1">= 10 + AGI + Equip. + Outros</p>
+                {load.overloaded && (
+                  <p className="text-[9px] font-bold mt-0.5">Sobrecarregado: −{OVERLOAD_DEFENSE_PENALTY} já aplicado.</p>
+                )}
                 {conditionalDefense.map((d, i) => (
                   <p key={i} className="text-[9px] text-gray-600 mt-0.5">
                     +{d.value}{d.appliesToResistanceTests && ' (e em resist.)'} {d.condition} — {d.source}.
@@ -234,7 +240,13 @@ export function PrintableSheet() {
                           <span className="text-[9px] text-gray-500 font-normal"> ({grade})</span>
                         )}
                       </td>
-                      <td className="text-center">{attributes[skill.attribute as keyof OrdemAttributes]} <span className="text-[9px] text-gray-500">{ATTR_ABBREV[skill.attribute as keyof OrdemAttributes]}</span></td>
+                      <td className="text-center">
+                        {(() => {
+                          const pool = getSkillDicePool(draft, skill.id)
+                          return pool.mode === 'worst' ? `${pool.dice} pior` : pool.dice
+                        })()}{' '}
+                        <span className="text-[9px] text-gray-500">{ATTR_ABBREV[skill.attribute as keyof OrdemAttributes]}</span>
+                      </td>
                       <td className="text-center">{bonus > 0 ? `+${bonus}` : '0'}</td>
                       <td className="text-center">{powerBonus > 0 ? `+${powerBonus}` : <span className="inline-block border-b border-gray-400 w-8" />}</td>
                     </tr>
@@ -299,7 +311,13 @@ export function PrintableSheet() {
               {weaponAttacks.map((a, i) => (
                 <tr key={`${a.name}-${i}`} className="border-b border-gray-300">
                   <td className="pr-2 py-0.5 font-semibold">{a.name}</td>
-                  <td className="pr-2 py-0.5">{a.skill} {a.rollDice}d20 <strong>{a.attackBonus >= 0 ? `+${a.attackBonus}` : a.attackBonus}</strong></td>
+                  <td className="pr-2 py-0.5">
+                    {a.skill} {formatDicePool({ dice: a.rollDice, mode: a.rollMode })}{' '}
+                    <strong>{a.attackBonus >= 0 ? `+${a.attackBonus}` : a.attackBonus}</strong>
+                    {a.dicePenaltyNotes.length > 0 && (
+                      <span className="text-[9px] text-gray-600"> ({a.dicePenaltyNotes.join(', ')})</span>
+                    )}
+                  </td>
                   <td className="pr-2 py-0.5">{a.damage}</td>
                   <td className="pr-2 py-0.5">{a.critical}</td>
                   <td className="py-0.5">{a.range}</td>
@@ -564,7 +582,10 @@ export function PrintableSheet() {
               <span className="font-bold uppercase text-[10px]">Limite de Crédito:</span> {credit.level}
               {credit.source && <span className="text-gray-600"> ({credit.source})</span>}
             </span>
-            <span><span className="font-bold uppercase text-[10px]">Carga Máx.:</span> {getModifiedSpaces(draft)}/{getTotalCarryCapacity(draft)}</span>
+            <span>
+              <span className="font-bold uppercase text-[10px]">Carga:</span> {load.spaces}/{load.capacity}
+              {load.overloaded && <strong> · SOBRECARREGADO</strong>}
+            </span>
           </div>
           <table className="w-full text-xs mt-2">
             <thead>

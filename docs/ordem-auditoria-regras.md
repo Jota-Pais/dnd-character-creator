@@ -40,6 +40,10 @@ exemplos da p. 121 usam a tabela corretamente, o que confirma o deslize. Seguimo
 
 ---
 
+> **Estado: todos os problemas corrigidos em 2026-07-30.** As seções abaixo descrevem cada achado
+> como diagnosticado; o que mudou está no fim de cada uma, em **Correção**. Dois achados novos
+> apareceram durante a implementação (F8 e F9) e também estão fechados.
+
 ## Problemas encontrados
 
 ### F1 — Sobrecarga bloqueia a ficha em vez de penalizar (P0)
@@ -119,3 +123,50 @@ desarmado 1d3 não letal (este já temos).
 
 Não são itens requisitáveis, então o lugar deles é uma nota de ficha ao lado do Desarmado, não o
 catálogo de equipamento.
+
+---
+
+## Achados novos, durante a implementação
+
+### F8 — Atributo 0 mostrava "0d20" na ficha (P0)
+
+**Livro (p. 16):** "Se você tem um atributo 0, rola **dois dados** em testes daquele atributo, mas usa
+o **pior** resultado."
+
+Atributo 0 é legal na criação (o livro reduz um atributo a 0 na própria personagem-exemplo, Bianca,
+com Força 0), e a ficha calculava o pool como o valor do atributo — resultando em `0d20`, que não
+existe. Fechado junto com F2/F3, porque é a mesma máquina de "role e pegue o pior".
+
+### F9 — Arremesso usava Luta em vez de Pontaria (P1, latente)
+
+**Livro (p. 56):** ataques de arremesso são ataques **à distância** — "para atacar com uma arma de
+combate à distância, faça um teste de **Pontaria**... São subdivididas em de arremesso, disparo e
+fogo" — mas somam Força no dano, ao contrário de disparo e fogo.
+
+`isMelee()` devolvia `true` para `arremesso` e era usada tanto para escolher a perícia quanto para
+somar Força, misturando as duas coisas. Não tinha efeito visível porque nenhuma arma do catálogo é
+`arremesso` — mas quebrou na hora de implementar a F6. Agora `isMelee` significa só "corpo a corpo"
+(quem usa Luta) e `addsStrengthToDamage` cobre corpo a corpo **e** arremesso.
+
+---
+
+## Correções aplicadas (2026-07-30)
+
+| Achado | O que mudou |
+|---|---|
+| **F1** | `getLoadState` classifica em dentro do limite / sobrecarregado / impossível. Passar da capacidade é permitido e aplica −5 Defesa (via `getModifiedDefenseBonus`), −5 nas perícias de carga (via o canal de bônus, acumulando com a Proteção Pesada) e deslocamento 6m. Só acima de 2× bloqueia. Aviso destacado no Equipamento e bloco próprio na Revisão e no PDF |
+| **F2** | Arma sem proficiência: −ØØ no teste de ataque, com a fonte anotada na linha |
+| **F3** | Proteção sem proficiência: −ØØ em **todos** os testes de Força e Agilidade — entra na tabela de perícias e nos ataques por Luta/Pontaria (não no ataque por Ocultismo, que é Intelecto). Aviso próprio no Equipamento, porque a penalidade é ampla |
+| **F4** | Engenhosidade entrou na habilidade do Especialista, com `scalingByNex` resolvendo o patamar (NEX 40% veterano, 75% expert) |
+| **F5** | Florete: `damageType` P → **C**, e a descrição corrigida (seguindo a Tabela 3.3, por decisão do usuário) |
+| **F6** | Faca, Lança e Machadinha rendem uma segunda linha, "(arremesso)", com Pontaria e a Força ainda somada no dano |
+| **F7** | Coronhada virou ataque sintético quando o agente carrega arma de fogo (1d4, ou 1d6 se a arma é de duas mãos, impacto letal). Arma improvisada ficou fora, por decisão do usuário |
+| **F8** | `getDicePool` centraliza o pool: atributo 0 → 2 dados pelo pior; penalidade que derruba abaixo de 1 → rola como se fosse bônus, pelo pior. A ficha marca "pior" onde aplicável |
+| **F9** | `isMelee` passou a ser só corpo a corpo; `addsStrengthToDamage` cobre a regra de dano do arremesso |
+
+**Fontes de proficiência conferidas exaustivamente** antes de aplicar F2/F3 (a penalidade errada é
+pior que penalidade nenhuma). O livro concede proficiência em exatamente 6 lugares para armas —
+classe, Armamento Pesado, Balística Avançada, Ninja Urbano, Mira de Elite e Ferramenta de Trabalho
+(que diz "sabe usar", sem a palavra proficiência) — e 3 para proteções: classe, Proteção Pesada e o
+Escudo contando como pesada. Todas já estavam implementadas, inclusive quando o poder chega por
+Versatilidade ou Expansão de Conhecimento.

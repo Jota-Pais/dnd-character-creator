@@ -72,6 +72,45 @@ export function getTotalCarryCapacity(draft: OrdemCharacterDraft): number {
   return getMaxCapacity(strength) + getEquipmentCarryBonus(draft.equipmentChoices)
 }
 
+/**
+ * Estado de carga (p. 55): dentro do limite, sobrecarregado, ou impossível.
+ *
+ * "Se ultrapassar esse limite, fica sobrecarregado; você sofre –5 em Defesa e testes de perícia
+ * afetadas por carga, e seu deslocamento é reduzido em –3m. Você não pode ultrapassar o dobro
+ * desse limite." Ou seja: passar da capacidade é PERMITIDO e penalizado; só acima do dobro é que
+ * a configuração deixa de existir.
+ */
+export type LoadState = {
+  spaces: number
+  capacity: number
+  /** Teto absoluto: o dobro da capacidade. */
+  max: number
+  overloaded: boolean
+  /** Acima do dobro — configuração inválida, a única que bloqueia a etapa. */
+  impossible: boolean
+}
+
+/** Penalidades da sobrecarga (p. 55). */
+export const OVERLOAD_DEFENSE_PENALTY = 5
+export const OVERLOAD_SKILL_PENALTY = 5
+export const OVERLOAD_SPEED_PENALTY_METERS = 3
+
+export function getLoadState(draft: OrdemCharacterDraft): LoadState {
+  const capacity = getTotalCarryCapacity(draft)
+  const spaces = getModifiedSpaces(draft)
+  return {
+    spaces,
+    capacity,
+    max: capacity * 2,
+    overloaded: spaces > capacity && spaces <= capacity * 2,
+    impossible: spaces > capacity * 2,
+  }
+}
+
+export function isOverloaded(draft: OrdemCharacterDraft): boolean {
+  return getLoadState(draft).overloaded
+}
+
 export function getCurrentSpaces(choices: string[]): number {
   return choices.reduce((acc, uid) => {
     const item = getEquipmentByInstance(uid)
@@ -186,9 +225,15 @@ export function getModifiedSpaces(draft: OrdemCharacterDraft): number {
   }, 0)
 }
 
-/** Bônus de Defesa total das proteções, incluindo modificações (Reforçada +2) e poderes (Tanque de Guerra). */
+/**
+ * Contribuição do EQUIPAMENTO para a Defesa: proteções com suas modificações (Reforçada +2) e
+ * poderes (Tanque de Guerra), menos a penalidade de sobrecarga (−5, p. 55) — que também é
+ * consequência do que se carrega, e por isso mora aqui em vez de em `getCursedDerivedStats`
+ * (evita um ciclo entre `curseUtils` e este módulo).
+ */
 export function getModifiedDefenseBonus(draft: OrdemCharacterDraft): number {
-  return draft.equipmentChoices.reduce((acc, uid) => {
+  const overload = isOverloaded(draft) ? -OVERLOAD_DEFENSE_PENALTY : 0
+  return overload + draft.equipmentChoices.reduce((acc, uid) => {
     const item = getEquipmentByInstance(uid)
     if (!item || item.type !== 'protection') return acc
     const modDef = itemMods(draft, uid).reduce((s, mid) => s + (getModification(mid)?.defenseBonus ?? 0), 0)
@@ -349,9 +394,9 @@ export function areCursesValid(draft: OrdemCharacterDraft): boolean {
 }
 
 export function isEquipmentStepComplete(draft: OrdemCharacterDraft): boolean {
-  // A carga (já com as variações das modificações) é limitada pela capacidade (5×Força + bônus). Loadout vazio é válido.
-  const capacity = getTotalCarryCapacity(draft)
-  if (getModifiedSpaces(draft) > capacity) return false
+  // Passar da capacidade de carga é PERMITIDO (fica sobrecarregado, com penalidades); o livro só
+  // proíbe passar do DOBRO. Ver `getLoadState` e o aviso no passo de Equipamento.
+  if (getLoadState(draft).impossible) return false
 
   // As vagas da Tabela 3.1 limitam as unidades pela categoria EFETIVA (base + mods + maldições);
   // Categoria 0 é ilimitada, e item de categoria menor pode ocupar vaga de categoria maior (F21).
@@ -638,9 +683,17 @@ export function formatKitSkill(draft: OrdemCharacterDraft, uid: string): string 
  * bônus NEGATIVO incondicional, pra entrar no total da perícia junto dos demais.
  */
 export function getLoadPenaltySkillBonuses(draft: OrdemCharacterDraft): { skillId: string; value: number; source: string }[] {
-  const wearsHeavy = draft.equipmentChoices.some(uid => instanceItemId(uid) === 'protecao-pesada')
-  if (!wearsHeavy) return []
-  return SKILLS.filter(s => s.loadPenalty).map(s => ({ skillId: s.id, value: -5, source: 'Proteção Pesada' }))
+  const out: { skillId: string; value: number; source: string }[] = []
+  const loadSkills = SKILLS.filter(s => s.loadPenalty)
+  if (draft.equipmentChoices.some(uid => instanceItemId(uid) === 'protecao-pesada')) {
+    out.push(...loadSkills.map(s => ({ skillId: s.id, value: -5, source: 'Proteção Pesada' })))
+  }
+  // Sobrecarga: −5 nas mesmas perícias (p. 55). Acumula com a da Proteção Pesada — são fontes
+  // diferentes, e o livro não as declara excludentes.
+  if (isOverloaded(draft)) {
+    out.push(...loadSkills.map(s => ({ skillId: s.id, value: -OVERLOAD_SKILL_PENALTY, source: 'Sobrecarregado' })))
+  }
+  return out
 }
 
 /**

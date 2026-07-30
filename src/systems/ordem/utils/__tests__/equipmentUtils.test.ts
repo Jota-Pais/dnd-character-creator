@@ -13,6 +13,8 @@ import {
   hasProtectionProficiency,
   hasItemProficiency,
   getLoadPenaltySkillBonuses,
+  getLoadState,
+  isOverloaded,
   getAccessorySkillSlots,
   getAccessorySkillOptions,
   areAccessorySkillChoicesComplete,
@@ -44,6 +46,8 @@ import { getPatente } from '../patenteUtils'
 import { SKILLS } from '../skillUtils'
 import { canApplyModification } from '../modificationUtils'
 import { getSkillBonusTotal } from '../sheetEffects'
+import { getOrdemClass } from '../classUtils'
+import { getCursedDerivedStats } from '../curseUtils'
 
 function makeDraft(over: Partial<OrdemCharacterDraft>): OrdemCharacterDraft {
   return { ...EMPTY_DRAFT, ...over }
@@ -81,13 +85,48 @@ describe('equipmentUtils', () => {
     expect(isEquipmentStepComplete(draft)).toBe(false)
   })
 
-  it('bloqueia carga acima da capacidade', () => {
+  it('passar da capacidade NÃO bloqueia: fica sobrecarregado (p. 55)', () => {
     const draft = makeDraft({
       class: 'combatant',
-      attributes: { ...EMPTY_ATTRIBUTES, strength: 0 }, // capacidade 2
+      attributes: { ...EMPTY_ATTRIBUTES, strength: 0 }, // capacidade 2, teto 4
       equipmentChoices: ['faca', 'martelo', 'punhal'], // 3 espaços > 2
     })
+    const load = getLoadState(draft)
+    expect(load).toMatchObject({ spaces: 3, capacity: 2, max: 4, overloaded: true, impossible: false })
+    expect(isEquipmentStepComplete(draft)).toBe(true)
+  })
+
+  it('bloqueia só acima do DOBRO da capacidade', () => {
+    const draft = makeDraft({
+      class: 'combatant',
+      attributes: { ...EMPTY_ATTRIBUTES, strength: 0 }, // capacidade 2, teto 4
+      equipmentChoices: ['faca', 'martelo', 'punhal', 'machete', 'lanca'], // 5 espaços > 4
+    })
+    expect(getLoadState(draft).impossible).toBe(true)
     expect(isEquipmentStepComplete(draft)).toBe(false)
+  })
+
+  it('sobrecarga aplica −5 na Defesa, −5 nas perícias de carga e −3m de deslocamento', () => {
+    const cls = getOrdemClass('combatant')!
+    const base = makeDraft({
+      class: 'combatant',
+      attributes: { ...EMPTY_ATTRIBUTES, strength: 0, agility: 2 },
+      equipmentChoices: ['faca'], // 1 espaço ≤ 2
+    })
+    const sobrecarregado = makeDraft({
+      class: 'combatant',
+      attributes: { ...EMPTY_ATTRIBUTES, strength: 0, agility: 2 },
+      equipmentChoices: ['faca', 'martelo', 'punhal'], // 3 > 2
+    })
+    expect(isOverloaded(base)).toBe(false)
+    expect(isOverloaded(sobrecarregado)).toBe(true)
+    // A penalidade entra pela contribuição de equipamento na Defesa.
+    expect(getModifiedDefenseBonus(base) - getModifiedDefenseBonus(sobrecarregado)).toBe(5)
+    expect(getCursedDerivedStats(base, cls, getModifiedDefenseBonus(base)).defense
+      - getCursedDerivedStats(sobrecarregado, cls, getModifiedDefenseBonus(sobrecarregado)).defense).toBe(5)
+    // Crime tem penalidade de carga → −5 pela sobrecarga.
+    expect(getLoadPenaltySkillBonuses(sobrecarregado).filter(p => p.source === 'Sobrecarregado').length)
+      .toBe(SKILLS.filter(s => s.loadPenalty).length)
   })
 
   it('usa a Força EFETIVA: aumento de atributo por NEX eleva a capacidade', () => {
@@ -182,20 +221,21 @@ describe('equipmentUtils', () => {
     expect(semDescricao.map(e => e.id)).toEqual([])
   })
 
-  it('a Mochila Militar permite carregar além do limite base de Força', () => {
-    // Força 0 → base 2. 3 itens de 1 espaço estouram o limite base...
+  it('a Mochila Militar eleva a capacidade e tira o agente da sobrecarga', () => {
+    // Força 0 → base 2. 3 itens de 1 espaço passam do limite base (sobrecarregado)...
     const semMochila = makeDraft({
       class: 'combatant',
       attributes: { ...EMPTY_ATTRIBUTES, strength: 0 },
       equipmentChoices: ['faca', 'martelo', 'punhal'], // 3 espaços > 2
     })
-    expect(isEquipmentStepComplete(semMochila)).toBe(false)
-    // ...mas com a Mochila Militar (+2 → capacidade 4, e ela mesma ocupa 0 espaço) passam a caber.
+    expect(isOverloaded(semMochila)).toBe(true)
+    // ...mas com a Mochila Militar (+2 → capacidade 4, e ela mesma ocupa 0 espaço) cabem sem penalidade.
     const comMochila = makeDraft({
       class: 'combatant',
       attributes: { ...EMPTY_ATTRIBUTES, strength: 0 },
       equipmentChoices: ['mochila-militar', 'faca', 'martelo', 'punhal'], // 3 espaços ≤ 4
     })
+    expect(isOverloaded(comMochila)).toBe(false)
     expect(isEquipmentStepComplete(comMochila)).toBe(true)
   })
 

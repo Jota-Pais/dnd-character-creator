@@ -292,8 +292,12 @@ describe('App (smoke) — Ordem Paranormal', () => {
     useOrdemStore.setState({ draft: seedLaborerWithWorkTool(), view: 'wizard', currentStep: 'review' })
     render(<App />)
     // Dano: Força 2 + Ferramenta 1 = +3. Margem de ameaça: x3 (19-20) → 19/x3 (18-20).
-    expect(screen.getByText(/1d6\+3 corte/)).toBeInTheDocument()
-    expect(screen.getByText(/Crít\. 19\/x3/)).toBeInTheDocument()
+    // A machadinha tem alcance, então rende duas linhas (corpo a corpo e arremesso) com o
+    // mesmo dano — o bônus da Ferramenta de Trabalho vale nas duas.
+    expect(screen.getAllByText(/1d6\+3 corte/).length).toBe(2)
+    expect(screen.getAllByText(/Crít\. 19\/x3/).length).toBe(2)
+    // "Machadinha" aparece nos Ataques e no Equipamento; a linha de arremesso é única.
+    expect(screen.getByText('Machadinha (arremesso)')).toBeInTheDocument()
   })
 
   // Artista Marcial: ataque desarmado aparece em Ataques mesmo sem nenhum item equipado (Fase 5).

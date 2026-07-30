@@ -14,15 +14,17 @@ import {
   getConditionalDefenseBonuses, getExtraDamageDiceNotes, getSheetExplosives,
   getResolvedAbilityNotes,
 } from '../../utils/sheetEffects'
+import { formatDicePool } from '../../utils/attributeUtils'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, ritualNeedsElementChoice, getSlotRitualElement, getGrantedRitualElement, grantedRitualElementKey, ELEMENT_NAMES, ELEMENT_COLORS } from '../../utils/ritualUtils'
 import {
   getAffinityState, getParanormalEffects, getParanormalInstances, getSanityBreakdown, getSourceLabel,
   isParanormalElement, OPPRESSOR_OF,
 } from '../../utils/paranormalPowerUtils'
 import {
-  getEquipmentByInstance, getInstanceLabel, getTotalCarryCapacity, getModifiedSpaces, getModifiedDefenseBonus, getDraftInstanceCategory,
+  getEquipmentByInstance, getInstanceLabel, getModifiedDefenseBonus, getDraftInstanceCategory,
   getMissingRitualComponentElements, getEquipmentDamageResistances, formatAccessorySkills,
   getKitSkills, getSkillsMissingKit, formatKitSkill,
+  getLoadState, OVERLOAD_DEFENSE_PENALTY, OVERLOAD_SKILL_PENALTY, OVERLOAD_SPEED_PENALTY_METERS,
 } from '../../utils/equipmentUtils'
 import { getModification } from '../../utils/modificationUtils'
 import { getCurse, getCursedDerivedStats, getSheetAttributes, formatCurseElement, formatCurseChoiceDetail, getRitualDt, getRitualPeLimit } from '../../utils/curseUtils'
@@ -116,6 +118,8 @@ export function ReviewStep() {
   const expertDie = getExpertDie(draft.nex)
   // Bônus de perícia que só valem numa situação (Hacker, Envolto em Mistério, Acalentar...).
   const conditionalSkillBonuses = getConditionalSkillBonuses(draft)
+  // Sobrecarga: passar da capacidade é permitido e penalizado (p. 55) — a ficha precisa gritar isso.
+  const load = getLoadState(draft)
   // Defesa condicional (Reflexos Defensivos, Inquebrável, Campo Protetor) e dados de dano extra
   // já resolvidos pelo NEX (Ataque Furtivo) — ficam fora dos números somados da ficha.
   const conditionalDefense = getConditionalDefenseBonuses(draft)
@@ -153,8 +157,24 @@ export function ReviewStep() {
         {getRitualPeLimit(draft) !== getEffectivePeLimit(draft) && (
           <span className="text-gold-600/90"> ({getRitualPeLimit(draft)} ao conjurar rituais — Presença Poderosa)</span>
         )}
-        {' · '}Deslocamento: <span className="text-parchment-400 font-semibold">9m</span>
+        {' · '}Deslocamento:{' '}
+        <span className={`font-semibold ${load.overloaded ? 'text-amber-400' : 'text-parchment-400'}`}>
+          {9 - (load.overloaded ? OVERLOAD_SPEED_PENALTY_METERS : 0)}m
+        </span>
       </p>
+      {load.overloaded && (
+        <div className="rounded-xl border border-amber-700/60 bg-amber-950/30 p-3 text-center">
+          <p className="text-amber-300 text-sm font-bold">
+            🎒 SOBRECARREGADO — {load.spaces}/{load.capacity} espaços
+          </p>
+          <p className="text-amber-300/90 text-xs mt-1">
+            Já descontado na ficha: <strong>−{OVERLOAD_DEFENSE_PENALTY} na Defesa</strong>,{' '}
+            <strong>−{OVERLOAD_SKILL_PENALTY} nas perícias com penalidade de carga</strong> e{' '}
+            <strong>deslocamento {9 - OVERLOAD_SPEED_PENALTY_METERS}m</strong> (livro, pág. 55).
+            O teto é {load.max} espaços.
+          </p>
+        </div>
+      )}
       {conditionalDefense.length > 0 && (
         <p className="text-center text-parchment-600 text-xs">
           {conditionalDefense.map((d, i) => (
@@ -513,7 +533,10 @@ export function ReviewStep() {
 
       {weaponAttacks.length > 0 && (
         <Section title="Ataques">
-          <p className="text-parchment-700 text-xs mb-2">Role a quantidade de d20 indicada e use o melhor + o bônus.</p>
+          <p className="text-parchment-700 text-xs mb-2">
+            Role a quantidade de d20 indicada e use o melhor + o bônus —{' '}
+            <span className="text-amber-400/90">exceto onde estiver marcado "pior"</span>.
+          </p>
           {extraDamageDice.map(d => (
             <p key={d.source} className="text-gold-500/90 text-xs mb-2">
               ✨ <strong>{d.source}:</strong> +{d.dice} de dano no seu NEX (condições na descrição da trilha).
@@ -524,9 +547,13 @@ export function ReviewStep() {
               <p key={`${a.name}-${i}`} className="text-parchment-500 text-xs">
                 <span className="font-semibold text-parchment-300">{a.name}</span>{' '}
                 <span className="text-parchment-700">
-                  {a.skill} {a.rollDice}d20 <span className="text-gold-500">{a.attackBonus >= 0 ? `+${a.attackBonus}` : a.attackBonus}</span>
+                  {a.skill} {formatDicePool({ dice: a.rollDice, mode: a.rollMode })}{' '}
+                  <span className="text-gold-500">{a.attackBonus >= 0 ? `+${a.attackBonus}` : a.attackBonus}</span>
                   {' · '}{a.damage} · Crít. {a.critical}{a.range && a.range !== '-' ? ` · ${a.range}` : ''}
                 </span>
+                {a.dicePenaltyNotes.length > 0 && (
+                  <span className="text-amber-400/90"> ({a.dicePenaltyNotes.join(', ')})</span>
+                )}
               </p>
             ))}
           </div>
@@ -559,7 +586,7 @@ export function ReviewStep() {
       )}
 
       {equipmentUnits.length > 0 && (
-        <Section title={`Equipamento (${getModifiedSpaces(draft)}/${getTotalCarryCapacity(draft)} espaços)`}>
+        <Section title={`Equipamento (${load.spaces}/${load.capacity} espaços${load.overloaded ? ' — SOBRECARREGADO' : ''})`}>
           <div className="space-y-2">
             {equipmentUnits.map(({ uid, item }) => {
               const mods = draft.equipmentModifications[uid] ?? []

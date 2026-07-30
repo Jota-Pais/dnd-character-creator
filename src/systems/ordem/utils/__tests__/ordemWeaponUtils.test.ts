@@ -6,6 +6,7 @@ import { getEquipmentById, EQUIPMENTS, hasWeaponProficiency } from '../equipment
 import {
   getOrdemWeaponAttack, getWeaponSkillName, formatWeaponSummary, isMelee, getUnarmedAttack,
   getWeaponAmmoVariants, getSheetWeaponAttacks, getBloodWeaponAttack,
+  canBeThrown, getCoronhadaAttack,
 } from '../ordemWeaponUtils'
 
 function makeDraft(over: Partial<OrdemCharacterDraft>): OrdemCharacterDraft {
@@ -183,6 +184,122 @@ describe('Arma de Sangue (poder paranormal)', () => {
   })
 })
 
+describe('Penalidades de proficiência no pool de dados', () => {
+  const espingarda = getEquipmentById('espingarda') as OrdemWeapon // tática
+  const agi3 = { agility: 3, strength: 3, intellect: 2, presence: 1, vigor: 1 }
+
+  it('arma sem proficiência: −ØØ no teste de ataque, com a nota da fonte', () => {
+    // Ocultista só tem proficiência com armas simples.
+    const ocultista = makeDraft({ class: 'occultist', attributes: agi3 })
+    const a = getOrdemWeaponAttack(espingarda, ocultista, [])
+    expect(a.rollDice).toBe(1) // Agilidade 3 − 2
+    expect(a.rollMode).toBe('best')
+    expect(a.dicePenaltyNotes).toEqual(['arma sem proficiência −ØØ'])
+  })
+
+  it('combatente tem proficiência com tática: pool cheio, sem nota', () => {
+    const combatente = makeDraft({ class: 'combatant', attributes: agi3 })
+    const a = getOrdemWeaponAttack(espingarda, combatente, [])
+    expect(a.rollDice).toBe(3)
+    expect(a.dicePenaltyNotes).toEqual([])
+  })
+
+  it('proteção sem proficiência penaliza o ataque também (Força/Agilidade)', () => {
+    // Ocultista não tem proficiência com proteção alguma.
+    const ocultista = makeDraft({
+      class: 'occultist', attributes: agi3,
+      equipmentChoices: ['protecao-leve', 'faca'],
+    })
+    const faca = getEquipmentById('faca') as OrdemWeapon // simples → tem proficiência
+    const a = getOrdemWeaponAttack(faca, ocultista, [])
+    expect(a.dicePenaltyNotes).toEqual(['proteção sem proficiência −ØØ'])
+    expect(a.rollDice).toBe(1) // Força 3 − 2
+  })
+
+  it('as duas penalidades acumulam e podem virar "role o pior"', () => {
+    const ocultista = makeDraft({
+      class: 'occultist', attributes: agi3,
+      equipmentChoices: ['protecao-leve', 'espingarda'],
+    })
+    const a = getOrdemWeaponAttack(espingarda, ocultista, [])
+    expect(a.dicePenaltyNotes).toHaveLength(2)
+    // Agilidade 3 − 4 = −1 → rola 3+4 = 7 dados e pega o pior.
+    expect(a.rollMode).toBe('worst')
+    expect(a.rollDice).toBe(7)
+  })
+
+  it('ataque por Ocultismo (Lâmina Maldita) não sofre a penalidade de proteção', () => {
+    const ocultista = makeDraft({
+      class: 'occultist', nex: 10, trilha: 'paranormal-blade',
+      attributes: { agility: 1, strength: 1, intellect: 3, presence: 1, vigor: 1 },
+      equipmentChoices: ['protecao-leve', 'faca'],
+      weaponSkillChoices: { faca: 'occultism' },
+    })
+    const faca = getEquipmentById('faca') as OrdemWeapon
+    const a = getOrdemWeaponAttack(faca, ocultista, [], [], 'occultism')
+    expect(a.skill).toBe('Ocultismo')
+    expect(a.dicePenaltyNotes).toEqual([]) // Intelecto não é Força nem Agilidade
+    expect(a.rollDice).toBe(3)
+  })
+
+  it('atributo 0 rola 2 dados e pega o pior', () => {
+    const forca0 = makeDraft({
+      class: 'combatant',
+      attributes: { agility: 2, strength: 0, intellect: 3, presence: 3, vigor: 1 },
+    })
+    const a = getOrdemWeaponAttack(getEquipmentById('faca') as OrdemWeapon, forca0, [])
+    expect(a.rollDice).toBe(2)
+    expect(a.rollMode).toBe('worst')
+  })
+})
+
+describe('Arremesso e coronhada', () => {
+  it('faca, lança e machadinha rendem uma linha de arremesso com Pontaria', () => {
+    for (const id of ['faca', 'lanca', 'machadinha']) {
+      expect(canBeThrown(getEquipmentById(id) as OrdemWeapon), id).toBe(true)
+    }
+    // Punhal não tem alcance → não é arremessável.
+    expect(canBeThrown(getEquipmentById('punhal') as OrdemWeapon)).toBe(false)
+
+    const draft = makeDraft({
+      class: 'combatant',
+      attributes: { agility: 2, strength: 3, intellect: 1, presence: 1, vigor: 1 },
+      equipmentChoices: ['faca'],
+    })
+    const attacks = getSheetWeaponAttacks(draft)
+    expect(attacks.map(a => a.name)).toEqual(['Faca', 'Faca (arremesso)', 'Desarmado'])
+    const [corpo, arremesso] = attacks
+    expect(corpo.skill).toBe('Luta')
+    expect(arremesso.skill).toBe('Pontaria')
+    // Arremesso soma Força no dano, igual ao corpo a corpo.
+    expect(arremesso.damage).toBe('1d4+3 corte')
+    expect(arremesso.rollDice).toBe(2) // Agilidade
+  })
+
+  it('coronhada só aparece com arma de fogo, e usa o dado maior se for de duas mãos', () => {
+    const semFogo = makeDraft({ class: 'combatant', equipmentChoices: ['faca'] })
+    expect(getCoronhadaAttack(semFogo)).toBeNull()
+
+    const pistola = makeDraft({ class: 'combatant', equipmentChoices: ['pistola'] })
+    expect(getCoronhadaAttack(pistola)?.damage).toContain('1d4')
+
+    const fuzil = makeDraft({ class: 'combatant', equipmentChoices: ['fuzil-de-caca'] })
+    expect(getCoronhadaAttack(fuzil)?.damage).toContain('1d6')
+  })
+
+  it('coronhada é impacto letal, diferente do desarmado (1d3 não letal)', () => {
+    const draft = makeDraft({
+      class: 'combatant',
+      attributes: { agility: 1, strength: 2, intellect: 1, presence: 1, vigor: 1 },
+      equipmentChoices: ['pistola'],
+    })
+    const attacks = getSheetWeaponAttacks(draft)
+    expect(attacks.map(a => a.name)).toEqual(['Pistola', 'Coronhada', 'Desarmado'])
+    expect(attacks[1].damage).toBe('1d4+2 impacto')
+    expect(attacks[2].damage).toBe('1d3+2 I (não letal)')
+  })
+})
+
 describe('Máquina de Matar (Aniquilador NEX 99%)', () => {
   const katana = getEquipmentById('katana') as OrdemWeapon // 1d10, crít 19
   const aniquilador = (over: Partial<OrdemCharacterDraft> = {}) => makeDraft({
@@ -258,12 +375,14 @@ describe('munição: variantes e linhas de ataque', () => {
     const draft = atirador({ equipmentChoices: ['pistola'] })
     expect(getWeaponAmmoVariants(draft, pistola)).toEqual([])
     const attacks = getSheetWeaponAttacks(draft)
-    expect(attacks.map(a => a.name)).toEqual(['Pistola', 'Desarmado'])
+    // Carregar arma de fogo também abre a linha de Coronhada (Tabela 3.3).
+    expect(attacks.map(a => a.name)).toEqual(['Pistola', 'Coronhada', 'Desarmado'])
   })
 
   it('munição comum rende uma linha com o nome da munição', () => {
     const draft = atirador({ equipmentChoices: ['pistola', 'municao-balas-curtas'] })
-    expect(getSheetWeaponAttacks(draft).map(a => a.name)).toEqual(['Pistola (Balas Curtas)', 'Desarmado'])
+    expect(getSheetWeaponAttacks(draft).map(a => a.name))
+      .toEqual(['Pistola (Balas Curtas)', 'Coronhada', 'Desarmado'])
   })
 
   it('munição comum + munição modificada rendem DUAS linhas, a comum primeiro', () => {
@@ -275,6 +394,7 @@ describe('munição: variantes e linhas de ataque', () => {
     expect(attacks.map(a => a.name)).toEqual([
       'Pistola (Balas Curtas)',
       'Pistola (Balas Curtas — Dum dum)',
+      'Coronhada',
       'Desarmado',
     ])
     // Dum dum: +2 no multiplicador de crítico (pistola é 18/x2 → 18/x4).
@@ -290,7 +410,7 @@ describe('munição: variantes e linhas de ataque', () => {
     })
     expect(getWeaponAmmoVariants(draft, espingarda).map(v => v.label)).toEqual(['Cartuchos'])
     const attacks = getSheetWeaponAttacks(draft)
-    expect(attacks.map(a => a.name)).toEqual(['Espingarda (Cartuchos)', 'Desarmado'])
+    expect(attacks.map(a => a.name)).toEqual(['Espingarda (Cartuchos)', 'Coronhada', 'Desarmado'])
     expect(attacks[0].critical).toBe('x3') // sem o +2 do Dum dum
   })
 
@@ -314,6 +434,7 @@ describe('munição: variantes e linhas de ataque', () => {
     })
     expect(getSheetWeaponAttacks(draft).map(a => a.name)).toEqual([
       'Pistola (Balas Curtas — Dum dum)',
+      'Coronhada',
       'Desarmado',
     ])
   })
@@ -328,6 +449,7 @@ describe('munição: variantes e linhas de ataque', () => {
       'Pistola #1 (Balas Curtas — Dum dum)',
       'Pistola #2 (Balas Curtas)',
       'Pistola #2 (Balas Curtas — Dum dum)',
+      'Coronhada',
       'Desarmado',
     ])
   })
@@ -338,6 +460,7 @@ describe('munição: variantes e linhas de ataque', () => {
       equipmentModifications: { 'municao-balas-curtas': ['dum-dum'] },
     })
     expect(getWeaponAmmoVariants(draft, faca)).toEqual([])
-    expect(getSheetWeaponAttacks(draft).map(a => a.name)).toEqual(['Faca', 'Desarmado'])
+    // A faca tem alcance, então rende também a linha de arremesso; sem arma de fogo, sem Coronhada.
+    expect(getSheetWeaponAttacks(draft).map(a => a.name)).toEqual(['Faca', 'Faca (arremesso)', 'Desarmado'])
   })
 })

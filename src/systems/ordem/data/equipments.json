@@ -256,8 +256,8 @@
     "damage": "1d6",
     "critical": "18",
     "range": "-",
-    "damageType": "P",
-    "description": "Florete — espada fina e ágil, de estocada perfurante."
+    "damageType": "C",
+    "description": "Florete — espada fina e ágil, de lâmina cortante (Tabela 3.3: dano de corte)."
   },
   {
     "id": "machado",

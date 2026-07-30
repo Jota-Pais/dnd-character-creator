@@ -7,6 +7,7 @@ import {
   fitsWithAdjustedCounts, getCategorySlotAllocation, getMissingRitualComponentElements,
   getAccessorySkillSlots, getAccessorySkillOptions, getNonCumulativeSkillConflicts, getWornVestimentas,
   getEquipmentByInstance, getKitSlots, getKitSkillOptions,
+  getLoadState, OVERLOAD_DEFENSE_PENALTY, OVERLOAD_SKILL_PENALTY, OVERLOAD_SPEED_PENALTY_METERS,
 } from '../../utils/equipmentUtils'
 import { getSkillName, getSkillKitName } from '../../utils/skillUtils'
 import { getAvailableModifications, canApplyModification, isModifiable, countApplied } from '../../utils/modificationUtils'
@@ -16,9 +17,9 @@ import {
 import type { OrdemElement } from '../../types/ritual'
 import { getAvailableRituals, ELEMENT_NAMES, ELEMENT_COLORS } from '../../utils/ritualUtils'
 import { hasClassPower, getFavoriteWeaponReduction, getFavoriteEquipmentReduction, getWorkToolBonus } from '../../utils/characterUtils'
-import { isMelee, formatWeaponSummary } from '../../utils/ordemWeaponUtils'
+import { addsStrengthToDamage, formatWeaponSummary } from '../../utils/ordemWeaponUtils'
 import { getPatente, PATENTES } from '../../utils/patenteUtils'
-import { getEffectiveCreditLimit } from '../../utils/sheetEffects'
+import { getEffectiveCreditLimit, getUnproficientProtections } from '../../utils/sheetEffects'
 import { isStepComplete } from '../../utils/draftValidation'
 import { StepNav } from '../common/StepNav'
 
@@ -62,6 +63,10 @@ export function EquipmentStep() {
   const kitSlots = getKitSlots(draft)
   const kitSkillOptions = getKitSkillOptions()
   const pendingKits = kitSlots.filter(s => !s.skillId).length
+  // Proteção sem proficiência: −ØØ em Força e Agilidade (p. 62), penalidade ampla o bastante
+  // pra merecer aviso próprio no passo, não só o rótulo no card do item.
+  const unproficientProtections = getUnproficientProtections(draft)
+  const load = getLoadState(draft)
 
   const addUnit = (itemId: string) => {
     const uid = newInstanceUid(draft.equipmentChoices, itemId)
@@ -246,7 +251,7 @@ export function EquipmentStep() {
                 </span>
                 <span
                   className="bg-parchment-900/50 px-2 py-0.5 rounded border border-parchment-800/50"
-                  title={isMelee(item) ? 'Soma Força no dano' : 'Não soma atributo no dano'}
+                  title={addsStrengthToDamage(item) ? 'Soma Força no dano' : 'Não soma atributo no dano'}
                 >
                   {formatWeaponSummary(item)}
                 </span>
@@ -610,6 +615,30 @@ export function EquipmentStep() {
 
         <div>
           <h3 className="font-fantasy text-xl text-parchment-300 border-b border-parchment-900/50 pb-2 mb-4">Equipamento Geral</h3>
+          {load.overloaded && (
+            <div className="mb-4 p-3 rounded-lg border-2 border-amber-600 bg-amber-950/40 text-amber-200 text-sm">
+              🎒 <strong>SOBRECARREGADO</strong> — {load.spaces} de {load.capacity} espaços.
+              Você pode carregar tudo isso, mas o livro (pág. 55) cobra o preço:{' '}
+              <strong>−{OVERLOAD_DEFENSE_PENALTY} na Defesa</strong>,{' '}
+              <strong>−{OVERLOAD_SKILL_PENALTY} nas perícias com penalidade de carga</strong> e{' '}
+              <strong>−{OVERLOAD_SPEED_PENALTY_METERS}m de deslocamento</strong>. A ficha já aplica tudo.
+              O limite absoluto é <strong>{load.max} espaços</strong> ({load.max - load.spaces} a mais que agora).
+            </div>
+          )}
+          {load.impossible && (
+            <div className="mb-4 p-3 rounded-lg border-2 border-red-600 bg-red-950/40 text-red-200 text-sm">
+              🚫 <strong>Carga impossível</strong> — {load.spaces} espaços, e o teto é {load.max} (o dobro da
+              capacidade). Remova itens para continuar.
+            </div>
+          )}
+          {unproficientProtections.length > 0 && (
+            <div className="mb-4 p-3 rounded-lg border border-amber-700/50 bg-amber-950/30 text-amber-300 text-sm">
+              ⚠️ Você está usando proteção sem proficiência
+              (<strong>{unproficientProtections.map(uid => getInstanceLabel(draft, uid)).join(', ')}</strong>):
+              o livro (pág. 62) impõe <strong>−ØØ em todos os testes de Força e Agilidade</strong>, não só em
+              ataques. A ficha já desconta esses dados — dá pra requisitar, mas o custo é alto.
+            </div>
+          )}
           {skillConflicts.length > 0 && (
             <div className="mb-4 p-3 rounded-lg border border-amber-700/50 bg-amber-950/30 text-amber-300 text-sm">
               ⚠️ <strong>Bônus de itens não se acumulam</strong> (livro, pág. 63). Você tem mais de um item
@@ -650,7 +679,14 @@ export function EquipmentStep() {
         </div>
       </div>
 
-      <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={isStepComplete(draft, 'equipment')} disabledReason="Limite de patentes excedido" />
+      <StepNav
+        onPrev={prevStep}
+        onNext={nextStep}
+        canAdvance={isStepComplete(draft, 'equipment')}
+        disabledReason={load.impossible
+          ? `Carga acima do teto de ${load.max} espaços`
+          : 'Resolva as pendências do equipamento'}
+      />
     </div>
   )
 }

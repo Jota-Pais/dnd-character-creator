@@ -5,7 +5,9 @@ import { getSkillGrade, hasClassPower, getOriginEffects, getWorkToolBonus, getWe
 import { getParanormalEffects, hasParanormalPower } from './paranormalPowerUtils'
 import { getModification } from './modificationUtils'
 import { getCurse, getSheetAttributes } from './curseUtils'
-import { getEquipmentByInstance, getInstanceLabel, instanceItemId, usesLongBullets } from './equipmentUtils'
+import { getEquipmentByInstance, getInstanceLabel, instanceItemId, usesLongBullets, hasWeaponProficiency } from './equipmentUtils'
+import { getAttributeDicePenalty } from './sheetEffects'
+import { getDicePool, NO_PROFICIENCY_DICE_PENALTY, type DicePool } from './attributeUtils'
 
 /** Bônus fixo por grau de treinamento (livro, Cap. 2). */
 export const GRADE_BONUS: Record<SkillGrade, number> = {
@@ -27,8 +29,12 @@ export type OrdemWeaponAttack = {
   name: string
   /** Perícia do ataque: "Luta" (corpo a corpo) ou "Pontaria" (à distância). */
   skill: string
-  /** Quantos d20 se rola (pegando o melhor) — igual ao atributo-base da perícia (Força ou Agilidade). */
+  /** Quantos d20 se rola — do atributo-base da perícia, já com as penalidades de proficiência. */
   rollDice: number
+  /** 'worst' quando vale o PIOR resultado (atributo 0, ou penalidade que zerou o pool). */
+  rollMode: DicePool['mode']
+  /** Por que o pool foi penalizado, pra ficha explicar (ex.: "arma sem proficiência −ØØ"). */
+  dicePenaltyNotes: string[]
   /** Bônus no teste de ataque (treino + modificações). */
   attackBonus: number
   /** Dano já com a Força (corpo a corpo/arremesso) e as modificações. */
@@ -38,8 +44,20 @@ export type OrdemWeaponAttack = {
   range: string
 }
 
-/** Armas corpo a corpo e de arremesso usam Luta e somam Força no dano; disparo/fogo usam Pontaria. */
+/**
+ * Só corpo a corpo usa **Luta**; arremesso, disparo e fogo são ataques à distância e usam
+ * **Pontaria** (p. 56). Não confundir com quem soma Força no dano — ver `addsStrengthToDamage`.
+ */
 export function isMelee(weapon: OrdemWeapon): boolean {
+  return weapon.weaponCategory === 'corpo_a_corpo'
+}
+
+/**
+ * Soma o valor de Força nas rolagens de dano? Vale para corpo a corpo **e arremesso** ("Quando você
+ * ataca com uma arma de arremesso, soma seu valor de Força às rolagens de dano"); disparo e fogo
+ * não somam atributo nenhum (p. 56).
+ */
+export function addsStrengthToDamage(weapon: OrdemWeapon): boolean {
   return weapon.weaponCategory === 'corpo_a_corpo' || weapon.weaponCategory === 'arremesso'
 }
 
@@ -141,7 +159,22 @@ export function getOrdemWeaponAttack(
   // (ex.: Ocultismo via Lâmina Maldita). O dano corpo a corpo segue somando Força.
   const skillId: AttackSkillChoice = skillOverride ?? (melee ? 'fighting' : 'aim')
   const skill = ATTACK_SKILLS[skillId].name
-  const rollDice = attrs[ATTACK_SKILLS[skillId].attribute]
+  const attackAttribute = ATTACK_SKILLS[skillId].attribute
+  // Penalidades em DADOS que valem para o teste de ataque, somadas antes de resolver o pool:
+  // arma sem proficiência (–ØØ no ataque, p. 56) e proteção sem proficiência (–ØØ em testes de
+  // Força/Agilidade, p. 62 — não atinge o ataque por Ocultismo, que é Intelecto).
+  const dicePenaltyNotes: string[] = []
+  let dicePenalty = 0
+  if (!hasWeaponProficiency(draft, weapon)) {
+    dicePenalty += NO_PROFICIENCY_DICE_PENALTY
+    dicePenaltyNotes.push('arma sem proficiência −ØØ')
+  }
+  const armorPenalty = getAttributeDicePenalty(draft, attackAttribute)
+  if (armorPenalty > 0) {
+    dicePenalty += armorPenalty
+    dicePenaltyNotes.push('proteção sem proficiência −ØØ')
+  }
+  const pool = getDicePool(attrs[attackAttribute], dicePenalty)
 
   // Modificações da ARMA e da MUNIÇÃO usada entram no mesmo bolo de números: a munição só chega
   // aqui se for do tipo que a arma consome (ver `getWeaponAmmoVariants`).
@@ -162,7 +195,9 @@ export function getOrdemWeaponAttack(
     (usesLongBullets(weapon) && hasTrilhaFeature(draft, 'elite-marksman', 10) ? attrs.intellect : 0) +
     (weapon.weaponCategory === 'corpo_a_corpo' ? (originEffects.meleeDamageBonus ?? 0) : 0) +
     (weapon.weaponCategory === 'fogo' ? (originEffects.firearmDamageBonus ?? 0) : 0)
-  const damageBonus = (melee ? attrs.strength : 0) + powerDamage + workToolBonus + mods.reduce((s, m) => s + (m.damageBonus ?? 0), 0)
+  // Força entra no dano de corpo a corpo E de arremesso (p. 56) — mas o TESTE do arremesso é Pontaria.
+  const damageBonus = (addsStrengthToDamage(weapon) ? attrs.strength : 0) + powerDamage + workToolBonus
+    + mods.reduce((s, m) => s + (m.damageBonus ?? 0), 0)
   // Máquina de Matar (Aniquilador NEX 99%): "o dano aumenta em um passo" — ruling do usuário
   // (2026-07-29): um passo = mais um dado do mesmo tipo, igual a Golpe Pesado e Calibre Grosso.
   const extraDice = mods.reduce((s, m) => s + (m.damageDice ?? 0), 0) +
@@ -196,7 +231,10 @@ export function getOrdemWeaponAttack(
 
   const range = curses.some(c => c.rangeIncrease) ? increaseRange(weapon.range) : weapon.range
 
-  return { name: weapon.name, skill, rollDice, attackBonus, damage, critical, range }
+  return {
+    name: weapon.name, skill, rollDice: pool.dice, rollMode: pool.mode, dicePenaltyNotes,
+    attackBonus, damage, critical, range,
+  }
 }
 
 // ── Munição: uma linha de ataque por variante carregada ────────────────────────
@@ -257,19 +295,69 @@ export function getSheetWeaponAttacks(draft: OrdemCharacterDraft): OrdemWeaponAt
     const variants = getWeaponAmmoVariants(draft, item)
     if (variants.length === 0) {
       attacks.push({ ...getOrdemWeaponAttack(item, draft, modIds, curseIds, skillOverride), name })
-      continue
+    } else {
+      for (const variant of variants) {
+        attacks.push({
+          ...getOrdemWeaponAttack(item, draft, modIds, curseIds, skillOverride, variant.modIds),
+          name: `${name} (${variant.label})`,
+        })
+      }
     }
-    for (const variant of variants) {
-      attacks.push({
-        ...getOrdemWeaponAttack(item, draft, modIds, curseIds, skillOverride, variant.modIds),
-        name: `${name} (${variant.label})`,
-      })
-    }
+    // Faca, Lança e Machadinha têm alcance: rendem também a linha de arremesso (Pontaria).
+    if (canBeThrown(item)) attacks.push(getThrownAttack(item, draft, modIds, curseIds, name))
   }
+  const coronhada = getCoronhadaAttack(draft)
+  if (coronhada) attacks.push(coronhada)
   const bloodWeapon = getBloodWeaponAttack(draft)
   if (bloodWeapon) attacks.push(bloodWeapon)
   attacks.push(getUnarmedAttack(draft))
   return attacks
+}
+
+/**
+ * A arma corpo a corpo pode ser arremessada? O livro lista Faca, Lança e Machadinha como corpo a
+ * corpo COM alcance — arremessá-las é um ataque à distância, então o teste vira Pontaria (p. 56).
+ * O dano continua somando Força, porque armas de arremesso somam Força (ao contrário de
+ * disparo/fogo).
+ */
+export function canBeThrown(weapon: OrdemWeapon): boolean {
+  return weapon.weaponCategory === 'corpo_a_corpo' && weapon.range !== '-' && Boolean(weapon.range)
+}
+
+/**
+ * Linha de ataque de ARREMESSO de uma arma corpo a corpo que tem alcance. Modelada trocando a
+ * categoria para 'arremesso', o que já faz o motor usar Pontaria e manter a Força no dano.
+ */
+function getThrownAttack(
+  weapon: OrdemWeapon,
+  draft: OrdemCharacterDraft,
+  modIds: string[],
+  curseIds: string[],
+  label: string,
+): OrdemWeaponAttack {
+  const thrown: OrdemWeapon = { ...weapon, weaponCategory: 'arremesso' }
+  return { ...getOrdemWeaponAttack(thrown, draft, modIds, curseIds), name: `${label} (arremesso)` }
+}
+
+/**
+ * Coronhada (Tabela 3.3): golpear com a própria arma de fogo, 1d4 de impacto (1d6 se a arma é de
+ * duas mãos, notação "1d4/1d6"). Não é o ataque desarmado — este causa 1d3 NÃO letal —, e não é
+ * item de inventário: é um modo de ataque de quem está com uma arma de fogo na mão. A ficha mostra
+ * uma linha só, a melhor disponível, pra não repetir por arma.
+ */
+export function getCoronhadaAttack(draft: OrdemCharacterDraft): OrdemWeaponAttack | null {
+  const firearms = draft.equipmentChoices
+    .map(getEquipmentByInstance)
+    .filter((item): item is OrdemWeapon => item?.type === 'weapon' && item.weaponCategory === 'fogo')
+  if (firearms.length === 0) return null
+  // "1d4/1d6": o dado maior vale para a arma de duas mãos.
+  const twoHanded = firearms.some(w => w.grip === 'duas_maos')
+  const weapon: OrdemWeapon = {
+    id: 'coronhada', name: 'Coronhada', category: 0, spaces: 0, type: 'weapon',
+    proficiency: 'simple', weaponCategory: 'corpo_a_corpo', grip: twoHanded ? 'duas_maos' : 'uma_mao',
+    damage: twoHanded ? '1d6' : '1d4', critical: 'x2', range: '-', damageType: 'I',
+  }
+  return { ...getOrdemWeaponAttack(weapon, draft, []), name: 'Coronhada' }
 }
 
 /**

@@ -437,3 +437,62 @@ verificável), mas conferir de verdade exige a página do PDF.
 
 Vale como recado geral: "conferido contra o extract" não é o mesmo que "conferido contra o livro
 impresso" nos pontos onde o extract perdeu conteúdo.
+
+---
+
+# Quarta rodada (2026-07-30)
+
+As três lacunas de cobertura que a terceira rodada declarou em aberto: a Tabela 3.10 (itens
+paranormais), a Afinidade Elemental (p. 116) e os pontos do Capítulo 4/5 que tocam a ficha.
+
+## Conferido e correto
+
+| Área | Situação |
+|---|---|
+| Tabela 3.10 — os 6 itens paranormais, categoria e espaços | ✅ Amarras II/1, Câmera II/1, Componentes 0/1, Emissor II/1, Escuta II/1, Scanner II/1 |
+| Descrições dos itens paranormais | ✅ condensadas mas fiéis (armadilha e laçar das Amarras, DTs, custos em PE) |
+| Afinidade Elemental (p. 116) | ✅ elemento a partir do NEX 50%, ativação no primeiro transcender dali em diante, e os 3 benefícios cobertos: dispensa de componentes, o ±ØØ como nota, e a 2ª escolha de poder |
+| Mapa do elemento opressor (`OPPRESSOR_OF`) | ✅ o livro diz "a Morte é o elemento opressor do Sangue" e o mapa tem `blood: 'death'`; o ciclo inteiro fecha com o `OPPRESSES` de `curseUtils` |
+| Condições `machucado` e `morrendo` | ✅ as condições que nossos efeitos citam existem e significam o que dizem |
+
+**Mais uma contradição interna do livro:** a Tabela 3.10 lista "**Câmara** de aura paranormal", mas a
+descrição do item (p. 67) diz "**Câmera** de Aura Paranormal. Esta **câmera** amaldiçoada..." e o
+efeito é tirar fotos. Nossos dados usam "Câmera", que é o certo. Sem ação — é o terceiro caso, junto
+com o exemplo de DT da p. 80 e o atributo-base da Intuição.
+
+## Problemas encontrados
+
+### I1 — Amarras e Scanner nunca resolvem o elemento (P1)
+
+O livro nomeia três itens paranormais com o placeholder "(Elemento)", porque o elemento é escolhido
+ao requisitar: **Amarras de (Elemento)**, **Componentes Ritualísticos de (Elemento)** e **Scanner de
+Manifestação Paranormal de (Elemento)**. O elemento muda o efeito — as Amarras só imobilizam
+criaturas vulneráveis *ao elemento que as compõe*, e o Scanner detecta manifestações *do elemento
+escolhido*.
+
+Os Componentes nós dividimos em **4 itens concretos** (um por elemento), e isso funciona: alimenta o
+aviso de componentes faltando. Mas Amarras e Scanner ficaram como **item único com o `(Elemento)`
+literal no nome** — então a ficha imprime "Amarras de (Elemento)", um placeholder não resolvido, e o
+jogador não tem onde registrar qual elemento escolheu.
+
+É a mesma classe de escolha que já foi resolvida duas vezes (perícia do acessório, perícia do kit).
+Duas formas:
+
+- **dividir em 4 itens cada** (8 novas entradas), seguindo o precedente dos Componentes; ou
+- **escolha de elemento por unidade**, como a maldição Proteção Elemental (`element: 'varies'` +
+  `choice: 'element'`) e o kit já fazem — mantém o catálogo com um item por item do livro
+
+### I2 — O limiar de "machucado" não aparece na ficha (P2)
+
+**Livro (p. 94):** "Machucado. Se estiver com **menos da metade** de seus PV totais, você está
+machucado. Por si só, essa condição não causa penalidades, mas serve de pré-requisito para certas
+habilidades e efeitos."
+
+E há várias habilidades penduradas nela: **Inquebrável** (+10 Defesa e RD 5 enquanto machucado),
+**Sangue Fervente** (+1/+2 em Agilidade ou Força), **Sangue Vivo** (cura acelerada na primeira vez
+que ficar machucado) e **Resgate** (aliado machucado). A ficha mostra a condição como texto —
+"enquanto estiver machucado" — mas nunca diz **a partir de quantos PV isso vale**, embora o número
+seja trivial de derivar do PV total que já está impresso ao lado.
+
+Para um agente com 34 PV, machucado é 16 PV ou menos. Hoje o jogador faz essa conta no meio do
+combate, com três efeitos dependendo dela.

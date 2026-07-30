@@ -170,3 +170,108 @@ classe, Armamento Pesado, Balística Avançada, Ninja Urbano, Mira de Elite e Fe
 (que diz "sabe usar", sem a palavra proficiência) — e 3 para proteções: classe, Proteção Pesada e o
 Escudo contando como pesada. Todas já estavam implementadas, inclusive quando o poder chega por
 Versatilidade ou Expansão de Conhecimento.
+
+---
+
+# Segunda rodada (2026-07-30)
+
+Áreas que a primeira rodada não tinha coberto: Tabela 2.1 (perícias), pré-requisitos dos poderes de
+classe, Tabela 3.5 (modificações de arma) e — o filão principal — a seção **"Habilidades de Armas"**
+e as **descrições individuais das armas** (p. 58-61), que carregam regras que a Tabela 3.3 não mostra.
+
+## Conferido e correto nesta rodada
+
+| Área | Referência | Situação |
+|---|---|---|
+| As 28 perícias: atributo-base, "somente treinada", "penalidade de carga" | Tabela 2.1 | ✅ exceto a contradição da Intuição (ver G11) |
+| Pré-requisitos dos poderes de classe (todos os 20 que têm) | p. 26/29/33 | ✅ inclusive Combater com Duas Armas e Movimento Tático, que o grep só achou depois (o livro hifeniza "Pré-re-quisito" entre linhas) |
+| Modificações de arma e munição (16) | Tabela 3.5 | ✅ inclusive Dum dum +2 multiplicador e Explosiva +2d6 |
+| Mapeamento arma ↔ munição e durações dos pacotes | p. 60 | ✅ confirma o vínculo implementado ontem |
+| Coronhada: 1d4 leve/uma mão, 1d6 duas mãos | p. 58 | ✅ confirma o que foi implementado ontem |
+
+## Problemas encontrados
+
+### G1 — Armas ágeis não existem no projeto (P0)
+
+**Livro (p. 59, "Habilidades de Armas → Armas Ágeis"):** "Facas, punhais, cajados, nunchakus,
+floretes e katanas permitem que você aplique sua **Agilidade em vez de sua Força** em testes de
+ataque e rolagens de dano realizadas com elas."
+
+O changelog da edição (p. 6) trata isso como mudança de destaque: o poder "Acuidade com Arma" foi
+**removido** justamente porque as armas ágeis passaram a permitir builds de corpo a corpo por
+Agilidade "sem que eles precisem pagar nada por isso". E o poder **Artista Marcial** diz que o
+ataque desarmado "conta como armas ágeis" — hoje o código tem um comentário dizendo que isso não é
+modelado porque nada dependia disso. Passou a depender.
+
+**Hoje:** `getOrdemWeaponAttack` usa Força para todo corpo a corpo, no pool de dados **e** no dano.
+Um agente de Agilidade 4 / Força 1 com katana aparece na ficha com 1d20 e +1 de dano, quando deveria
+ter 4d20 e +4.
+
+**São 6 armas:** faca, punhal, cajado, nunchaku, florete, katana (+ desarmado com Artista Marcial).
+
+**Decisão de UX pendente:** o livro diz "permitem que você aplique" — é escolha do jogador por
+ataque. Ou a ficha usa automaticamente o melhor atributo (os dois — ataque e dano — trocam juntos,
+então o maior é sempre a escolha ótima), ou vira uma escolha explícita como a perícia de ataque da
+Lâmina Maldita.
+
+### G2 — Arco Composto soma Força no dano (P1)
+
+**Livro (p. 58):** "Arco Composto. [...] **Ao contrário de outras armas de disparo, permite que você
+aplique seu valor de Força às rolagens de dano.**"
+
+**Hoje:** `addsStrengthToDamage` cobre só corpo a corpo e arremesso, então o arco composto não soma
+nada — é a única arma de disparo com essa exceção.
+
+### G3 — Motosserra: −2 nos testes de ataque (P1)
+
+**Livro (p. 59):** "esta arma é muito desajeitada e **impõe uma penalidade de –2 nos seus testes de
+ataque**". Penalidade fixa e incondicional, que a ficha não aplica. (O outro efeito — "sempre que
+rolar um 6 em um dado de dano, role um dado adicional" — é rolagem em jogo, cabe como nota.)
+
+### G4 — Armas automáticas e rajada (P1)
+
+**Livro (p. 59):** "Fuzis de assalto, submetralhadoras e metralhadoras podem disparar tiros únicos
+[...] ou **rajadas**. Quando dispara uma rajada, você sofre **–Ø no teste de ataque, mas causa 1 dado
+de dano adicional** do mesmo tipo."
+
+Duas consequências: (a) a rajada é uma segunda forma de atacar com essas três armas, que a ficha não
+mostra; (b) essas armas **já são automáticas**, mas o catálogo não marca isso — então a modificação
+**Ferrolho Automático** ("a arma se torna automática") é oferecida a elas, onde é redundante. A
+modificação Compensador ("anula a penalidade por rajadas") também não tem como agir sem a rajada
+modelada.
+
+### G5 — Metralhadora: −5 sem Força 4 ou apoio (P2)
+
+**Livro (p. 59):** "você precisa ter **Força 4 ou maior** ou gastar uma ação de movimento para
+apoiá-la em seu tripé; caso contrário, **sofre –5 em seus ataques**." A ficha conhece a Força, então
+dá para resolver: com Força < 4, mostrar a penalidade (ou a nota de que exige apoio).
+
+### G6 — Fuzil de Precisão: +5 na margem se veterano em Pontaria (P2)
+
+**Livro (p. 59):** "Se for **veterano em Pontaria** e mirar com um fuzil de precisão, você recebe
+**+5 na margem de ameaça**." A ficha sabe o grau de treinamento — é nota resolvível.
+
+### G7 — Regras de empunhadura condicionais (P2)
+
+- **Katana** (p. 59): "Se você for **veterano em Luta** pode usá-la como uma **arma de uma mão**."
+- **Cajado** (p. 58): "pode ser usado com Combater com Duas Armas (e poderes similares) [...] como
+  se fosse uma arma de uma mão e uma arma leve."
+
+### G8 — Armas com área e regras de alcance próprias (P2)
+
+- **Espingarda** (p. 58): "causa apenas **metade do dano** em alcance médio ou maior."
+- **Lança-chamas** (p. 59): atinge todos numa **linha de 1,5m** em alcance curto; um único teste de
+  ataque comparado com a Defesa de todos; atingidos ficam **em chamas**.
+- **Bazuca** (p. 58): dano no alvo **e em todos num raio de 3m** (estes com Reflexos DT Agi para
+  metade); pode ser disparada num **ponto**, sem teste de ataque.
+- **Besta, Balestra e Bazuca**: exigem ação de movimento para recarregar a cada disparo.
+
+### G11 — Intuição: o livro se contradiz (nenhuma ação, decisão registrada)
+
+**Tabela 2.1** lista Intuição com atributo-base **Int**. O cabeçalho da descrição da perícia (p. 45)
+diz **INTUIÇÃO (PRE)**.
+
+Nossos dados usam **Presença**, e é a leitura defensável: a descrição diz "mede sua empatia e sexto
+sentido"; Percepção também é Presença; e o poder paranormal **Sensitivo** concede "+5 em Diplomacia,
+Intimidação e Intuição" — um trio coerente de perícias de Presença. A célula da tabela parece ser o
+deslize. Sem mudança de código.

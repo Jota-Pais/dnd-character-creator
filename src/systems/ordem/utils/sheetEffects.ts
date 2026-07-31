@@ -1,6 +1,5 @@
 import type { OrdemCharacterDraft } from '../types/character'
 import type { ClassPower } from '../types/power'
-import type { OrdemClass } from '../types/class'
 import type { ConditionalSkillBonus, ConditionalDefenseBonus } from '../types/effects'
 import { getOrigin } from './originUtils'
 import { getPower } from './powerUtils'
@@ -296,23 +295,18 @@ export function getEffectiveCreditLimit(draft: OrdemCharacterDraft): { level: st
 }
 
 /**
- * Notas de habilidade com o valor do NEX/atributo já substituído, pra ficha não imprimir a
- * escada inteira nem deixar o jogador fazendo conta: habilidade de classe (Ataque Especial),
- * features de trilha com `noteByNex` (Paramédico, Discurso Motivador) e poderes de classe com
- * valor derivado de atributo (Criar Selo = Presença).
+ * Notas de habilidade que resolvem um valor que a descrição não entrega calculado: o teto de
+ * selos do Criar Selo (Presença) e o bônus de cura da Técnica Medicinal (Intelecto).
+ *
+ * Escadas de NEX ficam DE FORA de propósito: a descrição da habilidade já lista os patamares
+ * (Ataque Especial, Paramédico, Discurso Motivador), então repetir o degrau atual só imprimia a
+ * mesma habilidade duas vezes na ficha. Cada nota daqui sai junto da descrição da habilidade
+ * dela (ver `splitResolvedNotes`), nunca como uma linha solta.
  */
-export function getResolvedAbilityNotes(draft: OrdemCharacterDraft, cls: OrdemClass | undefined): { source: string; note: string }[] {
+export function getResolvedAbilityNotes(draft: OrdemCharacterDraft): { source: string; note: string }[] {
   const out: { source: string; note: string }[] = []
   const attrs = getSheetAttributes(draft)
 
-  const scaling = cls?.classAbility.scalingByNex?.filter(s => s.nex <= draft.nex) ?? []
-  if (scaling.length > 0 && cls) {
-    out.push({ source: cls.classAbility.name, note: `no seu NEX: ${scaling[scaling.length - 1].note}` })
-  }
-  for (const { feature } of getReachedTrilhaFeaturesWithSource(draft)) {
-    const reached = feature.effects?.noteByNex?.filter(s => s.nex <= draft.nex) ?? []
-    if (reached.length > 0) out.push({ source: feature.name, note: `no seu NEX: ${reached[reached.length - 1].note}` })
-  }
   // Criar Selo: "número máximo de selos criados igual à sua Presença".
   if (hasClassPower(draft, 'create-seal')) {
     out.push({ source: 'Criar Selo', note: `pode manter até ${attrs.presence} selos criados (Presença)` })
@@ -321,16 +315,26 @@ export function getResolvedAbilityNotes(draft: OrdemCharacterDraft, cls: OrdemCl
   if (getOriginEffects(draft).healingBonusEqualsIntellect) {
     out.push({ source: 'Técnica Medicinal', note: `some +${attrs.intellect} (Intelecto) no total de PV que curar` })
   }
-  // Ferramentas Paranormais: ativa os itens paranormais do loadout sem gastar PE.
-  if (hasClassPower(draft, 'paranormal-tools')) {
-    const paranormalItems = draft.equipmentChoices
-      .map(uid => getEquipmentByInstance(uid))
-      .filter(item => item?.paranormal)
-    if (paranormalItems.length > 0) {
-      out.push({ source: 'Ferramentas Paranormais', note: 'ativa os itens paranormais do inventário sem pagar o custo em PE' })
-    }
-  }
   return out
+}
+
+/**
+ * Separa as notas entre as que saem junto da habilidade (o nome tem parágrafo próprio na ficha)
+ * e as sobras, que continuam listadas à parte — nenhuma nota se perde se a habilidade dona dela
+ * não estiver sendo impressa.
+ */
+export function splitResolvedNotes(
+  notes: { source: string; note: string }[],
+  printedAbilities: (string | undefined)[],
+): { inline: Map<string, string>; leftovers: { source: string; note: string }[] } {
+  const printed = new Set(printedAbilities.filter((name): name is string => Boolean(name)))
+  const inline = new Map<string, string>()
+  const leftovers: { source: string; note: string }[] = []
+  for (const entry of notes) {
+    if (printed.has(entry.source)) inline.set(entry.source, entry.note)
+    else leftovers.push(entry)
+  }
+  return { inline, leftovers }
 }
 
 // ── Dados de dano extra escalonados por NEX ────────────────────────────────────

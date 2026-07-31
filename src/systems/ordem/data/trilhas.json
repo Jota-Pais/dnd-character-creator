@@ -98,7 +98,7 @@
     "requirement": "Treinado em Medicina",
     "requiredTrainedSkill": "medicine",
     "features": [
-      { "nex": 10, "name": "Paramédico", "description": "Use uma ação padrão e 2 PE para curar 2d10 pontos de vida de um aliado adjacente. Cura +1d10 PV adicionais em NEX 40%, 65% e 99%, gastando +1 PE por dado adicional.", "effects": { "noteByNex": [{ "nex": 10, "note": "cura 2d10 PV por 2 PE" }, { "nex": 40, "note": "cura até 3d10 PV por 3 PE" }, { "nex": 65, "note": "cura até 4d10 PV por 4 PE" }, { "nex": 99, "note": "cura até 5d10 PV por 5 PE" }] } },
+      { "nex": 10, "name": "Paramédico", "description": "Use uma ação padrão e 2 PE para curar 2d10 pontos de vida de um aliado adjacente. Cura +1d10 PV adicionais em NEX 40%, 65% e 99%, gastando +1 PE por dado adicional." },
       { "nex": 40, "name": "Equipe de Trauma", "description": "Use uma ação padrão e 2 PE para remover uma condição negativa (exceto morrendo) de um aliado adjacente." },
       { "nex": 65, "name": "Resgate", "description": "Uma vez por rodada, se estiver em alcance curto de um aliado machucado ou morrendo, pode se aproximar dele com uma ação livre; ao curar PV ou remover condições, você e o aliado recebem +5 na Defesa até o início do próximo turno. O espaço ocupado ao carregar um personagem é reduzido pela metade." },
       { "nex": 99, "name": "Reanimação", "description": "Uma vez por cena, gaste uma ação completa e 10 PE para trazer de volta à vida um personagem que tenha morrido na mesma cena (exceto morte por dano massivo)." }
@@ -112,7 +112,7 @@
     "requirement": null,
     "features": [
       { "nex": 10, "name": "Eloquência", "description": "Use uma ação completa e 1 PE por alvo em alcance curto para afetá-los com sua fala. Teste de Diplomacia, Enganação ou Intimidação contra a Vontade dos alvos; vencendo, os alvos ficam fascinados enquanto se concentrar (uma ação padrão por rodada). Um alvo hostil ou envolvido em combate recebe +5 no teste de resistência e tem direito a um novo teste por rodada, sempre que você se concentrar. Quem passar no teste fica imune a este efeito por um dia." },
-      { "nex": 40, "name": "Discurso Motivador", "description": "Gaste uma ação padrão e 4 PE para inspirar seus aliados: você e todos os aliados em alcance curto ganham +O em testes de perícia até o fim da cena. A partir de NEX 65%, pode gastar 8 PE para +OO.", "effects": { "noteByNex": [{ "nex": 40, "note": "4 PE para +Ø em perícias (você e aliados em alcance curto)" }, { "nex": 65, "note": "4 PE para +Ø, ou 8 PE para +ØØ" }] } },
+      { "nex": 40, "name": "Discurso Motivador", "description": "Gaste uma ação padrão e 4 PE para inspirar seus aliados: você e todos os aliados em alcance curto ganham +O em testes de perícia até o fim da cena. A partir de NEX 65%, pode gastar 8 PE para +OO." },
       { "nex": 65, "name": "Eu Conheço um Cara", "description": "Uma vez por missão, ative sua rede de contatos para pedir um favor (trocar equipamento, conseguir um local de descanso, ser resgatado de uma cena etc.), a critério do mestre." },
       { "nex": 99, "name": "Truque de Mestre", "description": "Gaste 5 PE para simular o efeito de qualquer habilidade que você tenha visto um de seus aliados usar durante a cena, ignorando os pré-requisitos mas pagando todos os custos normalmente." }
     ]

@@ -10,7 +10,8 @@ import {
 } from '../utils/characterUtils'
 import {
   getSkillBonusTotal, getConditionalSkillBonuses, getConditionalDefenseBonuses, getExtraDamageDiceNotes,
-  getSheetExplosives, getResolvedAbilityNotes, getEffectiveCreditLimit, getSkillDicePool, resolveDtInText,
+  getSheetExplosives, getResolvedAbilityNotes, splitResolvedNotes, getEffectiveCreditLimit,
+  getSkillDicePool, resolveDtInText,
 } from '../utils/sheetEffects'
 import { formatDicePool, ATTRIBUTE_ABBREV as ATTR_ABBREV } from '../utils/attributeUtils'
 import { getReachedTrilhaSlots, getPeLimit } from '../utils/progressionUtils'
@@ -105,8 +106,12 @@ export function PrintableSheet() {
   const extraDamageDice = getExtraDamageDiceNotes(draft)
   // Explosivos com a DT do teste de resistência já calculada (10 + limite de PE + atributo).
   const explosives = getSheetExplosives(draft)
-  // Notas com valor resolvido pelo NEX/atributo (Ataque Especial, Paramédico, Criar Selo...).
-  const resolvedNotes = getResolvedAbilityNotes(draft, cls)
+  // Notas que resolvem um valor por atributo (Criar Selo, Técnica Medicinal): saem junto da
+  // descrição da própria habilidade, pra não imprimir a habilidade duas vezes.
+  const { inline: inlineNotes, leftovers: leftoverNotes } = splitResolvedNotes(
+    getResolvedAbilityNotes(draft),
+    [origin?.power.name, cls.classAbility.name, ...reachedTrilhaFeatures.map(f => f?.name), ...powers.map(p => p?.name)],
+  )
   const credit = getEffectiveCreditLimit(draft)
   // Kits registrados e perícias sem kit — a ficha informa, mas não aplica o −5 (decisão do mestre).
   const kitSkills = getKitSkills(draft)
@@ -381,9 +386,17 @@ export function PrintableSheet() {
           <div className="space-y-1.5 mt-2 text-sm">
             {/* `resolveDtInText` troca as DTs em sigla pelo número (ex.: Cai Dentro "DT Vig" → "DT 18 — Vig"). */}
             {origin && (
-              <p><span className="font-semibold">{origin.power.name} (origem).</span> {resolveDtInText(draft, origin.power.description)}</p>
+              <p>
+                <span className="font-semibold">{origin.power.name} (origem).</span>{' '}
+                {resolveDtInText(draft, origin.power.description)}
+                <ResolvedNote note={inlineNotes.get(origin.power.name)} />
+              </p>
             )}
-            <p><span className="font-semibold">{cls.classAbility.name} ({cls.name}).</span> {resolveDtInText(draft, cls.classAbility.description)}</p>
+            <p>
+              <span className="font-semibold">{cls.classAbility.name} ({cls.name}).</span>{' '}
+              {resolveDtInText(draft, cls.classAbility.description)}
+              <ResolvedNote note={inlineNotes.get(cls.classAbility.name)} />
+            </p>
             {expertSkills.length > 0 && (
               <p>
                 <span className="font-semibold">
@@ -392,14 +405,22 @@ export function PrintableSheet() {
                 Gaste {expertDie.pe} PE para somar +{expertDie.die} no teste dessas perícias (no seu NEX).
               </p>
             )}
-            {resolvedNotes.map((n, i) => (
+            {leftoverNotes.map((n, i) => (
               <p key={i}><span className="font-semibold">{n.source}:</span> {n.note}.</p>
             ))}
             {reachedTrilhaFeatures.map(f => f && (
-              <p key={f.name}><span className="font-semibold">{f.name} (trilha {trilha?.name}, NEX {f.nex}%).</span> {resolveDtInText(draft, f.description)}</p>
+              <p key={f.name}>
+                <span className="font-semibold">{f.name} (trilha {trilha?.name}, NEX {f.nex}%).</span>{' '}
+                {resolveDtInText(draft, f.description)}
+                <ResolvedNote note={inlineNotes.get(f.name)} />
+              </p>
             ))}
             {powers.map(p => p && (
-              <p key={p.id}><span className="font-semibold">{p.name} (poder).</span> {resolveDtInText(draft, p.description)}</p>
+              <p key={p.id}>
+                <span className="font-semibold">{p.name} (poder).</span>{' '}
+                {resolveDtInText(draft, p.description)}
+                <ResolvedNote note={inlineNotes.get(p.name)} />
+              </p>
             ))}
             {paranormalInstances.map(instance => {
               const power = instance.power!
@@ -652,6 +673,12 @@ export function PrintableSheet() {
       </div>
     </div>
   )
+}
+
+/** Valor já calculado da habilidade, no fim da descrição dela (nunca numa linha própria). */
+function ResolvedNote({ note }: { note: string | undefined }) {
+  if (!note) return null
+  return <span className="font-semibold"> — {note}.</span>
 }
 
 function BlackBar({ children, className = '' }: { children: React.ReactNode; className?: string }) {

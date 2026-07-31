@@ -50,6 +50,7 @@ import {
   getExtraDamageDiceNotes,
   getSheetExplosives,
   getResolvedAbilityNotes,
+  splitResolvedNotes,
   getEffectiveCreditLimit,
   resolveDtInText,
   getAbilityDt,
@@ -564,43 +565,45 @@ describe('resolveDtInText (DT de habilidades, p. 80)', () => {
 })
 
 describe('Notas com valores resolvidos', () => {
-  it('Ataque Especial mostra só o patamar do NEX atual', () => {
-    const combatant = getOrdemClass('combatant')!
-    const at = (nex: number) => getResolvedAbilityNotes(makeDraft({ class: 'combatant', nex }), combatant)
-      .find(n => n.source === 'Ataque Especial')?.note
-    expect(at(5)).toBe('no seu NEX: até 2 PE para +5')
-    expect(at(25)).toBe('no seu NEX: até 3 PE para +10')
-    expect(at(55)).toBe('no seu NEX: até 4 PE para +15')
-    expect(at(99)).toBe('no seu NEX: até 5 PE para +20')
-  })
+  it('não repete escada de NEX que já está na descrição da habilidade', () => {
+    // Ataque Especial (classe) e Paramédico (trilha) listam os patamares no próprio texto do
+    // livro — a nota resolvida só imprimia a mesma habilidade duas vezes na ficha.
+    const combatente = makeDraft({ class: 'combatant', nex: 25 })
+    expect(getResolvedAbilityNotes(combatente).map(n => n.source)).not.toContain('Ataque Especial')
 
-  it('Paramédico (Médico de Campo) resolve os dados de cura pelo NEX', () => {
-    const cls = getOrdemClass('specialist')!
-    const at = (nex: number) => getResolvedAbilityNotes(
-      makeDraft({ class: 'specialist', trilha: 'field-medic', nex, classFreeSkillChoices: ['medicine'] }), cls,
-    ).find(n => n.source === 'Paramédico')?.note
-    expect(at(10)).toBe('no seu NEX: cura 2d10 PV por 2 PE')
-    expect(at(65)).toBe('no seu NEX: cura até 4d10 PV por 4 PE')
+    const medico = makeDraft({
+      class: 'specialist', trilha: 'field-medic', nex: 65, classFreeSkillChoices: ['medicine'],
+    })
+    expect(getResolvedAbilityNotes(medico).map(n => n.source)).not.toContain('Paramédico')
   })
 
   it('Criar Selo resolve o máximo de selos pela Presença', () => {
-    const cls = getOrdemClass('occultist')!
     const draft = makeDraft({
       class: 'occultist', powerChoices: ['create-seal'],
       attributes: { agility: 1, strength: 1, intellect: 1, presence: 4, vigor: 1 },
     })
-    expect(getResolvedAbilityNotes(draft, cls).find(n => n.source === 'Criar Selo')?.note)
+    expect(getResolvedAbilityNotes(draft).find(n => n.source === 'Criar Selo')?.note)
       .toBe('pode manter até 4 selos criados (Presença)')
   })
 
   it('Técnica Medicinal resolve o bônus de cura pelo Intelecto', () => {
-    const cls = getOrdemClass('specialist')!
     const draft = makeDraft({
       class: 'specialist', origin: 'healthcare-worker',
       attributes: { agility: 1, strength: 1, intellect: 3, presence: 1, vigor: 1 },
     })
-    expect(getResolvedAbilityNotes(draft, cls).find(n => n.source === 'Técnica Medicinal')?.note)
+    expect(getResolvedAbilityNotes(draft).find(n => n.source === 'Técnica Medicinal')?.note)
       .toBe('some +3 (Intelecto) no total de PV que curar')
+  })
+
+  it('splitResolvedNotes manda a nota pra linha da habilidade e guarda as órfãs', () => {
+    const notes = [
+      { source: 'Criar Selo', note: 'pode manter até 4 selos criados (Presença)' },
+      { source: 'Habilidade que não está impressa', note: 'nota órfã' },
+    ]
+    const { inline, leftovers } = splitResolvedNotes(notes, ['Criar Selo', undefined])
+    expect(inline.get('Criar Selo')).toBe('pode manter até 4 selos criados (Presença)')
+    expect(inline.size).toBe(1)
+    expect(leftovers).toEqual([{ source: 'Habilidade que não está impressa', note: 'nota órfã' }])
   })
 
   it('Patrocinador da Ordem (Magnata) sobe o limite de crédito um degrau', () => {

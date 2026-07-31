@@ -12,7 +12,7 @@ import {
 import {
   getSkillBonusTotal, getSkillsWithUnconditionalBonus, getConditionalSkillBonuses,
   getConditionalDefenseBonuses, getExtraDamageDiceNotes, getSheetExplosives,
-  getResolvedAbilityNotes, resolveDtInText,
+  getResolvedAbilityNotes, splitResolvedNotes, resolveDtInText,
 } from '../../utils/sheetEffects'
 import { formatDicePool, ATTRIBUTE_ABBREV as ATTR_ABBREV } from '../../utils/attributeUtils'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, ritualNeedsElementChoice, getSlotRitualElement, getGrantedRitualElement, grantedRitualElementKey, ELEMENT_NAMES, ELEMENT_COLORS } from '../../utils/ritualUtils'
@@ -161,8 +161,12 @@ export function ReviewStep() {
   const extraDamageDice = getExtraDamageDiceNotes(draft)
   // Explosivos com a DT do teste de resistência já calculada (10 + limite de PE + atributo).
   const explosives = getSheetExplosives(draft)
-  // Notas com valor resolvido pelo NEX/atributo (Ataque Especial, Paramédico, Criar Selo...).
-  const resolvedNotes = getResolvedAbilityNotes(draft, cls)
+  // Notas que resolvem um valor por atributo (Criar Selo, Técnica Medicinal): saem junto da
+  // descrição da própria habilidade, pra não mostrar a habilidade duas vezes.
+  const { inline: inlineNotes, leftovers: leftoverNotes } = splitResolvedNotes(
+    getResolvedAbilityNotes(draft),
+    [origin?.power.name, cls.classAbility.name, ...reachedTrilhaFeatures.map(f => f?.name), ...powers.map(p => p?.name)],
+  )
   // Kits: a ficha registra os que o agente tem e lista as perícias sem kit. O −5 não é aplicado —
   // o livro amarra a exigência a USOS da perícia, então quem decide no teste é o mestre.
   const kitSkills = getKitSkills(draft)
@@ -253,6 +257,7 @@ export function ReviewStep() {
           <p className="text-parchment-500 text-xs mt-1">
             {/* `resolveDtInText` resolve as DTs escritas em sigla ("DT Vig" → "DT 18 — Vig"). */}
             <span className="font-semibold">{origin.power.name}.</span> {resolveDtInText(draft, origin.power.description)}
+            <ResolvedNote note={inlineNotes.get(origin.power.name)} />
           </p>
         </Section>
       )}
@@ -262,6 +267,7 @@ export function ReviewStep() {
         <p className="text-parchment-500 text-xs mt-1">{cls.description}</p>
         <p className="text-parchment-500 text-xs mt-2">
           <span className="font-semibold text-parchment-300">{cls.classAbility.name}.</span> {resolveDtInText(draft, cls.classAbility.description)}
+          <ResolvedNote note={inlineNotes.get(cls.classAbility.name)} />
         </p>
         {expertSkills.length > 0 && (
           <p className="text-gold-500/90 text-xs mt-2">
@@ -269,7 +275,7 @@ export function ReviewStep() {
             {expertDie.pe} PE para somar +{expertDie.die} no teste (no seu NEX).
           </p>
         )}
-        {resolvedNotes.map((n, i) => (
+        {leftoverNotes.map((n, i) => (
           <p key={i} className="text-gold-500/90 text-xs mt-2">
             ✨ <strong>{n.source}:</strong> {n.note}.
           </p>
@@ -282,6 +288,7 @@ export function ReviewStep() {
             {reachedTrilhaFeatures.map(f => f && (
               <p key={f.name} className="text-parchment-500 text-xs">
                 <span className="font-semibold text-parchment-300">NEX {f.nex}% – {f.name}.</span> {resolveDtInText(draft, f.description)}
+                <ResolvedNote note={inlineNotes.get(f.name)} />
               </p>
             ))}
           </div>
@@ -294,6 +301,7 @@ export function ReviewStep() {
             {powers.map(p => p && (
               <p key={p.id} className="text-parchment-500 text-xs">
                 <span className="font-semibold text-parchment-300">{p.name}.</span> {resolveDtInText(draft, p.description)}
+                <ResolvedNote note={inlineNotes.get(p.name)} />
               </p>
             ))}
           </div>
@@ -777,6 +785,12 @@ export function ReviewStep() {
       />
     </div>
   )
+}
+
+/** Valor já calculado da habilidade, no fim da descrição dela (nunca numa linha própria). */
+function ResolvedNote({ note }: { note: string | undefined }) {
+  if (!note) return null
+  return <span className="font-semibold text-gold-500/90"> — {note}.</span>
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {

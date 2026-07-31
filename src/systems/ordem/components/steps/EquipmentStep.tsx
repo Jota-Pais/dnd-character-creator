@@ -24,7 +24,7 @@ import { addsStrengthToDamage, formatWeaponSummary } from '../../utils/ordemWeap
 import { getPatente, PATENTES } from '../../utils/patenteUtils'
 import { getEffectiveCreditLimit, getUnproficientProtections } from '../../utils/sheetEffects'
 import { isStepComplete } from '../../utils/draftValidation'
-import { StepNav } from '../common/StepNav'
+import { StepNav } from '../../../../components/wizard/StepNav'
 
 const CAT_ROMAN = ['0', 'I', 'II', 'III', 'IV']
 

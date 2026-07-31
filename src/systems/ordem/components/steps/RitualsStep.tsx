@@ -7,7 +7,7 @@ import { isStepComplete } from '../../utils/draftValidation'
 import { STEP_LABELS } from '../../types/character'
 import type { OrdemCharacterDraft } from '../../types/character'
 import type { OrdemElement, OrdemRitualCircle } from '../../types/ritual'
-import { StepNav } from '../common/StepNav'
+import { StepNav } from '../../../../components/wizard/StepNav'
 import { RitualSlotCard } from '../rituals/RitualSlotCard'
 
 /** Dono de uma instância ritual+elemento já conhecida — usado para não oferecer duplicatas. */

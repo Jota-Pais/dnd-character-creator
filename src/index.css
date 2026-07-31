@@ -25,6 +25,15 @@
   --color-gold-700: #7a4e05;
   --color-gold-800: #52330a;
   --color-gold-900: #2d1c06;
+
+  /* Superfícies da casca do wizard (fundo da página e da sidebar). Eram hex soltos dentro do
+     OrdemApp; viraram token pra casca compartilhada re-tematizar junto com o resto. */
+  --color-surface-base: #0e0a06;
+  --color-surface-raised: #141008;
+
+  /* Texto sobre o accent (CTA preenchido). O dourado do D&D é claro demais pra texto branco;
+     o vermelho do Ordem é escuro demais pra texto preto — por isso é token, não valor fixo. */
+  --color-on-accent: #0a0704;
 }
 
 /* Tema do módulo Ordem Paranormal (handoff "Redesign Ordem", 2026-07-13): acento vermelho do
@@ -49,6 +58,10 @@
   --color-parchment-800: #3d2a2c;
   --color-parchment-900: #2a1518;
   --color-parchment-950: #120a0c;
+
+  --color-surface-base: #0b0608;
+  --color-surface-raised: #0e080a;
+  --color-on-accent: #ffffff;
 }
 
 /* Rotação lenta do Símbolo Maior de fundo (240s, contínua). */

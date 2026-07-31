@@ -40,7 +40,7 @@ import type { OrdemWeapon } from '../../types/equipment'
 const CAT_ROMAN = ['0', 'I', 'II', 'III', 'IV']
 import { getReachedTrilhaSlots } from '../../utils/progressionUtils'
 import { exportCharacter } from '../../utils/storage'
-import { StepNav } from '../common/StepNav'
+import { StepNav } from '../../../../components/wizard/StepNav'
 import { PendingStepsPanel } from '../common/PendingStepsPanel'
 import { formatMissingCount } from '../../../../components/wizard/pendingSteps'
 import { getMissingSteps } from '../../utils/draftValidation'

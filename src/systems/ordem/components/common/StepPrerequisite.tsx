@@ -1,7 +1,7 @@
 import { useOrdemStore } from '../../stores/characterStore'
 import { STEP_LABELS } from '../../types/character'
 import type { WizardStep } from '../../types/character'
-import { StepNav } from './StepNav'
+import { StepNav } from '../../../../components/wizard/StepNav'
 
 type Props = {
   /** Etapa dona da escolha que falta (o botão leva direto pra ela). */

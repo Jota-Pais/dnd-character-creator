@@ -12,7 +12,7 @@ import {
   type ParanormalInstance,
 } from '../../utils/paranormalPowerUtils'
 import { isParanormalElement } from '../../utils/paranormalPowerUtils'
-import { StepNav } from '../common/StepNav'
+import { StepNav } from '../../../../components/wizard/StepNav'
 import { AffinitySection } from '../paranormal/AffinitySection'
 import { ParanormalPowerCatalog } from '../paranormal/ParanormalPowerCatalog'
 import { ParanormalSubChoicePicker } from '../paranormal/ParanormalSubChoicePicker'

@@ -14,7 +14,7 @@ import {
   EXPERT_SKILL_COUNT,
 } from '../../utils/characterUtils'
 import { isStepComplete } from '../../utils/draftValidation'
-import { StepNav } from '../common/StepNav'
+import { StepNav } from '../../../../components/wizard/StepNav'
 import { StepPrerequisite } from '../common/StepPrerequisite'
 
 export function SkillsStep() {

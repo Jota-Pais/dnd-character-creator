@@ -1,9 +1,11 @@
 import { useEffect } from 'react'
 import { useAppStore } from '../../core/stores/appStore'
 import { useCharacterStore } from './stores/characterStore'
-import { StepIndicator } from '../../components/wizard/StepIndicator'
+import { WizardShell } from '../../components/wizard/WizardShell'
 import { getMissingSteps } from './utils/draftValidation'
+import { getClass } from './utils/classUtils'
 import { dnd5eSystem } from './index'
+import { D20Logo } from './assets/D20Logo'
 
 export function Dnd5eApp() {
   const setActiveSystem = useAppStore(state => state.setActiveSystem)
@@ -23,12 +25,16 @@ export function Dnd5eApp() {
   // trilho e passa a ser um mapa — o ✦ marca completude real do draft, não posição no fluxo.
   // A Revisão é o único caso especial: o isComplete dela mede o pré-requisito de multiclasse,
   // não preenchimento, então ela só ganha ✦ quando nenhuma etapa está pendente.
-  const noneMissing = getMissingSteps(draft).length === 0
-  const stepIndicatorProps = steps.map(s => ({
+  const missing = getMissingSteps(draft)
+  const noneMissing = missing.length === 0
+  const shellSteps = steps.map(s => ({
     id: s.id,
     label: s.title,
     complete: s.id === 'review' ? noneMissing && s.isComplete(draft) : s.isComplete(draft),
   }))
+
+  const className = draft.class ? getClass(draft.class)?.name : undefined
+  const extraClasses = draft.additionalClasses?.length ?? 0
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -82,77 +88,27 @@ export function Dnd5eApp() {
   }
 
   return (
-    <div className="min-h-screen">
-      <div className="max-w-6xl mx-auto px-4 pb-24">
-
-        {/* Header */}
-        <header className="pt-8 pb-6 text-center">
-          <div className="text-5xl mb-3">🐉</div>
-          <h1 className="font-fantasy text-3xl font-bold text-gold-400 tracking-wide">
-            Criador de Personagem
-          </h1>
-          <div className="flex items-center justify-center gap-3 mt-2">
-            <div className="h-px w-20 bg-gold-800" />
-            <span className="text-parchment-500 text-xs uppercase tracking-widest font-fantasy">
-              D&D 5e · PHB 2014
-            </span>
-            <div className="h-px w-20 bg-gold-800" />
-          </div>
-          {view === 'wizard' && name && currentStep !== 'name' && (
-            <p className="mt-2 text-parchment-400 text-sm">
-              <span className="text-parchment-600">Aventureiro:</span>{' '}
-              <span className="text-gold-400 font-semibold font-fantasy">{name}</span>
-            </p>
-          )}
-          {view === 'wizard' && (
-            <button
-              onClick={goToGallery}
-              className="mt-3 text-parchment-600 hover:text-parchment-300 text-xs font-fantasy transition-colors"
-            >
-              ← Meus personagens
-            </button>
-          )}
-        </header>
-
-        {/* Step indicator */}
-        <div className="mb-8 flex justify-center">
-          <StepIndicator steps={stepIndicatorProps} currentStepId={currentStep} onStepClick={id => goToStep(id as typeof currentStep)} />
-        </div>
-
-        {/* Divider ornamental */}
-        <div className="flex items-center gap-3 mb-8">
-          <div className="h-px flex-1 bg-gradient-to-r from-transparent to-parchment-800" />
-          <span className="text-parchment-700 text-sm">✦</span>
-          <div className="h-px flex-1 bg-gradient-to-l from-transparent to-parchment-800" />
-        </div>
-
-        <main key={currentStep} className="animate-fade-in relative pb-24 lg:pb-32">
-          {CurrentStepComponent && <CurrentStepComponent />}
-        </main>
-      </div>
-
-      {/* Footer */}
-      <footer className="border-t border-parchment-900 mt-12 py-6 text-center">
-        <p className="text-parchment-700 text-xs font-fantasy tracking-wider">
-          Forjado por Jota{' '}
-          <span className="text-parchment-800 mx-1">·</span>{' '}
-          <a
-            href="https://github.com/Jota-Pais/dnd-character-creator"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-gold-700 hover:text-gold-500 transition-colors"
-          >
-            GitHub ↗
-          </a>
-          <span className="text-parchment-800 mx-1">·</span>{' '}
-          <button
-            onClick={() => setActiveSystem(null)}
-            className="text-gold-700 hover:text-gold-500 transition-colors"
-          >
-            Trocar de sistema
-          </button>
-        </p>
-      </footer>
-    </div>
+    <WizardShell
+      systemLabel="D&D 5E"
+      systemSubtitle="Criador de Personagem"
+      logo={<D20Logo className="w-full h-full" />}
+      watermark={<D20Logo className="w-full h-full text-gold-500" />}
+      characterSummary={name ? (
+        <>
+          Aventureiro: <span className="font-fantasy font-semibold text-gold-300">{name}</span>
+          {className && <> · {className}{extraClasses > 0 && ` +${extraClasses}`}</>}
+          {' '}· nível {draft.level ?? 1}
+        </>
+      ) : undefined}
+      steps={shellSteps}
+      currentStepId={currentStep}
+      pendingCount={missing.length}
+      onStepClick={id => goToStep(id as typeof currentStep)}
+      onGallery={goToGallery}
+      galleryLabel="Meus personagens"
+      onSwitchSystem={() => setActiveSystem(null)}
+    >
+      {CurrentStepComponent && <CurrentStepComponent />}
+    </WizardShell>
   )
 }

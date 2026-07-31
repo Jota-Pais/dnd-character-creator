@@ -2,7 +2,7 @@ import { useOrdemStore } from '../../stores/characterStore'
 import { ORIGINS, getOrigin } from '../../utils/originUtils'
 import { SKILLS, getSkillName } from '../../utils/skillUtils'
 import { isStepComplete } from '../../utils/draftValidation'
-import { StepNav } from '../common/StepNav'
+import { StepNav } from '../../../../components/wizard/StepNav'
 import type { Origin } from '../../types/origin'
 
 export function OriginStep() {

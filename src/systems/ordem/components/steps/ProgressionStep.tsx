@@ -79,17 +79,20 @@ export function ProgressionStep() {
         <TrilhaSection draft={draft} cls={cls} onSelect={setTrilha} />
       )}
 
-      <div className="max-w-lg mx-auto space-y-4">
-        {requiredPowers > 0 && (
-          <PowerSection
-            draft={draft}
-            cls={cls}
-            required={requiredPowers}
-            onPick={setPowerChoice}
-            onRelease={clearPowerChoice}
-          />
-        )}
+      {/* Catálogos (poderes, versatilidade) usam a largura toda, como a trilha: são cards com
+          descrição inteira, e ler três lado a lado é bem melhor do que rolar uma coluna estreita. */}
+      {requiredPowers > 0 && (
+        <PowerSection
+          draft={draft}
+          cls={cls}
+          required={requiredPowers}
+          onPick={setPowerChoice}
+          onRelease={clearPowerChoice}
+        />
+      )}
 
+      {/* Aumentos e graus são listas curtas de chips — ficam melhor numa coluna central. */}
+      <div className="max-w-lg mx-auto space-y-4">
         {requiredAttrIncreases > 0 && (
           <AttributeIncreaseSection draft={draft} required={requiredAttrIncreases} onPick={setAttributeIncreaseChoice} />
         )}
@@ -97,13 +100,13 @@ export function ProgressionStep() {
         {requiredGradeSlots > 0 && (
           <SkillGradeSection draft={draft} cls={cls} required={requiredGradeSlots} onPick={setSkillGradeChoice} />
         )}
-
-        {showVersatility && (
-          <VersatilitySection draft={draft} cls={cls} onPick={setVersatilityChoice} />
-        )}
-
-        <StepNav onPrev={prevStep} onNext={nextStep} pendingReason={canAdvance ? undefined : 'Escolhas pendentes'} />
       </div>
+
+      {showVersatility && (
+        <VersatilitySection draft={draft} cls={cls} onPick={setVersatilityChoice} />
+      )}
+
+      <StepNav onPrev={prevStep} onNext={nextStep} pendingReason={canAdvance ? undefined : 'Escolhas pendentes'} />
     </div>
   )
 }
@@ -202,7 +205,7 @@ function PowerSection({ draft, cls, required, onPick, onRelease }: {
       <p className="text-xs mb-3" style={{ color: missing > 0 ? '#c9a05a' : '#86efac' }}>
         {chosenCount} de {required} escolhidos{missing > 0 ? ` — falta${missing > 1 ? 'm' : ''} ${missing}` : ' ✓'}
       </p>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2 items-start">
         {catalog.map(entry => (
           <ClassPowerCard
             key={entry.power.id}
@@ -408,7 +411,7 @@ function VersatilitySection({ draft, cls, onPick }: {
       </p>
 
       <p className="text-parchment-700 text-xs mb-1.5">Poder extra</p>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2 items-start">
         {powerOptions.map(option => {
           const active = choice?.kind === 'power' && choice.powerId === option.power.id
           return (
@@ -431,7 +434,7 @@ function VersatilitySection({ draft, cls, onPick }: {
       </div>
 
       <p className="text-parchment-700 text-xs mt-4 mb-1.5">Ou 1º poder de outra trilha</p>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2 items-start">
         {trilhaOptions.map(({ trilha, available, reasons }) => {
           const active = choice?.kind === 'trilha' && choice.trilhaId === trilha.id
           const first = trilha.features[0]

@@ -132,7 +132,14 @@ export function PlayScreen() {
             ))}
           </div>
 
-          <ActionPanel groups={actionGroups} onLog={addLog} />
+          <ActionPanel
+            groups={actionGroups}
+            onLog={addLog}
+            onSpend={(resourceId, amount) => {
+              const track = resources.find(r => r.id === resourceId)
+              if (track) adjustResource(resourceId, -amount, track.max)
+            }}
+          />
 
           <QuickRoller onRoll={addLog} />
         </div>

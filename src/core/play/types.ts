@@ -105,7 +105,13 @@ export type PlayDamage = {
 export type PlayAction = {
   id: string
   name: string
-  roll: PlayRollSpec
+  /**
+   * Ausente quando quem rola não é o personagem — num ritual, o teste é do alvo contra a DT.
+   * A ação existe do mesmo jeito: ela consome recurso e entra no histórico.
+   */
+  roll?: PlayRollSpec
+  /** Mostrado no lugar do pool quando não há teste próprio: "DT 14". */
+  rollLabel?: string
   damage?: PlayDamage
   /** Linha de apoio: alcance, crítico, elemento. */
   detail?: string

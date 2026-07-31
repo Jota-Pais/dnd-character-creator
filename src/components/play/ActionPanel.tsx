@@ -5,6 +5,8 @@ import type { LogEntry, PlayAction, PlayActionGroup } from '../../core/play/type
 type Props = {
   groups: PlayActionGroup[]
   onLog: (entry: Omit<LogEntry, 'id' | 'at'>) => void
+  /** Cobra o custo da ação. Delta negativo consome. */
+  onSpend: (resourceId: string, amount: number) => void
 }
 
 /** O resultado do último ataque, pra oferecer o dano logo em seguida. */
@@ -16,11 +18,27 @@ type PendingAttack = { actionId: string; kept: number; total: number; isThreat: 
  * A rolagem em si mora em `core/dice` — este componente só dispara e apresenta. É de propósito:
  * a animação de dados da versão final entra aqui, na apresentação, sem tocar no cálculo.
  */
-export function ActionPanel({ groups, onLog }: Props) {
+export function ActionPanel({ groups, onLog, onSpend }: Props) {
   const [pending, setPending] = useState<PendingAttack | null>(null)
   const [openGroup, setOpenGroup] = useState<string>(groups[0]?.id ?? '')
 
-  function rollAction(action: PlayAction) {
+  function performAction(action: PlayAction) {
+    if (action.blocked) return
+
+    // O custo sai primeiro: se a ação consome recurso, o gasto acontece mesmo que ela não role.
+    if (action.cost) onSpend(action.cost.resourceId, action.cost.amount)
+
+    if (!action.roll) {
+      onLog({
+        kind: 'roll',
+        title: action.name,
+        detail: [action.cost ? `−${action.cost.label}` : null, action.rollLabel]
+          .filter(Boolean).join(' · '),
+      })
+      setPending(null)
+      return
+    }
+
     const result = rollPool(action.roll)
     const isThreat = action.damage !== undefined && result.kept >= action.damage.threatMargin
 
@@ -29,6 +47,7 @@ export function ActionPanel({ groups, onLog }: Props) {
       title: action.name,
       detail: [
         action.roll.label,
+        action.cost ? `−${action.cost.label}` : null,
         isThreat ? `⚡ margem de ameaça (${action.damage!.threatMargin}+)` : null,
       ].filter(Boolean).join(' · '),
       total: result.total,
@@ -85,7 +104,7 @@ export function ActionPanel({ groups, onLog }: Props) {
                 key={action.id}
                 action={action}
                 pending={pending?.actionId === action.id ? pending : null}
-                onRoll={() => rollAction(action)}
+                onUse={() => performAction(action)}
                 onDamage={critical => rollTheDamage(action, critical)}
               />
             ))}
@@ -96,10 +115,10 @@ export function ActionPanel({ groups, onLog }: Props) {
   )
 }
 
-function ActionRow({ action, pending, onRoll, onDamage }: {
+function ActionRow({ action, pending, onUse, onDamage }: {
   action: PlayAction
   pending: PendingAttack | null
-  onRoll: () => void
+  onUse: () => void
   onDamage: (critical: boolean) => void
 }) {
   const blocked = Boolean(action.blocked)
@@ -114,7 +133,7 @@ function ActionRow({ action, pending, onRoll, onDamage }: {
       }}
     >
       <button
-        onClick={onRoll}
+        onClick={onUse}
         disabled={blocked}
         title={action.blocked}
         className="w-full text-left px-3 py-2 flex items-baseline gap-2"
@@ -124,9 +143,16 @@ function ActionRow({ action, pending, onRoll, onDamage }: {
           {action.name}
         </span>
         {action.cost && (
-          <span className="text-[11px] shrink-0 text-parchment-500">{action.cost.label}</span>
+          <span
+            className="text-[11px] shrink-0 px-1.5 py-0.5 rounded font-bold"
+            style={{ color: '#93c5fd', backgroundColor: '#2563eb22' }}
+          >
+            {action.cost.label}
+          </span>
         )}
-        <span className="font-mono text-[12px] shrink-0 text-gold-400">{action.roll.label}</span>
+        <span className="font-mono text-[12px] shrink-0 text-gold-400">
+          {action.roll?.label ?? action.rollLabel}
+        </span>
       </button>
 
       <div className="px-3 pb-2 -mt-1 space-y-1">

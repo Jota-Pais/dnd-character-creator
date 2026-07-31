@@ -6,10 +6,19 @@ import type { OrdemCharacterDraft } from '../types/character'
 import { loadLibrary } from '../utils/storage'
 import { getOrdemClass } from '../utils/classUtils'
 import { getOrigin } from '../utils/originUtils'
-import { getCursedDerivedStats } from '../utils/curseUtils'
-import { getEffectivePeLimit, getTrainedSkills } from '../utils/characterUtils'
+import type { OrdemElement, OrdemRitual } from '../types/ritual'
+import { getCursedDerivedStats, getRitualDt, getRitualPeLimit } from '../utils/curseUtils'
+import {
+  getEffectivePeLimit, getGrantedRituals, getRitualCost, getTrainedSkills,
+} from '../utils/characterUtils'
+import {
+  formatRitualElementLabel, getGrantedRitualElement, getRitualById, getRitualSlotsCount,
+  getSlotRitualElement,
+} from '../utils/ritualUtils'
 import { getSheetWeaponAttacks } from '../utils/ordemWeaponUtils'
-import { getConditionalSkillBonuses, getSkillBonusTotal, getSkillDicePool } from '../utils/sheetEffects'
+import {
+  getConditionalSkillBonuses, getSkillBonusTotal, getSkillDicePool, resolveDtInText,
+} from '../utils/sheetEffects'
 import { SKILLS, formatSkillWithAttribute } from '../utils/skillUtils'
 import { formatDicePool } from '../utils/attributeUtils'
 import {
@@ -107,12 +116,23 @@ export const ordemPlayAdapter: PlayAdapter = {
     return [cls?.name, `NEX ${draft.nex}%`, origin?.name].filter(Boolean).join(' · ')
   },
 
-  getActions(draftRaw): PlayActionGroup[] {
+  getActions(draftRaw, runtime): PlayActionGroup[] {
     const draft = draftRaw as OrdemCharacterDraft
     if (!draft.class) return []
+    const cls = getOrdemClass(draft.class)
+    if (!cls) return []
+
+    const maxPe = getCursedDerivedStats(draft, cls, getModifiedDefenseBonus(draft)).pe
+    const currentPe = currentOf(runtime, 'pe', maxPe)
 
     return [
       { id: 'attacks', label: 'Ataques', actions: buildAttacks(draft) },
+      {
+        id: 'rituals',
+        label: 'Rituais',
+        hint: `Conjurar desconta o PE automaticamente. Limite de ${getRitualPeLimit(draft)} PE por turno para rituais — mas o livro garante ao menos uma habilidade no custo mínimo por turno, então ele não bloqueia nada aqui (p. 21).`,
+        actions: buildRituals(draft, currentPe),
+      },
       {
         id: 'skills',
         label: 'Perícias',
@@ -121,6 +141,63 @@ export const ordemPlayAdapter: PlayAdapter = {
       },
     ].filter(group => group.actions.length > 0)
   },
+}
+
+/**
+ * Rituais conhecidos: os slots do Ocultista mais os concedidos por trilha, Aprender Ritual e
+ * slots bônus. O custo sai de `getRitualCost`, que já aplica predileto, Mestre em Elemento,
+ * Lâmina Maldita e Tatuagem Ritualística.
+ */
+function buildRituals(draft: OrdemCharacterDraft, currentPe: number): PlayAction[] {
+  type Known = { ritual: OrdemRitual; element: OrdemElement | undefined; source: string }
+
+  const slotCount = draft.class === 'occultist' ? getRitualSlotsCount(draft.nex) : 0
+  const fromSlots: Known[] = []
+  draft.ritualChoices.slice(0, slotCount).forEach((id, slotIndex) => {
+    const ritual = id ? getRitualById(id) : undefined
+    if (!ritual) return
+    fromSlots.push({
+      ritual,
+      element: getSlotRitualElement(ritual, slotIndex, draft.ritualElementChoices),
+      source: '',
+    })
+  })
+
+  const granted: Known[] = getGrantedRituals(draft).map(g => ({
+    ritual: g.ritual,
+    element: g.element ?? getGrantedRitualElement(g.ritual, draft.ritualElementChoices),
+    source: g.source,
+  }))
+
+  return [...fromSlots, ...granted].map(({ ritual, element, source }, i) => {
+    const { cost, notes: costNotes } = getRitualCost(draft, ritual, element)
+    const { dt, notes: dtNotes } = getRitualDt(draft, ritual, element)
+    // Só a FALTA de PE bloqueia. O limite por turno não: "independentemente do limite, você
+    // sempre pode usar pelo menos uma habilidade em seu custo mínimo por turno" (p. 21).
+    const missing = cost - currentPe
+
+    return {
+      id: `ritual:${i}:${ritual.id}:${element ?? ''}`,
+      name: ritual.name,
+      // Sem `roll`: quem testa é o alvo, contra a DT. Conjurar gasta PE e registra no histórico.
+      rollLabel: `DT ${dt}`,
+      cost: { resourceId: 'pe', amount: cost, label: `${cost} PE` },
+      blocked: missing > 0 ? `Requer ${cost} PE, você tem ${currentPe}` : undefined,
+      detail: [
+        `${ritual.circle}º círculo`,
+        // Elemento da instância: nos multi-elemento é o escolhido, nos demais o único.
+        formatRitualElementLabel(ritual, element),
+        ritual.execution,
+        ritual.range,
+        source || null,
+      ].filter(Boolean).join(' · '),
+      notes: [
+        ...costNotes.map(n => `custo: ${n}`),
+        ...dtNotes,
+        ritual.resistance && ritual.resistance !== '—' ? `Resistência: ${resolveDtInText(draft, ritual.resistance)}` : null,
+      ].filter((n): n is string => Boolean(n)),
+    }
+  })
 }
 
 /** Ataques da ficha, já roláveis: pool, bônus, dano estruturado e margem de ameaça. */

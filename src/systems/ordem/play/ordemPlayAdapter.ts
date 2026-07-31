@@ -1,5 +1,6 @@
 import type {
-  PlayAction, PlayActionGroup, PlayAdapter, PlayCondition, PlayRuntime, PlayStat, ResourceTrack,
+  DyingState, PlayAction, PlayActionGroup, PlayAdapter, PlayCondition, PlayRuntime, PlayStat,
+  ResourceTrack, RestOption, RestQuality,
 } from '../../../core/play/types'
 import { currentOf } from '../../../core/play/types'
 import type { OrdemCharacterDraft } from '../types/character'
@@ -186,6 +187,72 @@ export const ordemPlayAdapter: PlayAdapter = {
   },
 
   escalateCondition,
+
+  /**
+   * Leitura adotada: **Capítulo 4, p. 87** (decisão registrada em regras-combate.md). Morre ao
+   * iniciar o TERCEIRO turno morrendo na mesma cena, e só sai de morrendo com Medicina DT 20 —
+   * curar PV tira a inconsciência, não o sangramento.
+   */
+  getDyingState(draftRaw, runtime): DyingState {
+    const draft = draftRaw as OrdemCharacterDraft
+    const cls = draft.class ? getOrdemClass(draft.class) : undefined
+    const maxHp = cls ? getCursedDerivedStats(draft, cls, getModifiedDefenseBonus(draft)).hp : 0
+    const hp = currentOf(runtime, 'hp', maxHp)
+    return {
+      dying: hp === 0 && !runtime.stabilized && !runtime.dead,
+      turnsStarted: runtime.dyingTurns,
+      limit: DEATH_AT_TURNS,
+      dead: runtime.dead,
+      stabilizeCheck: { skillId: 'medicine', skillName: 'Medicina', dt: 20 },
+    }
+  },
+
+  /**
+   * Dormir e relaxar (interlúdio, p. 92-93). A recuperação é o **limite de PE** vezes o
+   * multiplicador da qualidade; relaxar faz o mesmo pela Sanidade. Arredonda pra baixo, como
+   * manda a regra geral de divisões.
+   */
+  getRestOptions(draftRaw, quality): RestOption[] {
+    const draft = draftRaw as OrdemCharacterDraft
+    const base = getEffectivePeLimit(draft)
+    const amount = Math.floor(base * REST_MULTIPLIER[quality])
+    const label = REST_LABEL[quality]
+
+    return [
+      {
+        id: 'sleep',
+        label: 'Dormir',
+        recovery: [
+          { resourceId: 'hp', amount },
+          { resourceId: 'pe', amount },
+        ],
+        hint: `Limite de PE ${base} × ${label} = ${amount} PV e ${amount} PE. Uma vez por interlúdio.`,
+      },
+      {
+        id: 'relax',
+        label: 'Relaxar',
+        recovery: [{ resourceId: 'sanity', amount }],
+        hint: `${amount} de Sanidade. +1 por cada agente que também relaxar no mesmo interlúdio. Uma vez por interlúdio.`,
+      },
+    ]
+  },
+}
+
+/** Cap. 4, p. 87: morre ao INICIAR o terceiro turno morrendo na mesma cena. */
+const DEATH_AT_TURNS = 3
+
+const REST_MULTIPLIER: Record<RestQuality, number> = {
+  poor: 0.5,
+  normal: 1,
+  comfortable: 2,
+  luxurious: 3,
+}
+
+const REST_LABEL: Record<RestQuality, string> = {
+  poor: 'precária (½)',
+  normal: 'normal (×1)',
+  comfortable: 'confortável (×2)',
+  luxurious: 'luxuosa (×3)',
 }
 
 /**
@@ -200,7 +267,8 @@ export function getActiveConditions(draft: OrdemCharacterDraft, runtime: PlayRun
 
   const derived: string[] = []
   if (hp < maxHp / 2) derived.push('machucado')
-  if (hp === 0) derived.push('morrendo')
+  // Estabilizado por Medicina continua em 0 PV, mas fora de morrendo (Cap. 4, p. 87).
+  if (hp === 0 && !runtime.stabilized) derived.push('morrendo')
   return [...new Set([...runtime.conditions, ...derived])]
 }
 

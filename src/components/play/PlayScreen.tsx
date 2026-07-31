@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react'
 import { SYSTEMS } from '../../core/systems/registry'
 import { usePlayStore } from '../../core/play/playStore'
+import { rollPool } from '../../core/dice/dice'
 import { ActionPanel } from './ActionPanel'
 import { ConditionsPanel } from './ConditionsPanel'
 import { ResourceBar } from './ResourceBar'
+import { TurnPanel } from './TurnPanel'
 import { RollLog } from './RollLog'
 import { QuickRoller } from './QuickRoller'
 
@@ -26,6 +28,10 @@ export function PlayScreen() {
   const clearLog = usePlayStore(s => s.clearLog)
   const addCondition = usePlayStore(s => s.addCondition)
   const removeCondition = usePlayStore(s => s.removeCondition)
+  const nextTurn = usePlayStore(s => s.nextTurn)
+  const newScene = usePlayStore(s => s.newScene)
+  const setStabilized = usePlayStore(s => s.setStabilized)
+  const undoDeath = usePlayStore(s => s.undoDeath)
   const [confirmDiscard, setConfirmDiscard] = useState(false)
 
   const system = session ? SYSTEMS[session.systemId] : undefined
@@ -68,6 +74,7 @@ export function PlayScreen() {
   const actionGroups = adapter.getActions(character.draft, session.runtime)
   const activeConditions = adapter.getConditions(character.draft, session.runtime)
   const conditionCatalog = adapter.getConditionCatalog()
+  const dying = adapter.getDyingState(character.draft, session.runtime)
 
   return (
     <Frame
@@ -118,6 +125,63 @@ export function PlayScreen() {
             </div>
           )}
 
+          <TurnPanel
+            runtime={session.runtime}
+            dying={dying}
+            restOptions={quality => adapter.getRestOptions(character.draft, quality)}
+            onNextTurn={() => {
+              nextTurn(dying.dying, dying.limit)
+              addLog({
+                kind: 'note',
+                title: `Turno ${session.runtime.turn + 1}`,
+                detail: dying.dying
+                  ? `morrendo ${session.runtime.dyingTurns + 1}/${dying.limit}`
+                  : undefined,
+              })
+            }}
+            onNewScene={() => {
+              newScene()
+              addLog({ kind: 'note', title: 'Nova cena', detail: 'condições e contadores zerados' })
+            }}
+            onStabilizeRoll={() => {
+              const check = actionGroups
+                .flatMap(g => g.actions)
+                .find(a => a.id === `skill:${dying.stabilizeCheck.skillId}`)
+              const spec = check?.roll ?? { dice: 1, mode: 'best' as const, bonus: 0, label: '1d20' }
+              const result = rollPool(spec)
+              const passed = result.total >= dying.stabilizeCheck.dt
+              if (passed) setStabilized(true)
+              addLog({
+                kind: 'roll',
+                title: `${dying.stabilizeCheck.skillName} para estabilizar`,
+                detail: `DT ${dying.stabilizeCheck.dt} · ${passed ? 'estabilizou' : 'falhou'}`,
+                total: result.total,
+                dice: result.dice,
+              })
+            }}
+            onUndoDeath={() => {
+              undoDeath()
+              addLog({ kind: 'note', title: 'Morte desfeita' })
+            }}
+            onRest={option => {
+              const parts: string[] = []
+              for (const { resourceId, amount } of option.recovery) {
+                const track = resources.find(r => r.id === resourceId)
+                if (!track) continue
+                const changed = adjustResource(resourceId, amount, track.max)
+                if (changed !== 0) parts.push(`+${changed} ${track.short}`)
+              }
+              // Curar tira do 0, e sair do 0 encerra o episódio de morrendo: um novo mergulho
+              // a 0 PV começa do zero, não estabilizado (Cap. 4, p. 87).
+              if (session.runtime.stabilized) setStabilized(false)
+              addLog({
+                kind: 'rest',
+                title: option.label,
+                detail: parts.length > 0 ? parts.join(' · ') : 'nada a recuperar',
+              })
+            }}
+          />
+
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {resources.map(track => (
               <ResourceBar
@@ -126,13 +190,22 @@ export function PlayScreen() {
                 onAdjust={delta => {
                   const changed = adjustResource(track.id, delta, track.max)
                   if (changed === 0) return
+                  // Voltar a ter PV encerra o episódio de morrendo (ver onRest).
+                  if (track.tone === 'vitality' && track.current + changed > 0 && session.runtime.stabilized) {
+                    setStabilized(false)
+                  }
                   addLog({
                     kind: changed < 0 ? 'damage' : 'heal',
                     title: `${changed < 0 ? '−' : '+'}${Math.abs(changed)} ${track.short}`,
                     detail: `${track.current + changed}/${track.max}`,
                   })
                 }}
-                onSet={value => setResource(track.id, value)}
+                onSet={value => {
+                  setResource(track.id, value)
+                  if (track.tone === 'vitality' && value > 0 && session.runtime.stabilized) {
+                    setStabilized(false)
+                  }
+                }}
               />
             ))}
           </div>

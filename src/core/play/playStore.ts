@@ -39,6 +39,16 @@ type PlayStore = {
    */
   addCondition: (id: string, escalate?: (id: string, active: string[]) => string) => void
   removeCondition: (id: string) => void
+  /** Começa um turno. `dying` faz o contador de morte andar; `dead` chega do sistema. */
+  nextTurn: (dying: boolean, deathAt: number) => void
+  /** Cena nova: zera turno, contador de morte e as condições (que duram a cena, p. 311). */
+  newScene: () => void
+  setStabilized: (value: boolean) => void
+  /**
+   * Desfaz a morte. Existe porque erro de clique acontece na mesa e o mestre pode decidir
+   * diferente — não é "nova cena", que seria mentir sobre o que aconteceu.
+   */
+  undoDeath: () => void
   addLog: (entry: Omit<LogEntry, 'id' | 'at'>) => void
   clearLog: () => void
 }
@@ -121,6 +131,42 @@ export const usePlayStore = create<PlayStore>((set, get) => {
     removeCondition: id => mutate(session => ({
       ...session,
       runtime: { ...session.runtime, conditions: session.runtime.conditions.filter(c => c !== id) },
+    })),
+
+    nextTurn: (dying, deathAt) => mutate(session => {
+      const dyingTurns = session.runtime.dyingTurns + (dying ? 1 : 0)
+      return {
+        ...session,
+        runtime: {
+          ...session.runtime,
+          turn: session.runtime.turn + 1,
+          dyingTurns,
+          dead: session.runtime.dead || (dying && dyingTurns >= deathAt),
+        },
+      }
+    }),
+
+    newScene: () => mutate(session => ({
+      ...session,
+      runtime: {
+        ...session.runtime,
+        turn: 0,
+        dyingTurns: 0,
+        // "A menos que especificado o contrário, as condições terminam no fim da cena" (p. 311).
+        // As derivadas dos PV não estão aqui — elas voltam sozinhas se o estado ainda valer.
+        conditions: [],
+      },
+    })),
+
+    setStabilized: value => mutate(session => ({
+      ...session,
+      // Estabilizar zera o contador: o personagem sai de morrendo (Cap. 4, p. 87).
+      runtime: { ...session.runtime, stabilized: value, dyingTurns: value ? 0 : session.runtime.dyingTurns },
+    })),
+
+    undoDeath: () => mutate(session => ({
+      ...session,
+      runtime: { ...session.runtime, dead: false, dyingTurns: 0 },
     })),
 
     addLog: entry => mutate(session => ({

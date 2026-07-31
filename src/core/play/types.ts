@@ -35,6 +35,19 @@ export type PlayRuntime = {
   /** Consumíveis gastos: munição por id, usos por habilidade. */
   spent: Record<string, number>
   notes: string
+  /** Turnos iniciados na cena atual. */
+  turn: number
+  /**
+   * Turnos iniciados **morrendo** na cena atual, não precisando ser consecutivos. O contador é
+   * da cena: cena nova zera. Quantos matam é regra do sistema (ver `getDyingState`).
+   */
+  dyingTurns: number
+  /**
+   * Estabilizado por Medicina (DT 20): continua em 0 PV, mas não morre mais. Curar PV **não**
+   * estabiliza — remove a inconsciência e só (Cap. 4, p. 87).
+   */
+  stabilized: boolean
+  dead: boolean
 }
 
 export const EMPTY_RUNTIME: PlayRuntime = {
@@ -42,6 +55,33 @@ export const EMPTY_RUNTIME: PlayRuntime = {
   conditions: [],
   spent: {},
   notes: '',
+  turn: 0,
+  dyingTurns: 0,
+  stabilized: false,
+  dead: false,
+}
+
+/** Estado de morte iminente, resolvido pelo sistema. */
+export type DyingState = {
+  dying: boolean
+  /** Turnos já iniciados morrendo nesta cena. */
+  turnsStarted: number
+  /** Em quantos turnos iniciados o personagem morre. */
+  limit: number
+  dead: boolean
+  /** DT do teste que estabiliza, e a perícia. */
+  stabilizeCheck: { skillId: string; skillName: string; dt: number }
+}
+
+/** Qualidade do descanso, na escala do livro. */
+export type RestQuality = 'poor' | 'normal' | 'comfortable' | 'luxurious'
+
+export type RestOption = {
+  id: string
+  label: string
+  /** O que recupera, por trilha, já com o multiplicador de qualidade aplicado. */
+  recovery: { resourceId: string; amount: number }[]
+  hint?: string
 }
 
 export type LogKind = 'roll' | 'damage' | 'heal' | 'rest' | 'note'
@@ -157,6 +197,10 @@ export interface PlayAdapter {
   getConditionCatalog(): PlayCondition[]
   /** Ao receber uma condição de novo, qual resulta (agravamento). Identidade quando não escala. */
   escalateCondition(id: string, active: string[]): string
+  /** Onde o personagem está na contagem regressiva pra morte. */
+  getDyingState(draft: unknown, runtime: PlayRuntime): DyingState
+  /** Opções de descanso e o quanto cada uma recupera, na qualidade escolhida. */
+  getRestOptions(draft: unknown, quality: RestQuality): RestOption[]
 }
 
 export type PlayCondition = {

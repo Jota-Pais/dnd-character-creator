@@ -1,8 +1,8 @@
 import { EMPTY_DRAFT, WIZARD_STEPS, STEP_LABELS } from './types/character';
-import { isStepComplete } from './utils/draftValidation';
+import { isStepComplete, getMissingSteps } from './utils/draftValidation';
 import { PrintableSheet } from './components/PrintableSheet';
 import { Dnd5eApp } from './Dnd5eApp';
-import { getRace } from './utils/raceUtils';
+import { getRace, getSubrace } from './utils/raceUtils';
 import { getClass } from './utils/classUtils';
 import type { IRpgSystem, StepConfig } from '../../core/types/system';
 import type { CharacterDraft } from './types/character';
@@ -57,6 +57,23 @@ export const dnd5eSystem: IRpgSystem = {
     return parts.length > 0
       ? `${parts.join(' · ')} — nível ${dndDraft.level ?? 1}`
       : `Nível ${dndDraft.level ?? 1}`;
+  },
+  getGalleryFacets: (draft: unknown) => {
+    const d = draft as CharacterDraft;
+    const race = d.race ? getRace(d.race) : undefined;
+    const subrace = race && d.subrace ? getSubrace(race, d.subrace) : undefined;
+    const level = d.level ?? 1;
+    return {
+      levelLabel: 'Nível',
+      levelValue: `${level}`,
+      levelSort: level,
+      // Só a classe primária: agrupar por "Guerreiro/Ladino" espalharia a multiclasse
+      // em grupos de um item cada (a linha da ficha já mostra a combinação completa).
+      classValue: (d.class ? getClass(d.class)?.name : null) ?? null,
+      originLabel: 'Raça',
+      originValue: subrace?.name ?? race?.name ?? null,
+      missingCount: getMissingSteps(d).length,
+    };
   },
   Component: Dnd5eApp,
 };

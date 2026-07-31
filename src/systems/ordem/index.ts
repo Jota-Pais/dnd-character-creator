@@ -1,5 +1,5 @@
 import { EMPTY_DRAFT, WIZARD_STEPS, STEP_LABELS } from './types/character'
-import { isStepComplete } from './utils/draftValidation'
+import { isStepComplete, getMissingSteps } from './utils/draftValidation'
 import { getOrigin } from './utils/originUtils'
 import { getOrdemClass } from './utils/classUtils'
 import { PrintableSheet } from './components/PrintableSheet'
@@ -53,6 +53,18 @@ export const ordemSystem: IRpgSystem = {
     const cls = d.class ? getOrdemClass(d.class) : undefined
     const parts = [origin?.name, cls?.name].filter(Boolean)
     return parts.length > 0 ? parts.join(' · ') : 'Agente incompleto'
+  },
+  getGalleryFacets: (draft: unknown) => {
+    const d = draft as OrdemCharacterDraft
+    return {
+      levelLabel: 'NEX',
+      levelValue: `${d.nex}%`,
+      levelSort: d.nex,
+      classValue: (d.class ? getOrdemClass(d.class)?.name : null) ?? null,
+      originLabel: 'Origem',
+      originValue: (d.origin ? getOrigin(d.origin)?.name : null) ?? null,
+      missingCount: getMissingSteps(d).length,
+    }
   },
   Component: OrdemApp,
 }

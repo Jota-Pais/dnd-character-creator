@@ -49,6 +49,17 @@ Toda decisão de produto e design serve a esse objetivo: guiar o iniciante sem t
 
 **Fora do escopo da V1:** evolução de personagem em sessão (level up dinâmico / XP), suplementos, raças/classes homebrew. (Multiclasse **entrou** no escopo em 2026-07-14, para o D&D 5e.)
 
+## Modo de Jogo — ficha viva (beta, desde 2026-07-31)
+
+Frente **separada** da criação de fichas: o jogador leva o personagem pra mesa e não precisa de papel, lápis, borracha nem dados. Começou pelo Ordem Paranormal.
+
+- **Escopo:** a ficha do **jogador**. PV/PE/Sanidade atuais, ação escolhida rola os dados sozinha, custo em recurso validado (ritual bloqueado sem PE), condições e descanso.
+- **Fora do escopo:** painel de mestre, iniciativa com inimigos, bestiário/stat blocks de criatura. Também não é level up — a ficha não evolui durante o jogo.
+- **Isolamento:** não usa o `WizardShell` nem os stores de criação. A **ficha é imutável durante o jogo** — o estado de sessão é uma camada por cima, em chave própria (`play-sessions`). Reusar as funções de regra dos sistemas é obrigatório: elas são a fonte da verdade e duplicá-las criaria duas verdades.
+- **Plugabilidade:** `IRpgSystem.play?` é opcional. Sistema sem adaptador não é jogável e não mostra a entrada.
+- **Rolagem:** o cálculo (`src/core/dice`) fica **sempre separado da apresentação**. O produto final terá animação de rolagem de dados — a emoção de rolar um dado de verdade — e ela entra como camada de UI, sem tocar no motor.
+- **Regras:** digitalizadas em `docs/ordem-paranormal/regras-combate.md`, `regras-condicoes.md` e `regras-descanso.md`.
+
 ## Estrutura de Pastas
 
 src/

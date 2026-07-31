@@ -2,8 +2,8 @@
   {
     "id": "adepto-elemental",
     "name": "Adepto Elemental",
-    "prerequisite": "Capacidade de conjurar pelo menos uma",
-    "description": "magia\nQuando você ganha esse talento, escolha um dos tipos de\ndano a seguir: ácido, elétrico, fogo, frio ou trovão.\nAs magias que você conjurar ignoram resistência a\ndano do tipo escolhido. Além disso, quando você rola o\ndano para uma magia que você conjurar que causar dano\ndesse tipo, você pode tratar qualquer 1 num dado de dano\ncomo um 2.\nVocê pode escolher esse talento diversas vezes. A cada\nvez que o fizer, você deve escolher um tipo diferente de\ndano."
+    "prerequisite": "Capacidade de conjurar pelo menos uma magia",
+    "description": "Quando você ganha esse talento, escolha um dos tipos de\ndano a seguir: ácido, elétrico, fogo, frio ou trovão.\nAs magias que você conjurar ignoram resistência a\ndano do tipo escolhido. Além disso, quando você rola o\ndano para uma magia que você conjurar que causar dano\ndesse tipo, você pode tratar qualquer 1 num dado de dano\ncomo um 2.\nVocê pode escolher esse talento diversas vezes. A cada\nvez que o fizer, você deve escolher um tipo diferente de\ndano."
   },
   {
     "id": "adepto-marcial",
@@ -38,8 +38,8 @@
   {
     "id": "atirador-de-magia",
     "name": "Atirador de Magia",
-    "prerequisite": "Capacidade de conjurar pelo menos uma",
-    "description": "magia\nVocê aprendeu técnicas para aprimorar seus ataques com\ncertos tipos de magia, ganhando os seguintes benefícios:\nQuando você conjura uma magia que requer que você\nrealize uma jogada de ataque, o alcance da magia é\ndobrada.\nSeus ataques à distância com magia ignoram meia-\ncobertura ou três-quartos de cobertura.\nVocê aprende um truque que requer uma jogada de\nataque. Escolha o truque da lista de magias do bardo,\nbruxo, clérigo, druida, feiticeiro ou mago. Sua\nhabilidade de conjuração para esse truque depende da\nlista de magia a qual você escolheu o truque: Carisma\npara bardo, bruxo ou feiticeiro; Sabedoria para clérigo\nou druida; ou Inteligência para mago."
+    "prerequisite": "Capacidade de conjurar pelo menos uma magia",
+    "description": "Você aprendeu técnicas para aprimorar seus ataques com\ncertos tipos de magia, ganhando os seguintes benefícios:\nQuando você conjura uma magia que requer que você\nrealize uma jogada de ataque, o alcance da magia é\ndobrada.\nSeus ataques à distância com magia ignoram meia-\ncobertura ou três-quartos de cobertura.\nVocê aprende um truque que requer uma jogada de\nataque. Escolha o truque da lista de magias do bardo,\nbruxo, clérigo, druida, feiticeiro ou mago. Sua\nhabilidade de conjuração para esse truque depende da\nlista de magia a qual você escolheu o truque: Carisma\npara bardo, bruxo ou feiticeiro; Sabedoria para clérigo\nou druida; ou Inteligência para mago."
   },
   {
     "id": "atleta",
@@ -69,8 +69,8 @@
   {
     "id": "conjurador-de-guerra",
     "name": "Conjurador de Guerra",
-    "prerequisite": "Capacidade de conjurar pelo menos uma",
-    "description": "magia\nVocê praticou a conjuração de magias no meio do\ncombate, aprendendo técnicas que lhe concedem os\nseguintes benefícios:\nVocê tem vantagem em testes de resistência de\nConstituição para manter sua concentração em uma\nmagia quando você sofrer dano.\nVocê pode realizar os componentes somáticos de uma\nmagia mesmo quando está com armas ou um escudo\nem uma ou ambas as mãos.\nQuando o movimento de uma criatura hostil provocar\num ataque de oportunidade para você, você pode usar\nsua reação para conjurar uma magia na criatura, ao\ninvés de realizar o ataque de oportunidade. A magia\ndeve ter um tempo de conjuração de 1 ação e deve ter\napenas uma criatura como alvo."
+    "prerequisite": "Capacidade de conjurar pelo menos uma magia",
+    "description": "Você praticou a conjuração de magias no meio do\ncombate, aprendendo técnicas que lhe concedem os\nseguintes benefícios:\nVocê tem vantagem em testes de resistência de\nConstituição para manter sua concentração em uma\nmagia quando você sofrer dano.\nVocê pode realizar os componentes somáticos de uma\nmagia mesmo quando está com armas ou um escudo\nem uma ou ambas as mãos.\nQuando o movimento de uma criatura hostil provocar\num ataque de oportunidade para você, você pode usar\nsua reação para conjurar uma magia na criatura, ao\ninvés de realizar o ataque de oportunidade. A magia\ndeve ter um tempo de conjuração de 1 ação e deve ter\napenas uma criatura como alvo."
   },
   {
     "id": "conjurador-de-ritual",

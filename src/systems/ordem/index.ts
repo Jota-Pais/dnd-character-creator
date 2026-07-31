@@ -4,6 +4,7 @@ import { getOrigin } from './utils/originUtils'
 import { getOrdemClass } from './utils/classUtils'
 import { PrintableSheet } from './components/PrintableSheet'
 import { OrdemApp } from './OrdemApp'
+import { ordemPlayAdapter } from './play/ordemPlayAdapter'
 import type { IRpgSystem, StepConfig } from '../../core/types/system'
 import type { OrdemCharacterDraft } from './types/character'
 import { NameStep } from './components/steps/NameStep'
@@ -67,4 +68,5 @@ export const ordemSystem: IRpgSystem = {
     }
   },
   Component: OrdemApp,
+  play: ordemPlayAdapter,
 }

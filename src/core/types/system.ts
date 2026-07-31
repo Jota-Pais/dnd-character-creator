@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react';
+import type { PlayAdapter } from '../play/types';
 
 export interface AppState {
   view: 'system-select' | 'wizard' | 'gallery' | 'print';
@@ -45,4 +46,9 @@ export interface IRpgSystem {
   formatDraftName: (draft: unknown) => string;
   getGalleryFacets: (draft: unknown) => GalleryFacets;
   Component: ComponentType;
+  /**
+   * Modo de jogo (ficha viva). Opcional: um sistema sem adaptador simplesmente não é jogável e
+   * não mostra a entrada "Jogar" — é assim que o D&D segue funcionando sem alteração nenhuma.
+   */
+  play?: PlayAdapter;
 }

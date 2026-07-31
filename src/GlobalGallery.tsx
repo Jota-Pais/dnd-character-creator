@@ -2,6 +2,9 @@ import { useMemo, useRef, useState } from 'react'
 import { exportCharacter as exportDnd, importCharacter as importDnd, type SavedCharacter as DndSaved } from './systems/dnd5e/utils/storage'
 import { exportCharacter as exportOrdem, importCharacter as importOrdem, type SavedCharacter as OrdemSaved } from './systems/ordem/utils/storage'
 import { useAppStore } from './core/stores/appStore'
+import { SYSTEMS } from './core/systems/registry'
+import { usePlayStore } from './core/play/playStore'
+import { hasSession } from './core/play/playStorage'
 import {
   filterByName,
   groupGalleryCharacters,
@@ -56,6 +59,7 @@ const SYSTEM_UI = {
 
 export function GlobalGallery() {
   const setActiveSystem = useAppStore(s => s.setActiveSystem)
+  const startPlay = usePlayStore(s => s.start)
 
   // Assina as bibliotecas dos dois sistemas: qualquer ação (criar/duplicar/excluir/importar)
   // atualiza o `library` do store e re-renderiza a galeria — sem estado local nem useEffect.
@@ -145,6 +149,18 @@ export function GlobalGallery() {
   function handleExport(char: UnifiedCharacter) {
     if (char.system === 'dnd5e') exportDnd(char.draft)
     else exportOrdem(char.draft)
+  }
+
+  /**
+   * Jogável = o sistema tem adaptador de mesa e a ficha não tem etapa pendente. Levar uma ficha
+   * incompleta pra mesa daria PV e recursos errados, que é justamente o que o modo evita.
+   */
+  function canPlay(char: UnifiedCharacter, entry: GalleryEntry): boolean {
+    return Boolean(SYSTEMS[char.system]?.play) && entry.facets.missingCount === 0
+  }
+
+  function handlePlay(char: UnifiedCharacter) {
+    startPlay(char.system, char.id, char.draft.name?.trim() || '(sem nome)')
   }
 
   function handleCreate(system: 'dnd5e' | 'ordem') {
@@ -265,6 +281,7 @@ export function GlobalGallery() {
                     char={char}
                     entry={entry}
                     onOpen={() => handleOpen(char)}
+                    onPlay={canPlay(char, entry) ? () => handlePlay(char) : null}
                     onDuplicate={() => handleDuplicate(char)}
                     onExport={() => handleExport(char)}
                     onDelete={() => handleDelete(char)}
@@ -290,6 +307,7 @@ export function GlobalGallery() {
                     char={char}
                     entry={entry}
                     onOpen={() => handleOpen(char)}
+                    onPlay={canPlay(char, entry) ? () => handlePlay(char) : null}
                     onDuplicate={() => handleDuplicate(char)}
                     onExport={() => handleExport(char)}
                     onDelete={() => handleDelete(char)}
@@ -373,10 +391,11 @@ function Section({ marker, title, count, ui, children }: {
   )
 }
 
-function CharacterRow({ char, entry, onOpen, onDuplicate, onExport, onDelete }: {
+function CharacterRow({ char, entry, onOpen, onPlay, onDuplicate, onExport, onDelete }: {
   char: UnifiedCharacter
   entry: GalleryEntry
   onOpen: () => void
+  onPlay: (() => void) | null
   onDuplicate: () => void
   onExport: () => void
   onDelete: () => void
@@ -386,6 +405,7 @@ function CharacterRow({ char, entry, onOpen, onDuplicate, onExport, onDelete }: 
   const ui = SYSTEM_UI[char.system]
   const { name, facets } = entry
   const subtitle = char.system === 'dnd5e' ? dnd5eSystem.formatDraftName(char.draft) : ordemSystem.formatDraftName(char.draft)
+  const resuming = onPlay !== null && hasSession(char.system, char.id)
 
   return (
     <div
@@ -419,6 +439,21 @@ function CharacterRow({ char, entry, onOpen, onDuplicate, onExport, onDelete }: 
         {facets.levelLabel} <span className="font-fantasy font-black text-base" style={{ color: ui.accent }}>{facets.levelValue}</span>
       </div>
       <div className="flex items-center gap-1.5 shrink-0">
+        {/* Jogar só aparece em sistema com adaptador de mesa e ficha sem pendência: levar uma
+            ficha incompleta pra mesa é garantia de PV errado. */}
+        {onPlay && (
+          <button
+            onClick={onPlay}
+            title={resuming ? 'Retomar a sessão salva desta ficha' : 'Abrir a ficha viva (beta)'}
+            className="px-4 py-2 rounded-lg font-fantasy font-bold text-[13px] transition-colors flex items-center gap-1.5"
+            style={{ backgroundColor: 'transparent', border: `1px solid ${ui.openBorder}`, color: ui.accent }}
+            onMouseEnter={e => { e.currentTarget.style.backgroundColor = ui.openBg }}
+            onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent' }}
+          >
+            ▶ {resuming ? 'Continuar' : 'Jogar'}
+            <span className="text-[8px] uppercase tracking-widest opacity-70">beta</span>
+          </button>
+        )}
         <button
           onClick={onOpen}
           className="px-5 py-2 rounded-lg font-fantasy font-bold text-[13px] transition-colors"

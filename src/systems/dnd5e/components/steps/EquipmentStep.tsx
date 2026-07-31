@@ -20,6 +20,7 @@ export function EquipmentStep() {
   const removePurchasedItem = useCharacterStore(state => state.removePurchasedItem)
   const nextStep = useCharacterStore(state => state.nextStep)
   const prevStep = useCharacterStore(state => state.prevStep)
+  const goToStep = useCharacterStore(state => state.goToStep)
 
   const cls = draft.class ? getClass(draft.class) : undefined
   const bg = draft.background ? getBackground(draft.background) : undefined
@@ -54,6 +55,24 @@ export function EquipmentStep() {
           Escolha como deseja equipar seu personagem para a aventura.
         </p>
       </div>
+
+      {/* Sem classe não há equipamento inicial pra oferecer (nem pacote, nem riqueza) */}
+      {!cls && (
+        <div className="rounded-xl border-2 border-dashed border-parchment-800 p-6 text-center">
+          <div className="text-4xl mb-3">🔒</div>
+          <p className="text-parchment-400 text-sm leading-relaxed mb-4">
+            O equipamento inicial vem da classe (o pacote dela ou o ouro equivalente). Escolha a
+            classe agora e volte, ou siga preenchendo outro passo — nada se perde.
+          </p>
+          <button
+            onClick={() => goToStep('class')}
+            className="px-5 py-2 rounded-xl font-fantasy font-bold text-sm"
+            style={{ backgroundColor: accent, color: '#0a0704' }}
+          >
+            Ir para Classe →
+          </button>
+        </div>
+      )}
 
       {/* Method selector */}
       {classEquipment && (
@@ -144,7 +163,12 @@ export function EquipmentStep() {
         </div>
       )}
 
-      <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={canAdvance} accent={accent} />
+      <StepNav
+        onPrev={prevStep}
+        onNext={nextStep}
+        accent={accent}
+        pendingReason={canAdvance ? undefined : !cls ? 'Depende da etapa Classe' : !equipment.method ? 'Escolha como se equipar' : 'Escolhas de equipamento pendentes'}
+      />
     </div>
   )
 }

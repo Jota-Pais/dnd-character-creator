@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useAppStore } from '../../core/stores/appStore'
 import { useCharacterStore } from './stores/characterStore'
 import { StepIndicator } from '../../components/wizard/StepIndicator'
+import { getMissingSteps } from './utils/draftValidation'
 import { dnd5eSystem } from './index'
 
 export function Dnd5eApp() {
@@ -18,11 +19,16 @@ export function Dnd5eApp() {
   const PrintableSheet = dnd5eSystem.PrintableSheet
   const steps = dnd5eSystem.getSteps()
   const CurrentStepComponent = steps.find(s => s.id === currentStep)?.component
-  // Navegação livre: uma etapa é clicável se todas as anteriores estão completas
-  // (o mesmo alcance de avançar com "próximo" — nunca pula validação).
-  const firstIncompleteIdx = steps.findIndex(s => !s.isComplete(draft))
-  const maxReachableIdx = firstIncompleteIdx === -1 ? steps.length - 1 : firstIncompleteIdx
-  const stepIndicatorProps = steps.map((s, i) => ({ id: s.id, label: s.title, clickable: i <= maxReachableIdx }))
+  // Navegação livre: toda etapa é alcançável a qualquer momento. O stepper deixa de ser um
+  // trilho e passa a ser um mapa — o ✦ marca completude real do draft, não posição no fluxo.
+  // A Revisão é o único caso especial: o isComplete dela mede o pré-requisito de multiclasse,
+  // não preenchimento, então ela só ganha ✦ quando nenhuma etapa está pendente.
+  const noneMissing = getMissingSteps(draft).length === 0
+  const stepIndicatorProps = steps.map(s => ({
+    id: s.id,
+    label: s.title,
+    complete: s.id === 'review' ? noneMissing && s.isComplete(draft) : s.isComplete(draft),
+  }))
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' })

@@ -3,7 +3,7 @@ import type { OrdemAttributes, OrdemCharacterDraft, ParanormalPowerChoice, Paran
 import type { ParanormalElement } from '../types/ritual'
 import { WIZARD_STEPS, EMPTY_DRAFT } from '../types/character'
 import { loadLibrary, saveCharacterEntry, deleteCharacterEntry, newId, type SavedCharacter } from '../utils/storage'
-import { getFirstIncompleteStep, isStepComplete } from '../utils/draftValidation'
+import { getFirstIncompleteStep } from '../utils/draftValidation'
 import { useAppStore } from '../../../core/stores/appStore'
 
 const initialLibrary = loadLibrary()
@@ -229,10 +229,11 @@ export const useOrdemStore = create<CharacterStore>((set, get) => ({
   updateDraft: (partial) =>
     set(state => ({ draft: { ...state.draft, ...partial } })),
 
+  // Avança mesmo com o passo atual incompleto: a ordem de preenchimento é do jogador, e a
+  // cobrança das pendências acontece só no fim (ver getMissingSteps e o gate da Revisão).
   nextStep: () => {
     const { currentStep, draft, currentId } = get()
     const idx = WIZARD_STEPS.indexOf(currentStep)
-    if (!isStepComplete(draft, currentStep)) return
     if (idx < WIZARD_STEPS.length - 1) {
       const next = WIZARD_STEPS[idx + 1]
       const { id, library } = persistCurrent(currentId, draft, next)
@@ -250,15 +251,12 @@ export const useOrdemStore = create<CharacterStore>((set, get) => ({
     }
   },
 
-  // Navegação livre pelo stepper: pra trás sempre; pra frente, só até o 1º passo incompleto
-  // (o mesmo alcance de apertar "próximo" repetidamente — nunca pula validação).
+  // Navegação livre pelo stepper: qualquer etapa, em qualquer ordem, completa ou não —
+  // o jogador escolhe por onde começar; a Revisão é quem cobra o que ficou pendente.
   goToStep: (step) => {
     const { currentStep, draft, currentId } = get()
     const targetIdx = WIZARD_STEPS.indexOf(step)
     if (targetIdx < 0 || step === currentStep) return
-    const firstIncomplete = WIZARD_STEPS.findIndex(s => !isStepComplete(draft, s))
-    const maxIdx = firstIncomplete === -1 ? WIZARD_STEPS.length - 1 : firstIncomplete
-    if (targetIdx > maxIdx) return
     const { id, library } = persistCurrent(currentId, draft, step)
     set({ currentStep: step, currentId: id, library })
   },

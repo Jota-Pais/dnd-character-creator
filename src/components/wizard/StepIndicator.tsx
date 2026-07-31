@@ -1,20 +1,19 @@
 type Props = {
-  steps: { id: string; label: string; clickable?: boolean }[]
+  /** `complete` é a completude real do draft — não a posição no fluxo. */
+  steps: { id: string; label: string; complete?: boolean }[]
   currentStepId: string
-  /** Torna as etapas clicáveis (navegação livre) — chamado com o id da etapa. */
+  /** Etapas são sempre clicáveis (navegação livre) — chamado com o id da etapa. */
   onStepClick?: (id: string) => void
 }
 
 export function StepIndicator({ steps, currentStepId, onStepClick }: Props) {
-  const currentIdx = steps.findIndex(s => s.id === currentStepId)
-
   return (
     <nav aria-label="Etapas de criação" className="w-full min-w-0 overflow-x-auto overflow-y-hidden">
       <ol className="flex items-center gap-0 w-max mx-auto px-1">
         {steps.map((step, idx) => {
-          const isDone = idx < currentIdx
-          const isActive = idx === currentIdx
-          const isClickable = Boolean(onStepClick && step.clickable && !isActive)
+          const isDone = Boolean(step.complete)
+          const isActive = step.id === currentStepId
+          const isClickable = Boolean(onStepClick && !isActive)
 
           return (
             <li key={step.id} className="flex items-center shrink-0">
@@ -23,7 +22,7 @@ export function StepIndicator({ steps, currentStepId, onStepClick }: Props) {
                 onClick={() => { if (isClickable) onStepClick?.(step.id) }}
                 disabled={!isClickable}
                 aria-current={isActive ? 'step' : undefined}
-                title={isClickable ? `Ir para ${step.label}` : undefined}
+                title={isClickable ? (isDone ? `Revisar ${step.label}` : `Preencher ${step.label}`) : undefined}
                 className={[
                   'flex flex-col items-center bg-transparent border-0 p-0 group',
                   isClickable ? 'cursor-pointer' : 'cursor-default',

@@ -86,7 +86,7 @@ export function NameStep() {
         )}
       </div>
 
-      <StepNav onNext={nextStep} canAdvance={canAdvance} disabledReason="Preencha o Nome" nextLabel="Continuar ✦" />
+      <StepNav onNext={nextStep} pendingReason={canAdvance ? undefined : 'Preencha o Nome'} nextLabel="Continuar ✦" />
     </div>
   )
 }

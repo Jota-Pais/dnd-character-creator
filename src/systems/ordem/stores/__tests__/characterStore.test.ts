@@ -16,6 +16,39 @@ describe('useOrdemStore — sair para a galeria global', () => {
   })
 })
 
+describe('useOrdemStore — navegação livre entre etapas', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    useOrdemStore.getState().newCharacter()
+  })
+
+  it('goToStep alcança qualquer etapa numa ficha em branco, em qualquer ordem', () => {
+    useOrdemStore.getState().goToStep('equipment')
+    expect(useOrdemStore.getState().currentStep).toBe('equipment')
+    useOrdemStore.getState().goToStep('review')
+    expect(useOrdemStore.getState().currentStep).toBe('review')
+    useOrdemStore.getState().goToStep('attributes')
+    expect(useOrdemStore.getState().currentStep).toBe('attributes')
+  })
+
+  it('nextStep avança com o passo atual incompleto (o gate é só na Revisão)', () => {
+    expect(useOrdemStore.getState().currentStep).toBe('name')
+    useOrdemStore.getState().nextStep()
+    expect(useOrdemStore.getState().currentStep).toBe('attributes')
+  })
+
+  it('pular de etapa persiste a ficha na biblioteca, no passo em que ela ficou', () => {
+    useOrdemStore.getState().goToStep('origin')
+    expect(useOrdemStore.getState().library.some(c => c.step === 'origin')).toBe(true)
+  })
+
+  it('nextStep não passa da última etapa', () => {
+    useOrdemStore.getState().goToStep('review')
+    useOrdemStore.getState().nextStep()
+    expect(useOrdemStore.getState().currentStep).toBe('review')
+  })
+})
+
 describe('useOrdemStore — setClass', () => {
   beforeEach(() => {
     useOrdemStore.getState().reset()

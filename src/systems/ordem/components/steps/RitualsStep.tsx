@@ -114,14 +114,14 @@ export function RitualsStep() {
   }
 
   const canAdvance = isStepComplete(draft, 'rituals')
-  const disabledReason = learnSlots.some(s => !s.complete)
+  const pendingReason = learnSlots.some(s => !s.complete)
     ? 'Escolha o ritual concedido pelo poder Aprender Ritual'
     : bonusSlots.some(s => !s.complete)
       ? 'Escolha os rituais concedidos pela sua trilha'
       : 'Escolha todos os rituais pendentes'
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8 animate-fade-in pb-20">
+    <div className="max-w-3xl mx-auto space-y-8 pb-20">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-fantasy text-gold-400 flex items-center gap-2">
           {STEP_LABELS.rituals}
@@ -201,7 +201,7 @@ export function RitualsStep() {
 
       <GrantedRitualsBlock draft={draft} />
 
-      <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={canAdvance} disabledReason={disabledReason} />
+      <StepNav onPrev={prevStep} onNext={nextStep} pendingReason={canAdvance ? undefined : pendingReason} />
     </div>
   )
 }

@@ -15,6 +15,7 @@ import {
 } from '../../utils/characterUtils'
 import { isStepComplete } from '../../utils/draftValidation'
 import { StepNav } from '../common/StepNav'
+import { StepPrerequisite } from '../common/StepPrerequisite'
 
 export function SkillsStep() {
   const draft = useOrdemStore(state => state.draft)
@@ -27,7 +28,8 @@ export function SkillsStep() {
   const cls = draft.class ? getOrdemClass(draft.class) : undefined
   const canAdvance = isStepComplete(draft, 'skills')
 
-  if (!cls) return null
+  // As perícias treinadas vêm dos grupos da classe: sem classe, não há grupo pra escolher.
+  if (!cls) return <StepPrerequisite dependsOn="class" needs="saber a classe do seu agente" emoji="🎯" />
 
   const originSkills = getOriginSkills(draft)
   const requiredFree = getRequiredFreeSkillCount(draft, cls)
@@ -169,7 +171,7 @@ export function SkillsStep() {
         </div>
       )}
 
-      <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={canAdvance} disabledReason="Preencha as perícias pendentes" />
+      <StepNav onPrev={prevStep} onNext={nextStep} pendingReason={canAdvance ? undefined : 'Perícias pendentes'} />
     </div>
   )
 }

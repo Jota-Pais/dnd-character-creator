@@ -90,7 +90,12 @@ export function AbilitiesStep() {
         </div>
       )}
 
-      <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={canAdvance} accent={ACCENT} />
+      <StepNav
+        onPrev={prevStep}
+        onNext={nextStep}
+        accent={ACCENT}
+        pendingReason={canAdvance ? undefined : !draft.abilityMethod ? 'Escolha um método' : 'Distribua os atributos'}
+      />
     </div>
   )
 }

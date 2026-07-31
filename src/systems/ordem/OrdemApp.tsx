@@ -19,11 +19,12 @@ export function OrdemApp() {
   const PrintableSheet = ordemSystem.PrintableSheet
   const steps = ordemSystem.getSteps()
   const CurrentStepComponent = steps.find(s => s.id === currentStep)?.component
-  // Navegação livre: uma etapa é clicável se todas as anteriores estão completas
-  // (o mesmo alcance de avançar com "próximo" — nunca pula validação).
-  const firstIncompleteIdx = steps.findIndex(s => !s.isComplete(draft))
-  const maxReachableIdx = firstIncompleteIdx === -1 ? steps.length - 1 : firstIncompleteIdx
-  const stepIndicatorProps = steps.map((s, i) => ({ id: s.id, label: s.title, clickable: i <= maxReachableIdx }))
+  // Navegação livre: toda etapa é alcançável a qualquer momento. O stepper deixa de ser um
+  // trilho e passa a ser um mapa — o ✦ marca completude real do draft, não posição no fluxo.
+  const completion = steps.map(s => s.isComplete(draft))
+  const stepIndicatorProps = steps.map((s, i) => ({ id: s.id, label: s.title, complete: completion[i] }))
+  // A Revisão fica fora da conta: ela só espelha as outras (ver getMissingSteps).
+  const pendingCount = steps.filter((s, i) => s.id !== 'review' && !completion[i]).length
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -108,22 +109,30 @@ export function OrdemApp() {
           </div>
         )}
 
-        <div className="px-5 pt-4 pb-1.5 text-[10px] uppercase" style={{ color: '#a08b80', letterSpacing: '.16em' }}>Etapas</div>
+        <div className="px-5 pt-4 pb-1.5 flex items-baseline justify-between gap-2">
+          <span className="text-[10px] uppercase" style={{ color: '#a08b80', letterSpacing: '.16em' }}>Etapas</span>
+          {pendingCount > 0 && (
+            <span className="text-[10px]" style={{ color: '#c9a05a' }} title="Pendências que impedem concluir a ficha">
+              {pendingCount} pendente{pendingCount > 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
         <nav className="flex flex-col gap-0.5 px-2.5">
           {steps.map((s, i) => {
-            const done = i < stepIndex
+            const done = completion[i]
             const active = i === stepIndex
-            const clickable = i <= maxReachableIdx && !active
+            const clickable = !active
             return (
               <button
                 key={s.id}
                 onClick={() => { if (clickable) goToStep(s.id as typeof currentStep) }}
-                disabled={!clickable && !active}
+                disabled={active}
+                title={active ? undefined : done ? `Revisar ${s.title}` : `Preencher ${s.title}`}
                 className="flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors"
                 style={{
                   backgroundColor: active ? '#2a0d0f' : 'transparent',
                   border: active ? '1px solid #7f1d1d' : '1px solid transparent',
-                  cursor: clickable ? 'pointer' : active ? 'default' : 'not-allowed',
+                  cursor: clickable ? 'pointer' : 'default',
                 }}
                 onMouseEnter={e => { if (clickable) e.currentTarget.style.backgroundColor = '#170d0f' }}
                 onMouseLeave={e => { if (!active) e.currentTarget.style.backgroundColor = 'transparent' }}

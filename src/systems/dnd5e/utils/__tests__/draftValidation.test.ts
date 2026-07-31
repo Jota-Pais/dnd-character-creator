@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sanitizeImportedDraft, getFirstIncompleteStep, isStepComplete } from '../draftValidation'
+import { sanitizeImportedDraft, getFirstIncompleteStep, getMissingSteps, isStepComplete } from '../draftValidation'
 import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
 import { SPELLS } from '../spellUtils'
 import { COMPLETE_DRAFT } from '../../../../test/fixtures'
@@ -170,6 +170,34 @@ describe('getFirstIncompleteStep', () => {
       equipment: { method: null, classResolutions: [], rolledGold: null, purchasedItems: [] },
     }
     expect(getFirstIncompleteStep(draft)).toBe('equipment')
+  })
+})
+
+describe('getMissingSteps (gate final da Revisão)', () => {
+  it('ficha completa não tem pendência', () => {
+    expect(getMissingSteps(COMPLETE_DRAFT)).toEqual([])
+  })
+
+  it('nunca inclui a própria Revisão (pré-requisito de multiclasse é avaliado à parte)', () => {
+    expect(getMissingSteps(structuredClone(EMPTY_DRAFT))).not.toContain('review')
+  })
+
+  it('ficha em branco: lista as pendências na ordem do wizard', () => {
+    const missing = getMissingSteps(structuredClone(EMPTY_DRAFT))
+    expect(missing[0]).toBe('name')
+    expect(missing).toContain('race')
+    expect(missing).toContain('class')
+    expect(missing).toContain('equipment')
+  })
+
+  it('preencher fora de ordem tira só aquela etapa da lista', () => {
+    const missing = getMissingSteps({ ...structuredClone(EMPTY_DRAFT), name: 'Conan' })
+    expect(missing).not.toContain('name')
+    expect(missing).toContain('race')
+  })
+
+  it('uma etapa apagada de uma ficha pronta é a única pendência', () => {
+    expect(getMissingSteps({ ...COMPLETE_DRAFT, background: null })).toEqual(['background'])
   })
 })
 

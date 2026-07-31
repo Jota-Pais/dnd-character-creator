@@ -115,7 +115,7 @@ export function ClassStep() {
         )}
       </div>
 
-      <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={canAdvance} disabledReason="Escolha uma Classe" />
+      <StepNav onPrev={prevStep} onNext={nextStep} pendingReason={canAdvance ? undefined : 'Escolha uma Classe'} />
     </div>
   )
 }

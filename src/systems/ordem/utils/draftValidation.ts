@@ -120,6 +120,15 @@ export function getFirstIncompleteStep(draft: OrdemCharacterDraft): WizardStep {
   return WIZARD_STEPS.find(s => s !== 'review' && !isStepComplete(draft, s)) ?? 'review'
 }
 
+/**
+ * Etapas que ainda faltam preencher, na ordem do wizard. Com navegação livre, é isso que a
+ * Revisão cobra antes de deixar concluir — a única trava do fluxo.
+ * A própria Revisão fica fora da lista (ela só espelha as outras).
+ */
+export function getMissingSteps(draft: OrdemCharacterDraft): WizardStep[] {
+  return WIZARD_STEPS.filter(s => s !== 'review' && !isStepComplete(draft, s))
+}
+
 /** Valida estruturalmente um JSON importado; devolve null se não parecer uma ficha de Ordem Paranormal. */
 export function sanitizeImportedDraft(parsed: unknown): OrdemCharacterDraft | null {
   if (!parsed || typeof parsed !== 'object') return null

@@ -22,6 +22,7 @@ import type { OrdemElement } from '../../types/ritual'
 import { ATTRIBUTES, ATTRIBUTE_MAX } from '../../utils/attributeUtils'
 import { isStepComplete } from '../../utils/draftValidation'
 import { StepNav } from '../common/StepNav'
+import { StepPrerequisite } from '../common/StepPrerequisite'
 import type { OrdemAttributes } from '../../types/character'
 
 const ATTRIBUTE_INCREASE_CAP = 5
@@ -38,7 +39,8 @@ export function ProgressionStep() {
 
   const cls = draft.class ? getOrdemClass(draft.class) : undefined
   const canAdvance = isStepComplete(draft, 'progression')
-  if (!cls) return null
+  // Trilha, poderes e graus de perícia são todos da classe: sem ela, não há o que oferecer aqui.
+  if (!cls) return <StepPrerequisite dependsOn="class" needs="saber a classe do seu agente" emoji="🎖️" />
 
   const showTrilha = hasTrilha(draft.nex)
   const requiredPowers = getRequiredPowerSlots(draft.nex)
@@ -55,7 +57,7 @@ export function ProgressionStep() {
           Em NEX 5%, seu agente ainda não escolheu trilha, poderes extras nem aumentos de atributo —
           isso começa a partir de NEX 10%. Volte ao passo Nome se quiser criar um agente mais experiente.
         </p>
-        <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={canAdvance} disabledReason="Preencha a progressão" />
+        <StepNav onPrev={prevStep} onNext={nextStep} pendingReason={canAdvance ? undefined : 'Progressão pendente'} />
       </div>
     )
   }
@@ -91,7 +93,7 @@ export function ProgressionStep() {
           <VersatilitySection draft={draft} cls={cls} onPick={setVersatilityChoice} />
         )}
 
-        <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={canAdvance} disabledReason="Faça as escolhas pendentes" />
+        <StepNav onPrev={prevStep} onNext={nextStep} pendingReason={canAdvance ? undefined : 'Escolhas pendentes'} />
       </div>
     </div>
   )

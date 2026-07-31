@@ -356,3 +356,13 @@ export function getFirstIncompleteStep(draft: CharacterDraft): WizardStep {
   }
   return 'review'
 }
+
+/**
+ * Etapas que ainda faltam preencher, na ordem do wizard. Com navegação livre, é isso que a
+ * Revisão cobra antes de deixar concluir — a única trava do fluxo.
+ * A própria Revisão fica fora da lista: ela não é preenchimento, é o pré-requisito de
+ * multiclasse (avaliado à parte, no gate da Revisão).
+ */
+export function getMissingSteps(draft: CharacterDraft): WizardStep[] {
+  return WIZARD_STEPS.filter(step => step !== 'review' && !isStepComplete(draft, step))
+}

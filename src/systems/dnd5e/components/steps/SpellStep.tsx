@@ -34,6 +34,7 @@ export function SpellStep() {
   const updateAdditionalSpellChoices = useCharacterStore(state => state.updateAdditionalSpellChoices)
   const nextStep = useCharacterStore(state => state.nextStep)
   const prevStep = useCharacterStore(state => state.prevStep)
+  const goToStep = useCharacterStore(state => state.goToStep)
 
   const [detail, setDetail] = useState<Spell | null>(null)
 
@@ -53,6 +54,7 @@ export function SpellStep() {
         level={getPrimaryLevel(draft)}
         onNext={nextStep}
         onPrev={prevStep}
+        onGoToClass={() => goToStep('class')}
       />
     )
   }
@@ -109,7 +111,12 @@ export function SpellStep() {
         </div>
       </div>
 
-      <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={canAdvance} accent={ACCENT} />
+      <StepNav
+        onPrev={prevStep}
+        onNext={nextStep}
+        accent={ACCENT}
+        pendingReason={canAdvance ? undefined : 'Magias pendentes'}
+      />
     </div>
   )
 }
@@ -257,38 +264,43 @@ const ABILITY_LABELS: Record<string, string> = {
 }
 
 function NonCasterScreen({
-  hasClass, className, level, onNext, onPrev,
+  hasClass, className, level, onNext, onPrev, onGoToClass,
 }: {
   hasClass: boolean
   className: string
   level: number
   onNext: () => void
   onPrev: () => void
+  onGoToClass: () => void
 }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-[40vh] text-center gap-6">
-      <div className="text-5xl">⚔️</div>
+      <div className="text-5xl">{hasClass ? '⚔️' : '🔒'}</div>
       <div>
         <h2 className="font-fantasy text-2xl font-bold text-parchment-200 mb-2">
-          {hasClass ? `${className} não usa magia no nível ${level}` : 'Nenhuma classe selecionada'}
+          {hasClass ? `${className} não usa magia no nível ${level}` : 'Falta um passo antes'}
         </h2>
         <p className="text-parchment-500 text-sm max-w-md">
           {hasClass
             ? 'Nenhuma das suas classes conjura neste nível. Continue para o próximo passo.'
-            : 'Volte e selecione uma classe antes de continuar.'}
+            : 'Quem conjura, e o que pode conjurar, vem da classe. Pode escolher a classe agora e voltar, ou seguir preenchendo outro passo — nada se perde.'}
         </p>
       </div>
-      <div className="flex gap-3">
-        <button onClick={onPrev} className="px-4 py-2 text-parchment-500 hover:text-parchment-300 font-fantasy text-sm">← Voltar</button>
+      {!hasClass && (
         <button
-          onClick={onNext}
-          disabled={!hasClass}
-          className="px-6 py-2 rounded-xl font-fantasy font-bold text-sm tracking-wide transition-all"
-          style={{ backgroundColor: hasClass ? '#6b3fa0' : '#3a2614', color: hasClass ? '#f5e6c8' : '#5a3e24' }}
+          onClick={onGoToClass}
+          className="px-6 py-2.5 rounded-xl font-fantasy font-bold text-sm tracking-wide transition-all"
+          style={{ backgroundColor: '#6b3fa0', color: '#f5e6c8' }}
         >
-          Continuar ✦
+          Ir para Classe →
         </button>
-      </div>
+      )}
+      <StepNav
+        onPrev={onPrev}
+        onNext={onNext}
+        accent={ACCENT}
+        pendingReason={hasClass ? undefined : 'Depende da etapa Classe'}
+      />
     </div>
   )
 }

@@ -10,10 +10,16 @@ beforeEach(() => {
   useCharacterStore.getState().newCharacter()
 })
 
-describe('nextStep (validação defensiva)', () => {
-  it('não avança de "name" com nome vazio', () => {
+describe('nextStep (navegação livre)', () => {
+  it('avança mesmo com o passo atual incompleto (o gate é só na Revisão)', () => {
     useCharacterStore.getState().nextStep()
-    expect(useCharacterStore.getState().currentStep).toBe('name')
+    expect(useCharacterStore.getState().currentStep).toBe('race')
+  })
+
+  it('não passa do último passo', () => {
+    useCharacterStore.getState().goToStep('review')
+    useCharacterStore.getState().nextStep()
+    expect(useCharacterStore.getState().currentStep).toBe('review')
   })
 
   it('avança quando o passo atual está completo e persiste na biblioteca', () => {
@@ -87,12 +93,20 @@ describe('goToStep (navegação livre pelo stepper — F19)', () => {
     expect(useCharacterStore.getState().currentStep).toBe('name')
   })
 
-  it('não pula validação: com só o nome preenchido, alcança "race" (1º incompleto) mas não além', () => {
-    useCharacterStore.getState().setName('Conan')
+  it('ficha em branco: alcança qualquer etapa, mesmo com tudo incompleto', () => {
+    useCharacterStore.getState().goToStep('equipment')
+    expect(useCharacterStore.getState().currentStep).toBe('equipment')
+    useCharacterStore.getState().goToStep('review')
+    expect(useCharacterStore.getState().currentStep).toBe('review')
     useCharacterStore.getState().goToStep('background')
-    expect(useCharacterStore.getState().currentStep).toBe('name')
-    useCharacterStore.getState().goToStep('race')
-    expect(useCharacterStore.getState().currentStep).toBe('race')
+    expect(useCharacterStore.getState().currentStep).toBe('background')
+  })
+
+  it('ignora etapa inexistente', () => {
+    useCharacterStore.getState().goToStep('spells')
+    // @ts-expect-error — passo inválido vindo de fora (ex.: ficha salva de uma versão antiga)
+    useCharacterStore.getState().goToStep('nao-existe')
+    expect(useCharacterStore.getState().currentStep).toBe('spells')
   })
 
   it('navegar persiste a ficha na biblioteca (como próximo/anterior)', () => {

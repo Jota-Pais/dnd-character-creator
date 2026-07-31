@@ -258,7 +258,12 @@ export function ClassStep() {
         )}
       </div>
 
-      <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={canAdvance} accent={accent} />
+      <StepNav
+        onPrev={prevStep}
+        onNext={nextStep}
+        accent={accent}
+        pendingReason={canAdvance ? undefined : !draft.class ? 'Escolha uma classe' : 'Escolhas da classe pendentes'}
+      />
     </div>
   )
 }

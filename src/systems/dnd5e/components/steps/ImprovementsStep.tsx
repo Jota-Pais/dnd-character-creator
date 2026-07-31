@@ -57,7 +57,7 @@ export function ImprovementsStep() {
             {' '}(guerreiro no 6, ladino no 10).
           </p>
         </div>
-        <StepNav canAdvance onPrev={prevStep} onNext={nextStep} accent={ACCENT} />
+        <StepNav onPrev={prevStep} onNext={nextStep} accent={ACCENT} />
       </div>
     )
   }
@@ -109,7 +109,12 @@ export function ImprovementsStep() {
         })}
       </div>
 
-      <StepNav canAdvance={canAdvance} onPrev={prevStep} onNext={nextStep} accent={ACCENT} />
+      <StepNav
+        onPrev={prevStep}
+        onNext={nextStep}
+        accent={ACCENT}
+        pendingReason={canAdvance ? undefined : 'Aprimoramentos pendentes'}
+      />
     </div>
   )
 }

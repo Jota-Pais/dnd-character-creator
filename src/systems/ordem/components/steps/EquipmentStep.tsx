@@ -573,7 +573,7 @@ export function EquipmentStep() {
   }
 
   return (
-    <div className="animate-fade-in pb-20">
+    <div className="pb-20">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-fantasy text-red-400 flex items-center gap-2">
           {STEP_LABELS.equipment}
@@ -755,10 +755,11 @@ export function EquipmentStep() {
       <StepNav
         onPrev={prevStep}
         onNext={nextStep}
-        canAdvance={isStepComplete(draft, 'equipment')}
-        disabledReason={load.impossible
-          ? `Carga acima do teto de ${load.max} espaços`
-          : 'Resolva as pendências do equipamento'}
+        pendingReason={isStepComplete(draft, 'equipment')
+          ? undefined
+          : load.impossible
+            ? `Carga acima do teto de ${load.max} espaços`
+            : 'Pendências no equipamento'}
       />
     </div>
   )

@@ -229,7 +229,12 @@ export function RaceStep() {
         )}
       </div>
 
-      <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={canAdvance} accent={accent} />
+      <StepNav
+        onPrev={prevStep}
+        onNext={nextStep}
+        accent={accent}
+        pendingReason={canAdvance ? undefined : !selectedRace ? 'Escolha uma raça' : 'Escolhas da raça pendentes'}
+      />
     </div>
   )
 }

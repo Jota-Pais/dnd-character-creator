@@ -127,13 +127,16 @@ export function NameStep() {
         </p>
       </div>
 
+      {/* Sem nome ainda dá pra seguir (o nome pode vir por último) — a Revisão cobra no fim. */}
       <button
         onClick={nextStep}
-        disabled={!canAdvance}
-        className="px-8 py-3 rounded-xl font-fantasy font-bold text-base tracking-wider transition-all duration-200 bg-gold-500 text-parchment-950 hover:bg-gold-400 hover:shadow-lg hover:shadow-gold-900/30 disabled:bg-parchment-900 disabled:text-parchment-700 disabled:cursor-not-allowed"
+        className="px-8 py-3 rounded-xl font-fantasy font-bold text-base tracking-wider transition-all duration-200 bg-gold-500 text-parchment-950 hover:bg-gold-400 hover:shadow-lg hover:shadow-gold-900/30"
       >
         Iniciar a Aventura ✦
       </button>
+      {!canAdvance && (
+        <p className="mt-2 text-xs text-gold-600/90 font-fantasy">⚠ Dê um nome antes de concluir a ficha</p>
+      )}
 
       <div className="mt-8 pt-8 border-t border-parchment-900">
         <p className="text-parchment-700 text-xs mb-3 font-fantasy">Já tem uma ficha?</p>

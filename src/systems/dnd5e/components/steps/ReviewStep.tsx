@@ -32,7 +32,10 @@ import {
   SCHOOL_EMOJI,
 } from '../../utils/spellUtils'
 import { exportCharacter } from '../../utils/storage'
+import { getMissingSteps, isStepComplete } from '../../utils/draftValidation'
 import { InfoTooltip } from '../common/InfoTooltip'
+import { PendingStepsPanel } from '../common/PendingStepsPanel'
+import { formatMissingCount } from '../../../../components/wizard/pendingSteps'
 import { StepNav } from '../../../../components/wizard/StepNav'
 import type { TermId } from '../../utils/glossary'
 import type { AbilityScore } from '../../types/race'
@@ -70,6 +73,7 @@ function resolveOptionItems(option: EquipmentOption, pickedIds: string[]): strin
 export function ReviewStep() {
   const draft = useCharacterStore(state => state.draft)
   const prevStep = useCharacterStore(state => state.prevStep)
+  const goToStep = useCharacterStore(state => state.goToStep)
   const reset = useCharacterStore(state => state.reset)
   const setHpMethod = useCharacterStore(state => state.setHpMethod)
   const rollHpForLevel = useCharacterStore(state => state.rollHpForLevel)
@@ -185,6 +189,12 @@ export function ReviewStep() {
     reset()
   }
 
+  // Navegação livre: dá pra chegar aqui com etapas em branco. As pendências (e o pré-requisito
+  // de multiclasse) são cobradas aqui — é o único bloqueio do fluxo.
+  const missing = getMissingSteps(draft)
+  const multiclassPrereqsOk = isStepComplete(draft, 'review')
+  const blocked = missing.length > 0 || !multiclassPrereqsOk
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
 
@@ -197,6 +207,28 @@ export function ReviewStep() {
           Confira todos os detalhes antes de exportar sua ficha.
         </p>
       </div>
+
+      <PendingStepsPanel missing={missing} />
+
+      {/* Pré-requisito de multiclasse (PHB p. 163): só aqui todos os insumos dos atributos
+          finais existem, então é aqui que a violação aparece — e trava o Concluir. */}
+      {!multiclassPrereqsOk && (
+        <div className="rounded-xl border border-red-900 bg-red-950/20 p-4">
+          <p className="font-fantasy font-bold text-[15px] text-red-400">
+            ⚠ Pré-requisito de multiclasse não atendido
+          </p>
+          <p className="text-parchment-500 text-xs mt-1 leading-relaxed">
+            Para entrar (ou continuar) em cada uma das suas classes, o PHB exige um valor mínimo de
+            atributo. Ajuste os atributos ou as classes antes de concluir.
+          </p>
+          <button
+            onClick={() => goToStep('class')}
+            className="mt-3 px-3 py-1.5 rounded-lg font-fantasy font-bold text-xs bg-red-900 text-parchment-100 hover:bg-red-700 transition-colors"
+          >
+            Rever classes →
+          </button>
+        </div>
+      )}
 
       {/* Identity + quick stats */}
       <div
@@ -814,9 +846,12 @@ export function ReviewStep() {
       <StepNav
         onPrev={prevStep}
         onNext={handleReset}
-        canAdvance
+        blocked={blocked}
+        pendingReason={missing.length > 0
+          ? formatMissingCount(missing.length)
+          : !multiclassPrereqsOk ? 'Pré-requisito de multiclasse' : undefined}
         nextLabel="Concluir ✓"
-        nextTitle="Salva a ficha e volta para a galeria"
+        nextTitle={blocked ? 'Resolva as pendências acima para concluir' : 'Salva a ficha e volta para a galeria'}
       />
     </div>
   )

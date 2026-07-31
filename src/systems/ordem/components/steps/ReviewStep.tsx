@@ -41,6 +41,9 @@ const CAT_ROMAN = ['0', 'I', 'II', 'III', 'IV']
 import { getReachedTrilhaSlots } from '../../utils/progressionUtils'
 import { exportCharacter } from '../../utils/storage'
 import { StepNav } from '../common/StepNav'
+import { PendingStepsPanel } from '../common/PendingStepsPanel'
+import { formatMissingCount } from '../../../../components/wizard/pendingSteps'
+import { getMissingSteps } from '../../utils/draftValidation'
 
 export function ReviewStep() {
   const draft = useOrdemStore(state => state.draft)
@@ -51,7 +54,33 @@ export function ReviewStep() {
 
   const origin = draft.origin ? getOrigin(draft.origin) : undefined
   const cls = draft.class ? getOrdemClass(draft.class) : undefined
-  if (!cls) return null
+  // Navegação livre: dá pra chegar aqui com etapas em branco. As pendências são cobradas aqui
+  // (o único bloqueio do fluxo) e a classe é a única sem a qual não existe ficha pra montar.
+  const missing = getMissingSteps(draft)
+
+  if (!cls) {
+    return (
+      <div className="max-w-lg mx-auto space-y-4 pb-16">
+        <div className="text-center mb-2">
+          <div className="text-5xl mb-3">📋</div>
+          <h2 className="font-fantasy text-2xl font-bold text-gold-400">
+            {draft.name.trim() || 'Agente sem nome'}
+          </h2>
+          <p className="text-parchment-600 text-xs mt-1 leading-relaxed">
+            A ficha só se monta depois da classe — é ela que define PV, PE, Sanidade e as perícias treinadas.
+          </p>
+        </div>
+        <PendingStepsPanel missing={missing} />
+        <StepNav
+          onPrev={prevStep}
+          onNext={reset}
+          blocked
+          pendingReason={formatMissingCount(missing.length)}
+          nextLabel="Concluir ✓"
+        />
+      </div>
+    )
+  }
 
   const attributes = getSheetAttributes(draft)
   const stats = getCursedDerivedStats(draft, cls, getModifiedDefenseBonus(draft))
@@ -146,11 +175,13 @@ export function ReviewStep() {
   return (
     <div className="max-w-lg mx-auto space-y-4 pb-16">
       <div className="text-center mb-2">
-        <h2 className="font-fantasy text-2xl font-bold text-gold-400">{draft.name}</h2>
+        <h2 className="font-fantasy text-2xl font-bold text-gold-400">{draft.name.trim() || 'Agente sem nome'}</h2>
         <p className="text-parchment-600 text-xs mt-1">
-          {origin?.name} · {cls.name}{trilha ? ` (${trilha.name})` : ''} · NEX {draft.nex}% · {getPatente(draft.patente).name}
+          {origin ? `${origin.name} · ` : ''}{cls.name}{trilha ? ` (${trilha.name})` : ''} · NEX {draft.nex}% · {getPatente(draft.patente).name}
         </p>
       </div>
+
+      <PendingStepsPanel missing={missing} />
 
       <div className="grid grid-cols-2 gap-3">
         <Stat label="Pontos de Vida" value={String(stats.hp)} />
@@ -737,7 +768,13 @@ export function ReviewStep() {
         </button>
       </div>
 
-      <StepNav onPrev={prevStep} onNext={reset} canAdvance nextLabel="Concluir ✓" />
+      <StepNav
+        onPrev={prevStep}
+        onNext={reset}
+        blocked={missing.length > 0}
+        pendingReason={missing.length > 0 ? formatMissingCount(missing.length) : undefined}
+        nextLabel="Concluir ✓"
+      />
     </div>
   )
 }

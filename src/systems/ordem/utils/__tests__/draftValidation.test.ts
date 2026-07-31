@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isStepComplete, getFirstIncompleteStep, sanitizeImportedDraft } from '../draftValidation'
+import { isStepComplete, getFirstIncompleteStep, getMissingSteps, sanitizeImportedDraft } from '../draftValidation'
 import { EMPTY_DRAFT } from '../../types/character'
 import type { OrdemCharacterDraft } from '../../types/character'
 
@@ -165,6 +165,39 @@ describe('getFirstIncompleteStep', () => {
   it('ficha vazia começa em name', () => expect(getFirstIncompleteStep(makeDraft({}))).toBe('name'))
   it('com nome, incompleto vai pra attributes', () => {
     expect(getFirstIncompleteStep(makeDraft({ name: 'Bianca' }))).toBe('attributes')
+  })
+})
+
+describe('getMissingSteps (gate final da Revisão)', () => {
+  it('nunca inclui a própria Revisão', () => {
+    expect(getMissingSteps(makeDraft({}))).not.toContain('review')
+  })
+
+  it('ficha em branco: lista as etapas realmente pendentes, na ordem do wizard', () => {
+    // Perícias e Progressão entram porque dependem da classe. Paranormal e Rituais já contam
+    // como completos (sem transcender, sem NEX 50% e sem Ocultista não há o que escolher), e
+    // Equipamento é opcional em Ordem.
+    expect(getMissingSteps(makeDraft({}))).toEqual([
+      'name', 'attributes', 'origin', 'class', 'skills', 'progression',
+    ])
+  })
+
+  it('preencher fora de ordem tira só aquela etapa da lista', () => {
+    const draft = makeDraft({ origin: 'academic' })
+    expect(getMissingSteps(draft)).not.toContain('origin')
+    expect(getMissingSteps(draft)).toContain('name')
+  })
+
+  it('ficha completa não tem pendência', () => {
+    const draft = makeDraft({
+      name: 'Bianca',
+      attributes: { agility: 2, strength: 2, intellect: 2, presence: 2, vigor: 1 },
+      origin: 'academic',
+      class: 'combatant',
+      classChoiceGroupPicks: ['fighting', 'fortitude'],
+      classFreeSkillChoices: ['medicine', 'technology', 'science'], // 1 base + Int 2
+    })
+    expect(getMissingSteps(draft)).toEqual([])
   })
 })
 

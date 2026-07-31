@@ -32,7 +32,7 @@ export function ParanormalPowersStep() {
 
   if (sources.length === 0 && !showAffinity) {
     return (
-      <div className="max-w-lg mx-auto text-center animate-fade-in pb-20">
+      <div className="max-w-lg mx-auto text-center pb-20">
         <div className="text-5xl mb-3">🌘</div>
         <h2 className="font-fantasy text-2xl font-bold text-parchment-200 mb-2">Nenhum poder paranormal ainda</h2>
         <p className="text-parchment-500 text-sm mb-8 leading-relaxed">
@@ -40,13 +40,13 @@ export function ParanormalPowersStep() {
           etapa Progressão, ou a origem <strong className="text-gold-500">Cultista Arrependido</strong>.
           Cada Transcender concede um poder paranormal — mas cobra a Sanidade daquele aumento de NEX.
         </p>
-        <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={canAdvance} />
+        <StepNav onPrev={prevStep} onNext={nextStep} />
       </div>
     )
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-4 animate-fade-in pb-20">
+    <div className="max-w-3xl mx-auto space-y-4 pb-20">
       <div className="text-center mb-2">
         <h2 className="font-fantasy text-2xl font-bold text-parchment-200">{STEP_LABELS.paranormal}</h2>
         <p className="text-parchment-500 text-sm mt-1 leading-relaxed">
@@ -78,15 +78,14 @@ export function ParanormalPowersStep() {
       <StepNav
         onPrev={prevStep}
         onNext={nextStep}
-        canAdvance={canAdvance}
-        disabledReason={getDisabledReason(instances, showAffinity && !draft.affinityElement)}
+        pendingReason={canAdvance ? undefined : getPendingReason(instances, showAffinity && !draft.affinityElement)}
       />
     </div>
   )
 }
 
-/** Mensagem do CTA bloqueado, na ordem da pendência mais fundamental. */
-function getDisabledReason(instances: ParanormalInstance[], affinityPending: boolean): string {
+/** Aviso de pendência exibido no rodapé, na ordem da pendência mais fundamental. */
+function getPendingReason(instances: ParanormalInstance[], affinityPending: boolean): string {
   if (affinityPending) return 'Escolha o elemento de afinidade'
   if (instances.some(i => !i.choice)) return 'Escolha o poder paranormal pendente'
   if (instances.some(i => !i.complete)) return 'Complete as escolhas do poder'

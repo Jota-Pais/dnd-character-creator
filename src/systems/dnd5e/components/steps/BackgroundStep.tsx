@@ -202,7 +202,12 @@ export function BackgroundStep() {
         )}
       </div>
 
-      <StepNav onPrev={prevStep} onNext={nextStep} canAdvance={canAdvance} accent={accent} />
+      <StepNav
+        onPrev={prevStep}
+        onNext={nextStep}
+        accent={accent}
+        pendingReason={canAdvance ? undefined : !selectedBg ? 'Escolha um antecedente' : 'Escolhas do antecedente pendentes'}
+      />
     </div>
   )
 }

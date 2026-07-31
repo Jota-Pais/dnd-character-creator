@@ -2,9 +2,10 @@ import { useOrdemStore } from '../../stores/characterStore'
 import { getOrdemClass } from '../../utils/classUtils'
 import { formatSkillWithAttribute } from '../../utils/skillUtils'
 import {
-  getAvailableTrilhaOptions,
-  getAvailableVersatilityTrilhaOptions,
-  getAvailablePowerOptions,
+  getTrilhaOptions,
+  getVersatilityTrilhaOptions,
+  getClassPowerOptions,
+  getClassPowerCatalog,
   getEligibleSkillGradeOptions,
   getEffectiveAttributes,
   getRequiredPowerSlots,
@@ -13,7 +14,7 @@ import {
   getSkillGrade,
   POWER_PARAM_SPECS,
 } from '../../utils/characterUtils'
-import { hasTrilha, hasVersatility } from '../../utils/progressionUtils'
+import { hasTrilha, hasVersatility, POWER_SLOT_NEX } from '../../utils/progressionUtils'
 import { getParanormalPower } from '../../utils/paranormalPowerUtils'
 import type { ParanormalSourceKey } from '../../types/character'
 import { SKILLS } from '../../utils/skillUtils'
@@ -23,6 +24,7 @@ import { ATTRIBUTES, ATTRIBUTE_MAX } from '../../utils/attributeUtils'
 import { isStepComplete } from '../../utils/draftValidation'
 import { StepNav } from '../common/StepNav'
 import { StepPrerequisite } from '../common/StepPrerequisite'
+import { ClassPowerCard } from '../progression/ClassPowerCard'
 import type { OrdemAttributes } from '../../types/character'
 
 const ATTRIBUTE_INCREASE_CAP = 5
@@ -31,6 +33,7 @@ export function ProgressionStep() {
   const draft = useOrdemStore(state => state.draft)
   const setTrilha = useOrdemStore(state => state.setTrilha)
   const setPowerChoice = useOrdemStore(state => state.setPowerChoice)
+  const clearPowerChoice = useOrdemStore(state => state.clearPowerChoice)
   const setAttributeIncreaseChoice = useOrdemStore(state => state.setAttributeIncreaseChoice)
   const setSkillGradeChoice = useOrdemStore(state => state.setSkillGradeChoice)
   const setVersatilityChoice = useOrdemStore(state => state.setVersatilityChoice)
@@ -78,7 +81,13 @@ export function ProgressionStep() {
 
       <div className="max-w-lg mx-auto space-y-4">
         {requiredPowers > 0 && (
-          <PowerSection draft={draft} cls={cls} required={requiredPowers} onPick={setPowerChoice} />
+          <PowerSection
+            draft={draft}
+            cls={cls}
+            required={requiredPowers}
+            onPick={setPowerChoice}
+            onRelease={clearPowerChoice}
+          />
         )}
 
         {requiredAttrIncreases > 0 && (
@@ -125,7 +134,8 @@ function Chip({ label, active, disabled, onClick }: { label: string; active: boo
 }
 
 function TrilhaSection({ draft, cls, onSelect }: { draft: import('../../types/character').OrdemCharacterDraft; cls: import('../../types/class').OrdemClass; onSelect: (id: string) => void }) {
-  const options = getAvailableTrilhaOptions(draft, cls)
+  // Trilha sem o treino exigido aparece desabilitada com o motivo, não escondida.
+  const options = getTrilhaOptions(draft, cls)
 
   return (
     <Section title="Trilha (NEX 10%)">
@@ -134,19 +144,24 @@ function TrilhaSection({ draft, cls, onSelect }: { draft: import('../../types/ch
         todas já estão à mostra — clique numa coluna pra escolher.
       </p>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 items-stretch">
-        {options.map(t => (
+        {options.map(({ trilha: t, available, reasons }) => (
           <button
             key={t.id}
-            onClick={() => onSelect(t.id)}
-            className="text-left px-3 py-2.5 rounded-lg border transition-all flex flex-col"
+            onClick={() => { if (available) onSelect(t.id) }}
+            disabled={!available}
+            className="text-left px-3 py-2.5 rounded-lg border transition-all flex flex-col disabled:cursor-not-allowed"
             style={{
-              borderColor: draft.trilha === t.id ? '#dc2626' : '#2a2213',
+              borderColor: draft.trilha === t.id ? '#dc2626' : available ? '#2a2213' : '#241a1c',
               backgroundColor: draft.trilha === t.id ? '#dc262615' : '#0a070499',
+              opacity: available ? 1 : 0.65,
             }}
           >
             <p className="font-fantasy font-semibold text-base text-parchment-200">{t.name}</p>
             <p className="text-parchment-500 text-xs mt-0.5 leading-snug">{t.description}</p>
             {t.requirement && <p className="text-parchment-600 text-xs mt-0.5">Requisito: {t.requirement}</p>}
+            {!available && reasons.length > 0 && (
+              <p className="text-[11px] mt-1" style={{ color: '#c9a05a' }}>⛔ {reasons.join(' · ')}</p>
+            )}
             <div className="mt-2 pt-2 border-t border-parchment-900/60 space-y-1.5">
               {t.features.map(f => {
                 const reached = f.nex <= draft.nex
@@ -167,38 +182,49 @@ function TrilhaSection({ draft, cls, onSelect }: { draft: import('../../types/ch
   )
 }
 
-function PowerSection({ draft, cls, required, onPick }: {
+function PowerSection({ draft, cls, required, onPick, onRelease }: {
   draft: import('../../types/character').OrdemCharacterDraft
   cls: import('../../types/class').OrdemClass
   required: number
   onPick: (slot: number, powerId: string) => void
+  onRelease: (slot: number) => void
 }) {
+  const catalog = getClassPowerCatalog(draft, cls, required)
+  const chosenCount = draft.powerChoices.slice(0, required).filter(Boolean).length
+  const missing = required - chosenCount
+
   return (
     <Section title={`Poderes de ${cls.name}`}>
-      <div className="space-y-3">
-        {Array.from({ length: required }).map((_, slot) => {
-          const chosen = draft.powerChoices[slot]
-          const options = getAvailablePowerOptions(draft, cls, slot)
-          return (
-            <div key={slot}>
-              <p className="text-parchment-600 text-xs mb-1">Poder {slot + 1} de {required}</p>
-              <div className="flex flex-wrap gap-1.5">
-                {options.map(p => (
-                  <Chip key={p.id} label={p.name} active={chosen === p.id} onClick={() => onPick(slot, p.id)} />
-                ))}
+      <p className="text-parchment-600 text-xs mb-1">
+        Escolha {required} {required === 1 ? 'poder' : 'poderes'} entre os {catalog.length} da classe. Todos estão
+        listados com o que fazem; o que você ainda não pode pegar aparece com o motivo.
+      </p>
+      <p className="text-xs mb-3" style={{ color: missing > 0 ? '#c9a05a' : '#86efac' }}>
+        {chosenCount} de {required} escolhidos{missing > 0 ? ` — falta${missing > 1 ? 'm' : ''} ${missing}` : ' ✓'}
+      </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        {catalog.map(entry => (
+          <ClassPowerCard
+            key={entry.power.id}
+            power={entry.power}
+            reasons={entry.reasons}
+            onPick={entry.targetSlot !== null ? () => onPick(entry.targetSlot!, entry.power.id) : undefined}
+            chosen={entry.chosenSlots.map(slot => ({
+              key: `slot-${slot}`,
+              label: `adquirido em NEX ${POWER_SLOT_NEX[slot]}%`,
+              onRelease: () => onRelease(slot),
+            }))}
+          >
+            {entry.chosenSlots.map(slot => (
+              <div key={slot}>
+                {POWER_PARAM_SPECS[entry.power.id] && (
+                  <PowerParamPicker draft={draft} slotKey={`slot-${slot}`} powerId={entry.power.id} />
+                )}
+                {entry.power.id === 'transcend' && <TranscendHint draft={draft} sourceKey={`slot-${slot}`} />}
               </div>
-              {chosen && (
-                <p className="text-parchment-500 text-xs mt-1">
-                  {options.find(p => p.id === chosen)?.description}
-                </p>
-              )}
-              {chosen && POWER_PARAM_SPECS[chosen] && (
-                <PowerParamPicker draft={draft} slotKey={`slot-${slot}`} powerId={chosen} />
-              )}
-              {chosen === 'transcend' && <TranscendHint draft={draft} sourceKey={`slot-${slot}`} />}
-            </div>
-          )
-        })}
+            ))}
+          </ClassPowerCard>
+        ))}
       </div>
     </Section>
   )
@@ -367,43 +393,92 @@ function SkillGradeSection({ draft, cls, required, onPick }: {
 function VersatilitySection({ draft, cls, onPick }: {
   draft: import('../../types/character').OrdemCharacterDraft
   cls: import('../../types/class').OrdemClass
-  onPick: (choice: import('../../types/character').VersatilityChoice) => void
+  /** null desfaz a escolha (o ✕ do card). */
+  onPick: (choice: import('../../types/character').OrdemCharacterDraft['versatilityChoice']) => void
 }) {
-  const powerOptions = getAvailablePowerOptions(draft, cls)
-  const trilhaOptions = getAvailableVersatilityTrilhaOptions(draft, cls)
+  // Poder extra: a escolha vale no NEX 50% (slotIndex undefined), não no NEX de um slot.
+  const powerOptions = getClassPowerOptions(draft, cls)
+  const trilhaOptions = getVersatilityTrilhaOptions(draft, cls)
   const choice = draft.versatilityChoice
 
   return (
     <Section title="Versatilidade (NEX 50%)">
-      <p className="text-parchment-600 text-xs mb-2">Escolha um poder extra de {cls.name}, ou o 1º poder de outra trilha.</p>
-      <div className="mb-2">
-        <p className="text-parchment-700 text-xs mb-1">Poder extra</p>
-        <div className="flex flex-wrap gap-1.5">
-          {powerOptions.map(p => (
-            <Chip
-              key={p.id}
-              label={p.name}
-              active={choice?.kind === 'power' && choice.powerId === p.id}
-              onClick={() => onPick({ kind: 'power', powerId: p.id })}
-            />
-          ))}
-        </div>
-        {choice?.kind === 'power' && choice.powerId === 'transcend' && (
-          <TranscendHint draft={draft} sourceKey="versatility" />
-        )}
+      <p className="text-parchment-600 text-xs mb-3">
+        Escolha <strong>um</strong> poder extra de {cls.name} <strong>ou</strong> o 1º poder de outra trilha.
+      </p>
+
+      <p className="text-parchment-700 text-xs mb-1.5">Poder extra</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        {powerOptions.map(option => {
+          const active = choice?.kind === 'power' && choice.powerId === option.power.id
+          return (
+            <ClassPowerCard
+              key={option.power.id}
+              power={option.power}
+              reasons={option.reasons}
+              onPick={option.available && !active ? () => onPick({ kind: 'power', powerId: option.power.id }) : undefined}
+              chosen={active
+                ? [{ key: 'versatility', label: 'Versatilidade (NEX 50%)', onRelease: () => onPick(null) }]
+                : []}
+            >
+              {active && POWER_PARAM_SPECS[option.power.id] && (
+                <PowerParamPicker draft={draft} slotKey="versatility" powerId={option.power.id} />
+              )}
+              {active && option.power.id === 'transcend' && <TranscendHint draft={draft} sourceKey="versatility" />}
+            </ClassPowerCard>
+          )
+        })}
       </div>
-      <div>
-        <p className="text-parchment-700 text-xs mb-1">Ou 1º poder de outra trilha</p>
-        <div className="flex flex-wrap gap-1.5">
-          {trilhaOptions.map(t => (
-            <Chip
-              key={t.id}
-              label={t.name}
-              active={choice?.kind === 'trilha' && choice.trilhaId === t.id}
-              onClick={() => onPick({ kind: 'trilha', trilhaId: t.id })}
-            />
-          ))}
-        </div>
+
+      <p className="text-parchment-700 text-xs mt-4 mb-1.5">Ou 1º poder de outra trilha</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        {trilhaOptions.map(({ trilha, available, reasons }) => {
+          const active = choice?.kind === 'trilha' && choice.trilhaId === trilha.id
+          const first = trilha.features[0]
+          return (
+            <div
+              key={trilha.id}
+              className="rounded-xl border p-3"
+              style={{
+                borderColor: active ? '#dc2626' : available ? '#2a2213' : '#241a1c',
+                backgroundColor: active ? '#dc262612' : '#0a070499',
+                opacity: available ? 1 : 0.65,
+              }}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <p className="font-fantasy font-bold leading-tight" style={{ color: active ? '#fca5a5' : '#f3e9dc' }}>
+                  {trilha.name}
+                </p>
+                {available && !active && (
+                  <button
+                    onClick={() => onPick({ kind: 'trilha', trilhaId: trilha.id })}
+                    className="shrink-0 px-3 py-1.5 rounded-lg font-fantasy font-bold text-[12px]"
+                    style={{ backgroundColor: '#2a0d0f', border: '1px solid #7f1d1d', color: '#fca5a5' }}
+                  >
+                    Escolher
+                  </button>
+                )}
+                {active && (
+                  <button
+                    onClick={() => onPick(null)}
+                    className="shrink-0 px-3 py-1.5 rounded-lg font-fantasy text-[12px]"
+                    style={{ border: '1px solid #7f1d1d', color: '#c9a5a5' }}
+                  >
+                    ✓ Escolhida ✕
+                  </button>
+                )}
+              </div>
+              {first && (
+                <p className="text-xs mt-1 leading-relaxed" style={{ color: available ? '#b3a094' : '#8a7368' }}>
+                  <span className="font-semibold">NEX {first.nex}% – {first.name}.</span> {first.description}
+                </p>
+              )}
+              {!available && reasons.length > 0 && (
+                <p className="text-[11px] mt-2" style={{ color: '#c9a05a' }}>⛔ {reasons.join(' · ')}</p>
+              )}
+            </div>
+          )
+        })}
       </div>
     </Section>
   )

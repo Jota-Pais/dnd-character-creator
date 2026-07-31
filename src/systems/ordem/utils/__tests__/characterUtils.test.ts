@@ -16,8 +16,11 @@ import {
   getEffectiveAttributes,
   getSkillGrade,
   getAvailablePowerOptions,
+  getClassPowerOptions,
+  getClassPowerCatalog,
   getAvailableTrilhaOptions,
-  getAvailableVersatilityTrilhaOptions,
+  getTrilhaOptions,
+  getVersatilityTrilhaOptions,
   getGrantedRituals,
   getOriginDefenseBonus,
   getOriginHpBonus,
@@ -1007,7 +1010,116 @@ describe('getAvailablePowerOptions', () => {
   })
 })
 
-describe('getAvailableTrilhaOptions / getAvailableVersatilityTrilhaOptions', () => {
+describe('getClassPowerOptions (catálogo de um ponto de escolha)', () => {
+  const combatant = getOrdemClass('combatant')!
+
+  it('lista TODOS os poderes da classe, inclusive os bloqueados', () => {
+    const options = getClassPowerOptions(makeDraft({ class: 'combatant', nex: 15 }), combatant, 0)
+    expect(options).toHaveLength(19)
+    expect(options.some(o => !o.available)).toBe(true)
+  })
+
+  it('explica o pré-requisito de atributo com o valor que falta', () => {
+    const draft = makeDraft({
+      class: 'combatant', nex: 15,
+      attributes: { agility: 1, strength: 1, intellect: 1, presence: 1, vigor: 1 },
+    })
+    const heavyWeapons = getClassPowerOptions(draft, combatant, 0).find(o => o.power.id === 'heavy-weapons')
+    expect(heavyWeapons?.available).toBe(false)
+    expect(heavyWeapons?.reasons).toEqual(['Requer Força 2 (você tem 1)'])
+  })
+
+  it('explica o pré-requisito de NEX com o NEX da escolha', () => {
+    const draft = makeDraft({
+      class: 'combatant', nex: 15,
+      attributes: { agility: 1, strength: 2, intellect: 1, presence: 1, vigor: 1 },
+    })
+    const heavyArmor = getClassPowerOptions(draft, combatant, 0).find(o => o.power.id === 'heavy-armor-proficiency')
+    expect(heavyArmor?.available).toBe(false)
+    expect(heavyArmor?.reasons.some(r => r.includes('NEX'))).toBe(true)
+  })
+
+  it('poder não-repetível já escolhido em outro slot vem com o motivo, não escondido', () => {
+    const draft = makeDraft({
+      class: 'combatant', nex: 30,
+      attributes: { agility: 1, strength: 2, intellect: 1, presence: 1, vigor: 1 },
+      powerChoices: ['heavy-weapons'],
+    })
+    const option = getClassPowerOptions(draft, combatant, 1).find(o => o.power.id === 'heavy-weapons')
+    expect(option?.available).toBe(false)
+    expect(option?.reasons).toEqual(['Já escolhido em outro poder (não é repetível)'])
+  })
+
+  it('concorda com getAvailablePowerOptions (mesma regra, uma fonte)', () => {
+    const draft = makeDraft({ class: 'combatant', nex: 30, powerChoices: ['heavy-blow'] })
+    expect(getClassPowerOptions(draft, combatant, 1).filter(o => o.available).map(o => o.power.id))
+      .toEqual(getAvailablePowerOptions(draft, combatant, 1).map(p => p.id))
+  })
+})
+
+describe('getClassPowerCatalog (catálogo da etapa Progressão)', () => {
+  const combatant = getOrdemClass('combatant')!
+
+  it('encaixa o poder no primeiro slot livre que o aceita', () => {
+    const draft = makeDraft({ class: 'combatant', nex: 30 })
+    const catalog = getClassPowerCatalog(draft, combatant, 2)
+    const transcend = catalog.find(e => e.power.id === 'transcend')
+    expect(transcend?.targetSlot).toBe(0)
+
+    // Com o slot 0 ocupado, o próximo alvo é o slot 1.
+    const comSlot0 = makeDraft({ class: 'combatant', nex: 30, powerChoices: ['heavy-blow'] })
+    expect(getClassPowerCatalog(comSlot0, combatant, 2).find(e => e.power.id === 'transcend')?.targetSlot).toBe(1)
+  })
+
+  it('poder que exige NEX alto só encaixa no slot adquirido naquele NEX', () => {
+    const draft = makeDraft({
+      class: 'combatant', nex: 30,
+      attributes: { agility: 1, strength: 2, intellect: 1, presence: 1, vigor: 1 },
+      classChoiceGroupPicks: ['fighting', 'fortitude'],
+    })
+    // Proficiência em Armadura Pesada pede NEX 30%: o slot 0 é adquirido no NEX 15%.
+    const entry = getClassPowerCatalog(draft, combatant, 2).find(e => e.power.id === 'heavy-armor-proficiency')
+    expect(entry?.targetSlot).toBe(1)
+  })
+
+  it('marca o slot em que o poder já está escolhido', () => {
+    const draft = makeDraft({ class: 'combatant', nex: 30, powerChoices: ['heavy-blow'] })
+    const entry = getClassPowerCatalog(draft, combatant, 2).find(e => e.power.id === 'heavy-blow')
+    expect(entry?.chosenSlots).toEqual([0])
+    // Não-repetível escolhido: sem alvo novo e sem motivo de bloqueio (o card mostra "escolhido").
+    expect(entry?.targetSlot).toBeNull()
+    expect(entry?.reasons).toEqual([])
+  })
+
+  it('poder repetível pode ocupar mais de um slot e segue escolhível', () => {
+    const draft = makeDraft({ class: 'combatant', nex: 30, powerChoices: ['transcend'] })
+    const entry = getClassPowerCatalog(draft, combatant, 2).find(e => e.power.id === 'transcend')
+    expect(entry?.chosenSlots).toEqual([0])
+    expect(entry?.targetSlot).toBe(1)
+  })
+
+  it('com todos os slots cheios, o motivo é pedir pra soltar um poder', () => {
+    const draft = makeDraft({
+      class: 'combatant', nex: 30,
+      powerChoices: ['heavy-blow', 'transcend'],
+    })
+    const entry = getClassPowerCatalog(draft, combatant, 2).find(e => e.power.id === 'martial-artist')
+    expect(entry?.targetSlot).toBeNull()
+    expect(entry?.reasons).toEqual(['Você já escolheu todos os poderes do seu NEX — solte um para trocar'])
+  })
+
+  it('pré-requisito não atendido em nenhum slot livre vem com o motivo do slot mais favorável', () => {
+    const draft = makeDraft({
+      class: 'combatant', nex: 30,
+      attributes: { agility: 1, strength: 1, intellect: 1, presence: 1, vigor: 1 },
+    })
+    const entry = getClassPowerCatalog(draft, combatant, 2).find(e => e.power.id === 'heavy-weapons')
+    expect(entry?.targetSlot).toBeNull()
+    expect(entry?.reasons).toEqual(['Requer Força 2 (você tem 1)'])
+  })
+})
+
+describe('getAvailableTrilhaOptions / getVersatilityTrilhaOptions', () => {
   it('lista as 5 trilhas da classe', () => {
     const combatant = getOrdemClass('combatant')!
     expect(getAvailableTrilhaOptions(makeDraft({ class: 'combatant' }), combatant)).toHaveLength(5)
@@ -1025,9 +1137,33 @@ describe('getAvailableTrilhaOptions / getAvailableVersatilityTrilhaOptions', () 
   it('versatilidade exclui a trilha já escolhida', () => {
     const combatant = getOrdemClass('combatant')!
     const draft = makeDraft({ class: 'combatant', trilha: 'annihilator' })
-    const options = getAvailableVersatilityTrilhaOptions(draft, combatant)
+    const options = getVersatilityTrilhaOptions(draft, combatant)
     expect(options).toHaveLength(4)
-    expect(options.find(t => t.id === 'annihilator')).toBeUndefined()
+    expect(options.find(o => o.trilha.id === 'annihilator')).toBeUndefined()
+  })
+})
+
+describe('getTrilhaOptions (catálogo da UI)', () => {
+  it('nenhuma trilha é escondida: a bloqueada vem com o motivo', () => {
+    const specialist = getOrdemClass('specialist')!
+    const options = getTrilhaOptions(makeDraft({ class: 'specialist' }), specialist)
+    // Todas as trilhas da classe aparecem, mesmo as com requisito não atendido.
+    expect(options).toHaveLength(getAvailableTrilhaOptions(makeDraft({
+      class: 'specialist',
+      classFreeSkillChoices: ['medicine', 'technology'],
+    }), specialist).length)
+
+    const fieldMedic = options.find(o => o.trilha.id === 'field-medic')
+    expect(fieldMedic?.available).toBe(false)
+    expect(fieldMedic?.reasons).toEqual(['Requer treino em Medicina'])
+  })
+
+  it('com o treino exigido, a trilha fica disponível e sem motivo', () => {
+    const specialist = getOrdemClass('specialist')!
+    const draft = makeDraft({ class: 'specialist', classFreeSkillChoices: ['medicine'] })
+    const fieldMedic = getTrilhaOptions(draft, specialist).find(o => o.trilha.id === 'field-medic')
+    expect(fieldMedic?.available).toBe(true)
+    expect(fieldMedic?.reasons).toEqual([])
   })
 })
 

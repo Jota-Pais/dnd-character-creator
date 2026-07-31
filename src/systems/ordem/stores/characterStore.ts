@@ -35,6 +35,7 @@ type CharacterStore = {
   setFreeSkillChoices: (skillIds: string[]) => void
   setTrilha: (trilhaId: string) => void
   setPowerChoice: (slotIndex: number, powerId: string) => void
+  clearPowerChoice: (slotIndex: number) => void
   setAttributeIncreaseChoice: (slotIndex: number, attribute: keyof OrdemAttributes) => void
   setSkillGradeChoice: (slotIndex: number, skillIds: string[]) => void
   setVersatilityChoice: (choice: OrdemCharacterDraft['versatilityChoice']) => void
@@ -165,7 +166,8 @@ export const useOrdemStore = create<CharacterStore>((set, get) => ({
   setPowerChoice: (slotIndex, powerId) =>
     set(state => {
       const choices = [...state.draft.powerChoices]
-      const changed = choices[slotIndex] !== powerId
+      const previous = choices[slotIndex]
+      const changed = previous !== powerId
       choices[slotIndex] = powerId
       if (!changed) return { draft: { ...state.draft, powerChoices: choices } }
       // Trocar o poder do slot descarta os parâmetros da instância antiga — senão um
@@ -173,7 +175,26 @@ export const useOrdemStore = create<CharacterStore>((set, get) => ({
       // arePowerParamsComplete nunca valida o passo.
       const powerParams = { ...state.draft.powerParams }
       delete powerParams[`slot-${slotIndex}`]
-      return { draft: { ...state.draft, powerChoices: choices, powerParams } }
+      // Sair de um Transcender leva embora o poder paranormal daquele slot: guardado, ele
+      // ressuscitaria (já sem valer o NEX de aquisição) se o Transcender voltasse ao mesmo slot.
+      const paranormalPowerChoices = { ...state.draft.paranormalPowerChoices }
+      if (previous === 'transcend') delete paranormalPowerChoices[`slot-${slotIndex}` as ParanormalSourceKey]
+      return { draft: { ...state.draft, powerChoices: choices, powerParams, paranormalPowerChoices } }
+    }),
+
+  // Soltar um poder escolhido (o card do catálogo desmarca): o slot volta a ficar livre e leva
+  // consigo o que só existia por causa dele — parâmetros e, se era Transcender, o poder paranormal.
+  clearPowerChoice: (slotIndex) =>
+    set(state => {
+      const choices = [...state.draft.powerChoices]
+      const previous = choices[slotIndex]
+      if (!previous) return {}
+      choices[slotIndex] = null
+      const powerParams = { ...state.draft.powerParams }
+      delete powerParams[`slot-${slotIndex}`]
+      const paranormalPowerChoices = { ...state.draft.paranormalPowerChoices }
+      if (previous === 'transcend') delete paranormalPowerChoices[`slot-${slotIndex}` as ParanormalSourceKey]
+      return { draft: { ...state.draft, powerChoices: choices, powerParams, paranormalPowerChoices } }
     }),
 
   setAttributeIncreaseChoice: (slotIndex, attribute) =>

@@ -7,10 +7,12 @@ import { getOrigin } from './originUtils'
 import { getOrdemClass, getFreeSkillChoiceCount } from './classUtils'
 import { getTrilhasByClass, getTrilha } from './trilhaUtils'
 import { getPowersByClass } from './powerUtils'
+import { getSkillName } from './skillUtils'
 import { RITUAL_COST, getRitualById, RITUAL_CIRCLE_NEX, bonusRitualElementKey } from './ritualUtils'
 import { getNexIndex, getReachedPowerSlots, getReachedAttributeIncreaseSlots, getReachedSkillGradeSlots, ATTRIBUTE_INCREASE_CAP, POWER_SLOT_NEX, TRILHA_FEATURE_NEX, VERSATILITY_NEX, NEX_STEPS, getPeLimit, hasVersatility } from './progressionUtils'
 import { getExpansionGrantedClassPowers, getParanormalEffects, getParanormalLearnedRituals } from './paranormalPowerUtils'
-import { getUnmetPrereqs, type PrereqContext } from './prereqUtils'
+import { getUnmetPrereqs, formatUnmetPrereqs, type PrereqContext } from './prereqUtils'
+import type { ClassPower } from '../types/power'
 
 export type DerivedStats = {
   hp: number
@@ -233,19 +235,105 @@ function getClassPowerPrereqContext(draft: OrdemCharacterDraft, acquisitionNex: 
   }
 }
 
+/** Um poder do catálogo da classe: se dá pra escolher agora e, se não dá, por quê. */
+export type ClassPowerOption = {
+  power: ClassPower
+  available: boolean
+  /** Motivos legíveis do bloqueio (vazio quando disponível). */
+  reasons: string[]
+}
+
+/**
+ * Todo poder da classe avaliado para UM ponto de escolha (um slot, ou a Versatilidade quando
+ * `slotIndex` é undefined), com o motivo do bloqueio quando houver. A UI nunca esconde poder:
+ * mostra o motivo e desabilita.
+ *
+ * Pré-requisitos valem no NEX em que a escolha é feita — poder posterior não supre pré-requisito
+ * anterior. Poder não-repetível já escolhido em outro slot também bloqueia (com motivo próprio).
+ */
+export function getClassPowerOptions(
+  draft: OrdemCharacterDraft,
+  cls: OrdemClass,
+  slotIndex?: number,
+): ClassPowerOption[] {
+  const prereqContext = getClassPowerPrereqContext(draft, getPowerAcquisitionNex(slotIndex))
+  const chosenElsewhere = draft.powerChoices.filter((p, i): p is string => Boolean(p) && i !== slotIndex)
+
+  return getPowersByClass(cls.id).map(power => {
+    if (!power.repeatable && chosenElsewhere.includes(power.id)) {
+      return { power, available: false, reasons: ['Já escolhido em outro poder (não é repetível)'] }
+    }
+    const unmet = getUnmetPrereqs(power.prereqs, prereqContext)
+    return unmet.length === 0
+      ? { power, available: true, reasons: [] }
+      : { power, available: false, reasons: formatUnmetPrereqs(unmet, prereqContext) }
+  })
+}
+
 /**
  * Poderes de classe disponíveis para uma escolha, respeitando pré-requisitos no NEX em que ela
  * foi adquirida. Poderes posteriores não podem suprir um pré-requisito anterior.
  */
 export function getAvailablePowerOptions(draft: OrdemCharacterDraft, cls: OrdemClass, slotIndex?: number) {
-  const acquisitionNex = getPowerAcquisitionNex(slotIndex)
-  const prereqContext = getClassPowerPrereqContext(draft, acquisitionNex)
-  // Exclusão de duplicatas: qualquer poder não-repetível já escolhido em OUTRO slot
-  const chosenElsewhere = draft.powerChoices.filter((p, i): p is string => Boolean(p) && i !== slotIndex)
-  return getPowersByClass(cls.id).filter(power =>
-    (power.repeatable || !chosenElsewhere.includes(power.id))
-    && getUnmetPrereqs(power.prereqs, prereqContext).length === 0,
-  )
+  return getClassPowerOptions(draft, cls, slotIndex).filter(o => o.available).map(o => o.power)
+}
+
+/** Um poder no catálogo da etapa Progressão, já resolvido contra os slots do NEX atual. */
+export type ClassPowerCatalogEntry = {
+  power: ClassPower
+  /** Slots que já têm este poder (repetível pode ocupar mais de um). */
+  chosenSlots: number[]
+  /** Primeiro slot livre que aceita o poder; null = não cabe em nenhum. */
+  targetSlot: number | null
+  /** Por que não cabe em slot nenhum (vazio quando cabe, ou quando já está escolhido). */
+  reasons: string[]
+}
+
+/**
+ * Catálogo completo dos poderes da classe para a etapa Progressão: em vez de o jogador escolher
+ * slot por slot, ele escolhe do catálogo e o poder entra no primeiro slot que o aceita.
+ *
+ * O slot continua importando porque cada um é adquirido num NEX diferente (POWER_SLOT_NEX), e o
+ * pré-requisito é medido nesse NEX. Quando nenhum slot livre aceita, o motivo vem do slot mais
+ * favorável (o livre de maior NEX) — é onde o poder teria a melhor chance.
+ */
+export function getClassPowerCatalog(
+  draft: OrdemCharacterDraft,
+  cls: OrdemClass,
+  slotCount: number,
+): ClassPowerCatalogEntry[] {
+  const slots = Array.from({ length: slotCount }, (_, i) => draft.powerChoices[i] ?? null)
+  const freeSlots = slots.flatMap((id, i) => (id ? [] : [i]))
+
+  const contexts = new Map<number, PrereqContext>()
+  const contextFor = (slot: number): PrereqContext => {
+    const cached = contexts.get(slot)
+    if (cached) return cached
+    const ctx = getClassPowerPrereqContext(draft, getPowerAcquisitionNex(slot))
+    contexts.set(slot, ctx)
+    return ctx
+  }
+
+  return getPowersByClass(cls.id).map(power => {
+    const chosenSlots = slots.flatMap((id, i) => (id === power.id ? [i] : []))
+    // Não-repetível já escolhido: o card aparece como escolhido, sem motivo de bloqueio.
+    if (!power.repeatable && chosenSlots.length > 0) {
+      return { power, chosenSlots, targetSlot: null, reasons: [] }
+    }
+    const targetSlot = freeSlots.find(slot => getUnmetPrereqs(power.prereqs, contextFor(slot)).length === 0) ?? null
+    if (targetSlot !== null) return { power, chosenSlots, targetSlot, reasons: [] }
+    if (freeSlots.length === 0) {
+      return {
+        power,
+        chosenSlots,
+        targetSlot: null,
+        reasons: ['Você já escolheu todos os poderes do seu NEX — solte um para trocar'],
+      }
+    }
+    const bestSlot = freeSlots[freeSlots.length - 1]
+    const ctx = contextFor(bestSlot)
+    return { power, chosenSlots, targetSlot: null, reasons: formatUnmetPrereqs(getUnmetPrereqs(power.prereqs, ctx), ctx) }
+  })
 }
 
 /** A trilha pertence à classe e seus pré-requisitos de perícia foram atendidos? */
@@ -258,14 +346,37 @@ export function isTrilhaChoiceValid(draft: OrdemCharacterDraft, cls: OrdemClass,
   )
 }
 
+/** Uma trilha da classe com o motivo do bloqueio, quando o requisito de perícia não é atendido. */
+export type TrilhaOption = {
+  trilha: Trilha
+  available: boolean
+  reasons: string[]
+}
+
+/**
+ * Todas as trilhas da classe, com o motivo do bloqueio — a UI mostra a trilha indisponível em vez
+ * de escondê-la (o jogador precisa saber que ela existe e o que treinar pra alcançá-la).
+ */
+export function getTrilhaOptions(draft: OrdemCharacterDraft, cls: OrdemClass): TrilhaOption[] {
+  return getTrilhasByClass(cls.id).map(trilha => {
+    if (isTrilhaChoiceValid(draft, cls, trilha.id)) return { trilha, available: true, reasons: [] }
+    const skill = trilha.requiredTrainedSkill
+    return {
+      trilha,
+      available: false,
+      reasons: [skill ? `Requer treino em ${getSkillName(skill)}` : 'Requisito não atendido'],
+    }
+  })
+}
+
 /** Trilhas disponíveis pra escolher em NEX 10%, já filtradas pelos pré-requisitos. */
 export function getAvailableTrilhaOptions(draft: OrdemCharacterDraft, cls: OrdemClass): Trilha[] {
   return getTrilhasByClass(cls.id).filter(trilha => isTrilhaChoiceValid(draft, cls, trilha.id))
 }
 
-/** Trilhas alternativas pra Versatilidade (NEX 50%) — qualquer trilha da classe que não seja a escolhida. */
-export function getAvailableVersatilityTrilhaOptions(draft: OrdemCharacterDraft, cls: OrdemClass): Trilha[] {
-  return getAvailableTrilhaOptions(draft, cls).filter(t => t.id !== draft.trilha)
+/** Trilhas alternativas pra Versatilidade (NEX 50%) — as da classe, menos a que já foi escolhida. */
+export function getVersatilityTrilhaOptions(draft: OrdemCharacterDraft, cls: OrdemClass): TrilhaOption[] {
+  return getTrilhaOptions(draft, cls).filter(option => option.trilha.id !== draft.trilha)
 }
 
 /** Todas as escolhas de poderes de classe e Versatilidade atendem os requisitos de aquisição. */

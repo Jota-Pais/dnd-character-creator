@@ -1,0 +1,267 @@
+[
+  {
+    "id": "abalado",
+    "name": "Abalado",
+    "description": "Sofre –O em testes. Se ficar abalado novamente, em vez disso fica apavorado.",
+    "family": "fear",
+    "escalatesTo": "apavorado",
+    "effects": { "dicePenalty": [{ "amount": 1, "scope": "all" }] }
+  },
+  {
+    "id": "agarrado",
+    "name": "Agarrado",
+    "description": "Fica desprevenido e imóvel, sofre –O em testes de ataque e só pode atacar com armas leves. Um personagem fazendo um ataque à distância contra um alvo agarrado tem 50% de chance de acertar o alvo errado.",
+    "family": "paralysis",
+    "implies": ["desprevenido", "imovel"],
+    "effects": { "dicePenalty": [{ "amount": 1, "scope": "attacks" }] }
+  },
+  {
+    "id": "alquebrado",
+    "name": "Alquebrado",
+    "description": "O custo em pontos de esforço das habilidades e dos rituais do personagem aumenta em +1.",
+    "family": "mental",
+    "effects": { "peCostDelta": 1 }
+  },
+  {
+    "id": "apavorado",
+    "name": "Apavorado",
+    "description": "Sofre –OO em testes de perícia e deve fugir da fonte do medo da maneira mais eficiente possível (pode parar ao perdê-la de vista ou se afastar mais que alcance médio). Se não puder fugir, pode agir, mas não pode se aproximar voluntariamente da fonte do medo.",
+    "family": "fear",
+    "effects": { "dicePenalty": [{ "amount": 2, "scope": "skills" }] }
+  },
+  {
+    "id": "asfixiado",
+    "name": "Asfixiado",
+    "description": "Não pode respirar. Prende o fôlego por um total de rodadas igual ao seu Vigor +1 e, a cada vez que sofre dano nesta condição, reduz esse valor em 1. Ao final de seu turno na última dessas rodadas, fica morrendo."
+  },
+  {
+    "id": "atordoado",
+    "name": "Atordoado",
+    "description": "Fica desprevenido e não pode fazer ações.",
+    "family": "mental",
+    "implies": ["desprevenido"],
+    "effects": { "cannotAct": true }
+  },
+  {
+    "id": "caido",
+    "name": "Caído",
+    "description": "Deitado no chão. Sofre –OO em ataques corpo a corpo e seu deslocamento é reduzido a 1,5 m. Sofre –5 na Defesa contra ataques corpo a corpo, mas recebe +5 na Defesa contra ataques à distância.",
+    "effects": {
+      "dicePenalty": [{ "amount": 2, "scope": "melee-attacks" }],
+      "defenseVs": { "melee": -5, "ranged": 5 }
+    }
+  },
+  {
+    "id": "cego",
+    "name": "Cego",
+    "description": "Fica desprevenido e lento, não pode fazer testes de Percepção para observar e sofre –OO em testes de perícias baseadas em Agilidade ou Força. Todos os alvos de seus ataques recebem camuflagem total. Você é considerado cego em área de escuridão total, a menos que algo permita perceber no escuro.",
+    "family": "senses",
+    "implies": ["desprevenido", "lento"],
+    "effects": {
+      "dicePenalty": [{ "amount": 2, "scope": "attributes", "attributes": ["agility", "strength"] }]
+    }
+  },
+  {
+    "id": "confuso",
+    "name": "Confuso",
+    "description": "Comporta-se de modo aleatório. Role 1d6 no início dos seus turnos: 1) move-se em uma direção escolhida por 1d8; 2-3) não pode fazer ações e fica balbuciando; 4-5) usa a arma que estiver empunhando para atacar o ser mais próximo, ou a si mesmo se estiver sozinho (nesse caso, apenas role o dano); 6) a condição termina e pode agir normalmente.",
+    "family": "mental"
+  },
+  {
+    "id": "debilitado",
+    "name": "Debilitado",
+    "description": "Sofre –OO em testes de Agilidade, Força e Vigor. Se ficar debilitado novamente, em vez disso fica inconsciente.",
+    "escalatesTo": "inconsciente",
+    "effects": {
+      "dicePenalty": [{ "amount": 2, "scope": "attributes", "attributes": ["agility", "strength", "vigor"] }]
+    }
+  },
+  {
+    "id": "desprevenido",
+    "name": "Desprevenido",
+    "description": "Despreparado para reagir. Sofre –5 na Defesa e –O em Reflexos. Você fica desprevenido contra inimigos que não possa perceber.",
+    "effects": {
+      "defense": -5,
+      "dicePenalty": [{ "amount": 1, "scope": "named-skills", "skills": ["reflexes"] }]
+    }
+  },
+  {
+    "id": "doente",
+    "name": "Doente",
+    "description": "Sob efeito de uma doença."
+  },
+  {
+    "id": "em-chamas",
+    "name": "Em Chamas",
+    "description": "Está pegando fogo. No início dos seus turnos, sofre 1d6 pontos de dano de fogo. Pode gastar uma ação padrão para apagar o fogo com as mãos. Imersão em água também apaga as chamas.",
+    "effects": { "recurringDamage": { "notation": "1d6", "type": "fogo" } }
+  },
+  {
+    "id": "enjoado",
+    "name": "Enjoado",
+    "description": "Só pode realizar uma ação padrão ou de movimento (não ambas) por rodada."
+  },
+  {
+    "id": "enredado",
+    "name": "Enredado",
+    "description": "Fica lento, vulnerável e sofre –O em testes de ataque.",
+    "family": "paralysis",
+    "implies": ["lento", "vulneravel"],
+    "effects": { "dicePenalty": [{ "amount": 1, "scope": "attacks" }] }
+  },
+  {
+    "id": "envenenado",
+    "name": "Envenenado",
+    "description": "O efeito varia conforme o veneno: pode ser outra condição (fraco, enjoado…) ou dano recorrente (ex.: 1d12 de veneno por rodada). A duração vem da descrição do veneno; se nada for dito, dura a cena. Dano recorrente de condições envenenado sempre se acumula, mesmo de fontes iguais."
+  },
+  {
+    "id": "esmorecido",
+    "name": "Esmorecido",
+    "description": "Sofre –OO em testes de Intelecto e Presença.",
+    "family": "mental",
+    "effects": {
+      "dicePenalty": [{ "amount": 2, "scope": "attributes", "attributes": ["intellect", "presence"] }]
+    }
+  },
+  {
+    "id": "exausto",
+    "name": "Exausto",
+    "description": "Fica debilitado, lento e vulnerável. Se ficar exausto novamente, em vez disso fica inconsciente.",
+    "family": "fatigue",
+    "escalatesTo": "inconsciente",
+    "implies": ["debilitado", "lento", "vulneravel"]
+  },
+  {
+    "id": "fascinado",
+    "name": "Fascinado",
+    "description": "Com a atenção presa em alguma coisa. Sofre –OO em Percepção e não pode fazer ações, exceto observar aquilo que o fascinou. Qualquer ação hostil contra o personagem anula esta condição. Balançar um ser fascinado para tirá-lo desse estado gasta uma ação padrão.",
+    "family": "mental",
+    "effects": {
+      "dicePenalty": [{ "amount": 2, "scope": "named-skills", "skills": ["perception"] }]
+    }
+  },
+  {
+    "id": "fatigado",
+    "name": "Fatigado",
+    "description": "Fica fraco e vulnerável. Se ficar fatigado novamente, em vez disso fica exausto.",
+    "family": "fatigue",
+    "escalatesTo": "exausto",
+    "implies": ["fraco", "vulneravel"]
+  },
+  {
+    "id": "fraco",
+    "name": "Fraco",
+    "description": "Sofre –O em testes de Agilidade, Força e Vigor. Se ficar fraco novamente, em vez disso fica debilitado.",
+    "escalatesTo": "debilitado",
+    "effects": {
+      "dicePenalty": [{ "amount": 1, "scope": "attributes", "attributes": ["agility", "strength", "vigor"] }]
+    }
+  },
+  {
+    "id": "frustrado",
+    "name": "Frustrado",
+    "description": "Sofre –O em testes de Intelecto e Presença. Se ficar frustrado novamente, em vez disso fica esmorecido.",
+    "family": "mental",
+    "escalatesTo": "esmorecido",
+    "effects": {
+      "dicePenalty": [{ "amount": 1, "scope": "attributes", "attributes": ["intellect", "presence"] }]
+    }
+  },
+  {
+    "id": "imovel",
+    "name": "Imóvel",
+    "description": "Todas as formas de deslocamento são reduzidas a 0 m.",
+    "family": "paralysis"
+  },
+  {
+    "id": "inconsciente",
+    "name": "Inconsciente",
+    "description": "Fica indefeso e não pode fazer ações, incluindo reações. Balançar um ser para acordá-lo gasta uma ação padrão.",
+    "implies": ["indefeso"],
+    "effects": { "cannotAct": true }
+  },
+  {
+    "id": "indefeso",
+    "name": "Indefeso",
+    "description": "É considerado desprevenido, mas sofre –10 na Defesa, falha automaticamente em testes de Reflexos e pode sofrer golpes de misericórdia.",
+    "effects": { "defense": -10, "autoFailReflexes": true }
+  },
+  {
+    "id": "lento",
+    "name": "Lento",
+    "description": "Todas as formas de deslocamento são reduzidas à metade (arredonde para baixo no incremento de 1,5 m) e não pode correr nem fazer investidas.",
+    "family": "paralysis"
+  },
+  {
+    "id": "machucado",
+    "name": "Machucado",
+    "description": "Tem menos da metade dos pontos de vida totais. Não causa penalidade por si só, mas é pré-requisito de certas habilidades e efeitos.",
+    "derived": true
+  },
+  {
+    "id": "morrendo",
+    "name": "Morrendo",
+    "description": "Com 0 pontos de vida. Fica inconsciente e morre ao iniciar o terceiro turno morrendo na mesma cena (não precisam ser consecutivos). Só sai desta condição com um teste de Medicina (DT 20) ou efeito específico — curar pontos de vida remove a inconsciência, mas não o sangramento fatal.",
+    "derived": true,
+    "implies": ["inconsciente"]
+  },
+  {
+    "id": "ofuscado",
+    "name": "Ofuscado",
+    "description": "Sofre –O em testes de ataque e de Percepção.",
+    "family": "senses",
+    "effects": {
+      "dicePenalty": [
+        { "amount": 1, "scope": "attacks" },
+        { "amount": 1, "scope": "named-skills", "skills": ["perception"] }
+      ]
+    }
+  },
+  {
+    "id": "paralisado",
+    "name": "Paralisado",
+    "description": "Fica imóvel e indefeso e só pode realizar ações puramente mentais.",
+    "family": "paralysis",
+    "implies": ["imovel", "indefeso"]
+  },
+  {
+    "id": "pasmo",
+    "name": "Pasmo",
+    "description": "Não pode fazer ações.",
+    "family": "mental",
+    "effects": { "cannotAct": true }
+  },
+  {
+    "id": "petrificado",
+    "name": "Petrificado",
+    "description": "Fica inconsciente e recebe resistência a dano 10.",
+    "implies": ["inconsciente"]
+  },
+  {
+    "id": "sangrando",
+    "name": "Sangrando",
+    "description": "Com um ferimento aberto. No início dos seus turnos, faça um teste de Vigor (DT 20). Passando, estabiliza e remove a condição. Falhando, perde 1d6 pontos de vida e continua sangrando."
+  },
+  {
+    "id": "surdo",
+    "name": "Surdo",
+    "description": "Não pode fazer testes de Percepção para ouvir e sofre –OO em testes de Iniciativa. Além disso, é considerado em condição ruim para lançar rituais.",
+    "family": "senses",
+    "effects": {
+      "dicePenalty": [{ "amount": 2, "scope": "named-skills", "skills": ["initiative"] }]
+    }
+  },
+  {
+    "id": "surpreendido",
+    "name": "Surpreendido",
+    "description": "Não ciente de seus inimigos. Fica desprevenido e não pode fazer ações.",
+    "implies": ["desprevenido"],
+    "effects": { "cannotAct": true }
+  },
+  {
+    "id": "vulneravel",
+    "name": "Vulnerável",
+    "description": "Sofre –5 na Defesa.",
+    "effects": { "defense": -5 }
+  }
+]

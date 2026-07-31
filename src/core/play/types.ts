@@ -143,11 +143,33 @@ export interface PlayAdapter {
    */
   getResources(draft: unknown, runtime: PlayRuntime): ResourceTrack[]
   /** Números que a mesa consulta o tempo todo mas não consome. */
-  getStats(draft: unknown): PlayStat[]
+  getStats(draft: unknown, runtime: PlayRuntime): PlayStat[]
   /** Uma linha curta de identificação: "Combatente · NEX 35% · Militar". */
   describeCharacter(draft: unknown): string
   /** Tudo que dá pra fazer, agrupado. Recebe o runtime porque disponibilidade depende dele. */
   getActions(draft: unknown, runtime: PlayRuntime): PlayActionGroup[]
+  /**
+   * Condições ativas: as marcadas pelo jogador mais as **derivadas do estado** (Machucado e
+   * Morrendo saem dos PV, não da escolha). É esta lista que a UI mostra.
+   */
+  getConditions(draft: unknown, runtime: PlayRuntime): string[]
+  /** Catálogo de condições do sistema, para a UI nomear, descrever e oferecer. */
+  getConditionCatalog(): PlayCondition[]
+  /** Ao receber uma condição de novo, qual resulta (agravamento). Identidade quando não escala. */
+  escalateCondition(id: string, active: string[]): string
+}
+
+export type PlayCondition = {
+  id: string
+  name: string
+  description: string
+  /** Ligada pelo motor a partir do estado; o jogador não escolhe nem remove. */
+  derived?: boolean
+  /**
+   * Id da condição que resulta de receber esta de novo. Presente só nas que agravam — é o que
+   * permite a UI continuar oferecendo uma condição já ativa, para o agravamento ser alcançável.
+   */
+  escalatesTo?: string
 }
 
 /** Lê o atual de uma trilha, tratando "nunca tocada" como cheia. */

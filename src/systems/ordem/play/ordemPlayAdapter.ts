@@ -1,5 +1,5 @@
 import type {
-  PlayAction, PlayActionGroup, PlayAdapter, PlayRuntime, PlayStat, ResourceTrack,
+  PlayAction, PlayActionGroup, PlayAdapter, PlayCondition, PlayRuntime, PlayStat, ResourceTrack,
 } from '../../../core/play/types'
 import { currentOf } from '../../../core/play/types'
 import type { OrdemCharacterDraft } from '../types/character'
@@ -17,10 +17,15 @@ import {
 } from '../utils/ritualUtils'
 import { getSheetWeaponAttacks } from '../utils/ordemWeaponUtils'
 import {
-  getConditionalSkillBonuses, getSkillBonusTotal, getSkillDicePool, resolveDtInText,
+  getAttributeDicePenalty, getConditionalSkillBonuses, getSkillBonusTotal, resolveDtInText,
 } from '../utils/sheetEffects'
+import {
+  CONDITIONS, escalateCondition, getBlockingConditions, getConditionDefense,
+  getConditionDefenseVs, getConditionDicePenalty, getConditionPeCostDelta,
+} from '../utils/conditionUtils'
+import { getSheetAttributes } from '../utils/curseUtils'
 import { SKILLS, formatSkillWithAttribute } from '../utils/skillUtils'
-import { formatDicePool } from '../utils/attributeUtils'
+import { formatDicePool, getDicePool } from '../utils/attributeUtils'
 import {
   getLoadState,
   getModifiedDefenseBonus,
@@ -82,21 +87,39 @@ export const ordemPlayAdapter: PlayAdapter = {
     ]
   },
 
-  getStats(draftRaw): PlayStat[] {
+  getStats(draftRaw, runtime): PlayStat[] {
     const draft = draftRaw as OrdemCharacterDraft
     const cls = draft.class ? getOrdemClass(draft.class) : undefined
     if (!cls) return []
     const stats = getCursedDerivedStats(draft, cls, getModifiedDefenseBonus(draft))
     const load = getLoadState(draft)
 
+    // Condições mexem na Defesa (Vulnerável −5, Indefeso −10) e a mesa precisa do número final.
+    const conditions = getActiveConditions(draft, runtime)
+    const conditionDefense = getConditionDefense(conditions)
+    const vs = getConditionDefenseVs(conditions)
+
     const out: PlayStat[] = [
-      { label: 'Defesa', value: `${stats.defense}` },
+      {
+        label: 'Defesa',
+        value: `${stats.defense + conditionDefense}`,
+        hint: conditionDefense !== 0 ? `Base ${stats.defense}, ${conditionDefense} por condições` : undefined,
+      },
       {
         label: 'Limite de PE',
         value: `${getEffectivePeLimit(draft)}`,
         hint: 'Máximo de PE que dá pra gastar por turno',
       },
     ]
+    // Caído dá Defesa diferente por tipo de ataque recebido — não cabe num número só.
+    if (vs.melee !== 0 || vs.ranged !== 0) {
+      out.push({
+        label: 'Defesa (Caído)',
+        value: `${stats.defense + conditionDefense + vs.melee} c.a.c. · ${stats.defense + conditionDefense + vs.ranged} à dist.`,
+        hint: 'Caído: −5 contra corpo a corpo, +5 contra ataques à distância',
+      })
+    }
+
     // A Defesa acima JÁ vem com o −5 (getModifiedDefenseBonus aplica). O aviso existe porque a
     // penalidade de deslocamento não aparece em lugar nenhum e a mesa precisa saber dela.
     if (load.overloaded) {
@@ -122,25 +145,63 @@ export const ordemPlayAdapter: PlayAdapter = {
     const cls = getOrdemClass(draft.class)
     if (!cls) return []
 
-    const maxPe = getCursedDerivedStats(draft, cls, getModifiedDefenseBonus(draft)).pe
-    const currentPe = currentOf(runtime, 'pe', maxPe)
+    const stats = getCursedDerivedStats(draft, cls, getModifiedDefenseBonus(draft))
+    const currentPe = currentOf(runtime, 'pe', stats.pe)
+    const conditions = getActiveConditions(draft, runtime)
+    const blockedBy = getBlockingConditions(conditions)
+    const blocked = blockedBy.length > 0 ? `${blockedBy.join(' + ')}: não pode agir` : undefined
+
+    const withBlock = (actions: PlayAction[]) =>
+      blocked ? actions.map(a => ({ ...a, blocked: a.blocked ?? blocked })) : actions
 
     return [
-      { id: 'attacks', label: 'Ataques', actions: buildAttacks(draft) },
+      { id: 'attacks', label: 'Ataques', actions: withBlock(buildAttacks(draft, conditions)) },
       {
         id: 'rituals',
         label: 'Rituais',
         hint: `Conjurar desconta o PE automaticamente. Limite de ${getRitualPeLimit(draft)} PE por turno para rituais — mas o livro garante ao menos uma habilidade no custo mínimo por turno, então ele não bloqueia nada aqui (p. 21).`,
-        actions: buildRituals(draft, currentPe),
+        actions: withBlock(buildRituals(draft, currentPe, conditions)),
       },
       {
         id: 'skills',
         label: 'Perícias',
         hint: 'Bônus condicional (só em certas situações) fica de fora do número e aparece na nota.',
-        actions: buildSkills(draft),
+        actions: buildSkills(draft, conditions),
       },
     ].filter(group => group.actions.length > 0)
   },
+
+  getConditions(draftRaw, runtime): string[] {
+    return getActiveConditions(draftRaw as OrdemCharacterDraft, runtime)
+  },
+
+  getConditionCatalog(): PlayCondition[] {
+    return CONDITIONS.map(c => ({
+      id: c.id,
+      name: c.name,
+      description: c.description,
+      derived: c.derived,
+      escalatesTo: c.escalatesTo,
+    }))
+  },
+
+  escalateCondition,
+}
+
+/**
+ * Condições ativas de verdade: as que o jogador marcou mais as **derivadas dos PV**, que o motor
+ * liga e desliga sozinho — Machucado abaixo de metade dos PV, Morrendo em 0 (p. 311).
+ */
+export function getActiveConditions(draft: OrdemCharacterDraft, runtime: PlayRuntime): string[] {
+  const cls = draft.class ? getOrdemClass(draft.class) : undefined
+  if (!cls) return runtime.conditions
+  const maxHp = getCursedDerivedStats(draft, cls, getModifiedDefenseBonus(draft)).hp
+  const hp = currentOf(runtime, 'hp', maxHp)
+
+  const derived: string[] = []
+  if (hp < maxHp / 2) derived.push('machucado')
+  if (hp === 0) derived.push('morrendo')
+  return [...new Set([...runtime.conditions, ...derived])]
 }
 
 /**
@@ -148,7 +209,7 @@ export const ordemPlayAdapter: PlayAdapter = {
  * slots bônus. O custo sai de `getRitualCost`, que já aplica predileto, Mestre em Elemento,
  * Lâmina Maldita e Tatuagem Ritualística.
  */
-function buildRituals(draft: OrdemCharacterDraft, currentPe: number): PlayAction[] {
+function buildRituals(draft: OrdemCharacterDraft, currentPe: number, conditions: string[]): PlayAction[] {
   type Known = { ritual: OrdemRitual; element: OrdemElement | undefined; source: string }
 
   const slotCount = draft.class === 'occultist' ? getRitualSlotsCount(draft.nex) : 0
@@ -169,8 +230,13 @@ function buildRituals(draft: OrdemCharacterDraft, currentPe: number): PlayAction
     source: g.source,
   }))
 
+  // Alquebrado encarece habilidades e rituais em +1 PE (p. 310).
+  const peDelta = getConditionPeCostDelta(conditions)
+
   return [...fromSlots, ...granted].map(({ ritual, element, source }, i) => {
-    const { cost, notes: costNotes } = getRitualCost(draft, ritual, element)
+    const base = getRitualCost(draft, ritual, element)
+    const cost = base.cost + peDelta
+    const costNotes = peDelta > 0 ? [...base.notes, `Alquebrado +${peDelta}`] : base.notes
     const { dt, notes: dtNotes } = getRitualDt(draft, ritual, element)
     // Só a FALTA de PE bloqueia. O limite por turno não: "independentemente do limite, você
     // sempre pode usar pelo menos uma habilidade em seu custo mínimo por turno" (p. 21).
@@ -201,15 +267,25 @@ function buildRituals(draft: OrdemCharacterDraft, currentPe: number): PlayAction
 }
 
 /** Ataques da ficha, já roláveis: pool, bônus, dano estruturado e margem de ameaça. */
-function buildAttacks(draft: OrdemCharacterDraft): PlayAction[] {
-  return getSheetWeaponAttacks(draft).map((attack, i) => ({
+function buildAttacks(draft: OrdemCharacterDraft, conditions: string[]): PlayAction[] {
+  return getSheetWeaponAttacks(draft).map((attack, i) => {
+    // Condições penalizam em DADOS, e a ficha estática não as conhece — por isso o pool é
+    // re-derivado das entradas originais em vez de ajustado a partir do resultado.
+    const conditionPenalty = getConditionDicePenalty(conditions, {
+      kind: 'attack',
+      melee: attack.skill === 'Luta',
+      attribute: attack.attributeUsed,
+    })
+    const pool = getDicePool(attack.attributeValue, attack.dicePenalty + conditionPenalty)
+
+    return {
     id: `attack:${i}:${attack.name}`,
     name: attack.name,
     roll: {
-      dice: attack.rollDice,
-      mode: attack.rollMode,
+      dice: pool.dice,
+      mode: pool.mode,
       bonus: attack.attackBonus,
-      label: formatPoolLabel({ dice: attack.rollDice, mode: attack.rollMode }, attack.attackBonus),
+      label: formatPoolLabel(pool, attack.attackBonus),
     },
     damage: {
       spec: attack.damageSpec,
@@ -220,32 +296,50 @@ function buildAttacks(draft: OrdemCharacterDraft): PlayAction[] {
     // Arma corpo a corpo vem com o alcance em travessão; virar "· – ·" na linha é só ruído.
     detail: [attack.skill, isRealRange(attack.range) ? attack.range : null, `Crít. ${attack.critical}`]
       .filter(Boolean).join(' · '),
-    notes: [...attack.dicePenaltyNotes, ...attack.notes],
-  }))
+    notes: [
+      ...attack.dicePenaltyNotes,
+      ...(conditionPenalty > 0 ? [`condições −${'Ø'.repeat(conditionPenalty)}`] : []),
+      ...attack.notes,
+    ],
+    }
+  })
 }
 
 /**
  * Todas as perícias roláveis. As "somente treinada" só entram se o personagem for treinado —
  * o livro não permite testá-las destreinado, então oferecer o botão seria mentir.
  */
-function buildSkills(draft: OrdemCharacterDraft): PlayAction[] {
+function buildSkills(draft: OrdemCharacterDraft, conditions: string[]): PlayAction[] {
   const trained = new Set(getTrainedSkills(draft))
   const conditional = getConditionalSkillBonuses(draft)
+  const attrs = getSheetAttributes(draft)
 
   return SKILLS
     .filter(skill => !skill.trainedOnly || trained.has(skill.id))
     .map(skill => {
-      const pool = getSkillDicePool(draft, skill.id)
+      const conditionPenalty = getConditionDicePenalty(conditions, {
+        kind: 'skill',
+        skillId: skill.id,
+        attribute: skill.attribute,
+      })
+      // Mesma conta de getSkillDicePool, mais a penalidade das condições.
+      const pool = getDicePool(
+        attrs[skill.attribute],
+        getAttributeDicePenalty(draft, skill.attribute) + conditionPenalty,
+      )
       const bonus = getSkillBonusTotal(draft, skill.id)
       return {
         id: `skill:${skill.id}`,
         name: formatSkillWithAttribute(skill.id),
         roll: { dice: pool.dice, mode: pool.mode, bonus, label: formatPoolLabel(pool, bonus) },
-        // Condicional NÃO entra no número: vale só em certas situações, e embutir enganaria o
-        // teste. Vira nota, pro jogador somar quando a condição valer.
-        notes: conditional
-          .filter(b => b.skillIds.includes(skill.id))
-          .map(b => `+${b.value} ${b.condition} (${b.source})`),
+        notes: [
+          ...(conditionPenalty > 0 ? [`condições −${'Ø'.repeat(conditionPenalty)}`] : []),
+          // Condicional NÃO entra no número: vale só em certas situações, e embutir enganaria o
+          // teste. Vira nota, pro jogador somar quando a condição valer.
+          ...conditional
+            .filter(b => b.skillIds.includes(skill.id))
+            .map(b => `+${b.value} ${b.condition} (${b.source})`),
+        ],
       }
     })
 }

@@ -43,6 +43,13 @@ export type OrdemWeaponAttack = {
   notes: string[]
   /** Por que o pool foi penalizado, pra ficha explicar (ex.: "arma sem proficiência −ØØ"). */
   dicePenaltyNotes: string[]
+  /**
+   * Entradas de que `rollDice`/`rollMode` saíram, para quem precisa RE-derivar o pool com uma
+   * penalidade a mais — o modo de jogo faz isso ao aplicar condições, que a ficha estática não
+   * conhece. Recompor é `getDicePool(attributeValue, dicePenalty + extra)`.
+   */
+  attributeValue: number
+  dicePenalty: number
   /** Bônus no teste de ataque (treino + modificações). */
   attackBonus: number
   /** Dano já com a Força (corpo a corpo/arremesso) e as modificações. */
@@ -286,7 +293,8 @@ export function getOrdemWeaponAttack(
 
   return {
     name: weapon.name, skill, rollDice: pool.dice, rollMode: pool.mode, attributeUsed: attackAttribute,
-    dicePenaltyNotes, notes: getWeaponRuleNotes(weapon, draft),
+    dicePenaltyNotes, attributeValue: attrs[attackAttribute], dicePenalty,
+    notes: getWeaponRuleNotes(weapon, draft),
     attackBonus, damage, damageSpec, critical,
     threatMargin: finalThreat, critMultiplier: finalMult,
     range,

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { SYSTEMS } from '../../core/systems/registry'
 import { usePlayStore } from '../../core/play/playStore'
 import { ActionPanel } from './ActionPanel'
+import { ConditionsPanel } from './ConditionsPanel'
 import { ResourceBar } from './ResourceBar'
 import { RollLog } from './RollLog'
 import { QuickRoller } from './QuickRoller'
@@ -23,6 +24,8 @@ export function PlayScreen() {
   const adjustResource = usePlayStore(s => s.adjustResource)
   const addLog = usePlayStore(s => s.addLog)
   const clearLog = usePlayStore(s => s.clearLog)
+  const addCondition = usePlayStore(s => s.addCondition)
+  const removeCondition = usePlayStore(s => s.removeCondition)
   const [confirmDiscard, setConfirmDiscard] = useState(false)
 
   const system = session ? SYSTEMS[session.systemId] : undefined
@@ -61,8 +64,10 @@ export function PlayScreen() {
   }
 
   const resources = adapter.getResources(character.draft, session.runtime)
-  const stats = adapter.getStats(character.draft)
+  const stats = adapter.getStats(character.draft, session.runtime)
   const actionGroups = adapter.getActions(character.draft, session.runtime)
+  const activeConditions = adapter.getConditions(character.draft, session.runtime)
+  const conditionCatalog = adapter.getConditionCatalog()
 
   return (
     <Frame
@@ -144,7 +149,30 @@ export function PlayScreen() {
           <QuickRoller onRoll={addLog} />
         </div>
 
-        <div className="lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] flex flex-col min-h-0">
+        <div className="lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] flex flex-col gap-4 min-h-0">
+          <ConditionsPanel
+            active={activeConditions}
+            catalog={conditionCatalog}
+            onAdd={id => {
+              const resulting = adapter.escalateCondition(id, session.runtime.conditions)
+              addCondition(id, adapter.escalateCondition)
+              const name = conditionCatalog.find(c => c.id === resulting)?.name ?? resulting
+              addLog({
+                kind: 'note',
+                title: `Condição: ${name}`,
+                detail: resulting !== id
+                  ? `agravou a partir de ${conditionCatalog.find(c => c.id === id)?.name ?? id}`
+                  : undefined,
+              })
+            }}
+            onRemove={id => {
+              removeCondition(id)
+              addLog({
+                kind: 'note',
+                title: `Removida: ${conditionCatalog.find(c => c.id === id)?.name ?? id}`,
+              })
+            }}
+          />
           <RollLog entries={session.log} onClear={clearLog} />
         </div>
       </div>

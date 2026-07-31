@@ -33,6 +33,12 @@ type PlayStore = {
   /** Delta negativo é dano, positivo é cura. Devolve o quanto realmente mudou. */
   adjustResource: (id: string, delta: number, max: number) => number
   setNotes: (notes: string) => void
+  /**
+   * Liga uma condição. `escalate` traduz "receber de novo" no agravamento certo (Abalado →
+   * Apavorado) — quem sabe disso é o sistema, então a regra vem de fora.
+   */
+  addCondition: (id: string, escalate?: (id: string, active: string[]) => string) => void
+  removeCondition: (id: string) => void
   addLog: (entry: Omit<LogEntry, 'id' | 'at'>) => void
   clearLog: () => void
 }
@@ -102,6 +108,20 @@ export const usePlayStore = create<PlayStore>((set, get) => {
     },
 
     setNotes: notes => mutate(session => ({ ...session, runtime: { ...session.runtime, notes } })),
+
+    addCondition: (id, escalate) => mutate(session => {
+      const active = session.runtime.conditions
+      const resulting = escalate ? escalate(id, active) : id
+      if (active.includes(resulting)) return session
+      // Ao agravar, a condição de origem sai: Abalado vira Apavorado, não os dois.
+      const kept = resulting === id ? active : active.filter(c => c !== id)
+      return { ...session, runtime: { ...session.runtime, conditions: [...kept, resulting] } }
+    }),
+
+    removeCondition: id => mutate(session => ({
+      ...session,
+      runtime: { ...session.runtime, conditions: session.runtime.conditions.filter(c => c !== id) },
+    })),
 
     addLog: entry => mutate(session => ({
       ...session,

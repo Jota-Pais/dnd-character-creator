@@ -47,7 +47,7 @@ A penalidade em dados já é modelada pelo motor: `getDicePool(atributo, dicePen
 | **Indefeso** | Considerado desprevenido, mas com **–10 na Defesa**; falha automaticamente em Reflexos; pode sofrer golpe de misericórdia. | — |
 | **Lento** | Deslocamentos reduzidos à metade (arredondando para baixo no incremento de 1,5 m); não pode correr nem investir. | paralisia |
 | **Machucado** | Menos da metade dos PV totais. Sem penalidade própria — é pré-requisito de habilidades e efeitos. | — |
-| **Morrendo** | Com 0 PV. Fica inconsciente; morre ao acumular rodadas morrendo na mesma cena (ver a divergência em [regras-combate.md](regras-combate.md)). | — |
+| **Morrendo** | Com 0 PV. Fica inconsciente; morre ao **iniciar o terceiro turno** morrendo na mesma cena. Só sai com **Medicina DT 20** ou efeito específico — curar PV **não** basta (leitura do Cap. 4 adotada; ver [regras-combate.md](regras-combate.md)). | — |
 | **Ofuscado** | –O em testes de ataque e de Percepção. | sentidos |
 | **Paralisado** | Fica imóvel e indefeso; só realiza ações puramente mentais. | paralisia |
 | **Pasmo** | Não pode fazer ações. | mental |

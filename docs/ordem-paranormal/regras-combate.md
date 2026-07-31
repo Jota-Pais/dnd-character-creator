@@ -94,7 +94,23 @@ Não existem PV negativos.
   - **Inconsciente** termina com qualquer efeito que cure ao menos 1 PV.
   - **Morrendo** termina com um teste de **Medicina (DT 20)** ou efeitos específicos.
 
-> ⚠️ **Divergência no próprio livro.** O Capítulo 4 (p. 87) diz: *"Se iniciar três turnos morrendo na mesma cena (não necessariamente consecutivos), você morre."* Já o glossário de condições (p. 311) diz: *"se terminar mais de três rodadas (não necessariamente consecutivas) morrendo na mesma cena, morre"*, e que a condição *"se encerra se o personagem voltar a ter pelo menos 1 PV"* — o que também conflita com o Cap. 4, que exige Medicina DT 20. **Não resolver por conta própria:** decidir com o usuário qual leitura o app segue antes de implementar o contador de morte.
+### Divergência no próprio livro — e a leitura adotada
+
+O livro define "morrendo" duas vezes, de formas incompatíveis:
+
+| | Capítulo 4, p. 87 | Glossário, p. 311 |
+| --- | --- | --- |
+| Morre quando | **inicia** 3 turnos morrendo na cena | **termina** mais de 3 rodadas morrendo na cena |
+| Sai de "morrendo" | teste de **Medicina (DT 20)** ou efeitos específicos | voltar a ter **pelo menos 1 PV** |
+
+> ✅ **Decisão (2026-07-31, com o usuário): o app segue o Capítulo 4.** É o capítulo dedicado a combate, mais detalhado, e traz exemplo trabalhado (a Bianca). Ele separa **inconsciente** de **morrendo**: curar 1 PV tira o personagem do chão, mas ele **continua morrendo** e o contador segue correndo até alguém passar num teste de Medicina (DT 20).
+
+Consequências para o motor:
+
+- Contador de morte por **turno iniciado** enquanto morrendo, na mesma cena, não precisando ser consecutivos. No terceiro, morre.
+- Cura de ≥1 PV remove **inconsciente**, e **não** remove morrendo.
+- Só Medicina DT 20 (ou efeito específico) remove morrendo e zera o contador.
+- O contador é da **cena**: começar cena nova zera.
 
 ## Ordem de cálculo
 

@@ -8,6 +8,7 @@ import { getCurse, getSheetAttributes } from './curseUtils'
 import { getEquipmentByInstance, getInstanceLabel, instanceItemId, usesLongBullets, hasWeaponProficiency } from './equipmentUtils'
 import { getAttributeDicePenalty } from './sheetEffects'
 import { getDicePool, NO_PROFICIENCY_DICE_PENALTY, type DicePool } from './attributeUtils'
+import { parseDice, type DamageSpec } from '../../../core/dice/dice'
 
 /** Bônus fixo por grau de treinamento (livro, Cap. 2). */
 export const GRADE_BONUS: Record<SkillGrade, number> = {
@@ -46,8 +47,23 @@ export type OrdemWeaponAttack = {
   attackBonus: number
   /** Dano já com a Força (corpo a corpo/arremesso) e as modificações. */
   damage: string
+  /**
+   * O mesmo dano de `damage`, estruturado para o modo de jogo poder rolar. Existe em paralelo
+   * porque o crítico multiplica **só os dados** (p. 84) — de uma string "1d8+2" não dá pra
+   * multiplicar o 1d8 sem multiplicar o +2.
+   *
+   * `dice` são os dados DA ARMA (já com os aumentos de contagem tipo Golpe Pesado, que somam um
+   * dado do próprio dado da arma) e multiplicam no crítico. `extra` são punhados separados de
+   * outra fonte (munição explosiva, maldições) e **não** multiplicam, como o Ataque Furtivo do
+   * exemplo do livro.
+   */
+  damageSpec: DamageSpec
   /** Margem de ameaça / multiplicador de crítico, já com as modificações. */
   critical: string
+  /** A margem de ameaça de `critical` como número: crítico com resultado >= isto. */
+  threatMargin: number
+  /** O multiplicador de `critical` como número. */
+  critMultiplier: number
   range: string
 }
 
@@ -247,19 +263,33 @@ export function getOrdemWeaponAttack(
     ? `${parseInt(dmgMatch[1], 10) + extraDice}d${dmgMatch[2]}${damageBonus !== 0 ? signed(damageBonus) : ''} ${typePt}`
     : `${weapon.damage}${damageBonus !== 0 ? ` ${signed(damageBonus)}` : ''} ${typePt}`) + extraDamage
 
+  // A mesma conta de `damage`, em estrutura. Os dados da arma ficam em `dice` (multiplicam no
+  // crítico) e os punhados de outra fonte em `extra` (não multiplicam).
+  const weaponDice = parseDice(String(weapon.damage))
+  const damageSpec: DamageSpec = {
+    dice: weaponDice.dice.map((term, i) => (i === 0 ? { ...term, count: term.count + extraDice } : term)),
+    // Arma de dano fixo (sem NdM) tem o valor no `bonus` do parse.
+    bonus: damageBonus + weaponDice.bonus,
+    extra: [...mods, ...curses].flatMap(m => (m.extraDamage ? parseDice(m.extraDamage).dice : [])),
+  }
+
   const { threat, mult } = parseCritical(weapon.critical)
   // Predadora: a margem (20 − início + 1) duplica ANTES dos aumentos fixos (ex.: fuzil de caça 19 → 17).
   const doubledThreat = curses.some(c => c.doublesThreat) ? 21 - 2 * (21 - threat) : threat
   // Multiplicador de crítico: Golpe de Sorte com afinidade (+1) e munição Dum dum (+2).
   const multBonus = paranormal.critMultiplierBonus + mods.reduce((s, m) => s + (m.critMultiplierBonus ?? 0), 0)
-  const critical = formatCritical(doubledThreat - threatMargin, mult + multBonus)
+  const finalThreat = doubledThreat - threatMargin
+  const finalMult = mult + multBonus
+  const critical = formatCritical(finalThreat, finalMult)
 
   const range = curses.some(c => c.rangeIncrease) ? increaseRange(weapon.range) : weapon.range
 
   return {
     name: weapon.name, skill, rollDice: pool.dice, rollMode: pool.mode, attributeUsed: attackAttribute,
     dicePenaltyNotes, notes: getWeaponRuleNotes(weapon, draft),
-    attackBonus, damage, critical, range,
+    attackBonus, damage, damageSpec, critical,
+    threatMargin: finalThreat, critMultiplier: finalMult,
+    range,
   }
 }
 

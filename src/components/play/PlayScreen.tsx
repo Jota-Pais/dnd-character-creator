@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { SYSTEMS } from '../../core/systems/registry'
 import { usePlayStore } from '../../core/play/playStore'
+import { ActionPanel } from './ActionPanel'
 import { ResourceBar } from './ResourceBar'
 import { RollLog } from './RollLog'
 import { QuickRoller } from './QuickRoller'
@@ -61,6 +62,7 @@ export function PlayScreen() {
 
   const resources = adapter.getResources(character.draft, session.runtime)
   const stats = adapter.getStats(character.draft)
+  const actionGroups = adapter.getActions(character.draft, session.runtime)
 
   return (
     <Frame
@@ -129,6 +131,8 @@ export function PlayScreen() {
               />
             ))}
           </div>
+
+          <ActionPanel groups={actionGroups} onLog={addLog} />
 
           <QuickRoller onRoll={addLog} />
         </div>

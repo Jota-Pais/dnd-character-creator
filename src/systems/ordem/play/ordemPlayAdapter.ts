@@ -1,11 +1,17 @@
-import type { PlayAdapter, PlayRuntime, PlayStat, ResourceTrack } from '../../../core/play/types'
+import type {
+  PlayAction, PlayActionGroup, PlayAdapter, PlayRuntime, PlayStat, ResourceTrack,
+} from '../../../core/play/types'
 import { currentOf } from '../../../core/play/types'
 import type { OrdemCharacterDraft } from '../types/character'
 import { loadLibrary } from '../utils/storage'
 import { getOrdemClass } from '../utils/classUtils'
 import { getOrigin } from '../utils/originUtils'
 import { getCursedDerivedStats } from '../utils/curseUtils'
-import { getEffectivePeLimit } from '../utils/characterUtils'
+import { getEffectivePeLimit, getTrainedSkills } from '../utils/characterUtils'
+import { getSheetWeaponAttacks } from '../utils/ordemWeaponUtils'
+import { getConditionalSkillBonuses, getSkillBonusTotal, getSkillDicePool } from '../utils/sheetEffects'
+import { SKILLS, formatSkillWithAttribute } from '../utils/skillUtils'
+import { formatDicePool } from '../utils/attributeUtils'
 import {
   getLoadState,
   getModifiedDefenseBonus,
@@ -100,6 +106,83 @@ export const ordemPlayAdapter: PlayAdapter = {
     const origin = draft.origin ? getOrigin(draft.origin) : undefined
     return [cls?.name, `NEX ${draft.nex}%`, origin?.name].filter(Boolean).join(' · ')
   },
+
+  getActions(draftRaw): PlayActionGroup[] {
+    const draft = draftRaw as OrdemCharacterDraft
+    if (!draft.class) return []
+
+    return [
+      { id: 'attacks', label: 'Ataques', actions: buildAttacks(draft) },
+      {
+        id: 'skills',
+        label: 'Perícias',
+        hint: 'Bônus condicional (só em certas situações) fica de fora do número e aparece na nota.',
+        actions: buildSkills(draft),
+      },
+    ].filter(group => group.actions.length > 0)
+  },
+}
+
+/** Ataques da ficha, já roláveis: pool, bônus, dano estruturado e margem de ameaça. */
+function buildAttacks(draft: OrdemCharacterDraft): PlayAction[] {
+  return getSheetWeaponAttacks(draft).map((attack, i) => ({
+    id: `attack:${i}:${attack.name}`,
+    name: attack.name,
+    roll: {
+      dice: attack.rollDice,
+      mode: attack.rollMode,
+      bonus: attack.attackBonus,
+      label: formatPoolLabel({ dice: attack.rollDice, mode: attack.rollMode }, attack.attackBonus),
+    },
+    damage: {
+      spec: attack.damageSpec,
+      label: attack.damage,
+      threatMargin: attack.threatMargin,
+      critMultiplier: attack.critMultiplier,
+    },
+    // Arma corpo a corpo vem com o alcance em travessão; virar "· – ·" na linha é só ruído.
+    detail: [attack.skill, isRealRange(attack.range) ? attack.range : null, `Crít. ${attack.critical}`]
+      .filter(Boolean).join(' · '),
+    notes: [...attack.dicePenaltyNotes, ...attack.notes],
+  }))
+}
+
+/**
+ * Todas as perícias roláveis. As "somente treinada" só entram se o personagem for treinado —
+ * o livro não permite testá-las destreinado, então oferecer o botão seria mentir.
+ */
+function buildSkills(draft: OrdemCharacterDraft): PlayAction[] {
+  const trained = new Set(getTrainedSkills(draft))
+  const conditional = getConditionalSkillBonuses(draft)
+
+  return SKILLS
+    .filter(skill => !skill.trainedOnly || trained.has(skill.id))
+    .map(skill => {
+      const pool = getSkillDicePool(draft, skill.id)
+      const bonus = getSkillBonusTotal(draft, skill.id)
+      return {
+        id: `skill:${skill.id}`,
+        name: formatSkillWithAttribute(skill.id),
+        roll: { dice: pool.dice, mode: pool.mode, bonus, label: formatPoolLabel(pool, bonus) },
+        // Condicional NÃO entra no número: vale só em certas situações, e embutir enganaria o
+        // teste. Vira nota, pro jogador somar quando a condição valer.
+        notes: conditional
+          .filter(b => b.skillIds.includes(skill.id))
+          .map(b => `+${b.value} ${b.condition} (${b.source})`),
+      }
+    })
+}
+
+/** A ficha usa travessão/hífen pra "sem alcance" (corpo a corpo). */
+function isRealRange(range: string): boolean {
+  const trimmed = range.trim()
+  return trimmed.length > 0 && !/^[–—-]$/.test(trimmed)
+}
+
+function formatPoolLabel(pool: { dice: number; mode: 'best' | 'worst' }, bonus: number): string {
+  const base = formatDicePool(pool)
+  if (bonus === 0) return base
+  return `${base} ${bonus > 0 ? '+' : '−'}${Math.abs(bonus)}`
 }
 
 export type { PlayRuntime }

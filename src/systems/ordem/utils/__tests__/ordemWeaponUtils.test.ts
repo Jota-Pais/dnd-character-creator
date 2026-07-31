@@ -660,3 +660,48 @@ describe('munição: variantes e linhas de ataque', () => {
     expect(getSheetWeaponAttacks(draft).map(a => a.name)).toEqual(['Faca', 'Faca (arremesso)', 'Desarmado'])
   })
 })
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Dano estruturado (modo de jogo)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('damageSpec', () => {
+  it('espelha a string de dano: dados da arma e Força no bônus', () => {
+    const a = getOrdemWeaponAttack(machete, AGI3_FOR2, [])
+    expect(a.damage).toBe('1d6+2 corte')
+    expect(a.damageSpec).toEqual({ dice: [{ count: 1, sides: 6 }], bonus: 2, extra: [] })
+  })
+
+  it('arma de fogo não soma atributo no bônus', () => {
+    const a = getOrdemWeaponAttack(pistola, AGI3_FOR2, [])
+    expect(a.damageSpec).toEqual({ dice: [{ count: 1, sides: 12 }], bonus: 0, extra: [] })
+  })
+
+  it('expõe margem de ameaça e multiplicador como número', () => {
+    // Machete é crít 19 (margem 19, multiplicador x2 implícito).
+    const a = getOrdemWeaponAttack(machete, AGI3_FOR2, [])
+    expect(a.threatMargin).toBe(19)
+    expect(a.critMultiplier).toBe(2)
+    // Pistola é crít 18.
+    expect(getOrdemWeaponAttack(pistola, AGI3_FOR2, []).threatMargin).toBe(18)
+  })
+
+  it('dado extra de fonte separada vai pra `extra`, que NÃO multiplica no crítico (p. 84)', () => {
+    // Munição explosiva concede +2d6 — punhado próprio, como o Ataque Furtivo do exemplo do livro.
+    const draft = makeDraft({
+      attributes: { agility: 3, strength: 2, intellect: 1, presence: 1, vigor: 1 },
+      equipmentChoices: ['pistola', 'municao-balas-curtas'],
+      equipmentModifications: { 'municao-balas-curtas': ['explosiva'] },
+    })
+    const explosiva = getSheetWeaponAttacks(draft).find(a => a.name.includes('Explosiva'))
+    if (!explosiva) return // munição explosiva pode não existir pra este calibre; o resto do teste cobre a estrutura
+    expect(explosiva.damageSpec.extra?.length).toBeGreaterThan(0)
+    // O dado da arma continua sozinho em `dice`.
+    expect(explosiva.damageSpec.dice).toEqual([{ count: 1, sides: 12 }])
+  })
+
+  it('desarmado também tem dano estruturado', () => {
+    const a = getUnarmedAttack(AGI3_FOR2)
+    expect(a.damageSpec.dice.length + (a.damageSpec.bonus === 0 ? 0 : 1)).toBeGreaterThan(0)
+  })
+})

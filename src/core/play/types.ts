@@ -1,4 +1,4 @@
-import type { RolledDie } from '../dice/dice'
+import type { DamageSpec, RolledDie } from '../dice/dice'
 
 /**
  * Modelo do modo de jogo (ficha viva), agnóstico de sistema.
@@ -76,6 +76,54 @@ export function sessionKey(systemId: string, characterId: string): string {
 /** Valor fixo da ficha exibido na mesa (Defesa, Deslocamento). Não é consumível. */
 export type PlayStat = { label: string; value: string; hint?: string }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Ações jogáveis
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** O teste principal de uma ação, pronto para o motor de dados. */
+export type PlayRollSpec = {
+  dice: number
+  mode: 'best' | 'worst'
+  bonus: number
+  /** Como o pool aparece na UI: "3d20 +5", "4d20 pior". */
+  label: string
+}
+
+export type PlayDamage = {
+  spec: DamageSpec
+  /** O dano como a ficha escreve: "1d12 balístico". */
+  label: string
+  /** Resultado a partir do qual o ataque é crítico. */
+  threatMargin: number
+  critMultiplier: number
+}
+
+/**
+ * Um botão que a mesa aperta. O adaptador entrega tudo resolvido — inclusive **por que** está
+ * bloqueado, porque esconder a opção deixa o jogador sem saber que ela existe.
+ */
+export type PlayAction = {
+  id: string
+  name: string
+  roll: PlayRollSpec
+  damage?: PlayDamage
+  /** Linha de apoio: alcance, crítico, elemento. */
+  detail?: string
+  /** Avisos de regra que dependem da situação (arma sem apoio, sem proficiência). */
+  notes?: string[]
+  /** Recurso consumido ao usar. */
+  cost?: { resourceId: string; amount: number; label: string }
+  /** Motivo de não poder usar agora. Ausente = liberada. */
+  blocked?: string
+}
+
+export type PlayActionGroup = {
+  id: string
+  label: string
+  hint?: string
+  actions: PlayAction[]
+}
+
 /**
  * O que cada sistema precisa fornecer para ser jogável. Cresce a cada fase — hoje cobre carregar
  * a ficha, derivar as trilhas de recurso e os números fixos de consulta.
@@ -92,6 +140,8 @@ export interface PlayAdapter {
   getStats(draft: unknown): PlayStat[]
   /** Uma linha curta de identificação: "Combatente · NEX 35% · Militar". */
   describeCharacter(draft: unknown): string
+  /** Tudo que dá pra fazer, agrupado. Recebe o runtime porque disponibilidade depende dele. */
+  getActions(draft: unknown, runtime: PlayRuntime): PlayActionGroup[]
 }
 
 /** Lê o atual de uma trilha, tratando "nunca tocada" como cheia. */

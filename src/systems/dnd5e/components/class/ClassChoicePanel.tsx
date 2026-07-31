@@ -7,12 +7,13 @@ import {
   SUBCLASS_LABEL,
 } from '../../utils/classUtils'
 import { ClassSubclassCard } from './ClassSubclassCard'
+import { ProgressionOptionCard } from './ProgressionOptionCard'
 import { InfoTooltip } from '../common/InfoTooltip'
 import type { TermId } from '../../utils/glossary'
 import { SKILLS, LANGUAGES } from '../../utils/raceUtils'
 import toolsData from '../../data/tools.json'
 import { getProgressionSlotsUpToLevel, type ProgressionSlot } from '../../utils/progressionChoiceUtils'
-import { getProgressionOptions } from '../../utils/progressionOptions'
+import { getProgressionOptions, type ProgressionOption } from '../../utils/progressionOptions'
 
 type Tool = { id: string; name: string; category: 'artisan' | 'musical-instrument' | 'gaming-set' | 'other' | 'vehicle' }
 const ALL_TOOLS: Tool[] = toolsData as Tool[]
@@ -195,7 +196,9 @@ export function ClassChoicePanel({ cls, choices, accent, level, onChange, exclud
               <span className="text-red-500 text-xs">obrigatório</span>
             )}
           </div>
-          <div className="space-y-2">
+          {/* Grid em vez de coluna: com as características à mostra, comparar lado a lado é o
+              ponto todo — uma coluna estreita viraria um rolo interminável. */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 items-stretch">
             {cls.subclasses.map(sub => (
               <ClassSubclassCard
                 key={sub.id}
@@ -553,47 +556,132 @@ function ProgressionChoicesPanel({
             }
           }
 
-          return (
-            <ChoiceSection
-              key={slot.id}
-              title={`${slot.label} (${currentPicked.length}/${slot.count}) ${slot.cumulative && index > 0 ? `(Nível ${slot.level})` : ''}`}
-              accent={accent}
-            >
-              <div className="flex flex-wrap gap-1.5">
-                {options.map(opt => {
-                  const isPreviouslyPicked = previousPicks.has(opt.id)
-                  const isCurrentlyPicked = currentPicked.includes(opt.id)
-                  const selected = isCurrentlyPicked || isPreviouslyPicked
-                  const disabled = isPreviouslyPicked || (!isCurrentlyPicked && currentPicked.length >= slot.count)
+          const title = `${slot.label} (${currentPicked.length}/${slot.count}) ${slot.cumulative && index > 0 ? `(Nível ${slot.level})` : ''}`
 
-                  return (
-                    <button
-                      key={opt.id}
-                      onClick={() => {
-                        if (!isPreviouslyPicked) {
-                          handleOptionToggle(slot.id, opt.id, slot.count)
-                        }
-                      }}
-                      disabled={disabled}
-                      title={opt.description ?? opt.prerequisite}
-                      className="px-2.5 py-1 rounded-lg text-xs font-semibold transition-all group relative"
-                      style={{
-                        backgroundColor: selected ? accent : disabled ? 'rgba(30, 20, 8, 0.4)' : 'rgba(40, 28, 12, 0.8)',
-                        color: selected ? '#0a0704' : disabled ? '#4a3520' : '#c4a97a',
-                        border: selected ? 'none' : `1px solid ${disabled ? 'rgba(60, 40, 20, 0.3)' : 'rgba(90, 62, 36, 0.5)'}`,
-                        cursor: disabled ? 'not-allowed' : 'pointer',
-                      }}
-                    >
-                      {isPreviouslyPicked ? '✓ ' : ''}{opt.name}
-                      {opt.prerequisite && <span className="ml-1 opacity-60">({opt.prerequisite})</span>}
-                    </button>
-                  )
-                })}
+          // Segredos Mágicos escolhe entre TODAS as magias do jogo — card catalog não serve
+          // pra 361 opções. Esse caso fica na lista compacta com busca.
+          if (optionsListId === 'any-known-spell') {
+            return (
+              <ChoiceSection key={slot.id} title={title} accent={accent}>
+                <SpellPickerList
+                  options={options}
+                  picked={currentPicked}
+                  previousPicks={previousPicks}
+                  max={slot.count}
+                  accent={accent}
+                  onToggle={optId => handleOptionToggle(slot.id, optId, slot.count)}
+                />
+              </ChoiceSection>
+            )
+          }
+
+          return (
+            <ChoiceSection key={slot.id} title={title} accent={accent}>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2 items-stretch">
+                {options.map(opt => (
+                  <ProgressionOptionCard
+                    key={opt.id}
+                    option={opt}
+                    accent={accent}
+                    picked={currentPicked.includes(opt.id)}
+                    pickedEarlier={previousPicks.has(opt.id)}
+                    slotFull={currentPicked.length >= slot.count}
+                    onToggle={() => handleOptionToggle(slot.id, opt.id, slot.count)}
+                  />
+                ))}
               </div>
             </ChoiceSection>
           )
         })
       })}
+    </div>
+  )
+}
+
+/**
+ * Seletor dos Segredos Mágicos (Bardo): a lista de opções são as 361 magias do jogo, então em
+ * vez do catálogo de cards vale busca + lista compacta. As já escolhidas ficam no topo, pra não
+ * sumirem no meio do rolo depois de filtrar.
+ */
+function SpellPickerList({
+  options,
+  picked,
+  previousPicks,
+  max,
+  accent,
+  onToggle,
+}: {
+  options: ProgressionOption[]
+  picked: string[]
+  previousPicks: Set<string>
+  max: number
+  accent: string
+  onToggle: (optionId: string) => void
+}) {
+  const [query, setQuery] = useState('')
+  const term = query.trim().toLowerCase()
+
+  const chosen = options.filter(o => picked.includes(o.id) || previousPicks.has(o.id))
+  const rest = options.filter(
+    o => !picked.includes(o.id) && !previousPicks.has(o.id) &&
+      (term === '' || o.name.toLowerCase().includes(term) || (o.description ?? '').toLowerCase().includes(term)),
+  )
+  const LIMIT = 40
+  const shown = rest.slice(0, LIMIT)
+
+  return (
+    <div>
+      <input
+        type="search"
+        value={query}
+        onChange={e => setQuery(e.target.value)}
+        placeholder="Buscar magia por nome, nível ou classe…"
+        className="w-full px-3 py-2 mb-2 rounded-lg border text-parchment-200 text-sm bg-parchment-950 placeholder:text-parchment-700"
+        style={{ borderColor: 'rgba(90,62,36,0.6)' }}
+      />
+
+      <div className="max-h-[320px] overflow-y-auto pr-1 space-y-1">
+        {[...chosen, ...shown].map(opt => {
+          const pickedEarlier = previousPicks.has(opt.id)
+          const isPicked = picked.includes(opt.id)
+          const selected = isPicked || pickedEarlier
+          const disabled = pickedEarlier || (!isPicked && picked.length >= max)
+
+          return (
+            <button
+              key={opt.id}
+              onClick={() => { if (!pickedEarlier) onToggle(opt.id) }}
+              disabled={disabled}
+              className="w-full text-left px-3 py-1.5 rounded-lg border transition-all"
+              style={{
+                borderColor: selected ? accent : 'rgba(90,62,36,0.4)',
+                backgroundColor: selected ? `${accent}12` : 'transparent',
+                opacity: disabled && !selected ? 0.45 : 1,
+                cursor: disabled ? 'not-allowed' : 'pointer',
+              }}
+            >
+              <div className="flex items-baseline justify-between gap-2">
+                <span
+                  className="font-fantasy text-sm font-semibold"
+                  style={{ color: selected ? accent : '#c4a97a' }}
+                >
+                  {pickedEarlier ? '✓ ' : ''}{opt.name}
+                </span>
+                <span className="text-[11px] text-parchment-600 shrink-0">{opt.description}</span>
+              </div>
+            </button>
+          )
+        })}
+
+        {rest.length > LIMIT && (
+          <p className="text-[11px] text-parchment-600 text-center py-2">
+            +{rest.length - LIMIT} magias — refine a busca pra ver as demais.
+          </p>
+        )}
+        {rest.length === 0 && chosen.length === 0 && (
+          <p className="text-xs text-parchment-600 text-center py-3">Nenhuma magia encontrada.</p>
+        )}
+      </div>
     </div>
   )
 }

@@ -11,10 +11,10 @@ import {
   isImprovementsStepComplete,
   isAsiChoiceComplete,
 } from '../../utils/asiUtils'
-import { getAllFeats, getFeat } from '../../utils/featUtils'
 import { getClass } from '../../utils/classUtils'
 import { getPrimaryLevel } from '../../utils/multiclassUtils'
 import { StepNav } from '../../../../components/wizard/StepNav'
+import { FeatCatalog } from '../improvements/FeatCatalog'
 
 const ACCENT = '#c0961a'
 type Mode = 'plus2' | 'split' | 'feat'
@@ -62,15 +62,18 @@ export function ImprovementsStep() {
     )
   }
 
+  // Largura cheia: o catálogo de talentos são 42 cards com a descrição à mostra, e ler três
+  // lado a lado é bem melhor do que rolar uma coluna estreita (mesmo raciocínio da Progressão
+  // do Ordem). As listas curtas de chips seguem centralizadas em max-w-lg.
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-6xl mx-auto">
       <h2 className="font-fantasy text-2xl font-bold text-parchment-200 mb-1 text-center">Aprimoramentos</h2>
       <p className="text-parchment-500 text-sm mb-6 text-center">
         A cada Incremento no Valor de Habilidade, aumente <strong>um atributo em +2</strong> ou{' '}
         <strong>dois atributos em +1</strong> (máximo de 20 em cada).
       </p>
 
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-6">
+      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-6 max-w-lg mx-auto">
         {ALL_ABILITY_SCORES.map(ab => (
           <div key={ab} className="rounded-lg border border-parchment-800 bg-parchment-950 p-2 text-center">
             <p className="text-xs font-fantasy text-parchment-600 uppercase">{ABILITY_LABELS[ab].short}</p>
@@ -162,8 +165,6 @@ function AsiSlot({ asiLevel, choice, baseScore, otherBonuses, racial, onChange }
   }
 
   const featChoice = choice?.kind === 'feat' ? choice : undefined
-  const selectedFeat = featChoice?.featId ? getFeat(featChoice.featId) : undefined
-  const halfOptions = selectedFeat?.abilityIncrease ?? []
 
   return (
     <div
@@ -182,61 +183,17 @@ function AsiSlot({ asiLevel, choice, baseScore, otherBonuses, racial, onChange }
       </div>
 
       {mode === 'feat' ? (
-        <div>
-          <select
-            value={featChoice?.featId ?? ''}
-            onChange={e => onChange({ kind: 'feat', featId: e.target.value })}
-            className="w-full px-3 py-2 rounded-lg border text-parchment-200 text-sm bg-parchment-950 mb-2"
-            style={{ borderColor: featChoice?.featId ? ACCENT : 'rgba(90,62,36,0.6)' }}
-          >
-            <option value="">— escolha um talento —</option>
-            {getAllFeats().map(f => (
-              <option key={f.id} value={f.id}>{f.name}</option>
-            ))}
-          </select>
-          {selectedFeat && (
-            <>
-              {selectedFeat.prerequisite && (
-                <p className="text-xs text-gold-600 mb-1">Pré-requisito: {selectedFeat.prerequisite}</p>
-              )}
-              <p className="text-xs text-parchment-500 leading-relaxed whitespace-pre-line mb-2">
-                {selectedFeat.description}
-              </p>
-              {halfOptions.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-parchment-300 mb-1">
-                    +1 no atributo (parte do talento):
-                  </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {halfOptions.map(ab => {
-                      const isSel = featChoice?.abilities?.[0] === ab
-                      const wouldExceed = !isSel && scoreWithout(ab) + 1 > 20
-                      return (
-                        <button
-                          key={ab}
-                          onClick={() => { if (!wouldExceed) onChange({ kind: 'feat', featId: featChoice!.featId, abilities: [ab] }) }}
-                          disabled={wouldExceed}
-                          title={wouldExceed ? 'Excederia o máximo de 20' : undefined}
-                          className="px-2 py-1 rounded-lg border text-xs font-semibold font-fantasy"
-                          style={{
-                            borderColor: isSel ? ACCENT : 'rgba(58,38,20,0.6)',
-                            backgroundColor: isSel ? `${ACCENT}20` : 'transparent',
-                            color: isSel ? ACCENT : wouldExceed ? '#4a3520' : '#b8946f',
-                            cursor: wouldExceed ? 'not-allowed' : 'pointer',
-                          }}
-                        >
-                          {ABILITY_LABELS[ab].short}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </div>
+        <FeatCatalog
+          selectedFeatId={featChoice?.featId ?? ''}
+          // Trocar de talento zera o +1 do meio-talento: o atributo elegível é do talento antigo.
+          onSelect={featId => onChange({ kind: 'feat', featId })}
+          accent={ACCENT}
+          abilityChoice={featChoice?.abilities?.[0]}
+          onAbilityChoice={ab => onChange({ kind: 'feat', featId: featChoice!.featId, abilities: [ab] })}
+          scoreWithout={scoreWithout}
+        />
       ) : (
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 max-w-lg">
           {ALL_ABILITY_SCORES.map(ab => {
             const isSel = selected.includes(ab)
             const projected = mode === 'plus2' ? scoreWithout(ab) + 2 : scoreWithout(ab) + 1

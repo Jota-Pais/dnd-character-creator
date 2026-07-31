@@ -70,7 +70,8 @@ export function ClassStep() {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6">
+    <div>
+      <div className="flex flex-col lg:flex-row gap-6">
 
       {/* ── Grade de classes ── */}
       <div className="lg:w-1/2 xl:w-3/5">
@@ -225,27 +226,6 @@ export function ClassStep() {
                 </div>
               )}
 
-              {/* Painel de escolhas */}
-              <div className="rounded-xl border border-parchment-900 bg-parchment-950/60 p-4">
-                <SectionTitle>Escolhas do Personagem</SectionTitle>
-                <ClassChoicePanel
-                  cls={selectedClass}
-                  choices={draft.classChoices}
-                  accent={accent}
-                  level={primaryLevel}
-                  onChange={updateClassChoices}
-                  excludedSkills={excludedSkills}
-                  excludedTools={excludedTools}
-                />
-              </div>
-
-              {draft.multiclass && (
-                <div className="rounded-xl border border-parchment-900 bg-parchment-950/60 p-4">
-                  <SectionTitle>Multiclasse</SectionTitle>
-                  <MulticlassPanel />
-                </div>
-              )}
-
             </div>
           </div>
         ) : (
@@ -257,6 +237,34 @@ export function ClassStep() {
           </div>
         )}
       </div>
+      </div>
+
+      {/* As escolhas saem das duas colunas e ocupam a largura toda: subclasses e opções de
+          progressão agora são cards com o texto à mostra, e não cabem numa coluna de 2/5.
+          Também não entram no recolher do mobile — é a parte acionável da etapa. */}
+      {selectedClass && (
+        <div className="mt-6 space-y-4">
+          <div className="rounded-xl border border-parchment-900 bg-parchment-950/60 p-4">
+            <SectionTitle>Escolhas do Personagem</SectionTitle>
+            <ClassChoicePanel
+              cls={selectedClass}
+              choices={draft.classChoices}
+              accent={accent}
+              level={primaryLevel}
+              onChange={updateClassChoices}
+              excludedSkills={excludedSkills}
+              excludedTools={excludedTools}
+            />
+          </div>
+
+          {draft.multiclass && (
+            <div className="rounded-xl border border-parchment-900 bg-parchment-950/60 p-4">
+              <SectionTitle>Multiclasse</SectionTitle>
+              <MulticlassPanel />
+            </div>
+          )}
+        </div>
+      )}
 
       <StepNav
         onPrev={prevStep}

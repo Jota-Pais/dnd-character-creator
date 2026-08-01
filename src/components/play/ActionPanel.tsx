@@ -7,6 +7,8 @@ type Props = {
   onLog: (entry: Omit<LogEntry, 'id' | 'at'>) => void
   /** Cobra o custo da ação. Delta negativo consome. */
   onSpend: (resourceId: string, amount: number) => void
+  /** Marca um uso limitado por frequência (1×/cena, 1×/rodada). */
+  onUse: (key: string, at: number) => void
 }
 
 /** O resultado do último ataque, pra oferecer o dano logo em seguida. */
@@ -18,7 +20,7 @@ type PendingAttack = { actionId: string; kept: number; total: number; isThreat: 
  * A rolagem em si mora em `core/dice` — este componente só dispara e apresenta. É de propósito:
  * a animação de dados da versão final entra aqui, na apresentação, sem tocar no cálculo.
  */
-export function ActionPanel({ groups, onLog, onSpend }: Props) {
+export function ActionPanel({ groups, onLog, onSpend, onUse }: Props) {
   const [pending, setPending] = useState<PendingAttack | null>(null)
   const [openGroup, setOpenGroup] = useState<string>(groups[0]?.id ?? '')
 
@@ -27,6 +29,7 @@ export function ActionPanel({ groups, onLog, onSpend }: Props) {
 
     // O custo sai primeiro: se a ação consome recurso, o gasto acontece mesmo que ela não role.
     if (action.cost) onSpend(action.cost.resourceId, action.cost.amount)
+    if (action.usage) onUse(action.usage.key, action.usage.at)
 
     if (!action.roll) {
       onLog({

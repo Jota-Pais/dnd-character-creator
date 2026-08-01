@@ -37,6 +37,8 @@ export type PlayRuntime = {
   notes: string
   /** Turnos iniciados na cena atual. */
   turn: number
+  /** Número da cena. Só serve pra saber se um uso "por cena" foi nesta ou numa anterior. */
+  scene: number
   /**
    * Turnos iniciados **morrendo** na cena atual, não precisando ser consecutivos. O contador é
    * da cena: cena nova zera. Quantos matam é regra do sistema (ver `getDyingState`).
@@ -56,6 +58,7 @@ export const EMPTY_RUNTIME: PlayRuntime = {
   spent: {},
   notes: '',
   turn: 0,
+  scene: 1,
   dyingTurns: 0,
   stabilized: false,
   dead: false,
@@ -159,6 +162,11 @@ export type PlayAction = {
   notes?: string[]
   /** Recurso consumido ao usar. */
   cost?: { resourceId: string; amount: number; label: string }
+  /**
+   * Uso limitado por frequência. A UI grava `at` em `runtime.spent[key]` ao usar; o adaptador
+   * compara com a cena/turno atual pra saber se ainda está disponível.
+   */
+  usage?: { key: string; at: number }
   /** Motivo de não poder usar agora. Ausente = liberada. */
   blocked?: string
 }

@@ -32,6 +32,7 @@ export function PlayScreen() {
   const newScene = usePlayStore(s => s.newScene)
   const setStabilized = usePlayStore(s => s.setStabilized)
   const undoDeath = usePlayStore(s => s.undoDeath)
+  const markUsed = usePlayStore(s => s.markUsed)
   const [confirmDiscard, setConfirmDiscard] = useState(false)
 
   const system = session ? SYSTEMS[session.systemId] : undefined
@@ -217,6 +218,7 @@ export function PlayScreen() {
               const track = resources.find(r => r.id === resourceId)
               if (track) adjustResource(resourceId, -amount, track.max)
             }}
+            onUse={markUsed}
           />
 
           <QuickRoller onRoll={addLog} />

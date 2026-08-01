@@ -49,6 +49,8 @@ type PlayStore = {
    * diferente — não é "nova cena", que seria mentir sobre o que aconteceu.
    */
   undoDeath: () => void
+  /** Marca um uso limitado por frequência. `at` é a cena ou o turno em que aconteceu. */
+  markUsed: (key: string, at: number) => void
   addLog: (entry: Omit<LogEntry, 'id' | 'at'>) => void
   clearLog: () => void
 }
@@ -151,6 +153,7 @@ export const usePlayStore = create<PlayStore>((set, get) => {
       runtime: {
         ...session.runtime,
         turn: 0,
+        scene: session.runtime.scene + 1,
         dyingTurns: 0,
         // "A menos que especificado o contrário, as condições terminam no fim da cena" (p. 311).
         // As derivadas dos PV não estão aqui — elas voltam sozinhas se o estado ainda valer.
@@ -162,6 +165,11 @@ export const usePlayStore = create<PlayStore>((set, get) => {
       ...session,
       // Estabilizar zera o contador: o personagem sai de morrendo (Cap. 4, p. 87).
       runtime: { ...session.runtime, stabilized: value, dyingTurns: value ? 0 : session.runtime.dyingTurns },
+    })),
+
+    markUsed: (key, at) => mutate(session => ({
+      ...session,
+      runtime: { ...session.runtime, spent: { ...session.runtime.spent, [key]: at } },
     })),
 
     undoDeath: () => mutate(session => ({

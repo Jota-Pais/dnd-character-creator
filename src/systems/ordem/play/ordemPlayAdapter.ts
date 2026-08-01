@@ -10,8 +10,12 @@ import { getOrigin } from '../utils/originUtils'
 import type { OrdemElement, OrdemRitual } from '../types/ritual'
 import { getCursedDerivedStats, getRitualDt, getRitualPeLimit } from '../utils/curseUtils'
 import {
-  getEffectivePeLimit, getGrantedRituals, getRitualCost, getTrainedSkills,
+  getEffectivePeLimit, getExpertDie, getExpertSkills, getGrantedRituals, getRitualCost,
+  getSpecialAttackTier, getTrainedSkills,
 } from '../utils/characterUtils'
+import { getPower } from '../utils/powerUtils'
+import { getExpansionGrantedClassPowers } from '../utils/paranormalPowerUtils'
+import { getSkillName } from '../utils/skillUtils'
 import {
   formatRitualElementLabel, getGrantedRitualElement, getRitualById, getRitualSlotsCount,
   getSlotRitualElement,
@@ -157,6 +161,12 @@ export const ordemPlayAdapter: PlayAdapter = {
 
     return [
       { id: 'attacks', label: 'Ataques', actions: withBlock(buildAttacks(draft, conditions)) },
+      {
+        id: 'abilities',
+        label: 'Habilidades',
+        hint: 'Marcadas como "modificador" você aplica na mão — o app cobra o PE e registra, mas o efeito entra na rolagem que você escolher.',
+        actions: withBlock(buildAbilities(draft, currentPe, runtime, conditions)),
+      },
       {
         id: 'rituals',
         label: 'Rituais',
@@ -332,6 +342,117 @@ function buildRituals(draft: OrdemCharacterDraft, currentPe: number, conditions:
       ].filter((n): n is string => Boolean(n)),
     }
   })
+}
+
+const ACTION_TYPE_LABEL: Record<string, string> = {
+  standard: 'ação padrão',
+  movement: 'ação de movimento',
+  full: 'ação completa',
+  free: 'ação livre',
+  reaction: 'reação',
+}
+
+/** Chave do uso limitado no `spent`, separada por escopo pra "por cena" e "por rodada" não colidirem. */
+function usageKey(id: string, frequency: 'per-scene' | 'per-round'): string {
+  return `${frequency}:${id}`
+}
+
+/**
+ * Habilidades ativáveis: os poderes de classe escolhidos que gastam PE, mais as habilidades da
+ * própria classe (Ataque Especial, Eclético, Perito), cujo custo escala com o NEX.
+ *
+ * O que o app faz e o que não faz: ele **cobra o PE** e **trava a frequência**. Aplicar o efeito
+ * de um modificador na rolagem certa continua sendo do jogador — o livro descreve esses efeitos
+ * em texto livre, e adivinhar onde eles incidem seria inventar regra.
+ */
+function buildAbilities(
+  draft: OrdemCharacterDraft,
+  currentPe: number,
+  runtime: PlayRuntime,
+  conditions: string[],
+): PlayAction[] {
+  const peDelta = getConditionPeCostDelta(conditions)
+  const out: PlayAction[] = []
+
+  const push = (
+    id: string,
+    name: string,
+    baseCost: number,
+    detail: string,
+    opts: { frequency?: 'per-scene' | 'per-round'; note?: string } = {},
+  ) => {
+    const cost = baseCost + peDelta
+    let blocked: string | undefined
+    let usage: { key: string; at: number } | undefined
+    if (opts.frequency) {
+      const key = usageKey(id, opts.frequency)
+      const now = opts.frequency === 'per-scene' ? runtime.scene : runtime.turn
+      usage = { key, at: now }
+      if (runtime.spent[key] === now) {
+        blocked = opts.frequency === 'per-scene' ? 'Já usado nesta cena' : 'Já usado nesta rodada'
+      }
+    }
+    if (!blocked && cost > currentPe) blocked = `Requer ${cost} PE, você tem ${currentPe}`
+
+    out.push({
+      id,
+      name,
+      cost: { resourceId: 'pe', amount: cost, label: `${cost} PE` },
+      usage,
+      rollLabel: opts.frequency === 'per-scene' ? '1×/cena' : opts.frequency === 'per-round' ? '1×/rodada' : '',
+      detail,
+      blocked,
+      notes: [
+        ...(peDelta > 0 ? [`Alquebrado +${peDelta} PE`] : []),
+        ...(opts.note ? [opts.note] : []),
+      ],
+    })
+  }
+
+  // ── Habilidade da própria classe (custo escala com o NEX) ──
+  if (draft.class === 'combatant') {
+    const tier = getSpecialAttackTier(draft.nex)
+    push('ability:special-attack', 'Ataque Especial', tier.pe,
+      `+${tier.bonus} no teste de ataque OU na rolagem de dano`,
+      { note: 'modificador — escolha onde aplicar antes de rolar' })
+  }
+  if (draft.class === 'specialist') {
+    const expert = getExpertDie(draft.nex)
+    push('ability:eclectic', 'Eclético', 2,
+      'recebe os benefícios de ser treinado na perícia do teste',
+      { note: 'modificador — vale no teste que você fizer em seguida' })
+    if (getExpertSkills(draft).length > 0) {
+      push('ability:expert', 'Perito', expert.pe,
+        `+${expert.die} no teste — ${getExpertSkills(draft).map(getSkillName).join(' ou ')}`,
+        { note: 'modificador — some o dado ao resultado' })
+    }
+  }
+
+  // ── Poderes de classe escolhidos que se ativam ──
+  // Mesma resolução da ficha impressa: os ids de `powerChoices`, tirando o Transcender (que não
+  // é poder de classe, e sim a porta pros paranormais). Inclui os concedidos por expansão.
+  const chosenIds = [
+    ...draft.powerChoices.filter((id): id is string => Boolean(id) && id !== 'transcend'),
+    ...getExpansionGrantedClassPowers(draft).map(g => g.powerId),
+  ]
+  for (const id of [...new Set(chosenIds)]) {
+    const power = getPower(id)
+    const activation = power?.activation
+    if (!power || !activation) continue
+    const bits = [
+      activation.actionType ? ACTION_TYPE_LABEL[activation.actionType] : null,
+      activation.kind === 'rider' ? 'modificador' : null,
+      activation.kind === 'variable' ? 'custo variável' : null,
+    ].filter(Boolean)
+    push(`power:${power.id}`, power.name, activation.peCost, bits.join(' · '), {
+      frequency: activation.frequency,
+      note: activation.kind === 'variable'
+        ? 'o custo cresce a cada uso no turno — o app cobra só o primeiro degrau'
+        : power.description,
+    })
+  }
+
+  return out
 }
 
 /** Ataques da ficha, já roláveis: pool, bônus, dano estruturado e margem de ameaça. */

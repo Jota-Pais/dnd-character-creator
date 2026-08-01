@@ -128,6 +128,18 @@ export function hasExpertAbility(draft: OrdemCharacterDraft): boolean {
  * Dado extra e custo do Perito no NEX atual: 2 PE/+1d6 até NEX 20%, 3 PE/+1d8 em 25%,
  * 4 PE/+1d10 em 55% e 5 PE/+1d12 em 85% (habilidade Eclético e Perito, Tabela 1.4).
  */
+/**
+ * Custo e bônus do **Ataque Especial** (habilidade do Combatente) no NEX atual: 2 PE/+5 até
+ * NEX 20%, 3 PE/+10 em 25%, 4 PE/+15 em 55% e 5 PE/+20 em 85%. Mesmos degraus do Perito
+ * (Tabela 1.4). O bônus vale no teste de ataque OU na rolagem de dano, à escolha.
+ */
+export function getSpecialAttackTier(nex: number): { pe: number; bonus: number } {
+  if (nex >= 85) return { pe: 5, bonus: 20 }
+  if (nex >= 55) return { pe: 4, bonus: 15 }
+  if (nex >= 25) return { pe: 3, bonus: 10 }
+  return { pe: 2, bonus: 5 }
+}
+
 export function getExpertDie(nex: number): { pe: number; die: string } {
   if (nex >= 85) return { pe: 5, die: '1d12' }
   if (nex >= 55) return { pe: 4, die: '1d10' }

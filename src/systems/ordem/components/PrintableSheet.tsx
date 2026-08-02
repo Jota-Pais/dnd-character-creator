@@ -1,7 +1,7 @@
 import { useOrdemStore } from '../stores/characterStore'
 import { getOrigin } from '../utils/originUtils'
 import { getOrdemClass } from '../utils/classUtils'
-import { SKILLS, getSkillName, getSkillKitName, getSkillKitScope } from '../utils/skillUtils'
+import { SKILLS, getSkillName, getSkillKitName } from '../utils/skillUtils'
 import { getTrilha } from '../utils/trilhaUtils'
 import { getPower } from '../utils/powerUtils'
 import {
@@ -23,7 +23,7 @@ import {
 import {
   getEquipmentByInstance, getInstanceLabel, getModifiedDefenseBonus,
   getDraftInstanceCategory, getEquipmentDamageResistances, formatAccessorySkills,
-  getKitSkills, getSkillsMissingKit, hasKitForSkill, formatKitSkill,
+  getKitSkills, hasKitForSkill, formatKitSkill,
   getLoadState, OVERLOAD_DEFENSE_PENALTY, OVERLOAD_SPEED_PENALTY_METERS,
 } from '../utils/equipmentUtils'
 import { getModification } from '../utils/modificationUtils'
@@ -115,7 +115,6 @@ export function PrintableSheet() {
   const credit = getEffectiveCreditLimit(draft)
   // Kits registrados e perícias sem kit — a ficha informa, mas não aplica o −5 (decisão do mestre).
   const kitSkills = getKitSkills(draft)
-  const skillsMissingKit = getSkillsMissingKit(draft)
   const load = getLoadState(draft)
   const cursedUnits = equipmentUnits.filter(u => (draft.equipmentCurses[u.uid]?.length ?? 0) > 0)
   // Armas com a maldição Ritualística: o ritual armazenado é listado junto das Habilidades.
@@ -261,21 +260,12 @@ export function PrintableSheet() {
             <p className="text-[9px] text-gray-500 mt-1">
               + Penalidade de carga. * Somente treinada. ⚒ Exige kit (✓ você tem). Role os d20 indicados e use o melhor + bônus.
             </p>
-            {(kitSkills.length > 0 || skillsMissingKit.length > 0) && (
+            {kitSkills.length > 0 && (
               <div className="mt-1 text-[9px] text-gray-600 space-y-0.5">
-                {kitSkills.length > 0 && (
-                  <p>
-                    <span className="font-semibold">Kits:</span>{' '}
-                    {kitSkills.map(k => `${getSkillKitName(k.skillId)} (${k.source})`).join(' · ')}.
-                  </p>
-                )}
-                {skillsMissingKit.length > 0 && (
-                  <p>
-                    <span className="font-semibold">Sem kit:</span>{' '}
-                    {skillsMissingKit.map(sid => `${getSkillName(sid)} — ${getSkillKitScope(sid)}`).join(' · ')}.
-                    {' '}O mestre decide se o teste exigia o kit; quando exigir, são −5.
-                  </p>
-                )}
+                <p>
+                  <span className="font-semibold">Kits:</span>{' '}
+                  {kitSkills.map(k => `${getSkillKitName(k.skillId)} (${k.source})`).join(' · ')}.
+                </p>
               </div>
             )}
             {conditionalSkillBonuses.length > 0 && (

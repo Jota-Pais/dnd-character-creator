@@ -1,7 +1,7 @@
 import { useOrdemStore } from '../../stores/characterStore'
 import { getOrigin } from '../../utils/originUtils'
 import { getOrdemClass } from '../../utils/classUtils'
-import { formatSkillWithAttribute, getSkillName, getSkillKitName, getSkillKitScope } from '../../utils/skillUtils'
+import { formatSkillWithAttribute, getSkillName, getSkillKitName } from '../../utils/skillUtils'
 import { getTrilha } from '../../utils/trilhaUtils'
 import { getPower } from '../../utils/powerUtils'
 import {
@@ -23,7 +23,7 @@ import {
 import {
   getEquipmentByInstance, getInstanceLabel, getModifiedDefenseBonus, getDraftInstanceCategory,
   getMissingRitualComponentElements, getEquipmentDamageResistances, formatAccessorySkills,
-  getKitSkills, getSkillsMissingKit, formatKitSkill,
+  getKitSkills, formatKitSkill,
   getLoadState, OVERLOAD_DEFENSE_PENALTY, OVERLOAD_SKILL_PENALTY, OVERLOAD_SPEED_PENALTY_METERS,
 } from '../../utils/equipmentUtils'
 import { getModification } from '../../utils/modificationUtils'
@@ -170,7 +170,6 @@ export function ReviewStep() {
   // Kits: a ficha registra os que o agente tem e lista as perícias sem kit. O −5 não é aplicado —
   // o livro amarra a exigência a USOS da perícia, então quem decide no teste é o mestre.
   const kitSkills = getKitSkills(draft)
-  const skillsMissingKit = getSkillsMissingKit(draft)
 
   function handleExport() {
     exportCharacter(draft)
@@ -729,21 +728,12 @@ export function ReviewStep() {
         {upgradedSkills.length === 0 && trainedSkills.length > 0 && (
           <p className="text-parchment-700 text-xs mt-2">Todas treinadas — nenhuma subiu de grau ainda.</p>
         )}
-        {(kitSkills.length > 0 || skillsMissingKit.length > 0) && (
+        {kitSkills.length > 0 && (
           <div className="mt-3 pt-3 border-t border-parchment-900/50 space-y-1">
-            {kitSkills.length > 0 && (
-              <p className="text-parchment-500 text-xs">
-                <span className="font-semibold text-parchment-300">Kits que você tem:</span>{' '}
-                {kitSkills.map(k => `${getSkillKitName(k.skillId)} (${k.source})`).join(' · ')}
-              </p>
-            )}
-            {skillsMissingKit.length > 0 && (
-              <p className="text-parchment-600 text-xs">
-                <span className="font-semibold text-parchment-400">Sem kit:</span>{' '}
-                {skillsMissingKit.map(sid => `${getSkillName(sid)} (${getSkillKitScope(sid)})`).join(' · ')}.
-                {' '}O mestre decide se o teste exigia o kit — quando exigir, são −5.
-              </p>
-            )}
+            <p className="text-parchment-500 text-xs">
+              <span className="font-semibold text-parchment-300">Kits que você tem:</span>{' '}
+              {kitSkills.map(k => `${getSkillKitName(k.skillId)} (${k.source})`).join(' · ')}
+            </p>
           </div>
         )}
         {conditionalSkillBonuses.length > 0 && (

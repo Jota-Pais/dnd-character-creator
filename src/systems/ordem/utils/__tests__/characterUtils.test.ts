@@ -57,6 +57,9 @@ import {
   getEffectiveCreditLimit,
   resolveDtInText,
   getAbilityDt,
+  getDefenseReactions,
+  isDodgeCondition,
+  isBlockCondition,
 } from '../sheetEffects'
 import { bonusRitualElementKey } from '../ritualUtils'
 import { getCursedDerivedStats } from '../curseUtils'
@@ -688,6 +691,66 @@ describe('Defesa condicional e dados de dano por NEX', () => {
     expect(at(65)).toEqual([{ source: 'Ataque Furtivo', dice: '3d6' }])
     expect(at(99)).toEqual([{ source: 'Ataque Furtivo', dice: '4d6' }])
     expect(at(5)).toEqual([])
+  })
+})
+
+describe('getDefenseReactions (ações especiais de defesa, p. 88)', () => {
+  it('sem treino em Reflexos nem Fortitude, nenhuma reação aparece', () => {
+    // Ocultista: fixas Ocultismo e Vontade — nada de Reflexos/Fortitude.
+    expect(getDefenseReactions(makeDraft({ class: 'occultist' }), 12)).toEqual({})
+  })
+
+  it('Esquiva (Reflexos treinado): Defesa + modificador de Reflexos', () => {
+    const draft = makeDraft({ class: 'combatant', classFreeSkillChoices: ['reflexes'] })
+    expect(getDefenseReactions(draft, 12).dodge).toEqual({ total: 17, included: [] })
+    expect(getDefenseReactions(draft, 12).block).toBeUndefined()
+  })
+
+  it('o grau de treinamento sobe o modificador (veterano +10)', () => {
+    const draft = makeDraft({
+      class: 'combatant', nex: 35,
+      classFreeSkillChoices: ['reflexes'],
+      skillGradeChoices: [['reflexes']],
+    })
+    expect(getDefenseReactions(draft, 12).dodge?.total).toBe(22)
+  })
+
+  it('Bloqueio (Fortitude treinada): RD igual ao bônus de Fortitude', () => {
+    const draft = makeDraft({ class: 'combatant', classFreeSkillChoices: ['fortitude'] })
+    expect(getDefenseReactions(draft, 12).block).toEqual({ total: 5, included: [] })
+    expect(getDefenseReactions(draft, 12).dodge).toBeUndefined()
+  })
+
+  it('Campo Protetor entra somado na esquiva, com a fonte nomeada', () => {
+    // Campo Protetor exige Energia 1: o Afortunado no slot anterior (NEX 15) satisfaz o
+    // pré-requisito no slot de NEX 30.
+    const draft = makeDraft({
+      class: 'combatant', nex: 30,
+      classFreeSkillChoices: ['reflexes'],
+      powerChoices: ['transcend', 'transcend'],
+      paranormalPowerChoices: { 'slot-0': { powerId: 'fortunate' }, 'slot-1': { powerId: 'protective-field' } },
+    })
+    expect(getDefenseReactions(draft, 12).dodge).toEqual({
+      total: 22, included: [{ source: 'Campo Protetor', value: 5 }],
+    })
+  })
+
+  it('Casca Grossa soma o Vigor na RD do bloqueio, com a fonte nomeada', () => {
+    const draft = makeDraft({
+      class: 'combatant', trilha: 'shock-trooper', nex: 10,
+      classFreeSkillChoices: ['fortitude'],
+      attributes: { agility: 1, strength: 1, intellect: 1, presence: 1, vigor: 3 },
+    })
+    expect(getDefenseReactions(draft, 12).block).toEqual({
+      total: 8, included: [{ source: 'Casca Grossa', value: 3 }],
+    })
+  })
+
+  it('as condições de esquiva e bloqueio são reconhecidas; as demais, não', () => {
+    expect(isDodgeCondition('ao usar a ação esquiva')).toBe(true)
+    expect(isBlockCondition('ao bloquear')).toBe(true)
+    expect(isDodgeCondition('enquanto estiver machucado')).toBe(false)
+    expect(isBlockCondition('contra inimigos em alcance curto')).toBe(false)
   })
 })
 

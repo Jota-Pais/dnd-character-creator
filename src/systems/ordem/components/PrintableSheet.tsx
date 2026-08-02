@@ -12,6 +12,7 @@ import {
   getSkillBonusTotal, getConditionalSkillBonuses, getConditionalDefenseBonuses, getExtraDamageDiceNotes,
   getSheetExplosives, getResolvedAbilityNotes, splitResolvedNotes, getEffectiveCreditLimit,
   getSkillDicePool, resolveDtInText,
+  getDefenseReactions, isDodgeCondition, isBlockCondition, type DefenseReaction,
 } from '../utils/sheetEffects'
 import { formatDicePool, ATTRIBUTE_ABBREV as ATTR_ABBREV } from '../utils/attributeUtils'
 import { getReachedTrilhaSlots, getPeLimit } from '../utils/progressionUtils'
@@ -39,6 +40,12 @@ import type { OrdemRitual } from '../types/ritual'
 
 const CAT_ROMAN = ['0', 'I', 'II', 'III', 'IV']
 
+/** Sufixo com os bônus condicionais já somados no número da reação (ex.: ", já com +5 de Campo Protetor"). */
+function formatReactionSources(reaction: DefenseReaction): string {
+  if (reaction.included.length === 0) return ''
+  return `, já com ${reaction.included.map(i => `+${i.value} de ${i.source}`).join(' e ')}`
+}
+
 /**
  * Ficha imprimível no formato da Ficha de Agente oficial (sem a arte), em DUAS páginas:
  * 1) atributos, origem/classe, NEX, PV/PE/Defesa/Sanidade, tabela completa de perícias e ataques;
@@ -52,6 +59,8 @@ export function PrintableSheet() {
 
   const attributes = getSheetAttributes(draft)
   const stats = getCursedDerivedStats(draft, cls, getModifiedDefenseBonus(draft))
+  // Esquiva e bloqueio (p. 88): os números prontos das reações de defesa, se o treino permite.
+  const defenseReactions = getDefenseReactions(draft, stats.defense)
   const trilha = draft.trilha ? getTrilha(draft.trilha) : undefined
   const reachedTrilhaFeatures = trilha ? getReachedTrilhaSlots(draft.nex).map(nex => trilha.features.find(f => f.nex === nex)).filter(Boolean) : []
   // O Transcender sai da lista (as instâncias resolvidas entram como "poder paranormal" abaixo).
@@ -69,7 +78,9 @@ export function PrintableSheet() {
   const equipmentResistances = getEquipmentDamageResistances(draft)
   // Resistências vindas de maldições (elemental e mental) — fonte própria, como as do equipamento.
   const curseResistances = getCurseResistances(draft)
+  // A RD condicional do bloqueio (Casca Grossa) já está somada na linha "Bloqueando" da Defesa.
   const conditionalResistances = getConditionalDamageResistances(draft)
+    .filter(r => !(defenseReactions.block && isBlockCondition(r.condition)))
   // Resumo compacto pro quadro de Combate (página 1) — o detalhe completo, com a fonte de cada
   // uma, fica na seção "Resistências" (página 2).
   const resistanceSummary = [
@@ -102,7 +113,9 @@ export function PrintableSheet() {
   // Bônus de perícia que só valem numa situação (Hacker, Envolto em Mistério, Acalentar...).
   const conditionalSkillBonuses = getConditionalSkillBonuses(draft)
   // Defesa condicional e dados de dano extra já resolvidos pelo NEX (Ataque Furtivo).
+  // O bônus condicional da esquiva (Campo Protetor) já está somado na linha "Esquivando".
   const conditionalDefense = getConditionalDefenseBonuses(draft)
+    .filter(d => !(defenseReactions.dodge && isDodgeCondition(d.condition)))
   const extraDamageDice = getExtraDamageDiceNotes(draft)
   // Explosivos com a DT do teste de resistência já calculada (10 + limite de PE + atributo).
   const explosives = getSheetExplosives(draft)
@@ -184,6 +197,23 @@ export function PrintableSheet() {
                 <p className="text-[9px] text-gray-500 mt-1">= 10 + AGI + Equip. + Outros</p>
                 {load.overloaded && (
                   <p className="text-[9px] font-bold mt-0.5">Sobrecarregado: −{OVERLOAD_DEFENSE_PENALTY} já aplicado.</p>
+                )}
+                {(defenseReactions.dodge || defenseReactions.block) && (
+                  <div className="text-[9px] text-gray-600 mt-0.5 space-y-0.5">
+                    {defenseReactions.dodge && (
+                      <p>
+                        <span className="font-semibold text-gray-900">Esquivando: {defenseReactions.dodge.total}</span>
+                        {' '}— Reflexos{formatReactionSources(defenseReactions.dodge)}.
+                      </p>
+                    )}
+                    {defenseReactions.block && (
+                      <p>
+                        <span className="font-semibold text-gray-900">Bloqueando: RD {defenseReactions.block.total}</span>
+                        {' '}no corpo a corpo — Fortitude{formatReactionSources(defenseReactions.block)}.
+                      </p>
+                    )}
+                    <p className="text-gray-500">Reação, uma por rodada, antes da rolagem do atacante.</p>
+                  </div>
                 )}
                 {conditionalDefense.map((d, i) => (
                   <p key={i} className="text-[9px] text-gray-600 mt-0.5">

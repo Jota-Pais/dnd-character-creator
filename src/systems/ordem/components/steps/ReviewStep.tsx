@@ -13,6 +13,7 @@ import {
   getSkillBonusTotal, getSkillsWithUnconditionalBonus, getConditionalSkillBonuses,
   getConditionalDefenseBonuses, getExtraDamageDiceNotes, getSheetExplosives,
   getResolvedAbilityNotes, splitResolvedNotes, resolveDtInText,
+  getDefenseReactions, isDodgeCondition, isBlockCondition, type DefenseReaction,
 } from '../../utils/sheetEffects'
 import { formatDicePool, ATTRIBUTE_ABBREV as ATTR_ABBREV } from '../../utils/attributeUtils'
 import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, ritualNeedsElementChoice, getSlotRitualElement, getGrantedRitualElement, grantedRitualElementKey, ELEMENT_NAMES, ELEMENT_COLORS } from '../../utils/ritualUtils'
@@ -44,6 +45,12 @@ import { StepNav } from '../../../../components/wizard/StepNav'
 import { PendingStepsPanel } from '../common/PendingStepsPanel'
 import { formatMissingCount } from '../../../../components/wizard/pendingSteps'
 import { getMissingSteps } from '../../utils/draftValidation'
+
+/** Sufixo com os bônus condicionais já somados no número da reação (ex.: ", já com +5 de Campo Protetor"). */
+function formatReactionSources(reaction: DefenseReaction): string {
+  if (reaction.included.length === 0) return ''
+  return `, já com ${reaction.included.map(i => `+${i.value} de ${i.source}`).join(' e ')}`
+}
 
 export function ReviewStep() {
   const draft = useOrdemStore(state => state.draft)
@@ -84,6 +91,8 @@ export function ReviewStep() {
 
   const attributes = getSheetAttributes(draft)
   const stats = getCursedDerivedStats(draft, cls, getModifiedDefenseBonus(draft))
+  // Esquiva e bloqueio (p. 88): os números prontos das reações de defesa, se o treino permite.
+  const defenseReactions = getDefenseReactions(draft, stats.defense)
   const trainedSkills = getTrainedSkills(draft)
   const trilha = draft.trilha ? getTrilha(draft.trilha) : undefined
   const reachedTrilhaFeatures = trilha
@@ -103,7 +112,9 @@ export function ReviewStep() {
   const originMentalDr = getOriginMentalDamageResistance(draft, attributes.intellect)
   const elementResistances = Object.entries(paranormalEffects.elementResistances) as [keyof typeof ELEMENT_NAMES, number][]
   const equipmentResistances = getEquipmentDamageResistances(draft)
+  // A RD condicional do bloqueio (Casca Grossa) já está somada na linha "Bloqueando" da Defesa.
   const conditionalResistances = getConditionalDamageResistances(draft)
+    .filter(r => !(defenseReactions.block && isBlockCondition(r.condition)))
   // Resistências das maldições equipadas (Profética/Voltaica/Repulsiva/Regenerativa/Proteção
   // Elemental e Escudo Mental) — fonte própria, ao lado das do poder Resistir a Elemento.
   const curseResistances = getCurseResistances(draft)
@@ -155,9 +166,11 @@ export function ReviewStep() {
   const conditionalSkillBonuses = getConditionalSkillBonuses(draft)
   // Sobrecarga: passar da capacidade é permitido e penalizado (p. 55) — a ficha precisa gritar isso.
   const load = getLoadState(draft)
-  // Defesa condicional (Reflexos Defensivos, Inquebrável, Campo Protetor) e dados de dano extra
-  // já resolvidos pelo NEX (Ataque Furtivo) — ficam fora dos números somados da ficha.
+  // Defesa condicional (Reflexos Defensivos, Inquebrável) e dados de dano extra já resolvidos
+  // pelo NEX (Ataque Furtivo) — ficam fora dos números somados da ficha. O bônus condicional da
+  // esquiva (Campo Protetor) é a exceção: já está somado na linha "Esquivando".
   const conditionalDefense = getConditionalDefenseBonuses(draft)
+    .filter(d => !(defenseReactions.dodge && isDodgeCondition(d.condition)))
   const extraDamageDice = getExtraDamageDiceNotes(draft)
   // Explosivos com a DT do teste de resistência já calculada (10 + limite de PE + atributo).
   const explosives = getSheetExplosives(draft)
@@ -214,6 +227,24 @@ export function ReviewStep() {
             O teto é {load.max} espaços.
           </p>
         </div>
+      )}
+      {(defenseReactions.dodge || defenseReactions.block) && (
+        <p className="text-center text-parchment-600 text-xs">
+          {defenseReactions.dodge && (
+            <>
+              Esquivando: <span className="text-parchment-400 font-semibold">Defesa {defenseReactions.dodge.total}</span>{' '}
+              <span className="text-gold-600/90">(Reflexos{formatReactionSources(defenseReactions.dodge)})</span>
+            </>
+          )}
+          {defenseReactions.dodge && defenseReactions.block && ' · '}
+          {defenseReactions.block && (
+            <>
+              Bloqueando: <span className="text-parchment-400 font-semibold">RD {defenseReactions.block.total}</span> no corpo a corpo{' '}
+              <span className="text-gold-600/90">(Fortitude{formatReactionSources(defenseReactions.block)})</span>
+            </>
+          )}
+          {' — '}reação, uma por rodada, antes da rolagem do atacante
+        </p>
       )}
       {conditionalDefense.length > 0 && (
         <p className="text-center text-parchment-600 text-xs">

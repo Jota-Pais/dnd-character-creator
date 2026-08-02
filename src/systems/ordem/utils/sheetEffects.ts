@@ -4,7 +4,10 @@ import type { ConditionalSkillBonus, ConditionalDefenseBonus } from '../types/ef
 import { getOrigin } from './originUtils'
 import { getPower } from './powerUtils'
 import { getPatente } from './patenteUtils'
-import { getReachedTrilhaFeaturesWithSource, hasClassPower, getOriginEffects } from './characterUtils'
+import {
+  getReachedTrilhaFeaturesWithSource, hasClassPower, getOriginEffects,
+  getTrainedSkills, getSkillGrade, getConditionalDamageResistances, GRADE_BONUS,
+} from './characterUtils'
 import { getExpansionGrantedClassPowers, getParanormalInstances } from './paranormalPowerUtils'
 import {
   getLoadPenaltySkillBonuses, getAccessorySkillBonuses, getEquipmentByInstance, getInstanceLabel,
@@ -183,6 +186,69 @@ export function getConditionalDefenseBonuses(draft: OrdemCharacterDraft): SheetC
     for (const entry of effects?.conditionalDefenseBonus ?? []) out.push({ ...entry, source: instance.power.name })
   }
   return out
+}
+
+// ── Ações especiais de defesa (p. 88) ──────────────────────────────────────────
+
+export type DefenseReaction = {
+  /** Esquiva: a Defesa final contra o ataque. Bloqueio: a RD contra o ataque. */
+  total: number
+  /** Bônus condicionais amarrados à ação, já somados no total, com a fonte de cada um. */
+  included: { source: string; value: number }[]
+}
+
+/** A condição é amarrada à ação de esquivar? (Campo Protetor: "ao usar a ação esquiva".) */
+export function isDodgeCondition(condition: string): boolean {
+  return /esquiv/i.test(condition)
+}
+
+/** A condição é amarrada à ação de bloquear? (Casca Grossa: "ao bloquear".) */
+export function isBlockCondition(condition: string): boolean {
+  return /bloque/i.test(condition)
+}
+
+/**
+ * Ações especiais de defesa (p. 88) — uma reação por rodada, declarada ANTES da rolagem do
+ * atacante, cada uma exigindo o treinamento:
+ *
+ * - **Esquiva** (Reflexos treinado): soma o modificador de Reflexos (treino + outros) na Defesa
+ *   contra o ataque — `dodge.total` é a Defesa esquivando.
+ * - **Bloqueio** (Fortitude treinada): RD igual ao bônus de Fortitude contra um ataque corpo a
+ *   corpo — `block.total` é a RD bloqueando.
+ *
+ * Bônus condicionais amarrados a essas ações (Campo Protetor na esquiva, Casca Grossa no bloqueio)
+ * entram no total, com a fonte em `included` — a UI deve omitir essas linhas condicionais quando
+ * mostrar estes números, senão o jogador soma o mesmo bônus duas vezes.
+ */
+export function getDefenseReactions(
+  draft: OrdemCharacterDraft,
+  defense: number,
+): { dodge?: DefenseReaction; block?: DefenseReaction } {
+  const trained = getTrainedSkills(draft)
+  const skillModifier = (skillId: string) =>
+    GRADE_BONUS[getSkillGrade(draft, skillId)] + getSkillBonusTotal(draft, skillId)
+
+  const reactions: { dodge?: DefenseReaction; block?: DefenseReaction } = {}
+  if (trained.includes('reflexes')) {
+    const included = getConditionalDefenseBonuses(draft)
+      .filter(d => isDodgeCondition(d.condition))
+      .map(d => ({ source: d.source, value: d.value }))
+    reactions.dodge = {
+      total: defense + skillModifier('reflexes') + included.reduce((sum, i) => sum + i.value, 0),
+      included,
+    }
+  }
+  if (trained.includes('fortitude')) {
+    const vigor = getSheetAttributes(draft).vigor
+    const included = getConditionalDamageResistances(draft)
+      .filter(r => isBlockCondition(r.condition))
+      .map(r => ({ source: r.name, value: r.value === 'vigor' ? vigor : r.value }))
+    reactions.block = {
+      total: skillModifier('fortitude') + included.reduce((sum, i) => sum + i.value, 0),
+      included,
+    }
+  }
+  return reactions
 }
 
 // ── DT de habilidades e itens (p. 80) ──────────────────────────────────────────

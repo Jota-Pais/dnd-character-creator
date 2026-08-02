@@ -1,7 +1,7 @@
 import type { OrdemCharacterDraft } from '../types/character'
 import type { OrdemWeapon, OrdemWeaponGrip, OrdemWeaponProficiency, OrdemWeaponCategory } from '../types/equipment'
 import type { SkillGrade } from './characterUtils'
-import { getSkillGrade, hasClassPower, getOriginEffects, getWorkToolBonus, getWeaponSkillOverride, hasTrilhaFeature } from './characterUtils'
+import { GRADE_BONUS, getSkillGrade, hasClassPower, getOriginEffects, getWorkToolBonus, getWeaponSkillOverride, hasTrilhaFeature } from './characterUtils'
 import { getParanormalEffects, hasParanormalPower } from './paranormalPowerUtils'
 import { getModification } from './modificationUtils'
 import { getCurse, getSheetAttributes } from './curseUtils'
@@ -9,13 +9,9 @@ import { getEquipmentByInstance, getInstanceLabel, instanceItemId, usesLongBulle
 import { getAttributeDicePenalty } from './sheetEffects'
 import { getDicePool, NO_PROFICIENCY_DICE_PENALTY, type DicePool } from './attributeUtils'
 
-/** Bônus fixo por grau de treinamento (livro, Cap. 2). */
-export const GRADE_BONUS: Record<SkillGrade, number> = {
-  destreinado: 0,
-  treinado: 5,
-  veterano: 10,
-  expert: 15,
-}
+// GRADE_BONUS mudou-se para characterUtils (é regra de perícia, não de arma); reexportado
+// aqui pra quem consome os ataques da ficha continuar achando o bônus do lado deles.
+export { GRADE_BONUS } from './characterUtils'
 
 /** Tipos de dano do Ordem (letra → nome). */
 const DAMAGE_TYPE_PT: Record<string, string> = {

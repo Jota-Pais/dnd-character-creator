@@ -403,6 +403,14 @@ export function getEligibleSkillGradeOptions(draft: OrdemCharacterDraft): string
 export type SkillGrade = 'destreinado' | 'treinado' | 'veterano' | 'expert'
 const GRADES: SkillGrade[] = ['destreinado', 'treinado', 'veterano', 'expert']
 
+/** Bônus fixo por grau de treinamento (livro, Cap. 2). */
+export const GRADE_BONUS: Record<SkillGrade, number> = {
+  destreinado: 0,
+  treinado: 5,
+  veterano: 10,
+  expert: 15,
+}
+
 /** Grau efetivo de uma perícia: treinado se estiver entre as treinadas, +1 grau por vez que aparecer nas escolhas de Grau de Treinamento. */
 export function getSkillGrade(draft: OrdemCharacterDraft, skillId: string): SkillGrade {
   const baseIndex = getTrainedSkills(draft).includes(skillId) ? 1 : 0

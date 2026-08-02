@@ -12,7 +12,7 @@ import {
   getSkillBonusTotal, getConditionalSkillBonuses, getConditionalDefenseBonuses, getExtraDamageDiceNotes,
   getSheetExplosives, getResolvedAbilityNotes, splitResolvedNotes, getEffectiveCreditLimit,
   getSkillDicePool, resolveDtInText,
-  getDefenseReactions, isDodgeCondition, isBlockCondition, type DefenseReaction,
+  getDefenseReactions, isDodgeCondition, isBlockCondition,
 } from '../utils/sheetEffects'
 import { formatDicePool, ATTRIBUTE_ABBREV as ATTR_ABBREV } from '../utils/attributeUtils'
 import { getReachedTrilhaSlots, getPeLimit } from '../utils/progressionUtils'
@@ -39,12 +39,6 @@ import type { OrdemAttributes } from '../types/character'
 import type { OrdemRitual } from '../types/ritual'
 
 const CAT_ROMAN = ['0', 'I', 'II', 'III', 'IV']
-
-/** Sufixo com os bônus condicionais já somados no número da reação (ex.: ", já com +5 de Campo Protetor"). */
-function formatReactionSources(reaction: DefenseReaction): string {
-  if (reaction.included.length === 0) return ''
-  return `, já com ${reaction.included.map(i => `+${i.value} de ${i.source}`).join(' e ')}`
-}
 
 /**
  * Ficha imprimível no formato da Ficha de Agente oficial (sem a arte), em DUAS páginas:
@@ -132,7 +126,6 @@ export function PrintableSheet() {
   const cursedUnits = equipmentUnits.filter(u => (draft.equipmentCurses[u.uid]?.length ?? 0) > 0)
   // Armas com a maldição Ritualística: o ritual armazenado é listado junto das Habilidades.
   const ritualisticUnits = equipmentUnits.filter(u => (draft.equipmentCurses[u.uid] ?? []).includes('ritualistica'))
-  const protections = equipmentUnits.filter(u => u.item.type === 'protection')
   const trainedSkills = getTrainedSkills(draft)
   const patente = getPatente(draft.patente)
   // DT de habilidades/rituais: 10 + limite de PE por rodada + Presença (exemplo do livro, pág. 121).
@@ -198,23 +191,6 @@ export function PrintableSheet() {
                 {load.overloaded && (
                   <p className="text-[9px] font-bold mt-0.5">Sobrecarregado: −{OVERLOAD_DEFENSE_PENALTY} já aplicado.</p>
                 )}
-                {(defenseReactions.dodge || defenseReactions.block) && (
-                  <div className="text-[9px] text-gray-600 mt-0.5 space-y-0.5">
-                    {defenseReactions.dodge && (
-                      <p>
-                        <span className="font-semibold text-gray-900">Esquivando: {defenseReactions.dodge.total}</span>
-                        {' '}— Reflexos{formatReactionSources(defenseReactions.dodge)}.
-                      </p>
-                    )}
-                    {defenseReactions.block && (
-                      <p>
-                        <span className="font-semibold text-gray-900">Bloqueando: RD {defenseReactions.block.total}</span>
-                        {' '}no corpo a corpo — Fortitude{formatReactionSources(defenseReactions.block)}.
-                      </p>
-                    )}
-                    <p className="text-gray-500">Reação, uma por rodada, antes da rolagem do atacante.</p>
-                  </div>
-                )}
                 {conditionalDefense.map((d, i) => (
                   <p key={i} className="text-[9px] text-gray-600 mt-0.5">
                     +{d.value}{d.appliesToResistanceTests && ' (e em resist.)'} {d.condition} — {d.source}.
@@ -226,10 +202,11 @@ export function PrintableSheet() {
 
             <section className="text-xs space-y-1">
               <p>
-                <span className="font-bold uppercase text-[10px]">Proteção:</span>{' '}
-                {protections.length > 0
-                  ? protections.map(u => `${getInstanceLabel(draft, u.uid)} (+${u.item.type === 'protection' ? u.item.defenseBonus : 0})`).join(', ')
-                  : '—'}
+                <span className="font-bold uppercase text-[10px]">1 reação:</span>{' '}
+                {[
+                  defenseReactions.dodge && `esquiva: ${defenseReactions.dodge.total}`,
+                  defenseReactions.block && `bloqueio: ${defenseReactions.block.total} RD`,
+                ].filter(Boolean).join(', ') || '—'}
               </p>
               <p className="flex items-baseline gap-1">
                 <span className="font-bold uppercase text-[10px]">Resistências:</span>{' '}

@@ -641,6 +641,23 @@ export function EquipmentStep() {
         </div>
       </div>
 
+      {load.overloaded && (
+        <div className="mb-4 p-3 rounded-lg border-2 border-amber-600 bg-amber-950/40 text-amber-200 text-sm">
+          🎒 <strong>SOBRECARREGADO</strong> — {load.spaces} de {load.capacity} espaços.
+          Você pode carregar tudo isso, mas o livro (pág. 55) cobra o preço:{' '}
+          <strong>−{OVERLOAD_DEFENSE_PENALTY} na Defesa</strong>,{' '}
+          <strong>−{OVERLOAD_SKILL_PENALTY} nas perícias com penalidade de carga</strong> e{' '}
+          <strong>−{OVERLOAD_SPEED_PENALTY_METERS}m de deslocamento</strong>. A ficha já aplica tudo.
+          O limite absoluto é <strong>{load.max} espaços</strong> ({load.max - load.spaces} a mais que agora).
+        </div>
+      )}
+      {load.impossible && (
+        <div className="mb-4 p-3 rounded-lg border-2 border-red-600 bg-red-950/40 text-red-200 text-sm">
+          🚫 <strong>Carga impossível</strong> — {load.spaces} espaços, e o teto é {load.max} (o dobro da
+          capacidade). Remova itens para continuar.
+        </div>
+      )}
+
       <div className="space-y-8">
         <div>
           <h3 className="font-fantasy text-xl text-parchment-300 border-b border-parchment-900/50 pb-2 mb-4">Armas</h3>
@@ -680,22 +697,6 @@ export function EquipmentStep() {
 
         <div>
           <h3 className="font-fantasy text-xl text-parchment-300 border-b border-parchment-900/50 pb-2 mb-4">Equipamento Geral</h3>
-          {load.overloaded && (
-            <div className="mb-4 p-3 rounded-lg border-2 border-amber-600 bg-amber-950/40 text-amber-200 text-sm">
-              🎒 <strong>SOBRECARREGADO</strong> — {load.spaces} de {load.capacity} espaços.
-              Você pode carregar tudo isso, mas o livro (pág. 55) cobra o preço:{' '}
-              <strong>−{OVERLOAD_DEFENSE_PENALTY} na Defesa</strong>,{' '}
-              <strong>−{OVERLOAD_SKILL_PENALTY} nas perícias com penalidade de carga</strong> e{' '}
-              <strong>−{OVERLOAD_SPEED_PENALTY_METERS}m de deslocamento</strong>. A ficha já aplica tudo.
-              O limite absoluto é <strong>{load.max} espaços</strong> ({load.max - load.spaces} a mais que agora).
-            </div>
-          )}
-          {load.impossible && (
-            <div className="mb-4 p-3 rounded-lg border-2 border-red-600 bg-red-950/40 text-red-200 text-sm">
-              🚫 <strong>Carga impossível</strong> — {load.spaces} espaços, e o teto é {load.max} (o dobro da
-              capacidade). Remova itens para continuar.
-            </div>
-          )}
           {blockedCurses.length > 0 && (
             <div className="mb-4 p-3 rounded-lg border border-red-700/60 bg-red-950/30 text-red-300 text-sm">
               ⛔ <strong>Sua Patente não requisita itens amaldiçoados</strong> (livro, pág. 144): eles são liberados

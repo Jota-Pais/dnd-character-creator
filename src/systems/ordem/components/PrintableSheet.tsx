@@ -357,7 +357,7 @@ export function PrintableSheet() {
               <tbody>
                 {explosives.map(e => (
                   <tr key={e.uid} className="border-b border-gray-300 align-top">
-                    <td className="pr-2 py-0.5 font-semibold">{e.name}</td>
+                    <td className="pr-2 py-0.5 font-semibold">{e.name}{e.count > 1 ? ` ×${e.count}` : ''}</td>
                     <td className="pr-2 py-0.5">{e.range} · {e.area}</td>
                     <td className="pr-2 py-0.5">{e.damage ?? '—'}</td>
                     <td className="py-0.5">

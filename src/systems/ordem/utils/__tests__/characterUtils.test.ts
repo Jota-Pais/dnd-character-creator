@@ -632,11 +632,34 @@ describe('getSheetExplosives (DT = 10 + limite de PE + atributo, p. 80)', () => 
     expect(getSheetExplosives(draft)).toEqual([{
       uid: 'granada-fragmentacao',
       name: 'Granada de Fragmentação',
+      count: 1,
       damage: '8d6 perfuração',
       area: 'raio de 6m',
       range: 'Médio',
       resistance: { skill: 'Reflexos', dt: 18, effect: 'reduz o dano à metade', notes: [] },
     }])
+  })
+
+  it('unidades idênticas colapsam numa linha só, com a contagem (4 granadas = 1 teste ×4)', () => {
+    const draft = makeDraft({
+      class: 'specialist', nex: 25, attributes: agi3int2,
+      equipmentChoices: ['granada-fragmentacao', 'granada-fragmentacao#2', 'granada-fragmentacao#3', 'granada-fragmentacao#4'],
+    })
+    const explosives = getSheetExplosives(draft)
+    expect(explosives).toHaveLength(1)
+    expect(explosives[0].name).toBe('Granada de Fragmentação')
+    expect(explosives[0].count).toBe(4)
+  })
+
+  it('explosivos diferentes continuam em linhas separadas', () => {
+    const draft = makeDraft({
+      class: 'specialist', nex: 25, attributes: agi3int2,
+      equipmentChoices: ['granada-fragmentacao', 'granada-fragmentacao#2', 'granada-fumaca'],
+    })
+    expect(getSheetExplosives(draft).map(e => `${e.name} ×${e.count}`)).toEqual([
+      'Granada de Fragmentação ×2',
+      'Granada de Fumaça ×1',
+    ])
   })
 
   it('mina antipessoal usa DT Int, não DT Agi', () => {

@@ -655,7 +655,7 @@ export function ReviewStep() {
           <div className="space-y-1">
             {explosives.map(e => (
               <p key={e.uid} className="text-parchment-500 text-xs">
-                <span className="font-semibold text-parchment-300">{e.name}</span>{' '}
+                <span className="font-semibold text-parchment-300">{e.name}{e.count > 1 ? ` ×${e.count}` : ''}</span>{' '}
                 <span className="text-parchment-700">
                   {e.range} · {e.area}
                   {e.damage && ` · ${e.damage}`}

@@ -296,6 +296,8 @@ export type SheetExplosive = {
   uid: string
   name: string
   /** Dano em dados com o tipo (ex.: "8d6 perfuração"); null quando o explosivo não causa dano. */
+  /** Quantas unidades idênticas deste explosivo o agente carrega — a linha vale pra todas. */
+  count: number
   damage: string | null
   area: string
   range: string
@@ -314,6 +316,7 @@ export type SheetExplosive = {
 export function getSheetExplosives(draft: OrdemCharacterDraft): SheetExplosive[] {
   const attrs = getSheetAttributes(draft)
   const expert = hasClassPower(draft, 'explosives-expert')
+  const bySignature = new Map<string, SheetExplosive>()
   const out: SheetExplosive[] = []
   for (const uid of draft.equipmentChoices) {
     const item = getEquipmentByInstance(uid)
@@ -328,14 +331,24 @@ export function getSheetExplosives(draft: OrdemCharacterDraft): SheetExplosive[]
       }
       resistance = { skill: item.resistance.skill, dt, effect: item.resistance.effect, notes }
     }
-    out.push({
+    const entry: SheetExplosive = {
       uid,
-      name: getInstanceLabel(draft, uid),
+      // Sem o "#N": 4 granadas iguais são o MESMO teste — vira uma linha só, com a contagem.
+      name: getInstanceLabel(draft, uid).replace(/ #\d+/, ''),
+      count: 1,
       damage: item.damage ? `${item.damage} ${item.damageType ?? ''}`.trim() : null,
       area: item.area,
       range: item.range,
       resistance,
-    })
+    }
+    const signature = JSON.stringify({ ...entry, uid: null })
+    const existing = bySignature.get(signature)
+    if (existing) {
+      existing.count++
+      continue
+    }
+    bySignature.set(signature, entry)
+    out.push(entry)
   }
   return out
 }

@@ -155,7 +155,7 @@ export function getAttributeDicePenalty(
 /** Pool de d20 de uma perícia na ficha, já com atributo 0 e a penalidade de proteção. */
 export function getSkillDicePool(draft: OrdemCharacterDraft, skillId: string): DicePool {
   const skill = getSkill(skillId)
-  if (!skill) return { dice: 1, mode: 'best' }
+  if (!skill) return { dice: 1 }
   const attribute = skill.attribute as 'agility' | 'strength' | 'intellect' | 'presence' | 'vigor'
   const attrs = getSheetAttributes(draft)
   return getDicePool(attrs[attribute], getAttributeDicePenalty(draft, attribute))

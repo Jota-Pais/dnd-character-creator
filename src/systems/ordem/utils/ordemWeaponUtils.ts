@@ -7,7 +7,7 @@ import { getModification } from './modificationUtils'
 import { getCurse, getSheetAttributes } from './curseUtils'
 import { getEquipmentByInstance, getInstanceLabel, instanceItemId, usesLongBullets, hasWeaponProficiency } from './equipmentUtils'
 import { getAttributeDicePenalty } from './sheetEffects'
-import { getDicePool, NO_PROFICIENCY_DICE_PENALTY, type DicePool } from './attributeUtils'
+import { getDicePool, NO_PROFICIENCY_DICE_PENALTY } from './attributeUtils'
 import { parseDice, type DamageSpec } from '../../../core/dice/dice'
 
 /** Bônus fixo por grau de treinamento (livro, Cap. 2). */
@@ -32,8 +32,6 @@ export type OrdemWeaponAttack = {
   skill: string
   /** Quantos d20 se rola — do atributo-base da perícia, já com as penalidades de proficiência. */
   rollDice: number
-  /** 'worst' quando vale o PIOR resultado (atributo 0, ou penalidade que zerou o pool). */
-  rollMode: DicePool['mode']
   /**
    * Atributo que dá os dados e o bônus de dano deste ataque. Normalmente o da perícia (Força na
    * Luta, Agilidade na Pontaria), mas numa arma ágil pode ser Agilidade num teste de Luta (p. 59).
@@ -44,7 +42,7 @@ export type OrdemWeaponAttack = {
   /** Por que o pool foi penalizado, pra ficha explicar (ex.: "arma sem proficiência −ØØ"). */
   dicePenaltyNotes: string[]
   /**
-   * Entradas de que `rollDice`/`rollMode` saíram, para quem precisa RE-derivar o pool com uma
+   * Entradas de que `rollDice` saiu, para quem precisa RE-derivar o pool com uma
    * penalidade a mais — o modo de jogo faz isso ao aplicar condições, que a ficha estática não
    * conhece. Recompor é `getDicePool(attributeValue, dicePenalty + extra)`.
    */
@@ -292,7 +290,7 @@ export function getOrdemWeaponAttack(
   const range = curses.some(c => c.rangeIncrease) ? increaseRange(weapon.range) : weapon.range
 
   return {
-    name: weapon.name, skill, rollDice: pool.dice, rollMode: pool.mode, attributeUsed: attackAttribute,
+    name: weapon.name, skill, rollDice: pool.dice, attributeUsed: attackAttribute,
     dicePenaltyNotes, attributeValue: attrs[attackAttribute], dicePenalty,
     notes: getWeaponRuleNotes(weapon, draft),
     attackBonus, damage, damageSpec, critical,

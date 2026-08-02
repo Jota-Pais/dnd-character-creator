@@ -472,7 +472,7 @@ function buildAttacks(draft: OrdemCharacterDraft, conditions: string[]): PlayAct
     name: attack.name,
     roll: {
       dice: pool.dice,
-      mode: pool.mode,
+      mode: 'best',
       bonus: attack.attackBonus,
       label: formatPoolLabel(pool, attack.attackBonus),
     },
@@ -520,7 +520,7 @@ function buildSkills(draft: OrdemCharacterDraft, conditions: string[]): PlayActi
       return {
         id: `skill:${skill.id}`,
         name: formatSkillWithAttribute(skill.id),
-        roll: { dice: pool.dice, mode: pool.mode, bonus, label: formatPoolLabel(pool, bonus) },
+        roll: { dice: pool.dice, mode: 'best', bonus, label: formatPoolLabel(pool, bonus) },
         notes: [
           ...(conditionPenalty > 0 ? [`condições −${'Ø'.repeat(conditionPenalty)}`] : []),
           // Condicional NÃO entra no número: vale só em certas situações, e embutir enganaria o
@@ -540,15 +540,16 @@ function isRealRange(range: string): boolean {
 }
 
 /**
- * A ficha mostra `0` dados quando o atributo é 0 (ver `getDicePool`), mas na mesa o botão precisa
- * rolar alguma coisa quando o jogador aperta — e `rollPool` já tem piso de 1 dado. O modo de jogo
- * então rola 1d20 e **rotula 1d20**: o número exibido nunca mente sobre o que foi rolado.
+ * A ficha mostra `0` dados quando o atributo (menos as penalidades) zera — ver `getDicePool`. Na
+ * mesa o botão precisa rolar alguma coisa quando o jogador aperta, e `rollPool` já tem piso de 1
+ * dado: aqui o pool sobe pra 1 **antes** de virar rótulo, pro número exibido nunca mentir sobre o
+ * que foi rolado.
  */
 function toRollablePool(pool: DicePool): DicePool {
-  return pool.dice >= 1 ? pool : { dice: 1, mode: pool.mode }
+  return pool.dice >= 1 ? pool : { dice: 1 }
 }
 
-function formatPoolLabel(pool: { dice: number; mode: 'best' | 'worst' }, bonus: number): string {
+function formatPoolLabel(pool: DicePool, bonus: number): string {
   const base = formatDicePool(pool)
   if (bonus === 0) return base
   return `${base} ${bonus > 0 ? '+' : '−'}${Math.abs(bonus)}`

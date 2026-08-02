@@ -14,7 +14,9 @@ Fonte: Glossário de Condições, livro básico pt-BR, p. 310–311. Digitalizad
 | **–OO** | Penalidade de **2 dados** |
 | **–5 / –10 na Defesa** | Penalidade numérica, direta na Defesa |
 
-A penalidade em dados já é modelada pelo motor: `getDicePool(atributo, dicePenalty)` em `attributeUtils.ts`. Quando a penalidade derruba o pool abaixo de 1 dado, o personagem rola e pega o **pior** resultado (p. 13) — a função já resolve isso.
+A penalidade em dados já é modelada pelo motor: `getDicePool(atributo, dicePenalty)` em `attributeUtils.ts`, que subtrai do atributo com **piso em 0 dados**.
+
+> Pelo livro, a penalidade que derruba o pool abaixo de 1 dado manda rolar como se ela fosse bônus e pegar o **pior** resultado (p. 13). **O app não aplica isso** — decisão de produto do usuário em 2026-08-02, junto com o atributo 0. Ver `docs/ordem-auditoria-regras.md` (F8). Não reimplementar sem pedido.
 
 ## As 36 condições
 

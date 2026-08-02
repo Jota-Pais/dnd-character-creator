@@ -18,7 +18,7 @@ Valores: 1 = média humana. 2–3 = acima da média (atleta de elite, pesquisado
 
 Role uma quantidade de d20 igual ao valor do atributo (ou atributo-base da perícia) envolvido, use o **melhor** resultado. Se o atributo for 0, role **2d20** e use o **pior** resultado. Ex.: Força 3 → role 3d20, use o maior ("3O" na notação do livro).
 
-> **O app não aplica o "2d20 pelo pior" do atributo 0** — decisão de produto do usuário em 2026-08-02: a ficha mostra `0` mesmo, porque o "2 pior" na coluna de dados confundia. Ver `docs/ordem-auditoria-regras.md` (F8, revertido pela metade). Não reimplementar sem pedido.
+> **O app não aplica o "2d20 pelo pior" do atributo 0** — decisão de produto do usuário em 2026-08-02: a ficha mostra `0 AGI` mesmo, porque o "2 pior" na coluna de dados confundia. O mesmo vale pra outra regra de "pegue o pior", a da p. 13 (ver `regras-condicoes.md`). Ver `docs/ordem-auditoria-regras.md` (F8, revertido por inteiro). Não reimplementar sem pedido.
 
 Efeitos colaterais notáveis:
 - **Intelecto** concede perícias treinadas adicionais em quantidade igual ao seu valor (além do que a origem/classe já dá), e define quantos rituais o personagem pode aprender.

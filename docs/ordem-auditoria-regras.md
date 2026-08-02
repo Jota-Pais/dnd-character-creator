@@ -161,19 +161,33 @@ somar Força, misturando as duas coisas. Não tinha efeito visível porque nenhu
 | **F5** | Florete: `damageType` P → **C**, e a descrição corrigida (seguindo a Tabela 3.3, por decisão do usuário) |
 | **F6** | Faca, Lança e Machadinha rendem uma segunda linha, "(arremesso)", com Pontaria e a Força ainda somada no dano |
 | **F7** | Coronhada virou ataque sintético quando o agente carrega arma de fogo (1d4, ou 1d6 se a arma é de duas mãos, impacto letal). Arma improvisada ficou fora, por decisão do usuário |
-| **F8** | `getDicePool` centraliza o pool: atributo 0 → 2 dados pelo pior; penalidade que derruba abaixo de 1 → rola como se fosse bônus, pelo pior. A ficha marca "pior" onde aplicável. **Metade revertida em 2026-08-02** — ver abaixo |
+| **F8** | `getDicePool` centraliza o pool: atributo 0 → 2 dados pelo pior; penalidade que derruba abaixo de 1 → rola como se fosse bônus, pelo pior. A ficha marca "pior" onde aplicável. **Revertido por inteiro em 2026-08-02** — ver abaixo |
 | **F9** | `isMelee` passou a ser só corpo a corpo; `addsStrengthToDamage` cobre a regra de dano do arremesso |
 
-### F8, revertido pela metade (2026-08-02)
+### F8, revertido por inteiro (2026-08-02)
 
-O "2 pior" do **atributo 0** saiu: `getDicePool(0)` volta a render **0 dados**, e a ficha volta a
-mostrar `0` na coluna de dados e `0d20` nos ataques — como era antes da auditoria. É uma decisão
-de produto do usuário contra a p. 16 do livro: o "2 pior" na coluna confundia mais do que ajudava.
-A regra segue digitalizada em `regras-atributos.md` — **não é bug, não reimplementar sem pedido.**
+**A ficha não fala mais em "pior" em lugar nenhum.** `getDicePool` virou uma subtração com piso em
+zero — `max(0, atributo − penalidade)` — e `formatDicePool` só escreve `Nd20`. A coluna de dados
+mostra `0 AGI`, os ataques mostram `0d20`, e o tipo `DicePool` perdeu o campo `mode`.
 
-A outra metade do F8 **fica**: a regra de dados negativos da p. 13, quando uma **penalidade**
-(arma/proteção sem proficiência, condições) derruba o pool abaixo de 1 dado, continua rolando como
-se a penalidade fosse bônus e pegando o pior. É outra regra, e o usuário não pediu pra tirar.
+Isso derruba as **duas** regras de "role e pegue o pior" do livro, por decisão de produto do
+usuário:
+
+- **Atributo 0** (p. 16): rolaria 2d20 pelo pior. Agora é 0 dado, e a ficha mostra `0`.
+- **Penalidade que derruba o pool abaixo de 1** (p. 13): rolaria como se a penalidade fosse bônus,
+  pegando o pior (Agilidade 3 com −ØØØØ → 7d20 pelo pior). Agora para em 0 dado.
+
+O motivo é de produto, não de regra: o "2 pior" na coluna de dados confundia mais do que ajudava.
+As duas regras seguem digitalizadas em `regras-atributos.md` e `regras-condicoes.md`, marcadas como
+não aplicadas — **não é bug, não reimplementar sem pedido.**
+
+O que **fica** do resto da auditoria: as penalidades em dados de F2/F3 continuam valendo e
+continuam reduzindo o pool, com as notas ("arma sem proficiência −ØØ") explicando o número menor.
+Só o tratamento do pool que zera é que mudou. Os outros 8 achados estão intactos.
+
+No modo de jogo, `toRollablePool` sobe um pool de 0 para 1 dado antes de rotular, porque o botão
+precisa rolar algo quando o jogador aperta (`rollPool` já tem piso de 1) — assim o rótulo não
+mente sobre o que foi rolado.
 
 **Fontes de proficiência conferidas exaustivamente** antes de aplicar F2/F3 (a penalidade errada é
 pior que penalidade nenhuma). O livro concede proficiência em exatamente 6 lugares para armas —

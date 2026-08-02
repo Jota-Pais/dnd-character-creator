@@ -587,8 +587,7 @@ export function ReviewStep() {
       {weaponAttacks.length > 0 && (
         <Section title="Ataques">
           <p className="text-parchment-700 text-xs mb-2">
-            Role a quantidade de d20 indicada e use o melhor + o bônus —{' '}
-            <span className="text-amber-400/90">exceto onde estiver marcado "pior"</span>.
+            Role a quantidade de d20 indicada e use o melhor + o bônus.
           </p>
           {extraDamageDice.map(d => (
             <p key={d.source} className="text-gold-500/90 text-xs mb-2">
@@ -601,7 +600,7 @@ export function ReviewStep() {
                 <span className="font-semibold text-parchment-300">{a.name}</span>{' '}
                 <span className="text-parchment-700">
                   {a.skill} ({ATTR_ABBREV[a.attributeUsed]}){' '}
-                  {formatDicePool({ dice: a.rollDice, mode: a.rollMode })}{' '}
+                  {formatDicePool({ dice: a.rollDice })}{' '}
                   <span className="text-gold-500">{a.attackBonus >= 0 ? `+${a.attackBonus}` : a.attackBonus}</span>
                   {' · '}{a.damage} · Crít. {a.critical}{a.range && a.range !== '-' ? ` · ${a.range}` : ''}
                 </span>

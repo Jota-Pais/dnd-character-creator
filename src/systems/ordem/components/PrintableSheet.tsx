@@ -245,10 +245,7 @@ export function PrintableSheet() {
                         )}
                       </td>
                       <td className="text-center">
-                        {(() => {
-                          const pool = getSkillDicePool(draft, skill.id)
-                          return pool.mode === 'worst' ? `${pool.dice} pior` : pool.dice
-                        })()}{' '}
+                        {getSkillDicePool(draft, skill.id).dice}{' '}
                         <span className="text-[9px] text-gray-500">{ATTR_ABBREV[skill.attribute as keyof OrdemAttributes]}</span>
                       </td>
                       <td className="text-center">{bonus > 0 ? `+${bonus}` : '0'}</td>
@@ -317,7 +314,7 @@ export function PrintableSheet() {
                   <td className="pr-2 py-0.5 font-semibold">{a.name}</td>
                   <td className="pr-2 py-0.5">
                     {a.skill} ({ATTR_ABBREV[a.attributeUsed]}){' '}
-                    {formatDicePool({ dice: a.rollDice, mode: a.rollMode })}{' '}
+                    {formatDicePool({ dice: a.rollDice })}{' '}
                     <strong>{a.attackBonus >= 0 ? `+${a.attackBonus}` : a.attackBonus}</strong>
                     {a.dicePenaltyNotes.length > 0 && (
                       <span className="text-[9px] text-gray-600"> ({a.dicePenaltyNotes.join(', ')})</span>

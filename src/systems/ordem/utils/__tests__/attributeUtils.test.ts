@@ -2,33 +2,32 @@ import { describe, it, expect } from 'vitest'
 import { getDicePool, formatDicePool } from '../attributeUtils'
 
 describe('getDicePool', () => {
-  it('1 dado por ponto do atributo, pegando o melhor', () => {
-    expect(getDicePool(3)).toEqual({ dice: 3, mode: 'best' })
-    expect(getDicePool(1)).toEqual({ dice: 1, mode: 'best' })
+  it('1 dado por ponto do atributo', () => {
+    expect(getDicePool(3)).toEqual({ dice: 3 })
+    expect(getDicePool(1)).toEqual({ dice: 1 })
   })
 
-  it('atributo 0 vale 0 dados — a ficha mostra o valor cru, sem o "2 pior" do livro (p. 16)', () => {
-    expect(getDicePool(0)).toEqual({ dice: 0, mode: 'best' })
+  it('atributo 0 vale 0 dados — sem o "2 pelo pior" do livro (p. 16), por decisão de produto', () => {
+    expect(getDicePool(0)).toEqual({ dice: 0 })
     expect(formatDicePool(getDicePool(0))).toBe('0d20')
   })
 
-  it('penalidade que mantém o pool >= 1 apenas reduz os dados', () => {
-    expect(getDicePool(3, 2)).toEqual({ dice: 1, mode: 'best' })
-    expect(getDicePool(5, 2)).toEqual({ dice: 3, mode: 'best' })
+  it('penalidade reduz os dados', () => {
+    expect(getDicePool(3, 2)).toEqual({ dice: 1 })
+    expect(getDicePool(5, 2)).toEqual({ dice: 3 })
   })
 
-  it('penalidade que derruba abaixo de 1: rola como se fosse bônus e pega o pior (p. 13)', () => {
-    // Agilidade 2 com −ØØ → 2+2 = 4 dados, pior.
-    expect(getDicePool(2, 2)).toEqual({ dice: 4, mode: 'worst' })
-    // Agilidade 1 com −ØØ → 1+2 = 3 dados, pior.
-    expect(getDicePool(1, 2)).toEqual({ dice: 3, mode: 'worst' })
-    // Atributo 0 com −ØØ → nunca menos que 2 dados.
-    expect(getDicePool(0, 2)).toEqual({ dice: 2, mode: 'worst' })
+  it('penalidade que zera o pool para em 0 — sem o "role pelo pior" da p. 13', () => {
+    // Agilidade 2 com −ØØ → 0 dados (o livro rolaria 4d20 pelo pior).
+    expect(getDicePool(2, 2)).toEqual({ dice: 0 })
+    // Agilidade 1 com −ØØ → o pool nunca fica negativo.
+    expect(getDicePool(1, 2)).toEqual({ dice: 0 })
+    expect(getDicePool(0, 2)).toEqual({ dice: 0 })
   })
 
-  it('formatDicePool marca quando vale o pior', () => {
-    expect(formatDicePool({ dice: 3, mode: 'best' })).toBe('3d20')
-    expect(formatDicePool({ dice: 4, mode: 'worst' })).toBe('4d20 pior')
+  it('formatDicePool nunca escreve "pior"', () => {
+    expect(formatDicePool({ dice: 3 })).toBe('3d20')
+    expect(formatDicePool({ dice: 0 })).toBe('0d20')
   })
 })
 import { getAttributeSum, isValidAttributes, ATTRIBUTES } from '../attributeUtils'

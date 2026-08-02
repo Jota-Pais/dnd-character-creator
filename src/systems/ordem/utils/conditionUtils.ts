@@ -71,7 +71,7 @@ function penaltyApplies(penalty: ConditionDicePenalty, context: RollContext): bo
 
 /**
  * Penalidade em DADOS somada de todas as condições ativas para este teste. Alimenta o
- * `dicePenalty` de `getDicePool`, que já sabe virar "role e pegue o pior" quando o pool zera.
+ * `dicePenalty` de `getDicePool`, que subtrai do atributo com piso em 0 dados.
  *
  * As condições entram já expandidas — quem chama não precisa lembrar da cascata.
  */

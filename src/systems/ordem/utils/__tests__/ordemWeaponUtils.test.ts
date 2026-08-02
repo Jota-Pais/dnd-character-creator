@@ -388,7 +388,6 @@ describe('Penalidades de proficiência no pool de dados', () => {
     const ocultista = makeDraft({ class: 'occultist', attributes: agi3 })
     const a = getOrdemWeaponAttack(espingarda, ocultista, [])
     expect(a.rollDice).toBe(1) // Agilidade 3 − 2
-    expect(a.rollMode).toBe('best')
     expect(a.dicePenaltyNotes).toEqual(['arma sem proficiência −ØØ'])
   })
 
@@ -411,16 +410,15 @@ describe('Penalidades de proficiência no pool de dados', () => {
     expect(a.rollDice).toBe(1) // Força 3 − 2
   })
 
-  it('as duas penalidades acumulam e podem virar "role o pior"', () => {
+  it('as duas penalidades acumulam e o pool para em 0, sem virar "role o pior"', () => {
     const ocultista = makeDraft({
       class: 'occultist', attributes: agi3,
       equipmentChoices: ['protecao-leve', 'espingarda'],
     })
     const a = getOrdemWeaponAttack(espingarda, ocultista, [])
     expect(a.dicePenaltyNotes).toHaveLength(2)
-    // Agilidade 3 − 4 = −1 → rola 3+4 = 7 dados e pega o pior.
-    expect(a.rollMode).toBe('worst')
-    expect(a.rollDice).toBe(7)
+    // Agilidade 3 − 4 = −1 → piso em 0 (o livro rolaria 7d20 pelo pior, p. 13).
+    expect(a.rollDice).toBe(0)
   })
 
   it('ataque por Ocultismo (Lâmina Maldita) não sofre a penalidade de proteção', () => {
@@ -445,7 +443,6 @@ describe('Penalidades de proficiência no pool de dados', () => {
     // Machete (não ágil) mantém o teste em Força 0; a faca desviaria para Agilidade.
     const a = getOrdemWeaponAttack(machete, forca0, [])
     expect(a.rollDice).toBe(0)
-    expect(a.rollMode).toBe('best')
   })
 })
 

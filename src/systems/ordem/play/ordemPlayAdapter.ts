@@ -30,7 +30,7 @@ import {
 } from '../utils/conditionUtils'
 import { getSheetAttributes } from '../utils/curseUtils'
 import { SKILLS, formatSkillWithAttribute } from '../utils/skillUtils'
-import { formatDicePool, getDicePool } from '../utils/attributeUtils'
+import { formatDicePool, getDicePool, type DicePool } from '../utils/attributeUtils'
 import {
   getLoadState,
   getModifiedDefenseBonus,
@@ -465,7 +465,7 @@ function buildAttacks(draft: OrdemCharacterDraft, conditions: string[]): PlayAct
       melee: attack.skill === 'Luta',
       attribute: attack.attributeUsed,
     })
-    const pool = getDicePool(attack.attributeValue, attack.dicePenalty + conditionPenalty)
+    const pool = toRollablePool(getDicePool(attack.attributeValue, attack.dicePenalty + conditionPenalty))
 
     return {
     id: `attack:${i}:${attack.name}`,
@@ -512,10 +512,10 @@ function buildSkills(draft: OrdemCharacterDraft, conditions: string[]): PlayActi
         attribute: skill.attribute,
       })
       // Mesma conta de getSkillDicePool, mais a penalidade das condições.
-      const pool = getDicePool(
+      const pool = toRollablePool(getDicePool(
         attrs[skill.attribute],
         getAttributeDicePenalty(draft, skill.attribute) + conditionPenalty,
-      )
+      ))
       const bonus = getSkillBonusTotal(draft, skill.id)
       return {
         id: `skill:${skill.id}`,
@@ -537,6 +537,15 @@ function buildSkills(draft: OrdemCharacterDraft, conditions: string[]): PlayActi
 function isRealRange(range: string): boolean {
   const trimmed = range.trim()
   return trimmed.length > 0 && !/^[–—-]$/.test(trimmed)
+}
+
+/**
+ * A ficha mostra `0` dados quando o atributo é 0 (ver `getDicePool`), mas na mesa o botão precisa
+ * rolar alguma coisa quando o jogador aperta — e `rollPool` já tem piso de 1 dado. O modo de jogo
+ * então rola 1d20 e **rotula 1d20**: o número exibido nunca mente sobre o que foi rolado.
+ */
+function toRollablePool(pool: DicePool): DicePool {
+  return pool.dice >= 1 ? pool : { dice: 1, mode: pool.mode }
 }
 
 function formatPoolLabel(pool: { dice: number; mode: 'best' | 'worst' }, bonus: number): string {

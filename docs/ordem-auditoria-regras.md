@@ -161,8 +161,19 @@ somar Força, misturando as duas coisas. Não tinha efeito visível porque nenhu
 | **F5** | Florete: `damageType` P → **C**, e a descrição corrigida (seguindo a Tabela 3.3, por decisão do usuário) |
 | **F6** | Faca, Lança e Machadinha rendem uma segunda linha, "(arremesso)", com Pontaria e a Força ainda somada no dano |
 | **F7** | Coronhada virou ataque sintético quando o agente carrega arma de fogo (1d4, ou 1d6 se a arma é de duas mãos, impacto letal). Arma improvisada ficou fora, por decisão do usuário |
-| **F8** | `getDicePool` centraliza o pool: atributo 0 → 2 dados pelo pior; penalidade que derruba abaixo de 1 → rola como se fosse bônus, pelo pior. A ficha marca "pior" onde aplicável |
+| **F8** | `getDicePool` centraliza o pool: atributo 0 → 2 dados pelo pior; penalidade que derruba abaixo de 1 → rola como se fosse bônus, pelo pior. A ficha marca "pior" onde aplicável. **Metade revertida em 2026-08-02** — ver abaixo |
 | **F9** | `isMelee` passou a ser só corpo a corpo; `addsStrengthToDamage` cobre a regra de dano do arremesso |
+
+### F8, revertido pela metade (2026-08-02)
+
+O "2 pior" do **atributo 0** saiu: `getDicePool(0)` volta a render **0 dados**, e a ficha volta a
+mostrar `0` na coluna de dados e `0d20` nos ataques — como era antes da auditoria. É uma decisão
+de produto do usuário contra a p. 16 do livro: o "2 pior" na coluna confundia mais do que ajudava.
+A regra segue digitalizada em `regras-atributos.md` — **não é bug, não reimplementar sem pedido.**
+
+A outra metade do F8 **fica**: a regra de dados negativos da p. 13, quando uma **penalidade**
+(arma/proteção sem proficiência, condições) derruba o pool abaixo de 1 dado, continua rolando como
+se a penalidade fosse bônus e pegando o pior. É outra regra, e o usuário não pediu pra tirar.
 
 **Fontes de proficiência conferidas exaustivamente** antes de aplicar F2/F3 (a penalidade errada é
 pior que penalidade nenhuma). O livro concede proficiência em exatamente 6 lugares para armas —

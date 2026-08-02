@@ -333,10 +333,38 @@ export function getWeaponAmmoVariants(draft: OrdemCharacterDraft, weapon: OrdemW
   return [...bySignature.values()].sort((a, b) => a.modIds.length - b.modIds.length)
 }
 
+/** Remove o número de duplicata do rótulo da unidade ("Revólver #2 (arremesso)" → "Revólver (arremesso)"). */
+function stripCopyNumber(name: string): string {
+  return name.replace(/ #\d+/, '')
+}
+
+/**
+ * Colapsa linhas de ataque idênticas de unidades repetidas do mesmo item: dois revólveres iguais
+ * são o MESMO ataque, e mostrá-lo duas vezes só ocupa ficha — vira uma linha "Revólver", sem o #N.
+ * Qualquer diferença (modificação, maldição, munição carregada) muda a assinatura e mantém as
+ * linhas separadas, cada uma com seu número.
+ */
+function dedupeIdenticalAttacks(attacks: OrdemWeaponAttack[]): OrdemWeaponAttack[] {
+  const bySignature = new Map<string, OrdemWeaponAttack>()
+  const out: OrdemWeaponAttack[] = []
+  for (const attack of attacks) {
+    const signature = JSON.stringify({ ...attack, name: stripCopyNumber(attack.name) })
+    const existing = bySignature.get(signature)
+    if (existing) {
+      existing.name = stripCopyNumber(existing.name)
+      continue
+    }
+    bySignature.set(signature, attack)
+    out.push(attack)
+  }
+  return out
+}
+
 /**
  * Todas as linhas de ataque da ficha, na ordem em que aparecem na Revisão e no PDF: uma por
  * arma requisitada (ou uma por variante de munição compatível, quando o agente carrega munições
- * diferentes) e o ataque desarmado no fim. Fonte única pra Revisão e PDF não divergirem.
+ * diferentes) e o ataque desarmado no fim — unidades idênticas do mesmo item rendem uma linha só.
+ * Fonte única pra Revisão e PDF não divergirem.
  */
 export function getSheetWeaponAttacks(draft: OrdemCharacterDraft): OrdemWeaponAttack[] {
   const attacks: OrdemWeaponAttack[] = []
@@ -366,7 +394,7 @@ export function getSheetWeaponAttacks(draft: OrdemCharacterDraft): OrdemWeaponAt
   const bloodWeapon = getBloodWeaponAttack(draft)
   if (bloodWeapon) attacks.push(bloodWeapon)
   attacks.push(getUnarmedAttack(draft))
-  return attacks
+  return dedupeIdenticalAttacks(attacks)
 }
 
 /**

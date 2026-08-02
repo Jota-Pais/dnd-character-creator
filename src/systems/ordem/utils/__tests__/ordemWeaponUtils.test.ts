@@ -635,19 +635,37 @@ describe('munição: variantes e linhas de ataque', () => {
     ])
   })
 
-  it('duas unidades da MESMA arma cruzam com as variantes de munição (2 armas × 2 munições = 4 linhas)', () => {
+  it('duas unidades IDÊNTICAS da mesma arma colapsam: as variantes de munição saem uma vez, sem o #N', () => {
     const draft = atirador({
       equipmentChoices: ['pistola', 'pistola#2', 'municao-balas-curtas', 'municao-balas-curtas#2'],
       equipmentModifications: { 'municao-balas-curtas#2': ['dum-dum'] },
     })
     expect(getSheetWeaponAttacks(draft).map(a => a.name)).toEqual([
-      'Pistola #1 (Balas Curtas)',
-      'Pistola #1 (Balas Curtas — Dum dum)',
-      'Pistola #2 (Balas Curtas)',
-      'Pistola #2 (Balas Curtas — Dum dum)',
+      'Pistola (Balas Curtas)',
+      'Pistola (Balas Curtas — Dum dum)',
       'Coronhada',
       'Desarmado',
     ])
+  })
+
+  it('dois revólveres iguais rendem UMA linha de ataque (é o mesmo ataque duas vezes)', () => {
+    const draft = atirador({ equipmentChoices: ['revolver', 'revolver#2'] })
+    expect(getSheetWeaponAttacks(draft).map(a => a.name)).toEqual(['Revólver', 'Coronhada', 'Desarmado'])
+  })
+
+  it('duas unidades com alguma diferença (modificação) mantêm as duas linhas, com o #N', () => {
+    const draft = atirador({
+      equipmentChoices: ['revolver', 'revolver#2'],
+      equipmentModifications: { 'revolver#2': ['certeira'] },
+    })
+    const names = getSheetWeaponAttacks(draft).map(a => a.name)
+    expect(names).toContain('Revólver #1')
+    expect(names).toContain('Revólver #2')
+  })
+
+  it('duas facas iguais colapsam também na linha de arremesso', () => {
+    const draft = atirador({ equipmentChoices: ['faca', 'faca#2'] })
+    expect(getSheetWeaponAttacks(draft).map(a => a.name)).toEqual(['Faca', 'Faca (arremesso)', 'Desarmado'])
   })
 
   it('arma corpo a corpo ignora munição no loadout', () => {

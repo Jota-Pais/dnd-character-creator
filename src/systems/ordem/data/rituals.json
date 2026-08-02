@@ -616,7 +616,7 @@
     "target": "você",
     "duration": "cena",
     "resistance": "",
-    "description": "Você potencializa seus sentidos, recebendo +O em Investigação, Luta, Percepção e Pontaria. Discente (+2 PE): além do normal, seus inimigos sofrem –O em testes de ataque contra você. Requer 2º círculo. Verdadeiro (+5 PE): além do normal, você apura seus sentidos para perceber qualquer perigo ou ameaça. Você fica imune às condições surpreendido e desprevenido e recebe +10 em Defesa e Reflexo. Requer 4º círculo e afinidade."
+    "description": "Você potencializa seus sentidos, recebendo +1d20 em Investigação, Luta, Percepção e Pontaria. Discente (+2 PE): além do normal, seus inimigos sofrem −1d20 em testes de ataque contra você. Requer 2º círculo. Verdadeiro (+5 PE): além do normal, você apura seus sentidos para perceber qualquer perigo ou ameaça. Você fica imune às condições surpreendido e desprevenido e recebe +10 em Defesa e Reflexo. Requer 4º círculo e afinidade."
   },
   {
     "id": "hemofagia",
@@ -714,7 +714,7 @@
     "target": "1 objeto",
     "duration": "cena",
     "resistance": "Vontade anula",
-    "description": "(veja texto) O alvo emite luz de cores alternadas e brilhantes (mas não produz calor) em uma área com 9m de raio. O objeto pode ser guardado (em um bolso, por exemplo) para interromper a luz, que voltará a funcionar caso o objeto seja revelado. Se o alvo for um objeto em posse de uma pessoa involuntária, ela tem direito a um teste de Vontade para anular o efeito. Discente (+2 PE): muda o alcance para longo e o efeito para 4 esferas brilhantes. Cria esferas flutuantes de pura luz com 10cm de diâmetro, que você pode posicionar onde quiser dentro do alcance. Você pode enviar uma esfera à frente, outra para trás, outra para cima e manter uma perto de você, por exemplo. Uma vez por rodada, você pode mover as esferas com uma ação livre. Cada esfera ilumina uma área de 6m de raio, mas não produz calor. Se uma esfera ocupar o espaço de um ser, ele fica ofuscada e sua silhueta pode ser vista claramente (ela não recebe camuflagem por escuridão ou invisibilidade). Requer 2º círculo. Verdadeiro (+5 PE): a luz é cálida como a do sol. Dentro da área seus aliados recebem +O em testes de Vontade, e seus inimigos ficam ofuscados. Requer 3º círculo."
+    "description": "(veja texto) O alvo emite luz de cores alternadas e brilhantes (mas não produz calor) em uma área com 9m de raio. O objeto pode ser guardado (em um bolso, por exemplo) para interromper a luz, que voltará a funcionar caso o objeto seja revelado. Se o alvo for um objeto em posse de uma pessoa involuntária, ela tem direito a um teste de Vontade para anular o efeito. Discente (+2 PE): muda o alcance para longo e o efeito para 4 esferas brilhantes. Cria esferas flutuantes de pura luz com 10cm de diâmetro, que você pode posicionar onde quiser dentro do alcance. Você pode enviar uma esfera à frente, outra para trás, outra para cima e manter uma perto de você, por exemplo. Uma vez por rodada, você pode mover as esferas com uma ação livre. Cada esfera ilumina uma área de 6m de raio, mas não produz calor. Se uma esfera ocupar o espaço de um ser, ele fica ofuscada e sua silhueta pode ser vista claramente (ela não recebe camuflagem por escuridão ou invisibilidade). Requer 2º círculo. Verdadeiro (+5 PE): a luz é cálida como a do sol. Dentro da área seus aliados recebem +1d20 em testes de Vontade, e seus inimigos ficam ofuscados. Requer 3º círculo."
   },
   {
     "id": "medo-tangivel",

@@ -385,8 +385,8 @@ export function ReviewStep() {
             {affinity.active && affinity.element && (
               <p className="text-parchment-600 text-xs pt-2 border-t border-parchment-900/50">
                 <span className="font-semibold text-gold-400">Afinidade Elemental — {ELEMENT_NAMES[affinity.element]}.</span>{' '}
-                Conjura rituais de {ELEMENT_NAMES[affinity.element]} sem componentes ritualísticos; +ØØ em testes contra
-                efeitos de {ELEMENT_NAMES[affinity.element]} e −ØØ contra {ELEMENT_NAMES[OPPRESSOR_OF[affinity.element]]} (opressor);
+                Conjura rituais de {ELEMENT_NAMES[affinity.element]} sem componentes ritualísticos; +2d20 em testes contra
+                efeitos de {ELEMENT_NAMES[affinity.element]} e −2d20 contra {ELEMENT_NAMES[OPPRESSOR_OF[affinity.element]]} (opressor);
                 pode aprender rituais que exijam afinidade com o elemento.
               </p>
             )}

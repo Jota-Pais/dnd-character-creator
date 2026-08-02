@@ -55,7 +55,7 @@ export function AffinitySection({ draft, onPick }: Props) {
       {affinity.active && affinity.element && (
         <ul className="text-parchment-500 text-xs mt-3 space-y-1 leading-relaxed list-disc list-inside">
           <li>Conjura rituais de {ELEMENT_NAMES[affinity.element]} sem componentes ritualísticos, e pode aprender rituais que exijam afinidade com o elemento.</li>
-          <li>+ØØ em testes contra efeitos de {ELEMENT_NAMES[affinity.element]}; −ØØ contra efeitos de {ELEMENT_NAMES[OPPRESSOR_OF[affinity.element]]} (elemento opressor).</li>
+          <li>+2d20 em testes contra efeitos de {ELEMENT_NAMES[affinity.element]}; −2d20 contra efeitos de {ELEMENT_NAMES[OPPRESSOR_OF[affinity.element]]} (elemento opressor).</li>
           <li>Pode escolher poderes paranormais de {ELEMENT_NAMES[affinity.element]} uma 2ª vez para receber a linha "Afinidade".</li>
         </ul>
       )}

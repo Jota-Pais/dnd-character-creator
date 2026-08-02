@@ -55,7 +55,7 @@
     "name": "Sensitivo",
     "element": "knowledge",
     "description": "Você consegue sentir as emoções e intenções de outros personagens, como medo, raiva ou malícia, recebendo +5 em testes de Diplomacia, Intimidação e Intuição.",
-    "affinityDescription": "Quando você faz um teste oposto usando uma dessas perícias, o oponente sofre –O.",
+    "affinityDescription": "Quando você faz um teste oposto usando uma dessas perícias, o oponente sofre −1d20.",
     "prerequisite": null,
     "effects": { "skillBonus": { "diplomacy": 5, "intimidation": 5, "insight": 5 } }
   },

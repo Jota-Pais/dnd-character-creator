@@ -709,7 +709,7 @@ export function EquipmentStep() {
             <div className="mb-4 p-3 rounded-lg border border-amber-700/50 bg-amber-950/30 text-amber-300 text-sm">
               ⚠️ Você está usando proteção sem proficiência
               (<strong>{unproficientProtections.map(uid => getInstanceLabel(draft, uid)).join(', ')}</strong>):
-              o livro (pág. 62) impõe <strong>−ØØ em todos os testes de Força e Agilidade</strong>, não só em
+              o livro (pág. 62) impõe <strong>−2d20 em todos os testes de Força e Agilidade</strong>, não só em
               ataques. A ficha já desconta esses dados — dá pra requisitar, mas o custo é alto.
             </div>
           )}

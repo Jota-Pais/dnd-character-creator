@@ -112,7 +112,7 @@
     "requirement": null,
     "features": [
       { "nex": 10, "name": "Eloquência", "description": "Use uma ação completa e 1 PE por alvo em alcance curto para afetá-los com sua fala. Teste de Diplomacia, Enganação ou Intimidação contra a Vontade dos alvos; vencendo, os alvos ficam fascinados enquanto se concentrar (uma ação padrão por rodada). Um alvo hostil ou envolvido em combate recebe +5 no teste de resistência e tem direito a um novo teste por rodada, sempre que você se concentrar. Quem passar no teste fica imune a este efeito por um dia." },
-      { "nex": 40, "name": "Discurso Motivador", "description": "Gaste uma ação padrão e 4 PE para inspirar seus aliados: você e todos os aliados em alcance curto ganham +O em testes de perícia até o fim da cena. A partir de NEX 65%, pode gastar 8 PE para +OO." },
+      { "nex": 40, "name": "Discurso Motivador", "description": "Gaste uma ação padrão e 4 PE para inspirar seus aliados: você e todos os aliados em alcance curto ganham +1d20 em testes de perícia até o fim da cena. A partir de NEX 65%, pode gastar 8 PE para +2d20." },
       { "nex": 65, "name": "Eu Conheço um Cara", "description": "Uma vez por missão, ative sua rede de contatos para pedir um favor (trocar equipamento, conseguir um local de descanso, ser resgatado de uma cena etc.), a critério do mestre." },
       { "nex": 99, "name": "Truque de Mestre", "description": "Gaste 5 PE para simular o efeito de qualquer habilidade que você tenha visto um de seus aliados usar durante a cena, ignorando os pré-requisitos mas pagando todos os custos normalmente." }
     ]

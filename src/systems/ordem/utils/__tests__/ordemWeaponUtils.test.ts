@@ -389,7 +389,7 @@ describe('Penalidades de proficiência no pool de dados', () => {
     const a = getOrdemWeaponAttack(espingarda, ocultista, [])
     expect(a.rollDice).toBe(1) // Agilidade 3 − 2
     expect(a.rollMode).toBe('best')
-    expect(a.dicePenaltyNotes).toEqual(['arma sem proficiência −ØØ'])
+    expect(a.dicePenaltyNotes).toEqual(['arma sem proficiência −2d20'])
   })
 
   it('combatente tem proficiência com tática: pool cheio, sem nota', () => {
@@ -407,7 +407,7 @@ describe('Penalidades de proficiência no pool de dados', () => {
     })
     const faca = getEquipmentById('faca') as OrdemWeapon // simples → tem proficiência
     const a = getOrdemWeaponAttack(faca, ocultista, [])
-    expect(a.dicePenaltyNotes).toEqual(['proteção sem proficiência −ØØ'])
+    expect(a.dicePenaltyNotes).toEqual(['proteção sem proficiência −2d20'])
     expect(a.rollDice).toBe(1) // Força 3 − 2
   })
 

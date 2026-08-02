@@ -443,8 +443,8 @@ export function PrintableSheet() {
             {affinity.active && affinity.element && (
               <p>
                 <span className="font-semibold">Afinidade Elemental — {ELEMENT_NAMES[affinity.element]}.</span>{' '}
-                Conjura rituais de {ELEMENT_NAMES[affinity.element]} sem componentes ritualísticos; +ØØ em testes contra
-                efeitos de {ELEMENT_NAMES[affinity.element]} e −ØØ contra efeitos de {ELEMENT_NAMES[OPPRESSOR_OF[affinity.element]]} (elemento
+                Conjura rituais de {ELEMENT_NAMES[affinity.element]} sem componentes ritualísticos; +2d20 em testes contra
+                efeitos de {ELEMENT_NAMES[affinity.element]} e −2d20 contra efeitos de {ELEMENT_NAMES[OPPRESSOR_OF[affinity.element]]} (elemento
                 opressor); pode aprender rituais que exijam afinidade com o elemento.
               </p>
             )}

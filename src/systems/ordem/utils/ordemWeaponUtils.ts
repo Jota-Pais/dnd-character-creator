@@ -36,7 +36,7 @@ export type OrdemWeaponAttack = {
   attributeUsed: 'agility' | 'strength' | 'intellect' | 'presence' | 'vigor'
   /** Regras próprias da arma, já resolvidas pelo personagem quando dependem dele. */
   notes: string[]
-  /** Por que o pool foi penalizado, pra ficha explicar (ex.: "arma sem proficiência −ØØ"). */
+  /** Por que o pool foi penalizado, pra ficha explicar (ex.: "arma sem proficiência −2d20"). */
   dicePenaltyNotes: string[]
   /** Bônus no teste de ataque (treino + modificações). */
   attackBonus: number
@@ -181,12 +181,12 @@ export function getOrdemWeaponAttack(
   let dicePenalty = 0
   if (!hasWeaponProficiency(draft, weapon)) {
     dicePenalty += NO_PROFICIENCY_DICE_PENALTY
-    dicePenaltyNotes.push('arma sem proficiência −ØØ')
+    dicePenaltyNotes.push('arma sem proficiência −2d20')
   }
   const armorPenalty = getAttributeDicePenalty(draft, attackAttribute)
   if (armorPenalty > 0) {
     dicePenalty += armorPenalty
-    dicePenaltyNotes.push('proteção sem proficiência −ØØ')
+    dicePenaltyNotes.push('proteção sem proficiência −2d20')
   }
   const pool = getDicePool(attrs[attackAttribute], dicePenalty)
 

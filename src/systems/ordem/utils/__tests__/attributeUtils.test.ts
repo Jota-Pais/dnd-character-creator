@@ -7,8 +7,9 @@ describe('getDicePool', () => {
     expect(getDicePool(1)).toEqual({ dice: 1, mode: 'best' })
   })
 
-  it('atributo 0 rola 2 dados e usa o PIOR (p. 16)', () => {
-    expect(getDicePool(0)).toEqual({ dice: 2, mode: 'worst' })
+  it('atributo 0 vale 0 dados — a ficha mostra o valor cru, sem o "2 pior" do livro (p. 16)', () => {
+    expect(getDicePool(0)).toEqual({ dice: 0, mode: 'best' })
+    expect(formatDicePool(getDicePool(0))).toBe('0d20')
   })
 
   it('penalidade que mantém o pool >= 1 apenas reduz os dados', () => {

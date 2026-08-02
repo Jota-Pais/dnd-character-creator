@@ -437,15 +437,15 @@ describe('Penalidades de proficiência no pool de dados', () => {
     expect(a.rollDice).toBe(3)
   })
 
-  it('atributo 0 rola 2 dados e pega o pior', () => {
+  it('atributo 0 rende 0 dados, sem marcação de "pior"', () => {
     const forca0 = makeDraft({
       class: 'combatant',
       attributes: { agility: 2, strength: 0, intellect: 3, presence: 3, vigor: 1 },
     })
     // Machete (não ágil) mantém o teste em Força 0; a faca desviaria para Agilidade.
     const a = getOrdemWeaponAttack(machete, forca0, [])
-    expect(a.rollDice).toBe(2)
-    expect(a.rollMode).toBe('worst')
+    expect(a.rollDice).toBe(0)
+    expect(a.rollMode).toBe('best')
   })
 })
 

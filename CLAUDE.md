@@ -6,14 +6,6 @@ Qualquer pessoa que decida jogar D&D — mesmo pela primeira vez — deve conseg
 
 Toda decisão de produto e design serve a esse objetivo: guiar o iniciante sem tirar dele o controle, esconder a complexidade das regras (mas nunca as escolhas) e tornar a criação um momento divertido — não uma lição de casa.
 
-## Stack
-
-- **Vite** + **React 19** + **TypeScript estrito**
-- **React Compiler** (memoização automática)
-- **Tailwind v4**
-- **Zustand** (gerenciamento de estado)
-- **Vitest** (testes unitários)
-
 ## Arquitetura
 
 - **SPA front-end pura**, sem backend
@@ -21,6 +13,19 @@ Toda decisão de produto e design serve a esse objetivo: guiar o iniciante sem t
 - **Sistemas Multi-RPG (Arquitetura Modular):** O núcleo da aplicação (`src/core`) é completamente agnóstico de regras de negócio. Todos os dados, regras e telas específicas ficam isolados nos seus respectivos módulos de sistema (ex: `src/systems/dnd5e`).
 - Deploy estático na Vercel, com CI de lint + testes via GitHub Actions (`.github/workflows/ci.yml`) a cada push/PR na `main`
 - Não sugerir API routes, server actions ou qualquer arquitetura com servidor próprio
+
+### Proficiências e efeitos (portado do módulo Ordem, 2026-08-29)
+
+Dois motores, um em cada arquivo, espelhando o que o Ordem já fazia:
+
+- **`utils/proficiencyUtils.ts` — quem tem o quê.** Fonte única de perícias, ferramentas, idiomas, armaduras, armas e resistências, agregando raça, classe (com o subconjunto de multiclasse da p. 163), subclasse e talento. Nada de agregação paralela em outro módulo.
+  - A exclusão é **por slot**, não por fonte: a lista de perícias da classe e os extras da subclasse são concessões independentes, e cada classe da multiclasse tem as suas. É o que impede repetir uma perícia (regra da p. 125).
+  - Exceção: o picker de *expertise* (Domínio do Conhecimento) **não** exclui — lá dobrar uma perícia que você já tem é o ponto.
+- **`utils/sheetEffects.ts` — o que as características fazem.** Efeitos declarados nos dados (`types/effects.ts`), agregados aqui. Regra de ouro herdada do Ordem: **efeito incondicional entra no número da ficha; efeito condicional vira linha própria com a condição** (somar o +1 do Ambidestro mentiria pra quem usa escudo).
+  - Escolhas que uma característica abre (Perito, Poliglota, Mestre de Armas, Colégio do Conhecimento) viram **slot na etapa dona dela**, ao lado do catálogo — nunca um catálogo aninhado dentro do card.
+  - Consequência de regra que a ficha não deve "resolver" sozinha vira **aviso**, não alteração de número: armadura sem proficiência (p. 144) avisa da desvantagem em vez de mexer nos valores.
+
+Ao adicionar uma característica nova, prefira declará-la como efeito nos dados a espalhar `if` pela UI.
 
 ## Versão de D&D
 
@@ -49,23 +54,8 @@ Toda decisão de produto e design serve a esse objetivo: guiar o iniciante sem t
 
 **Fora do escopo da V1:** evolução de personagem em sessão (level up dinâmico / XP), suplementos, raças/classes homebrew. (Multiclasse **entrou** no escopo em 2026-07-14, para o D&D 5e.)
 
-## Estrutura de Pastas
-
-src/
- ├─ core/       # Motor agnóstico, tipos base, gerenciamento de estado global (AppStore)
- ├─ components/ # Design System / UI Genérica (Componentes sem regras de negócios)
- └─ systems/    # Módulos de RPG (Plugins)
-     ├─ dnd5e/  # Todo o universo do D&D (data, utils, types, stores e components específicos)
-     └─ ordem/  # (Futuro) Arquivos do Ordem Paranormal
- docs/          # Regras digitalizadas em markdown
-
 ## Convenções de Código
 
-- Componentes funcionais com hooks, sem class components
-- **PascalCase** para componentes (`CharacterSheet.tsx`)
-- **camelCase** para utilitários e funções (`calculateModifier.ts`)
-- TypeScript estrito (`strict: true` no tsconfig)
-- Prettier + ESLint configurados
 - Commits pequenos e atômicos
 - Código (variáveis, funções, tipos, nomes de arquivo) em **inglês**
 

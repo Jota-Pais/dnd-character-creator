@@ -25,7 +25,10 @@ import { getEquippedArmor, getItemName, getWeaponById } from '../utils/equipment
 import { getClassResources } from '../utils/classResourceUtils'
 import { getProgressionSlotsUpToLevel } from '../utils/progressionChoiceUtils'
 import { getProgressionOptions } from '../utils/progressionOptions'
-import { getSpell, getSpellSaveDC, formatSpellAttackBonus, getCombinedSpellSlots, getPactSlots } from '../utils/spellUtils'
+import {
+  getSpell, getSpellSaveDC, formatSpellAttackBonus, getCombinedSpellSlots, getPactSlots,
+  getMaxPreparedSpells,
+} from '../utils/spellUtils'
 import { getFeat } from '../utils/featUtils'
 import { RuleText } from './common/RuleText'
 import { getWeaponAttack } from '../utils/weaponFormat'
@@ -35,6 +38,7 @@ import {
 } from '../utils/sheetEffects'
 import type { CharacterDraft } from '../types/character'
 import type { EquipmentChoiceItem, Weapon } from '../types/equipment'
+import type { GameClass } from '../types/class'
 
 const SKILL_ABILITY: Record<string, AbilityScore> = {
   acrobatics: 'DEX', 'animal-handling': 'WIS', arcana: 'INT', athletics: 'STR',
@@ -137,6 +141,37 @@ function gatherInventory(draft: CharacterDraft): string[] {
     }
   }
   return items
+}
+
+/**
+ * Quantas magias a classe tem a cada descanso, na linguagem da mesa. As três formas do livro:
+ *
+ * - `known` (bardo, feiticeiro, bruxo, patrulheiro): a lista é fixa, não se remonta;
+ * - `prepared` (clérigo, druida, paladino): prepara N magias a cada descanso longo, e N vem da
+ *   fórmula da classe (mod. do atributo + nível, ou metade dele no paladino);
+ * - `hybrid` (mago): o grimório é fixo, mas prepara N dele a cada descanso longo.
+ */
+function describeSpellRefresh(
+  cls: GameClass,
+  classLevel: number,
+  scores: Record<AbilityScore, number>,
+): string {
+  const sc = cls.spellcasting
+  if (!sc) return ''
+  const abilityLabel = ABILITY_LABELS[sc.ability].short
+  const abilityMod = calculateModifier(scores[sc.ability])
+  const prepared = getMaxPreparedSpells(sc, scores, classLevel)
+  const formula = sc.preparedFormula
+    ? ` (${abilityLabel} ${formatModifier(abilityMod)} + ${sc.preparedFormula.includes('metade') ? `metade do nível ${classLevel}` : `nível ${classLevel}`})`
+    : ''
+
+  if (sc.type === 'prepared') {
+    return `Prepara ${prepared} magias a cada descanso longo${formula}.`
+  }
+  if (sc.type === 'hybrid') {
+    return `Grimório fixo; prepara ${prepared} magias dele a cada descanso longo${formula}.`
+  }
+  return 'Magias conhecidas fixas — não se troca em descanso (só ao subir de nível).'
 }
 
 /** Círculos vazios (○) pra marcar usos a lápis na mesa. Acima de 12, vazio (o número já indica). */
@@ -445,7 +480,7 @@ export function PrintableSheet() {
           <Box title="Magias" className="mb-4">
             {slots.length > 0 && (
               <p className="text-xs mb-1">
-                <span className="text-gray-600">Espaços (marque os gastos): </span>
+                <span className="text-gray-600">Espaços (marque os gastos, recuperam em descanso longo): </span>
                 {slots.map(s => `${s.lvl}º: ${trackCircles(s.count) || s.count}`).join(' · ')}
               </p>
             )}
@@ -464,7 +499,12 @@ export function PrintableSheet() {
               return (
                 <div key={e.classId} className="mb-1">
                   {isMc && <p className="text-xs font-bold text-gray-700 mt-1">{ec.name}</p>}
-                  {cantrips.length > 0 && <p className="text-xs mb-0.5"><span className="text-gray-600">Truques: </span>{cantrips.join(', ')}</p>}
+                  {/* Quantas magias esta classe tem a cada descanso — o número que se refaz na mesa. */}
+                  <p className="text-xs mb-0.5">
+                    <span className="text-gray-600">{isMc ? '' : `${ec.name}: `}</span>
+                    {describeSpellRefresh(ec, e.level, finalScores)}
+                  </p>
+                  {cantrips.length > 0 && <p className="text-xs mb-0.5"><span className="text-gray-600">Truques (sempre disponíveis): </span>{cantrips.join(', ')}</p>}
                   {[...byLevel.keys()].sort((a, b) => a - b).map(lvl => (
                     <p key={lvl} className="text-xs mb-0.5"><span className="text-gray-600">{lvl}º nível: </span>{byLevel.get(lvl)!.join(', ')}</p>
                   ))}

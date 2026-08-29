@@ -9,7 +9,7 @@ import {
   meetsMulticlassPrereq,
 } from '../../utils/multiclassUtils'
 import { getFinalAbilityScores } from '../../utils/asiUtils'
-import { getExcludedSkills, getExcludedTools } from '../../utils/proficiencyUtils'
+import { getClassSlotProficiencies } from '../../utils/proficiencyUtils'
 import { ABILITY_LABELS } from '../../utils/abilityScoreUtils'
 import type { GameClass } from '../../types/class'
 import { ClassChoicePanel } from './ClassChoicePanel'
@@ -41,8 +41,6 @@ export function MulticlassPanel() {
   // Atributos finais só são significativos depois do passo Atributos — só aí mostramos alerta de pré-req.
   const abilitiesSet = draft.abilityMethod !== null
   const finalScores: Partial<Record<AbilityScore, number>> = getFinalAbilityScores(draft)
-  const excludedSkills = getExcludedSkills(draft, 'class')
-  const excludedTools = getExcludedTools(draft, 'class')
 
   const addable = CLASSES.filter(
     c => c.id !== draft.class && !draft.additionalClasses.some(a => a.classId === c.id),
@@ -99,8 +97,7 @@ export function MulticlassPanel() {
                 accent={accent}
                 level={entry.level}
                 multiclass
-                excludedSkills={excludedSkills}
-                excludedTools={excludedTools}
+                proficiencies={getClassSlotProficiencies(draft, entry.classId)}
                 onChange={patch => updateAdditionalClassChoices(entry.classId, patch)}
               />
             </div>

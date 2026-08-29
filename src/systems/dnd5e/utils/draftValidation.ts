@@ -92,6 +92,8 @@ function sanitizeClassChoices(raw: unknown, cls: GameClass | null): ClassChoiceS
   if (extraSkills.length > 0) subclassExtras.skills = extraSkills
   const extraLanguages = toStringArray(extrasRaw.languages)
   if (extraLanguages.length > 0) subclassExtras.languages = extraLanguages
+  const extraTools = toStringArray(extrasRaw.tools)
+  if (extraTools.length > 0) subclassExtras.tools = extraTools
   if (typeof extrasRaw.cantrip === 'string') subclassExtras.cantrip = extrasRaw.cantrip
 
   const subclassId = typeof raw.subclass === 'string' ? raw.subclass : null

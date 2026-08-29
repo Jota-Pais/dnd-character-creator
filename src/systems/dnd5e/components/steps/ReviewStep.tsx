@@ -21,7 +21,7 @@ import {
 } from '../../utils/abilityScoreUtils'
 import { getItemName, getEquippedArmor, getPurchasesTotalCopper, formatCurrency } from '../../utils/equipmentUtils'
 import { getUnarmoredDefense, calculateArmorClass } from '../../utils/armorClassUtils'
-import { getAllGrantedSkills, getAllGrantedTools } from '../../utils/proficiencyUtils'
+import { getAllGrantedSkills, getAllGrantedTools, getAllGrantedLanguages } from '../../utils/proficiencyUtils'
 import { getProgressionSlotsUpToLevel } from '../../utils/progressionChoiceUtils'
 import { getProgressionOptions } from '../../utils/progressionOptions'
 import {
@@ -149,10 +149,7 @@ export function ReviewStep() {
   )
 
   // Languages & tools
-  const raceLanguages = race?.grantedLanguages ?? []
-  const chosenRaceLanguages = draft.raceChoices.languages ?? []
-  const chosenBgLanguages = draft.backgroundChoices.languages ?? []
-  const allLanguages = [...new Set([...raceLanguages, ...chosenRaceLanguages, ...chosenBgLanguages])]
+  const allLanguages = getAllGrantedLanguages(draft)
 
   const allTools = getAllGrantedTools(draft)
 

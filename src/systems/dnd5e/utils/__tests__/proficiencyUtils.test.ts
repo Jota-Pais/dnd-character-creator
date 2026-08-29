@@ -3,9 +3,13 @@ import {
   getSkillsBySource,
   getExcludedSkills,
   getExcludedTools,
+  getExcludedSkillsForClassSlot,
+  getExcludedToolsForClassSlot,
   getAllGrantedSkills,
   getAllGrantedTools,
+  getAllGrantedLanguages,
 } from '../proficiencyUtils'
+import { EMPTY_CLASS_CHOICES } from '../../types/class'
 import { getRaceGrantedSkills, getRaceGrantedTools, getRace, getSubrace } from '../raceUtils'
 import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
 
@@ -96,7 +100,125 @@ describe('getExcludedTools', () => {
   })
 })
 
+/**
+ * Regra do livro: ao receber uma proficiência que já se possui, escolhe-se outra. Dentro da
+ * própria classe isso vale entre a lista base e os extras da subclasse — e, na multiclasse,
+ * entre as classes.
+ */
+describe('getExcludedSkillsForClassSlot', () => {
+  it('a lista da classe não repete as três perícias do Colégio do Conhecimento', () => {
+    const d = draft({
+      class: 'bard',
+      classChoices: {
+        ...EMPTY_DRAFT.classChoices,
+        subclass: 'college-of-lore',
+        subclassExtras: { skills: ['arcana', 'history', 'religion'] },
+      },
+    })
+    const excluded = getExcludedSkillsForClassSlot(d, { classId: 'bard', part: 'base' })
+    expect(excluded).toEqual(expect.arrayContaining(['arcana', 'history', 'religion']))
+  })
+
+  it('o colégio não repete o que a lista da classe já pegou', () => {
+    const d = draft({
+      class: 'bard',
+      classChoices: {
+        ...EMPTY_DRAFT.classChoices,
+        skills: ['deception', 'performance', 'persuasion'],
+        subclass: 'college-of-lore',
+      },
+    })
+    const excluded = getExcludedSkillsForClassSlot(d, { classId: 'bard', part: 'subclass' })
+    expect(excluded).toEqual(expect.arrayContaining(['deception', 'performance', 'persuasion']))
+  })
+
+  it('nenhum slot exclui as próprias escolhas (senão não dava pra desmarcar)', () => {
+    const d = draft({
+      class: 'bard',
+      classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['deception'] },
+    })
+    expect(getExcludedSkillsForClassSlot(d, { classId: 'bard', part: 'base' })).not.toContain('deception')
+  })
+
+  it('na multiclasse, a segunda classe não repete a perícia da primeira', () => {
+    const d = draft({
+      class: 'bard',
+      classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['stealth'] },
+      additionalClasses: [{
+        classId: 'rogue',
+        level: 1,
+        classChoices: { ...EMPTY_CLASS_CHOICES },
+        spellChoices: { cantrips: [], spells: [] },
+        asiChoices: [],
+        hpRolls: [],
+      }],
+    })
+    expect(getExcludedSkillsForClassSlot(d, { classId: 'rogue', part: 'base' })).toContain('stealth')
+  })
+})
+
+describe('getExcludedToolsForClassSlot', () => {
+  it('a ferramenta do Estudioso da Guerra não repete a do antecedente', () => {
+    const d = draft({
+      class: 'fighter',
+      classChoices: { ...EMPTY_DRAFT.classChoices, subclass: 'battle-master' },
+      background: 'guild-artisan', // ferramenta de artesão à escolha
+      backgroundChoices: { tools: ['smiths-tools'] },
+    })
+    expect(getExcludedToolsForClassSlot(d, { classId: 'fighter', part: 'subclass' })).toContain('smiths-tools')
+  })
+
+  it('as ferramentas concedidas pelo Assassino saem do picker do antecedente', () => {
+    const d = draft({
+      class: 'rogue',
+      classChoices: { ...EMPTY_DRAFT.classChoices, subclass: 'assassin' },
+      background: 'charlatan',
+    })
+    expect(getExcludedTools(d, 'background')).toEqual(
+      expect.arrayContaining(['disguise-kit', 'poisoners-kit']),
+    )
+  })
+})
+
+describe('getAllGrantedLanguages', () => {
+  it('inclui o idioma fixo da subclasse (Dracônico da Linhagem Dracônica)', () => {
+    const d = draft({
+      class: 'sorcerer',
+      classChoices: { ...EMPTY_DRAFT.classChoices, subclass: 'draconic-bloodline' },
+    })
+    expect(getAllGrantedLanguages(d)).toContain('draconic')
+  })
+
+  it('inclui os idiomas escolhidos no Domínio do Conhecimento', () => {
+    const d = draft({
+      class: 'cleric',
+      classChoices: {
+        ...EMPTY_DRAFT.classChoices,
+        subclass: 'knowledge-domain',
+        subclassExtras: { languages: ['elvish', 'dwarvish'] },
+      },
+    })
+    expect(getAllGrantedLanguages(d)).toEqual(expect.arrayContaining(['elvish', 'dwarvish']))
+  })
+})
+
 describe('getAllGrantedSkills / getAllGrantedTools', () => {
+  it('inclui as perícias das classes adicionais da multiclasse', () => {
+    const d = draft({
+      class: 'bard',
+      classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['performance'] },
+      additionalClasses: [{
+        classId: 'rogue',
+        level: 1,
+        classChoices: { ...EMPTY_CLASS_CHOICES, skills: ['stealth'] },
+        spellChoices: { cantrips: [], spells: [] },
+        asiChoices: [],
+        hpRolls: [],
+      }],
+    })
+    expect(getAllGrantedSkills(d)).toEqual(expect.arrayContaining(['performance', 'stealth']))
+  })
+
   it('une todas as fontes sem duplicar', () => {
     const d = draft({
       race: 'elf', // perception

@@ -16,7 +16,7 @@ import {
   ALL_ABILITY_SCORES, ABILITY_LABELS,
 } from '../utils/abilityScoreUtils'
 import { getFinalAbilityScores } from '../utils/asiUtils'
-import { getAllGrantedSkills, getAllGrantedTools } from '../utils/proficiencyUtils'
+import { getAllGrantedSkills, getAllGrantedTools, getAllGrantedLanguages } from '../utils/proficiencyUtils'
 import { calculateArmorClass, getUnarmoredDefense } from '../utils/armorClassUtils'
 import { getEquippedArmor, getItemName, getWeaponById } from '../utils/equipmentUtils'
 import { getClassResources } from '../utils/classResourceUtils'
@@ -176,11 +176,7 @@ export function PrintableSheet() {
   const saves = cls?.savingThrows ?? []
   const allTools = getAllGrantedTools(draft)
 
-  const languages = [...new Set([
-    ...(race?.grantedLanguages ?? []),
-    ...(draft.raceChoices.languages ?? []),
-    ...(draft.backgroundChoices.languages ?? []),
-  ])]
+  const languages = getAllGrantedLanguages(draft)
 
   const classLabel = entries.map(e => {
     const ec = getClass(e.classId)

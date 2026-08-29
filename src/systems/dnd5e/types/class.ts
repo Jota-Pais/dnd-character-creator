@@ -15,13 +15,23 @@ export type ClassSpellcasting = {
 }
 
 export type SubclassExtraChoices = {
+  /**
+   * Perícias que passam a ter bônus de proficiência DOBRADO (Domínio do Conhecimento). Não exige
+   * proficiência prévia, então o picker não esconde as que o personagem já tem — ao contrário de
+   * `skillChoice`, dobrar uma perícia que você já usa é justamente o ponto.
+   */
   expertiseSkills: { count: number; from: string[] } | null
+  /** Perícias GANHAS pela subclasse. `from: ['any']` abre a lista inteira (Colégio do Conhecimento). */
   skillChoice: { count: number; from: string[] } | null
   languages: { count: number } | null
   cantripChoice: string | null
+  /** Ferramenta à escolha (Mestre de Batalha, "Estudioso da Guerra": uma de artesão). */
+  toolChoice: { count: number; from: ToolChoiceSource } | null
   grantedLanguages: string[]
   grantedArmorProficiencies: string[]
   grantedWeaponProficiencies: string[]
+  /** Ferramentas concedidas de cara (Assassino: kit de disfarce e kit de venenos). */
+  grantedTools: string[]
 }
 
 export type ClassFeature = { name: string; description: string }
@@ -41,9 +51,12 @@ export type ClassSubclass = {
   extras: SubclassExtraChoices | null
 }
 
+/** Recorte do catálogo de ferramentas de onde uma escolha pode tirar opções. */
+export type ToolChoiceSource = 'musical-instrument' | 'artisan' | 'any-tool'
+
 export type ClassToolProficiencies = {
   granted: string[]
-  choices: { count: number; from: 'musical-instrument' | 'artisan' | 'any-tool' }[]
+  choices: { count: number; from: ToolChoiceSource }[]
 }
 
 /** Categorias de proficiência de armadura (PHB). */
@@ -102,6 +115,7 @@ export type SubclassChoiceSelections = {
   skills?: string[]
   languages?: string[]
   cantrip?: string
+  tools?: string[]
 }
 
 export type ClassChoiceSelections = {

@@ -180,19 +180,32 @@ export function getHpFormula(cls: GameClass): string {
   return `d${cls.hitDie} + mod. de CON`
 }
 
-export function getSkillOptions(cls: GameClass): { id: string; name: string }[] {
-  if (cls.skillChoices.from.includes('any')) {
-    return SKILLS.map(s => ({ id: s.id, name: s.name }))
-  }
-  return SKILLS
-    .filter(s => cls.skillChoices.from.includes(s.id))
-    .map(s => ({ id: s.id, name: s.name }))
+/** Resolve a lista `from` de uma escolha de perícia; o token 'any' abre as 18 perícias do livro. */
+export function resolveSkillOptions(from: string[]): { id: string; name: string }[] {
+  const allowed = from.includes('any') ? SKILLS : SKILLS.filter(s => from.includes(s.id))
+  return allowed.map(s => ({ id: s.id, name: s.name }))
 }
 
-export function getExpertiseOptions(choices: ClassChoiceSelections): { id: string; name: string }[] {
-  const skillLookup = Object.fromEntries(SKILLS.map(s => [s.id, s.name]))
-  const fromSkills = choices.skills.map(id => ({ id, name: skillLookup[id] ?? id }))
-  return [...fromSkills, { id: 'thieves-tools', name: 'Ferramentas de Ladrão' }]
+export function getSkillOptions(cls: GameClass): { id: string; name: string }[] {
+  return resolveSkillOptions(cls.skillChoices.from)
+}
+
+/**
+ * Itens elegíveis para Especialização (ladino p. 96, bardo p. 53): "duas das SUAS proficiências
+ * em perícia" — qualquer uma, venha de onde vier. Antes só listava as perícias marcadas na lista
+ * da classe, o que deixava de fora as do antecedente, da raça e as três do Colégio do
+ * Conhecimento. As Ferramentas de Ladrão entram só para quem é proficiente nelas (o ladino).
+ */
+export function getExpertiseOptions(
+  grantedSkills: string[],
+  grantedTools: string[],
+): { id: string; name: string }[] {
+  const fromSkills = SKILLS
+    .filter(s => grantedSkills.includes(s.id))
+    .map(s => ({ id: s.id, name: s.name }))
+  return grantedTools.includes('thieves-tools')
+    ? [...fromSkills, { id: 'thieves-tools', name: 'Ferramentas de Ladrão' }]
+    : fromSkills
 }
 
 export function isClassStepComplete(
@@ -223,6 +236,7 @@ export function isClassStepComplete(
       const skillsNeeded = (extras.expertiseSkills?.count ?? 0) + (extras.skillChoice?.count ?? 0)
       if (skillsNeeded > 0 && (choices.subclassExtras.skills ?? []).length < skillsNeeded) return false
       if (extras.languages && (choices.subclassExtras.languages ?? []).length < extras.languages.count) return false
+      if (extras.toolChoice && (choices.subclassExtras.tools ?? []).length < extras.toolChoice.count) return false
       if (extras.cantripChoice && !choices.subclassExtras.cantrip) return false
     }
   }

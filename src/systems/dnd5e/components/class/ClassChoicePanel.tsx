@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import type { GameClass, ClassChoiceSelections } from '../../types/class'
+import type { GameClass, ClassChoiceSelections, ToolChoiceSource } from '../../types/class'
 import {
   getSkillOptions,
   getExpertiseOptions,
+  resolveSkillOptions,
   FIGHTING_STYLES,
   SUBCLASS_LABEL,
 } from '../../utils/classUtils'
@@ -14,9 +15,22 @@ import { SKILLS, LANGUAGES } from '../../utils/raceUtils'
 import toolsData from '../../data/tools.json'
 import { getProgressionSlotsUpToLevel, type ProgressionSlot } from '../../utils/progressionChoiceUtils'
 import { getProgressionOptions, type ProgressionOption } from '../../utils/progressionOptions'
+import type { ClassSlotProficiencies } from '../../utils/proficiencyUtils'
 
 type Tool = { id: string; name: string; category: 'artisan' | 'musical-instrument' | 'gaming-set' | 'other' | 'vehicle' }
 const ALL_TOOLS: Tool[] = toolsData as Tool[]
+
+const TOOL_CHOICE_LABELS: Record<ToolChoiceSource, string> = {
+  'musical-instrument': 'Instrumento Musical',
+  artisan: 'Ferramenta de Artesão',
+  'any-tool': 'Ferramenta',
+}
+
+/** Recorte do catálogo de ferramentas para uma escolha ('any-tool' abre tudo). */
+function filterToolsBySource(from: ToolChoiceSource): Tool[] {
+  if (from === 'any-tool') return ALL_TOOLS
+  return ALL_TOOLS.filter(t => t.category === from)
+}
 
 type Props = {
   cls: GameClass
@@ -24,16 +38,20 @@ type Props = {
   accent: string
   level: number
   onChange: (patch: Partial<ClassChoiceSelections>) => void
-  excludedSkills?: string[]
-  excludedTools?: string[]
+  /**
+   * O que já está tomado em cada slot desta classe e o que o personagem tem no total. Vem pronto
+   * de `getClassSlotProficiencies` porque só quem enxerga o draft inteiro sabe o que a raça, o
+   * antecedente e as OUTRAS classes da multiclasse já concederam.
+   */
+  proficiencies: ClassSlotProficiencies
   /** Classe adicional (multiclasse): concede só o subconjunto de perícias e nenhuma escolha de ferramenta. */
   multiclass?: boolean
 }
 
-export function ClassChoicePanel({ cls, choices, accent, level, onChange, excludedSkills, excludedTools, multiclass = false }: Props) {
+export function ClassChoicePanel({ cls, choices, accent, level, onChange, proficiencies, multiclass = false }: Props) {
   const skillOptions = getSkillOptions(cls)
-  const excludedSkillSet = new Set(excludedSkills ?? [])
-  const excludedToolSet = new Set(excludedTools ?? [])
+  const excludedSkillSet = new Set(proficiencies.excludedBaseSkills)
+  const excludedToolSet = new Set(proficiencies.excludedBaseTools)
   // Ao multiclassar, a classe dá só o subconjunto de perícias da Tabela de Proficiências (0 ou 1).
   const skillLimit = multiclass ? (cls.multiclassProficiencies.skills?.count ?? 0) : cls.skillChoices.count
 
@@ -113,14 +131,8 @@ export function ClassChoicePanel({ cls, choices, accent, level, onChange, exclud
 
       {/* ── Ferramentas (Bardo/Monge) — só na classe inicial ── */}
       {!multiclass && cls.toolProficiencies.choices.map((toolChoice, i) => {
-        const filtered =
-          toolChoice.from === 'musical-instrument' ? ALL_TOOLS.filter(t => t.category === 'musical-instrument')
-          : toolChoice.from === 'artisan' ? ALL_TOOLS.filter(t => t.category === 'artisan')
-          : ALL_TOOLS
-        const label =
-          toolChoice.from === 'musical-instrument' ? 'Instrumento Musical'
-          : toolChoice.from === 'artisan' ? 'Ferramenta de Artesão'
-          : 'Ferramenta'
+        const filtered = filterToolsBySource(toolChoice.from)
+        const label = TOOL_CHOICE_LABELS[toolChoice.from]
         return (
           <ChoiceSection
             key={i}
@@ -218,6 +230,8 @@ export function ClassChoicePanel({ cls, choices, accent, level, onChange, exclud
           extras={subclassExtras}
           subclassExtras={choices.subclassExtras}
           accent={accent}
+          excludedSkills={proficiencies.excludedSubclassSkills}
+          excludedTools={proficiencies.excludedSubclassTools}
           onChangeExtras={(patch) =>
             onChange({ subclassExtras: { ...choices.subclassExtras, ...patch } })
           }
@@ -235,7 +249,7 @@ export function ClassChoicePanel({ cls, choices, accent, level, onChange, exclud
             Escolha 2 itens para dobrar o bônus de proficiência.
           </p>
           <div className="flex flex-wrap gap-1.5">
-            {getExpertiseOptions(choices).map(opt => {
+            {getExpertiseOptions(proficiencies.grantedSkills, proficiencies.grantedTools).map(opt => {
               const selected = choices.expertiseItems.includes(opt.id)
               const disabled = !selected && choices.expertiseItems.length >= 2
               return (
@@ -276,22 +290,36 @@ type SubclassExtrasPanelProps = {
   extras: NonNullable<import('../../types/class').ClassSubclass['extras']>
   subclassExtras: import('../../types/class').SubclassChoiceSelections
   accent: string
+  /** Perícias já vindas de outra fonte — o livro manda escolher outra em vez de repetir. */
+  excludedSkills: string[]
+  excludedTools: string[]
   onChangeExtras: (patch: Partial<import('../../types/class').SubclassChoiceSelections>) => void
 }
 
-function SubclassExtrasPanel({ extras, subclassExtras, accent, onChangeExtras }: SubclassExtrasPanelProps) {
+const ARMOR_LABELS: Record<string, string> = {
+  light: 'Armadura Leve',
+  medium: 'Armadura Média',
+  heavy: 'Armadura Pesada',
+  shields: 'Escudos',
+}
+
+function SubclassExtrasPanel({
+  extras, subclassExtras, accent, excludedSkills, excludedTools, onChangeExtras,
+}: SubclassExtrasPanelProps) {
   const [cantripInput, setCantripInput] = useState(subclassExtras.cantrip ?? '')
+  const excludedSkillSet = new Set(excludedSkills)
+  const excludedToolSet = new Set(excludedTools)
 
   const hasChoices =
-    extras.expertiseSkills || extras.skillChoice || extras.languages || extras.cantripChoice
+    extras.expertiseSkills || extras.skillChoice || extras.languages ||
+    extras.toolChoice || extras.cantripChoice
 
   const grantedInfo = [
-    ...extras.grantedArmorProficiencies.map(a =>
-      a === 'heavy' ? 'Armadura Pesada' : a === 'medium' ? 'Armadura Média' : a
-    ),
+    ...extras.grantedArmorProficiencies.map(a => ARMOR_LABELS[a] ?? a),
     ...extras.grantedWeaponProficiencies.map(w =>
-      w === 'martial' ? 'Armas Marciais' : w
+      w === 'martial' ? 'Armas Marciais' : w === 'simple' ? 'Armas Simples' : w
     ),
+    ...extras.grantedTools.map(t => ALL_TOOLS.find(x => x.id === t)?.name ?? t),
     ...extras.grantedLanguages.map(l => {
       const lang = LANGUAGES.find(x => x.id === l)
       return lang?.name ?? l
@@ -391,26 +419,28 @@ function SubclassExtrasPanel({ extras, subclassExtras, accent, onChangeExtras }:
         </ChoiceSection>
       )}
 
-      {/* Perícia extra (Domínio da Natureza) */}
+      {/* Perícias ganhas (Domínio da Natureza: 1; Colégio do Conhecimento: 3 quaisquer) */}
       {extras.skillChoice && (
         <ChoiceSection
-          title={`Perícia Adicional (${(subclassExtras.skills ?? []).length}/${extras.skillChoice.count})`}
+          title={`${extras.skillChoice.count === 1 ? 'Perícia Adicional' : 'Perícias Adicionais'} (${(subclassExtras.skills ?? []).length}/${extras.skillChoice.count})`}
           accent={accent}
         >
           <div className="flex flex-wrap gap-1.5">
-            {extras.skillChoice.from.map(skillId => {
-              const skill = SKILLS.find(s => s.id === skillId)
-              if (!skill) return null
-              const selected = (subclassExtras.skills ?? []).includes(skillId)
-              const disabled = !selected && (subclassExtras.skills ?? []).length >= extras.skillChoice!.count
+            {resolveSkillOptions(extras.skillChoice.from).map(skill => {
+              const selected = (subclassExtras.skills ?? []).includes(skill.id)
+              const excluded = excludedSkillSet.has(skill.id)
+              const disabled = excluded
+                || (!selected && (subclassExtras.skills ?? []).length >= extras.skillChoice!.count)
               return (
                 <button
-                  key={skillId}
+                  key={skill.id}
                   disabled={disabled}
+                  title={excluded ? 'Você já possui esta perícia de outra fonte' : undefined}
                   onClick={() => {
+                    if (excluded) return
                     const current = subclassExtras.skills ?? []
                     onChangeExtras({
-                      skills: selected ? current.filter(s => s !== skillId) : [...current, skillId],
+                      skills: selected ? current.filter(s => s !== skill.id) : [...current, skill.id],
                     })
                   }}
                   className="px-2.5 py-1 rounded-lg text-xs font-semibold transition-all"
@@ -421,7 +451,47 @@ function SubclassExtrasPanel({ extras, subclassExtras, accent, onChangeExtras }:
                     cursor: disabled ? 'not-allowed' : 'pointer',
                   }}
                 >
-                  {skill.name}
+                  {excluded ? '✓ ' : ''}{skill.name}
+                </button>
+              )
+            })}
+          </div>
+        </ChoiceSection>
+      )}
+
+      {/* Ferramenta à escolha (Mestre de Batalha, "Estudioso da Guerra") */}
+      {extras.toolChoice && (
+        <ChoiceSection
+          title={`${TOOL_CHOICE_LABELS[extras.toolChoice.from]} (${(subclassExtras.tools ?? []).length}/${extras.toolChoice.count})`}
+          accent={accent}
+        >
+          <div className="flex flex-wrap gap-1.5">
+            {filterToolsBySource(extras.toolChoice.from).map(tool => {
+              const selected = (subclassExtras.tools ?? []).includes(tool.id)
+              const excluded = excludedToolSet.has(tool.id)
+              const disabled = excluded
+                || (!selected && (subclassExtras.tools ?? []).length >= extras.toolChoice!.count)
+              return (
+                <button
+                  key={tool.id}
+                  disabled={disabled}
+                  title={excluded ? 'Você já possui esta ferramenta de outra fonte' : undefined}
+                  onClick={() => {
+                    if (excluded) return
+                    const current = subclassExtras.tools ?? []
+                    onChangeExtras({
+                      tools: selected ? current.filter(t => t !== tool.id) : [...current, tool.id],
+                    })
+                  }}
+                  className="px-2.5 py-1 rounded-lg text-xs font-semibold transition-all"
+                  style={{
+                    backgroundColor: selected ? accent : disabled ? 'rgba(30,20,8,0.4)' : 'rgba(40,28,12,0.8)',
+                    color: selected ? '#0a0704' : disabled ? '#4a3520' : '#c4a97a',
+                    border: selected ? 'none' : `1px solid ${disabled ? 'rgba(60,40,20,0.3)' : 'rgba(90,62,36,0.5)'}`,
+                    cursor: disabled ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {excluded ? '✓ ' : ''}{tool.name}
                 </button>
               )
             })}

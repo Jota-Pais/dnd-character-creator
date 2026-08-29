@@ -8,8 +8,7 @@ import {
   getToolName,
   isBackgroundStepComplete,
 } from '../../utils/backgroundUtils'
-import { getRace } from '../../utils/raceUtils'
-import { getExcludedTools } from '../../utils/proficiencyUtils'
+import { getExcludedTools, getExcludedLanguages } from '../../utils/proficiencyUtils'
 import { BackgroundCard } from '../background/BackgroundCard'
 import { BackgroundChoicePanel } from '../background/BackgroundChoicePanel'
 import { StepNav } from '../../../../components/wizard/StepNav'
@@ -30,12 +29,8 @@ export function BackgroundStep() {
 
   const canAdvance = isBackgroundStepComplete(selectedBg ?? null, draft.backgroundChoices)
 
-  const race = draft.race ? getRace(draft.race) : undefined
-  const langExcluded = [
-    ...(race?.grantedLanguages ?? []),
-    ...(draft.raceChoices.languages ?? []),
-  ]
-  // Ferramentas já obtidas de raça ou classe não podem ser re-escolhidas
+  // Idiomas/ferramentas já obtidos de raça ou classe (inclusive da subclasse) não se repetem
+  const langExcluded = getExcludedLanguages(draft, 'background')
   const toolExcluded = getExcludedTools(draft, 'background')
 
   useEffect(() => {

@@ -90,8 +90,8 @@
     ],
     "subclassLevel": 3,
     "subclasses": [
-      { "id": "college-of-lore", "name": "Colégio do Conhecimento", "description": "Coleciona conhecimento de todos os cantos do mundo, desdenhando as tradições convencionais e revelando os segredos mais sombrios.", "features": [{ "name": "Proficiência Adicional", "description": "Você ganha proficiência em três perícias, à sua escolha." }, { "name": "Palavras de Interrupção", "description": "Com sua reação e um uso de Inspiração de Bardo, subtraia o dado de inspiração da jogada de ataque, teste de habilidade ou jogada de dano de uma criatura a até 18 m." }], "extras": null },
-      { "id": "college-of-valor", "name": "Colégio da Bravura", "description": "Inspira bravura em aliados narrando histórias de heróis do passado, enquanto também empunha armas com destreza.", "features": [{ "name": "Proficiências Adicionais", "description": "Você ganha proficiência com armaduras médias, escudos e armas marciais." }, { "name": "Inspiração em Combate", "description": "Uma criatura com sua Inspiração de Bardo pode somar o dado a uma jogada de dano ou, com uma reação, à CA contra um ataque." }], "extras": null }
+      { "id": "college-of-lore", "name": "Colégio do Conhecimento", "description": "Coleciona conhecimento de todos os cantos do mundo, desdenhando as tradições convencionais e revelando os segredos mais sombrios.", "features": [{ "name": "Proficiência Adicional", "description": "Você ganha proficiência em três perícias, à sua escolha." }, { "name": "Palavras de Interrupção", "description": "Com sua reação e um uso de Inspiração de Bardo, subtraia o dado de inspiração da jogada de ataque, teste de habilidade ou jogada de dano de uma criatura a até 18 m." }], "extras": { "expertiseSkills": null, "skillChoice": { "count": 3, "from": ["any"] }, "languages": null, "cantripChoice": null, "toolChoice": null, "grantedLanguages": [], "grantedArmorProficiencies": [], "grantedWeaponProficiencies": [], "grantedTools": [] } },
+      { "id": "college-of-valor", "name": "Colégio da Bravura", "description": "Inspira bravura em aliados narrando histórias de heróis do passado, enquanto também empunha armas com destreza.", "features": [{ "name": "Proficiências Adicionais", "description": "Você ganha proficiência com armaduras médias, escudos e armas marciais." }, { "name": "Inspiração em Combate", "description": "Uma criatura com sua Inspiração de Bardo pode somar o dado a uma jogada de dano ou, com uma reação, à CA contra um ataque." }], "extras": { "expertiseSkills": null, "skillChoice": null, "languages": null, "cantripChoice": null, "toolChoice": null, "grantedLanguages": [], "grantedArmorProficiencies": ["medium", "shields"], "grantedWeaponProficiencies": ["martial"], "grantedTools": [] } }
     ],
     "startingEquipment": {
       "fixed": [
@@ -276,9 +276,11 @@
           "skillChoice": null,
           "languages": { "count": 2 },
           "cantripChoice": null,
+          "toolChoice": null,
           "grantedLanguages": [],
           "grantedArmorProficiencies": [],
-          "grantedWeaponProficiencies": []
+          "grantedWeaponProficiencies": [],
+          "grantedTools": []
         }
       },
       {
@@ -302,9 +304,11 @@
           "skillChoice": null,
           "languages": null,
           "cantripChoice": null,
+          "toolChoice": null,
           "grantedLanguages": [],
           "grantedArmorProficiencies": ["heavy"],
-          "grantedWeaponProficiencies": ["martial"]
+          "grantedWeaponProficiencies": ["martial"],
+          "grantedTools": []
         }
       },
       {
@@ -329,9 +333,11 @@
           "skillChoice": { "count": 1, "from": ["animal-handling", "nature", "survival"] },
           "languages": null,
           "cantripChoice": "druid",
+          "toolChoice": null,
           "grantedLanguages": [],
           "grantedArmorProficiencies": ["heavy"],
-          "grantedWeaponProficiencies": []
+          "grantedWeaponProficiencies": [],
+          "grantedTools": []
         }
       },
       {
@@ -346,9 +352,11 @@
           "skillChoice": null,
           "languages": null,
           "cantripChoice": null,
+          "toolChoice": null,
           "grantedLanguages": [],
           "grantedArmorProficiencies": ["heavy"],
-          "grantedWeaponProficiencies": ["martial"]
+          "grantedWeaponProficiencies": ["martial"],
+          "grantedTools": []
         }
       },
       {
@@ -363,9 +371,11 @@
           "skillChoice": null,
           "languages": null,
           "cantripChoice": null,
+          "toolChoice": null,
           "grantedLanguages": [],
           "grantedArmorProficiencies": ["heavy"],
-          "grantedWeaponProficiencies": []
+          "grantedWeaponProficiencies": [],
+          "grantedTools": []
         }
       }
     ],
@@ -531,9 +541,11 @@
           "skillChoice": null,
           "languages": null,
           "cantripChoice": null,
+          "toolChoice": null,
           "grantedLanguages": ["draconic"],
           "grantedArmorProficiencies": [],
-          "grantedWeaponProficiencies": []
+          "grantedWeaponProficiencies": [],
+          "grantedTools": []
         }
       },
       {
@@ -607,7 +619,7 @@
     "subclassLevel": 3,
     "subclasses": [
       { "id": "champion", "name": "Campeão", "description": "Maximiza o potencial físico bruto para alcançar a perfeição marcial através de treinamento intenso.", "features": [{ "name": "Crítico Aprimorado", "description": "Seus ataques com arma causam acerto crítico com uma rolagem de 19 ou 20 na jogada de ataque." }], "extras": null },
-      { "id": "battle-master", "name": "Mestre de Batalha", "description": "Aprende manobras militares para explorar as fraquezas do inimigo com precisão tática.", "features": [{ "name": "Superioridade em Combate", "description": "Você aprende 3 manobras (de uma lista) alimentadas por 4 dados de superioridade (d8), recuperados em descanso curto ou longo. A CD das manobras é 8 + bônus de proficiência + seu modificador de Força ou Destreza." }, { "name": "Estudioso da Guerra", "description": "Você ganha proficiência com um tipo de ferramenta de artesão, à sua escolha." }], "extras": null },
+      { "id": "battle-master", "name": "Mestre de Batalha", "description": "Aprende manobras militares para explorar as fraquezas do inimigo com precisão tática.", "features": [{ "name": "Superioridade em Combate", "description": "Você aprende 3 manobras (de uma lista) alimentadas por 4 dados de superioridade (d8), recuperados em descanso curto ou longo. A CD das manobras é 8 + bônus de proficiência + seu modificador de Força ou Destreza." }, { "name": "Estudioso da Guerra", "description": "Você ganha proficiência com um tipo de ferramenta de artesão, à sua escolha." }], "extras": { "expertiseSkills": null, "skillChoice": null, "languages": null, "cantripChoice": null, "toolChoice": { "count": 1, "from": "artisan" }, "grantedLanguages": [], "grantedArmorProficiencies": [], "grantedWeaponProficiencies": [], "grantedTools": [] } },
       { "id": "eldritch-knight", "casterProgression": "third", "name": "Cavaleiro Arcano", "description": "Combina arte marcial com estudo de magia arcana de abjuração e evocação.", "features": [{ "name": "Conjuração", "description": "Você amplia seu poderio marcial com magia de mago (usando Inteligência): aprende 2 truques e algumas magias de 1° nível, focadas em abjuração e evocação." }, { "name": "Vínculo com Arma", "description": "Por um ritual de 1 hora, você forja um elo com até duas armas. Você não pode ser desarmado delas e pode invocá-las para sua mão como ação bônus, se estiverem no mesmo plano." }], "extras": null }
     ],
     "startingEquipment": {
@@ -682,7 +694,7 @@
     "subclassLevel": 3,
     "subclasses": [
       { "id": "thief", "name": "Ladrão", "description": "Aprimora habilidades de escalar, esconder e roubar com versatilidade incomum.", "features": [{ "name": "Mãos Rápidas", "description": "Você pode usar a ação bônus da Ação Ardilosa para fazer um teste de Destreza (Prestidigitação), usar ferramentas de ladrão para desarmar armadilha ou abrir fechadura, ou realizar a ação de Usar um Objeto." }, { "name": "Andarilho de Telhados", "description": "Escalar não custa movimento extra e, ao saltar com corrida, a distância aumenta em 0,3 m × seu modificador de Destreza." }], "extras": null },
-      { "id": "assassin", "name": "Assassino", "description": "Especializado em eliminar alvos de surpresa com letalidade máxima.", "features": [{ "name": "Proficiência Adicional", "description": "Você ganha proficiência com kit de disfarce e kit de venenos." }, { "name": "Assassinar", "description": "Você tem vantagem em ataques contra criaturas que ainda não agiram no combate. Qualquer acerto contra uma criatura surpresa é um acerto crítico." }], "extras": null },
+      { "id": "assassin", "name": "Assassino", "description": "Especializado em eliminar alvos de surpresa com letalidade máxima.", "features": [{ "name": "Proficiência Adicional", "description": "Você ganha proficiência com kit de disfarce e kit de venenos." }, { "name": "Assassinar", "description": "Você tem vantagem em ataques contra criaturas que ainda não agiram no combate. Qualquer acerto contra uma criatura surpresa é um acerto crítico." }], "extras": { "expertiseSkills": null, "skillChoice": null, "languages": null, "cantripChoice": null, "toolChoice": null, "grantedLanguages": [], "grantedArmorProficiencies": [], "grantedWeaponProficiencies": [], "grantedTools": ["disguise-kit", "poisoners-kit"] } },
       { "id": "arcane-trickster", "casterProgression": "third", "name": "Trapaceiro Arcano", "description": "Combina furtividade com truques arcanos de ilusão e encantamento.", "features": [{ "name": "Conjuração", "description": "Você adquire magia de mago (usando Inteligência), com foco em ilusão e encantamento: aprende 3 truques (incluindo mãos mágicas) e algumas magias de 1° nível." }, { "name": "Mãos Mágicas Malabaristas", "description": "Ao conjurar mãos mágicas você pode torná-la invisível, guardar/recuperar objetos em recipientes de outra criatura e usar ferramentas de ladrão à distância, controlando-a com a ação bônus da Ação Ardilosa." }], "extras": null }
     ],
     "startingEquipment": {

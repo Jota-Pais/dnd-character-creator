@@ -12,7 +12,7 @@ import {
 import { getPrimaryLevel } from '../../utils/multiclassUtils'
 import { isStepComplete } from '../../utils/draftValidation'
 import { ABILITY_LABELS } from '../../utils/abilityScoreUtils'
-import { getExcludedSkills, getExcludedTools } from '../../utils/proficiencyUtils'
+import { getClassSlotProficiencies } from '../../utils/proficiencyUtils'
 import { ClassCard } from '../class/ClassCard'
 import { ClassChoicePanel } from '../class/ClassChoicePanel'
 import { MulticlassPanel } from '../class/MulticlassPanel'
@@ -43,26 +43,29 @@ export function ClassStep() {
   // Valida o passo inteiro (primária + adicionais + orçamento), não só a primária.
   const canAdvance = isStepComplete(draft, 'class')
 
-  // Perícias/ferramentas já obtidas de raça ou antecedente não podem ser re-escolhidas
-  const excludedSkills = getExcludedSkills(draft, 'class')
-  const excludedTools = getExcludedTools(draft, 'class')
+  // Perícias/ferramentas já obtidas de outra fonte não podem ser re-escolhidas. A exclusão é por
+  // slot: a lista da classe e os extras da subclasse são concessões distintas (ver proficiencyUtils).
+  const proficiencies = getClassSlotProficiencies(draft, draft.class ?? '')
+  const { excludedBaseSkills, excludedBaseTools, grantedSkills, grantedTools } = proficiencies
 
   useEffect(() => {
     const skills = draft.classChoices.skills
-    const filtered = skills.filter(id => !excludedSkills.includes(id))
-    if (filtered.length !== skills.length) {
-      updateClassChoices({
-        skills: filtered,
-        expertiseItems: draft.classChoices.expertiseItems.filter(id => !excludedSkills.includes(id)),
-      })
-    }
-  }, [excludedSkills.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
+    const filtered = skills.filter(id => !excludedBaseSkills.includes(id))
+    if (filtered.length !== skills.length) updateClassChoices({ skills: filtered })
+  }, [excludedBaseSkills.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const tools = draft.classChoices.tools
-    const filtered = tools.filter(id => !excludedTools.includes(id))
+    const filtered = tools.filter(id => !excludedBaseTools.includes(id))
     if (filtered.length !== tools.length) updateClassChoices({ tools: filtered })
-  }, [excludedTools.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [excludedBaseTools.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Especialização vale sobre proficiências que o personagem TEM; se a perícia sai, a expertise sai junto.
+  useEffect(() => {
+    const items = draft.classChoices.expertiseItems
+    const filtered = items.filter(id => grantedSkills.includes(id) || grantedTools.includes(id))
+    if (filtered.length !== items.length) updateClassChoices({ expertiseItems: filtered })
+  }, [grantedSkills.join(','), grantedTools.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleClassSelect(classId: string) {
     setClass(classId)
@@ -252,8 +255,7 @@ export function ClassStep() {
               accent={accent}
               level={primaryLevel}
               onChange={updateClassChoices}
-              excludedSkills={excludedSkills}
-              excludedTools={excludedTools}
+              proficiencies={proficiencies}
             />
           </div>
 

@@ -12,7 +12,7 @@ import {
   isRaceStepComplete,
   RACE_PRESENTATION,
 } from '../../utils/raceUtils'
-import { getExcludedSkills, getExcludedTools } from '../../utils/proficiencyUtils'
+import { getExcludedSkills, getExcludedTools, getExcludedLanguages } from '../../utils/proficiencyUtils'
 import { ABILITY_LABELS, formatBonus, formatSpeed } from '../../utils/abilityScoreUtils'
 import { RaceCard } from '../race/RaceCard'
 import { SubraceCard } from '../race/SubraceCard'
@@ -49,6 +49,17 @@ export function RaceStep() {
   // Perícias/ferramentas já obtidas de classe ou antecedente não podem ser re-escolhidas
   const excludedSkills = getExcludedSkills(draft, 'race')
   const excludedTools = getExcludedTools(draft, 'race')
+  // Idiomas: os fixos da própria raça (não dá pra escolher Comum de novo) mais os de outras fontes.
+  const excludedLanguages = [
+    ...(selectedRace?.grantedLanguages ?? []),
+    ...getExcludedLanguages(draft, 'race'),
+  ]
+
+  useEffect(() => {
+    const languages = draft.raceChoices.languages ?? []
+    const filtered = languages.filter(id => !excludedLanguages.includes(id))
+    if (filtered.length !== languages.length) updateRaceChoices({ languages: filtered })
+  }, [excludedLanguages.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const skills = draft.raceChoices.skills ?? []
@@ -210,7 +221,7 @@ export function RaceStep() {
                     selections={draft.raceChoices}
                     accent={accent}
                     onChange={updateRaceChoices}
-                    excludedLanguages={selectedRace?.grantedLanguages}
+                    excludedLanguages={excludedLanguages}
                     excludedSkills={excludedSkills}
                     excludedTools={excludedTools}
                   />

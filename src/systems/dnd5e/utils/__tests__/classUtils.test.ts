@@ -235,13 +235,20 @@ describe('isClassStepComplete', () => {
 })
 
 describe('getExpertiseOptions', () => {
-  it('retorna perícias escolhidas + ferramentas de ladrão', () => {
-    const choices = { ...EMPTY_CLASS_CHOICES, skills: ['acrobatics', 'stealth'] }
-    const options = getExpertiseOptions(choices)
-    expect(options.map(o => o.id)).toContain('acrobatics')
-    expect(options.map(o => o.id)).toContain('stealth')
-    expect(options.map(o => o.id)).toContain('thieves-tools')
-    expect(options).toHaveLength(3)
+  it('lista as perícias que o personagem tem + ferramentas de ladrão do ladino', () => {
+    const options = getExpertiseOptions(['acrobatics', 'stealth'], ['thieves-tools'])
+    expect(options.map(o => o.id)).toEqual(['acrobatics', 'stealth', 'thieves-tools'])
+  })
+
+  // "Duas das SUAS proficiências em perícia" (p. 53 e 96): não importa de onde vieram.
+  it('inclui perícias de outras fontes (antecedente, colégio do conhecimento)', () => {
+    const options = getExpertiseOptions(['arcana', 'history', 'performance'], [])
+    expect(options.map(o => o.id)).toEqual(['arcana', 'history', 'performance'])
+  })
+
+  it('não oferece ferramentas de ladrão a quem não é proficiente nelas (bardo)', () => {
+    const options = getExpertiseOptions(['deception'], ['lute'])
+    expect(options.map(o => o.id)).toEqual(['deception'])
   })
 })
 

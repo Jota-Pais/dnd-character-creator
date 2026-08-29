@@ -14,7 +14,7 @@ import {
 import { getClass } from '../../utils/classUtils'
 import { getPrimaryLevel } from '../../utils/multiclassUtils'
 import { StepNav } from '../../../../components/wizard/StepNav'
-import { FeatCatalog } from '../improvements/FeatCatalog'
+import { FeatCatalog } from '../common/FeatCatalog'
 
 const ACCENT = '#c0961a'
 type Mode = 'plus2' | 'split' | 'feat'

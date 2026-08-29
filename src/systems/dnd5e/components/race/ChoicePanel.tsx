@@ -3,8 +3,8 @@ import type { RaceChoiceSelections } from '../../types/character'
 import { ALL_ABILITY_SCORES, ABILITY_LABELS } from '../../utils/abilityScoreUtils'
 import { SKILLS, LANGUAGES, TOOL_NAMES } from '../../utils/raceUtils'
 import { getCantrips, SPELLS } from '../../utils/spellUtils'
-import { getFeat, getAllFeats } from '../../utils/featUtils'
-import { RuleText } from '../common/RuleText'
+import { getFeat } from '../../utils/featUtils'
+import { FeatCatalog } from '../common/FeatCatalog'
 
 type Props = {
   choices: RaceChoice[]
@@ -351,56 +351,30 @@ function FeatChoiceField({
   onChange: (patch: Partial<RaceChoiceSelections>) => void
 }) {
   const feat = featId ? getFeat(featId) : undefined
-  const halfOptions = feat?.abilityIncrease ?? []
   return (
     <div>
-      <p className="text-sm font-semibold text-parchment-300 mb-2 font-fantasy">Talento</p>
-      <select
-        value={featId}
-        onChange={e => onChange({ feat: e.target.value, featAbility: undefined })}
-        className="w-full px-3 py-2 rounded-lg border text-parchment-200 text-sm bg-parchment-950 mb-2"
-        style={{ borderColor: featId ? accent : 'rgba(58,38,20,0.6)' }}
-      >
-        <option value="">— escolha um talento —</option>
-        {getAllFeats().map(f => (
-          <option key={f.id} value={f.id}>{f.name}</option>
-        ))}
-      </select>
-      {feat && (
-        <>
-          {feat.prerequisite && (
-            <p className="text-xs text-gold-600 mb-1">Pré-requisito: {feat.prerequisite}</p>
-          )}
-          <RuleText
-            text={feat.description}
-            className="text-xs text-parchment-500 leading-relaxed mb-2"
-          />
-          {halfOptions.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-parchment-300 mb-1">+1 no atributo (parte do talento):</p>
-              <div className="flex flex-wrap gap-1.5">
-                {halfOptions.map(ab => {
-                  const isSel = featAbility === ab
-                  return (
-                    <button
-                      key={ab}
-                      onClick={() => onChange({ featAbility: ab })}
-                      className="px-2 py-1 rounded-lg border text-xs font-semibold font-fantasy"
-                      style={{
-                        borderColor: isSel ? accent : 'rgba(58,38,20,0.6)',
-                        backgroundColor: isSel ? `${accent}20` : 'transparent',
-                        color: isSel ? accent : '#b8946f',
-                      }}
-                    >
-                      {ABILITY_LABELS[ab].short}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-        </>
-      )}
+      <div className="flex items-baseline justify-between gap-2 mb-2">
+        <p className="text-sm font-semibold text-parchment-300 font-fantasy">Talento</p>
+        <span className="text-xs" style={{ color: feat ? accent : '#7d5c3c' }}>
+          {feat ? feat.name : 'nenhum escolhido'}
+        </span>
+      </div>
+      {/*
+        O mesmo catálogo do passo Aprimoramentos, e não um <select>: com 42 talentos, uma lista
+        só de nomes obriga a escolher um por um pra descobrir o que cada um faz. O painel da raça
+        é estreito, então a grade vai a uma coluna só e rola dentro de si.
+        Sem `scoreWithout`: aqui os atributos ainda nem foram definidos (Raça vem antes).
+      */}
+      <FeatCatalog
+        selectedFeatId={featId}
+        // Trocar de talento zera o +1: o atributo elegível é do talento antigo.
+        onSelect={id => onChange({ feat: id, featAbility: undefined })}
+        accent={accent}
+        abilityChoice={featAbility}
+        onAbilityChoice={ab => onChange({ featAbility: ab })}
+        gridClassName="grid-cols-1"
+        gridMaxHeightClassName="max-h-[26rem]"
+      />
     </div>
   )
 }

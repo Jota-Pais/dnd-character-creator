@@ -5,6 +5,7 @@ import {
 } from '../../utils/raceUtils'
 import { getFinalAbilityScores } from '../../utils/asiUtils'
 import { getFeat } from '../../utils/featUtils'
+import { RuleText } from '../common/RuleText'
 import {
   getClass, getSubclass, CLASS_PRESENTATION,
   isActiveCaster, getClassFeaturesUpToLevel,
@@ -620,8 +621,8 @@ export function ReviewStep() {
             <div className="space-y-3">
               {feats.map(feat => (
                 <div key={feat!.id}>
-                  <span className="text-sm font-semibold font-fantasy text-parchment-200">{feat!.name}.{' '}</span>
-                  <span className="text-sm text-parchment-500 leading-relaxed whitespace-pre-line">{feat!.description}</span>
+                  <p className="text-sm font-semibold font-fantasy text-parchment-200">{feat!.name}</p>
+                  <RuleText text={feat!.description} className="text-sm text-parchment-500 leading-relaxed" />
                 </div>
               ))}
             </div>

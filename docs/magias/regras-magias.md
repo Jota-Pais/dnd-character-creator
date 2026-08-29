@@ -10315,10 +10315,10 @@ Você invoca espíritos feéricos, que assumem formas de
 bestas, que aparecem em espaços desocupados, que você
 possa ver dentro do alcance. Escolha uma das opções a
 seguir para aparecer:
-Uma besta de nível de desafio 2 ou inferior
-Duas bestas de nível de desafio 1 ou inferior
-Quatro bestas de nível de desafio 1/2 ou inferior
-Oito bestas de nível de desafio 1/4 ou inferior
+- Uma besta de nível de desafio 2 ou inferior
+- Duas bestas de nível de desafio 1 ou inferior
+- Quatro bestas de nível de desafio 1/2 ou inferior
+- Oito bestas de nível de desafio 1/4 ou inferior
 Cada besta é também considerada uma fada e
 desaparece quando cair a 0 pontos de vida ou quando a
 magia acabar.

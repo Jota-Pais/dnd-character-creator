@@ -4,6 +4,7 @@ import { ALL_ABILITY_SCORES, ABILITY_LABELS } from '../../utils/abilityScoreUtil
 import { SKILLS, LANGUAGES, TOOL_NAMES } from '../../utils/raceUtils'
 import { getCantrips, SPELLS } from '../../utils/spellUtils'
 import { getFeat, getAllFeats } from '../../utils/featUtils'
+import { RuleText } from '../common/RuleText'
 
 type Props = {
   choices: RaceChoice[]
@@ -370,9 +371,10 @@ function FeatChoiceField({
           {feat.prerequisite && (
             <p className="text-xs text-gold-600 mb-1">Pré-requisito: {feat.prerequisite}</p>
           )}
-          <p className="text-xs text-parchment-500 leading-relaxed whitespace-pre-line mb-2">
-            {feat.description}
-          </p>
+          <RuleText
+            text={feat.description}
+            className="text-xs text-parchment-500 leading-relaxed mb-2"
+          />
           {halfOptions.length > 0 && (
             <div>
               <p className="text-xs font-semibold text-parchment-300 mb-1">+1 no atributo (parte do talento):</p>

@@ -22,6 +22,7 @@ import { getEquippedArmor, getItemName, getWeaponById } from '../utils/equipment
 import { getClassResources } from '../utils/classResourceUtils'
 import { getSpell, getSpellSaveDC, formatSpellAttackBonus, getCombinedSpellSlots, getPactSlots } from '../utils/spellUtils'
 import { getFeat } from '../utils/featUtils'
+import { RuleText } from './common/RuleText'
 import { getWeaponAttack } from '../utils/weaponFormat'
 import type { CharacterDraft } from '../types/character'
 import type { EquipmentChoiceItem, Weapon } from '../types/equipment'
@@ -438,7 +439,10 @@ export function PrintableSheet() {
       {feats.length > 0 && (
         <Box title="Talentos" className="mb-4">
           {feats.map(f => (
-            <p key={f!.id} className="text-xs mb-1"><strong>{f!.name}.</strong> {f!.description}</p>
+            <div key={f!.id} className="mb-1">
+              <p className="text-xs"><strong>{f!.name}.</strong></p>
+              <RuleText text={f!.description} className="text-xs" />
+            </div>
           ))}
         </Box>
       )}

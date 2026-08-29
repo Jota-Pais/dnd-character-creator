@@ -1,6 +1,7 @@
 import type { AbilityScore } from '../../types/race'
 import { ABILITY_LABELS } from '../../utils/abilityScoreUtils'
 import { getAllFeats } from '../../utils/featUtils'
+import { RuleText } from '../common/RuleText'
 
 type Props = {
   selectedFeatId: string
@@ -62,14 +63,11 @@ export function FeatCatalog({
                 </span>
               )}
 
-              <p
-                className={[
-                  'text-parchment-500 text-xs leading-relaxed whitespace-pre-line',
-                  selected ? '' : 'line-clamp-3',
-                ].join(' ')}
-              >
-                {feat.description}
-              </p>
+              <RuleText
+                text={feat.description}
+                clamp={!selected}
+                className="text-parchment-500 text-xs leading-relaxed"
+              />
             </button>
 
             {/* Meio-talento: o +1 é parte do talento, então mora dentro do card escolhido. */}

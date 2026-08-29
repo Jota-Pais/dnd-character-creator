@@ -5,7 +5,7 @@ import {
   getAvailableInnateSpells, TOOL_NAMES,
 } from '../utils/raceUtils'
 import {
-  getClass, getSubclass, isActiveCaster, getClassFeaturesUpToLevel,
+  getClass, getSubclass, isActiveCaster, getClassFeaturesUpToLevel, FIGHTING_STYLES,
 } from '../utils/classUtils'
 import {
   allClassEntries, getHitDicePool, getAllAsiChoices,
@@ -24,6 +24,7 @@ import { calculateArmorClass, getUnarmoredDefense } from '../utils/armorClassUti
 import { getEquippedArmor, getItemName, getWeaponById } from '../utils/equipmentUtils'
 import { getClassResources } from '../utils/classResourceUtils'
 import { getProgressionSlotsUpToLevel } from '../utils/progressionChoiceUtils'
+import { getProgressionOptions } from '../utils/progressionOptions'
 import { getSpell, getSpellSaveDC, formatSpellAttackBonus, getCombinedSpellSlots, getPactSlots } from '../utils/spellUtils'
 import { getFeat } from '../utils/featUtils'
 import { RuleText } from './common/RuleText'
@@ -164,11 +165,20 @@ export function PrintableSheet() {
 
   // Combate
   const { bodyArmor, hasShield } = getEquippedArmor(draft.equipment, cls?.startingEquipment)
-  const ac = calculateArmorClass({
+  const acResult = calculateArmorClass({
     dexMod, conMod, wisMod, bodyArmor, hasShield,
     unarmoredDefense: getUnarmoredDefense(entries.find(e => e.classId === 'barbarian' || e.classId === 'monk')?.classId ?? cls?.id),
     hasDefenseFightingStyle: entries.some(e => e.classChoices.fightingStyle === 'defense'),
-  }).value
+  })
+  const ac = acResult.value
+  // A conta da CA aberta: na mesa se troca de armadura e se larga o escudo, e sem as parcelas
+  // o jogador teria que abrir o app pra saber o que recalcular.
+  const acBreakdown = acResult.components
+    .map((c, i) => {
+      if (i === 0) return c.label === 'Base' ? `${c.value}` : `${c.value} (${c.label})`
+      return `${c.value >= 0 ? '+' : '−'} ${Math.abs(c.value)} (${c.label})`
+    })
+    .join(' ')
   const hp: number | null = cls ? getTotalHp(draft, conMod) : null
   const speed = race ? getEffectiveSpeed(race, subrace) + getSpeedBonusTotal(draft) : 0
   const initiative = dexMod + getInitiativeBonusTotal(draft)
@@ -237,6 +247,40 @@ export function PrintableSheet() {
    *
    * Sem repetir e na ordem da mesa: truques primeiro, depois por nível, alfabético dentro de cada.
    */
+  /** Estilo de Luta escolhido por cada classe que tem um (guerreiro, paladino, patrulheiro). */
+  const fightingStyles = entries.flatMap(e => {
+    const style = FIGHTING_STYLES.find(s => s.id === e.classChoices.fightingStyle)
+    return style ? [{ classId: e.classId, style }] : []
+  })
+
+  /**
+   * Escolhas de progressão com o texto de cada uma: manobras do Mestre de Batalha, invocações do
+   * bruxo, metamagia do feiticeiro, totem, terreno, presa. Os slots de Segredos Mágicos ficam de
+   * fora porque as magias que eles escolhem já saem inteiras no grimório.
+   */
+  const progressionBlocks = entries
+    .map(e => ({
+      e,
+      slots: getProgressionSlotsUpToLevel(e.classId, e.classChoices.subclass, e.level)
+        .filter(slot => slot.optionsListId !== 'any-known-spell')
+        .map(slot => {
+          const options = getProgressionOptions(slot.optionsListId)
+          const picks = (e.classChoices.progressionChoices[slot.id] ?? []).flatMap(id => {
+            const opt = options.find(o => o.id === id)
+            if (!opt) return []
+            // As opções escalonadas (táticas do patrulheiro) trazem o texto do degrau alcançado.
+            const text = opt.description
+              ?? (e.level >= 14 ? opt.tier14 : e.level >= 6 ? opt.tier6 : opt.tier3)
+              ?? opt.prerequisite
+              ?? ''
+            return [{ id: opt.id, name: opt.name, text }]
+          })
+          return { slot, picks }
+        })
+        .filter(s => s.picks.length > 0),
+    }))
+    .filter(b => b.slots.length > 0)
+
   const knownSpells = (() => {
     const fromProgression = entries.flatMap(e =>
       getProgressionSlotsUpToLevel(e.classId, e.classChoices.subclass, e.level)
@@ -246,6 +290,7 @@ export function PrintableSheet() {
     const ids = [
       ...casters.flatMap(({ e }) => [...e.spellChoices.cantrips, ...e.spellChoices.spells]),
       ...(draft.raceChoices.cantrip ? [draft.raceChoices.cantrip] : []),
+      ...entries.flatMap(e => e.classChoices.subclassExtras.cantrip ? [e.classChoices.subclassExtras.cantrip] : []),
       ...innateSpells.map(s => s.spellId),
       ...fromProgression,
     ]
@@ -286,6 +331,13 @@ export function PrintableSheet() {
         <Stat label="Visão no Escuro" value={darkvision > 0 ? metersLabel(darkvision) : '—'} />
         <Stat label="Nível" value={String(level)} />
       </Grid>
+
+      <p className="text-xs mb-1">
+        <span className="text-gray-600">CA {ac} = </span>{acBreakdown}
+        {acResult.stealthDisadvantage && (
+          <span className="text-gray-600"> · armadura impõe desvantagem em Furtividade</span>
+        )}
+      </p>
 
       {/* CA condicional: fora do número, com a condição, pra valer na mesa sem inflar a ficha. */}
       {conditionalAc.length > 0 && (
@@ -473,6 +525,48 @@ export function PrintableSheet() {
           <p key={t.name} className="text-xs mb-1"><strong>{t.name}.</strong> {t.description}</p>
         ))}
       </Box>
+
+      {/* Característica de antecedente — regra de mesa que o jogador aciona (Contatos, Refúgio...) */}
+      {bg && (
+        <Box title="Característica de Antecedente" className="mb-4">
+          <p className="text-xs"><strong>{bg.feature.name}.</strong> {bg.feature.description}</p>
+        </Box>
+      )}
+
+      {/* Estilo de Luta: só o accent da CA usava; o texto (ex.: Arquearia +2) nunca saía na ficha. */}
+      {fightingStyles.length > 0 && (
+        <Box title="Estilo de Luta" className="mb-4">
+          {fightingStyles.map(({ classId, style }) => (
+            <p key={classId} className="text-xs mb-1 last:mb-0">
+              {isMc && <span className="text-gray-600">{getClass(classId)?.name}: </span>}
+              <strong>{style.name}.</strong> {style.description}
+            </p>
+          ))}
+        </Box>
+      )}
+
+      {/* Manobras, Invocações, Metamagia, Totem, Terreno, Presa — escolhas que se usam na mesa. */}
+      {progressionBlocks.length > 0 && (
+        <Box title="Escolhas de Progressão" className="mb-4">
+          {progressionBlocks.map(({ e, slots }) => (
+            <div key={e.classId} className="mb-2 last:mb-0">
+              {isMc && <p className="text-xs font-bold text-gray-700">{getClass(e.classId)?.name}</p>}
+              {slots.map(({ slot, picks }) => (
+                <div key={slot.id} className="mb-1.5 last:mb-0">
+                  <p className="text-[10px] uppercase tracking-wide text-gray-600">
+                    {slot.label}{slot.cumulative ? ` (nv ${slot.level})` : ''}
+                  </p>
+                  {picks.map(opt => (
+                    <p key={opt.id} className="text-xs mb-0.5">
+                      <strong>{opt.name}.</strong> {opt.text}
+                    </p>
+                  ))}
+                </div>
+              ))}
+            </div>
+          ))}
+        </Box>
+      )}
 
       {featureBlocks.some(b => b.features.length > 0) && (
         <Box title="Habilidades de Classe" className="mb-4">

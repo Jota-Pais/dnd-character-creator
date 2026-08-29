@@ -21,7 +21,10 @@ import {
 } from '../../utils/abilityScoreUtils'
 import { getItemName, getEquippedArmor, getPurchasesTotalCopper, formatCurrency } from '../../utils/equipmentUtils'
 import { getUnarmoredDefense, calculateArmorClass } from '../../utils/armorClassUtils'
-import { getAllGrantedSkills, getAllGrantedTools, getAllGrantedLanguages } from '../../utils/proficiencyUtils'
+import {
+  getAllGrantedSkills, getAllGrantedTools, getAllGrantedLanguages,
+  getArmorProficiencyLabels, getWeaponProficiencyLabels, getUnproficientArmor,
+} from '../../utils/proficiencyUtils'
 import { getProgressionSlotsUpToLevel } from '../../utils/progressionChoiceUtils'
 import { getProgressionOptions } from '../../utils/progressionOptions'
 import {
@@ -150,6 +153,9 @@ export function ReviewStep() {
 
   // Languages & tools
   const allLanguages = getAllGrantedLanguages(draft)
+  const armorProficiencies = getArmorProficiencyLabels(draft)
+  const weaponProficiencies = getWeaponProficiencyLabels(draft)
+  const unproficientArmor = getUnproficientArmor(draft)
 
   const allTools = getAllGrantedTools(draft)
 
@@ -407,9 +413,42 @@ export function ReviewStep() {
       </div>
 
       {/* Languages & Tools */}
-      {(allTools.length > 0 || allLanguages.length > 0) && (
+      {(allTools.length > 0 || allLanguages.length > 0 || armorProficiencies.length > 0) && (
         <Section title="Proficiências & Idiomas">
           <div className="space-y-3">
+            {armorProficiencies.length > 0 && (
+              <div>
+                <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">
+                  Armaduras
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {armorProficiencies.map(label => <Chip key={label} label={label} />)}
+                </div>
+              </div>
+            )}
+            {weaponProficiencies.length > 0 && (
+              <div>
+                <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">
+                  Armas
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {weaponProficiencies.map(label => <Chip key={label} label={label} />)}
+                </div>
+              </div>
+            )}
+            {/* p. 144: vestir armadura sem proficiência custa caro — a ficha avisa em vez de
+                mexer no número, do mesmo jeito que o Ordem lista a penalidade de proteção. */}
+            {unproficientArmor.length > 0 && (
+              <div className="rounded-lg border border-red-900/60 bg-red-950/20 px-3 py-2">
+                <p className="text-xs font-semibold text-red-400 mb-1">
+                  ⚠ Sem proficiência: {unproficientArmor.map(a => a.name).join(', ')}
+                </p>
+                <p className="text-xs text-parchment-500 leading-relaxed">
+                  Desvantagem em testes de habilidade, testes de resistência e jogadas de ataque
+                  que usem Força ou Destreza — e você não pode conjurar magias.
+                </p>
+              </div>
+            )}
             {allTools.length > 0 && (
               <div>
                 <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">

@@ -8,7 +8,13 @@ import {
   getAllGrantedSkills,
   getAllGrantedTools,
   getAllGrantedLanguages,
+  getArmorProficiencies,
+  getWeaponProficiencies,
+  getWeaponProficiencyLabels,
+  getSavingThrowProficiencies,
+  hasWeaponProficiency,
 } from '../proficiencyUtils'
+import { getWeaponById } from '../equipmentUtils'
 import { EMPTY_CLASS_CHOICES } from '../../types/class'
 import { getRaceGrantedSkills, getRaceGrantedTools, getRace, getSubrace } from '../raceUtils'
 import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
@@ -177,6 +183,69 @@ describe('getExcludedToolsForClassSlot', () => {
     expect(getExcludedTools(d, 'background')).toEqual(
       expect.arrayContaining(['disguise-kit', 'poisoners-kit']),
     )
+  })
+})
+
+describe('proficiência de armadura, arma e resistência', () => {
+  it('a classe inicial concede a lista cheia de armadura', () => {
+    const d = draft({ class: 'fighter' })
+    expect(getArmorProficiencies(d)).toEqual(
+      expect.arrayContaining(['light', 'medium', 'heavy', 'shields']),
+    )
+  })
+
+  // p. 163: multiclassar concede só o subconjunto da Tabela de Proficiências de Multiclasse.
+  it('a classe adicional concede só o subconjunto de multiclasse', () => {
+    const d = draft({
+      class: 'wizard', // nenhuma armadura
+      additionalClasses: [{
+        classId: 'fighter', level: 1, classChoices: { ...EMPTY_CLASS_CHOICES },
+        spellChoices: { cantrips: [], spells: [] }, asiChoices: [], hpRolls: [],
+      }],
+    })
+    const profs = getArmorProficiencies(d)
+    expect(profs).toEqual(expect.arrayContaining(['light', 'medium', 'shields']))
+    expect(profs).not.toContain('heavy') // guerreiro só dá pesada como classe INICIAL
+  })
+
+  it('a sub-raça concede armadura (anão da montanha: leve e média)', () => {
+    const d = draft({ race: 'dwarf', subrace: 'mountain-dwarf' })
+    expect(getArmorProficiencies(d)).toEqual(expect.arrayContaining(['light', 'medium']))
+  })
+
+  it('a subclasse concede armadura e armas (Colégio da Bravura)', () => {
+    const d = draft({
+      class: 'bard',
+      classChoices: { ...EMPTY_DRAFT.classChoices, subclass: 'college-of-valor' },
+    })
+    expect(getArmorProficiencies(d)).toEqual(expect.arrayContaining(['medium', 'shields']))
+    expect(getWeaponProficiencies(d)).toContain('martial')
+  })
+
+  it('proficiência de arma vale por categoria ou por concessão específica', () => {
+    const dwarfWizard = draft({ race: 'dwarf', class: 'wizard' })
+    // Machado de batalha é marcial: o mago não teria, mas o anão ganha essa arma nominalmente.
+    expect(hasWeaponProficiency(dwarfWizard, getWeaponById('battleaxe')!)).toBe(true)
+    expect(hasWeaponProficiency(dwarfWizard, getWeaponById('greatsword')!)).toBe(false)
+    expect(hasWeaponProficiency(dwarfWizard, getWeaponById('quarterstaff')!)).toBe(true) // simples
+  })
+
+  // p. 163: multiclassar NUNCA concede proficiência em teste de resistência.
+  it('só a classe inicial concede resistências', () => {
+    const d = draft({
+      class: 'wizard', // INT, SAB
+      additionalClasses: [{
+        classId: 'fighter', level: 1, classChoices: { ...EMPTY_CLASS_CHOICES },
+        spellChoices: { cantrips: [], spells: [] }, asiChoices: [], hpRolls: [],
+      }],
+    })
+    expect(getSavingThrowProficiencies(d)).toEqual(['INT', 'WIS'])
+  })
+
+  it('rótulo de arma não repete a arma cuja categoria já entrou', () => {
+    // Guerreiro anão: tem todas as marciais, então "Machado de Batalha" seria ruído.
+    const labels = getWeaponProficiencyLabels(draft({ race: 'dwarf', class: 'fighter' }))
+    expect(labels).toEqual(['Armas Simples', 'Armas Marciais'])
   })
 })
 

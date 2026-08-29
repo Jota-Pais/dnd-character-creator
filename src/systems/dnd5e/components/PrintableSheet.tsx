@@ -16,7 +16,10 @@ import {
   ALL_ABILITY_SCORES, ABILITY_LABELS,
 } from '../utils/abilityScoreUtils'
 import { getFinalAbilityScores } from '../utils/asiUtils'
-import { getAllGrantedSkills, getAllGrantedTools, getAllGrantedLanguages } from '../utils/proficiencyUtils'
+import {
+  getAllGrantedSkills, getAllGrantedTools, getAllGrantedLanguages,
+  getArmorProficiencyLabels, getWeaponProficiencyLabels, getUnproficientArmor,
+} from '../utils/proficiencyUtils'
 import { calculateArmorClass, getUnarmoredDefense } from '../utils/armorClassUtils'
 import { getEquippedArmor, getItemName, getWeaponById } from '../utils/equipmentUtils'
 import { getClassResources } from '../utils/classResourceUtils'
@@ -177,6 +180,9 @@ export function PrintableSheet() {
   const allTools = getAllGrantedTools(draft)
 
   const languages = getAllGrantedLanguages(draft)
+  const armorProficiencies = getArmorProficiencyLabels(draft)
+  const weaponProficiencies = getWeaponProficiencyLabels(draft)
+  const unproficientArmor = getUnproficientArmor(draft)
 
   const classLabel = entries.map(e => {
     const ec = getClass(e.classId)
@@ -397,8 +403,17 @@ export function PrintableSheet() {
 
       {/* Proficiências & Idiomas */}
       <Box title="Proficiências & Idiomas" className="mb-4">
+        {armorProficiencies.length > 0 && <p className="text-xs mb-0.5"><span className="text-gray-600">Armaduras: </span>{armorProficiencies.join(', ')}</p>}
+        {weaponProficiencies.length > 0 && <p className="text-xs mb-0.5"><span className="text-gray-600">Armas: </span>{weaponProficiencies.join(', ')}</p>}
         {allTools.length > 0 && <p className="text-xs mb-0.5"><span className="text-gray-600">Ferramentas: </span>{allTools.map(t => TOOL_NAMES[t] ?? getToolName(t)).join(', ')}</p>}
         <p className="text-xs"><span className="text-gray-600">Idiomas: </span>{languages.map(l => LANG_NAME[l] ?? l).join(', ') || '—'}</p>
+        {/* p. 144 — a ficha vai pra mesa, então o custo de usar armadura sem proficiência vai junto. */}
+        {unproficientArmor.length > 0 && (
+          <p className="text-xs mt-1 border border-gray-400 px-1.5 py-1">
+            <strong>Sem proficiência: {unproficientArmor.map(a => a.name).join(', ')}.</strong>{' '}
+            Desvantagem em testes, resistências e ataques de Força ou Destreza; não conjura magias.
+          </p>
+        )}
       </Box>
 
       {/* Magias raciais */}

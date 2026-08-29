@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest'
+import { CLASSES } from '../../utils/classUtils'
+import weaponsData from '../weapons.json'
 
 /**
  * A digitalização do PHB vem de um PDF que usa Wingdings para os marcadores de lista: o extrator
@@ -35,4 +37,23 @@ describe('dados do livro', () => {
     const context = at >= 0 ? content.slice(Math.max(0, at - 60), at + 60) : ''
     expect(at, `caractere de uso privado em ${file}: ...${context}...`).toBe(-1)
   })
+})
+
+/**
+ * As classes listavam armas no plural inglês ("quarterstaffs") enquanto o catálogo usa o id
+ * singular ("quarterstaff"): nenhuma proficiência específica casava. Só apareceu quando o motor
+ * de proficiência passou a ler esses ids de verdade.
+ */
+describe('ids de arma das classes', () => {
+  const CATALOG_IDS = new Set((weaponsData as { id: string }[]).map(w => w.id))
+  const CATEGORY_TOKENS = ['simple', 'martial']
+
+  it.each(CLASSES.map(c => [c.id, c] as const))(
+    '%s: proficiências de arma existem no catálogo',
+    (_id, cls) => {
+      const declared = [...cls.weaponProficiencies, ...cls.multiclassProficiencies.weapons]
+      const unknown = declared.filter(w => !CATEGORY_TOKENS.includes(w) && !CATALOG_IDS.has(w))
+      expect(unknown, `ids sem correspondência no catálogo: ${unknown.join(', ')}`).toEqual([])
+    },
+  )
 })

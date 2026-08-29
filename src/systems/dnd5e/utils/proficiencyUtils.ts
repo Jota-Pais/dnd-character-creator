@@ -1,8 +1,14 @@
 import type { CharacterDraft } from '../types/character'
-import type { ClassChoiceSelections } from '../types/class'
-import { getRace, getSubrace, getRaceGrantedSkills, getRaceGrantedTools } from './raceUtils'
+import type { ClassChoiceSelections, ArmorProficiency } from '../types/class'
+import type { AbilityScore } from '../types/race'
+import type { Armor, ArmorCategory, Weapon } from '../types/equipment'
+import {
+  getRace, getSubrace, getRaceGrantedSkills, getRaceGrantedTools,
+  getEffectiveGrantedProficiencies,
+} from './raceUtils'
 import { getClass, getSubclass } from './classUtils'
 import { getBackground } from './backgroundUtils'
+import { getEquippedArmor, getArmor, getWeaponById } from './equipmentUtils'
 
 /**
  * Deduplicação de proficiências entre raça, classe e antecedente (PHB 2014).
@@ -195,6 +201,136 @@ export function getClassSlotProficiencies(
     grantedSkills: getAllGrantedSkills(draft),
     grantedTools: getAllGrantedTools(draft),
   }
+}
+
+// ── Armaduras, armas e resistências (a permissão de USAR) ──────────────────────
+
+/** Proficiências raciais de um tipo (ex.: anão da montanha = armadura leve e média). */
+function raceGranted(draft: CharacterDraft, type: 'armor' | 'weapon'): string[] {
+  const race = draft.race ? getRace(draft.race) : undefined
+  if (!race) return []
+  const subrace = draft.subrace ? (getSubrace(race, draft.subrace) ?? null) : null
+  return getEffectiveGrantedProficiencies(race, subrace)
+    .filter(g => g.type === type)
+    .map(g => g.value)
+}
+
+/**
+ * Proficiências de armadura de todas as fontes.
+ *
+ * A classe INICIAL concede a lista cheia; as adicionais só o subconjunto da Tabela de
+ * Proficiências de Multiclasse (p. 163) — por isso `multiclassProficiencies.armor`.
+ */
+export function getArmorProficiencies(draft: CharacterDraft): ArmorProficiency[] {
+  const fromPrimary = draft.class ? (getClass(draft.class)?.armorProficiencies ?? []) : []
+  const fromAdditional = draft.additionalClasses.flatMap(
+    e => getClass(e.classId)?.multiclassProficiencies.armor ?? [],
+  )
+  const fromSubclasses = classEntries(draft).flatMap(
+    ({ classId, choices }) => subclassExtrasOf(classId, choices)?.grantedArmorProficiencies ?? [],
+  )
+  return uniq([
+    ...raceGranted(draft, 'armor'),
+    ...fromPrimary,
+    ...fromAdditional,
+    ...fromSubclasses,
+  ]) as ArmorProficiency[]
+}
+
+/** Proficiências de arma: os tokens 'simple'/'martial' e/ou ids de armas específicas. */
+export function getWeaponProficiencies(draft: CharacterDraft): string[] {
+  const fromPrimary = draft.class ? (getClass(draft.class)?.weaponProficiencies ?? []) : []
+  const fromAdditional = draft.additionalClasses.flatMap(
+    e => getClass(e.classId)?.multiclassProficiencies.weapons ?? [],
+  )
+  const fromSubclasses = classEntries(draft).flatMap(
+    ({ classId, choices }) => subclassExtrasOf(classId, choices)?.grantedWeaponProficiencies ?? [],
+  )
+  return uniq([
+    ...raceGranted(draft, 'weapon'),
+    ...fromPrimary,
+    ...fromAdditional,
+    ...fromSubclasses,
+  ])
+}
+
+/**
+ * Testes de resistência com proficiência. Só a classe INICIAL concede: multiclassar nunca dá
+ * proficiência em resistência (p. 163) — é a diferença mais esquecida da tabela.
+ */
+export function getSavingThrowProficiencies(draft: CharacterDraft): AbilityScore[] {
+  return draft.class ? (getClass(draft.class)?.savingThrows ?? []) : []
+}
+
+/** O catálogo de armaduras diz 'shield'; a proficiência de classe diz 'shields'. */
+const ARMOR_CATEGORY_TO_PROFICIENCY: Record<ArmorCategory, ArmorProficiency> = {
+  light: 'light',
+  medium: 'medium',
+  heavy: 'heavy',
+  shield: 'shields',
+}
+
+export function hasArmorProficiency(draft: CharacterDraft, armor: Armor): boolean {
+  return getArmorProficiencies(draft).includes(ARMOR_CATEGORY_TO_PROFICIENCY[armor.category])
+}
+
+/** Proficiente com a arma pela categoria (simples/marcial) ou por concessão específica. */
+export function hasWeaponProficiency(draft: CharacterDraft, weapon: Weapon): boolean {
+  const profs = getWeaponProficiencies(draft)
+  return profs.includes(weapon.category) || profs.includes(weapon.id)
+}
+
+/**
+ * Armadura/escudo equipados sem a proficiência correspondente.
+ *
+ * "Se você vestir uma armadura com a qual não tem proficiência, terá desvantagem em qualquer
+ * teste de habilidade, teste de resistência ou jogada de ataque que envolva Força ou Destreza, e
+ * não poderá conjurar magias" (p. 144). O análogo da penalidade em dados do Ordem: a ficha não
+ * some com o número, mostra a condição.
+ */
+export function getUnproficientArmor(draft: CharacterDraft): Armor[] {
+  const classEquipment = draft.class ? getClass(draft.class)?.startingEquipment : undefined
+  const { bodyArmor, hasShield } = getEquippedArmor(draft.equipment, classEquipment)
+  // getEquippedArmor devolve só um booleano pro escudo; o item vem do catálogo pra nomear o aviso.
+  const shield = hasShield ? getArmor('shield') : undefined
+  const worn = [bodyArmor, shield].filter((a): a is Armor => a !== undefined)
+  return worn.filter(armor => !hasArmorProficiency(draft, armor))
+}
+
+// ── Rótulos ────────────────────────────────────────────────────────────────────
+
+export const ARMOR_PROFICIENCY_LABELS: Record<ArmorProficiency, string> = {
+  light: 'Armaduras Leves',
+  medium: 'Armaduras Médias',
+  heavy: 'Armaduras Pesadas',
+  shields: 'Escudos',
+}
+
+const WEAPON_CATEGORY_LABELS: Record<string, string> = {
+  simple: 'Armas Simples',
+  martial: 'Armas Marciais',
+}
+
+export function getArmorProficiencyLabels(draft: CharacterDraft): string[] {
+  return getArmorProficiencies(draft).map(p => ARMOR_PROFICIENCY_LABELS[p] ?? p)
+}
+
+/** Categorias primeiro, depois as armas avulsas (as raciais), cada uma pelo nome do catálogo. */
+export function getWeaponProficiencyLabels(draft: CharacterDraft): string[] {
+  const profs = getWeaponProficiencies(draft)
+  const categories = profs.filter(p => p in WEAPON_CATEGORY_LABELS)
+  const specific = profs.filter(p => !(p in WEAPON_CATEGORY_LABELS))
+  return [
+    ...categories.map(c => WEAPON_CATEGORY_LABELS[c]),
+    // Uma arma específica é redundante se a categoria dela já entrou (anão guerreiro: machado
+    // de batalha é marcial, e o guerreiro já tem todas as marciais).
+    ...specific
+      .filter(id => {
+        const weapon = getWeaponById(id)
+        return !weapon || !categories.includes(weapon.category)
+      })
+      .map(id => getWeaponById(id)?.name ?? id),
+  ]
 }
 
 // ── Idiomas ────────────────────────────────────────────────────────────────────

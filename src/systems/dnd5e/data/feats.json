@@ -15,13 +15,24 @@
     "id": "alerta",
     "name": "Alerta",
     "prerequisite": null,
-    "description": "Sempre a espera de perigo, você ganha os seguintes benefícios:\n- Você recebe +5 de bônus em iniciativa.\n- Você não pode ser surpreso enquanto estiver consciente.\n- Outras criaturas não ganham vantagem nas jogadas de ataque contra você por estarem escondidas de você."
+    "description": "Sempre a espera de perigo, você ganha os seguintes benefícios:\n- Você recebe +5 de bônus em iniciativa.\n- Você não pode ser surpreso enquanto estiver consciente.\n- Outras criaturas não ganham vantagem nas jogadas de ataque contra você por estarem escondidas de você.",
+    "effects": {
+      "initiativeBonus": 5
+    }
   },
   {
     "id": "ambidestro",
     "name": "Ambidestro",
     "prerequisite": null,
-    "description": "Você dominou o estilo de luta com duas armas, ganhando os seguintes benefícios:\n- Você ganha +1 de bônus na CA enquanto estiver empunhando uma arma corpo-a-corpo em cada mão.\n- Você pode usar combater com duas armas mesmo que a arma de uma mão que você está empunhando não seja leve.\n- Você pode sacar ou guardar duas armas de uma mão quando você, normalmente, seria capaz de sacar ou guardar apenas uma."
+    "description": "Você dominou o estilo de luta com duas armas, ganhando os seguintes benefícios:\n- Você ganha +1 de bônus na CA enquanto estiver empunhando uma arma corpo-a-corpo em cada mão.\n- Você pode usar combater com duas armas mesmo que a arma de uma mão que você está empunhando não seja leve.\n- Você pode sacar ou guardar duas armas de uma mão quando você, normalmente, seria capaz de sacar ou guardar apenas uma.",
+    "effects": {
+      "conditionalAcBonus": [
+        {
+          "value": 1,
+          "condition": "empunhando uma arma corpo-a-corpo em cada mão"
+        }
+      ]
+    }
   },
   {
     "id": "atacante-bestial",
@@ -198,7 +209,10 @@
     "id": "mobilidade",
     "name": "Mobilidade",
     "prerequisite": null,
-    "description": "Você é excepcionalmente rápido e ágil. Você ganha os seguintes benefícios:\n- Seu deslocamento aumenta em 3 metros.\n- Quando você usa a ação de Disparada, mover-se através de terreno difícil não lhe custa qualquer movimento adicional neste turno.\n- Quando você realiza um ataque corpo-a-corpo contra uma criatura, você não provoca ataques de oportunidade para essa criatura pelo resto do turno, independentemente de ter atingido ou não."
+    "description": "Você é excepcionalmente rápido e ágil. Você ganha os seguintes benefícios:\n- Seu deslocamento aumenta em 3 metros.\n- Quando você usa a ação de Disparada, mover-se através de terreno difícil não lhe custa qualquer movimento adicional neste turno.\n- Quando você realiza um ataque corpo-a-corpo contra uma criatura, você não provoca ataques de oportunidade para essa criatura pelo resto do turno, independentemente de ter atingido ou não.",
+    "effects": {
+      "speedBonus": 10
+    }
   },
   {
     "id": "observador",
@@ -208,7 +222,16 @@
     "abilityIncrease": [
       "INT",
       "WIS"
-    ]
+    ],
+    "effects": {
+      "passiveScoreBonus": {
+        "skills": [
+          "perception",
+          "investigation"
+        ],
+        "value": 5
+      }
+    }
   },
   {
     "id": "perito",
@@ -232,7 +255,12 @@
     "description": "Você treinou até dominar o uso de armaduras leves, ganhando os seguintes benefícios:\n- Aumente seu valor de Força em 1, até o máximo de 20.\n- Você ganha proficiência com armadura leves.",
     "abilityIncrease": [
       "STR"
-    ]
+    ],
+    "effects": {
+      "grantedArmorProficiencies": [
+        "light"
+      ]
+    }
   },
   {
     "id": "protecao-moderada",
@@ -241,7 +269,13 @@
     "description": "Você treinou até dominar o uso de armaduras médias e escudos, ganhando os seguintes benefícios:\n- Aumente seu valor de Força em 1, até o máximo de 20.\n- Você ganha proficiência com armadura média e escudos.",
     "abilityIncrease": [
       "STR"
-    ]
+    ],
+    "effects": {
+      "grantedArmorProficiencies": [
+        "medium",
+        "shields"
+      ]
+    }
   },
   {
     "id": "protecao-pesada",
@@ -250,7 +284,12 @@
     "description": "Você treinou até dominar o uso de armaduras pesadas, ganhando os seguintes benefícios:\n- Aumente seu valor de Força em 1, até o máximo de 20.\n- Você ganha proficiência com armadura pesada.",
     "abilityIncrease": [
       "STR"
-    ]
+    ],
+    "effects": {
+      "grantedArmorProficiencies": [
+        "heavy"
+      ]
+    }
   },
   {
     "id": "resiliente",
@@ -279,7 +318,10 @@
     "id": "robusto",
     "name": "Robusto",
     "prerequisite": null,
-    "description": "Seu máximo de pontos de vida aumenta em um valor igual a duas vezes seu nível quando você adquire esse talento. Toda vez que você ganhar um nível, após isso, seu máximo de pontos de vida aumenta em 2 pontos de vida adicionais."
+    "description": "Seu máximo de pontos de vida aumenta em um valor igual a duas vezes seu nível quando você adquire esse talento. Toda vez que você ganhar um nível, após isso, seu máximo de pontos de vida aumenta em 2 pontos de vida adicionais.",
+    "effects": {
+      "hpPerLevel": 2
+    }
   },
   {
     "id": "sentinela",

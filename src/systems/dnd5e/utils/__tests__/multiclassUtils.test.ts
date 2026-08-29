@@ -14,11 +14,10 @@ import {
   getTotalHpAverage,
   getTotalHpRolled,
   getHitDicePool,
-  getAllArmorProficiencies,
-  getAllWeaponProficiencies,
   getAllAsiChoices,
   getCombinedCasterLevel,
 } from '../multiclassUtils'
+import { getArmorProficiencies as getAllArmorProficiencies, getWeaponProficiencies as getAllWeaponProficiencies } from '../proficiencyUtils'
 import { getFinalAbilityScores, isImprovementsStepComplete } from '../asiUtils'
 import { isStepComplete } from '../draftValidation'
 import { getCombinedSpellSlots, getPactSlots } from '../spellUtils'
@@ -197,6 +196,8 @@ describe('multiclassUtils — PV em poço', () => {
   })
 })
 
+// A agregação mora em proficiencyUtils (que também soma raça, subclasse e talento); aqui
+// ficam só os casos de MULTICLASSE, que são a regra desta unidade.
 describe('multiclassUtils — proficiências agregadas', () => {
   it('armadura: completas da primária + subconjunto de multiclasse das adicionais', () => {
     // Mago (nenhuma) + Clérigo adicional (leve/média/escudos pela tabela de multiclasse)
@@ -210,7 +211,7 @@ describe('multiclassUtils — proficiências agregadas', () => {
     // Mago (adagas, dardos...) + Bárbaro adicional (simples, marciais pela multiclasse)
     const d = makeDraft({ class: 'wizard', level: 3, additionalClasses: [entry({ classId: 'barbarian', level: 1 })] })
     const w = getAllWeaponProficiencies(d)
-    expect(w).toContain('daggers') // base do mago
+    expect(w).toContain('dagger') // base do mago
     expect(w).toContain('martial') // concedida pelo bárbaro na multiclasse
   })
 })

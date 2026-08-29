@@ -9,6 +9,7 @@ import {
 import { getClass, getSubclass } from './classUtils'
 import { getBackground } from './backgroundUtils'
 import { getEquippedArmor, getArmor, getWeaponById } from './equipmentUtils'
+import { getFeatArmorProficiencies } from './sheetEffects'
 
 /**
  * Deduplicação de proficiências entre raça, classe e antecedente (PHB 2014).
@@ -234,6 +235,7 @@ export function getArmorProficiencies(draft: CharacterDraft): ArmorProficiency[]
     ...fromPrimary,
     ...fromAdditional,
     ...fromSubclasses,
+    ...getFeatArmorProficiencies(draft),
   ]) as ArmorProficiency[]
 }
 

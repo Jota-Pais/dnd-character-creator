@@ -11,7 +11,7 @@ import {
   isActiveCaster, getClassFeaturesUpToLevel,
 } from '../../utils/classUtils'
 import {
-  allClassEntries, getTotalHpAverage, getTotalHpRolled, getAllAsiChoices,
+  allClassEntries, getAllAsiChoices,
 } from '../../utils/multiclassUtils'
 import { getClassResources } from '../../utils/classResourceUtils'
 import { getBackground, BACKGROUND_PRESENTATION, getToolName, SKILLS } from '../../utils/backgroundUtils'
@@ -26,6 +26,10 @@ import {
   getArmorProficiencyLabels, getWeaponProficiencyLabels, getUnproficientArmor,
 } from '../../utils/proficiencyUtils'
 import { getProgressionSlotsUpToLevel } from '../../utils/progressionChoiceUtils'
+import {
+  getTotalHp, getInitiativeBonusTotal, getSpeedBonusTotal,
+  getPassiveScoreBonus, getConditionalAcBonuses,
+} from '../../utils/sheetEffects'
 import { getProgressionOptions } from '../../utils/progressionOptions'
 import {
   getSpell,
@@ -113,11 +117,12 @@ export function ReviewStep() {
 
   // PV total: soma o poço de dados de vida de todas as classes (só o 1º nível da classe
   // inicial usa o dado máximo). Para classe única equivale ao cálculo anterior.
-  const hp: number | null = cls
-    ? (hpMethod === 'average' ? getTotalHpAverage(draft, conMod) : getTotalHpRolled(draft, conMod))
-    : null
+  const hp: number | null = cls ? getTotalHp(draft, conMod) : null
 
-  const speed = race ? getEffectiveSpeed(race, subrace ?? null) : null
+  // Deslocamento e iniciativa já com os efeitos de talento somados (Mobilidade, Alerta).
+  const speed = race ? getEffectiveSpeed(race, subrace ?? null) + getSpeedBonusTotal(draft) : null
+  const initiative = dexMod + getInitiativeBonusTotal(draft)
+  const conditionalAc = getConditionalAcBonuses(draft)
   const darkvision = race ? getEffectiveDarkvision(race, subrace ?? null) : 0
   const classEquipment = cls?.startingEquipment
   const { bodyArmor, hasShield } = getEquippedArmor(draft.equipment, classEquipment)
@@ -149,7 +154,7 @@ export function ReviewStep() {
     wisMod,
     perceptionProficient,
     perceptionProficient && expertiseSet.has('perception') ? profBonus * 2 : profBonus,
-  )
+  ) + getPassiveScoreBonus(draft, 'perception')
 
   // Languages & tools
   const allLanguages = getAllGrantedLanguages(draft)
@@ -249,7 +254,7 @@ export function ReviewStep() {
         <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
           <QuickStat label="PV" value={hp !== null ? String(hp) : '—'} accent={accent} />
           <QuickStat label="CA" value={`${ac}${acNote}`} accent={accent} />
-          <QuickStat label="Iniciativa" value={formatModifier(dexMod)} accent={accent} />
+          <QuickStat label="Iniciativa" value={formatModifier(initiative)} accent={accent} />
           <QuickStat label="Percep. Passiva" value={String(passivePerception)} accent={accent} />
           <QuickStat label="Deslocamento" value={speedStr} accent={accent} />
           {darkvisionStr && (
@@ -259,6 +264,13 @@ export function ReviewStep() {
         <p className="text-xs text-parchment-700 mt-2 text-center">
           CA {ac} = {acBreakdown}
         </p>
+        {/* Bônus de CA condicional fica FORA do número: somar o +1 do Ambidestro seria mentir,
+            já que ele exige uma arma corpo-a-corpo em cada mão. */}
+        {conditionalAc.map(bonus => (
+          <p key={bonus.source} className="text-xs text-parchment-700 mt-1 text-center">
+            +{bonus.value} de CA {bonus.condition} ({bonus.source})
+          </p>
+        ))}
         {acNote && (
           <p className="text-xs text-parchment-700 mt-1 text-center">
             * Armadura impõe desvantagem em Furtividade

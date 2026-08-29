@@ -1,4 +1,5 @@
 import type { AbilityScore } from './race'
+import type { FeatureEffects } from './effects'
 
 /**
  * Talento (PHB 2014, cap. 6). Alguns talentos são "meio-talentos" e concedem
@@ -11,4 +12,6 @@ export type Feat = {
   prerequisite: string | null
   description: string
   abilityIncrease?: AbilityScore[]
+  /** Efeitos que a ficha aplica sozinha (ver `sheetEffects`). Ausente = só descritivo. */
+  effects?: FeatureEffects
 }

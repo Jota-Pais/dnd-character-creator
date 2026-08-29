@@ -8,7 +8,7 @@ import {
   getClass, getSubclass, isActiveCaster, getClassFeaturesUpToLevel,
 } from '../utils/classUtils'
 import {
-  allClassEntries, getTotalHpAverage, getTotalHpRolled, getHitDicePool, getAllAsiChoices,
+  allClassEntries, getHitDicePool, getAllAsiChoices,
 } from '../utils/multiclassUtils'
 import { getBackground, getToolName } from '../utils/backgroundUtils'
 import {
@@ -27,6 +27,10 @@ import { getSpell, getSpellSaveDC, formatSpellAttackBonus, getCombinedSpellSlots
 import { getFeat } from '../utils/featUtils'
 import { RuleText } from './common/RuleText'
 import { getWeaponAttack } from '../utils/weaponFormat'
+import {
+  getTotalHp, getInitiativeBonusTotal, getSpeedBonusTotal,
+  getPassiveScoreBonus, getConditionalAcBonuses,
+} from '../utils/sheetEffects'
 import type { CharacterDraft } from '../types/character'
 import type { EquipmentChoiceItem, Weapon } from '../types/equipment'
 
@@ -164,10 +168,10 @@ export function PrintableSheet() {
     unarmoredDefense: getUnarmoredDefense(entries.find(e => e.classId === 'barbarian' || e.classId === 'monk')?.classId ?? cls?.id),
     hasDefenseFightingStyle: entries.some(e => e.classChoices.fightingStyle === 'defense'),
   }).value
-  const hp: number | null = cls
-    ? (draft.hpMethod === 'roll' ? getTotalHpRolled(draft, conMod) : getTotalHpAverage(draft, conMod))
-    : null
-  const speed = race ? getEffectiveSpeed(race, subrace) : 0
+  const hp: number | null = cls ? getTotalHp(draft, conMod) : null
+  const speed = race ? getEffectiveSpeed(race, subrace) + getSpeedBonusTotal(draft) : 0
+  const initiative = dexMod + getInitiativeBonusTotal(draft)
+  const conditionalAc = getConditionalAcBonuses(draft)
   const darkvision = race ? getEffectiveDarkvision(race, subrace) : 0
 
   const allSkills = getAllGrantedSkills(draft)
@@ -175,7 +179,7 @@ export function PrintableSheet() {
   const passivePerception = getPassivePerception(
     wisMod, allSkills.includes('perception'),
     expertise.has('perception') ? prof * 2 : prof,
-  )
+  ) + getPassiveScoreBonus(draft, 'perception')
   const saves = cls?.savingThrows ?? []
   const allTools = getAllGrantedTools(draft)
 
@@ -245,7 +249,7 @@ export function PrintableSheet() {
       {/* Combate */}
       <Grid cols={4} className="mb-4">
         <Stat label="Classe de Armadura" value={String(ac)} />
-        <Stat label="Iniciativa" value={formatModifier(dexMod)} />
+        <Stat label="Iniciativa" value={formatModifier(initiative)} />
         <Stat label="Pontos de Vida" value={hp !== null ? String(hp) : '—'} />
         <Stat label="Dados de Vida" value={cls ? getHitDicePool(draft).map(p => `${p.count}d${p.die}`).join(' + ') : '—'} />
         <Stat label="Deslocamento" value={metersLabel(speed)} />
@@ -253,6 +257,13 @@ export function PrintableSheet() {
         <Stat label="Visão no Escuro" value={darkvision > 0 ? metersLabel(darkvision) : '—'} />
         <Stat label="Nível" value={String(level)} />
       </Grid>
+
+      {/* CA condicional: fora do número, com a condição, pra valer na mesa sem inflar a ficha. */}
+      {conditionalAc.length > 0 && (
+        <p className="text-xs mb-4">
+          {conditionalAc.map(b => `+${b.value} de CA ${b.condition} (${b.source})`).join(' · ')}
+        </p>
+      )}
 
       {/* Controle de sessão — espaços em branco pra preencher a lápis na mesa */}
       <Box title="Controle de Sessão (preencha a lápis)" className="mb-4">

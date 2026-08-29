@@ -1,5 +1,5 @@
 import type { AbilityScore } from '../types/race'
-import type { GameClass, CasterProgression, ArmorProficiency } from '../types/class'
+import type { GameClass, CasterProgression } from '../types/class'
 import type { CharacterDraft, ClassEntry, AsiChoice } from '../types/character'
 import { getClass, getAverageHpPerLevel, getHpAtLevel1 } from './classUtils'
 
@@ -129,31 +129,6 @@ export function getHitDicePool(draft: CharacterDraft): { die: number; count: num
     byDie.set(cls.hitDie, (byDie.get(cls.hitDie) ?? 0) + entry.level)
   }
   return [...byDie.entries()].sort((a, b) => b[0] - a[0]).map(([die, count]) => ({ die, count }))
-}
-
-/**
- * Proficiências de armadura do personagem: as completas da classe primária + o subconjunto de
- * multiclasse (Tabela de Proficiências, PHB pág. 166) de cada classe adicional.
- */
-export function getAllArmorProficiencies(draft: CharacterDraft): ArmorProficiency[] {
-  const set = new Set<ArmorProficiency>()
-  const primary = draft.class ? getClass(draft.class) : undefined
-  primary?.armorProficiencies.forEach(a => set.add(a))
-  for (const entry of draft.additionalClasses) {
-    getClass(entry.classId)?.multiclassProficiencies.armor.forEach(a => set.add(a))
-  }
-  return [...set]
-}
-
-/** Proficiências de arma: completas da classe primária + subconjunto de multiclasse das adicionais. */
-export function getAllWeaponProficiencies(draft: CharacterDraft): string[] {
-  const set = new Set<string>()
-  const primary = draft.class ? getClass(draft.class) : undefined
-  primary?.weaponProficiencies.forEach(w => set.add(w))
-  for (const entry of draft.additionalClasses) {
-    getClass(entry.classId)?.multiclassProficiencies.weapons.forEach(w => set.add(w))
-  }
-  return [...set]
 }
 
 /** Todas as escolhas de ASI/talento do personagem (primária + adicionais), para os atributos finais. */

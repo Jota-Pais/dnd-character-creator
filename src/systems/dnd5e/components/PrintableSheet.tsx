@@ -23,6 +23,7 @@ import {
 import { calculateArmorClass, getUnarmoredDefense } from '../utils/armorClassUtils'
 import { getEquippedArmor, getItemName, getWeaponById } from '../utils/equipmentUtils'
 import { getClassResources } from '../utils/classResourceUtils'
+import { getProgressionSlotsUpToLevel } from '../utils/progressionChoiceUtils'
 import { getSpell, getSpellSaveDC, formatSpellAttackBonus, getCombinedSpellSlots, getPactSlots } from '../utils/spellUtils'
 import { getFeat } from '../utils/featUtils'
 import { RuleText } from './common/RuleText'
@@ -227,15 +228,26 @@ export function PrintableSheet() {
   const isCaster = casters.length > 0
 
   /**
-   * Toda magia que o personagem conhece, de qualquer via — as das classes conjuradoras (truques
-   * e magias), o truque racial e as magias inatas da raça. Sem repetir e na ordem da mesa:
-   * truques primeiro, depois por nível, alfabético dentro de cada um.
+   * Toda magia que o personagem conhece, por QUALQUER via:
+   * - truques e magias das classes conjuradoras;
+   * - o truque racial e as magias inatas da raça;
+   * - as escolhidas em Segredos Mágicos, que o bardo guarda em `progressionChoices` (fora de
+   *   `spellChoices`) porque vêm de qualquer lista de classe — são até 8 magias que ficariam de
+   *   fora se a gente olhasse só as escolhas de conjuração.
+   *
+   * Sem repetir e na ordem da mesa: truques primeiro, depois por nível, alfabético dentro de cada.
    */
   const knownSpells = (() => {
+    const fromProgression = entries.flatMap(e =>
+      getProgressionSlotsUpToLevel(e.classId, e.classChoices.subclass, e.level)
+        .filter(slot => slot.optionsListId === 'any-known-spell')
+        .flatMap(slot => e.classChoices.progressionChoices[slot.id] ?? []),
+    )
     const ids = [
       ...casters.flatMap(({ e }) => [...e.spellChoices.cantrips, ...e.spellChoices.spells]),
       ...(draft.raceChoices.cantrip ? [draft.raceChoices.cantrip] : []),
       ...innateSpells.map(s => s.spellId),
+      ...fromProgression,
     ]
     return [...new Set(ids)]
       .map(getSpell)

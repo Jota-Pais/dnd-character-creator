@@ -10311,31 +10311,17 @@ _Magia de 3° nível de conjuração_
 
 ## Descrição
 
-Você invoca espíritos feéricos, que assumem formas de
-bestas, que aparecem em espaços desocupados, que você
-possa ver dentro do alcance. Escolha uma das opções a
-seguir para aparecer:
+Você invoca espíritos feéricos, que assumem formas de bestas, que aparecem em espaços desocupados, que você possa ver dentro do alcance. Escolha uma das opções a seguir para aparecer:
 - Uma besta de nível de desafio 2 ou inferior
 - Duas bestas de nível de desafio 1 ou inferior
 - Quatro bestas de nível de desafio 1/2 ou inferior
 - Oito bestas de nível de desafio 1/4 ou inferior
-Cada besta é também considerada uma fada e
-desaparece quando cair a 0 pontos de vida ou quando a
-magia acabar.
-As criaturas invocadas são amigáveis a você e a seus
-companheiros. Role a iniciativa para as criaturas
-invocadas como um grupo, que age no seu próprio turno.
-Eles obedecem a quaisquer comandos verbais que você
-emitir (não requer uma ação sua). Se você não emitir
-nenhum comando a elas, elas se defenderão de criaturas
-hostis, mas no mais, não realizarão nenhuma ação.
-O Mestre possui as estatísticas das criaturas.
-Em Níveis Superiores. Se você conjurar essa magia
-usando certos espaços de magia superiores, você escolhe
-uma das opções de invocação acima e mais criaturas
-aparecem: o dobro delas com um espaço de 5° nível, o
-triplo delas com um espaço de 7° nível e o quadruplo delas
-com um espaço de 9° nível.
+Cada besta é também considerada uma fada e desaparece quando cair a 0 pontos de vida ou quando a magia acabar.
+As criaturas invocadas são amigáveis a você e a seus companheiros. Role a iniciativa para as criaturas invocadas como um grupo, que age no seu próprio turno. Eles obedecem a quaisquer comandos verbais que você emitir (não requer uma ação sua). Se você não emitir nenhum comando a elas, elas se defenderão de criaturas hostis, mas no mais, não realizarão nenhuma ação. O Mestre possui as estatísticas das criaturas.
+
+## Em níveis superiores
+
+Se você conjurar essa magia usando certos espaços de magia superiores, você escolhe uma das opções de invocação acima e mais criaturas aparecem: o dobro delas com um espaço de 5° nível, o triplo delas com um espaço de 7° nível e o quadruplo delas com um espaço de 9° nível.
 
 ---
 id: conjure-celestial
@@ -10357,22 +10343,13 @@ _Magia de 7° nível de conjuração_
 
 ## Descrição
 
-Você invoca um celestial de nível de desafio 4 ou inferior,
-que aparece num espaço desocupado, que você possa ver
-dentro do alcance. O celestial desaparece se cair a 0
-pontos de vida ou quando a magia acabar.
-O celestial é amigável a você e a seus companheiros
-pela duração. Role a iniciativa para o celestial, que age no
-seu próprio turno. Ele obedece a quaisquer comandos
-verbais que você emitir (não requer uma ação sua),
-contanto que não violem sua tendência. Se você não
-emitir nenhum comando a ele, ele se defenderá de
-criaturas hostis, mas no mais, não realizará nenhuma
-ação.
+Você invoca um celestial de nível de desafio 4 ou inferior, que aparece num espaço desocupado, que você possa ver dentro do alcance. O celestial desaparece se cair a 0 pontos de vida ou quando a magia acabar.
+O celestial é amigável a você e a seus companheiros pela duração. Role a iniciativa para o celestial, que age no seu próprio turno. Ele obedece a quaisquer comandos verbais que você emitir (não requer uma ação sua), contanto que não violem sua tendência. Se você não emitir nenhum comando a ele, ele se defenderá de criaturas hostis, mas no mais, não realizará nenhuma ação.
 O Mestre possui as estatísticas do celestial.
-Em Níveis Superiores. Quando você conjurar essa
-magia usando um espaço de magia de 9° nível, você
-invoca um celestial de nível de desafio 5 ou inferior.
+
+## Em níveis superiores
+
+Quando você conjurar essa magia usando um espaço de magia de 9° nível, você invoca um celestial de nível de desafio 5 ou inferior.
 
 ---
 id: haste
@@ -10394,17 +10371,8 @@ _Magia de 3° nível de transmutação_
 
 ## Descrição
 
-Escolha uma criatura voluntária que você possa ver,
-dentro do alcance. Até a magia acabar, o deslocamento do
-alvo é dobrado, ele ganha +2 de bônus na CA, ele tem
-vantagem em testes de resistência de Destreza e ganha
-uma ação adicional em cada um dos turnos dele. A ação
-pode ser usada apenas para realizar as ações de Ataque
-(um ataque com arma, apenas), Disparada, Desengajar,
-Esconder ou Usar um Objeto.
-Quando a magia acabar, o alvo não poderá se mover
-ou realizar ações até depois do seu próximo turno, à
-medida que uma onda de letargia toma conta dele.
+Escolha uma criatura voluntária que você possa ver, dentro do alcance. Até a magia acabar, o deslocamento do alvo é dobrado, ele ganha +2 de bônus na CA, ele tem vantagem em testes de resistência de Destreza e ganha uma ação adicional em cada um dos turnos dele. A ação pode ser usada apenas para realizar as ações de Ataque (um ataque com arma, apenas), Disparada, Desengajar, Esconder ou Usar um Objeto.
+Quando a magia acabar, o alvo não poderá se mover ou realizar ações até depois do seu próximo turno, à medida que uma onda de letargia toma conta dele.
 
 ---
 id: see-invisibility
@@ -10426,10 +10394,7 @@ _Magia de 2° nível de adivinhação_
 
 ## Descrição
 
-Pela duração, você vê criaturas e objetos invisíveis como
-se eles fossem visíveis e você pode ver no Plano Etéreo.
-Criaturas e objetos etéreos parecem espectrais e
-translúcidos.
+Pela duração, você vê criaturas e objetos invisíveis como se eles fossem visíveis e você pode ver no Plano Etéreo. Criaturas e objetos etéreos parecem espectrais e translúcidos.
 
 ---
 id: plane-shift
@@ -10451,33 +10416,9 @@ _Magia de 7° nível de conjuração_
 
 ## Descrição
 
-Você e até oito criaturas voluntárias, que estejam de mãos
-dadas em um círculo, são transportadas para um plano de
-existência diferente. Você pode especificar o destino alvo
-em termos gerais, como a Cidade de Bronze do Plano
-Elemental do Fogo ou o palácio de Dispater na segunda
-camada dos Nove Infernos e você aparece no ou perto do
-destino. Se você estiver tentando chegar a Cidade de
-Bronze, por exemplo, você poderia chegar na Estrada de
-Aço dela, em frente aos Portões de Cinzas ou
-contemplando a cidade do outro lado do Mar de Fogo, à
-critério do Mestre.
-Alternativamente, se você conhecer a sequência de
-selos do círculo de teletransporte em outro plano de
-existência, essa magia pode leva-lo para esse círculo. Se o
-círculo de teletransporte for muito pequeno para
-comportar as criaturas que você está transportando, elas
-aparecerão no espaço desocupado mais próximo do
-círculo.
-Você pode usar essa magia para banir uma criatura
-involuntária para outro plano. Escolha uma criatura ao
-seu alcance e realize um ataque corpo-a-corpo com magia
-contra ela. Se atingir, a criatura deve realizar um teste de
-resistência de Carisma. Se a criatura falhar na
-resistência, ela é transportada para um local aleatório no
-plano de existência que você especificou. Uma criatura,
-uma vez transportada, deve encontrar seu próprio meio
-de retornar para seu plano de existência atual.
+Você e até oito criaturas voluntárias, que estejam de mãos dadas em um círculo, são transportadas para um plano de existência diferente. Você pode especificar o destino alvo em termos gerais, como a Cidade de Bronze do Plano Elemental do Fogo ou o palácio de Dispater na segunda camada dos Nove Infernos e você aparece no ou perto do destino. Se você estiver tentando chegar a Cidade de Bronze, por exemplo, você poderia chegar na Estrada de Aço dela, em frente aos Portões de Cinzas ou contemplando a cidade do outro lado do Mar de Fogo, à critério do Mestre.
+Alternativamente, se você conhecer a sequência de selos do círculo de teletransporte em outro plano de existência, essa magia pode leva-lo para esse círculo. Se o círculo de teletransporte for muito pequeno para comportar as criaturas que você está transportando, elas aparecerão no espaço desocupado mais próximo do círculo.
+Você pode usar essa magia para banir uma criatura involuntária para outro plano. Escolha uma criatura ao seu alcance e realize um ataque corpo-a-corpo com magia contra ela. Se atingir, a criatura deve realizar um teste de resistência de Carisma. Se a criatura falhar na resistência, ela é transportada para um local aleatório no plano de existência que você especificou. Uma criatura, uma vez transportada, deve encontrar seu próprio meio de retornar para seu plano de existência atual.
 
 ---
 id: scrying
@@ -10499,34 +10440,14 @@ _Magia de 5° nível de adivinhação_
 
 ## Descrição
 
-Você pode ver e ouvir uma criatura em particular, à sua
-escolha, que esteja no mesmo plano de existência que
-você. O alvo deve realizar um teste de resistência de
-Sabedoria, que é modificador de acordo com o quão bem
-você conhece o alvo e o tipo de conexão física que você tem
-com ele. Se um alvo souber que você está conjurando essa
-magia, ele pode falhar no teste de resistência
-voluntariamente, se ele quiser ser observado.
-Com um sucesso na resistência, o alvo não é afetado e
-você não pode usar essa magia contra ele novamente por
-24 horas.
-Se falhar na resistência, a magia cria um sensor
-invisível a até 3 metros do alvo. Você pode ver e ouvir
-através do sensor, como se você estivesse onde ele está. O
-sensor se move com o alvo, permanecendo a 3 metros dele
-pela duração. Uma criatura que puder ver objetos
-invisíveis verá o sensor como um globo luminoso do
-tamanho de um punho.
-Ao invés de focar em uma criatura, você pode escolher
-um local que você já tenha visto antes como alvo dessa
-magia. Quando fizer isso, o sensor aparece no local e não
-se move.
+Você pode ver e ouvir uma criatura em particular, à sua escolha, que esteja no mesmo plano de existência que você. O alvo deve realizar um teste de resistência de Sabedoria, que é modificador de acordo com o quão bem você conhece o alvo e o tipo de conexão física que você tem com ele. Se um alvo souber que você está conjurando essa magia, ele pode falhar no teste de resistência voluntariamente, se ele quiser ser observado. Com um sucesso na resistência, o alvo não é afetado e você não pode usar essa magia contra ele novamente por 24 horas.
+Se falhar na resistência, a magia cria um sensor invisível a até 3 metros do alvo. Você pode ver e ouvir através do sensor, como se você estivesse onde ele está. O sensor se move com o alvo, permanecendo a 3 metros dele pela duração. Uma criatura que puder ver objetos invisíveis verá o sensor como um globo luminoso do tamanho de um punho.
+Ao invés de focar em uma criatura, você pode escolher um local que você já tenha visto antes como alvo dessa magia. Quando fizer isso, o sensor aparece no local e não se move.
 Conhecimento
 Modificador de
 Resistência
 Segunda mão (você ouviu falar do alvo) +5
-Primeira mão (você foi apresentado ao alvo) +0
-Familiar (você conhece bem o alvo) –5
+Primeira mão (você foi apresentado ao alvo) +0 Familiar (você conhece bem o alvo) –5
 Conexão
 Modificador de
 Resistência
@@ -10556,18 +10477,8 @@ _Magia de 2° nível de abjuração_
 
 ## Descrição
 
-Essa magia protege uma criatura voluntária que você
-tocar e cria uma conexão mística entre você e o alvo até a
-magia acabar. Enquanto o alvo estiver a até 18 metros de
-você, ele recebe +1 de bônus na CA, nos testes de
-resistência e terá resistência a todos os danos. No
-entanto, a cada vez que ele sofrer dano, você sofrerá a
-mesma quantidade de dano.
-A magia acaba se você cair a 0 pontos de vida ou se
-você e o alvo ficarem separados a mais de 18 metros. Ela
-também termina se a magia for conjurada novamente em
-quaisquer das criaturas conectadas. Você também pode
-dissipar a magia com uma ação.
+Essa magia protege uma criatura voluntária que você tocar e cria uma conexão mística entre você e o alvo até a magia acabar. Enquanto o alvo estiver a até 18 metros de você, ele recebe +1 de bônus na CA, nos testes de resistência e terá resistência a todos os danos. No entanto, a cada vez que ele sofrer dano, você sofrerá a mesma quantidade de dano.
+A magia acaba se você cair a 0 pontos de vida ou se você e o alvo ficarem separados a mais de 18 metros. Ela também termina se a magia for conjurada novamente em quaisquer das criaturas conectadas. Você também pode dissipar a magia com uma ação.
 
 ---
 id: grasping-vine
@@ -10589,16 +10500,7 @@ _Magia de 4° nível de conjuração_
 
 ## Descrição
 
-Você conjura uma vinha que brota do chão em um espaço
-desocupado, à sua escolha, que você possa ver dentro do
-alcance. Quando você conjura essa magia, você pode
-direcionar a vinha para que ela enlace uma criatura a até
-9 metros dela que você possa ver. Essa criatura deve ser
-bem sucedida num teste de resistência de Destreza ou
-será arrastada 6 metros na direção da vinha.
-Até o fim da magia, você pode direcionar a vinha para
-enlaçar a mesma criatura ou uma diferente, com uma
-ação bônus, em cada um dos seus turnos.
+Você conjura uma vinha que brota do chão em um espaço desocupado, à sua escolha, que você possa ver dentro do alcance. Quando você conjura essa magia, você pode direcionar a vinha para que ela enlace uma criatura a até 9 metros dela que você possa ver. Essa criatura deve ser bem sucedida num teste de resistência de Destreza ou será arrastada 6 metros na direção da vinha. Até o fim da magia, você pode direcionar a vinha para enlaçar a mesma criatura ou uma diferente, com uma ação bônus, em cada um dos seus turnos.
 
 ---
 id: true-seeing
@@ -10620,11 +10522,7 @@ _Magia de 6° nível de adivinhação_
 
 ## Descrição
 
-Essa magia concede a uma criatura voluntária tocada a
-habilidade de ver as coisas como elas realmente são. Pela
-duração, a criatura terá visão verdadeira, percebendo
-portas secretas escondidas por magia e podendo ver no
-Plano Etéreo, tudo num alcance de até 36 metros.
+Essa magia concede a uma criatura voluntária tocada a habilidade de ver as coisas como elas realmente são. Pela duração, a criatura terá visão verdadeira, percebendo portas secretas escondidas por magia e podendo ver no Plano Etéreo, tudo num alcance de até 36 metros.
 
 ---
 id: darkvision
@@ -10646,9 +10544,7 @@ _Magia de 2° nível de transmutação_
 
 ## Descrição
 
-Você toca uma criatura voluntária para conceder a ela a
-habilidade de ver nas trevas. Pela duração, a criatura
-terá visão no escuro com alcance de 18 metros.
+Você toca uma criatura voluntária para conceder a ela a habilidade de ver nas trevas. Pela duração, a criatura terá visão no escuro com alcance de 18 metros.
 
 ---
 id: false-life
@@ -10670,14 +10566,11 @@ _Magia de 1° nível de necromancia_
 
 ## Descrição
 
-Reforçando-se com uma vitalidade necromântica ilusória,
-você ganha 1d4 + 4 pontos de vida temporários pela
-duração.
-Em  Níveis  Superiores.  Quando  você  conjurar  essa
-magia   usando   um   espaço   de   magia   de   2°   nível   ou
-superior,   você   ganha   5   pontos   de   vida   temporários
-adicionais  para  cada  nível  do  espaço  de  magia  acima  do
-1°.
+Reforçando-se com uma vitalidade necromântica ilusória, você ganha 1d4 + 4 pontos de vida temporários pela duração.
+
+## Em níveis superiores
+
+Quando você conjurar essa magia usando um espaço de magia de 2° nível ou superior, você ganha 5 pontos de vida temporários adicionais para cada nível do espaço de magia acima do 1°.
 
 ---
 id: fly
@@ -10699,14 +10592,11 @@ _Magia de 3° nível de transmutação_
 
 ## Descrição
 
-Você toca uma criatura voluntária. O alvo ganha
-deslocamento de voo de 18 metros, pela duração. Quando
-a magia acabar, o alvo cai se ainda estiver no ar, a não
-ser que ele possa impedir a queda.
-Em Níveis Superiores. Quando você conjurar essa
-magia usando um espaço de magia de 4° nível ou
-superior, você pode afetar uma criatura adicional para
-cada nível do espaço acima do 3°.
+Você toca uma criatura voluntária. O alvo ganha deslocamento de voo de 18 metros, pela duração. Quando a magia acabar, o alvo cai se ainda estiver no ar, a não ser que ele possa impedir a queda.
+
+## Em níveis superiores
+
+Quando você conjurar essa magia usando um espaço de magia de 4° nível ou superior, você pode afetar uma criatura adicional para cada nível do espaço acima do 3°.
 
 ---
 id: vicious-mockery
@@ -10728,15 +10618,7 @@ _Truque de encantamento_
 
 ## Descrição
 
-Você libera uma série de insultos atados com
-encantamentos sutis numa criatura que você possa ver,
-dentro do alcance. Se o alvo puder ouvir você (apesar de
-não precisar compreende-lo), ele deve ser bem sucedido
-num teste de resistência de Sabedoria ou sofrerá 1d4 de
-dano psíquico e terá desvantagem na próxima jogada de
-ataque que ele fizer antes do final do próximo turno dele.
-O dano dessa magia aumenta em 1d4 quando você
-alcança o 5° nível (2d4), 11° nível (3d4) e 17° nível (4d4).
+Você libera uma série de insultos atados com encantamentos sutis numa criatura que você possa ver, dentro do alcance. Se o alvo puder ouvir você (apesar de não precisar compreende-lo), ele deve ser bem sucedido num teste de resistência de Sabedoria ou sofrerá 1d4 de dano psíquico e terá desvantagem na próxima jogada de ataque que ele fizer antes do final do próximo turno dele. O dano dessa magia aumenta em 1d4 quando você alcança o 5° nível (2d4), 11° nível (3d4) e 17° nível (4d4).
 
 ---
 id: zone-of-truth
@@ -10758,18 +10640,5 @@ _Magia de 2° nível de encantamento_
 
 ## Descrição
 
-Você cria uma zona mágica protegida contra enganação,
-numa esfera com 4,5 metros de raio, centrada num ponto,
-à sua escolha, dentro do alcance. Até a magia acabar,
-uma criatura que entrar na área da magia pela primeira
-vez num turno ou começar seu turno nela, deve realizar
-um teste de resistência de Carisma. Se falhar na
-resistência, a criatura não poderá mentir
-deliberadamente enquanto estiver no raio. Você saberá
-cada criatura que passou ou falhou nesse teste de
-resistência.
-Uma criatura afetada está ciente da magia e pode,
-portanto, evitar responder perguntas as quais ela
-normalmente responderia com uma mentira. Tais
-criaturas podem ser evasivas em suas respostas, contanto
-que permaneçam dentro dos limites da verdade.
+Você cria uma zona mágica protegida contra enganação, numa esfera com 4,5 metros de raio, centrada num ponto, à sua escolha, dentro do alcance. Até a magia acabar, uma criatura que entrar na área da magia pela primeira vez num turno ou começar seu turno nela, deve realizar um teste de resistência de Carisma. Se falhar na resistência, a criatura não poderá mentir deliberadamente enquanto estiver no raio. Você saberá cada criatura que passou ou falhou nesse teste de resistência.
+Uma criatura afetada está ciente da magia e pode, portanto, evitar responder perguntas as quais ela normalmente responderia com uma mentira. Tais criaturas podem ser evasivas em suas respostas, contanto que permaneçam dentro dos limites da verdade.

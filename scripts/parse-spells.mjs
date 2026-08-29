@@ -132,14 +132,17 @@ function main() {
 
   spells.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
 
-  mkdirSync(resolve(root, 'src/data'), { recursive: true })
+  // O módulo do D&D mudou de lugar na arquitetura multi-RPG; sem isto o script recria um
+  // src/data/ órfão e o app segue lendo o arquivo antigo.
+  const OUT = 'src/systems/dnd5e/data/spells.json'
+  mkdirSync(dirname(resolve(root, OUT)), { recursive: true })
   writeFileSync(
-    resolve(root, 'src/data/spells.json'),
+    resolve(root, OUT),
     JSON.stringify(spells, null, 2),
     'utf-8',
   )
 
-  console.log(`✓ ${spells.length} magias exportadas para src/data/spells.json`)
+  console.log(`✓ ${spells.length} magias exportadas para ${OUT}`)
   const byClass = {}
   for (const spell of spells) {
     for (const cls of spell.classes) {

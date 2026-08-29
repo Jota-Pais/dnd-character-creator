@@ -5,6 +5,7 @@ import { allClassEntries, getPrimaryLevel } from '../../utils/multiclassUtils'
 import { isStepComplete } from '../../utils/draftValidation'
 import { InfoTooltip } from '../common/InfoTooltip'
 import { StepNav } from '../../../../components/wizard/StepNav'
+import { RuleText } from '../common/RuleText'
 import {
   getCantrips,
   getSpellsByLevel,
@@ -408,14 +409,6 @@ function SpellCard({
 function SpellDetail({ spell, accent }: { spell: Spell; accent: string }) {
   const color = SCHOOL_COLORS[spell.school] ?? accent
   const emoji = SCHOOL_EMOJI[spell.school] ?? '✨'
-  function renderDescription(text: string) {
-    return text.split('\n').map((line, i) => {
-      if (line.startsWith('## ')) return <p key={i} className="text-xs font-semibold font-fantasy text-parchment-400 uppercase tracking-wider mt-3 mb-1">{line.slice(3)}</p>
-      if (line.startsWith('- ')) return <p key={i} className="text-sm text-parchment-500 pl-3 before:content-['•'] before:mr-2 before:text-parchment-700">{line.slice(2)}</p>
-      if (line.trim() === '') return <div key={i} className="h-2" />
-      return <p key={i} className="text-sm text-parchment-500 leading-relaxed">{line}</p>
-    })
-  }
   return (
     <div className="rounded-2xl border-2 p-5 max-h-[80vh] overflow-y-auto" style={{ borderColor: `${color}50`, backgroundColor: `${color}08` }}>
       <div className="mb-4">
@@ -431,7 +424,13 @@ function SpellDetail({ spell, accent }: { spell: Spell; accent: string }) {
         <Meta label="Duração" value={spell.duration} />
         {spell.concentration && <Meta label="" value="⚡ Concentração" />}
       </div>
-      <div className="border-t border-parchment-900 pt-3">{renderDescription(spell.description)}</div>
+      <div className="border-t border-parchment-900 pt-3">
+        <RuleText
+          text={spell.description}
+          className="text-sm text-parchment-500 leading-relaxed"
+          headingClassName="text-xs font-semibold font-fantasy text-parchment-400 uppercase tracking-wider mt-3 first:mt-0 mb-1"
+        />
+      </div>
     </div>
   )
 }

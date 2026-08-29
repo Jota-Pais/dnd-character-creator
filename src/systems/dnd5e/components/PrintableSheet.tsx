@@ -226,6 +226,23 @@ export function PrintableSheet() {
   })
   const isCaster = casters.length > 0
 
+  /**
+   * Toda magia que o personagem conhece, de qualquer via — as das classes conjuradoras (truques
+   * e magias), o truque racial e as magias inatas da raça. Sem repetir e na ordem da mesa:
+   * truques primeiro, depois por nível, alfabético dentro de cada um.
+   */
+  const knownSpells = (() => {
+    const ids = [
+      ...casters.flatMap(({ e }) => [...e.spellChoices.cantrips, ...e.spellChoices.spells]),
+      ...(draft.raceChoices.cantrip ? [draft.raceChoices.cantrip] : []),
+      ...innateSpells.map(s => s.spellId),
+    ]
+    return [...new Set(ids)]
+      .map(getSpell)
+      .filter((s): s is NonNullable<typeof s> => s !== undefined)
+      .sort((a, b) => a.level - b.level || a.name.localeCompare(b.name, 'pt-BR'))
+  })()
+
   return (
     <div className="print-sheet mx-auto w-[794px] shrink-0 bg-white text-gray-900 p-8 rounded-lg shadow-lg" style={{ fontFamily: 'Georgia, serif' }}>
       {/* Cabeçalho */}
@@ -476,6 +493,41 @@ export function PrintableSheet() {
         )}
         <p className="text-xs">{inventory.length > 0 ? inventory.join(' · ') : '—'}</p>
       </Box>
+
+      {/*
+        Grimório: o texto de cada magia que o personagem conhece.
+        Vem no fim e numa página própria porque é a parte que mais cresce — um bardo de nível
+        alto tem dezenas de magias, e elas empurrariam o resto da ficha. Cada magia é um bloco
+        `breakInside: avoid`, então nenhuma é cortada no meio ao imprimir.
+      */}
+      {knownSpells.length > 0 && (
+        // `breakBefore`, e não a classe .page-break (que reserva uma folha inteira via
+        // min-height): aqui a intenção é começar numa página nova, não ocupar uma.
+        <div style={{ breakBefore: 'page' }}>
+          <Box title={`Magias — descrições (${knownSpells.length})`}>
+            {knownSpells.map(spell => (
+              <article key={spell.id} className="mb-3 last:mb-0" style={{ breakInside: 'avoid' }}>
+                <p className="text-xs font-bold">
+                  {spell.name}
+                  <span className="font-normal text-gray-600">
+                    {' — '}{spell.level === 0 ? 'truque' : `${spell.level}º nível`} de {spell.school}
+                    {spell.ritual && ' (ritual)'}
+                    {spell.concentration && ' · concentração'}
+                  </span>
+                </p>
+                <p className="text-[10px] text-gray-600 mb-0.5">
+                  {spell.castingTime} · {spell.range} · {spell.components} · {spell.duration}
+                </p>
+                <RuleText
+                  text={spell.description}
+                  className="text-xs"
+                  headingClassName="text-[10px] font-bold uppercase tracking-wide text-gray-600 mt-1.5 first:mt-0"
+                />
+              </article>
+            ))}
+          </Box>
+        </div>
+      )}
     </div>
   )
 }

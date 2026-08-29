@@ -6,6 +6,7 @@ import {
   getFinalAbilityScores,
   isAsiChoiceComplete,
   isImprovementsStepComplete,
+  getRacialBonuses,
 } from '../asiUtils'
 import { EMPTY_DRAFT, type CharacterDraft, type AsiChoice } from '../../types/character'
 
@@ -156,5 +157,45 @@ describe('isImprovementsStepComplete', () => {
       ],
     })
     expect(isImprovementsStepComplete(over)).toBe(false)
+  })
+})
+
+/**
+ * Humano Variante escolhe +1 em dois atributos E um talento. Quando o talento é meio-talento
+ * (Ator, +1 Carisma), o mesmo atributo pode receber os dois — total +2 antes de qualquer ASI.
+ * A etapa Atributos calculava o bônus racial por conta própria e esquecia o do talento, então
+ * mostrava +1 enquanto a Revisão mostrava +2.
+ */
+describe('humano variante com meio-talento', () => {
+  const variante = (featAbility?: 'CHA') => draft({
+    race: 'human',
+    subrace: 'variant-human',
+    raceChoices: {
+      abilityBonuses: ['CHA', 'DEX'],
+      skills: ['deception'],
+      feat: 'ator',
+      ...(featAbility ? { featAbility } : {}),
+    },
+    abilityScores: { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 15 },
+  })
+
+  it('soma o +1 da raça e o +1 do talento no bônus racial', () => {
+    expect(getRacialBonuses(variante('CHA')).CHA).toBe(2)
+    expect(getRacialBonuses(variante('CHA')).DEX).toBe(1)
+  })
+
+  it('o atributo final reflete os dois (15 + 1 + 1 = 17)', () => {
+    expect(getFinalAbilityScores(variante('CHA')).CHA).toBe(17)
+  })
+
+  it('sem escolher o atributo do talento, só o +1 da raça conta', () => {
+    expect(getRacialBonuses(variante()).CHA).toBe(1)
+    expect(getFinalAbilityScores(variante()).CHA).toBe(16)
+  })
+
+  it('não conta em dobro: o bônus racial já inclui o do talento', () => {
+    const d = variante('CHA')
+    const base = d.abilityScores.CHA ?? 0
+    expect(getFinalAbilityScores(d).CHA).toBe(base + getRacialBonuses(d).CHA)
   })
 })

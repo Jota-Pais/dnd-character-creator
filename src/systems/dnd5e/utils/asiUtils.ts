@@ -48,18 +48,6 @@ export function getAsiBonuses(asiChoices: AsiChoice[]): Record<AbilityScore, num
   return bonuses
 }
 
-/** Bônus raciais de atributo (fixos + escolhidos), por atributo. */
-export function getRacialBonuses(draft: CharacterDraft): Record<AbilityScore, number> {
-  const bonuses: Record<AbilityScore, number> = { STR: 0, DEX: 0, CON: 0, INT: 0, WIS: 0, CHA: 0 }
-  const race = draft.race ? getRace(draft.race) : undefined
-  if (!race) return bonuses
-  const subrace = draft.subrace ? (getSubrace(race, draft.subrace) ?? null) : null
-  for (const b of getEffectiveAbilityBonuses(race, subrace, draft.raceChoices)) {
-    bonuses[b.ability] += b.value
-  }
-  return bonuses
-}
-
 /** +1 do talento racial (Humano Variante) quando for um meio-talento. */
 export function getRaceFeatBonus(draft: CharacterDraft): Record<AbilityScore, number> {
   const bonuses: Record<AbilityScore, number> = { STR: 0, DEX: 0, CON: 0, INT: 0, WIS: 0, CHA: 0 }
@@ -72,20 +60,39 @@ export function getRaceFeatBonus(draft: CharacterDraft): Record<AbilityScore, nu
 }
 
 /**
- * Atributos finais = base + bônus racial + ASIs (incl. meio-talentos e o talento
- * racial), limitados a um teto de 20 por atributo (regra do PHB: incrementos não
- * elevam um atributo acima de 20).
+ * Bônus raciais de atributo: os fixos e escolhidos da raça MAIS o +1 do meio-talento que o
+ * Humano Variante ganha junto com o talento.
+ *
+ * O +1 do talento entra aqui, e não como um termo à parte, porque para o jogador ele é bônus de
+ * raça como qualquer outro: o Humano Variante que escolhe Carisma e depois pega Ator termina com
+ * +2 de Carisma antes de qualquer ASI. Deixá-lo de fora fazia a etapa Atributos mostrar +1
+ * enquanto a Revisão mostrava +2.
+ */
+export function getRacialBonuses(draft: CharacterDraft): Record<AbilityScore, number> {
+  const bonuses: Record<AbilityScore, number> = { STR: 0, DEX: 0, CON: 0, INT: 0, WIS: 0, CHA: 0 }
+  const race = draft.race ? getRace(draft.race) : undefined
+  if (!race) return bonuses
+  const subrace = draft.subrace ? (getSubrace(race, draft.subrace) ?? null) : null
+  for (const b of getEffectiveAbilityBonuses(race, subrace, draft.raceChoices)) {
+    bonuses[b.ability] += b.value
+  }
+  const featBonus = getRaceFeatBonus(draft)
+  for (const ab of ALL_ABILITY_SCORES) bonuses[ab] += featBonus[ab]
+  return bonuses
+}
+
+/**
+ * Atributos finais = base + bônus racial (já com o +1 do talento racial) + ASIs, limitados a um
+ * teto de 20 por atributo (regra do PHB: incrementos não elevam um atributo acima de 20).
  */
 export function getFinalAbilityScores(draft: CharacterDraft): Record<AbilityScore, number> {
   const racial = getRacialBonuses(draft)
   // ASI de TODAS as classes (primária + adicionais) — para multiclasse; single-class é idêntico.
   const asi = getAsiBonuses(getAllAsiChoices(draft))
-  const raceFeat = getRaceFeatBonus(draft)
   const final = {} as Record<AbilityScore, number>
   for (const ab of ALL_ABILITY_SCORES) {
     const baseWithRacial = (draft.abilityScores[ab] ?? 10) + racial[ab]
-    const increases = asi[ab] + raceFeat[ab]
-    const capped = Math.min(baseWithRacial + increases, Math.max(20, baseWithRacial))
+    const capped = Math.min(baseWithRacial + asi[ab], Math.max(20, baseWithRacial))
     final[ab] = capped
   }
   return final

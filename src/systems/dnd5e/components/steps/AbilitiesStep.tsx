@@ -1,7 +1,6 @@
 import { useCharacterStore } from '../../stores/characterStore'
-import { getRace, getSubrace, getEffectiveAbilityBonuses } from '../../utils/raceUtils'
 import { ALL_ABILITY_SCORES, isAbilitiesStepComplete } from '../../utils/abilityScoreUtils'
-import type { AbilityScore } from '../../types/race'
+import { getRacialBonuses } from '../../utils/asiUtils'
 import { MethodSelector } from '../abilities/MethodSelector'
 import { StandardArrayPanel } from '../abilities/StandardArrayPanel'
 import { PointBuyPanel } from '../abilities/PointBuyPanel'
@@ -19,17 +18,9 @@ export function AbilitiesStep() {
   const nextStep = useCharacterStore(state => state.nextStep)
   const prevStep = useCharacterStore(state => state.prevStep)
 
-  const race = draft.race ? getRace(draft.race) : undefined
-  const subrace = race && draft.subrace ? getSubrace(race, draft.subrace) : null
-
-  const racialBonuses: Record<AbilityScore, number> = {
-    STR: 0, DEX: 0, CON: 0, INT: 0, WIS: 0, CHA: 0,
-  }
-  if (race) {
-    for (const bonus of getEffectiveAbilityBonuses(race, subrace ?? null, draft.raceChoices)) {
-      racialBonuses[bonus.ability] += bonus.value
-    }
-  }
+  // Função compartilhada em vez de recalcular aqui: era o que fazia esta etapa esquecer o +1
+  // do meio-talento do Humano Variante e divergir da Revisão.
+  const racialBonuses = getRacialBonuses(draft)
 
   const hasAnyBonus = ALL_ABILITY_SCORES.some(a => racialBonuses[a] !== 0)
 

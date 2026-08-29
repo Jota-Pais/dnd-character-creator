@@ -8,9 +8,16 @@ import {
   getPassiveScoreBonus,
   getConditionalAcBonuses,
   getFeatArmorProficiencies,
+  getFeatChoiceSlots,
+  areFeatChoicesComplete,
+  getFeatSavingThrows,
 } from '../sheetEffects'
-import { getArmorProficiencies, hasArmorProficiency } from '../proficiencyUtils'
-import { getArmor } from '../equipmentUtils'
+import {
+  getArmorProficiencies, hasArmorProficiency, hasWeaponProficiency,
+  getSavingThrowProficiencies, getAllGrantedSkills, getAllGrantedLanguages,
+  getExcludedSkillsForFeat, getExcludedWeaponsForFeat,
+} from '../proficiencyUtils'
+import { getArmor, getWeaponById } from '../equipmentUtils'
 import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
 
 function draft(overrides: Partial<CharacterDraft>): CharacterDraft {
@@ -85,6 +92,79 @@ describe('efeitos condicionais NÃO entram no número', () => {
 
   it('sem talento condicional, nenhuma linha', () => {
     expect(getConditionalAcBonuses(draft({}))).toEqual([])
+  })
+})
+
+/**
+ * Quatro talentos prometem proficiência "à sua escolha" e antes não abriam escolha nenhuma —
+ * o mesmo buraco do Colégio do Conhecimento, só que em talento.
+ */
+describe('escolhas abertas pelos talentos', () => {
+  it('Perito abre um slot de 3 entre perícias e ferramentas', () => {
+    const slots = getFeatChoiceSlots(draft({ raceChoices: { feat: 'perito' } }))
+    expect(slots).toHaveLength(1)
+    expect(slots[0].choices.skillOrToolChoice).toEqual({ count: 3 })
+  })
+
+  it('Perito conta perícias e ferramentas no MESMO limite de 3', () => {
+    const base = { raceChoices: { feat: 'perito' } }
+    const duas = draft({ ...base, featSelections: { perito: { skills: ['arcana'], tools: ['lute'] } } })
+    const tres = draft({
+      ...base,
+      featSelections: { perito: { skills: ['arcana'], tools: ['lute', 'drum'] } },
+    })
+    expect(areFeatChoicesComplete(duas)).toBe(false)
+    expect(areFeatChoicesComplete(tres)).toBe(true)
+  })
+
+  it('Resiliente não abre slot: usa o atributo que já recebe o +1 do talento', () => {
+    const d = draft({ raceChoices: { feat: 'resiliente', featAbility: 'CON' } })
+    expect(getFeatChoiceSlots(d)).toHaveLength(0)
+    expect(getFeatSavingThrows(d)).toEqual(['CON'])
+  })
+
+  it('a resistência do Resiliente entra junto com as da classe', () => {
+    const d = draft({ class: 'wizard', raceChoices: { feat: 'resiliente', featAbility: 'CON' } })
+    expect(getSavingThrowProficiencies(d)).toEqual(['INT', 'WIS', 'CON'])
+  })
+
+  it('as perícias do Perito viram proficiência de verdade na ficha', () => {
+    const d = draft({ featSelections: { perito: { skills: ['stealth'] } }, raceChoices: { feat: 'perito' } })
+    expect(getAllGrantedSkills(d)).toContain('stealth')
+  })
+
+  it('o Perito não pode repetir perícia que o personagem já tem', () => {
+    const d = draft({
+      race: 'elf', // Percepção fixa
+      raceChoices: { feat: 'perito' },
+    })
+    expect(getExcludedSkillsForFeat(d, 'perito')).toContain('perception')
+  })
+
+  it('o picker do Mestre de Armas esconde armas em que já se é proficiente', () => {
+    // Guerreiro é proficiente com simples e marciais: sobra pouca coisa (nenhuma, na prática).
+    const guerreiro = draft({ class: 'fighter', raceChoices: { feat: 'mestre-de-armas' } })
+    expect(getExcludedWeaponsForFeat(guerreiro, 'mestre-de-armas')).toContain('greatsword')
+    // Mago não tem espada grande: ela fica disponível.
+    const mago = draft({ class: 'wizard', raceChoices: { feat: 'mestre-de-armas' } })
+    expect(getExcludedWeaponsForFeat(mago, 'mestre-de-armas')).not.toContain('greatsword')
+  })
+
+  it('a arma escolhida no Mestre de Armas passa a valer como proficiência', () => {
+    const d = draft({
+      class: 'wizard',
+      raceChoices: { feat: 'mestre-de-armas' },
+      featSelections: { 'mestre-de-armas': { weapons: ['greatsword'] } },
+    })
+    expect(hasWeaponProficiency(d, getWeaponById('greatsword')!)).toBe(true)
+  })
+
+  it('os idiomas do Poliglota chegam à ficha', () => {
+    const d = draft({
+      raceChoices: { feat: 'poliglota' },
+      featSelections: { poliglota: { languages: ['elvish', 'dwarvish', 'orc'] } },
+    })
+    expect(getAllGrantedLanguages(d)).toEqual(expect.arrayContaining(['elvish', 'dwarvish', 'orc']))
   })
 })
 

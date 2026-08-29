@@ -54,6 +54,18 @@ export type RaceChoiceSelections = {
   featAbility?: AbilityScore
 }
 
+/**
+ * O que o jogador escolheu dentro de um talento que abre escolhas (Perito, Poliglota, Mestre de
+ * Armas). Indexado por id do talento no draft: o livro não deixa pegar o mesmo talento duas
+ * vezes, então uma entrada por talento basta — e evita espalhar seleção por AsiChoice e raça.
+ */
+export type FeatSelections = {
+  skills?: string[]
+  tools?: string[]
+  languages?: string[]
+  weapons?: string[]
+}
+
 export type HpMethod = 'average' | 'roll'
 
 /**
@@ -90,6 +102,8 @@ export type CharacterDraft = {
   abilityScores: BaseAbilityScores
   rolledValues: number[]
   asiChoices: AsiChoice[]
+  /** Escolhas feitas dentro de talentos que abrem escolhas, por id do talento. */
+  featSelections: Record<string, FeatSelections>
   background: string | null
   backgroundChoices: BackgroundChoiceSelections
   equipment: EquipmentDraft
@@ -120,6 +134,7 @@ export const EMPTY_DRAFT: CharacterDraft = {
   abilityScores: { STR: null, DEX: null, CON: null, INT: null, WIS: null, CHA: null },
   rolledValues: [],
   asiChoices: [],
+  featSelections: {},
   background: null,
   backgroundChoices: {},
   equipment: EMPTY_EQUIPMENT_DRAFT,

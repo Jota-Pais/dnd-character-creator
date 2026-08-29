@@ -9,6 +9,7 @@ import type {
   SpellChoices,
   EquipmentDraft,
   BackgroundChoiceSelections,
+  FeatSelections,
 } from '../types/character'
 import { WIZARD_STEPS } from '../types/character'
 import type { GameClass, SubclassChoiceSelections } from '../types/class'
@@ -21,6 +22,7 @@ import { isAbilitiesStepComplete } from './abilityScoreUtils'
 import { getSpell, isSpellStepComplete } from './spellUtils'
 import { isEquipmentStepComplete } from './equipmentUtils'
 import { isImprovementsStepComplete, getFinalAbilityScores } from './asiUtils'
+import { areFeatChoicesComplete } from './sheetEffects'
 import {
   getPrimaryLevel,
   allClassEntries,
@@ -81,6 +83,26 @@ function sanitizeRaceChoices(raw: unknown): RaceChoiceSelections {
     choices.featAbility = raw.featAbility as AbilityScore
   }
   return choices
+}
+
+/** Seleções de talento vindas do JSON importado: só arrays de string, só chaves conhecidas. */
+function sanitizeFeatSelections(raw: unknown): Record<string, FeatSelections> {
+  if (!isRecord(raw)) return {}
+  const out: Record<string, FeatSelections> = {}
+  for (const [featId, value] of Object.entries(raw)) {
+    if (!isRecord(value)) continue
+    const selections: FeatSelections = {}
+    const skills = toStringArray(value.skills)
+    if (skills.length > 0) selections.skills = skills
+    const tools = toStringArray(value.tools)
+    if (tools.length > 0) selections.tools = tools
+    const languages = toStringArray(value.languages)
+    if (languages.length > 0) selections.languages = languages
+    const weapons = toStringArray(value.weapons)
+    if (weapons.length > 0) selections.weapons = weapons
+    if (Object.keys(selections).length > 0) out[featId] = selections
+  }
+  return out
 }
 
 function sanitizeClassChoices(raw: unknown, cls: GameClass | null): ClassChoiceSelections {
@@ -292,6 +314,7 @@ export function sanitizeImportedDraft(raw: unknown): CharacterDraft | null {
     abilityScores,
     rolledValues,
     asiChoices,
+    featSelections: sanitizeFeatSelections(raw.featSelections),
     background: background?.id ?? null,
     backgroundChoices: background ? sanitizeBackgroundChoices(raw.backgroundChoices) : {},
     equipment: cls ? sanitizeEquipment(raw.equipment) : emptyEquipment(),
@@ -310,8 +333,12 @@ export function isStepComplete(draft: CharacterDraft, step: WizardStep): boolean
   switch (step) {
     case 'name':
       return draft.name.trim().length > 0
-    case 'race':
-      return isRaceStepComplete(race, subrace, draft.raceChoices)
+    case 'race': {
+      if (!isRaceStepComplete(race, subrace, draft.raceChoices)) return false
+      // O talento do Humano Variante pode abrir escolhas próprias (Perito, Poliglota...).
+      const racialFeat = draft.raceChoices.feat
+      return !racialFeat || areFeatChoicesComplete(draft, [racialFeat])
+    }
     case 'class': {
       // Classe primária no nível dela (total − adicionais); cada adicional no nível dela
       // (com o subconjunto de proficiências de multiclasse); orçamento não pode estourar.

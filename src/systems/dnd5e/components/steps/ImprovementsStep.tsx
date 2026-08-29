@@ -15,6 +15,7 @@ import { getClass } from '../../utils/classUtils'
 import { getPrimaryLevel } from '../../utils/multiclassUtils'
 import { StepNav } from '../../../../components/wizard/StepNav'
 import { FeatCatalog } from '../common/FeatCatalog'
+import { FeatChoiceSlots } from '../common/FeatChoiceSlots'
 
 const ACCENT = '#c0961a'
 type Mode = 'plus2' | 'split' | 'feat'
@@ -192,6 +193,11 @@ function AsiSlot({ asiLevel, choice, baseScore, otherBonuses, racial, onChange }
           onAbilityChoice={ab => onChange({ kind: 'feat', featId: featChoice!.featId, abilities: [ab] })}
           scoreWithout={scoreWithout}
         />
+      ) : null}
+      {mode === 'feat' && featChoice?.featId ? (
+        <div className="mt-3">
+          <FeatChoiceSlots accent={ACCENT} featIds={[featChoice.featId]} />
+        </div>
       ) : (
         <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 max-w-lg">
           {ALL_ABILITY_SCORES.map(ab => {

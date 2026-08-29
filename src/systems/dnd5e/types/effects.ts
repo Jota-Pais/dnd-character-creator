@@ -19,7 +19,28 @@ export type ConditionalAcBonus = {
   condition: string
 }
 
+/**
+ * Escolhas que o talento ABRE e que o jogador ainda precisa fazer. Viram slot na etapa dona do
+ * talento (Raça, no Humano Variante; Aprimoramentos, nos espaços de ASI) — nunca um catálogo
+ * aninhado dentro do card, que já é uma escolha.
+ */
+export type FeatureChoices = {
+  /** Perito: "qualquer combinação de três perícias ou ferramentas" — os dois tipos no mesmo bolo. */
+  skillOrToolChoice?: { count: number }
+  /** Poliglota: três idiomas. */
+  languageChoice?: { count: number }
+  /** Mestre de Armas: quatro armas simples ou marciais. */
+  weaponChoice?: { count: number }
+  /**
+   * Resiliente: proficiência no teste de resistência do atributo escolhido. Não é escolha nova —
+   * reaproveita o atributo que já recebe o +1 do talento (`abilityIncrease`).
+   */
+  savingThrowFromAbilityChoice?: boolean
+}
+
 export type FeatureEffects = {
+  /** Escolhas pendentes que o talento cria. */
+  choices?: FeatureChoices
   /** Bônus fixo em iniciativa (Alerta: +5). */
   initiativeBonus?: number
   /** Bônus de deslocamento, em PÉS, a unidade em que a raça guarda (Mobilidade: +10 pés = +3 m). */

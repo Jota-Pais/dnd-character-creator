@@ -13,7 +13,7 @@ import mountsVehiclesData from '../data/mounts-vehicles.json'
 const ALL_PACKS = packsData as EquipmentPack[]
 const ALL_GENERAL = generalItemsData as GeneralItem[]
 const ALL_TOOLS = toolsData as Tool[]
-const ALL_WEAPONS = weaponsData as Weapon[]
+export const ALL_WEAPONS = weaponsData as Weapon[]
 const ALL_ARMORS = armorsData as Armor[]
 const ALL_MOUNTS_VEHICLES = mountsVehiclesData as { id: string, name: string, cost: number | null, weight: number | null }[]
 

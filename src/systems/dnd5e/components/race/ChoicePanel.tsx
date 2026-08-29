@@ -5,6 +5,7 @@ import { SKILLS, LANGUAGES, TOOL_NAMES } from '../../utils/raceUtils'
 import { getCantrips, SPELLS } from '../../utils/spellUtils'
 import { getFeat } from '../../utils/featUtils'
 import { FeatCatalog } from '../common/FeatCatalog'
+import { FeatChoiceSlots } from '../common/FeatChoiceSlots'
 
 type Props = {
   choices: RaceChoice[]
@@ -375,6 +376,7 @@ function FeatChoiceField({
         gridClassName="grid-cols-1"
         gridMaxHeightClassName="max-h-[26rem]"
       />
+      {featId && <div className="mt-3"><FeatChoiceSlots accent={accent} featIds={[featId]} /></div>}
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { WizardStep, CharacterDraft, ClassEntry, RaceChoiceSelections, ClassChoiceSelections, AbilityMethod, BackgroundChoiceSelections, EquipmentDraft, SpellChoices, HpMethod, AsiChoice } from '../types/character'
+import type { WizardStep, CharacterDraft, ClassEntry, RaceChoiceSelections, ClassChoiceSelections, AbilityMethod, BackgroundChoiceSelections, EquipmentDraft, SpellChoices, HpMethod, AsiChoice, FeatSelections } from '../types/character'
 import type { AbilityScore } from '../types/race'
 import type { ChoiceResolution } from '../types/equipment'
 import { WIZARD_STEPS, EMPTY_DRAFT } from '../types/character'
@@ -41,6 +41,8 @@ type CharacterStore = {
   updateRaceChoices: (choices: Partial<RaceChoiceSelections>) => void
   setClass: (classId: string) => void
   updateClassChoices: (choices: Partial<ClassChoiceSelections>) => void
+  /** Escolhas abertas por um talento (Perito, Poliglota, Mestre de Armas), por id do talento. */
+  updateFeatSelections: (featId: string, selections: Partial<FeatSelections>) => void
   updateSpellChoices: (choices: Partial<SpellChoices>) => void
   setMulticlass: (enabled: boolean) => void
   addClass: (classId: string) => void
@@ -196,6 +198,17 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
       draft: {
         ...state.draft,
         classChoices: { ...state.draft.classChoices, ...choices },
+      },
+    })),
+
+  updateFeatSelections: (featId, selections) =>
+    set(state => ({
+      draft: {
+        ...state.draft,
+        featSelections: {
+          ...state.draft.featSelections,
+          [featId]: { ...state.draft.featSelections[featId], ...selections },
+        },
       },
     })),
 

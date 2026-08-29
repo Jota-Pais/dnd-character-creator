@@ -3,6 +3,7 @@ import type { CharacterDraft, AsiChoice } from '../types/character'
 import { getRace, getSubrace, getEffectiveAbilityBonuses } from './raceUtils'
 import { ALL_ABILITY_SCORES } from './abilityScoreUtils'
 import { getFeat } from './featUtils'
+import { areFeatChoicesComplete } from './sheetEffects'
 import { allClassEntries, getAllAsiChoices } from './multiclassUtils'
 
 /**
@@ -129,6 +130,13 @@ export function isImprovementsStepComplete(draft: CharacterDraft): boolean {
       reached.push(choices[i])
     }
   }
+  // Talentos que abrem escolhas (Perito, Poliglota, Mestre de Armas) só fecham o passo
+  // quando o jogador resolve o que eles pedem.
+  const featIds = reached
+    .filter(c => c?.kind === 'feat')
+    .map(c => (c as { featId: string }).featId)
+  if (!areFeatChoicesComplete(draft, featIds)) return false
+
   // teto de 20 sobre o conjunto de todas as escolhas alcançadas (todas as classes)
   const racial = getRacialBonuses(draft)
   const asi = getAsiBonuses(reached)

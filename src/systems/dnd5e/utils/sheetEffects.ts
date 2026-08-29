@@ -1,6 +1,7 @@
-import type { CharacterDraft } from '../types/character'
+import type { CharacterDraft, FeatSelections } from '../types/character'
 import type { Feat } from '../types/feat'
 import type { ArmorProficiency } from '../types/class'
+import type { AbilityScore } from '../types/race'
 import type { ConditionalAcBonus } from '../types/effects'
 import { getFeat } from './featUtils'
 import { getAllAsiChoices, getTotalHpAverage, getTotalHpRolled } from './multiclassUtils'
@@ -122,4 +123,95 @@ export function getConditionalAcBonuses(draft: CharacterDraft): SheetConditional
 /** Armaduras liberadas por talento (Proteção Leve / Moderada / Pesada). */
 export function getFeatArmorProficiencies(draft: CharacterDraft): ArmorProficiency[] {
   return getOwnedFeats(draft).flatMap(f => f.effects?.grantedArmorProficiencies ?? [])
+}
+
+// ── Escolhas abertas pelos talentos ────────────────────────────────────────────
+
+/** Um talento possuído que ainda pede escolhas do jogador, com o que já foi escolhido. */
+export type FeatChoiceSlot = {
+  feat: Feat
+  choices: NonNullable<NonNullable<Feat['effects']>['choices']>
+  selections: FeatSelections
+}
+
+/** Talentos possuídos que abrem escolhas de proficiência (Perito, Poliglota, Mestre de Armas). */
+export function getFeatChoiceSlots(draft: CharacterDraft): FeatChoiceSlot[] {
+  return getOwnedFeats(draft)
+    .filter(feat => {
+      const choices = feat.effects?.choices
+      // savingThrowFromAbilityChoice não abre slot: reaproveita o atributo do +1 do talento.
+      return choices?.skillOrToolChoice || choices?.languageChoice || choices?.weaponChoice
+    })
+    .map(feat => ({
+      feat,
+      choices: feat.effects!.choices!,
+      selections: draft.featSelections[feat.id] ?? {},
+    }))
+}
+
+/** Todas as escolhas de um talento estão preenchidas? Portão de conclusão da etapa dona dele. */
+export function isFeatChoiceComplete(slot: FeatChoiceSlot): boolean {
+  const { choices, selections } = slot
+  if (choices.skillOrToolChoice) {
+    const picked = (selections.skills?.length ?? 0) + (selections.tools?.length ?? 0)
+    if (picked < choices.skillOrToolChoice.count) return false
+  }
+  if (choices.languageChoice && (selections.languages?.length ?? 0) < choices.languageChoice.count) {
+    return false
+  }
+  if (choices.weaponChoice && (selections.weapons?.length ?? 0) < choices.weaponChoice.count) {
+    return false
+  }
+  return true
+}
+
+/**
+ * Os talentos indicados tiveram suas escolhas resolvidas? Sem `featIds`, vale para todos —
+ * cada etapa passa os seus, porque quem trava o avanço é a etapa dona do talento.
+ */
+export function areFeatChoicesComplete(draft: CharacterDraft, featIds?: string[]): boolean {
+  return getFeatChoiceSlots(draft)
+    .filter(slot => !featIds || featIds.includes(slot.feat.id))
+    .every(isFeatChoiceComplete)
+}
+
+function selectionsOf(draft: CharacterDraft, key: keyof FeatSelections): string[] {
+  return getOwnedFeats(draft).flatMap(f => draft.featSelections[f.id]?.[key] ?? [])
+}
+
+/** Perícias ganhas por talento (Perito). */
+export function getFeatGrantedSkills(draft: CharacterDraft): string[] {
+  return selectionsOf(draft, 'skills')
+}
+
+/** Ferramentas ganhas por talento (Perito). */
+export function getFeatGrantedTools(draft: CharacterDraft): string[] {
+  return selectionsOf(draft, 'tools')
+}
+
+/** Idiomas aprendidos por talento (Poliglota). */
+export function getFeatGrantedLanguages(draft: CharacterDraft): string[] {
+  return selectionsOf(draft, 'languages')
+}
+
+/** Armas liberadas por talento (Mestre de Armas). */
+export function getFeatWeaponProficiencies(draft: CharacterDraft): string[] {
+  return selectionsOf(draft, 'weapons')
+}
+
+/**
+ * Resistências ganhas por talento (Resiliente): o atributo escolhido para o +1 do próprio
+ * talento. Vale tanto pelo Humano Variante quanto por um espaço de ASI.
+ */
+export function getFeatSavingThrows(draft: CharacterDraft): AbilityScore[] {
+  const out: AbilityScore[] = []
+  const add = (featId: string | undefined, ability: AbilityScore | undefined) => {
+    if (!featId || !ability) return
+    if (getFeat(featId)?.effects?.choices?.savingThrowFromAbilityChoice) out.push(ability)
+  }
+  add(draft.raceChoices.feat, draft.raceChoices.featAbility)
+  for (const choice of getAllAsiChoices(draft)) {
+    if (choice.kind === 'feat') add(choice.featId, choice.abilities?.[0])
+  }
+  return [...new Set(out)]
 }

@@ -9,10 +9,10 @@ import {
   getEffectiveDarkvision,
   getEffectiveAbilityBonuses,
   getAllChoices,
-  isRaceStepComplete,
   RACE_PRESENTATION,
 } from '../../utils/raceUtils'
 import { getExcludedSkills, getExcludedTools, getExcludedLanguages } from '../../utils/proficiencyUtils'
+import { isStepComplete } from '../../utils/draftValidation'
 import { ABILITY_LABELS, formatBonus, formatSpeed } from '../../utils/abilityScoreUtils'
 import { RaceCard } from '../race/RaceCard'
 import { SubraceCard } from '../race/SubraceCard'
@@ -40,11 +40,7 @@ export function RaceStep() {
     ? getEffectiveAbilityBonuses(selectedRace, selectedSubrace ?? null, draft.raceChoices)
     : []
 
-  const canAdvance = isRaceStepComplete(
-    selectedRace ?? null,
-    selectedSubrace ?? null,
-    draft.raceChoices,
-  )
+  const canAdvance = isStepComplete(draft, 'race')
 
   // Perícias/ferramentas já obtidas de classe ou antecedente não podem ser re-escolhidas
   const excludedSkills = getExcludedSkills(draft, 'race')

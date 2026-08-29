@@ -191,7 +191,14 @@
     "abilityIncrease": [
       "STR",
       "DEX"
-    ]
+    ],
+    "effects": {
+      "choices": {
+        "weaponChoice": {
+          "count": 4
+        }
+      }
+    }
   },
   {
     "id": "mestre-de-armas-grandes",
@@ -237,7 +244,14 @@
     "id": "perito",
     "name": "Perito",
     "prerequisite": null,
-    "description": "Você ganha proficiência em qualquer combinação de três perícias ou ferramentas, à sua escolha."
+    "description": "Você ganha proficiência em qualquer combinação de três perícias ou ferramentas, à sua escolha.",
+    "effects": {
+      "choices": {
+        "skillOrToolChoice": {
+          "count": 3
+        }
+      }
+    }
   },
   {
     "id": "poliglota",
@@ -246,7 +260,14 @@
     "description": "Você estudou línguas e códigos, ganhando os seguintes benefícios:\n- Aumente seu valor de Inteligência em 1, até o máximo de 20.\n- Você aprende três idiomas, à sua escolha.\n- Você é capaz de criar criptogramas escritos. Outros não podem decifrar um código criado por você a não ser que você os ensine, elas sejam bem sucedidas num teste de inteligência (CD igual ao seu valor de Inteligência + seu bônus de proficiência) ou usem mágica para decifrá-lo.",
     "abilityIncrease": [
       "INT"
-    ]
+    ],
+    "effects": {
+      "choices": {
+        "languageChoice": {
+          "count": 3
+        }
+      }
+    }
   },
   {
     "id": "protecao-leve",
@@ -303,7 +324,12 @@
       "INT",
       "WIS",
       "CHA"
-    ]
+    ],
+    "effects": {
+      "choices": {
+        "savingThrowFromAbilityChoice": true
+      }
+    }
   },
   {
     "id": "resistente",

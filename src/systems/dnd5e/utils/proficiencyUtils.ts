@@ -8,8 +8,11 @@ import {
 } from './raceUtils'
 import { getClass, getSubclass } from './classUtils'
 import { getBackground } from './backgroundUtils'
-import { getEquippedArmor, getArmor, getWeaponById } from './equipmentUtils'
-import { getFeatArmorProficiencies } from './sheetEffects'
+import { getEquippedArmor, getArmor, getWeaponById, ALL_WEAPONS } from './equipmentUtils'
+import {
+  getFeatArmorProficiencies, getFeatWeaponProficiencies, getFeatSavingThrows,
+  getFeatGrantedSkills, getFeatGrantedTools, getFeatGrantedLanguages,
+} from './sheetEffects'
 
 /**
  * Deduplicação de proficiências entre raça, classe e antecedente (PHB 2014).
@@ -129,13 +132,19 @@ export function getToolsBySource(draft: CharacterDraft): Record<ProficiencySourc
 /** Perícias já concedidas por fontes DIFERENTES da informada (para excluir do picker). */
 export function getExcludedSkills(draft: CharacterDraft, source: ProficiencySource): string[] {
   const bySource = getSkillsBySource(draft)
-  return uniq(ALL_SOURCES.filter(s => s !== source).flatMap(s => bySource[s]))
+  return uniq([
+    ...ALL_SOURCES.filter(s => s !== source).flatMap(s => bySource[s]),
+    ...getFeatGrantedSkills(draft),
+  ])
 }
 
 /** Ferramentas já concedidas por fontes DIFERENTES da informada (para excluir do picker). */
 export function getExcludedTools(draft: CharacterDraft, source: ProficiencySource): string[] {
   const bySource = getToolsBySource(draft)
-  return uniq(ALL_SOURCES.filter(s => s !== source).flatMap(s => bySource[s]))
+  return uniq([
+    ...ALL_SOURCES.filter(s => s !== source).flatMap(s => bySource[s]),
+    ...getFeatGrantedTools(draft),
+  ])
 }
 
 function sameSlot(a: ClassSlot, b: ClassSlot): boolean {
@@ -150,6 +159,7 @@ export function getExcludedSkillsForClassSlot(draft: CharacterDraft, slot: Class
   return uniq([
     ...raceSkills(draft),
     ...backgroundSkills(draft),
+    ...getFeatGrantedSkills(draft),
     ...classSkillSlots(draft).filter(s => !sameSlot(s.slot, slot)).flatMap(s => s.skills),
   ])
 }
@@ -159,20 +169,52 @@ export function getExcludedToolsForClassSlot(draft: CharacterDraft, slot: ClassS
   return uniq([
     ...raceTools(draft),
     ...backgroundTools(draft),
+    ...getFeatGrantedTools(draft),
     ...classToolSlots(draft).filter(s => !sameSlot(s.slot, slot)).flatMap(s => s.tools),
   ])
+}
+
+// ── Exclusões dos pickers de talento ───────────────────────────────────────────
+
+/**
+ * O que o picker de UM talento não pode oferecer: tudo que o personagem já tem por outra via,
+ * menos o que o próprio talento já escolheu (senão não daria pra desmarcar).
+ */
+function excludedForFeat(all: string[], own: string[]): string[] {
+  const mine = new Set(own)
+  return uniq(all.filter(id => !mine.has(id)))
+}
+
+export function getExcludedSkillsForFeat(draft: CharacterDraft, featId: string): string[] {
+  return excludedForFeat(getAllGrantedSkills(draft), draft.featSelections[featId]?.skills ?? [])
+}
+
+export function getExcludedToolsForFeat(draft: CharacterDraft, featId: string): string[] {
+  return excludedForFeat(getAllGrantedTools(draft), draft.featSelections[featId]?.tools ?? [])
+}
+
+export function getExcludedLanguagesForFeat(draft: CharacterDraft, featId: string): string[] {
+  return excludedForFeat(getAllGrantedLanguages(draft), draft.featSelections[featId]?.languages ?? [])
+}
+
+/** Armas que o personagem já sabe usar (por categoria ou nominalmente) não entram no picker. */
+export function getExcludedWeaponsForFeat(draft: CharacterDraft, featId: string): string[] {
+  const mine = new Set(draft.featSelections[featId]?.weapons ?? [])
+  return ALL_WEAPONS
+    .filter(w => !mine.has(w.id) && hasWeaponProficiency(draft, w))
+    .map(w => w.id)
 }
 
 /** Todas as perícias em que o personagem é proficiente (união das fontes). */
 export function getAllGrantedSkills(draft: CharacterDraft): string[] {
   const b = getSkillsBySource(draft)
-  return uniq([...b.race, ...b.class, ...b.background])
+  return uniq([...b.race, ...b.class, ...b.background, ...getFeatGrantedSkills(draft)])
 }
 
 /** Todas as ferramentas em que o personagem é proficiente (união das fontes). */
 export function getAllGrantedTools(draft: CharacterDraft): string[] {
   const b = getToolsBySource(draft)
-  return uniq([...b.race, ...b.class, ...b.background])
+  return uniq([...b.race, ...b.class, ...b.background, ...getFeatGrantedTools(draft)])
 }
 
 /**
@@ -253,6 +295,7 @@ export function getWeaponProficiencies(draft: CharacterDraft): string[] {
     ...fromPrimary,
     ...fromAdditional,
     ...fromSubclasses,
+    ...getFeatWeaponProficiencies(draft),
   ])
 }
 
@@ -261,7 +304,8 @@ export function getWeaponProficiencies(draft: CharacterDraft): string[] {
  * proficiência em resistência (p. 163) — é a diferença mais esquecida da tabela.
  */
 export function getSavingThrowProficiencies(draft: CharacterDraft): AbilityScore[] {
-  return draft.class ? (getClass(draft.class)?.savingThrows ?? []) : []
+  const fromClass = draft.class ? (getClass(draft.class)?.savingThrows ?? []) : []
+  return uniq([...fromClass, ...getFeatSavingThrows(draft)]) as AbilityScore[]
 }
 
 /** O catálogo de armaduras diz 'shield'; a proficiência de classe diz 'shields'. */
@@ -357,11 +401,14 @@ export function getLanguagesBySource(draft: CharacterDraft): Record<ProficiencyS
 /** Idiomas já vindos de fontes DIFERENTES da informada (para excluir do picker). */
 export function getExcludedLanguages(draft: CharacterDraft, source: ProficiencySource): string[] {
   const bySource = getLanguagesBySource(draft)
-  return uniq(ALL_SOURCES.filter(s => s !== source).flatMap(s => bySource[s]))
+  return uniq([
+    ...ALL_SOURCES.filter(s => s !== source).flatMap(s => bySource[s]),
+    ...getFeatGrantedLanguages(draft),
+  ])
 }
 
 /** Todos os idiomas que o personagem fala (união das fontes). */
 export function getAllGrantedLanguages(draft: CharacterDraft): string[] {
   const b = getLanguagesBySource(draft)
-  return uniq([...b.race, ...b.class, ...b.background])
+  return uniq([...b.race, ...b.class, ...b.background, ...getFeatGrantedLanguages(draft)])
 }

@@ -25,6 +25,7 @@ export const COMPLETE_DRAFT: CharacterDraft = {
   abilityScores: { STR: 15, DEX: 14, CON: 13, INT: 12, WIS: 10, CHA: 8 },
   rolledValues: [],
   asiChoices: [],
+  featSelections: {},
   background: 'sailor',
   backgroundChoices: {},
   equipment: { method: 'wealth', classResolutions: [], rolledGold: 50, purchasedItems: [] },

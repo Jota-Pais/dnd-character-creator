@@ -13,7 +13,9 @@ import { getEquippedArmor, getArmor, getWeaponById, ALL_WEAPONS } from './equipm
 import {
   getFeatArmorProficiencies, getFeatWeaponProficiencies, getFeatSavingThrows,
   getFeatGrantedSkills, getFeatGrantedTools, getFeatGrantedLanguages,
+  getCheckProficiencyBonus, getPassiveScoreBonus, type CheckProficiency,
 } from './sheetEffects'
+import { calculateModifier } from './abilityScoreUtils'
 
 /**
  * Deduplicação de proficiências entre raça, classe e antecedente (PHB 2014).
@@ -252,6 +254,51 @@ export function getExpertiseSkills(draft: CharacterDraft): string[] {
 export function getExpertiseTools(draft: CharacterDraft): string[] {
   const granted = new Set(getAllGrantedTools(draft))
   return uniq(allClassEntries(draft).flatMap(chosenExpertise)).filter(id => granted.has(id))
+}
+
+// ── Testes de perícia (o número da ficha) ──────────────────────────────────────
+
+export const SKILL_ABILITY: Record<string, AbilityScore> = {
+  acrobatics: 'DEX', 'animal-handling': 'WIS', arcana: 'INT', athletics: 'STR',
+  deception: 'CHA', history: 'INT', insight: 'WIS', intimidation: 'CHA',
+  investigation: 'INT', medicine: 'WIS', nature: 'INT', perception: 'WIS',
+  performance: 'CHA', persuasion: 'CHA', religion: 'INT', 'sleight-of-hand': 'DEX',
+  stealth: 'DEX', survival: 'WIS',
+}
+
+export type SkillCheck = { ability: AbilityScore; proficiency: CheckProficiency; bonus: number }
+
+/**
+ * O número de cada perícia: modificador do atributo + a parcela do bônus de proficiência que cabe
+ * — dobrada com Especialização, inteira com proficiência, metade com Versatilidade, nunca somadas.
+ * Fonte única da Revisão e do PDF, que antes repetiam a conta cada um do seu jeito e só
+ * enxergavam a Especialização da classe inicial.
+ */
+export function getSkillChecks(
+  draft: CharacterDraft,
+  finalScores: Record<AbilityScore, number>,
+): Record<string, SkillCheck> {
+  const granted = new Set(getAllGrantedSkills(draft))
+  const doubled = new Set(getExpertiseSkills(draft))
+  return Object.fromEntries(Object.entries(SKILL_ABILITY).map(([skillId, ability]) => {
+    const proficiency: CheckProficiency =
+      doubled.has(skillId) ? 'expertise' : granted.has(skillId) ? 'proficient' : 'none'
+    const bonus = calculateModifier(finalScores[ability]) + getCheckProficiencyBonus(draft, proficiency)
+    return [skillId, { ability, proficiency, bonus }]
+  }))
+}
+
+/**
+ * Valor passivo de uma perícia (p. 177): "10 + todos os modificadores que se aplicam normalmente
+ * ao teste" — então leva a Especialização e a Versatilidade junto — mais o que só vale no
+ * passivo (Observador +5).
+ */
+export function getPassiveScore(
+  draft: CharacterDraft,
+  skillId: string,
+  checks: Record<string, SkillCheck>,
+): number {
+  return 10 + checks[skillId].bonus + getPassiveScoreBonus(draft, skillId)
 }
 
 /**

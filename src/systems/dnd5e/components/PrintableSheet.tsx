@@ -12,12 +12,12 @@ import {
 } from '../utils/multiclassUtils'
 import { getBackground, getToolName } from '../utils/backgroundUtils'
 import {
-  calculateModifier, formatModifier, getProficiencyBonus, getPassivePerception,
+  calculateModifier, formatModifier, getProficiencyBonus,
   ALL_ABILITY_SCORES, ABILITY_LABELS,
 } from '../utils/abilityScoreUtils'
 import { getFinalAbilityScores } from '../utils/asiUtils'
 import {
-  getAllGrantedSkills, getAllGrantedTools, getAllGrantedLanguages,
+  getAllGrantedTools, getAllGrantedLanguages, getExpertiseTools, getSkillChecks, getPassiveScore,
   getArmorProficiencyLabels, getWeaponProficiencyLabels, getUnproficientArmor,
 } from '../utils/proficiencyUtils'
 import { calculateArmorClass, getUnarmoredDefense } from '../utils/armorClassUtils'
@@ -34,19 +34,12 @@ import { RuleText } from './common/RuleText'
 import { getWeaponAttack } from '../utils/weaponFormat'
 import {
   getTotalHp, getInitiativeBonusTotal, getSpeedBonusTotal,
-  getPassiveScoreBonus, getConditionalAcBonuses,
+  getConditionalAcBonuses, getCheckProficiencyBonus,
 } from '../utils/sheetEffects'
 import type { CharacterDraft } from '../types/character'
 import type { EquipmentChoiceItem, Weapon } from '../types/equipment'
 import type { GameClass } from '../types/class'
 
-const SKILL_ABILITY: Record<string, AbilityScore> = {
-  acrobatics: 'DEX', 'animal-handling': 'WIS', arcana: 'INT', athletics: 'STR',
-  deception: 'CHA', history: 'INT', insight: 'WIS', intimidation: 'CHA',
-  investigation: 'INT', medicine: 'WIS', nature: 'INT', perception: 'WIS',
-  performance: 'CHA', persuasion: 'CHA', religion: 'INT', 'sleight-of-hand': 'DEX',
-  stealth: 'DEX', survival: 'WIS',
-}
 const LANG_NAME = Object.fromEntries(LANGUAGES.map(l => [l.id, l.name]))
 
 function metersLabel(feet: number): string {
@@ -220,14 +213,13 @@ export function PrintableSheet() {
   const conditionalAc = getConditionalAcBonuses(draft)
   const darkvision = race ? getEffectiveDarkvision(race, subrace) : 0
 
-  const allSkills = getAllGrantedSkills(draft)
-  const expertise = new Set(draft.classChoices.expertiseItems.filter(id => SKILL_ABILITY[id]))
-  const passivePerception = getPassivePerception(
-    wisMod, allSkills.includes('perception'),
-    expertise.has('perception') ? prof * 2 : prof,
-  ) + getPassiveScoreBonus(draft, 'perception')
+  const skillChecks = getSkillChecks(draft, finalScores)
+  const passivePerception = getPassiveScore(draft, 'perception', skillChecks)
+  // Versatilidade: o que entra nas perícias sem proficiência (0 para quem não tem).
+  const halfProficiency = getCheckProficiencyBonus(draft, 'none')
   const saves = cls?.savingThrows ?? []
   const allTools = getAllGrantedTools(draft)
+  const expertiseTools = getExpertiseTools(draft)
 
   const languages = getAllGrantedLanguages(draft)
   const armorProficiencies = getArmorProficiencyLabels(draft)
@@ -405,20 +397,26 @@ export function PrintableSheet() {
         {/* Perícias */}
         <Box title="Perícias">
           {SKILLS.map(skill => {
-            const ability = SKILL_ABILITY[skill.id]
-            const proficient = allSkills.includes(skill.id)
-            const exp = expertise.has(skill.id)
-            const val = mod(ability) + (proficient ? prof : 0) + (exp ? prof : 0)
+            const check = skillChecks[skill.id]
             return (
               <Row
                 key={skill.id}
-                mark={proficient}
-                expertise={exp}
-                label={`${skill.name} (${ABILITY_LABELS[ability].short})`}
-                value={formatModifier(val)}
+                mark={check.proficiency !== 'none'}
+                expertise={check.proficiency === 'expertise'}
+                label={`${skill.name} (${ABILITY_LABELS[check.ability].short})`}
+                value={formatModifier(check.bonus)}
               />
             )
           })}
+          <p className="text-[10px] text-gray-500 mt-1">● proficiente · ◉ bônus de proficiência dobrado</p>
+          {/* O número das perícias já tem a Versatilidade; o que não está impresso (atributo puro,
+              ferramenta) o jogador precisa saber que também leva. */}
+          {halfProficiency > 0 && (
+            <p className="text-[10px] text-gray-500">
+              Versatilidade: +{halfProficiency} já somado nas perícias sem proficiência e na iniciativa;
+              vale também em testes de atributo e de ferramenta sem proficiência.
+            </p>
+          )}
         </Box>
       </div>
 
@@ -537,7 +535,7 @@ export function PrintableSheet() {
       <Box title="Proficiências & Idiomas" className="mb-4">
         {armorProficiencies.length > 0 && <p className="text-xs mb-0.5"><span className="text-gray-600">Armaduras: </span>{armorProficiencies.join(', ')}</p>}
         {weaponProficiencies.length > 0 && <p className="text-xs mb-0.5"><span className="text-gray-600">Armas: </span>{weaponProficiencies.join(', ')}</p>}
-        {allTools.length > 0 && <p className="text-xs mb-0.5"><span className="text-gray-600">Ferramentas: </span>{allTools.map(t => TOOL_NAMES[t] ?? getToolName(t)).join(', ')}</p>}
+        {allTools.length > 0 && <p className="text-xs mb-0.5"><span className="text-gray-600">Ferramentas: </span>{allTools.map(t => `${TOOL_NAMES[t] ?? getToolName(t)}${expertiseTools.includes(t) ? ' (bônus dobrado)' : ''}`).join(', ')}</p>}
         <p className="text-xs"><span className="text-gray-600">Idiomas: </span>{languages.map(l => LANG_NAME[l] ?? l).join(', ') || '—'}</p>
         {/* p. 144 — a ficha vai pra mesa, então o custo de usar armadura sem proficiência vai junto. */}
         {unproficientArmor.length > 0 && (

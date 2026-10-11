@@ -16,6 +16,8 @@ import {
   getExpertiseSkills,
   getExpertiseTools,
   getClassSlotProficiencies,
+  getSkillChecks,
+  getPassiveScore,
 } from '../proficiencyUtils'
 import { getWeaponById } from '../equipmentUtils'
 import { EMPTY_CLASS_CHOICES } from '../../types/class'
@@ -411,5 +413,57 @@ describe('getExpertiseSkills / getExpertiseTools', () => {
     expect(getClassSlotProficiencies(d, 'cleric').excludedExpertise).toEqual(
       expect.arrayContaining(['stealth', 'arcana', 'religion']),
     )
+  })
+})
+
+// O número de cada perícia: modificador + a parcela do bônus de proficiência que cabe.
+describe('getSkillChecks / getPassiveScore', () => {
+  // bad wolf do playtest, com os atributos finais da ficha impressa.
+  const scores = { STR: 8, DEX: 12, CON: 10, INT: 12, WIS: 16, CHA: 18 }
+  const badWolf = (expertiseItems: string[], level = 4) => draft({
+    level,
+    race: 'human',
+    subrace: 'variant-human',
+    raceChoices: { skills: ['perception'] },
+    class: 'bard',
+    classChoices: {
+      ...EMPTY_CLASS_CHOICES,
+      skills: ['intimidation', 'performance', 'persuasion'],
+      subclass: 'college-of-lore',
+      subclassExtras: { skills: ['history', 'insight', 'investigation'] },
+      expertiseItems,
+    },
+    background: 'charlatan',
+  })
+
+  it('Aptidão dobra o bônus: Enganação e Persuasão vão de +6 para +8', () => {
+    const checks = getSkillChecks(badWolf(['deception', 'persuasion']), scores)
+    expect(checks.deception).toEqual({ ability: 'CHA', proficiency: 'expertise', bonus: 8 })
+    expect(checks.persuasion.bonus).toBe(8)
+    expect(checks.performance).toEqual({ ability: 'CHA', proficiency: 'proficient', bonus: 6 })
+  })
+
+  it('Versatilidade soma metade nas perícias sem proficiência', () => {
+    const checks = getSkillChecks(badWolf(['deception', 'persuasion']), scores)
+    expect(checks.acrobatics).toEqual({ ability: 'DEX', proficiency: 'none', bonus: 2 }) // +1 +1
+    expect(checks.athletics.bonus).toBe(0) // −1 +1
+    expect(checks.medicine.bonus).toBe(4) // +3 +1
+  })
+
+  it('sem Versatilidade, perícia sem proficiência é só o modificador', () => {
+    const fighter = draft({ level: 4, class: 'fighter' })
+    expect(getSkillChecks(fighter, scores).acrobatics.bonus).toBe(1)
+  })
+
+  it('percepção passiva leva tudo que entra no teste, inclusive a Aptidão', () => {
+    const plain = badWolf(['deception', 'persuasion'])
+    expect(getPassiveScore(plain, 'perception', getSkillChecks(plain, scores))).toBe(15)
+    const expert = badWolf(['deception', 'perception'])
+    expect(getPassiveScore(expert, 'perception', getSkillChecks(expert, scores))).toBe(17)
+  })
+
+  it('passiva sem proficiência leva a Versatilidade e o Observador soma por cima', () => {
+    const d = draft({ level: 4, class: 'bard', raceChoices: { feat: 'observador' } })
+    expect(getPassiveScore(d, 'investigation', getSkillChecks(d, scores))).toBe(10 + 1 + 1 + 5)
   })
 })

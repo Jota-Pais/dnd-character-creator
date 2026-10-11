@@ -17,18 +17,18 @@ import { getClassResources } from '../../utils/classResourceUtils'
 import { getBackground, BACKGROUND_PRESENTATION, getToolName, SKILLS } from '../../utils/backgroundUtils'
 import {
   calculateModifier, formatModifier, ALL_ABILITY_SCORES, ABILITY_LABELS,
-  getProficiencyBonus, getPassivePerception,
+  getProficiencyBonus,
 } from '../../utils/abilityScoreUtils'
 import { getItemName, getEquippedArmor, getPurchasesTotalCopper, formatCurrency } from '../../utils/equipmentUtils'
 import { getUnarmoredDefense, calculateArmorClass } from '../../utils/armorClassUtils'
 import {
-  getAllGrantedSkills, getAllGrantedTools, getAllGrantedLanguages,
+  getAllGrantedTools, getAllGrantedLanguages, getExpertiseTools, getSkillChecks, getPassiveScore,
   getArmorProficiencyLabels, getWeaponProficiencyLabels, getUnproficientArmor,
 } from '../../utils/proficiencyUtils'
 import { getProgressionSlotsUpToLevel } from '../../utils/progressionChoiceUtils'
 import {
   getTotalHp, getInitiativeBonusTotal, getSpeedBonusTotal,
-  getPassiveScoreBonus, getConditionalAcBonuses,
+  getConditionalAcBonuses, getCheckProficiencyBonus,
 } from '../../utils/sheetEffects'
 import { getProgressionOptions } from '../../utils/progressionOptions'
 import {
@@ -50,14 +50,6 @@ import type { AbilityScore } from '../../types/race'
 import type { EquipmentOption } from '../../types/equipment'
 import type { Background } from '../../types/background'
 import type { HpMethod } from '../../types/character'
-
-const SKILL_ABILITY: Record<string, AbilityScore> = {
-  acrobatics: 'DEX', 'animal-handling': 'WIS', arcana: 'INT', athletics: 'STR',
-  deception: 'CHA', history: 'INT', insight: 'WIS', intimidation: 'CHA',
-  investigation: 'INT', medicine: 'WIS', nature: 'INT', perception: 'WIS',
-  performance: 'CHA', persuasion: 'CHA', religion: 'INT', 'sleight-of-hand': 'DEX',
-  stealth: 'DEX', survival: 'WIS',
-}
 
 const LANG_NAME = Object.fromEntries(LANGUAGES.map(l => [l.id, l.name]))
 
@@ -145,16 +137,11 @@ export function ReviewStep() {
     .join(' ')
 
   // Proficiencies
-  const allSkills = getAllGrantedSkills(draft)
-  const expertiseSet = new Set(draft.classChoices.expertiseItems.filter(id => SKILL_ABILITY[id]))
+  const skillChecks = getSkillChecks(draft, finalScores)
   const savingThrows = cls?.savingThrows ?? []
-
-  const perceptionProficient = allSkills.includes('perception')
-  const passivePerception = getPassivePerception(
-    wisMod,
-    perceptionProficient,
-    perceptionProficient && expertiseSet.has('perception') ? profBonus * 2 : profBonus,
-  ) + getPassiveScoreBonus(draft, 'perception')
+  const passivePerception = getPassiveScore(draft, 'perception', skillChecks)
+  // Versatilidade: o que entra nas perícias sem proficiência (0 para quem não tem).
+  const halfProficiency = getCheckProficiencyBonus(draft, 'none')
 
   // Languages & tools
   const allLanguages = getAllGrantedLanguages(draft)
@@ -163,6 +150,7 @@ export function ReviewStep() {
   const unproficientArmor = getUnproficientArmor(draft)
 
   const allTools = getAllGrantedTools(draft)
+  const expertiseTools = getExpertiseTools(draft)
 
   const classLabel = entries.map(e => {
     const ec = getClass(e.classId)
@@ -394,11 +382,9 @@ export function ReviewStep() {
         <Section title="Perícias">
           <div className="space-y-1">
             {[...SKILLS].sort((a, b) => a.name.localeCompare(b.name)).map(skill => {
-              const abilityId = SKILL_ABILITY[skill.id]
-              const abilityMod = abilityId ? calculateModifier(finalScores[abilityId]) : 0
-              const isProficient = allSkills.includes(skill.id)
-              const isExpert = expertiseSet.has(skill.id)
-              const bonus = abilityMod + (isProficient ? profBonus : 0) + (isExpert ? profBonus : 0)
+              const { ability: abilityId, proficiency, bonus } = skillChecks[skill.id]
+              const isProficient = proficiency !== 'none'
+              const isExpert = proficiency === 'expertise'
               return (
                 <div key={skill.id} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -421,6 +407,13 @@ export function ReviewStep() {
               )
             })}
           </div>
+          {halfProficiency > 0 && (
+            <p className="text-parchment-600 text-xs mt-2 leading-relaxed">
+              <span className="text-parchment-400 font-semibold">Versatilidade:</span> +{halfProficiency} já
+              somado nas perícias sem proficiência e na iniciativa — vale também em testes de atributo e
+              de ferramenta sem proficiência.
+            </p>
+          )}
         </Section>
       </div>
 
@@ -468,7 +461,7 @@ export function ReviewStep() {
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {allTools.map(id => (
-                    <Chip key={id} label={getToolName(id)} />
+                    <Chip key={id} label={`${getToolName(id)}${expertiseTools.includes(id) ? ' ◆' : ''}`} />
                   ))}
                 </div>
               </div>

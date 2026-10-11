@@ -10,7 +10,6 @@ import {
   rollAbilityScore,
   isAbilitiesStepComplete,
   getProficiencyBonus,
-  getPassivePerception,
   clampCustomScore,
 } from '../abilityScoreUtils'
 import type { AbilityScore } from '../../types/race'
@@ -25,22 +24,6 @@ describe('calculateModifier', () => {
   it('retorna -1 para atributo 9', () => expect(calculateModifier(9)).toBe(-1))
   it('retorna -4 para atributo 3', () => expect(calculateModifier(3)).toBe(-4))
   it('retorna +5 para atributo 20', () => expect(calculateModifier(20)).toBe(5))
-})
-
-describe('getPassivePerception', () => {
-  it('sem proficiência é 10 + mod. SAB', () => {
-    expect(getPassivePerception(3, false, 2)).toBe(13)
-    expect(getPassivePerception(0, false, 2)).toBe(10)
-    expect(getPassivePerception(-1, false, 2)).toBe(9)
-  })
-  it('proficiente soma o bônus de proficiência', () => {
-    expect(getPassivePerception(3, true, 2)).toBe(15)
-    expect(getPassivePerception(1, true, 3)).toBe(14)
-  })
-  it('especialização (bônus dobrado) é respeitada pelo chamador', () => {
-    // getPassivePerception apenas soma o bônus recebido; especialização = prof * 2
-    expect(getPassivePerception(2, true, 6)).toBe(18) // 10 + 2 + 6
-  })
 })
 
 describe('getProficiencyBonus', () => {

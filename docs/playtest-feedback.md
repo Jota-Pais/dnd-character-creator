@@ -330,3 +330,19 @@
   5. **UI:** nova etapa "Poderes Paranormais" (entre Progressão e Rituais) com catálogo por elemento, opções bloqueadas sempre visíveis com o motivo, seção de Afinidade Elemental, sub-escolhas aninhadas (ritual/elemento/poder de outra classe) e integrações (aviso do Cultista na Origem, status do Transcender na Progressão, rituais concedidos pra qualquer classe no passo Rituais); Revisão e ficha imprimível com seção própria, breakdown de SAN e números do motor.
   6. **Fix adjacente:** trocar o poder de um slot (ou da Versatilidade) agora descarta os `powerParams` órfãos da instância (antes o passo Progressão travava pra sempre).
 - **Status:** ✅ FEITO (2026-07-17) — 65 testes novos do motor + integridade de dados (774 no total), verificado no browser (Playwright/Edge, 29 checks): retrocompat de ficha antiga, catálogo com bloqueio por pré-requisito, cascata de invalidação, SAN do cultista (25→15), resist 20 com 2ª escolha, ritual concedido pra Combatente e mobile 390px.
+
+### F34 — Bardo 4 sem nenhuma Especialização na ficha (D&D)
+- **Sistema:** D&D 5e
+- **Onde:** etapa Classe (seletor), Revisão e ficha impressa (perícias, iniciativa, passiva)
+- **Relato:** o PDF do "bad wolf" (Humano Variante, Bardo 4 do Colégio do Conhecimento, Charlatão) saiu sem nenhuma perícia com bônus dobrado — "até onde eu sei eu ganho isso no nível 3".
+- **Triagem:** 🐛 bug + 📖 fidelidade ao livro
+- **Confirmado no livro:** Aptidão do bardo (p. 54: duas perícias no 3º nível, mais duas no 10º); Especialização do ladino (p. 91: duas no 1º, mais duas no 6º); Versatilidade (p. 54: metade do bônus, arredondada para baixo, em teste de habilidade sem proficiência — iniciativa é teste de Destreza, p. 179); Bênçãos do Conhecimento (p. 66: perícias com bônus dobrado); o bônus só se multiplica uma vez (p. 175); Humano Variante troca só o Aumento no Valor de Habilidade e as Perícias — os Idiomas continuam (p. 31).
+- **Confirmado no código:**
+  1. Especialização só existia como flag `hasExpertise` do ladino no 1º nível — o bardo nunca recebia o seletor, e o ladino não ganhava as duas do 6º.
+  2. Revisão e PDF repetiam a conta das perícias lendo só `draft.classChoices.expertiseItems` (classe inicial): Especialização de ladino adicional da multiclasse e as perícias do Domínio do Conhecimento nunca dobravam.
+  3. Versatilidade era só texto: perícias sem proficiência, iniciativa e passiva ficavam sem o +½.
+  4. De quebra na mesma ficha: `replacesParentTraits` do Humano Variante zerava também a escolha de idioma (ficha só com Comum) e a Revisão/PDF mostravam a "Versatilidade" do humano comum e o texto velho "(funcionalidade completa em versão futura)" no traço Talento.
+- **Implementado (2026-10-11):** Especialização vira progressão nos dados (`expertise.grants`), contada pelo nível na classe, com seletor na etapa Classe ("2 no 1º nível + 2 no 6º nível"); `getExpertiseSkills`/`getSkillChecks`/`getPassiveScore` em proficiencyUtils como fonte única da Revisão e do PDF; Versatilidade como efeito de feature de classe no sheetEffects (iniciativa + perícias + passiva, com aviso de que vale também em teste de atributo e de ferramenta); Humano Variante com o idioma de volta e traços pelo `getEffectiveTraits`.
+- **Efeito em fichas salvas:** bardo 3+ e ladino 6+ passam a pedir as escolhas de Especialização na etapa Classe; Humano Variante passa a pedir o idioma na etapa Raça. É só escolher e exportar de novo.
+- **Pendência vista e não resolvida:** a raça guarda o idioma fixo pelo nome ("Comum") e o seletor compara por id (`common`), então o humano consegue escolher Comum de novo como idioma adicional.
+- **Status:** ✅ FEITO (2026-10-11) — testes novos de nível/agregação/números (bad wolf como caso: Enganação +8, Acrobacia +2, iniciativa +2, passiva 15), verificado no browser (Playwright/Edge): seletor 0/2 → 2/2 na etapa Classe, Revisão e PDF com os números certos, console limpo.

@@ -1,5 +1,6 @@
 import type { AbilityScore } from './race'
 import type { ClassStartingEquipment } from './equipment'
+import type { FeatureEffects } from './effects'
 
 export type SpellcastingType = 'known' | 'prepared' | 'hybrid'
 
@@ -36,8 +37,11 @@ export type SubclassExtraChoices = {
 
 export type ClassFeature = { name: string; description: string }
 
-/** Feature ganha em um nível específico (progressão 1–20). */
-export type LevelFeature = ClassFeature & { level: number }
+/**
+ * Feature ganha em um nível específico (progressão 1–20). `effects` é o que a ficha aplica sozinha
+ * (Versatilidade, Especialização) — o mesmo formato dos talentos, agregado em `sheetEffects`.
+ */
+export type LevelFeature = ClassFeature & { level: number; effects?: FeatureEffects }
 
 export type ClassSubclass = {
   id: string

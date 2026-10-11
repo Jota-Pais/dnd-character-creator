@@ -1,14 +1,18 @@
 import type { CharacterDraft, FeatSelections } from '../types/character'
 import type { Feat } from '../types/feat'
-import type { ArmorProficiency } from '../types/class'
+import type { ArmorProficiency, LevelFeature } from '../types/class'
 import type { AbilityScore } from '../types/race'
 import type { ConditionalAcBonus } from '../types/effects'
 import { getFeat } from './featUtils'
-import { getAllAsiChoices, getTotalHpAverage, getTotalHpRolled } from './multiclassUtils'
+import { getClass, getSubclass, getClassFeaturesUpToLevel } from './classUtils'
+import { getProficiencyBonus } from './abilityScoreUtils'
+import {
+  allClassEntries, getAllAsiChoices, getTotalHpAverage, getTotalHpRolled,
+} from './multiclassUtils'
 
 /**
  * Agregador dos efeitos que a ficha aplica sozinha, atravessando as fontes de característica
- * (hoje só talentos; raça e classe entram no mesmo formato quando forem estruturadas).
+ * (talentos e features de classe; raça entra no mesmo formato quando for estruturada).
  * Espelha `src/systems/ordem/utils/sheetEffects.ts`.
  *
  * Regra geral: efeito INCONDICIONAL entra no número da ficha; efeito CONDICIONAL vira linha
@@ -40,6 +44,19 @@ export function getOwnedFeats(draft: CharacterDraft): Feat[] {
     .filter((f): f is Feat => f !== undefined)
 }
 
+/**
+ * Features de classe e subclasse que o personagem tem, de cada classe no nível que tem NELA: um
+ * Guerreiro 5 / Bardo 1 não tem a Versatilidade do bardo 2.
+ */
+export function getOwnedClassFeatures(draft: CharacterDraft): LevelFeature[] {
+  return allClassEntries(draft).flatMap(entry => {
+    const cls = getClass(entry.classId)
+    if (!cls) return []
+    const sub = entry.classChoices.subclass ? getSubclass(cls, entry.classChoices.subclass) : null
+    return getClassFeaturesUpToLevel(cls, sub ?? null, entry.level)
+  })
+}
+
 /** Percorre os talentos possuídos extraindo um efeito, junto com o nome de quem concedeu. */
 function collect<T>(draft: CharacterDraft, pick: (feat: Feat) => T | undefined): SheetEffect<T>[] {
   const out: SheetEffect<T>[] = []
@@ -50,13 +67,44 @@ function collect<T>(draft: CharacterDraft, pick: (feat: Feat) => T | undefined):
   return out
 }
 
-// ── Iniciativa ─────────────────────────────────────────────────────────────────
+// ── Testes de habilidade ───────────────────────────────────────────────────────
 
-export function getInitiativeBonuses(draft: CharacterDraft): SheetEffect<number>[] {
-  return collect(draft, f => f.effects?.initiativeBonus)
+/** Quanto do bônus de proficiência um teste de habilidade leva: nada, inteiro ou dobrado. */
+export type CheckProficiency = 'none' | 'proficient' | 'expertise'
+
+/** Tem Versatilidade (bardo 2+)? Metade do bônus em todo teste de habilidade sem proficiência. */
+export function hasHalfProficiencyOnChecks(draft: CharacterDraft): boolean {
+  return getOwnedClassFeatures(draft).some(f => f.effects?.halfProficiencyOnChecks)
 }
 
-/** Soma dos bônus de iniciativa (Alerta +5). Entra direto no número da ficha. */
+/**
+ * A parcela do bônus de proficiência num TESTE DE HABILIDADE — perícia, iniciativa, valor passivo.
+ *
+ * O livro aplica o bônus uma vez só e o multiplica uma vez só (p. 175): dobrado com
+ * Especialização, inteiro com proficiência e, sem proficiência, metade arredondada para baixo
+ * para quem tem Versatilidade. Os três nunca se somam. Resistência e ataque não passam por aqui —
+ * Versatilidade é só de teste de habilidade.
+ */
+export function getCheckProficiencyBonus(draft: CharacterDraft, proficiency: CheckProficiency): number {
+  const prof = getProficiencyBonus(draft.level ?? 1)
+  if (proficiency === 'expertise') return prof * 2
+  if (proficiency === 'proficient') return prof
+  return hasHalfProficiencyOnChecks(draft) ? Math.floor(prof / 2) : 0
+}
+
+// ── Iniciativa ─────────────────────────────────────────────────────────────────
+
+/**
+ * Bônus de iniciativa além da Destreza. Iniciativa é um teste de Destreza (p. 179) sem
+ * proficiência, então a Versatilidade entra aqui como linha própria.
+ */
+export function getInitiativeBonuses(draft: CharacterDraft): SheetEffect<number>[] {
+  const fromFeats = collect(draft, f => f.effects?.initiativeBonus)
+  const half = getCheckProficiencyBonus(draft, 'none')
+  return half > 0 ? [...fromFeats, { source: 'Versatilidade', value: half }] : fromFeats
+}
+
+/** Soma dos bônus de iniciativa (Alerta +5, Versatilidade). Entra direto no número da ficha. */
 export function getInitiativeBonusTotal(draft: CharacterDraft): number {
   return getInitiativeBonuses(draft).reduce((sum, e) => sum + e.value, 0)
 }

@@ -56,4 +56,10 @@ export type FeatureEffects = {
   conditionalAcBonus?: ConditionalAcBonus[]
   /** Proficiências de armadura concedidas (Proteção Leve / Moderada / Pesada). */
   grantedArmorProficiencies?: ArmorProficiency[]
+  /**
+   * Versatilidade (bardo 2): metade do bônus de proficiência, arredondada para baixo, em todo
+   * TESTE DE HABILIDADE que ainda não tenha o bônus — perícia sem proficiência, iniciativa, teste
+   * de atributo puro. Não vale para resistência nem ataque.
+   */
+  halfProficiencyOnChecks?: boolean
 }

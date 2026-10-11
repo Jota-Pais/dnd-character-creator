@@ -2,6 +2,9 @@ import { describe, it, expect } from 'vitest'
 import {
   getOwnedFeats,
   getInitiativeBonusTotal,
+  getInitiativeBonuses,
+  hasHalfProficiencyOnChecks,
+  getCheckProficiencyBonus,
   getSpeedBonusTotal,
   getFeatHpBonus,
   getTotalHp,
@@ -183,5 +186,50 @@ describe('talentos que concedem proficiência de armadura', () => {
     expect(getArmorProficiencies(semTalento)).toEqual([])
     expect(hasArmorProficiency(semTalento, chainMail)).toBe(false)
     expect(hasArmorProficiency(comTalento, chainMail)).toBe(true)
+  })
+})
+
+// Versatilidade do bardo (p. 54): metade do bônus de proficiência, arredondada para baixo, em todo
+// teste de habilidade sem proficiência — iniciativa inclusa, por ser um teste de Destreza (p. 179).
+describe('Versatilidade (efeito de feature de classe)', () => {
+  const bard = (level: number) => draft({ level, class: 'bard' })
+
+  it('bardo do 1º nível ainda não tem', () => {
+    expect(hasHalfProficiencyOnChecks(bard(1))).toBe(false)
+    expect(getInitiativeBonusTotal(bard(1))).toBe(0)
+  })
+
+  it('a partir do 2º nível soma metade do bônus de proficiência na iniciativa', () => {
+    expect(hasHalfProficiencyOnChecks(bard(2))).toBe(true)
+    expect(getInitiativeBonusTotal(bard(2))).toBe(1) // ⌊2/2⌋
+    expect(getInitiativeBonusTotal(bard(5))).toBe(1) // ⌊3/2⌋, arredonda para baixo
+    expect(getInitiativeBonusTotal(bard(9))).toBe(2) // ⌊4/2⌋
+  })
+
+  it('soma com o Alerta, cada um numa linha', () => {
+    const d = draft({ level: 2, class: 'bard', raceChoices: { feat: 'alerta' } })
+    expect(getInitiativeBonuses(d).map(e => e.source)).toEqual(['Alerta', 'Versatilidade'])
+    expect(getInitiativeBonusTotal(d)).toBe(6)
+  })
+
+  it('conta o nível NA classe: guerreiro 5 / bardo 1 não tem', () => {
+    const d = draft({
+      level: 6,
+      multiclass: true,
+      class: 'fighter',
+      additionalClasses: [{
+        classId: 'bard', level: 1, classChoices: { ...EMPTY_DRAFT.classChoices },
+        spellChoices: { cantrips: [], spells: [] }, asiChoices: [], hpRolls: [],
+      }],
+    })
+    expect(hasHalfProficiencyOnChecks(d)).toBe(false)
+  })
+
+  it('a parcela do bônus nunca soma: metade, inteiro ou dobrado', () => {
+    const d = bard(4) // proficiência +2
+    expect(getCheckProficiencyBonus(d, 'none')).toBe(1)
+    expect(getCheckProficiencyBonus(d, 'proficient')).toBe(2)
+    expect(getCheckProficiencyBonus(d, 'expertise')).toBe(4)
+    expect(getCheckProficiencyBonus(draft({ level: 4, class: 'fighter' }), 'none')).toBe(0)
   })
 })

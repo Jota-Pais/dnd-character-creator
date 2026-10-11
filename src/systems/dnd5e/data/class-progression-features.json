@@ -350,7 +350,8 @@
       {
         "level": 2,
         "name": "Versatilidade",
-        "description": "Você soma metade do seu bônus de proficiência (arredondado para baixo) em testes de habilidade em que ainda não seja proficiente."
+        "description": "Você soma metade do seu bônus de proficiência (arredondado para baixo) em testes de habilidade em que ainda não seja proficiente.",
+        "effects": { "halfProficiencyOnChecks": true }
       },
       {
         "level": 2,

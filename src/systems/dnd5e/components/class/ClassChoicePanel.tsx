@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { GameClass, ClassChoiceSelections, ToolChoiceSource } from '../../types/class'
 import {
   getSkillOptions,
+  getExpertiseCount,
   getExpertiseOptions,
   resolveSkillOptions,
   FIGHTING_STYLES,
@@ -54,6 +55,19 @@ export function ClassChoicePanel({ cls, choices, accent, level, onChange, profic
   const excludedToolSet = new Set(proficiencies.excludedBaseTools)
   // Ao multiclassar, a classe dá só o subconjunto de perícias da Tabela de Proficiências (0 ou 1).
   const skillLimit = multiclass ? (cls.multiclassProficiencies.skills?.count ?? 0) : cls.skillChoices.count
+  // Especialização chega em levas (ladino no 1º e 6º, bardo no 3º e 10º), pelo nível NESTA classe.
+  const expertiseCount = getExpertiseCount(cls, level)
+
+  // Especialização vale sobre proficiências que o personagem TEM: se a perícia sai, a escolha sai
+  // junto; se o nível baixa, ficam só as das levas mais antigas. Vale igual para as classes da
+  // multiclasse, por isso mora aqui e não na etapa.
+  useEffect(() => {
+    const items = choices.expertiseItems
+    const kept = items
+      .filter(id => proficiencies.grantedSkills.includes(id) || proficiencies.grantedTools.includes(id))
+      .slice(0, expertiseCount)
+    if (kept.length !== items.length) onChange({ expertiseItems: kept })
+  }, [proficiencies.grantedSkills.join(','), proficiencies.grantedTools.join(','), expertiseCount]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleSkillToggle(skillId: string) {
     if (choices.skills.includes(skillId)) {
@@ -75,7 +89,7 @@ export function ClassChoicePanel({ cls, choices, accent, level, onChange, profic
     if (choices.expertiseItems.includes(itemId)) {
       onChange({ expertiseItems: choices.expertiseItems.filter(e => e !== itemId) })
     } else {
-      if (choices.expertiseItems.length >= 2) return
+      if (choices.expertiseItems.length >= expertiseCount) return
       onChange({ expertiseItems: [...choices.expertiseItems, itemId] })
     }
   }
@@ -238,20 +252,27 @@ export function ClassChoicePanel({ cls, choices, accent, level, onChange, profic
         />
       )}
 
-      {/* ── Especialização (Ladino) — aparece após perícias escolhidas ── */}
-      {cls.hasExpertise && skillsFullyChosen && (
+      {/* ── Especialização (Ladino, Bardo) — aparece após perícias escolhidas ── */}
+      {cls.expertise && expertiseCount > 0 && skillsFullyChosen && (
         <ChoiceSection
-          title={`Especialização (${choices.expertiseItems.length}/2)`}
+          title={`Especialização (${choices.expertiseItems.length}/${expertiseCount})`}
           accent={accent}
           term="especializacao"
         >
           <p className="text-parchment-600 text-xs mb-2">
-            Escolha 2 itens para dobrar o bônus de proficiência.
+            {cls.expertise.includesThievesTools
+              ? `Escolha ${expertiseCount} entre suas perícias e as ferramentas de ladrão para dobrar o bônus de proficiência.`
+              : `Escolha ${expertiseCount} perícias em que você é proficiente para dobrar o bônus de proficiência.`}
+            {describeExpertiseGrants(cls.expertise.grants, level)}
           </p>
           <div className="flex flex-wrap gap-1.5">
-            {getExpertiseOptions(proficiencies.grantedSkills, proficiencies.grantedTools).map(opt => {
+            {getExpertiseOptions(
+              proficiencies.grantedSkills,
+              proficiencies.grantedTools,
+              cls.expertise.includesThievesTools,
+            ).map(opt => {
               const selected = choices.expertiseItems.includes(opt.id)
-              const disabled = !selected && choices.expertiseItems.length >= 2
+              const disabled = !selected && choices.expertiseItems.length >= expertiseCount
               return (
                 <button
                   key={opt.id}
@@ -284,6 +305,13 @@ export function ClassChoicePanel({ cls, choices, accent, level, onChange, profic
       />
     </div>
   )
+}
+
+/** " (2 no 1º nível + 2 no 6º nível)" — de onde vem o total, quando já chegou mais de uma leva. */
+function describeExpertiseGrants(grants: { level: number; count: number }[], level: number): string {
+  const reached = grants.filter(grant => grant.level <= level)
+  if (reached.length < 2) return ''
+  return ` (${reached.map(grant => `${grant.count} no ${grant.level}º nível`).join(' + ')})`
 }
 
 type SubclassExtrasPanelProps = {

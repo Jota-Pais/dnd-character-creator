@@ -81,7 +81,7 @@ const baseClass: GameClass = {
   subclassLevel: 3,
   subclasses: [],
   hasFightingStyle: true,
-  hasExpertise: false,
+  expertise: null,
   startingEquipment: { fixed: [], choices: [], wealthDice: '2d4', wealthMultiplier: 10, wealthUnit: 'po' },
 }
 

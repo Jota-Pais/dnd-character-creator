@@ -70,6 +70,17 @@ export type ArmorProficiency = 'light' | 'medium' | 'heavy' | 'shields'
  */
 export type CasterProgression = 'full' | 'half' | 'third' | 'pact' | 'none'
 
+/**
+ * Especialização (ladino p. 91) e Aptidão (bardo p. 54): proficiências com o bônus DOBRADO,
+ * ganhas em levas — o ladino escolhe duas no 1º nível e mais duas no 6º; o bardo, duas no 3º e
+ * mais duas no 10º. Cada leva conta pelo nível NA classe, então vale igual na multiclasse.
+ */
+export type ClassExpertise = {
+  grants: { level: number; count: number }[]
+  /** Ladino: "ou uma perícia e ferramentas de ladrão". A Aptidão do bardo é só de perícias. */
+  includesThievesTools: boolean
+}
+
 /** Pré-requisito de atributo para multiclassar (livro pág. 166; mínimo sempre 13). */
 export type MulticlassPrereq = { mode: 'all' | 'any'; abilities: AbilityScore[] }
 
@@ -107,7 +118,7 @@ export type GameClass = {
   subclassLevel: number
   subclasses: ClassSubclass[]
   hasFightingStyle: boolean
-  hasExpertise: boolean
+  expertise: ClassExpertise | null
   startingEquipment: ClassStartingEquipment
 }
 

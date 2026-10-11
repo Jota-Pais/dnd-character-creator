@@ -51,7 +51,7 @@
       "wealthUnit": "po"
     },
     "hasFightingStyle": false,
-    "hasExpertise": false
+    "expertise": null
   },
   {
     "id": "bard",
@@ -123,7 +123,7 @@
       "wealthUnit": "po"
     },
     "hasFightingStyle": false,
-    "hasExpertise": false
+    "expertise": { "grants": [{ "level": 3, "count": 2 }, { "level": 10, "count": 2 }], "includesThievesTools": false }
   },
   {
     "id": "warlock",
@@ -228,7 +228,7 @@
       "wealthUnit": "po"
     },
     "hasFightingStyle": false,
-    "hasExpertise": false
+    "expertise": null
   },
   {
     "id": "cleric",
@@ -423,7 +423,7 @@
       "wealthUnit": "po"
     },
     "hasFightingStyle": false,
-    "hasExpertise": false
+    "expertise": null
   },
   {
     "id": "druid",
@@ -491,7 +491,7 @@
       "wealthUnit": "po"
     },
     "hasFightingStyle": false,
-    "hasExpertise": false
+    "expertise": null
   },
   {
     "id": "sorcerer",
@@ -591,7 +591,7 @@
       "wealthUnit": "po"
     },
     "hasFightingStyle": false,
-    "hasExpertise": false
+    "expertise": null
   },
   {
     "id": "fighter",
@@ -665,7 +665,7 @@
       "wealthUnit": "po"
     },
     "hasFightingStyle": true,
-    "hasExpertise": false
+    "expertise": null
   },
   {
     "id": "rogue",
@@ -732,7 +732,7 @@
       "wealthUnit": "po"
     },
     "hasFightingStyle": false,
-    "hasExpertise": true
+    "expertise": { "grants": [{ "level": 1, "count": 2 }, { "level": 6, "count": 2 }], "includesThievesTools": true }
   },
   {
     "id": "wizard",
@@ -806,7 +806,7 @@
       "wealthUnit": "po"
     },
     "hasFightingStyle": false,
-    "hasExpertise": false
+    "expertise": null
   },
   {
     "id": "monk",
@@ -863,7 +863,7 @@
       "wealthUnit": "po"
     },
     "hasFightingStyle": false,
-    "hasExpertise": false
+    "expertise": null
   },
   {
     "id": "paladin",
@@ -940,7 +940,7 @@
       "wealthUnit": "po"
     },
     "hasFightingStyle": false,
-    "hasExpertise": false
+    "expertise": null
   },
   {
     "id": "ranger",
@@ -1010,6 +1010,6 @@
       "wealthUnit": "po"
     },
     "hasFightingStyle": false,
-    "hasExpertise": false
+    "expertise": null
   }
 ]

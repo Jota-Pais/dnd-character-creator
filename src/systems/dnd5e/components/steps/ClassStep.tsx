@@ -46,7 +46,7 @@ export function ClassStep() {
   // Perícias/ferramentas já obtidas de outra fonte não podem ser re-escolhidas. A exclusão é por
   // slot: a lista da classe e os extras da subclasse são concessões distintas (ver proficiencyUtils).
   const proficiencies = getClassSlotProficiencies(draft, draft.class ?? '')
-  const { excludedBaseSkills, excludedBaseTools, grantedSkills, grantedTools } = proficiencies
+  const { excludedBaseSkills, excludedBaseTools } = proficiencies
 
   useEffect(() => {
     const skills = draft.classChoices.skills
@@ -59,13 +59,6 @@ export function ClassStep() {
     const filtered = tools.filter(id => !excludedBaseTools.includes(id))
     if (filtered.length !== tools.length) updateClassChoices({ tools: filtered })
   }, [excludedBaseTools.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Especialização vale sobre proficiências que o personagem TEM; se a perícia sai, a expertise sai junto.
-  useEffect(() => {
-    const items = draft.classChoices.expertiseItems
-    const filtered = items.filter(id => grantedSkills.includes(id) || grantedTools.includes(id))
-    if (filtered.length !== items.length) updateClassChoices({ expertiseItems: filtered })
-  }, [grantedSkills.join(','), grantedTools.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleClassSelect(classId: string) {
     setClass(classId)

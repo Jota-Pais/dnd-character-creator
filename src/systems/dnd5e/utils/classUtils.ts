@@ -191,19 +191,31 @@ export function getSkillOptions(cls: GameClass): { id: string; name: string }[] 
 }
 
 /**
- * Itens elegíveis para Especialização (ladino p. 96, bardo p. 53): "duas das SUAS proficiências
+ * Quantos itens de Especialização a classe já concedeu no nível que o personagem tem NELA — a
+ * soma das levas até ali (ladino 6: 2 + 2). Zero para quem não tem a característica.
+ */
+export function getExpertiseCount(cls: GameClass, level: number): number {
+  return (cls.expertise?.grants ?? [])
+    .filter(grant => grant.level <= level)
+    .reduce((sum, grant) => sum + grant.count, 0)
+}
+
+/**
+ * Itens elegíveis para Especialização (ladino p. 91, bardo p. 54): "duas das SUAS proficiências
  * em perícia" — qualquer uma, venha de onde vier. Antes só listava as perícias marcadas na lista
  * da classe, o que deixava de fora as do antecedente, da raça e as três do Colégio do
- * Conhecimento. As Ferramentas de Ladrão entram só para quem é proficiente nelas (o ladino).
+ * Conhecimento. As Ferramentas de Ladrão entram só na do ladino (`includesThievesTools`) e só para
+ * quem é proficiente nelas: a Aptidão do bardo é de perícias, mesmo que ele saiba usá-las.
  */
 export function getExpertiseOptions(
   grantedSkills: string[],
   grantedTools: string[],
+  includesThievesTools: boolean,
 ): { id: string; name: string }[] {
   const fromSkills = SKILLS
     .filter(s => grantedSkills.includes(s.id))
     .map(s => ({ id: s.id, name: s.name }))
-  return grantedTools.includes('thieves-tools')
+  return includesThievesTools && grantedTools.includes('thieves-tools')
     ? [...fromSkills, { id: 'thieves-tools', name: 'Ferramentas de Ladrão' }]
     : fromSkills
 }
@@ -241,7 +253,8 @@ export function isClassStepComplete(
     }
   }
 
-  if (cls.hasExpertise && choices.expertiseItems.length < 2) return false
+  // Escolhas a mais (o nível baixou depois) não travam: o painel corta o excesso.
+  if (choices.expertiseItems.length < getExpertiseCount(cls, currentLevel)) return false
 
   if (!isProgressionChoicesComplete(cls.id, choices.subclass, choices, currentLevel)) return false
 

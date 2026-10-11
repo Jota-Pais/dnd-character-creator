@@ -7,6 +7,7 @@ import {
   getRolledHpAtLevel,
   isActiveCaster,
   isClassStepComplete,
+  getExpertiseCount,
   getExpertiseOptions,
   getClassFeaturesUpToLevel,
   hasFeaturesByLevel,
@@ -36,7 +37,7 @@ const baseClass: GameClass = {
   subclassLevel: 3,
   subclasses: [],
   hasFightingStyle: true,
-  hasExpertise: false,
+  expertise: null,
   startingEquipment: { fixed: [], choices: [], wealthDice: '2d4', wealthMultiplier: 10, wealthUnit: 'po' },
 }
 
@@ -71,7 +72,7 @@ const casterClass: GameClass = {
     { id: 'life-domain', name: 'Domínio da Vida', description: '', features: [], extras: null },
   ],
   hasFightingStyle: false,
-  hasExpertise: false,
+  expertise: null,
   startingEquipment: { fixed: [], choices: [], wealthDice: '2d4', wealthMultiplier: 10, wealthUnit: 'po' },
 }
 
@@ -106,7 +107,7 @@ const rogueClass: GameClass = {
   subclassLevel: 3,
   subclasses: [],
   hasFightingStyle: false,
-  hasExpertise: true,
+  expertise: { grants: [{ level: 1, count: 2 }, { level: 6, count: 2 }], includesThievesTools: true },
   startingEquipment: { fixed: [], choices: [], wealthDice: '2d4', wealthMultiplier: 10, wealthUnit: 'po' },
 }
 
@@ -234,20 +235,87 @@ describe('isClassStepComplete', () => {
     })).toBe(true))
 })
 
+// Ladino p. 91 (duas no 1º, mais duas no 6º) e bardo p. 54 (duas no 3º, mais duas no 10º).
+describe('Especialização por nível', () => {
+  const bard = getClass('bard')!
+  const rogue = getClass('rogue')!
+  const loreBardChoices = {
+    ...EMPTY_CLASS_CHOICES,
+    skills: ['deception', 'performance', 'persuasion'],
+    tools: ['flute', 'lyre', 'drum'],
+    subclass: 'college-of-lore',
+    subclassExtras: { skills: ['history', 'insight', 'investigation'] },
+  }
+
+  it('o bardo não tem nada antes do 3º nível, 2 do 3º ao 9º e 4 a partir do 10º', () => {
+    expect(getExpertiseCount(bard, 2)).toBe(0)
+    expect(getExpertiseCount(bard, 3)).toBe(2)
+    expect(getExpertiseCount(bard, 9)).toBe(2)
+    expect(getExpertiseCount(bard, 10)).toBe(4)
+    expect(getExpertiseCount(bard, 20)).toBe(4)
+  })
+
+  it('o ladino tem 2 do 1º ao 5º nível e 4 a partir do 6º', () => {
+    expect(getExpertiseCount(rogue, 1)).toBe(2)
+    expect(getExpertiseCount(rogue, 5)).toBe(2)
+    expect(getExpertiseCount(rogue, 6)).toBe(4)
+  })
+
+  it('classes sem a característica não concedem nenhuma', () => {
+    expect(getExpertiseCount(getClass('fighter')!, 20)).toBe(0)
+  })
+
+  it('bardo do 3º nível sem Especialização deixa a etapa pendente', () => {
+    expect(isClassStepComplete(bard, loreBardChoices, 3)).toBe(false)
+    expect(isClassStepComplete(bard, { ...loreBardChoices, expertiseItems: ['deception', 'persuasion'] }, 3)).toBe(true)
+  })
+
+  it('bardo do 10º nível precisa de 4', () => {
+    const two = {
+      ...loreBardChoices,
+      expertiseItems: ['deception', 'persuasion'],
+      // Segredos Mágicos do 6º (colégio) e do 10º (classe) também são escolhas da etapa.
+      progressionChoices: {
+        'lore-magical-secrets-6': ['fireball', 'counterspell'],
+        'bard-magical-secrets-10': ['revivify', 'haste'],
+      },
+    }
+    expect(isClassStepComplete(bard, two, 10)).toBe(false)
+    expect(isClassStepComplete(bard, { ...two, expertiseItems: ['deception', 'persuasion', 'history', 'insight'] }, 10)).toBe(true)
+  })
+
+  it('ladino do 6º nível precisa de 4', () => {
+    const choices = {
+      ...EMPTY_CLASS_CHOICES,
+      skills: ['acrobatics', 'athletics', 'deception', 'insight'],
+      subclass: 'thief',
+      expertiseItems: ['acrobatics', 'thieves-tools'],
+    }
+    expect(isClassStepComplete(rogueClass, choices, 5)).toBe(true)
+    expect(isClassStepComplete(rogueClass, choices, 6)).toBe(false)
+  })
+})
+
 describe('getExpertiseOptions', () => {
   it('lista as perícias que o personagem tem + ferramentas de ladrão do ladino', () => {
-    const options = getExpertiseOptions(['acrobatics', 'stealth'], ['thieves-tools'])
+    const options = getExpertiseOptions(['acrobatics', 'stealth'], ['thieves-tools'], true)
     expect(options.map(o => o.id)).toEqual(['acrobatics', 'stealth', 'thieves-tools'])
   })
 
-  // "Duas das SUAS proficiências em perícia" (p. 53 e 96): não importa de onde vieram.
+  // "Duas das SUAS proficiências em perícia" (p. 54 e 91): não importa de onde vieram.
   it('inclui perícias de outras fontes (antecedente, colégio do conhecimento)', () => {
-    const options = getExpertiseOptions(['arcana', 'history', 'performance'], [])
+    const options = getExpertiseOptions(['arcana', 'history', 'performance'], [], false)
     expect(options.map(o => o.id)).toEqual(['arcana', 'history', 'performance'])
   })
 
-  it('não oferece ferramentas de ladrão a quem não é proficiente nelas (bardo)', () => {
-    const options = getExpertiseOptions(['deception'], ['lute'])
+  it('não oferece ferramentas de ladrão a quem não é proficiente nelas', () => {
+    const options = getExpertiseOptions(['deception'], ['lute'], true)
+    expect(options.map(o => o.id)).toEqual(['deception'])
+  })
+
+  // A Aptidão do bardo é só de perícias, mesmo para um bardo criminoso que use as ferramentas.
+  it('a Aptidão do bardo não oferece ferramentas de ladrão nem a quem é proficiente nelas', () => {
+    const options = getExpertiseOptions(['deception'], ['thieves-tools'], false)
     expect(options.map(o => o.id)).toEqual(['deception'])
   })
 })

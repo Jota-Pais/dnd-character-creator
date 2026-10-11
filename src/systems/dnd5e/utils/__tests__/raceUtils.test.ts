@@ -8,6 +8,7 @@ import {
   getAvailableInnateSpells,
   getEffectiveInnateSpells,
   isRaceStepComplete,
+  getEffectiveTraits,
 } from '../raceUtils'
 import type { RaceChoiceSelections } from '../../types/character'
 
@@ -143,15 +144,38 @@ describe('isRaceStepComplete', () => {
     ).toBe(true))
 
   it('humano variante exige o talento escolhido', () => {
-    const base: RaceChoiceSelections = { abilityBonuses: ['STR', 'DEX'], skills: ['athletics'] }
+    const base: RaceChoiceSelections = { abilityBonuses: ['STR', 'DEX'], skills: ['athletics'], languages: ['elvish'] }
     expect(isRaceStepComplete(human, variantHuman, base)).toBe(false) // falta o talento
     expect(isRaceStepComplete(human, variantHuman, { ...base, feat: 'alerta' })).toBe(true)
   })
 
   it('humano variante com meio-talento exige o atributo do +1', () => {
-    const base: RaceChoiceSelections = { abilityBonuses: ['STR', 'DEX'], skills: ['athletics'], feat: 'atleta' }
+    const base: RaceChoiceSelections = { abilityBonuses: ['STR', 'DEX'], skills: ['athletics'], languages: ['elvish'], feat: 'atleta' }
     expect(isRaceStepComplete(human, variantHuman, base)).toBe(false) // meio-talento sem +1
     expect(isRaceStepComplete(human, variantHuman, { ...base, featAbility: 'STR' })).toBe(true)
     expect(isRaceStepComplete(human, variantHuman, { ...base, featAbility: 'CON' })).toBe(false) // CON não é opção do Atleta
+  })
+
+  // p. 31: os traços alternativos substituem o Aumento no Valor de Habilidade e as Perícias — os
+  // Idiomas (Comum + um à escolha) continuam.
+  it('humano variante continua escolhendo o idioma adicional', () => {
+    const complete: RaceChoiceSelections = {
+      abilityBonuses: ['STR', 'DEX'], skills: ['athletics'], feat: 'alerta', languages: ['elvish'],
+    }
+    expect(isRaceStepComplete(human, variantHuman, complete)).toBe(true)
+    expect(isRaceStepComplete(human, variantHuman, { ...complete, languages: [] })).toBe(false)
+  })
+})
+
+describe('getEffectiveTraits', () => {
+  it('soma os traços da raça e da sub-raça', () => {
+    const names = getEffectiveTraits(dwarf, hillDwarf).map(t => t.name)
+    expect(names).toEqual([...dwarf.traits, ...hillDwarf.traits].map(t => t.name))
+  })
+
+  it('humano variante não herda a Versatilidade (o +1 em tudo) do humano comum', () => {
+    const names = getEffectiveTraits(human, variantHuman).map(t => t.name)
+    expect(names).not.toContain('Versatilidade')
+    expect(names).toContain('Talento')
   })
 })

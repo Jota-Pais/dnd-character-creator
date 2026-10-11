@@ -257,13 +257,14 @@
         "choices": [
           { "kind": "ability", "count": 2, "from": "any", "value": 1 },
           { "kind": "skill", "count": 1, "from": "any" },
-          { "kind": "feat", "count": 1 }
+          { "kind": "feat", "count": 1 },
+          { "kind": "language", "count": 1, "from": "any" }
         ],
         "grantedProficiencies": [],
         "traits": [
           {
             "name": "Talento",
-            "description": "Você adquire um talento de sua escolha (funcionalidade completa em versão futura)."
+            "description": "Você adquire um talento de sua escolha."
           }
         ],
         "overrides": { "replacesParentTraits": true }

@@ -9,6 +9,7 @@ import {
   getEffectiveDarkvision,
   getEffectiveAbilityBonuses,
   getAllChoices,
+  getEffectiveTraits,
   RACE_PRESENTATION,
 } from '../../utils/raceUtils'
 import { getExcludedSkills, getExcludedTools, getExcludedLanguages } from '../../utils/proficiencyUtils'
@@ -176,7 +177,7 @@ export function RaceStep() {
               <div className="rounded-xl border border-parchment-900 bg-parchment-950/60 p-4">
                 <SectionTitle>Traços Raciais</SectionTitle>
                 <div className="space-y-2.5">
-                  {[...selectedRace.traits, ...(selectedSubrace?.traits ?? [])].map(trait => (
+                  {getEffectiveTraits(selectedRace, selectedSubrace ?? null).map(trait => (
                     <div key={trait.name}>
                       <span className="text-sm font-semibold text-parchment-200 font-fantasy">
                         {trait.name}.{' '}

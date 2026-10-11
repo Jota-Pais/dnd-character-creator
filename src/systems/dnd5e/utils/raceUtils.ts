@@ -1,4 +1,4 @@
-import type { Race, Subrace, AbilityBonus, RaceChoice, AbilityChoice, GrantedProficiency, InnateSpell } from '../types/race'
+import type { Race, Subrace, AbilityBonus, RaceChoice, AbilityChoice, GrantedProficiency, InnateSpell, RacialTrait } from '../types/race'
 import type { RaceChoiceSelections } from '../types/character'
 import racesData from '../data/races.json'
 import { getFeat } from './featUtils'
@@ -89,6 +89,15 @@ export function getEffectiveSpeed(race: Race, subrace: Subrace | null): number {
 
 export function getEffectiveDarkvision(race: Race, subrace: Subrace | null): number {
   return subrace?.overrides.darkvision ?? race.darkvision
+}
+
+/**
+ * Traços da raça + sub-raça (respeita replacesParentTraits). Sem isso o Humano Variante herdava a
+ * "Versatilidade" do humano comum — o texto do +1 em tudo, justamente o que a variante troca.
+ */
+export function getEffectiveTraits(race: Race, subrace: Subrace | null): RacialTrait[] {
+  const raceTraits = replacesParentTraits(subrace) ? [] : race.traits
+  return [...raceTraits, ...(subrace?.traits ?? [])]
 }
 
 export function getAllChoices(race: Race, subrace: Subrace | null): RaceChoice[] {

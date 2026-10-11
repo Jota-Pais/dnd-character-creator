@@ -2,7 +2,7 @@ import { useCharacterStore } from '../stores/characterStore'
 import type { AbilityScore } from '../types/race'
 import {
   getRace, getSubrace, getEffectiveSpeed, getEffectiveDarkvision, LANGUAGES, SKILLS,
-  getAvailableInnateSpells, TOOL_NAMES,
+  getAvailableInnateSpells, getEffectiveTraits, TOOL_NAMES,
 } from '../utils/raceUtils'
 import {
   getClass, getSubclass, isActiveCaster, getClassFeaturesUpToLevel, FIGHTING_STYLES,
@@ -561,7 +561,7 @@ export function PrintableSheet() {
 
       {/* Traços & Features */}
       <Box title="Traços Raciais" className="mb-4">
-        {[...(race?.traits ?? []), ...(subrace?.traits ?? [])].map(t => (
+        {(race ? getEffectiveTraits(race, subrace ?? null) : []).map(t => (
           <p key={t.name} className="text-xs mb-1"><strong>{t.name}.</strong> {t.description}</p>
         ))}
       </Box>

@@ -1,7 +1,7 @@
 import { useCharacterStore } from '../../stores/characterStore'
 import {
   getRace, getSubrace, getEffectiveSpeed,
-  getEffectiveDarkvision, RACE_PRESENTATION, LANGUAGES, getAvailableInnateSpells,
+  getEffectiveDarkvision, RACE_PRESENTATION, LANGUAGES, getAvailableInnateSpells, getEffectiveTraits,
 } from '../../utils/raceUtils'
 import { getFinalAbilityScores } from '../../utils/asiUtils'
 import { getFeat } from '../../utils/featUtils'
@@ -604,7 +604,7 @@ export function ReviewStep() {
       {race && (
         <Section title="Traços Raciais">
           <div className="space-y-3">
-            {[...race.traits, ...(subrace?.traits ?? [])].map(trait => (
+            {getEffectiveTraits(race, subrace ?? null).map(trait => (
               <div key={trait.name}>
                 <span className="text-sm font-semibold font-fantasy text-parchment-200">
                   {trait.name}.{' '}

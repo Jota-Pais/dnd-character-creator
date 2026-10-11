@@ -59,15 +59,18 @@ export function ClassChoicePanel({ cls, choices, accent, level, onChange, profic
   const expertiseCount = getExpertiseCount(cls, level)
 
   // Especialização vale sobre proficiências que o personagem TEM: se a perícia sai, a escolha sai
-  // junto; se o nível baixa, ficam só as das levas mais antigas. Vale igual para as classes da
-  // multiclasse, por isso mora aqui e não na etapa.
+  // junto; se outra fonte passou a dobrá-la, também (o bônus só dobra uma vez); se o nível baixa,
+  // ficam só as das levas mais antigas. Vale igual para as classes da multiclasse, por isso mora
+  // aqui e não na etapa.
+  const { grantedSkills, grantedTools, excludedExpertise } = proficiencies
   useEffect(() => {
     const items = choices.expertiseItems
     const kept = items
-      .filter(id => proficiencies.grantedSkills.includes(id) || proficiencies.grantedTools.includes(id))
+      .filter(id => grantedSkills.includes(id) || grantedTools.includes(id))
+      .filter(id => !excludedExpertise.includes(id))
       .slice(0, expertiseCount)
     if (kept.length !== items.length) onChange({ expertiseItems: kept })
-  }, [proficiencies.grantedSkills.join(','), proficiencies.grantedTools.join(','), expertiseCount]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [grantedSkills.join(','), grantedTools.join(','), excludedExpertise.join(','), expertiseCount]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleSkillToggle(skillId: string) {
     if (choices.skills.includes(skillId)) {
@@ -267,9 +270,10 @@ export function ClassChoicePanel({ cls, choices, accent, level, onChange, profic
           </p>
           <div className="flex flex-wrap gap-1.5">
             {getExpertiseOptions(
-              proficiencies.grantedSkills,
-              proficiencies.grantedTools,
+              grantedSkills,
+              grantedTools,
               cls.expertise.includesThievesTools,
+              excludedExpertise,
             ).map(opt => {
               const selected = choices.expertiseItems.includes(opt.id)
               const disabled = !selected && choices.expertiseItems.length >= expertiseCount

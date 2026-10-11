@@ -206,14 +206,18 @@ export function getExpertiseCount(cls: GameClass, level: number): number {
  * da classe, o que deixava de fora as do antecedente, da raça e as três do Colégio do
  * Conhecimento. As Ferramentas de Ladrão entram só na do ladino (`includesThievesTools`) e só para
  * quem é proficiente nelas: a Aptidão do bardo é de perícias, mesmo que ele saiba usá-las.
+ *
+ * `alreadyDoubled`: o que outra fonte já dobra (outra classe, Domínio do Conhecimento). O bônus
+ * só se multiplica uma vez, então oferecer de novo seria deixar o jogador jogar a escolha fora.
  */
 export function getExpertiseOptions(
   grantedSkills: string[],
   grantedTools: string[],
   includesThievesTools: boolean,
+  alreadyDoubled: string[] = [],
 ): { id: string; name: string }[] {
   const fromSkills = SKILLS
-    .filter(s => grantedSkills.includes(s.id))
+    .filter(s => grantedSkills.includes(s.id) && !alreadyDoubled.includes(s.id))
     .map(s => ({ id: s.id, name: s.name }))
   return includesThievesTools && grantedTools.includes('thieves-tools')
     ? [...fromSkills, { id: 'thieves-tools', name: 'Ferramentas de Ladrão' }]

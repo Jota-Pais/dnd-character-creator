@@ -13,11 +13,14 @@ import {
   getWeaponProficiencyLabels,
   getSavingThrowProficiencies,
   hasWeaponProficiency,
+  getExpertiseSkills,
+  getExpertiseTools,
+  getClassSlotProficiencies,
 } from '../proficiencyUtils'
 import { getWeaponById } from '../equipmentUtils'
 import { EMPTY_CLASS_CHOICES } from '../../types/class'
 import { getRaceGrantedSkills, getRaceGrantedTools, getRace, getSubrace } from '../raceUtils'
-import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
+import { EMPTY_DRAFT, type CharacterDraft, type ClassEntry } from '../../types/character'
 
 function draft(overrides: Partial<CharacterDraft>): CharacterDraft {
   return { ...structuredClone(EMPTY_DRAFT), ...overrides }
@@ -312,5 +315,101 @@ describe('getAllGrantedSkills / getAllGrantedTools', () => {
     const all = getAllGrantedTools(d)
     expect(all).toContain('tinkers-tools')
     expect(all).toContain('lute')
+  })
+})
+
+// Especialização (ladino p. 91, bardo p. 54) e Bênçãos do Conhecimento (p. 66).
+describe('getExpertiseSkills / getExpertiseTools', () => {
+  function entry(over: Partial<ClassEntry> & { classId: string; level: number }): ClassEntry {
+    return {
+      classChoices: { ...EMPTY_DRAFT.classChoices },
+      spellChoices: { cantrips: [], spells: [] },
+      asiChoices: [],
+      hpRolls: [],
+      ...over,
+    }
+  }
+
+  // O bad wolf do playtest: Humano Variante, Bardo 4 do Colégio do Conhecimento, Charlatão.
+  const loreBard = (expertiseItems: string[], level = 4) => draft({
+    level,
+    race: 'human',
+    subrace: 'variant-human',
+    raceChoices: { skills: ['perception'] },
+    class: 'bard',
+    classChoices: {
+      ...EMPTY_CLASS_CHOICES,
+      skills: ['intimidation', 'performance', 'persuasion'],
+      subclass: 'college-of-lore',
+      subclassExtras: { skills: ['history', 'insight', 'investigation'] },
+      expertiseItems,
+    },
+    background: 'charlatan',
+  })
+
+  it('bardo do 4º nível dobra as duas perícias escolhidas', () => {
+    expect(getExpertiseSkills(loreBard(['deception', 'persuasion']))).toEqual(['deception', 'persuasion'])
+  })
+
+  it('escolhas além do que o nível libera não contam (valem as primeiras)', () => {
+    const d = loreBard(['deception', 'persuasion', 'history', 'insight'], 9)
+    expect(getExpertiseSkills(d)).toEqual(['deception', 'persuasion'])
+  })
+
+  it('perícia que o personagem não tem não vira especialização', () => {
+    expect(getExpertiseSkills(loreBard(['deception', 'stealth']))).toEqual(['deception'])
+  })
+
+  it('ladino adicional da multiclasse também dobra (antes só a classe inicial contava)', () => {
+    const d = draft({
+      level: 3,
+      multiclass: true,
+      class: 'fighter',
+      classChoices: { ...EMPTY_CLASS_CHOICES, skills: ['athletics', 'perception'], fightingStyle: 'defense' },
+      additionalClasses: [entry({
+        classId: 'rogue',
+        level: 1,
+        classChoices: { ...EMPTY_CLASS_CHOICES, skills: ['stealth'], expertiseItems: ['stealth', 'thieves-tools'] },
+      })],
+    })
+    expect(getExpertiseSkills(d)).toEqual(['stealth'])
+    expect(getExpertiseTools(d)).toEqual(['thieves-tools'])
+  })
+
+  it('Domínio do Conhecimento dobra as duas perícias das Bênçãos', () => {
+    const d = draft({
+      class: 'cleric',
+      classChoices: {
+        ...EMPTY_CLASS_CHOICES,
+        skills: ['insight', 'medicine'],
+        subclass: 'knowledge-domain',
+        subclassExtras: { skills: ['arcana', 'religion'], languages: ['elvish', 'dwarvish'] },
+      },
+    })
+    expect(getExpertiseSkills(d)).toEqual(['arcana', 'religion'])
+  })
+
+  it('o seletor de uma classe não oferece o que outra fonte já dobra', () => {
+    const d = draft({
+      level: 4,
+      multiclass: true,
+      class: 'cleric',
+      classChoices: {
+        ...EMPTY_CLASS_CHOICES,
+        skills: ['insight', 'medicine'],
+        subclass: 'knowledge-domain',
+        subclassExtras: { skills: ['arcana', 'religion'] },
+      },
+      additionalClasses: [entry({
+        classId: 'rogue',
+        level: 1,
+        classChoices: { ...EMPTY_CLASS_CHOICES, skills: ['stealth'], expertiseItems: ['stealth', 'arcana'] },
+      })],
+    })
+    expect(getClassSlotProficiencies(d, 'rogue').excludedExpertise).toEqual(['arcana', 'religion'])
+    // Do ponto de vista do clérigo, a do ladino é que é "de fora".
+    expect(getClassSlotProficiencies(d, 'cleric').excludedExpertise).toEqual(
+      expect.arrayContaining(['stealth', 'arcana', 'religion']),
+    )
   })
 })

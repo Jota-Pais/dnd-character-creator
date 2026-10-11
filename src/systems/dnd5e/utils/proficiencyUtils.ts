@@ -1,4 +1,4 @@
-import type { CharacterDraft } from '../types/character'
+import type { CharacterDraft, ClassEntry } from '../types/character'
 import type { ClassChoiceSelections, ArmorProficiency } from '../types/class'
 import type { AbilityScore } from '../types/race'
 import type { Armor, ArmorCategory, Weapon } from '../types/equipment'
@@ -6,7 +6,8 @@ import {
   getRace, getSubrace, getRaceGrantedSkills, getRaceGrantedTools,
   getEffectiveGrantedProficiencies,
 } from './raceUtils'
-import { getClass, getSubclass } from './classUtils'
+import { getClass, getSubclass, getExpertiseCount } from './classUtils'
+import { allClassEntries } from './multiclassUtils'
 import { getBackground } from './backgroundUtils'
 import { getEquippedArmor, getArmor, getWeaponById, ALL_WEAPONS } from './equipmentUtils'
 import {
@@ -217,9 +218,59 @@ export function getAllGrantedTools(draft: CharacterDraft): string[] {
   return uniq([...b.race, ...b.class, ...b.background, ...getFeatGrantedTools(draft)])
 }
 
+// ── Especialização (bônus de proficiência dobrado) ─────────────────────────────
+
+/**
+ * A Especialização/Aptidão escolhida numa classe, só nas levas já liberadas pelo nível NELA: se o
+ * nível baixou e sobraram escolhas, valem as primeiras, que são as das levas mais antigas.
+ */
+function chosenExpertise(entry: ClassEntry): string[] {
+  const cls = getClass(entry.classId)
+  return cls ? entry.classChoices.expertiseItems.slice(0, getExpertiseCount(cls, entry.level)) : []
+}
+
+/** Perícias que a subclasse já concede dobradas (Domínio do Conhecimento, p. 66). */
+function subclassExpertise(entry: ClassEntry): string[] {
+  const from = subclassExtrasOf(entry.classId, entry.classChoices)?.expertiseSkills?.from ?? []
+  return (entry.classChoices.subclassExtras.skills ?? []).filter(id => from.includes(id))
+}
+
+/**
+ * Perícias com o bônus de proficiência dobrado, de todas as fontes: a Especialização de CADA
+ * classe da multiclasse (antes a ficha lia só a da classe inicial) e as perícias do Domínio do
+ * Conhecimento (antes nunca dobravam). Só perícias que o personagem tem — as ferramentas de
+ * ladrão ficam em `getExpertiseTools`.
+ */
+export function getExpertiseSkills(draft: CharacterDraft): string[] {
+  const granted = new Set(getAllGrantedSkills(draft))
+  return uniq(
+    allClassEntries(draft).flatMap(entry => [...chosenExpertise(entry), ...subclassExpertise(entry)]),
+  ).filter(id => granted.has(id))
+}
+
+/** Ferramentas com o bônus dobrado (hoje só as de ladrão, pela Especialização do ladino). */
+export function getExpertiseTools(draft: CharacterDraft): string[] {
+  const granted = new Set(getAllGrantedTools(draft))
+  return uniq(allClassEntries(draft).flatMap(chosenExpertise)).filter(id => granted.has(id))
+}
+
+/**
+ * O que já está dobrado por OUTRA fonte que não o seletor de Especialização desta classe: as das
+ * outras classes e as de subclasse. O bônus de proficiência só se multiplica uma vez (p. 175), então
+ * escolher de novo seria jogar a escolha fora.
+ */
+function expertiseOutsideClassPicker(draft: CharacterDraft, classId: string): string[] {
+  const entries = allClassEntries(draft)
+  return uniq([
+    ...entries.filter(e => e.classId !== classId).flatMap(chosenExpertise),
+    ...entries.flatMap(subclassExpertise),
+  ])
+}
+
 /**
  * Tudo que o painel de uma classe precisa saber sobre proficiências: o que já está tomado em
- * cada um dos seus dois slots e o que o personagem tem no total (base da Especialização).
+ * cada um dos seus dois slots, o que o personagem tem no total (base da Especialização) e o que já
+ * está dobrado por outra fonte.
  */
 export type ClassSlotProficiencies = {
   excludedBaseSkills: string[]
@@ -228,6 +279,7 @@ export type ClassSlotProficiencies = {
   excludedSubclassTools: string[]
   grantedSkills: string[]
   grantedTools: string[]
+  excludedExpertise: string[]
 }
 
 export function getClassSlotProficiencies(
@@ -243,6 +295,7 @@ export function getClassSlotProficiencies(
     excludedSubclassTools: getExcludedToolsForClassSlot(draft, subclass),
     grantedSkills: getAllGrantedSkills(draft),
     grantedTools: getAllGrantedTools(draft),
+    excludedExpertise: expertiseOutsideClassPicker(draft, classId),
   }
 }
 

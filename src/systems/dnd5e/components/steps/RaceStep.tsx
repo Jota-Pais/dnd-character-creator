@@ -11,6 +11,7 @@ import {
   getAllChoices,
   getEffectiveTraits,
   RACE_PRESENTATION,
+  LANGUAGES,
 } from '../../utils/raceUtils'
 import { getExcludedSkills, getExcludedTools, getExcludedLanguages } from '../../utils/proficiencyUtils'
 import { isStepComplete } from '../../utils/draftValidation'
@@ -152,7 +153,7 @@ export function RaceStep() {
                     }
                   />
                   <Stat label="📏 Tamanho" value={selectedRace.size === 'Small' ? 'Pequeno' : 'Médio'} />
-                  <Stat label="🗣️ Idiomas" value={selectedRace.grantedLanguages.join(', ')} />
+                  <Stat label="🗣️ Idiomas" value={selectedRace.grantedLanguages.map(id => LANGUAGES.find(l => l.id === id)?.name ?? id).join(', ')} />
                 </div>
 
                 {effectiveBonuses.length > 0 && (

@@ -11,7 +11,7 @@
     "size": "Medium",
     "speed": 25,
     "darkvision": 60,
-    "grantedLanguages": ["Comum", "Anão"],
+    "grantedLanguages": ["common", "dwarvish"],
     "grantedProficiencies": [
       { "type": "weapon", "value": "battleaxe" },
       { "type": "weapon", "value": "handaxe" },
@@ -69,7 +69,7 @@
     "size": "Medium",
     "speed": 30,
     "darkvision": 60,
-    "grantedLanguages": ["Comum", "Élfico"],
+    "grantedLanguages": ["common", "elvish"],
     "grantedProficiencies": [{ "type": "skill", "value": "perception" }],
     "traits": [
       {
@@ -174,7 +174,7 @@
     "size": "Small",
     "speed": 25,
     "darkvision": 0,
-    "grantedLanguages": ["Comum", "Halfling"],
+    "grantedLanguages": ["common", "halfling"],
     "grantedProficiencies": [],
     "traits": [
       {
@@ -240,7 +240,7 @@
     "size": "Medium",
     "speed": 30,
     "darkvision": 0,
-    "grantedLanguages": ["Comum"],
+    "grantedLanguages": ["common"],
     "grantedProficiencies": [],
     "traits": [
       {
@@ -284,7 +284,7 @@
     "size": "Medium",
     "speed": 30,
     "darkvision": 0,
-    "grantedLanguages": ["Comum", "Dracônico"],
+    "grantedLanguages": ["common", "draconic"],
     "grantedProficiencies": [],
     "traits": [
       {
@@ -439,7 +439,7 @@
     "size": "Small",
     "speed": 25,
     "darkvision": 60,
-    "grantedLanguages": ["Comum", "Gnômico"],
+    "grantedLanguages": ["common", "gnomish"],
     "grantedProficiencies": [],
     "traits": [
       {
@@ -502,7 +502,7 @@
     "size": "Medium",
     "speed": 30,
     "darkvision": 60,
-    "grantedLanguages": ["Comum", "Élfico"],
+    "grantedLanguages": ["common", "elvish"],
     "grantedProficiencies": [],
     "traits": [
       {
@@ -529,7 +529,7 @@
     "size": "Medium",
     "speed": 30,
     "darkvision": 60,
-    "grantedLanguages": ["Comum", "Orc"],
+    "grantedLanguages": ["common", "orc"],
     "grantedProficiencies": [{ "type": "skill", "value": "intimidation" }],
     "traits": [
       {
@@ -556,7 +556,7 @@
     "size": "Medium",
     "speed": 30,
     "darkvision": 60,
-    "grantedLanguages": ["Comum", "Infernal"],
+    "grantedLanguages": ["common", "infernal"],
     "grantedProficiencies": [],
     "innateSpells": [
       { "spellId": "thaumaturgy", "minLevel": 1, "ability": "CHA" },

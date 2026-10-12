@@ -8,6 +8,7 @@ import {
   getAllGrantedSkills,
   getAllGrantedTools,
   getAllGrantedLanguages,
+  getExcludedLanguages,
   getArmorProficiencies,
   getWeaponProficiencies,
   getWeaponProficiencyLabels,
@@ -21,7 +22,8 @@ import {
 } from '../proficiencyUtils'
 import { getWeaponById } from '../equipmentUtils'
 import { EMPTY_CLASS_CHOICES } from '../../types/class'
-import { getRaceGrantedSkills, getRaceGrantedTools, getRace, getSubrace } from '../raceUtils'
+import { getRaceGrantedSkills, getRaceGrantedTools, getRace, getSubrace, RACES, LANGUAGES } from '../raceUtils'
+import { CLASSES } from '../classUtils'
 import { EMPTY_DRAFT, type CharacterDraft, type ClassEntry } from '../../types/character'
 
 function draft(overrides: Partial<CharacterDraft>): CharacterDraft {
@@ -273,6 +275,21 @@ describe('getAllGrantedLanguages', () => {
       },
     })
     expect(getAllGrantedLanguages(d)).toEqual(expect.arrayContaining(['elvish', 'dwarvish']))
+  })
+
+  it('idioma fixo de raça e de subclasse é id do catálogo, o mesmo que os seletores guardam', () => {
+    const ids = new Set<string>(LANGUAGES.map(l => l.id))
+    const granted = [
+      ...RACES.flatMap(r => r.grantedLanguages),
+      ...CLASSES.flatMap(c => c.subclasses.flatMap(s => s.extras?.grantedLanguages ?? [])),
+    ]
+    expect(granted.filter(id => !ids.has(id))).toEqual([])
+  })
+
+  it('humano não escolhe Comum de novo: nem no idioma extra da raça, nem no antecedente', () => {
+    const d = draft({ race: 'human', subrace: 'variant-human' })
+    expect(getAllGrantedLanguages(d)).toEqual(['common'])
+    expect(getExcludedLanguages(d, 'background')).toContain('common')
   })
 })
 

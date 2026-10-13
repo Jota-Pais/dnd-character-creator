@@ -15,7 +15,7 @@ Aplicativo web pra criar fichas de RPG de mesa em poucos minutos, mesmo sem conh
 - Galeria de personagens com salvamento automático no navegador.
 - Exportar/importar fichas em JSON.
 - Ficha imprimível / exportável em PDF.
-- Regras digitalizadas das fontes oficiais, cobertas por mais de 570 testes automatizados.
+- Regras digitalizadas das fontes oficiais, cobertas por mais de 1.100 testes automatizados.
 
 ## 🛠️ Stack
 

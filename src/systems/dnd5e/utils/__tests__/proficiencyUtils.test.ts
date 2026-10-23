@@ -19,10 +19,15 @@ import {
   getClassSlotProficiencies,
   getSkillChecks,
   getPassiveScore,
+  getChosenExoticLanguages,
+  getLanguageLabels,
+  EXOTIC_LANGUAGE_NOTE,
 } from '../proficiencyUtils'
 import { getWeaponById } from '../equipmentUtils'
 import { EMPTY_CLASS_CHOICES } from '../../types/class'
-import { getRaceGrantedSkills, getRaceGrantedTools, getRace, getSubrace, RACES, LANGUAGES } from '../raceUtils'
+import {
+  getRaceGrantedSkills, getRaceGrantedTools, getRace, getSubrace, RACES, LANGUAGES, isExoticLanguage,
+} from '../raceUtils'
 import { CLASSES } from '../classUtils'
 import { EMPTY_DRAFT, type CharacterDraft, type ClassEntry } from '../../types/character'
 
@@ -298,6 +303,77 @@ describe('getAllGrantedLanguages', () => {
     const d = draft({ race: 'human', subrace: 'variant-human' })
     expect(getAllGrantedLanguages(d)).toEqual(['common'])
     expect(getExcludedLanguages(d, 'background')).toContain('common')
+  })
+})
+
+describe('idiomas exóticos (p. 125)', () => {
+  it('catálogo separa as tabelas Idiomas Padrão e Idiomas Exóticos com os nomes do livro', () => {
+    expect(LANGUAGES.filter(l => !l.exotic).map(l => l.name)).toEqual([
+      'Comum', 'Anão', 'Élfico', 'Gigante', 'Gnômico', 'Goblin', 'Halfling', 'Orc',
+    ])
+    expect(LANGUAGES.filter(l => l.exotic).map(l => l.name)).toEqual([
+      'Abissal', 'Celestial', 'Dialeto Subterrâneo', 'Dracônico', 'Infernal', 'Primordial',
+      'Silvestre', 'Subcomum',
+    ])
+    expect(isExoticLanguage('draconic')).toBe(true)
+    expect(isExoticLanguage('elvish')).toBe(false)
+    expect(isExoticLanguage('nao-existe')).toBe(false)
+  })
+
+  it('humano que escolhe Dracônico na raça: exótico escolhido', () => {
+    const d = draft({ race: 'human', subrace: 'variant-human', raceChoices: { languages: ['draconic'] } })
+    expect(getChosenExoticLanguages(d)).toEqual(['draconic'])
+  })
+
+  it('Dracônico fixo do draconato e Infernal do tiferino não contam: o livro já dá', () => {
+    expect(getChosenExoticLanguages(draft({ race: 'dragonborn', subrace: 'red-dragonborn' }))).toEqual([])
+    expect(getChosenExoticLanguages(draft({ race: 'tiefling' }))).toEqual([])
+  })
+
+  it('Dracônico fixo da Linhagem Dracônica não conta', () => {
+    const d = draft({
+      race: 'human',
+      class: 'sorcerer',
+      classChoices: { ...EMPTY_DRAFT.classChoices, subclass: 'draconic-bloodline' },
+    })
+    expect(getAllGrantedLanguages(d)).toContain('draconic')
+    expect(getChosenExoticLanguages(d)).toEqual([])
+  })
+
+  it('idioma padrão escolhido no antecedente não conta', () => {
+    const d = draft({ race: 'human', background: 'acolyte', backgroundChoices: { languages: ['elvish', 'dwarvish'] } })
+    expect(getChosenExoticLanguages(d)).toEqual([])
+  })
+
+  it('pega exóticos do antecedente, do Domínio do Conhecimento e do Poliglota', () => {
+    const d = draft({
+      race: 'human',
+      subrace: 'variant-human',
+      raceChoices: { feat: 'poliglota' },
+      featSelections: { poliglota: { languages: ['sylvan', 'elvish', 'deep-speech'] } },
+      background: 'acolyte',
+      backgroundChoices: { languages: ['celestial', 'giant'] },
+      class: 'cleric',
+      classChoices: {
+        ...EMPTY_DRAFT.classChoices,
+        subclass: 'knowledge-domain',
+        subclassExtras: { languages: ['abyssal', 'orc'] },
+      },
+    })
+    expect(getChosenExoticLanguages(d).sort()).toEqual(['abyssal', 'celestial', 'deep-speech', 'sylvan'])
+  })
+
+  it('ficha marca o exótico escolhido com "*" e liga a nota; o fixo sai sem marca', () => {
+    const humano = getLanguageLabels(draft({
+      race: 'human', subrace: 'variant-human', raceChoices: { languages: ['draconic'] },
+    }))
+    expect(humano.labels).toEqual(['Comum', 'Dracônico*'])
+    expect(humano.hasExoticNote).toBe(true)
+    expect(EXOTIC_LANGUAGE_NOTE).toBe('* idioma exótico: requer permissão do Mestre (p. 125)')
+
+    const draconato = getLanguageLabels(draft({ race: 'dragonborn', subrace: 'red-dragonborn' }))
+    expect(draconato.labels).toEqual(['Comum', 'Dracônico'])
+    expect(draconato.hasExoticNote).toBe(false)
   })
 })
 

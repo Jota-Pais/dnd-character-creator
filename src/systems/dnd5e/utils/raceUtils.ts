@@ -30,24 +30,36 @@ export const SKILLS = [
   { id: 'survival', name: 'Sobrevivência' },
 ] as const
 
-export const LANGUAGES = [
-  { id: 'common', name: 'Comum' },
-  { id: 'dwarvish', name: 'Anão' },
-  { id: 'elvish', name: 'Élfico' },
-  { id: 'giant', name: 'Gigante' },
-  { id: 'gnomish', name: 'Gnômico' },
-  { id: 'goblin', name: 'Goblin' },
-  { id: 'halfling', name: 'Halfling' },
-  { id: 'orc', name: 'Orc' },
-  { id: 'abyssal', name: 'Abissal' },
-  { id: 'celestial', name: 'Celestial' },
-  { id: 'draconic', name: 'Dracônico' },
-  { id: 'deep-speech', name: 'Fala das Profundezas' },
-  { id: 'infernal', name: 'Infernal' },
-  { id: 'primordial', name: 'Primordial' },
-  { id: 'sylvan', name: 'Silvano' },
-  { id: 'undercommon', name: 'Subcomum' },
-] as const
+export type Language = {
+  id: string
+  name: string
+  /**
+   * Da tabela Idiomas Exóticos (p. 125): só se escolhe com a permissão do Mestre. Os da tabela
+   * Idiomas Padrão são a escolha livre. Os ids são estáveis; os nomes seguem o livro em pt-BR.
+   */
+  exotic: boolean
+}
+
+export const LANGUAGES: readonly Language[] = [
+  // Idiomas Padrão (p. 125)
+  { id: 'common', name: 'Comum', exotic: false },
+  { id: 'dwarvish', name: 'Anão', exotic: false },
+  { id: 'elvish', name: 'Élfico', exotic: false },
+  { id: 'giant', name: 'Gigante', exotic: false },
+  { id: 'gnomish', name: 'Gnômico', exotic: false },
+  { id: 'goblin', name: 'Goblin', exotic: false },
+  { id: 'halfling', name: 'Halfling', exotic: false },
+  { id: 'orc', name: 'Orc', exotic: false },
+  // Idiomas Exóticos (p. 125)
+  { id: 'abyssal', name: 'Abissal', exotic: true },
+  { id: 'celestial', name: 'Celestial', exotic: true },
+  { id: 'deep-speech', name: 'Dialeto Subterrâneo', exotic: true },
+  { id: 'draconic', name: 'Dracônico', exotic: true },
+  { id: 'infernal', name: 'Infernal', exotic: true },
+  { id: 'primordial', name: 'Primordial', exotic: true },
+  { id: 'sylvan', name: 'Silvestre', exotic: true },
+  { id: 'undercommon', name: 'Subcomum', exotic: true },
+]
 
 export type RacePresentation = {
   emoji: string
@@ -112,6 +124,16 @@ export function getAllChoices(race: Race, subrace: Subrace | null): RaceChoice[]
 
 const SKILL_NAMES: Record<string, string> = Object.fromEntries(SKILLS.map(s => [s.id, s.name]))
 const LANGUAGE_NAMES: Record<string, string> = Object.fromEntries(LANGUAGES.map(l => [l.id, l.name]))
+
+/** Nome do idioma na ficha ("Dracônico"); o próprio id se não estiver no catálogo. */
+export function getLanguageName(id: string): string {
+  return LANGUAGE_NAMES[id] ?? id
+}
+
+/** Idioma da tabela Idiomas Exóticos (p. 125) — escolhê-lo depende da permissão do Mestre. */
+export function isExoticLanguage(id: string): boolean {
+  return LANGUAGES.some(l => l.id === id && l.exotic)
+}
 const SPELL_NAMES: Record<string, string> = Object.fromEntries((spellsData as Spell[]).map(s => [s.id, s.name]))
 
 /**

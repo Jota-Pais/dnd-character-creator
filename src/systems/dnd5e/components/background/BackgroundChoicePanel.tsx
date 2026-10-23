@@ -1,10 +1,11 @@
 import type { BackgroundChoice } from '../../types/background'
 import type { BackgroundChoiceSelections } from '../../types/character'
 import {
-  LANGUAGES, getToolsByCategory, TOOL_CHOICE_LABEL, getChosenBackgroundItem,
+  getToolsByCategory, TOOL_CHOICE_LABEL, getChosenBackgroundItem,
   type BackgroundItemChoice,
 } from '../../utils/backgroundUtils'
 import { getItemName } from '../../utils/equipmentUtils'
+import { LanguagePicker } from '../common/LanguagePicker'
 
 type Props = {
   choices: BackgroundChoice[]
@@ -163,43 +164,13 @@ type LanguageFieldProps = {
 }
 
 function LanguageField({ count, accent, selected, excluded, onSelect }: LanguageFieldProps) {
-  function toggle(langId: string) {
-    if (selected.includes(langId)) {
-      onSelect(selected.filter(l => l !== langId))
-    } else if (selected.length < count) {
-      onSelect([...selected, langId])
-    }
-  }
-
   return (
     <div>
       <p className="text-sm font-semibold text-parchment-300 mb-2 font-fantasy">
         Escolha {count} idioma{count > 1 ? 's' : ''}{' '}
         <span className="text-parchment-600 font-normal">({selected.length}/{count})</span>
       </p>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-        {LANGUAGES.map(lang => {
-          const isExcluded = excluded?.includes(lang.id) ?? false
-          const isSelected = selected.includes(lang.id)
-          const isDisabled = isExcluded || (!isSelected && selected.length >= count)
-          return (
-            <button
-              key={lang.id}
-              onClick={() => toggle(lang.id)}
-              disabled={isDisabled}
-              className="px-2 py-1.5 rounded-lg border text-xs text-left transition-all"
-              style={{
-                borderColor: isSelected ? accent : isExcluded ? '#1e150a' : 'rgba(58, 38, 20, 0.6)',
-                backgroundColor: isSelected ? `${accent}15` : 'transparent',
-                color: isSelected ? accent : isExcluded ? '#3a2614' : isDisabled ? '#5a3e24' : '#9a7650',
-                cursor: isDisabled ? 'not-allowed' : 'pointer',
-              }}
-            >
-              {isExcluded ? '✓ ' : ''}{lang.name}
-            </button>
-          )
-        })}
-      </div>
+      <LanguagePicker count={count} selected={selected} excluded={excluded} accent={accent} onChange={onSelect} />
     </div>
   )
 }

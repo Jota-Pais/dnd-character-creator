@@ -5,7 +5,8 @@ import {
   getExcludedSkillsForFeat, getExcludedToolsForFeat,
   getExcludedLanguagesForFeat, getExcludedWeaponsForFeat,
 } from '../../utils/proficiencyUtils'
-import { SKILLS, LANGUAGES } from '../../utils/raceUtils'
+import { SKILLS } from '../../utils/raceUtils'
+import { LanguagePicker } from './LanguagePicker'
 import { ALL_WEAPONS } from '../../utils/equipmentUtils'
 import toolsData from '../../data/tools.json'
 
@@ -59,7 +60,7 @@ export function FeatChoiceSlots({ accent, featIds }: { accent: string; featIds?:
 }
 
 type Option = { id: string; name: string }
-/** SKILLS e LANGUAGES são `as const`; o picker só lê, então basta afrouxar a leitura. */
+/** SKILLS é `as const`; o picker só lê, então basta afrouxar a leitura. */
 type OptionList = readonly Option[]
 
 function SlotBody({
@@ -110,13 +111,12 @@ function SlotBody({
     return (
       <>
         <Header label={`Idiomas (${selected.length}/${choices.languageChoice.count})`} />
-        <Group
-          options={LANGUAGES}
+        <LanguagePicker
+          count={choices.languageChoice.count}
           selected={selected}
-          excluded={new Set(getExcludedLanguagesForFeat(draft, feat.id))}
-          full={selected.length >= choices.languageChoice.count}
+          excluded={getExcludedLanguagesForFeat(draft, feat.id)}
           accent={accent}
-          onToggle={id => onChange({ languages: toggle(selected, id) })}
+          onChange={languages => onChange({ languages })}
         />
       </>
     )

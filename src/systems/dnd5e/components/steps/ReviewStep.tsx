@@ -1,7 +1,7 @@
 import { useCharacterStore } from '../../stores/characterStore'
 import {
   getRace, getSubrace, getEffectiveSpeed,
-  getEffectiveDarkvision, RACE_PRESENTATION, LANGUAGES, getAvailableInnateSpells, getEffectiveTraitsWithChoices,
+  getEffectiveDarkvision, RACE_PRESENTATION, getAvailableInnateSpells, getEffectiveTraitsWithChoices,
 } from '../../utils/raceUtils'
 import { getFinalAbilityScores, getCharacterFeats, getSheetClassFeatures } from '../../utils/asiUtils'
 import { RuleText } from '../common/RuleText'
@@ -25,8 +25,8 @@ import {
 } from '../../utils/equipmentUtils'
 import { getUnarmoredDefense, calculateArmorClass } from '../../utils/armorClassUtils'
 import {
-  getAllGrantedTools, getAllGrantedLanguages, getExpertiseTools, getSkillChecks, getPassiveScore,
-  getArmorProficiencyLabels, getWeaponProficiencyLabels, getUnproficientArmor,
+  getAllGrantedTools, getLanguageLabels, EXOTIC_LANGUAGE_NOTE, getExpertiseTools, getSkillChecks,
+  getPassiveScore, getArmorProficiencyLabels, getWeaponProficiencyLabels, getUnproficientArmor,
 } from '../../utils/proficiencyUtils'
 import { getProgressionSlotsUpToLevel } from '../../utils/progressionChoiceUtils'
 import {
@@ -52,8 +52,6 @@ import type { TermId } from '../../utils/glossary'
 import type { AbilityScore } from '../../types/race'
 import type { Background, BackgroundChoiceSelections } from '../../types/background'
 import type { HpMethod } from '../../types/character'
-
-const LANG_NAME = Object.fromEntries(LANGUAGES.map(l => [l.id, l.name]))
 
 export function ReviewStep() {
   const draft = useCharacterStore(state => state.draft)
@@ -129,7 +127,8 @@ export function ReviewStep() {
   const halfProficiency = getCheckProficiencyBonus(draft, 'none')
 
   // Languages & tools
-  const allLanguages = getAllGrantedLanguages(draft)
+  // Exótico escolhido sai com "*" e a nota da p. 125 — o mesmo texto do PDF.
+  const { labels: allLanguages, hasExoticNote } = getLanguageLabels(draft)
   const armorProficiencies = getArmorProficiencyLabels(draft)
   const weaponProficiencies = getWeaponProficiencyLabels(draft)
   const unproficientArmor = getUnproficientArmor(draft)
@@ -453,10 +452,13 @@ export function ReviewStep() {
                   Idiomas
                 </p>
                 <div className="flex flex-wrap gap-1.5">
-                  {allLanguages.map(id => (
-                    <Chip key={id} label={LANG_NAME[id] ?? id} />
+                  {allLanguages.map(label => (
+                    <Chip key={label} label={label} />
                   ))}
                 </div>
+                {hasExoticNote && (
+                  <p className="text-xs text-parchment-500 mt-1.5">{EXOTIC_LANGUAGE_NOTE}</p>
+                )}
               </div>
             )}
           </div>

@@ -12,7 +12,8 @@ import { ClassSubclassCard } from './ClassSubclassCard'
 import { ProgressionOptionCard } from './ProgressionOptionCard'
 import { InfoTooltip } from '../common/InfoTooltip'
 import type { TermId } from '../../utils/glossary'
-import { SKILLS, LANGUAGES } from '../../utils/raceUtils'
+import { SKILLS, getLanguageName } from '../../utils/raceUtils'
+import { LanguagePicker } from '../common/LanguagePicker'
 import toolsData from '../../data/tools.json'
 import { getProgressionSlotsUpToLevel, type ProgressionSlot } from '../../utils/progressionChoiceUtils'
 import { getProgressionOptions, type ProgressionOption } from '../../utils/progressionOptions'
@@ -352,10 +353,7 @@ function SubclassExtrasPanel({
       w === 'martial' ? 'Armas Marciais' : w === 'simple' ? 'Armas Simples' : w
     ),
     ...extras.grantedTools.map(t => ALL_TOOLS.find(x => x.id === t)?.name ?? t),
-    ...extras.grantedLanguages.map(l => {
-      const lang = LANGUAGES.find(x => x.id === l)
-      return lang?.name ?? l
-    }),
+    ...extras.grantedLanguages.map(getLanguageName),
   ]
 
   if (!hasChoices && grantedInfo.length === 0) return null
@@ -421,33 +419,12 @@ function SubclassExtrasPanel({
           title={`Idiomas (${(subclassExtras.languages ?? []).length}/${extras.languages.count})`}
           accent={accent}
         >
-          <div className="flex flex-wrap gap-1.5">
-            {LANGUAGES.map(lang => {
-              const selected = (subclassExtras.languages ?? []).includes(lang.id)
-              const disabled = !selected && (subclassExtras.languages ?? []).length >= extras.languages!.count
-              return (
-                <button
-                  key={lang.id}
-                  disabled={disabled}
-                  onClick={() => {
-                    const current = subclassExtras.languages ?? []
-                    onChangeExtras({
-                      languages: selected ? current.filter(l => l !== lang.id) : [...current, lang.id],
-                    })
-                  }}
-                  className="px-2.5 py-1 rounded-lg text-xs font-semibold transition-all"
-                  style={{
-                    backgroundColor: selected ? accent : disabled ? 'rgba(30,20,8,0.4)' : 'rgba(40,28,12,0.8)',
-                    color: selected ? '#0a0704' : disabled ? '#4a3520' : '#c4a97a',
-                    border: selected ? 'none' : `1px solid ${disabled ? 'rgba(60,40,20,0.3)' : 'rgba(90,62,36,0.5)'}`,
-                    cursor: disabled ? 'not-allowed' : 'pointer',
-                  }}
-                >
-                  {lang.name}
-                </button>
-              )
-            })}
-          </div>
+          <LanguagePicker
+            count={extras.languages.count}
+            selected={subclassExtras.languages ?? []}
+            accent={accent}
+            onChange={languages => onChangeExtras({ languages })}
+          />
         </ChoiceSection>
       )}
 

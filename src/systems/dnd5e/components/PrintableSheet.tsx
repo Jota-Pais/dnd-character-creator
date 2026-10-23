@@ -1,7 +1,7 @@
 import { useCharacterStore } from '../stores/characterStore'
 import type { AbilityScore } from '../types/race'
 import {
-  getRace, getSubrace, getEffectiveSpeed, getEffectiveDarkvision, LANGUAGES, SKILLS,
+  getRace, getSubrace, getEffectiveSpeed, getEffectiveDarkvision, SKILLS,
   getAvailableInnateSpells, getEffectiveTraitsWithChoices, TOOL_NAMES,
 } from '../utils/raceUtils'
 import {
@@ -17,8 +17,8 @@ import {
 } from '../utils/abilityScoreUtils'
 import { getFinalAbilityScores, getCharacterFeats, getSheetClassFeatures } from '../utils/asiUtils'
 import {
-  getAllGrantedTools, getAllGrantedLanguages, getExpertiseTools, getSkillChecks, getPassiveScore,
-  getArmorProficiencyLabels, getWeaponProficiencyLabels, getUnproficientArmor, hasWeaponProficiency,
+  getAllGrantedTools, getLanguageLabels, EXOTIC_LANGUAGE_NOTE, getExpertiseTools, getSkillChecks,
+  getPassiveScore, getArmorProficiencyLabels, getWeaponProficiencyLabels, getUnproficientArmor, hasWeaponProficiency,
 } from '../utils/proficiencyUtils'
 import { calculateArmorClass, getUnarmoredDefense } from '../utils/armorClassUtils'
 import {
@@ -41,8 +41,6 @@ import {
 import type { CharacterDraft } from '../types/character'
 import type { Weapon } from '../types/equipment'
 import type { GameClass } from '../types/class'
-
-const LANG_NAME = Object.fromEntries(LANGUAGES.map(l => [l.id, l.name]))
 
 function metersLabel(feet: number): string {
   const m = feet * 0.3
@@ -203,7 +201,8 @@ export function PrintableSheet() {
   const allTools = getAllGrantedTools(draft)
   const expertiseTools = getExpertiseTools(draft)
 
-  const languages = getAllGrantedLanguages(draft)
+  // Exótico escolhido sai com "*" e a nota da p. 125 — o mesmo texto da Revisão.
+  const { labels: languages, hasExoticNote } = getLanguageLabels(draft)
   const armorProficiencies = getArmorProficiencyLabels(draft)
   const weaponProficiencies = getWeaponProficiencyLabels(draft)
   const unproficientArmor = getUnproficientArmor(draft)
@@ -512,7 +511,8 @@ export function PrintableSheet() {
         {armorProficiencies.length > 0 && <p className="text-xs mb-0.5"><span className="text-gray-600">Armaduras: </span>{armorProficiencies.join(', ')}</p>}
         {weaponProficiencies.length > 0 && <p className="text-xs mb-0.5"><span className="text-gray-600">Armas: </span>{weaponProficiencies.join(', ')}</p>}
         {allTools.length > 0 && <p className="text-xs mb-0.5"><span className="text-gray-600">Ferramentas: </span>{allTools.map(t => `${TOOL_NAMES[t] ?? getToolName(t)}${expertiseTools.includes(t) ? ' (bônus dobrado)' : ''}`).join(', ')}</p>}
-        <p className="text-xs"><span className="text-gray-600">Idiomas: </span>{languages.map(l => LANG_NAME[l] ?? l).join(', ') || '—'}</p>
+        <p className="text-xs"><span className="text-gray-600">Idiomas: </span>{languages.join(', ') || '—'}</p>
+        {hasExoticNote && <p className="text-[10px] text-gray-600">{EXOTIC_LANGUAGE_NOTE}</p>}
         {/* p. 144 — a ficha vai pra mesa, então o custo de usar armadura sem proficiência vai junto. */}
         {unproficientArmor.length > 0 && (
           <p className="text-xs mt-1 border border-gray-400 px-1.5 py-1">

@@ -4,7 +4,7 @@ import type { AbilityScore } from '../types/race'
 import type { Armor, ArmorCategory, Weapon } from '../types/equipment'
 import {
   getRace, getSubrace, getRaceGrantedSkills, getRaceGrantedTools,
-  getEffectiveGrantedProficiencies,
+  getEffectiveGrantedProficiencies, getLanguageName, isExoticLanguage,
 } from './raceUtils'
 import { getClass, getSubclass, getExpertiseCount } from './classUtils'
 import { allClassEntries } from './multiclassUtils'
@@ -511,4 +511,44 @@ export function getExcludedLanguages(draft: CharacterDraft, source: ProficiencyS
 export function getAllGrantedLanguages(draft: CharacterDraft): string[] {
   const b = getLanguagesBySource(draft)
   return uniq([...b.race, ...b.class, ...b.background, ...getFeatGrantedLanguages(draft)])
+}
+
+/**
+ * Idiomas exóticos que o jogador ESCOLHEU — raça (humano, alto elfo, meio-elfo), antecedente,
+ * subclasse (Domínio do Conhecimento) e talento (Poliglota). Pelo livro (p. 125) a escolha sai
+ * da tabela Idiomas Padrão; um exótico só com a permissão do Mestre. A ficha deixa escolher e
+ * avisa, em vez de vetar.
+ *
+ * Os concedidos fixos não contam (Dracônico do draconato, Infernal do tiferino, Dracônico da
+ * Linhagem Dracônica): esses o livro já dá, sem depender do Mestre.
+ */
+export function getChosenExoticLanguages(draft: CharacterDraft): string[] {
+  const race = draft.race ? getRace(draft.race) : undefined
+  const entries = classEntries(draft)
+  const fixed = new Set([
+    ...(race?.grantedLanguages ?? []),
+    ...entries.flatMap(({ classId, choices }) => subclassExtrasOf(classId, choices)?.grantedLanguages ?? []),
+  ])
+  const chosen = [
+    ...(draft.raceChoices.languages ?? []),
+    ...entries.flatMap(({ choices }) => choices.subclassExtras.languages ?? []),
+    ...(draft.backgroundChoices.languages ?? []),
+    ...getFeatGrantedLanguages(draft),
+  ]
+  return uniq(chosen).filter(id => isExoticLanguage(id) && !fixed.has(id))
+}
+
+/** Nota que acompanha a marca "*" dos idiomas de getLanguageLabels, na Revisão e no PDF. */
+export const EXOTIC_LANGUAGE_NOTE = '* idioma exótico: requer permissão do Mestre (p. 125)'
+
+/**
+ * Os idiomas da ficha em texto, como a Revisão e o PDF mostram: o exótico escolhido leva "*"
+ * ("Dracônico*") e `hasExoticNote` diz se a EXOTIC_LANGUAGE_NOTE deve acompanhar a lista.
+ */
+export function getLanguageLabels(draft: CharacterDraft): { labels: string[]; hasExoticNote: boolean } {
+  const exotic = new Set(getChosenExoticLanguages(draft))
+  return {
+    labels: getAllGrantedLanguages(draft).map(id => `${getLanguageName(id)}${exotic.has(id) ? '*' : ''}`),
+    hasExoticNote: exotic.size > 0,
+  }
 }

@@ -24,6 +24,11 @@
         "description": "Vantagem em testes de resistência contra veneno e resistência a dano de veneno."
       },
       {
+        "name": "Proficiência com Ferramentas",
+        "description": "Você tem proficiência em uma ferramenta de artesão à sua escolha entre: ferramentas de ferreiro, suprimentos de cervejeiro ou ferramentas de pedreiro.",
+        "choice": "tool"
+      },
+      {
         "name": "Especialização em Rochas",
         "description": "Dobra o bônus de proficiência em testes de Inteligência (História) sobre origens de trabalho em pedra."
       }
@@ -105,7 +110,13 @@
         "traits": [
           {
             "name": "Truque",
-            "description": "Você conhece um truque da lista de magos, usando Inteligência como atributo de conjuração."
+            "description": "Você conhece um truque, à sua escolha, da lista de truques do mago. Inteligência é a habilidade usada para conjurar este truque.",
+            "choice": "cantrip"
+          },
+          {
+            "name": "Idioma Adicional",
+            "description": "Você pode falar, ler e escrever um idioma adicional à sua escolha.",
+            "choice": "language"
           }
         ],
         "overrides": {}
@@ -246,6 +257,11 @@
       {
         "name": "Versatilidade",
         "description": "Os humanos não possuem traços físicos ou mágicos especializados, compensando com o aumento em todas as suas habilidades básicas."
+      },
+      {
+        "name": "Idiomas",
+        "description": "Você pode falar, ler e escrever Comum e outro idioma adicional, à sua escolha.",
+        "choice": "language"
       }
     ],
     "subraces": [
@@ -263,8 +279,24 @@
         "grantedProficiencies": [],
         "traits": [
           {
+            "name": "Aumento no Valor de Habilidade",
+            "description": "Dois valores de habilidade, à sua escolha, aumentam em 1.",
+            "choice": "ability"
+          },
+          {
+            "name": "Perícia",
+            "description": "Você ganha proficiência em uma perícia, à sua escolha.",
+            "choice": "skill"
+          },
+          {
             "name": "Talento",
-            "description": "Você adquire um talento de sua escolha."
+            "description": "Você adquire um talento de sua escolha.",
+            "choice": "feat"
+          },
+          {
+            "name": "Idiomas",
+            "description": "Você pode falar, ler e escrever Comum e outro idioma adicional, à sua escolha.",
+            "choice": "language"
           }
         ],
         "overrides": { "replacesParentTraits": true }
@@ -506,12 +538,23 @@
     "grantedProficiencies": [],
     "traits": [
       {
+        "name": "Aumento no Valor de Habilidade",
+        "description": "Seu valor de Carisma aumenta em 2 e outros dois valores de habilidade, à sua escolha, aumentam em 1.",
+        "choice": "ability"
+      },
+      {
         "name": "Ancestral Feérico",
         "description": "Vantagem em testes de resistência contra encantamento e magia não pode colocar você para dormir."
       },
       {
         "name": "Versatilidade em Perícia",
-        "description": "Você ganha proficiência em duas perícias à sua escolha."
+        "description": "Você ganha proficiência em duas perícias, à sua escolha.",
+        "choice": "skill"
+      },
+      {
+        "name": "Idiomas",
+        "description": "Você sabe falar, ler e escrever Comum, Élfico e um idioma adicional, à sua escolha.",
+        "choice": "language"
       }
     ],
     "subraces": []

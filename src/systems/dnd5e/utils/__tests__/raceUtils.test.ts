@@ -9,8 +9,13 @@ import {
   getEffectiveInnateSpells,
   isRaceStepComplete,
   getEffectiveTraits,
+  getAllChoices,
+  describeRaceChoice,
+  getEffectiveTraitsWithChoices,
+  RACES,
 } from '../raceUtils'
 import type { RaceChoiceSelections } from '../../types/character'
+import type { RaceChoice } from '../../types/race'
 
 const dwarf = getRace('dwarf')!
 const hillDwarf = getSubrace(dwarf, 'hill-dwarf')!
@@ -173,9 +178,105 @@ describe('getEffectiveTraits', () => {
     expect(names).toEqual([...dwarf.traits, ...hillDwarf.traits].map(t => t.name))
   })
 
-  it('humano variante não herda a Versatilidade (o +1 em tudo) do humano comum', () => {
-    const names = getEffectiveTraits(human, variantHuman).map(t => t.name)
-    expect(names).not.toContain('Versatilidade')
-    expect(names).toContain('Talento')
+  // p. 31: os traços alternativos (Aumento no Valor de Habilidade, Perícia, Talento) substituem o
+  // Aumento no Valor de Habilidade e as Perícias do humano; os Idiomas continuam.
+  it('humano variante tem os três traços alternativos do livro + Idiomas, sem a Versatilidade', () => {
+    const traits = getEffectiveTraits(human, variantHuman)
+    expect(traits.map(t => t.name)).toEqual(['Aumento no Valor de Habilidade', 'Perícia', 'Talento', 'Idiomas'])
+    expect(traits.map(t => t.choice)).toEqual(['ability', 'skill', 'feat', 'language'])
+  })
+})
+
+describe('integridade dos dados: escolha da raça ↔ traço', () => {
+  // A raça sozinha (ex.: humano comum) e cada sub-raça dela.
+  const combos = RACES.flatMap(race => [
+    { race, subrace: null, label: race.id },
+    ...race.subraces.map(subrace => ({ race, subrace, label: `${race.id}/${subrace.id}` })),
+  ])
+
+  it.each(combos)('$label: cada escolha tem exatamente um traço efetivo que a abre', ({ race, subrace }) => {
+    const traits = getEffectiveTraits(race, subrace)
+    for (const choice of getAllChoices(race, subrace)) {
+      expect(traits.filter(t => t.choice === choice.kind), choice.kind).toHaveLength(1)
+    }
+  })
+
+  it.each(combos)('$label: todo traço com choice aponta para uma escolha que existe', ({ race, subrace }) => {
+    const kinds = getAllChoices(race, subrace).map(c => c.kind)
+    for (const t of getEffectiveTraits(race, subrace).filter(t => t.choice)) {
+      expect(kinds, t.name).toContain(t.choice)
+    }
+  })
+
+  // As seleções do draft são um campo por tipo (raceChoices.languages etc.): duas escolhas do mesmo
+  // tipo na mesma combinação dividiriam o mesmo campo.
+  it.each(combos)('$label: no máximo uma escolha por tipo', ({ race, subrace }) => {
+    const kinds = getAllChoices(race, subrace).map(c => c.kind)
+    expect(new Set(kinds).size).toBe(kinds.length)
+  })
+})
+
+describe('describeRaceChoice', () => {
+  const choiceOf = (kind: RaceChoice['kind'], r = human, s: typeof variantHuman | null = variantHuman) =>
+    getAllChoices(r, s).find(c => c.kind === kind)!
+
+  it('atributos: "+1 CAR, +1 SAB"', () =>
+    expect(describeRaceChoice(choiceOf('ability'), { abilityBonuses: ['CHA', 'WIS'] })).toBe('+1 CAR, +1 SAB'))
+
+  it('perícia e idioma pelo nome em português', () => {
+    expect(describeRaceChoice(choiceOf('skill'), { skills: ['persuasion'] })).toBe('Persuasão')
+    expect(describeRaceChoice(choiceOf('language'), { languages: ['draconic'] })).toBe('Dracônico')
+  })
+
+  it('perícias do meio-elfo: as duas, na ordem escolhida', () =>
+    expect(describeRaceChoice(choiceOf('skill', halfElf, null), { skills: ['stealth', 'insight'] })).toBe('Furtividade, Intuição'))
+
+  it('não passa do count da escolha', () =>
+    expect(describeRaceChoice(choiceOf('skill'), { skills: ['persuasion', 'stealth'] })).toBe('Persuasão'))
+
+  it('talento comum só com o nome; meio-talento com o +1 escolhido', () => {
+    expect(describeRaceChoice(choiceOf('feat'), { feat: 'alerta' })).toBe('Alerta')
+    expect(describeRaceChoice(choiceOf('feat'), { feat: 'ator', featAbility: 'CHA' })).toBe('Ator (+1 CAR)')
+  })
+
+  it('meio-talento com atributo fora das opções do talento não mostra o +1', () =>
+    expect(describeRaceChoice(choiceOf('feat'), { feat: 'ator', featAbility: 'STR' })).toBe('Ator'))
+
+  it('ferramenta do anão e truque do alto elfo', () => {
+    expect(describeRaceChoice(choiceOf('tool', dwarf, hillDwarf), { tools: ['brewers-tools'] })).toBe('Suprimentos de Cervejeiro')
+    expect(describeRaceChoice(choiceOf('cantrip', elf, highElf), { cantrip: 'minor-illusion' })).toBe('Ilusão Menor')
+  })
+
+  it('null quando nada foi escolhido', () => {
+    expect(describeRaceChoice(choiceOf('ability'), {})).toBeNull()
+    expect(describeRaceChoice(choiceOf('feat'), {})).toBeNull()
+    expect(describeRaceChoice(choiceOf('feat'), { feat: 'nao-existe' })).toBeNull()
+    expect(describeRaceChoice(choiceOf('cantrip', elf, highElf), {})).toBeNull()
+  })
+})
+
+describe('getEffectiveTraitsWithChoices', () => {
+  it('bardo Humano Variante: cada traço com escolha mostra o que foi escolhido', () => {
+    const view = getEffectiveTraitsWithChoices(human, variantHuman, {
+      abilityBonuses: ['CHA', 'WIS'], skills: ['persuasion'], languages: ['draconic'],
+      feat: 'ator', featAbility: 'CHA',
+    })
+    expect(view.map(v => [v.trait.name, v.chosen])).toEqual([
+      ['Aumento no Valor de Habilidade', '+1 CAR, +1 SAB'],
+      ['Perícia', 'Persuasão'],
+      ['Talento', 'Ator (+1 CAR)'],
+      ['Idiomas', 'Dracônico'],
+    ])
+  })
+
+  it('traço sem escolha fica com chosen null (Resiliência Anã)', () => {
+    const view = getEffectiveTraitsWithChoices(dwarf, hillDwarf, { tools: ['smiths-tools'] })
+    expect(view.find(v => v.trait.name === 'Resiliência Anã')?.chosen).toBeNull()
+    expect(view.find(v => v.trait.name === 'Proficiência com Ferramentas')?.chosen).toBe('Ferramentas de Ferreiro')
+  })
+
+  it('humano comum mostra o idioma adicional escolhido', () => {
+    const view = getEffectiveTraitsWithChoices(human, null, { languages: ['elvish'] })
+    expect(view.find(v => v.trait.name === 'Idiomas')?.chosen).toBe('Élfico')
   })
 })

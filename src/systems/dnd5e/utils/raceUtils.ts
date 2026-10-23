@@ -1,7 +1,11 @@
 import type { Race, Subrace, AbilityBonus, RaceChoice, AbilityChoice, GrantedProficiency, InnateSpell, RacialTrait } from '../types/race'
 import type { RaceChoiceSelections } from '../types/character'
+import type { Spell } from '../types/spell'
 import racesData from '../data/races.json'
+// Dado bruto, não spellUtils: spellUtils → classUtils → raceUtils fecharia um ciclo de import.
+import spellsData from '../data/spells.json'
 import { getFeat } from './featUtils'
+import { ABILITY_LABELS } from './abilityScoreUtils'
 
 export const RACES: Race[] = racesData as Race[]
 
@@ -66,7 +70,7 @@ export const RACE_PRESENTATION: Record<string, RacePresentation> = {
 
 export const TOOL_NAMES: Record<string, string> = {
   'smiths-tools': 'Ferramentas de Ferreiro',
-  'brewers-tools': 'Ferramentas de Cervejeiro',
+  'brewers-tools': 'Suprimentos de Cervejeiro', // p. 20 e tools.json: "suprimentos de cervejeiro"
   'masons-tools': 'Ferramentas de Pedreiro',
   'tinkers-tools': 'Ferramentas de Engenhoqueiro',
 }
@@ -104,6 +108,71 @@ export function getAllChoices(race: Race, subrace: Subrace | null): RaceChoice[]
   const raceChoices = replacesParentTraits(subrace) ? [] : race.choices
   const subraceChoices = subrace?.choices ?? []
   return [...raceChoices, ...subraceChoices]
+}
+
+const SKILL_NAMES: Record<string, string> = Object.fromEntries(SKILLS.map(s => [s.id, s.name]))
+const LANGUAGE_NAMES: Record<string, string> = Object.fromEntries(LANGUAGES.map(l => [l.id, l.name]))
+const SPELL_NAMES: Record<string, string> = Object.fromEntries((spellsData as Spell[]).map(s => [s.id, s.name]))
+
+/**
+ * O que o jogador escolheu numa escolha da raça, em texto de ficha: "+1 CAR, +1 SAB",
+ * "Persuasão", "Dracônico", "Ator (+1 CAR)", "Suprimentos de Cervejeiro", "Ilusão Menor".
+ * `null` quando nada foi escolhido ainda. Só lê as seleções até o `count` da escolha — o mesmo
+ * corte que getEffectiveAbilityBonuses aplica aos números.
+ */
+export function describeRaceChoice(choice: RaceChoice, selections: RaceChoiceSelections): string | null {
+  const pick = <T,>(ids: T[] | undefined): T[] => (ids ?? []).slice(0, choice.count)
+  let parts: string[]
+  switch (choice.kind) {
+    case 'ability':
+      parts = pick(selections.abilityBonuses).map(a => `+${choice.value} ${ABILITY_LABELS[a].short}`)
+      break
+    case 'skill':
+      parts = pick(selections.skills).map(id => SKILL_NAMES[id] ?? id)
+      break
+    case 'language':
+      parts = pick(selections.languages).map(id => LANGUAGE_NAMES[id] ?? id)
+      break
+    case 'tool':
+      parts = pick(selections.tools).map(id => TOOL_NAMES[id] ?? id)
+      break
+    case 'cantrip':
+      parts = selections.cantrip ? [SPELL_NAMES[selections.cantrip] ?? selections.cantrip] : []
+      break
+    case 'feat': {
+      const feat = selections.feat ? getFeat(selections.feat) : undefined
+      if (!feat) return null
+      // +1 do meio-talento só quando o atributo é uma opção válida do talento (como em getRaceFeatBonus).
+      const ab = selections.featAbility
+      const half = ab && feat.abilityIncrease?.includes(ab) ? ` (+1 ${ABILITY_LABELS[ab].short})` : ''
+      parts = [`${feat.name}${half}`]
+      break
+    }
+  }
+  return parts.length > 0 ? parts.join(', ') : null
+}
+
+export type RacialTraitView = {
+  trait: RacialTrait
+  /** O que foi escolhido na escolha que o traço abre (null se o traço não abre escolha ou ainda vazia). */
+  chosen: string | null
+}
+
+/**
+ * Traços efetivos com a escolha feita em cada um — o que a ficha imprimível e a Revisão mostram
+ * ("Perícia. Você ganha proficiência... Escolha: Persuasão"). Cada traço com `choice` aponta para
+ * a escolha da raça/sub-raça do mesmo tipo (uma por tipo; ver o teste de integridade dos dados).
+ */
+export function getEffectiveTraitsWithChoices(
+  race: Race,
+  subrace: Subrace | null,
+  selections: RaceChoiceSelections,
+): RacialTraitView[] {
+  const choices = getAllChoices(race, subrace)
+  return getEffectiveTraits(race, subrace).map(trait => {
+    const choice = trait.choice ? choices.find(c => c.kind === trait.choice) : undefined
+    return { trait, chosen: choice ? describeRaceChoice(choice, selections) : null }
+  })
 }
 
 /** Proficiências fixas concedidas pela raça + sub-raça (respeita replacesParentTraits). */

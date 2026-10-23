@@ -1,5 +1,6 @@
 import type { AbilityScore } from '../types/race'
 import type { CharacterDraft, AsiChoice } from '../types/character'
+import type { Feat } from '../types/feat'
 import { getRace, getSubrace, getEffectiveAbilityBonuses } from './raceUtils'
 import { ALL_ABILITY_SCORES } from './abilityScoreUtils'
 import { getFeat } from './featUtils'
@@ -57,6 +58,36 @@ export function getRaceFeatBonus(draft: CharacterDraft): Record<AbilityScore, nu
     bonuses[featAbility] += 1
   }
   return bonuses
+}
+
+export type CharacterFeat = {
+  feat: Feat
+  /** De onde veio, quando não é de um Aprimoramento: o talento racial diz a sub-raça ("Humano (Variante)"). */
+  origin: string | null
+}
+
+/**
+ * Talentos do personagem para a caixa Talentos da ficha e da Revisão: o talento racial (Humano
+ * Variante, com a origem) e os dos Aprimoramentos de todas as classes, sem repetir.
+ */
+export function getCharacterFeats(draft: CharacterDraft): CharacterFeat[] {
+  const result: CharacterFeat[] = []
+  const seen = new Set<string>()
+  const add = (featId: string, origin: string | null) => {
+    const feat = getFeat(featId)
+    if (!feat || seen.has(featId)) return
+    seen.add(featId)
+    result.push({ feat, origin })
+  }
+  if (draft.raceChoices.feat) {
+    const race = draft.race ? getRace(draft.race) : undefined
+    const subrace = race && draft.subrace ? getSubrace(race, draft.subrace) : undefined
+    add(draft.raceChoices.feat, subrace?.name ?? race?.name ?? null)
+  }
+  for (const c of getAllAsiChoices(draft)) {
+    if (c.kind === 'feat' && c.featId) add(c.featId, null)
+  }
+  return result
 }
 
 /**

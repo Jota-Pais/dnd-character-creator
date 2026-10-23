@@ -67,6 +67,12 @@ export type InnateSpell = {
 export type RacialTrait = {
   name: string
   description: string
+  /**
+   * Escolha da raça/sub-raça que este traço abre (ex.: o Idioma Adicional do alto elfo abre a
+   * escolha 'language'). Liga o texto do livro ao que o jogador escolheu, para a ficha dizer
+   * "Escolha: Dracônico" ao lado do traço. Toda escolha da raça tem um traço com este campo.
+   */
+  choice?: RaceChoice['kind']
 }
 
 export type SubraceOverrides = {

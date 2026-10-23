@@ -7,6 +7,7 @@ import {
   isAsiChoiceComplete,
   isImprovementsStepComplete,
   getRacialBonuses,
+  getCharacterFeats,
 } from '../asiUtils'
 import { EMPTY_DRAFT, type CharacterDraft, type AsiChoice } from '../../types/character'
 
@@ -197,5 +198,45 @@ describe('humano variante com meio-talento', () => {
     const d = variante('CHA')
     const base = d.abilityScores.CHA ?? 0
     expect(getFinalAbilityScores(d).CHA).toBe(base + getRacialBonuses(d).CHA)
+  })
+})
+
+describe('getCharacterFeats', () => {
+  it('talento racial vem com a origem (sub-raça); os dos Aprimoramentos sem origem', () => {
+    const d = draft({
+      race: 'human',
+      subrace: 'variant-human',
+      raceChoices: { feat: 'ator', featAbility: 'CHA' },
+      asiChoices: [{ kind: 'feat', featId: 'sortudo' }],
+    })
+    expect(getCharacterFeats(d).map(f => [f.feat.id, f.origin])).toEqual([
+      ['ator', 'Humano (Variante)'],
+      ['sortudo', null],
+    ])
+  })
+
+  it('inclui os talentos das classes adicionais (multiclasse)', () => {
+    const d = draft({
+      asiChoices: [{ kind: 'feat', featId: 'alerta' }],
+      additionalClasses: [{
+        classId: 'fighter', level: 4, classChoices: structuredClone(EMPTY_DRAFT.classChoices), spellChoices: structuredClone(EMPTY_DRAFT.spellChoices),
+        asiChoices: [{ kind: 'feat', featId: 'resiliente', abilities: ['CON'] }], hpRolls: [],
+      }],
+    })
+    expect(getCharacterFeats(d).map(f => f.feat.id)).toEqual(['alerta', 'resiliente'])
+  })
+
+  it('não repete o mesmo talento nem inclui id desconhecido ou espaço vazio', () => {
+    const d = draft({
+      race: 'human',
+      subrace: 'variant-human',
+      raceChoices: { feat: 'alerta' },
+      asiChoices: [{ kind: 'feat', featId: 'alerta' }, { kind: 'feat', featId: '' }, { kind: 'feat', featId: 'nao-existe' }],
+    })
+    expect(getCharacterFeats(d).map(f => [f.feat.id, f.origin])).toEqual([['alerta', 'Humano (Variante)']])
+  })
+
+  it('sem talentos, lista vazia', () => {
+    expect(getCharacterFeats(draft({}))).toEqual([])
   })
 })

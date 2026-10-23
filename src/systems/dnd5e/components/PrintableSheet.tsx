@@ -2,20 +2,20 @@ import { useCharacterStore } from '../stores/characterStore'
 import type { AbilityScore } from '../types/race'
 import {
   getRace, getSubrace, getEffectiveSpeed, getEffectiveDarkvision, LANGUAGES, SKILLS,
-  getAvailableInnateSpells, getEffectiveTraits, TOOL_NAMES,
+  getAvailableInnateSpells, getEffectiveTraitsWithChoices, TOOL_NAMES,
 } from '../utils/raceUtils'
 import {
   getClass, getSubclass, isActiveCaster, getClassFeaturesUpToLevel, FIGHTING_STYLES,
 } from '../utils/classUtils'
 import {
-  allClassEntries, getHitDicePool, getAllAsiChoices, formatClassLevelLabel,
+  allClassEntries, getHitDicePool, formatClassLevelLabel,
 } from '../utils/multiclassUtils'
 import { getBackground, getToolName, resolveBackgroundItems } from '../utils/backgroundUtils'
 import {
   calculateModifier, formatModifier, getProficiencyBonus,
   ALL_ABILITY_SCORES, ABILITY_LABELS,
 } from '../utils/abilityScoreUtils'
-import { getFinalAbilityScores } from '../utils/asiUtils'
+import { getFinalAbilityScores, getCharacterFeats } from '../utils/asiUtils'
 import {
   getAllGrantedTools, getAllGrantedLanguages, getExpertiseTools, getSkillChecks, getPassiveScore,
   getArmorProficiencyLabels, getWeaponProficiencyLabels, getUnproficientArmor, hasWeaponProficiency,
@@ -32,7 +32,6 @@ import {
   getSpell, getSpellSaveDC, formatSpellAttackBonus, getCombinedSpellSlots, getPactSlots,
   getMaxPreparedSpells,
 } from '../utils/spellUtils'
-import { getFeat } from '../utils/featUtils'
 import { RuleText } from './common/RuleText'
 import { getWeaponAttack } from '../utils/weaponFormat'
 import {
@@ -221,9 +220,7 @@ export function PrintableSheet() {
     const sub = ec && e.classChoices.subclass ? getSubclass(ec, e.classChoices.subclass) : null
     return { e, ec, features: ec ? getClassFeaturesUpToLevel(ec, sub ?? null, e.level) : [] }
   })
-  const featsFromAsi = getAllAsiChoices(draft).filter(c => c.kind === 'feat' && c.featId).map(c => (c as { featId: string }).featId)
-  const featIds = [...new Set([...(draft.raceChoices.feat ? [draft.raceChoices.feat] : []), ...featsFromAsi])]
-  const feats = featIds.map(id => getFeat(id)).filter(Boolean)
+  const feats = getCharacterFeats(draft)
   const resourceBlocks = entries
     .map(e => ({ e, resources: getClassResources(e.classId, e.level) }))
     .filter(b => b.resources.length > 0)
@@ -542,8 +539,11 @@ export function PrintableSheet() {
 
       {/* Traços & Features */}
       <Box title="Traços Raciais" className="mb-4">
-        {(race ? getEffectiveTraits(race, subrace ?? null) : []).map(t => (
-          <p key={t.name} className="text-xs mb-1"><strong>{t.name}.</strong> {t.description}</p>
+        {(race ? getEffectiveTraitsWithChoices(race, subrace ?? null, draft.raceChoices) : []).map(({ trait: t, chosen }) => (
+          <p key={t.name} className="text-xs mb-1">
+            <strong>{t.name}.</strong> {t.description}
+            {chosen && <> <span className="text-gray-600">Escolha:</span> <strong>{chosen}</strong></>}
+          </p>
         ))}
       </Box>
 
@@ -604,10 +604,13 @@ export function PrintableSheet() {
 
       {feats.length > 0 && (
         <Box title="Talentos" className="mb-4">
-          {feats.map(f => (
-            <div key={f!.id} className="mb-1">
-              <p className="text-xs"><strong>{f!.name}.</strong></p>
-              <RuleText text={f!.description} className="text-xs" />
+          {feats.map(({ feat: f, origin }) => (
+            <div key={f.id} className="mb-1">
+              <p className="text-xs">
+                <strong>{f.name}.</strong>
+                {origin && <span className="text-gray-600"> Talento racial ({origin})</span>}
+              </p>
+              <RuleText text={f.description} className="text-xs" />
             </div>
           ))}
         </Box>

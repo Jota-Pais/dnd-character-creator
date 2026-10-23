@@ -1,17 +1,16 @@
 import { useCharacterStore } from '../../stores/characterStore'
 import {
   getRace, getSubrace, getEffectiveSpeed,
-  getEffectiveDarkvision, RACE_PRESENTATION, LANGUAGES, getAvailableInnateSpells, getEffectiveTraits,
+  getEffectiveDarkvision, RACE_PRESENTATION, LANGUAGES, getAvailableInnateSpells, getEffectiveTraitsWithChoices,
 } from '../../utils/raceUtils'
-import { getFinalAbilityScores } from '../../utils/asiUtils'
-import { getFeat } from '../../utils/featUtils'
+import { getFinalAbilityScores, getCharacterFeats } from '../../utils/asiUtils'
 import { RuleText } from '../common/RuleText'
 import {
   getClass, getSubclass, CLASS_PRESENTATION,
   isActiveCaster, getClassFeaturesUpToLevel,
 } from '../../utils/classUtils'
 import {
-  allClassEntries, getAllAsiChoices, formatClassLevelLabel,
+  allClassEntries, formatClassLevelLabel,
 } from '../../utils/multiclassUtils'
 import { getClassResources } from '../../utils/classResourceUtils'
 import {
@@ -579,7 +578,7 @@ export function ReviewStep() {
       {race && (
         <Section title="Traços Raciais">
           <div className="space-y-3">
-            {getEffectiveTraits(race, subrace ?? null).map(trait => (
+            {getEffectiveTraitsWithChoices(race, subrace ?? null, draft.raceChoices).map(({ trait, chosen }) => (
               <div key={trait.name}>
                 <span className="text-sm font-semibold font-fantasy text-parchment-200">
                   {trait.name}.{' '}
@@ -587,6 +586,12 @@ export function ReviewStep() {
                 <span className="text-sm text-parchment-500 leading-relaxed">
                   {trait.description}
                 </span>
+                {chosen && (
+                  <span className="text-sm leading-relaxed">
+                    {' '}<span className="text-parchment-600">Escolha:</span>{' '}
+                    <span className="font-semibold" style={{ color: accent }}>{chosen}</span>
+                  </span>
+                )}
               </div>
             ))}
           </div>
@@ -633,19 +638,18 @@ export function ReviewStep() {
 
       {/* Talentos (aprimoramentos + talento racial do Humano Variante) */}
       {(() => {
-        const featIds = [
-          ...(draft.raceChoices.feat ? [draft.raceChoices.feat] : []),
-          ...getAllAsiChoices(draft).filter(c => c.kind === 'feat' && c.featId).map(c => (c as { featId: string }).featId),
-        ]
-        const feats = [...new Set(featIds)].map(id => getFeat(id)).filter(Boolean)
+        const feats = getCharacterFeats(draft)
         if (feats.length === 0) return null
         return (
           <Section title="Talentos">
             <div className="space-y-3">
-              {feats.map(feat => (
-                <div key={feat!.id}>
-                  <p className="text-sm font-semibold font-fantasy text-parchment-200">{feat!.name}</p>
-                  <RuleText text={feat!.description} className="text-sm text-parchment-500 leading-relaxed" />
+              {feats.map(({ feat, origin }) => (
+                <div key={feat.id}>
+                  <p className="text-sm font-semibold font-fantasy text-parchment-200">
+                    {feat.name}
+                    {origin && <span className="font-sans font-normal text-xs text-parchment-600"> · talento racial ({origin})</span>}
+                  </p>
+                  <RuleText text={feat.description} className="text-sm text-parchment-500 leading-relaxed" />
                 </div>
               ))}
             </div>

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatCurrency, resolvePackContents, validatePackRefs, FOCUS_GROUP_IDS, getEquippedArmor, getShopCatalog, getPurchasesTotalCopper, getItemCostCopper, formatInventoryItem, describeResolvedOption } from '../equipmentUtils'
+import { formatCurrency, resolvePackContents, validatePackRefs, FOCUS_GROUP_IDS, getEquippedArmor, getShopCatalog, getPurchasesTotalCopper, getItemCostCopper, formatInventoryItem, describeResolvedOption, formatCoins, getStartingMoney, describeStartingMoneySource } from '../equipmentUtils'
 import type { InventoryItem } from '../../types/equipment'
 import { getClass } from '../classUtils'
 import type { EquipmentDraft } from '../../types/equipment'
@@ -217,5 +217,60 @@ describe('formatInventoryItem / describeResolvedOption (inventário da ficha e d
     // (b) duas armas marciais
     expect(describeResolvedOption(fighter.startingEquipment.choices[1].options[1], ['longsword', 'rapier']))
       .toEqual(['Espada Longa', 'Rapieira'])
+  })
+})
+
+describe('formatCoins (dinheiro da algibeira)', () => {
+  it('fala em po, sem trocar 10 po por platina', () => {
+    expect(formatCoins(1000)).toBe('10 po')
+    expect(formatCoins(1500)).toBe('15 po')
+    expect(formatCoins(12000)).toBe('120 po')
+  })
+
+  it('quebra o troco em pp e pc', () => {
+    expect(formatCoins(755)).toBe('7 po 5 pp 5 pc')
+    expect(formatCoins(50)).toBe('5 pp')
+    expect(formatCoins(0)).toBe('0 po')
+  })
+})
+
+describe('getStartingMoney / describeStartingMoneySource', () => {
+  it('método padrão: só a algibeira do antecedente (Charlatão 15 po, Eremita 5 po — cap. 4)', () => {
+    const charlatan = getStartingMoney(fighterEquipment(), 15)
+    expect(charlatan.totalCopper).toBe(1500)
+    expect(describeStartingMoneySource(charlatan)).toBe('antecedente')
+    expect(getStartingMoney(fighterEquipment(), 5).totalCopper).toBe(500)
+  })
+
+  it('sem antecedente nem riqueza: zero, sem origem a explicar', () => {
+    const money = getStartingMoney(fighterEquipment({ method: null }), 0)
+    expect(money.totalCopper).toBe(0)
+    expect(describeStartingMoneySource(money)).toBeNull()
+  })
+
+  it('método riqueza: rolado − compras + antecedente (p. 145)', () => {
+    const equipment = fighterEquipment({
+      method: 'wealth',
+      rolledGold: 120,
+      purchasedItems: [
+        { itemId: 'lute', quantity: 1, source: 'purchased' },   // 35 po
+        { itemId: 'dagger', quantity: 2, source: 'purchased' }, // 2× 2 po
+      ],
+    })
+    const money = getStartingMoney(equipment, 15)
+    expect(money.spentCopper).toBe(3900)
+    expect(money.totalCopper).toBe(12000 - 3900 + 1500)
+    expect(formatCoins(money.totalCopper)).toBe('96 po')
+    expect(describeStartingMoneySource(money)).toBe('riqueza 120 po − 39 po em compras + 15 po do antecedente')
+  })
+
+  it('método riqueza antes de rolar: só o antecedente; compras de outro método não descontam', () => {
+    expect(getStartingMoney(fighterEquipment({ method: 'wealth', rolledGold: null }), 10).totalCopper).toBe(1000)
+    const standard = fighterEquipment({
+      method: 'standard',
+      rolledGold: 50,
+      purchasedItems: [{ itemId: 'lute', quantity: 1, source: 'purchased' }],
+    })
+    expect(getStartingMoney(standard, 10).totalCopper).toBe(1000)
   })
 })

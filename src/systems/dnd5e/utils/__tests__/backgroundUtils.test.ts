@@ -6,6 +6,7 @@ import {
   getSkillName,
   isBackgroundStepComplete,
   BACKGROUNDS,
+  resolveBackgroundItems,
 } from '../backgroundUtils'
 import type { Background } from '../../types/background'
 import type { BackgroundChoiceSelections } from '../../types/character'
@@ -147,5 +148,33 @@ describe('isBackgroundStepComplete', () => {
     it('completo sem choices (ferramentas são fixas)', () => {
       expect(isBackgroundStepComplete(sailor, {})).toBe(true)
     })
+  })
+})
+
+describe('resolveBackgroundItems (equipamento do antecedente na ficha, Revisão e Equipamento)', () => {
+  it('itens específicos saem com a quantidade (Acólito: 5 varetas de incenso — p. 129)', () => {
+    const acolyte = getBackground('acolyte') as Background
+    const labels = resolveBackgroundItems(acolyte, {}).map(i => i.label)
+    expect(labels).toContain('5× Bastão de Incenso')
+    expect(labels).toContain('Vestimentas')
+  })
+
+  it('chosen-tool vira a ferramenta escolhida na proficiência (Artista: o instrumento — p. 131)', () => {
+    const entertainer = getBackground('entertainer') as Background
+    const [tool] = resolveBackgroundItems(entertainer, { tools: ['lute'] })
+    expect(tool).toEqual({ id: 'lute', quantity: 1, label: 'Alaúde', pending: false })
+  })
+
+  it('chosen-tool sem escolha fica pendente, sem id', () => {
+    const guildArtisan = getBackground('guild-artisan') as Background
+    const [tool] = resolveBackgroundItems(guildArtisan, {})
+    expect(tool.id).toBeNull()
+    expect(tool.pending).toBe(true)
+  })
+
+  it('Herói do Povo: as ferramentas de artesão escolhidas entram no equipamento (p. 137)', () => {
+    const folkHero = getBackground('folk-hero') as Background
+    const ids = resolveBackgroundItems(folkHero, { tools: ['smiths-tools'] }).map(i => i.id)
+    expect(ids).toContain('smiths-tools')
   })
 })

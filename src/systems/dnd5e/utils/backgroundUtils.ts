@@ -2,6 +2,7 @@ import type { Background, BackgroundChoice, BackgroundChoiceSelections } from '.
 import backgroundsData from '../data/backgrounds.json'
 import toolsData from '../data/tools.json'
 import { LANGUAGES, SKILLS } from './raceUtils'
+import { FOCUS_GROUP_LABEL, formatInventoryItem } from './equipmentUtils'
 
 export { LANGUAGES, SKILLS }
 
@@ -75,4 +76,46 @@ export function isBackgroundStepComplete(
     (choices.tools?.length ?? 0) >= requiredTools &&
     (choices.languages?.length ?? 0) >= requiredLanguages
   )
+}
+
+// ── Equipamento do antecedente ──────────────────────────────────────────────
+
+export type ResolvedBackgroundItem = {
+  /** Id do item no catálogo; null enquanto a escolha que o define está pendente. */
+  id: string | null
+  quantity: number
+  /** Rótulo de inventário: "5× Bastão de Incenso", "Alaúde", "Ferramenta do Antecedente (a escolher)". */
+  label: string
+  /** A escolha que define o item ainda não foi feita. */
+  pending: boolean
+}
+
+/**
+ * Itens que o antecedente entrega, já resolvidos pelas escolhas do jogador. Fonte única do
+ * equipamento de antecedente na etapa Equipamento, na Revisão e na ficha imprimível — nenhuma
+ * tela converte `BackgroundEquipmentItem` em nome por conta própria.
+ *
+ * - `specific`: o item, com a quantidade;
+ * - `chosen-tool`: a ferramenta escolhida na proficiência do antecedente (Artista, Artesão de
+ *   Guilda, Herói do Povo — o livro entrega a mesma que você domina);
+ * - `focus-group`: o foco, pelo nome do grupo.
+ */
+export function resolveBackgroundItems(
+  background: Background,
+  choices: BackgroundChoiceSelections,
+): ResolvedBackgroundItem[] {
+  return background.equipment.items.map(item => {
+    switch (item.kind) {
+      case 'specific':
+        return { id: item.id, quantity: item.quantity, label: formatInventoryItem(item.id, item.quantity), pending: false }
+      case 'chosen-tool': {
+        const toolId = choices.tools?.[0]
+        return toolId
+          ? { id: toolId, quantity: 1, label: getToolName(toolId), pending: false }
+          : { id: null, quantity: 1, label: 'Ferramenta do Antecedente (a escolher)', pending: true }
+      }
+      case 'focus-group':
+        return { id: null, quantity: 1, label: FOCUS_GROUP_LABEL[item.group], pending: false }
+    }
+  })
 }

@@ -14,13 +14,16 @@ import {
   allClassEntries, getAllAsiChoices, formatClassLevelLabel,
 } from '../../utils/multiclassUtils'
 import { getClassResources } from '../../utils/classResourceUtils'
-import { getBackground, BACKGROUND_PRESENTATION, getToolName, SKILLS } from '../../utils/backgroundUtils'
+import {
+  getBackground, BACKGROUND_PRESENTATION, getToolName, SKILLS, resolveBackgroundItems,
+} from '../../utils/backgroundUtils'
 import {
   calculateModifier, formatModifier, ALL_ABILITY_SCORES, ABILITY_LABELS,
   getProficiencyBonus,
 } from '../../utils/abilityScoreUtils'
 import {
-  getEquippedArmor, getPurchasesTotalCopper, formatCurrency, formatInventoryItem, describeResolvedOption,
+  getEquippedArmor, formatInventoryItem, describeResolvedOption,
+  getStartingMoney, describeStartingMoneySource, formatCoins,
 } from '../../utils/equipmentUtils'
 import { getUnarmoredDefense, calculateArmorClass } from '../../utils/armorClassUtils'
 import {
@@ -49,7 +52,7 @@ import { formatMissingCount } from '../../../../components/wizard/pendingSteps'
 import { StepNav } from '../../../../components/wizard/StepNav'
 import type { TermId } from '../../utils/glossary'
 import type { AbilityScore } from '../../types/race'
-import type { Background } from '../../types/background'
+import type { Background, BackgroundChoiceSelections } from '../../types/background'
 import type { HpMethod } from '../../types/character'
 
 const LANG_NAME = Object.fromEntries(LANGUAGES.map(l => [l.id, l.name]))
@@ -464,28 +467,27 @@ export function ReviewStep() {
 
       {/* Equipment */}
       <Section title="Equipamento Inicial">
+        {(() => {
+          // Mesmo número da ficha imprimível (getStartingMoney).
+          const money = getStartingMoney(draft.equipment, bg?.equipment.goldPo ?? 0)
+          const source = describeStartingMoneySource(money)
+          return (
+            <p className="text-parchment-400 text-sm mb-4">
+              Dinheiro:{' '}
+              <span className="font-fantasy font-bold text-gold-500">{formatCoins(money.totalCopper)}</span>
+              {source && <span className="text-parchment-600"> ({source})</span>}
+            </p>
+          )
+        })()}
+
         {draft.equipment.method === null && (
           <p className="text-parchment-700 text-sm italic">Equipamento não definido</p>
         )}
 
         {draft.equipment.method === 'wealth' && (() => {
           const purchased = draft.equipment.purchasedItems
-          const spentCopper = getPurchasesTotalCopper(purchased)
-          const remainingCopper = (draft.equipment.rolledGold ?? 0) * 100 - spentCopper
           return (
             <div className="space-y-4">
-              <p className="text-parchment-400 text-sm">
-                Riqueza inicial:{' '}
-                <span className="font-fantasy font-bold text-gold-500">
-                  {draft.equipment.rolledGold ?? 0} po
-                </span>
-                {purchased.length > 0 && (
-                  <span className="text-parchment-600">
-                    {' '}· restante:{' '}
-                    <span className="font-fantasy text-gold-600">{formatCurrency(remainingCopper)}</span>
-                  </span>
-                )}
-              </p>
               {purchased.length > 0 && (
                 <div>
                   <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">
@@ -506,7 +508,7 @@ export function ReviewStep() {
                   <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">
                     Do Antecedente
                   </p>
-                  <BgEquipmentChips bg={bg} chosenToolId={draft.backgroundChoices.tools?.[0]} />
+                  <BgEquipmentChips bg={bg} choices={draft.backgroundChoices} />
                 </div>
               )}
             </div>
@@ -520,7 +522,7 @@ export function ReviewStep() {
                 <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">
                   Do Antecedente
                 </p>
-                <BgEquipmentChips bg={bg} chosenToolId={draft.backgroundChoices.tools?.[0]} />
+                <BgEquipmentChips bg={bg} choices={draft.backgroundChoices} />
               </div>
             )}
 
@@ -962,27 +964,11 @@ function SpellChip({
   )
 }
 
-function BgEquipmentChips({ bg, chosenToolId }: { bg: Background; chosenToolId?: string }) {
-  const FOCUS_LABEL: Record<string, string> = {
-    arcane: 'Foco Arcano',
-    druidic: 'Foco Druídico',
-    holy: 'Símbolo Sagrado',
-  }
-
+/** Itens do antecedente (o dinheiro vai na linha "Dinheiro" do topo da seção). */
+function BgEquipmentChips({ bg, choices }: { bg: Background; choices: BackgroundChoiceSelections }) {
   return (
     <div className="flex flex-wrap gap-1.5">
-      {bg.equipment.items.map((item, i) => {
-        let label: string
-        if (item.kind === 'specific') {
-          label = formatInventoryItem(item.id, item.quantity)
-        } else if (item.kind === 'chosen-tool') {
-          label = chosenToolId ? getToolName(chosenToolId) : 'Ferramenta do Antecedente'
-        } else {
-          label = FOCUS_LABEL[item.group] ?? item.group
-        }
-        return <Chip key={i} label={label} />
-      })}
-      <Chip label={`💰 ${bg.equipment.goldPo} po`} />
+      {resolveBackgroundItems(bg, choices).map((item, i) => <Chip key={i} label={item.label} />)}
     </div>
   )
 }

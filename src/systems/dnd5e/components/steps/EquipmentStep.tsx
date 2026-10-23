@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useCharacterStore } from '../../stores/characterStore'
 import { getClass, CLASS_PRESENTATION } from '../../utils/classUtils'
-import { getBackground } from '../../utils/backgroundUtils'
+import { getBackground, resolveBackgroundItems } from '../../utils/backgroundUtils'
 import {
   getItemName, isEquipmentStepComplete, getShopCatalog, getPurchasesTotalCopper,
   formatCurrency, type ShopCategory,
 } from '../../utils/equipmentUtils'
-import type { BackgroundEquipment, BackgroundEquipmentItem, FixedItem, InventoryItem } from '../../types/equipment'
+import type { FixedItem, InventoryItem } from '../../types/equipment'
+import type { Background, BackgroundChoiceSelections } from '../../types/background'
 import { EquipmentMethodSelector } from '../equipment/EquipmentMethodSelector'
 import { EquipmentChoiceCard } from '../equipment/EquipmentChoiceCard'
 import { StepNav } from '../../../../components/wizard/StepNav'
@@ -92,10 +93,7 @@ export function EquipmentStep() {
           {bg && (
             <div className="rounded-xl border border-parchment-900 bg-parchment-950/60 p-4">
               <SectionTitle>Do seu Antecedente</SectionTitle>
-              <BackgroundItemList
-                bgEquipment={bg.equipment}
-                chosenToolId={draft.backgroundChoices.tools?.[0]}
-              />
+              <BackgroundItemList background={bg} choices={draft.backgroundChoices} />
             </div>
           )}
 
@@ -135,10 +133,7 @@ export function EquipmentStep() {
               <p className="text-xs text-parchment-600 mb-2 uppercase tracking-widest font-fantasy">
                 Equipamento do Antecedente (sempre recebido)
               </p>
-              <BackgroundItemList
-                bgEquipment={bg.equipment}
-                chosenToolId={draft.backgroundChoices.tools?.[0]}
-              />
+              <BackgroundItemList background={bg} choices={draft.backgroundChoices} />
             </div>
           )}
 
@@ -182,59 +177,26 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 }
 
 function BackgroundItemList({
-  bgEquipment,
-  chosenToolId,
+  background,
+  choices,
 }: {
-  bgEquipment: BackgroundEquipment
-  chosenToolId?: string
+  background: Background
+  choices: BackgroundChoiceSelections
 }) {
-  const FOCUS_LABEL: Record<string, string> = {
-    arcane: 'Foco Arcano',
-    druidic: 'Foco Druídico',
-    holy: 'Símbolo Sagrado',
-  }
-
   return (
     <div className="flex flex-wrap gap-1.5">
-      {bgEquipment.items.map((item, idx) => (
-        <BgItemChip key={idx} item={item} chosenToolId={chosenToolId} focusLabel={FOCUS_LABEL} />
+      {resolveBackgroundItems(background, choices).map((item, idx) => (
+        <span
+          key={idx}
+          className={`text-xs px-2 py-1 rounded-md border border-parchment-800 text-parchment-400${item.pending ? ' italic' : ''}`}
+        >
+          {item.label}
+        </span>
       ))}
       <span className="text-xs px-2 py-1 rounded-md border border-gold-900/60 text-gold-600 font-fantasy">
-        💰 {bgEquipment.goldPo} po
+        💰 {background.equipment.goldPo} po
       </span>
     </div>
-  )
-}
-
-function BgItemChip({
-  item,
-  chosenToolId,
-  focusLabel,
-}: {
-  item: BackgroundEquipmentItem
-  chosenToolId?: string
-  focusLabel: Record<string, string>
-}) {
-  let label: string
-  let italic = false
-
-  if (item.kind === 'specific') {
-    const name = getItemName(item.id)
-    label = item.quantity > 1 ? `${item.quantity}× ${name}` : name
-  } else if (item.kind === 'chosen-tool') {
-    label = chosenToolId ? getItemName(chosenToolId) : 'Ferramenta do Antecedente'
-    italic = !chosenToolId
-  } else {
-    label = `${focusLabel[item.group] ?? item.group} (à escolher)`
-    italic = true
-  }
-
-  return (
-    <span
-      className={`text-xs px-2 py-1 rounded-md border border-parchment-800 text-parchment-400${italic ? ' italic' : ''}`}
-    >
-      {label}
-    </span>
   )
 }
 

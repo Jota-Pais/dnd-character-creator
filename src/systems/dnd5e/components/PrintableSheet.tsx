@@ -10,7 +10,7 @@ import {
 import {
   allClassEntries, getHitDicePool, getAllAsiChoices, formatClassLevelLabel,
 } from '../utils/multiclassUtils'
-import { getBackground, getToolName } from '../utils/backgroundUtils'
+import { getBackground, getToolName, resolveBackgroundItems } from '../utils/backgroundUtils'
 import {
   calculateModifier, formatModifier, getProficiencyBonus,
   ALL_ABILITY_SCORES, ABILITY_LABELS,
@@ -23,6 +23,7 @@ import {
 import { calculateArmorClass, getUnarmoredDefense } from '../utils/armorClassUtils'
 import {
   getEquippedArmor, getWeaponById, formatInventoryItem, describeResolvedOption,
+  getStartingMoney, describeStartingMoneySource, formatCoins,
 } from '../utils/equipmentUtils'
 import { getClassResources } from '../utils/classResourceUtils'
 import { getProgressionSlotsUpToLevel } from '../utils/progressionChoiceUtils'
@@ -76,7 +77,9 @@ function gatherEquippedWeapons(draft: CharacterDraft): Weapon[] {
     })
   }
   if (eq.method === 'wealth') for (const p of eq.purchasedItems) ids.push(p.itemId)
-  if (bg) for (const item of bg.equipment.items) if (item.kind === 'specific') ids.push(item.id)
+  if (bg) {
+    for (const item of resolveBackgroundItems(bg, draft.backgroundChoices)) if (item.id) ids.push(item.id)
+  }
 
   const seen = new Set<string>()
   const weapons: Weapon[] = []
@@ -112,13 +115,7 @@ function gatherInventory(draft: CharacterDraft): string[] {
       items.push(formatInventoryItem(p.itemId, p.quantity))
     }
   }
-  if (bg) {
-    for (const item of bg.equipment.items) {
-      if (item.kind === 'specific') {
-        items.push(formatInventoryItem(item.id, item.quantity))
-      }
-    }
-  }
+  if (bg) items.push(...resolveBackgroundItems(bg, draft.backgroundChoices).map(item => item.label))
   return items
 }
 
@@ -231,6 +228,8 @@ export function PrintableSheet() {
     .map(e => ({ e, resources: getClassResources(e.classId, e.level) }))
     .filter(b => b.resources.length > 0)
   const inventory = gatherInventory(draft)
+  const money = getStartingMoney(draft.equipment, bg?.equipment.goldPo ?? 0)
+  const moneySource = describeStartingMoneySource(money)
 
   // Ataques por arma equipada (F5). Ataque Extra NÃO empilha entre classes (PHB): usa o máximo.
   const weapons = gatherEquippedWeapons(draft)
@@ -616,9 +615,10 @@ export function PrintableSheet() {
 
       {/* Inventário */}
       <Box title="Equipamento & Inventário" className="mb-2">
-        {draft.equipment.method === 'wealth' && draft.equipment.rolledGold !== null && (
-          <p className="text-xs mb-1"><span className="text-gray-600">Riqueza inicial: </span>{draft.equipment.rolledGold} po</p>
-        )}
+        <p className="text-xs mb-1">
+          <span className="text-gray-600">Dinheiro: </span><strong>{formatCoins(money.totalCopper)}</strong>
+          {moneySource && <span className="text-gray-600"> ({moneySource})</span>}
+        </p>
         <p className="text-xs">{inventory.length > 0 ? inventory.join(' · ') : '—'}</p>
       </Box>
 

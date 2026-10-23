@@ -84,6 +84,25 @@ export function formatCurrency(copper: number | null): string {
   return `${copper} pc`
 }
 
+/**
+ * Dinheiro em moedas, na forma da algibeira: "15 po", "7 po 5 pp", "3 pc". Diferente de
+ * `formatCurrency` (preço de item), não troca 10 po por "1 ppt" — o livro dá o dinheiro do
+ * antecedente e da riqueza em po, e é assim que o jogador o anota.
+ */
+export function formatCoins(copper: number): string {
+  if (copper === 0) return '0 po'
+  const sign = copper < 0 ? '−' : ''
+  const abs = Math.abs(copper)
+  const parts: string[] = []
+  const gp = Math.floor(abs / 100)
+  const sp = Math.floor((abs % 100) / 10)
+  const cp = abs % 10
+  if (gp > 0) parts.push(`${gp} po`)
+  if (sp > 0) parts.push(`${sp} pp`)
+  if (cp > 0) parts.push(`${cp} pc`)
+  return sign + parts.join(' ')
+}
+
 export function getArmor(id: string): Armor | undefined {
   return ALL_ARMORS.find(a => a.id === id)
 }
@@ -193,6 +212,51 @@ export function getPurchasesTotalCopper(items: InventoryItem[]): number {
   return items.reduce((sum, it) => sum + (CATALOG_COST.get(it.itemId) ?? 0) * it.quantity, 0)
 }
 
+// ── Dinheiro inicial ────────────────────────────────────────────────────────
+
+export type StartingMoney = {
+  /** Total em cobre: o que vai na linha "Dinheiro" da ficha. */
+  totalCopper: number
+  /** A algibeira do antecedente (goldPo), em cobre. */
+  backgroundCopper: number
+  /** Riqueza rolada (método riqueza), em cobre; null fora desse método ou antes de rolar. */
+  wealthCopper: number | null
+  /** Gasto na loja (método riqueza), em cobre. */
+  spentCopper: number
+}
+
+/**
+ * Quanto dinheiro o personagem tem ao começar: a algibeira do antecedente (cap. 4) e, no
+ * método riqueza (p. 145), o rolado menos o que foi comprado. Segue a leitura do app de que no
+ * método riqueza o equipamento — e o dinheiro — do antecedente continuam valendo.
+ *
+ * Fonte única do número da Revisão e da ficha imprimível.
+ */
+export function getStartingMoney(equipment: EquipmentDraft, backgroundGoldPo: number): StartingMoney {
+  const backgroundCopper = backgroundGoldPo * 100
+  const isWealth = equipment.method === 'wealth'
+  const wealthCopper = isWealth && equipment.rolledGold !== null ? equipment.rolledGold * 100 : null
+  const spentCopper = isWealth ? getPurchasesTotalCopper(equipment.purchasedItems) : 0
+  return {
+    totalCopper: backgroundCopper + (wealthCopper ?? 0) - spentCopper,
+    backgroundCopper,
+    wealthCopper,
+    spentCopper,
+  }
+}
+
+/**
+ * De onde veio o dinheiro, para ler ao lado do total: "antecedente" ou
+ * "riqueza 120 po − 37 po em compras + 15 po do antecedente". null quando não há o que explicar.
+ */
+export function describeStartingMoneySource(money: StartingMoney): string | null {
+  if (money.wealthCopper === null) return money.backgroundCopper > 0 ? 'antecedente' : null
+  const parts = [`riqueza ${formatCoins(money.wealthCopper)}`]
+  if (money.spentCopper > 0) parts.push(`− ${formatCoins(money.spentCopper)} em compras`)
+  if (money.backgroundCopper > 0) parts.push(`+ ${formatCoins(money.backgroundCopper)} do antecedente`)
+  return parts.join(' ')
+}
+
 export function getWeaponsForFilter(filter: WeaponFilter): Weapon[] {
   return ALL_WEAPONS.filter(w => {
     if (filter.category && w.category !== filter.category) return false
@@ -225,7 +289,7 @@ const TOOL_CAT_LABEL: Record<string, string> = {
   other: 'outra ferramenta',
   vehicle: 'veículo',
 }
-const FOCUS_GROUP_LABEL: Record<string, string> = {
+export const FOCUS_GROUP_LABEL: Record<'arcane' | 'druidic' | 'holy', string> = {
   arcane: 'Foco Arcano',
   druidic: 'Foco Druídico',
   holy: 'Símbolo Sagrado',

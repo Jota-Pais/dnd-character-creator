@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { CLASSES } from '../../utils/classUtils'
+import { stripInlineBold } from '../../utils/ruleText'
 import weaponsData from '../weapons.json'
 
 /**
@@ -36,6 +37,52 @@ describe('dados do livro', () => {
     const at = findPrivateUse(content)
     const context = at >= 0 ? content.slice(Math.max(0, at - 60), at + 60) : ''
     expect(at, `caractere de uso privado em ${file}: ...${context}...`).toBe(-1)
+  })
+})
+
+/**
+ * Negrito inline (`**Nome.**`): as magias abrem cada opção assim, e o `RuleText` desenha o par
+ * como <strong>. Duas guardas:
+ *
+ * - todo `**` fecha na mesma linha — um solto sairia literal na ficha;
+ * - só aparece em campo que passa pelo `RuleText`. Raça, antecedente e características de
+ *   classe são impressos como texto cru na ficha e na Revisão: lá o `**` vazaria.
+ */
+type TextLine = { file: string; key: string; line: string }
+
+/** Linhas de todas as strings do JSON, com a chave do campo que as contém. */
+function collectLines(file: string, value: unknown, key = ''): TextLine[] {
+  if (typeof value === 'string') return value.split('\n').map(line => ({ file, key, line }))
+  if (Array.isArray(value)) return value.flatMap(v => collectLines(file, v, key))
+  if (value && typeof value === 'object') {
+    return Object.entries(value).flatMap(([k, v]) => collectLines(file, v, k))
+  }
+  return []
+}
+
+/** Arquivo → campos renderizados pelo `RuleText` (grimório, etapa de Magias, talentos). */
+const RULE_TEXT_FIELDS: Record<string, string[]> = {
+  'spells.json': ['description'],
+  'feats.json': ['description'],
+}
+
+describe('negrito inline nos dados do livro', () => {
+  const boldLines = Object.entries(DATA)
+    .flatMap(([path, mod]) => collectLines(path.replace('../', ''), mod.default))
+    .filter(l => l.line.includes('**'))
+
+  it('a marcação existe nos dados (o teste não está olhando o lugar errado)', () => {
+    expect(boldLines.length).toBeGreaterThan(0)
+  })
+
+  it('todo ** fecha na mesma linha', () => {
+    const unpaired = boldLines.filter(l => stripInlineBold(l.line).includes('**'))
+    expect(unpaired.map(l => `${l.file} (${l.key}): ${l.line.slice(0, 80)}`)).toEqual([])
+  })
+
+  it('** só aparece em campo desenhado pelo RuleText', () => {
+    const raw = boldLines.filter(l => !RULE_TEXT_FIELDS[l.file]?.includes(l.key))
+    expect(raw.map(l => `${l.file} (${l.key}): ${l.line.slice(0, 80)}`)).toEqual([])
   })
 })
 

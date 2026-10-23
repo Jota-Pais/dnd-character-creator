@@ -110,6 +110,35 @@ export function formatPackContents(pack: EquipmentPack): string {
     .join(', ')
 }
 
+/**
+ * Rótulo de inventário (ficha imprimível e Revisão): "2× Adaga". Pacote vai com o conteúdo —
+ * "Pacote de Artista (Mochila, Saco de Dormir, 2× Fantasia...)" —, porque na mesa ninguém lembra
+ * que o pacote tem rações, velas e cantil (p. 153).
+ */
+export function formatInventoryItem(id: string, quantity = 1): string {
+  const pack = getPackById(id)
+  const name = pack ? `${pack.name} (${formatPackContents(pack)})` : getItemName(id)
+  return quantity > 1 ? `${quantity}× ${name}` : name
+}
+
+/**
+ * Itens de uma opção de equipamento já escolhida, como rótulos de inventário: os específicos com
+ * a quantidade, e os escolhidos em filtros (arma/ferramenta/foco) na ordem dos `pickedIds`.
+ */
+export function describeResolvedOption(option: EquipmentOption, pickedIds: string[]): string[] {
+  const result: string[] = []
+  let pickIdx = 0
+  for (const item of option) {
+    if (item.kind === 'specific') {
+      result.push(formatInventoryItem(item.id, item.quantity))
+    } else {
+      result.push(...pickedIds.slice(pickIdx, pickIdx + item.picks).map(id => formatInventoryItem(id)))
+      pickIdx += item.picks
+    }
+  }
+  return result
+}
+
 export function getItemName(id: string): string {
   return (
     ALL_WEAPONS.find(w => w.id === id)?.name ??

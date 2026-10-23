@@ -19,7 +19,9 @@ import {
   calculateModifier, formatModifier, ALL_ABILITY_SCORES, ABILITY_LABELS,
   getProficiencyBonus,
 } from '../../utils/abilityScoreUtils'
-import { getItemName, getEquippedArmor, getPurchasesTotalCopper, formatCurrency } from '../../utils/equipmentUtils'
+import {
+  getEquippedArmor, getPurchasesTotalCopper, formatCurrency, formatInventoryItem, describeResolvedOption,
+} from '../../utils/equipmentUtils'
 import { getUnarmoredDefense, calculateArmorClass } from '../../utils/armorClassUtils'
 import {
   getAllGrantedTools, getAllGrantedLanguages, getExpertiseTools, getSkillChecks, getPassiveScore,
@@ -47,28 +49,10 @@ import { formatMissingCount } from '../../../../components/wizard/pendingSteps'
 import { StepNav } from '../../../../components/wizard/StepNav'
 import type { TermId } from '../../utils/glossary'
 import type { AbilityScore } from '../../types/race'
-import type { EquipmentOption } from '../../types/equipment'
 import type { Background } from '../../types/background'
 import type { HpMethod } from '../../types/character'
 
 const LANG_NAME = Object.fromEntries(LANGUAGES.map(l => [l.id, l.name]))
-
-function resolveOptionItems(option: EquipmentOption, pickedIds: string[]): string[] {
-  const result: string[] = []
-  let pickIdx = 0
-  for (const item of option) {
-    if (item.kind === 'specific') {
-      const name = getItemName(item.id)
-      result.push(item.quantity > 1 ? `${item.quantity}× ${name}` : name)
-    } else {
-      const picks = item.picks
-      const slice = pickedIds.slice(pickIdx, pickIdx + picks)
-      pickIdx += picks
-      result.push(...slice.map(id => getItemName(id)))
-    }
-  }
-  return result
-}
 
 export function ReviewStep() {
   const draft = useCharacterStore(state => state.draft)
@@ -511,7 +495,7 @@ export function ReviewStep() {
                     {purchased.map(item => (
                       <Chip
                         key={item.itemId}
-                        label={`${item.quantity > 1 ? `${item.quantity}× ` : ''}${getItemName(item.itemId)}`}
+                        label={formatInventoryItem(item.itemId, item.quantity)}
                       />
                     ))}
                   </div>
@@ -549,7 +533,7 @@ export function ReviewStep() {
                   {classEquipment.fixed.map((item, i) => (
                     <Chip
                       key={i}
-                      label={`${item.quantity > 1 ? `${item.quantity}× ` : ''}${getItemName(item.id)}`}
+                      label={formatInventoryItem(item.id, item.quantity)}
                     />
                   ))}
                 </div>
@@ -567,7 +551,7 @@ export function ReviewStep() {
                     if (!res || res.optionIndex < 0) return null
                     const option = choice.options[res.optionIndex]
                     if (!option) return null
-                    const items = resolveOptionItems(option, res.pickedIds)
+                    const items = describeResolvedOption(option, res.pickedIds)
                     return items.map((label, i) => <Chip key={`${idx}-${i}`} label={label} />)
                   })}
                 </div>
@@ -990,8 +974,7 @@ function BgEquipmentChips({ bg, chosenToolId }: { bg: Background; chosenToolId?:
       {bg.equipment.items.map((item, i) => {
         let label: string
         if (item.kind === 'specific') {
-          const name = getItemName(item.id)
-          label = item.quantity > 1 ? `${item.quantity}× ${name}` : name
+          label = formatInventoryItem(item.id, item.quantity)
         } else if (item.kind === 'chosen-tool') {
           label = chosenToolId ? getToolName(chosenToolId) : 'Ferramenta do Antecedente'
         } else {

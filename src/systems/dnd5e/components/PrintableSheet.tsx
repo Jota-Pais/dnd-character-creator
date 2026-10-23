@@ -21,7 +21,9 @@ import {
   getArmorProficiencyLabels, getWeaponProficiencyLabels, getUnproficientArmor,
 } from '../utils/proficiencyUtils'
 import { calculateArmorClass, getUnarmoredDefense } from '../utils/armorClassUtils'
-import { getEquippedArmor, getItemName, getWeaponById } from '../utils/equipmentUtils'
+import {
+  getEquippedArmor, getWeaponById, formatInventoryItem, describeResolvedOption,
+} from '../utils/equipmentUtils'
 import { getClassResources } from '../utils/classResourceUtils'
 import { getProgressionSlotsUpToLevel } from '../utils/progressionChoiceUtils'
 import { getProgressionOptions } from '../utils/progressionOptions'
@@ -37,7 +39,7 @@ import {
   getConditionalAcBonuses, getCheckProficiencyBonus,
 } from '../utils/sheetEffects'
 import type { CharacterDraft } from '../types/character'
-import type { EquipmentChoiceItem, Weapon } from '../types/equipment'
+import type { Weapon } from '../types/equipment'
 import type { GameClass } from '../types/class'
 
 const LANG_NAME = Object.fromEntries(LANGUAGES.map(l => [l.id, l.name]))
@@ -45,22 +47,6 @@ const LANG_NAME = Object.fromEntries(LANGUAGES.map(l => [l.id, l.name]))
 function metersLabel(feet: number): string {
   const m = feet * 0.3
   return Number.isInteger(m) ? `${m} m` : `${m.toFixed(1).replace('.', ',')} m`
-}
-
-function resolveOptionItems(option: EquipmentChoiceItem[], pickedIds: string[]): string[] {
-  const result: string[] = []
-  let pickIdx = 0
-  for (const item of option) {
-    if (item.kind === 'specific') {
-      const name = getItemName(item.id)
-      result.push(item.quantity > 1 ? `${item.quantity}× ${name}` : name)
-    } else {
-      const picks = item.picks
-      result.push(...pickedIds.slice(pickIdx, pickIdx + picks).map(id => getItemName(id)))
-      pickIdx += picks
-    }
-  }
-  return result
 }
 
 /** Armas efetivamente equipadas (do equipamento inicial / compradas / antecedente), sem repetir. */
@@ -111,25 +97,25 @@ function gatherInventory(draft: CharacterDraft): string[] {
 
   if (eq.method === 'standard' && cls) {
     for (const item of cls.startingEquipment.fixed) {
-      items.push(item.quantity > 1 ? `${item.quantity}× ${getItemName(item.id)}` : getItemName(item.id))
+      items.push(formatInventoryItem(item.id, item.quantity))
     }
     cls.startingEquipment.choices.forEach((choice, i) => {
       const res = eq.classResolutions[i]
       if (res && res.optionIndex >= 0) {
         const option = choice.options[res.optionIndex]
-        if (option) items.push(...resolveOptionItems(option, res.pickedIds))
+        if (option) items.push(...describeResolvedOption(option, res.pickedIds))
       }
     })
   }
   if (eq.method === 'wealth') {
     for (const p of eq.purchasedItems) {
-      items.push(p.quantity > 1 ? `${p.quantity}× ${getItemName(p.itemId)}` : getItemName(p.itemId))
+      items.push(formatInventoryItem(p.itemId, p.quantity))
     }
   }
   if (bg) {
     for (const item of bg.equipment.items) {
       if (item.kind === 'specific') {
-        items.push(item.quantity > 1 ? `${item.quantity}× ${getItemName(item.id)}` : getItemName(item.id))
+        items.push(formatInventoryItem(item.id, item.quantity))
       }
     }
   }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatCurrency, resolvePackContents, validatePackRefs, FOCUS_GROUP_IDS, getEquippedArmor, getShopCatalog, getPurchasesTotalCopper, getItemCostCopper } from '../equipmentUtils'
+import { formatCurrency, resolvePackContents, validatePackRefs, FOCUS_GROUP_IDS, getEquippedArmor, getShopCatalog, getPurchasesTotalCopper, getItemCostCopper, formatInventoryItem, describeResolvedOption } from '../equipmentUtils'
 import type { InventoryItem } from '../../types/equipment'
 import { getClass } from '../classUtils'
 import type { EquipmentDraft } from '../../types/equipment'
@@ -187,5 +187,35 @@ describe('FOCUS_GROUP_IDS', () => {
     expect(FOCUS_GROUP_IDS.druidic).toContain('totem')
     expect(FOCUS_GROUP_IDS.druidic).toContain('sprig-of-mistletoe')
     expect(FOCUS_GROUP_IDS.druidic).toContain('wooden-staff')
+  })
+})
+
+describe('formatInventoryItem / describeResolvedOption (inventário da ficha e da Revisão)', () => {
+  it('item comum sai com a quantidade; pacote sai com o conteúdo (p. 153)', () => {
+    expect(formatInventoryItem('dagger')).toBe('Adaga')
+    expect(formatInventoryItem('dagger', 2)).toBe('2× Adaga')
+    expect(formatInventoryItem('entertainers-pack')).toBe(
+      'Pacote de Artista (Mochila, Saco de Dormir, 2× Roupas de Entretenimento, 5× Vela, '
+      + '5× Rações de Viagem (1 dia), Cantil, Kit de Disfarce)',
+    )
+  })
+
+  it('bardo: itens específicos e escolhidos em filtro, com o pacote aberto', () => {
+    const bard = getClass('bard')!
+    const [weaponChoice, packChoice, instrumentChoice] = bard.startingEquipment.choices
+    // (c) qualquer arma simples → a escolhida vem dos pickedIds
+    expect(describeResolvedOption(weaponChoice.options[2], ['mace'])).toEqual(['Maça'])
+    expect(describeResolvedOption(packChoice.options[1], [])[0]).toMatch(/^Pacote de Artista \(Mochila, .*Kit de Disfarce\)$/)
+    expect(describeResolvedOption(instrumentChoice.options[0], [])).toEqual(['Alaúde'])
+  })
+
+  it('opção com item específico + escolha em filtro consome os pickedIds na ordem', () => {
+    const fighter = getClass('fighter')!
+    // (a) uma arma marcial e um escudo
+    expect(describeResolvedOption(fighter.startingEquipment.choices[1].options[0], ['longsword']))
+      .toEqual(['Espada Longa', 'Escudo'])
+    // (b) duas armas marciais
+    expect(describeResolvedOption(fighter.startingEquipment.choices[1].options[1], ['longsword', 'rapier']))
+      .toEqual(['Espada Longa', 'Rapieira'])
   })
 })

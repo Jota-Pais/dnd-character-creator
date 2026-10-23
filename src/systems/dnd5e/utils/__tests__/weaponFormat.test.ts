@@ -59,19 +59,19 @@ describe('weaponFormat', () => {
   describe('getWeaponAttack (F5 — linha de ataque por arma)', () => {
     it('arma de acuidade usa Destreza quando ela é melhor', () => {
       // Rapieira (acuidade), Força +1, Destreza +3, prof +2 → usa Destreza
-      const atk = getWeaponAttack(getWeaponById('rapier')!, 1, 3, 2)
-      expect(atk).toEqual({ name: 'Rapieira', ability: 'Destreza', attackBonus: '+5', damage: '1d8+3 perfurante', properties: 'acuidade' })
+      const atk = getWeaponAttack(getWeaponById('rapier')!, 1, 3, 2, true)
+      expect(atk).toEqual({ name: 'Rapieira', ability: 'Destreza', attackBonus: '+5', proficient: true, damage: '1d8+3 perfurante', properties: 'acuidade' })
     })
 
     it('arma corpo a corpo sem acuidade usa Força', () => {
       // Espada Grande (2d6, sem acuidade), Força +3, Destreza +1, prof +2 → usa Força
-      const atk = getWeaponAttack(getWeaponById('greatsword')!, 3, 1, 2)
-      expect(atk).toEqual({ name: 'Espada Grande', ability: 'Força', attackBonus: '+5', damage: '2d6+3 cortante', properties: 'pesada, duas mãos' })
+      const atk = getWeaponAttack(getWeaponById('greatsword')!, 3, 1, 2, true)
+      expect(atk).toEqual({ name: 'Espada Grande', ability: 'Força', attackBonus: '+5', proficient: true, damage: '2d6+3 cortante', properties: 'pesada, duas mãos' })
     })
 
     it('arma à distância usa Destreza', () => {
       // Arco Longo (à distância), Força +3, Destreza +2, prof +2 → usa Destreza
-      const atk = getWeaponAttack(getWeaponById('longbow')!, 3, 2, 2)
+      const atk = getWeaponAttack(getWeaponById('longbow')!, 3, 2, 2, true)
       expect(atk.ability).toBe('Destreza')
       expect(atk.attackBonus).toBe('+4')
       expect(atk.damage).toBe('1d8+2 perfurante')
@@ -79,24 +79,34 @@ describe('weaponFormat', () => {
 
     it('leva as propriedades da arma: a adaga do bardo mostra o alcance de arremesso (p. 149)', () => {
       // Adaga (1d4 perfurante; acuidade, leve, arremesso 6/18 m), Força 0, Destreza +1, prof +2
-      const atk = getWeaponAttack(getWeaponById('dagger')!, 0, 1, 2)
+      const atk = getWeaponAttack(getWeaponById('dagger')!, 0, 1, 2, true)
       expect(atk).toEqual({
         name: 'Adaga',
         ability: 'Destreza',
         attackBonus: '+3',
+        proficient: true,
         damage: '1d4+1 perfurante',
         properties: 'acuidade, leve, arremesso (6/18 m)',
       })
     })
 
     it('arma de munição mostra o alcance; arma sem propriedade fica vazia', () => {
-      expect(getWeaponAttack(getWeaponById('longbow')!, 0, 2, 2).properties).toBe('munição (45/180 m), pesada, duas mãos')
-      expect(getWeaponAttack(getWeaponById('mace')!, 1, 0, 2).properties).toBe('')
+      expect(getWeaponAttack(getWeaponById('longbow')!, 0, 2, 2, true).properties).toBe('munição (45/180 m), pesada, duas mãos')
+      expect(getWeaponAttack(getWeaponById('mace')!, 1, 0, 2, true).properties).toBe('')
+    })
+
+    it('sem proficiência na arma, o bônus de proficiência não entra no ataque (p. 148)', () => {
+      // Feiticeiro com uma maça (a "qualquer arma simples" do equipamento): Força +1, prof +2
+      const atk = getWeaponAttack(getWeaponById('mace')!, 1, 0, 2, false)
+      expect(atk.attackBonus).toBe('+1')
+      expect(atk.proficient).toBe(false)
+      // o dano não muda: proficiência nunca entrou nele
+      expect(atk.damage).toBe('1d6+1 concussão')
     })
 
     it('modificador 0 não aparece no dano', () => {
       // Porrete (1d4 concussão), Força 0, Destreza 0, prof +2 → dano sem "+0"
-      const atk = getWeaponAttack(getWeaponById('club')!, 0, 0, 2)
+      const atk = getWeaponAttack(getWeaponById('club')!, 0, 0, 2, true)
       expect(atk.damage).toBe('1d4 concussão')
       expect(atk.attackBonus).toBe('+2')
     })

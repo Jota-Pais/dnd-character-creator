@@ -74,8 +74,10 @@ export type WeaponAttack = {
   name: string
   /** Atributo usado no ataque: "Força" ou "Destreza". */
   ability: string
-  /** Bônus de ataque já com sinal (ex.: "+5"). */
+  /** Bônus de ataque já com sinal (ex.: "+5"). Sem proficiência na arma, só o modificador. */
   attackBonus: string
+  /** Se o personagem é proficiente com a arma (p. 148); sem isso, o bônus de proficiência não entra. */
+  proficient: boolean
   /** Dano com o modificador e o tipo (ex.: "1d8+3 perfurante"). */
   damage: string
   /**
@@ -87,10 +89,21 @@ export type WeaponAttack = {
 
 /**
  * Ataque de uma arma: escolhe o atributo (Destreza para armas à distância ou de acuidade quando
- * a Destreza é melhor; Força caso contrário), soma proficiência no ataque e o modificador no dano,
- * e leva junto as propriedades da arma.
+ * a Destreza é melhor; Força caso contrário), soma o modificador no ataque e no dano, e leva junto
+ * as propriedades da arma.
+ *
+ * O bônus de proficiência só entra se `proficient` — "Se você realizar uma jogada de ataque
+ * utilizando uma arma com a qual não tenha proficiência, não adiciona seu bônus de proficiência
+ * na jogada de ataque" (p. 148). Quem decide é o motor de proficiência (`hasWeaponProficiency`
+ * em proficiencyUtils); o parâmetro é obrigatório para nenhuma chamada esquecer a pergunta.
  */
-export function getWeaponAttack(weapon: Weapon, strMod: number, dexMod: number, proficiency: number): WeaponAttack {
+export function getWeaponAttack(
+  weapon: Weapon,
+  strMod: number,
+  dexMod: number,
+  proficiencyBonus: number,
+  proficient: boolean,
+): WeaponAttack {
   const hasFinesse = weapon.properties.some(p => p.kind === 'finesse')
   const useDex = weapon.weaponType === 'ranged' || (hasFinesse && dexMod >= strMod)
   const ability = useDex ? 'Destreza' : 'Força'
@@ -102,7 +115,8 @@ export function getWeaponAttack(weapon: Weapon, strMod: number, dexMod: number, 
   return {
     name: weapon.name,
     ability,
-    attackBonus: signed(proficiency + mod),
+    attackBonus: signed((proficient ? proficiencyBonus : 0) + mod),
+    proficient,
     damage,
     properties: formatWeaponProperties(weapon.properties),
   }

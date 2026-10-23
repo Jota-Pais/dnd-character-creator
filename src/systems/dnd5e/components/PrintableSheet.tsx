@@ -18,7 +18,7 @@ import {
 import { getFinalAbilityScores } from '../utils/asiUtils'
 import {
   getAllGrantedTools, getAllGrantedLanguages, getExpertiseTools, getSkillChecks, getPassiveScore,
-  getArmorProficiencyLabels, getWeaponProficiencyLabels, getUnproficientArmor,
+  getArmorProficiencyLabels, getWeaponProficiencyLabels, getUnproficientArmor, hasWeaponProficiency,
 } from '../utils/proficiencyUtils'
 import { calculateArmorClass, getUnarmoredDefense } from '../utils/armorClassUtils'
 import {
@@ -416,12 +416,13 @@ export function PrintableSheet() {
             </thead>
             <tbody>
               {weapons.map(w => {
-                const atk = getWeaponAttack(w, strMod, dexMod, prof)
+                const atk = getWeaponAttack(w, strMod, dexMod, prof, hasWeaponProficiency(draft, w))
                 return (
                   <tr key={w.id} className="text-gray-800">
                     <td className="pr-2 py-0.5">
                       {attacksPerAction > 1 && <span className="font-bold text-gray-500">{attacksPerAction}× </span>}
                       {atk.name}
+                      {!atk.proficient && <span className="text-[10px] text-gray-500"> (sem proficiência)</span>}
                     </td>
                     <td className="pr-2 py-0.5"><strong>{atk.attackBonus}</strong></td>
                     <td className="pr-2 py-0.5">{atk.damage}</td>

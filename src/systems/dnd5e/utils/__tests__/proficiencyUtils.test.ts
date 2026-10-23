@@ -237,6 +237,14 @@ describe('proficiência de armadura, arma e resistência', () => {
     expect(hasWeaponProficiency(dwarfWizard, getWeaponById('quarterstaff')!)).toBe(true) // simples
   })
 
+  it('feiticeiro não é proficiente com toda arma simples que o equipamento deixa escolher', () => {
+    // O equipamento dá "qualquer arma simples" (p. 78), mas a proficiência é só adagas, dardos,
+    // fundas, bordões e bestas leves: a maça escolhida ataca sem o bônus (p. 148).
+    const sorcerer = draft({ race: 'human', class: 'sorcerer' })
+    expect(hasWeaponProficiency(sorcerer, getWeaponById('dagger')!)).toBe(true)
+    expect(hasWeaponProficiency(sorcerer, getWeaponById('mace')!)).toBe(false)
+  })
+
   // p. 163: multiclassar NUNCA concede proficiência em teste de resistência.
   it('só a classe inicial concede resistências', () => {
     const d = draft({

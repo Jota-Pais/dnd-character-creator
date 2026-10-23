@@ -1,9 +1,15 @@
 import type { BackgroundChoice } from '../../types/background'
 import type { BackgroundChoiceSelections } from '../../types/character'
-import { LANGUAGES, getToolsByCategory, TOOL_CHOICE_LABEL } from '../../utils/backgroundUtils'
+import {
+  LANGUAGES, getToolsByCategory, TOOL_CHOICE_LABEL, getChosenBackgroundItem,
+  type BackgroundItemChoice,
+} from '../../utils/backgroundUtils'
+import { getItemName } from '../../utils/equipmentUtils'
 
 type Props = {
   choices: BackgroundChoice[]
+  /** "Um item entre opções" do equipamento do antecedente: slot aqui, ao lado de idioma e ferramenta. */
+  itemChoices?: BackgroundItemChoice[]
   selections: BackgroundChoiceSelections
   accent: string
   onChange: (updates: Partial<BackgroundChoiceSelections>) => void
@@ -11,8 +17,10 @@ type Props = {
   excludedTools?: string[]
 }
 
-export function BackgroundChoicePanel({ choices, selections, accent, onChange, excludedLanguages, excludedTools }: Props) {
-  if (choices.length === 0) return null
+export function BackgroundChoicePanel({
+  choices, itemChoices = [], selections, accent, onChange, excludedLanguages, excludedTools,
+}: Props) {
+  if (choices.length === 0 && itemChoices.length === 0) return null
 
   return (
     <div className="space-y-5">
@@ -40,6 +48,15 @@ export function BackgroundChoicePanel({ choices, selections, accent, onChange, e
           />
         )
       })}
+      {itemChoices.map(choice => (
+        <ItemChoiceField
+          key={choice.key}
+          choice={choice}
+          accent={accent}
+          selected={getChosenBackgroundItem(choice, selections)}
+          onSelect={id => onChange({ items: { ...selections.items, [choice.key]: id } })}
+        />
+      ))}
     </div>
   )
 }
@@ -91,6 +108,44 @@ function ToolCategoryField({ from, accent, selected, excluded, onSelect }: ToolC
               }}
             >
               {isExcluded ? '✓ ' : ''}{tool.name}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+type ItemChoiceFieldProps = {
+  choice: BackgroundItemChoice
+  accent: string
+  selected: string | null
+  onSelect: (id: string) => void
+}
+
+function ItemChoiceField({ choice, accent, selected, onSelect }: ItemChoiceFieldProps) {
+  return (
+    <div>
+      <p className="text-sm font-semibold text-parchment-300 mb-2 font-fantasy">
+        Equipamento: {choice.label}{' '}
+        <span className="text-parchment-600 font-normal">({selected ? 1 : 0}/1)</span>
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+        {choice.options.map(id => {
+          const isSelected = selected === id
+          return (
+            <button
+              key={id}
+              onClick={() => onSelect(id)}
+              aria-pressed={isSelected}
+              className="px-3 py-2 rounded-lg border text-sm text-left transition-all"
+              style={{
+                borderColor: isSelected ? accent : 'rgba(58, 38, 20, 0.6)',
+                backgroundColor: isSelected ? `${accent}15` : 'transparent',
+                color: isSelected ? accent : '#9a7650',
+              }}
+            >
+              {getItemName(id)}
             </button>
           )
         })}

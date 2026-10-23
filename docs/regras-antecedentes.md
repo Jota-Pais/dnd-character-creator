@@ -19,8 +19,8 @@
 
 **Equipamento inicial:**
 
-- item: holy-symbol
-- item: prayer-book (ou prayer-wheel)
+- item-choice holy-symbol: amulet | emblem | reliquary (o símbolo sagrado tem uma dessas formas, p. 151)
+- item-choice prayers: prayer-book (livro de preces) | prayer-wheel (conta de orações)
 - item: 5x incense-stick
 - item: vestments
 - item: common-clothes
@@ -123,7 +123,7 @@
 
 - item: fine-clothes
 - item: disguise-kit
-- item: con-tools (ferramentas do golpe favorito, ex: dados viciados, baralho marcado, anéis de sinete falsos, documentos forjados)
+- item-choice con-tools (ferramentas de trapaça, à sua escolha — p. 133): con-tools-bottles (dez garrafas tampadas com líquidos coloridos) | con-tools-weighted-dice (dados viciados) | con-tools-marked-cards (baralho de cartas marcadas) | con-tools-signet-ring (anel de sinete de um duque imaginário)
 - gold: 15 po
 
 **Feature de antecedente:**
@@ -429,7 +429,7 @@
 
 - item: rank-insignia (insígnia da sua patente)
 - item: trophy-from-fallen-enemy (troféu de um inimigo derrotado, ex: adaga, pedaço de bandeira)
-- item: bone-dice (ou baralho de cartas)
+- item-choice gaming-set: bone-dice (dados de osso) | playing-card-set (baralho)
 - item: common-clothes
 - gold: 10 po
 

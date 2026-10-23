@@ -61,6 +61,29 @@ describe('sanitizeImportedDraft', () => {
     expect(draft?.equipment).toEqual(EMPTY_DRAFT.equipment)
   })
 
+  it('mantém o item escolhido do antecedente só se for opção dele (fichas antigas sem items seguem válidas)', () => {
+    const draft = sanitizeImportedDraft({
+      name: 'X',
+      abilityScores: {},
+      background: 'charlatan',
+      backgroundChoices: { items: { 'con-tools': 'con-tools-weighted-dice', 'gaming-set': 'bone-dice' } },
+    })
+    expect(draft?.backgroundChoices).toEqual({ items: { 'con-tools': 'con-tools-weighted-dice' } })
+
+    const invalid = sanitizeImportedDraft({
+      name: 'X',
+      abilityScores: {},
+      background: 'charlatan',
+      backgroundChoices: { items: { 'con-tools': 'alaude-magico' } },
+    })
+    expect(invalid?.backgroundChoices).toEqual({})
+
+    const legacy = sanitizeImportedDraft({
+      name: 'X', abilityScores: {}, background: 'acolyte', backgroundChoices: { languages: ['elvish'] },
+    })
+    expect(legacy?.backgroundChoices).toEqual({ languages: ['elvish'] })
+  })
+
   it('descarta sub-raça que não pertence à raça', () => {
     const draft = sanitizeImportedDraft({
       name: 'X',

@@ -7,8 +7,11 @@ import {
   isBackgroundStepComplete,
   BACKGROUNDS,
   resolveBackgroundItems,
+  getBackgroundItemChoices,
+  sanitizeBackgroundItemSelections,
 } from '../backgroundUtils'
 import type { Background } from '../../types/background'
+import { FOCUS_GROUP_IDS, getItemName } from '../equipmentUtils'
 import type { BackgroundChoiceSelections } from '../../types/character'
 
 describe('getBackground', () => {
@@ -85,27 +88,43 @@ describe('isBackgroundStepComplete', () => {
     expect(isBackgroundStepComplete(null, {})).toBe(false)
   })
 
-  describe('antecedente sem escolhas (Charlatão)', () => {
+  describe('antecedente com escolha só de item (Charlatão — ferramentas de trapaça, p. 133)', () => {
     const charlatan = getBackground('charlatan') as Background
 
-    it('completo ao selecionar o antecedente', () => {
-      expect(isBackgroundStepComplete(charlatan, {})).toBe(true)
+    it('incompleto sem escolher qual ferramenta de trapaça leva', () => {
+      expect(isBackgroundStepComplete(charlatan, {})).toBe(false)
+    })
+
+    it('opção que não é da lista não conta', () => {
+      expect(isBackgroundStepComplete(charlatan, { items: { 'con-tools': 'bone-dice' } })).toBe(false)
+    })
+
+    it('completo com uma das quatro opções', () => {
+      expect(isBackgroundStepComplete(charlatan, { items: { 'con-tools': 'con-tools-signet-ring' } })).toBe(true)
     })
   })
 
   describe('antecedente com escolha de idioma (Acólito — 2 idiomas)', () => {
     const acolyte = getBackground('acolyte') as Background
+    const items = { 'holy-symbol': 'emblem', prayers: 'prayer-book' }
 
     it('incompleto sem idiomas escolhidos', () => {
       expect(isBackgroundStepComplete(acolyte, {})).toBe(false)
     })
 
     it('incompleto com apenas 1 idioma', () => {
-      expect(isBackgroundStepComplete(acolyte, { languages: ['elvish'] })).toBe(false)
+      expect(isBackgroundStepComplete(acolyte, { languages: ['elvish'], items })).toBe(false)
     })
 
-    it('completo com 2 idiomas', () => {
-      expect(isBackgroundStepComplete(acolyte, { languages: ['elvish', 'dwarvish'] })).toBe(true)
+    it('incompleto com 2 idiomas mas sem o símbolo sagrado e o livro/conta (p. 129)', () => {
+      expect(isBackgroundStepComplete(acolyte, { languages: ['elvish', 'dwarvish'] })).toBe(false)
+      expect(isBackgroundStepComplete(acolyte, {
+        languages: ['elvish', 'dwarvish'], items: { 'holy-symbol': 'emblem' },
+      })).toBe(false)
+    })
+
+    it('completo com 2 idiomas e os itens escolhidos', () => {
+      expect(isBackgroundStepComplete(acolyte, { languages: ['elvish', 'dwarvish'], items })).toBe(true)
     })
   })
 
@@ -116,8 +135,12 @@ describe('isBackgroundStepComplete', () => {
       expect(isBackgroundStepComplete(soldier, {})).toBe(false)
     })
 
-    it('completo com ferramenta escolhida', () => {
-      expect(isBackgroundStepComplete(soldier, { tools: ['dice-set'] })).toBe(true)
+    it('incompleto com a ferramenta mas sem dados de osso ou baralho (p. 142)', () => {
+      expect(isBackgroundStepComplete(soldier, { tools: ['dice-set'] })).toBe(false)
+    })
+
+    it('completo com ferramenta e item escolhidos', () => {
+      expect(isBackgroundStepComplete(soldier, { tools: ['dice-set'], items: { 'gaming-set': 'playing-card-set' } })).toBe(true)
     })
   })
 
@@ -176,5 +199,63 @@ describe('resolveBackgroundItems (equipamento do antecedente na ficha, Revisão 
     const folkHero = getBackground('folk-hero') as Background
     const ids = resolveBackgroundItems(folkHero, { tools: ['smiths-tools'] }).map(i => i.id)
     expect(ids).toContain('smiths-tools')
+  })
+})
+
+describe('item-choice — um item entre as opções do livro', () => {
+  it('Charlatão: as quatro ferramentas de trapaça (p. 133)', () => {
+    const charlatan = getBackground('charlatan') as Background
+    const [choice] = getBackgroundItemChoices(charlatan)
+    expect(choice.key).toBe('con-tools')
+    expect(choice.options).toEqual([
+      'con-tools-bottles', 'con-tools-weighted-dice', 'con-tools-marked-cards', 'con-tools-signet-ring',
+    ])
+    const resolved = resolveBackgroundItems(charlatan, { items: { 'con-tools': 'con-tools-marked-cards' } })
+    expect(resolved.map(i => i.label)).toContain('Baralho de Cartas Marcadas')
+  })
+
+  it('Acólito: símbolo sagrado (amuleto, emblema ou relicário — p. 151) e livro de preces ou conta de orações (p. 129)', () => {
+    const acolyte = getBackground('acolyte') as Background
+    const choices = getBackgroundItemChoices(acolyte)
+    expect(choices.map(c => c.key)).toEqual(['holy-symbol', 'prayers'])
+    expect(choices[0].options).toEqual(FOCUS_GROUP_IDS.holy)
+    expect(choices[1].options).toEqual(['prayer-book', 'prayer-wheel'])
+    const labels = resolveBackgroundItems(acolyte, { items: { 'holy-symbol': 'emblem', prayers: 'prayer-wheel' } })
+      .map(i => i.label)
+    expect(labels).toEqual(expect.arrayContaining(['Emblema (Símbolo Sagrado)', 'Conta de Orações']))
+  })
+
+  it('Soldado: dados de osso ou baralho (p. 142)', () => {
+    const soldier = getBackground('soldier') as Background
+    const [choice] = getBackgroundItemChoices(soldier)
+    expect(choice.options).toEqual(['bone-dice', 'playing-card-set'])
+    const resolved = resolveBackgroundItems(soldier, { items: { 'gaming-set': 'playing-card-set' } })
+    expect(resolved).toContainEqual({ id: 'playing-card-set', quantity: 1, label: 'Baralho de Cartas', pending: false })
+  })
+
+  it('sem escolha (ou com id fora das opções) fica pendente, com o rótulo do slot', () => {
+    const soldier = getBackground('soldier') as Background
+    for (const choices of [{}, { items: { 'gaming-set': 'con-tools-bottles' } }]) {
+      const pending = resolveBackgroundItems(soldier, choices).find(i => i.pending)
+      expect(pending).toEqual({ id: null, quantity: 1, label: 'Dados de Osso ou Baralho (a escolher)', pending: true })
+    }
+  })
+
+  it('todas as opções de todos os antecedentes existem no catálogo', () => {
+    for (const bg of BACKGROUNDS) {
+      for (const choice of getBackgroundItemChoices(bg)) {
+        for (const id of choice.options) expect(getItemName(id), `${bg.id}/${choice.key}/${id}`).not.toBe(id)
+      }
+    }
+  })
+
+  it('sanitizeBackgroundItemSelections mantém só chaves e opções do antecedente', () => {
+    const acolyte = getBackground('acolyte') as Background
+    expect(sanitizeBackgroundItemSelections(acolyte, {
+      'holy-symbol': 'reliquary',   // válido
+      prayers: 'con-tools-bottles', // opção de outro antecedente
+      'con-tools': 'con-tools-bottles', // chave que o Acólito não tem
+      lixo: 42,
+    })).toEqual({ 'holy-symbol': 'reliquary' })
   })
 })

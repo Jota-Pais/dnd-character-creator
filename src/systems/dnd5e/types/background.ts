@@ -16,6 +16,8 @@ export type BackgroundChoice = BackgroundToolChoice | BackgroundLanguageChoice
 export type BackgroundChoiceSelections = {
   languages?: string[]
   tools?: string[]
+  /** Item escolhido em cada `item-choice` do equipamento do antecedente: key → id do item. */
+  items?: Record<string, string>
 }
 
 export type Background = {

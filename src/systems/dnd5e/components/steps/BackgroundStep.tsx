@@ -7,6 +7,7 @@ import {
   getSkillName,
   getToolName,
   isBackgroundStepComplete,
+  getBackgroundItemChoices,
 } from '../../utils/backgroundUtils'
 import { getExcludedTools, getExcludedLanguages } from '../../utils/proficiencyUtils'
 import { BackgroundCard } from '../background/BackgroundCard'
@@ -28,6 +29,7 @@ export function BackgroundStep() {
     : '#d4900a'
 
   const canAdvance = isBackgroundStepComplete(selectedBg ?? null, draft.backgroundChoices)
+  const itemChoices = selectedBg ? getBackgroundItemChoices(selectedBg) : []
 
   // Idiomas/ferramentas já obtidos de raça ou classe (inclusive da subclasse) não se repetem
   const langExcluded = getExcludedLanguages(draft, 'background')
@@ -163,11 +165,12 @@ export function BackgroundStep() {
               </div>
 
               {/* Escolhas */}
-              {selectedBg.choices.length > 0 && (
+              {(selectedBg.choices.length > 0 || itemChoices.length > 0) && (
                 <div className="rounded-xl border border-parchment-900 bg-parchment-950/60 p-4">
                   <SectionTitle>Escolhas do Personagem</SectionTitle>
                   <BackgroundChoicePanel
                     choices={selectedBg.choices}
+                    itemChoices={itemChoices}
                     selections={draft.backgroundChoices}
                     accent={accent}
                     onChange={updateBackgroundChoices}

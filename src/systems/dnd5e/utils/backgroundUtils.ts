@@ -1,8 +1,9 @@
 import type { Background, BackgroundChoice, BackgroundChoiceSelections } from '../types/background'
+import type { BackgroundEquipmentItem } from '../types/equipment'
 import backgroundsData from '../data/backgrounds.json'
 import toolsData from '../data/tools.json'
 import { LANGUAGES, SKILLS } from './raceUtils'
-import { FOCUS_GROUP_LABEL, formatInventoryItem } from './equipmentUtils'
+import { formatInventoryItem, getItemName } from './equipmentUtils'
 
 export { LANGUAGES, SKILLS }
 
@@ -74,7 +75,8 @@ export function isBackgroundStepComplete(
 
   return (
     (choices.tools?.length ?? 0) >= requiredTools &&
-    (choices.languages?.length ?? 0) >= requiredLanguages
+    (choices.languages?.length ?? 0) >= requiredLanguages &&
+    getBackgroundItemChoices(background).every(c => getChosenBackgroundItem(c, choices) !== null)
   )
 }
 
@@ -98,7 +100,7 @@ export type ResolvedBackgroundItem = {
  * - `specific`: o item, com a quantidade;
  * - `chosen-tool`: a ferramenta escolhida na proficiência do antecedente (Artista, Artesão de
  *   Guilda, Herói do Povo — o livro entrega a mesma que você domina);
- * - `focus-group`: o foco, pelo nome do grupo.
+ * - `item-choice`: o item escolhido entre as opções do livro (`choices.items[key]`).
  */
 export function resolveBackgroundItems(
   background: Background,
@@ -114,8 +116,49 @@ export function resolveBackgroundItems(
           ? { id: toolId, quantity: 1, label: getToolName(toolId), pending: false }
           : { id: null, quantity: 1, label: 'Ferramenta do Antecedente (a escolher)', pending: true }
       }
-      case 'focus-group':
-        return { id: null, quantity: 1, label: FOCUS_GROUP_LABEL[item.group], pending: false }
+      case 'item-choice': {
+        const chosen = getChosenBackgroundItem(item, choices)
+        return chosen
+          ? { id: chosen, quantity: 1, label: getItemName(chosen), pending: false }
+          : { id: null, quantity: 1, label: `${item.label} (a escolher)`, pending: true }
+      }
     }
   })
+}
+
+export type BackgroundItemChoice = Extract<BackgroundEquipmentItem, { kind: 'item-choice' }>
+
+/**
+ * Os "um item entre opções" do equipamento do antecedente — o símbolo sagrado e o livro de
+ * preces ou a conta de orações do Acólito (p. 129), as ferramentas de trapaça do Charlatão
+ * (p. 133), os dados de osso ou o baralho do Soldado (p. 142). Cada um vira um slot na etapa
+ * Antecedente.
+ */
+export function getBackgroundItemChoices(background: Background): BackgroundItemChoice[] {
+  return background.equipment.items.filter((i): i is BackgroundItemChoice => i.kind === 'item-choice')
+}
+
+/** O item escolhido num `item-choice`, ou null se ainda não há escolha válida. */
+export function getChosenBackgroundItem(
+  choice: BackgroundItemChoice,
+  choices: BackgroundChoiceSelections,
+): string | null {
+  const id = choices.items?.[choice.key]
+  return id !== undefined && choice.options.includes(id) ? id : null
+}
+
+/**
+ * Filtra as escolhas de item contra o antecedente: só ficam chaves que ele tem e ids que são
+ * opção daquela chave. Usado pela sanitização do draft (fichas antigas ou importadas).
+ */
+export function sanitizeBackgroundItemSelections(
+  background: Background,
+  raw: Record<string, unknown>,
+): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const choice of getBackgroundItemChoices(background)) {
+    const id = raw[choice.key]
+    if (typeof id === 'string' && choice.options.includes(id)) out[choice.key] = id
+  }
+  return out
 }

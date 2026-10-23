@@ -1867,18 +1867,18 @@
 
 > **Nota:** estes itens não são compráveis. São recebidos automaticamente ao escolher o antecedente correspondente. Custo `0 pc` indica que é concedido pelo antecedente, não comprável no mercado.
 
-### Livro de Orações
+### Livro de Preces
 
 **ID:** prayer-book
-**Nome:** Livro de Orações
+**Nome:** Livro de Preces
 **Custo:** 0 pc
 **Peso:** null
 **Categoria:** background-item
 
-### Roda de Orações
+### Conta de Orações
 
 **ID:** prayer-wheel
-**Nome:** Roda de Orações
+**Nome:** Conta de Orações
 **Custo:** 0 pc
 **Peso:** null
 **Categoria:** background-item
@@ -1907,10 +1907,36 @@
 **Peso:** null
 **Categoria:** background-item
 
-### Ferramentas de Trapaça
+> **Ferramentas de trapaça (Charlatão, p. 133):** o livro dá uma, à escolha do jogador, entre as quatro abaixo. No antecedente é um `item-choice` (chave `con-tools`).
 
-**ID:** con-tools
-**Nome:** Ferramentas de Trapaça
+### Dez Garrafas Tampadas com Líquidos Coloridos
+
+**ID:** con-tools-bottles
+**Nome:** Dez Garrafas Tampadas com Líquidos Coloridos
+**Custo:** 0 pc
+**Peso:** null
+**Categoria:** background-item
+
+### Conjunto de Dados Viciados
+
+**ID:** con-tools-weighted-dice
+**Nome:** Conjunto de Dados Viciados
+**Custo:** 0 pc
+**Peso:** null
+**Categoria:** background-item
+
+### Baralho de Cartas Marcadas
+
+**ID:** con-tools-marked-cards
+**Nome:** Baralho de Cartas Marcadas
+**Custo:** 0 pc
+**Peso:** null
+**Categoria:** background-item
+
+### Anel de Sinete de um Duque Imaginário
+
+**ID:** con-tools-signet-ring
+**Nome:** Anel de Sinete de um Duque Imaginário
 **Custo:** 0 pc
 **Peso:** null
 **Categoria:** background-item

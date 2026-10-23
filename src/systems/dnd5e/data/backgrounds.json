@@ -15,8 +15,8 @@
     "variant": null,
     "equipment": {
       "items": [
-        { "kind": "focus-group", "group": "holy" },
-        { "kind": "specific", "id": "prayer-book", "itemType": "general", "quantity": 1 },
+        { "kind": "item-choice", "key": "holy-symbol", "label": "Símbolo Sagrado", "options": ["amulet", "emblem", "reliquary"] },
+        { "kind": "item-choice", "key": "prayers", "label": "Livro de Preces ou Conta de Orações", "options": ["prayer-book", "prayer-wheel"] },
         { "kind": "specific", "id": "incense-stick", "itemType": "general", "quantity": 5 },
         { "kind": "specific", "id": "vestments", "itemType": "general", "quantity": 1 },
         { "kind": "specific", "id": "common-clothes", "itemType": "general", "quantity": 1 }
@@ -87,7 +87,7 @@
       "items": [
         { "kind": "specific", "id": "fine-clothes", "itemType": "general", "quantity": 1 },
         { "kind": "specific", "id": "disguise-kit", "itemType": "tool", "quantity": 1 },
-        { "kind": "specific", "id": "con-tools", "itemType": "general", "quantity": 1 }
+        { "kind": "item-choice", "key": "con-tools", "label": "Ferramentas de Trapaça", "options": ["con-tools-bottles", "con-tools-weighted-dice", "con-tools-marked-cards", "con-tools-signet-ring"] }
       ],
       "goldPo": 15
     }
@@ -299,7 +299,7 @@
       "items": [
         { "kind": "specific", "id": "rank-insignia", "itemType": "general", "quantity": 1 },
         { "kind": "specific", "id": "trophy-from-fallen-enemy", "itemType": "general", "quantity": 1 },
-        { "kind": "specific", "id": "bone-dice", "itemType": "general", "quantity": 1 },
+        { "kind": "item-choice", "key": "gaming-set", "label": "Dados de Osso ou Baralho", "options": ["bone-dice", "playing-card-set"] },
         { "kind": "specific", "id": "common-clothes", "itemType": "general", "quantity": 1 }
       ],
       "goldPo": 10

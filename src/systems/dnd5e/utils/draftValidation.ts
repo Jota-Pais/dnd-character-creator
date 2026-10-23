@@ -15,9 +15,10 @@ import { WIZARD_STEPS } from '../types/character'
 import type { GameClass, SubclassChoiceSelections } from '../types/class'
 import type { ChoiceResolution, InventoryItem } from '../types/equipment'
 import type { AbilityScore } from '../types/race'
+import type { Background } from '../types/background'
 import { getRace, getSubrace, isRaceStepComplete } from './raceUtils'
 import { getClass, getSubclass, isClassStepComplete } from './classUtils'
-import { getBackground, isBackgroundStepComplete } from './backgroundUtils'
+import { getBackground, isBackgroundStepComplete, sanitizeBackgroundItemSelections } from './backgroundUtils'
 import { isAbilitiesStepComplete } from './abilityScoreUtils'
 import { getSpell, isSpellStepComplete } from './spellUtils'
 import { isEquipmentStepComplete } from './equipmentUtils'
@@ -148,13 +149,18 @@ function sanitizeSpellChoices(raw: unknown): SpellChoices {
   }
 }
 
-function sanitizeBackgroundChoices(raw: unknown): BackgroundChoiceSelections {
+function sanitizeBackgroundChoices(raw: unknown, background: Background): BackgroundChoiceSelections {
   if (!isRecord(raw)) return {}
   const choices: BackgroundChoiceSelections = {}
   const languages = toStringArray(raw.languages)
   if (languages.length > 0) choices.languages = languages
   const tools = toStringArray(raw.tools)
   if (tools.length > 0) choices.tools = tools
+  // Item escolhido no equipamento do antecedente: só chaves e opções que o antecedente tem.
+  if (isRecord(raw.items)) {
+    const items = sanitizeBackgroundItemSelections(background, raw.items)
+    if (Object.keys(items).length > 0) choices.items = items
+  }
   return choices
 }
 
@@ -316,7 +322,7 @@ export function sanitizeImportedDraft(raw: unknown): CharacterDraft | null {
     asiChoices,
     featSelections: sanitizeFeatSelections(raw.featSelections),
     background: background?.id ?? null,
-    backgroundChoices: background ? sanitizeBackgroundChoices(raw.backgroundChoices) : {},
+    backgroundChoices: background ? sanitizeBackgroundChoices(raw.backgroundChoices, background) : {},
     equipment: cls ? sanitizeEquipment(raw.equipment) : emptyEquipment(),
     hpMethod: raw.hpMethod === 'roll' ? 'roll' : 'average',
     hpRolls,

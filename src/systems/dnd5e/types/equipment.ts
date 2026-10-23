@@ -148,7 +148,10 @@ export type ClassStartingEquipment = {
 export type BackgroundEquipmentItem =
   | { kind: 'specific'; id: string; itemType: 'weapon' | 'armor' | 'tool' | 'general'; quantity: number }
   | { kind: 'chosen-tool' }  // a ferramenta escolhida na proficiência do antecedente
-  | { kind: 'focus-group'; group: 'holy' | 'arcane' | 'druidic' }
+  // Um item entre as opções que o livro dá ("um livro de preces ou uma conta de orações",
+  // "ferramentas de trapaça, à sua escolha (...)"). A escolha fica em
+  // backgroundChoices.items[key]; `options` são ids de general-items.json ou tools.json.
+  | { kind: 'item-choice'; key: string; label: string; options: string[] }
 
 export type BackgroundEquipment = {
   items: BackgroundEquipmentItem[]

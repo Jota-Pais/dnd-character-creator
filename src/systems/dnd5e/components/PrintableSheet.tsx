@@ -424,7 +424,8 @@ export function PrintableSheet() {
                 <th className="font-semibold pr-2">Arma</th>
                 <th className="font-semibold pr-2">Ataque</th>
                 <th className="font-semibold pr-2">Dano</th>
-                <th className="font-semibold">Atributo</th>
+                <th className="font-semibold pr-2">Atributo</th>
+                <th className="font-semibold">Propriedades</th>
               </tr>
             </thead>
             <tbody>
@@ -438,7 +439,8 @@ export function PrintableSheet() {
                     </td>
                     <td className="pr-2 py-0.5"><strong>{atk.attackBonus}</strong></td>
                     <td className="pr-2 py-0.5">{atk.damage}</td>
-                    <td className="py-0.5 text-gray-600">{atk.ability}</td>
+                    <td className="pr-2 py-0.5 text-gray-600">{atk.ability}</td>
+                    <td className="py-0.5 text-[10px] text-gray-600">{atk.properties || '—'}</td>
                   </tr>
                 )
               })}

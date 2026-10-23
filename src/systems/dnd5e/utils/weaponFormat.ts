@@ -78,11 +78,17 @@ export type WeaponAttack = {
   attackBonus: string
   /** Dano com o modificador e o tipo (ex.: "1d8+3 perfurante"). */
   damage: string
+  /**
+   * Propriedades da arma (ex.: "acuidade, leve, arremesso (6/18 m)"), ou "" se não tiver.
+   * Sem elas a ficha não diz o alcance de arremesso/munição nem o dado versátil.
+   */
+  properties: string
 }
 
 /**
  * Ataque de uma arma: escolhe o atributo (Destreza para armas à distância ou de acuidade quando
- * a Destreza é melhor; Força caso contrário), soma proficiência no ataque e o modificador no dano.
+ * a Destreza é melhor; Força caso contrário), soma proficiência no ataque e o modificador no dano,
+ * e leva junto as propriedades da arma.
  */
 export function getWeaponAttack(weapon: Weapon, strMod: number, dexMod: number, proficiency: number): WeaponAttack {
   const hasFinesse = weapon.properties.some(p => p.kind === 'finesse')
@@ -93,5 +99,11 @@ export function getWeaponAttack(weapon: Weapon, strMod: number, dexMod: number, 
   const damage = weapon.damage
     ? `${formatDamageRoll(weapon.damage)}${mod !== 0 ? signed(mod) : ''}${type}`
     : '—'
-  return { name: weapon.name, ability, attackBonus: signed(proficiency + mod), damage }
+  return {
+    name: weapon.name,
+    ability,
+    attackBonus: signed(proficiency + mod),
+    damage,
+    properties: formatWeaponProperties(weapon.properties),
+  }
 }

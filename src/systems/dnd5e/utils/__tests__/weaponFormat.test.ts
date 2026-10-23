@@ -60,13 +60,13 @@ describe('weaponFormat', () => {
     it('arma de acuidade usa Destreza quando ela é melhor', () => {
       // Rapieira (acuidade), Força +1, Destreza +3, prof +2 → usa Destreza
       const atk = getWeaponAttack(getWeaponById('rapier')!, 1, 3, 2)
-      expect(atk).toEqual({ name: 'Rapieira', ability: 'Destreza', attackBonus: '+5', damage: '1d8+3 perfurante' })
+      expect(atk).toEqual({ name: 'Rapieira', ability: 'Destreza', attackBonus: '+5', damage: '1d8+3 perfurante', properties: 'acuidade' })
     })
 
     it('arma corpo a corpo sem acuidade usa Força', () => {
       // Espada Grande (2d6, sem acuidade), Força +3, Destreza +1, prof +2 → usa Força
       const atk = getWeaponAttack(getWeaponById('greatsword')!, 3, 1, 2)
-      expect(atk).toEqual({ name: 'Espada Grande', ability: 'Força', attackBonus: '+5', damage: '2d6+3 cortante' })
+      expect(atk).toEqual({ name: 'Espada Grande', ability: 'Força', attackBonus: '+5', damage: '2d6+3 cortante', properties: 'pesada, duas mãos' })
     })
 
     it('arma à distância usa Destreza', () => {
@@ -75,6 +75,23 @@ describe('weaponFormat', () => {
       expect(atk.ability).toBe('Destreza')
       expect(atk.attackBonus).toBe('+4')
       expect(atk.damage).toBe('1d8+2 perfurante')
+    })
+
+    it('leva as propriedades da arma: a adaga do bardo mostra o alcance de arremesso (p. 149)', () => {
+      // Adaga (1d4 perfurante; acuidade, leve, arremesso 6/18 m), Força 0, Destreza +1, prof +2
+      const atk = getWeaponAttack(getWeaponById('dagger')!, 0, 1, 2)
+      expect(atk).toEqual({
+        name: 'Adaga',
+        ability: 'Destreza',
+        attackBonus: '+3',
+        damage: '1d4+1 perfurante',
+        properties: 'acuidade, leve, arremesso (6/18 m)',
+      })
+    })
+
+    it('arma de munição mostra o alcance; arma sem propriedade fica vazia', () => {
+      expect(getWeaponAttack(getWeaponById('longbow')!, 0, 2, 2).properties).toBe('munição (45/180 m), pesada, duas mãos')
+      expect(getWeaponAttack(getWeaponById('mace')!, 1, 0, 2).properties).toBe('')
     })
 
     it('modificador 0 não aparece no dano', () => {

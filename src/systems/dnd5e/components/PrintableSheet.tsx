@@ -8,7 +8,7 @@ import {
   getClass, getSubclass, isActiveCaster, getClassFeaturesUpToLevel, FIGHTING_STYLES,
 } from '../utils/classUtils'
 import {
-  allClassEntries, getHitDicePool, getAllAsiChoices,
+  allClassEntries, getHitDicePool, getAllAsiChoices, formatClassLevelLabel,
 } from '../utils/multiclassUtils'
 import { getBackground, getToolName } from '../utils/backgroundUtils'
 import {
@@ -226,14 +226,9 @@ export function PrintableSheet() {
   const weaponProficiencies = getWeaponProficiencyLabels(draft)
   const unproficientArmor = getUnproficientArmor(draft)
 
-  const classLabel = entries.map(e => {
-    const ec = getClass(e.classId)
-    const sub = ec && e.classChoices.subclass ? getSubclass(ec, e.classChoices.subclass) : null
-    return `${ec?.name ?? e.classId} ${e.level}°${sub ? ` (${sub.name})` : ''}`
-  }).join(' / ')
   const identity = [
     subrace ? subrace.name : race?.name,
-    cls ? `${classLabel}${isMc ? ` — nível ${level}` : ` nível ${level}`}` : `Nível ${level}`,
+    formatClassLevelLabel(draft) ?? `Nível ${level}`,
     bg?.name,
   ].filter(Boolean).join(' · ')
 

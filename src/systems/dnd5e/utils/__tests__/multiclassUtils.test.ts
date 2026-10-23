@@ -16,6 +16,7 @@ import {
   getHitDicePool,
   getAllAsiChoices,
   getCombinedCasterLevel,
+  formatClassLevelLabel,
 } from '../multiclassUtils'
 import { getArmorProficiencies as getAllArmorProficiencies, getWeaponProficiencies as getAllWeaponProficiencies } from '../proficiencyUtils'
 import { getFinalAbilityScores, isImprovementsStepComplete } from '../asiUtils'
@@ -353,5 +354,29 @@ describe('multiclasse — pool de espaços de magia combinado', () => {
     const mix = makeDraft({ class: 'wizard', level: 8, additionalClasses: [entry({ classId: 'warlock', level: 3 })] })
     expect(getCombinedSpellSlots(mix).slice(0, 3)).toEqual([4, 3, 2])
     expect(getPactSlots(mix)).not.toBeNull()
+  })
+})
+
+describe('formatClassLevelLabel — cabeçalho de identidade (Revisão e ficha imprimível)', () => {
+  it('sem classe → null (a tela decide o que mostrar)', () => {
+    expect(formatClassLevelLabel(makeDraft({ level: 3 }))).toBeNull()
+  })
+
+  it('classe única com subclasse: o nível aparece uma vez só, no rótulo da classe', () => {
+    const bard = makeDraft({ class: 'bard', level: 4, classChoices: { ...EMPTY_DRAFT.classChoices, subclass: 'college-of-lore' } })
+    expect(formatClassLevelLabel(bard)).toBe('Bardo 4° (Colégio do Conhecimento)')
+  })
+
+  it('classe única sem subclasse: sem sufixo de nível', () => {
+    expect(formatClassLevelLabel(makeDraft({ class: 'fighter', level: 1 }))).toBe('Guerreiro 1°')
+  })
+
+  it('multiclasse: cada classe com seu nível e o total no fim', () => {
+    const mix = makeDraft({
+      class: 'wizard',
+      level: 5,
+      additionalClasses: [entry({ classId: 'fighter', level: 2, classChoices: { ...EMPTY_DRAFT.classChoices, subclass: 'battle-master' } })],
+    })
+    expect(formatClassLevelLabel(mix)).toBe('Mago 3° / Guerreiro 2° (Mestre de Batalha) — nível 5')
   })
 })

@@ -11,7 +11,7 @@ import {
   isActiveCaster, getClassFeaturesUpToLevel,
 } from '../../utils/classUtils'
 import {
-  allClassEntries, getAllAsiChoices,
+  allClassEntries, getAllAsiChoices, formatClassLevelLabel,
 } from '../../utils/multiclassUtils'
 import { getClassResources } from '../../utils/classResourceUtils'
 import { getBackground, BACKGROUND_PRESENTATION, getToolName, SKILLS } from '../../utils/backgroundUtils'
@@ -152,15 +152,11 @@ export function ReviewStep() {
   const allTools = getAllGrantedTools(draft)
   const expertiseTools = getExpertiseTools(draft)
 
-  const classLabel = entries.map(e => {
-    const ec = getClass(e.classId)
-    const sub = ec && e.classChoices.subclass ? getSubclass(ec, e.classChoices.subclass) : null
-    return `${ec?.name ?? e.classId} ${e.level}°${sub ? ` (${sub.name})` : ''}`
-  }).join(' / ')
+  const classLabel = formatClassLevelLabel(draft)
 
   const identityParts = [
     race ? `${RACE_PRESENTATION[race.id]?.emoji ?? ''} ${subrace ? subrace.name : race.name}` : null,
-    cls ? `${classP?.emoji ?? ''} ${classLabel}${isMc ? ` — nível ${level}` : ''}` : null,
+    classLabel ? `${classP?.emoji ?? ''} ${classLabel}` : null,
     bg ? `${BACKGROUND_PRESENTATION[bg.id]?.emoji ?? ''} ${bg.name}` : null,
   ].filter(Boolean).join(' · ')
 

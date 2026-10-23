@@ -8,8 +8,12 @@ import {
   isImprovementsStepComplete,
   getRacialBonuses,
   getCharacterFeats,
+  describeAsiChoice,
+  getAsiFeatures,
+  getSheetClassFeatures,
+  ASI_FEATURE_NAME,
 } from '../asiUtils'
-import { EMPTY_DRAFT, type CharacterDraft, type AsiChoice } from '../../types/character'
+import { EMPTY_DRAFT, type CharacterDraft, type AsiChoice, type ClassEntry } from '../../types/character'
 
 function draft(overrides: Partial<CharacterDraft>): CharacterDraft {
   return { ...structuredClone(EMPTY_DRAFT), ...overrides }
@@ -202,41 +206,127 @@ describe('humano variante com meio-talento', () => {
 })
 
 describe('getCharacterFeats', () => {
-  it('talento racial vem com a origem (sub-raça); os dos Aprimoramentos sem origem', () => {
+  it('cada talento vem com a origem: racial (sub-raça) ou o nível do Incremento', () => {
     const d = draft({
       race: 'human',
       subrace: 'variant-human',
+      class: 'bard',
+      level: 8,
       raceChoices: { feat: 'ator', featAbility: 'CHA' },
-      asiChoices: [{ kind: 'feat', featId: 'sortudo' }],
+      asiChoices: [{ kind: 'asi', abilities: ['CHA', 'CHA'] }, { kind: 'feat', featId: 'sortudo' }],
     })
     expect(getCharacterFeats(d).map(f => [f.feat.id, f.origin])).toEqual([
-      ['ator', 'Humano (Variante)'],
-      ['sortudo', null],
+      ['ator', 'Talento racial (Humano (Variante))'],
+      ['sortudo', 'Incremento nv 8'],
     ])
   })
 
-  it('inclui os talentos das classes adicionais (multiclasse)', () => {
+  it('inclui os talentos das classes adicionais, com a classe na origem (multiclasse)', () => {
     const d = draft({
+      class: 'wizard',
+      level: 8,
       asiChoices: [{ kind: 'feat', featId: 'alerta' }],
       additionalClasses: [{
-        classId: 'fighter', level: 4, classChoices: structuredClone(EMPTY_DRAFT.classChoices), spellChoices: structuredClone(EMPTY_DRAFT.spellChoices),
-        asiChoices: [{ kind: 'feat', featId: 'resiliente', abilities: ['CON'] }], hpRolls: [],
+        classId: 'fighter', level: 6, classChoices: structuredClone(EMPTY_DRAFT.classChoices), spellChoices: structuredClone(EMPTY_DRAFT.spellChoices),
+        asiChoices: [{ kind: 'asi', abilities: ['STR', 'STR'] }, { kind: 'feat', featId: 'resiliente', abilities: ['CON'] }], hpRolls: [],
       }],
     })
-    expect(getCharacterFeats(d).map(f => f.feat.id)).toEqual(['alerta', 'resiliente'])
+    // mago 2 não alcançou ASI: o espaço sobrando sai sem nível, mas não some
+    expect(getCharacterFeats(d).map(f => [f.feat.id, f.origin])).toEqual([
+      ['alerta', 'Incremento (Mago)'],
+      ['resiliente', 'Incremento nv 6 (Guerreiro)'],
+    ])
   })
 
-  it('não repete o mesmo talento nem inclui id desconhecido ou espaço vazio', () => {
+  it('não repete o mesmo talento (junta as origens) nem inclui id desconhecido ou espaço vazio', () => {
     const d = draft({
       race: 'human',
       subrace: 'variant-human',
+      class: 'bard',
+      level: 12,
       raceChoices: { feat: 'alerta' },
       asiChoices: [{ kind: 'feat', featId: 'alerta' }, { kind: 'feat', featId: '' }, { kind: 'feat', featId: 'nao-existe' }],
     })
-    expect(getCharacterFeats(d).map(f => [f.feat.id, f.origin])).toEqual([['alerta', 'Humano (Variante)']])
+    expect(getCharacterFeats(d).map(f => [f.feat.id, f.origin])).toEqual([
+      ['alerta', 'Talento racial (Humano (Variante)), Incremento nv 4'],
+    ])
   })
 
   it('sem talentos, lista vazia', () => {
     expect(getCharacterFeats(draft({}))).toEqual([])
+  })
+})
+
+describe('describeAsiChoice', () => {
+  it('[a, a] é +2; [a, b] é +1 e +1', () => {
+    expect(describeAsiChoice({ kind: 'asi', abilities: ['STR', 'STR'] })).toBe('+2 FOR')
+    expect(describeAsiChoice({ kind: 'asi', abilities: ['CHA', 'WIS'] })).toBe('+1 CAR, +1 SAB')
+  })
+
+  it('talento com o nome; meio-talento com o +1 escolhido', () => {
+    expect(describeAsiChoice({ kind: 'feat', featId: 'sortudo' })).toBe('Talento: Sortudo')
+    expect(describeAsiChoice({ kind: 'feat', featId: 'ator', abilities: ['CHA'] })).toBe('Talento: Ator (+1 CAR)')
+    // atributo fora das opções do talento não vira +1 (o mesmo corte da validação)
+    expect(describeAsiChoice({ kind: 'feat', featId: 'ator', abilities: ['STR'] })).toBe('Talento: Ator')
+  })
+
+  it('espaço vazio ou talento desconhecido: null', () => {
+    expect(describeAsiChoice(undefined)).toBeNull()
+    expect(describeAsiChoice({ kind: 'asi', abilities: [] })).toBeNull()
+    expect(describeAsiChoice({ kind: 'feat', featId: '' })).toBeNull()
+    expect(describeAsiChoice({ kind: 'feat', featId: 'nao-existe' })).toBeNull()
+  })
+})
+
+function entry(classId: string, level: number, asiChoices: AsiChoice[] = [], subclass: string | null = null): ClassEntry {
+  return {
+    classId, level, asiChoices, hpRolls: [],
+    classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), subclass },
+    spellChoices: structuredClone(EMPTY_DRAFT.spellChoices),
+  }
+}
+
+describe('getAsiFeatures', () => {
+  it('bardo 4: uma linha no nível 4, com a escolha', () => {
+    const lines = getAsiFeatures(entry('bard', 4, [{ kind: 'asi', abilities: ['CHA', 'WIS'] }]))
+    expect(lines.map(l => [l.level, l.name, l.chosen])).toEqual([[4, ASI_FEATURE_NAME, '+1 CAR, +1 SAB']])
+  })
+
+  it('guerreiro 6: níveis 4 e 6; ladino 10: níveis 4, 8 e 10', () => {
+    expect(getAsiFeatures(entry('fighter', 6)).map(l => l.level)).toEqual([4, 6])
+    expect(getAsiFeatures(entry('rogue', 10)).map(l => l.level)).toEqual([4, 8, 10])
+  })
+
+  it('cada linha leva a escolha do seu espaço; espaço vazio fica sem escolha', () => {
+    const lines = getAsiFeatures(entry('fighter', 6, [{ kind: 'feat', featId: 'sortudo' }]))
+    expect(lines.map(l => l.chosen)).toEqual(['Talento: Sortudo', null])
+  })
+
+  it('antes do nível 4 não há linha', () => {
+    expect(getAsiFeatures(entry('bard', 3))).toEqual([])
+  })
+})
+
+describe('getSheetClassFeatures', () => {
+  it('bardo 4 do Colégio do Conhecimento: classe, subclasse e Incremento em ordem de nível', () => {
+    const features = getSheetClassFeatures(entry('bard', 4, [{ kind: 'asi', abilities: ['CHA', 'CHA'] }], 'college-of-lore'))
+    const levels = features.map(f => f.level)
+    expect(levels).toEqual([...levels].sort((a, b) => a - b))
+    expect(features.some(f => f.name === 'Palavras de Interrupção' && f.level === 3)).toBe(true)
+    const last = features[features.length - 1]
+    expect([last.level, last.name, last.chosen]).toEqual([4, ASI_FEATURE_NAME, '+2 CAR'])
+    // features dos dados não abrem escolha aqui
+    expect(features.filter(f => f.name !== ASI_FEATURE_NAME).every(f => f.chosen === null)).toBe(true)
+  })
+
+  it('bardo 6: as features do colégio (nv 3) entram antes das da classe nos níveis 5 e 6', () => {
+    const features = getSheetClassFeatures(entry('bard', 6, [], 'college-of-lore'))
+    const levels = features.map(f => f.level)
+    expect(levels).toEqual([...levels].sort((a, b) => a - b))
+    expect(levels.filter(l => l === 6).length).toBeGreaterThan(0)
+  })
+
+  it('classe desconhecida: lista vazia', () => {
+    expect(getSheetClassFeatures(entry('nao-existe', 4))).toEqual([])
   })
 })

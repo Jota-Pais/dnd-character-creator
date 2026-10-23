@@ -5,7 +5,7 @@ import {
   getAvailableInnateSpells, getEffectiveTraitsWithChoices, TOOL_NAMES,
 } from '../utils/raceUtils'
 import {
-  getClass, getSubclass, isActiveCaster, getClassFeaturesUpToLevel, FIGHTING_STYLES,
+  getClass, isActiveCaster, FIGHTING_STYLES,
 } from '../utils/classUtils'
 import {
   allClassEntries, getHitDicePool, formatClassLevelLabel,
@@ -15,7 +15,7 @@ import {
   calculateModifier, formatModifier, getProficiencyBonus,
   ALL_ABILITY_SCORES, ABILITY_LABELS,
 } from '../utils/abilityScoreUtils'
-import { getFinalAbilityScores, getCharacterFeats } from '../utils/asiUtils'
+import { getFinalAbilityScores, getCharacterFeats, getSheetClassFeatures } from '../utils/asiUtils'
 import {
   getAllGrantedTools, getAllGrantedLanguages, getExpertiseTools, getSkillChecks, getPassiveScore,
   getArmorProficiencyLabels, getWeaponProficiencyLabels, getUnproficientArmor, hasWeaponProficiency,
@@ -214,12 +214,8 @@ export function PrintableSheet() {
     bg?.name,
   ].filter(Boolean).join(' · ')
 
-  // Features por classe (multiclasse): cada classe no nível que tem nela.
-  const featureBlocks = entries.map(e => {
-    const ec = getClass(e.classId)
-    const sub = ec && e.classChoices.subclass ? getSubclass(ec, e.classChoices.subclass) : null
-    return { e, ec, features: ec ? getClassFeaturesUpToLevel(ec, sub ?? null, e.level) : [] }
-  })
+  // Features por classe (multiclasse): cada classe no nível que tem nela, com os Incrementos.
+  const featureBlocks = entries.map(e => ({ e, ec: getClass(e.classId), features: getSheetClassFeatures(e) }))
   const feats = getCharacterFeats(draft)
   const resourceBlocks = entries
     .map(e => ({ e, resources: getClassResources(e.classId, e.level) }))
@@ -595,7 +591,10 @@ export function PrintableSheet() {
             <div key={e.classId} className="mb-1">
               {isMc && <p className="text-xs font-bold text-gray-700">{ec?.name} {e.level}°</p>}
               {features.map((f, i) => (
-                <p key={`${f.name}-${i}`} className="text-xs mb-1"><strong>{f.name}</strong> (nv {f.level}). {f.description}</p>
+                <p key={`${f.name}-${i}`} className="text-xs mb-1">
+                  <strong>{f.name}</strong> (nv {f.level}). {f.description}
+                  {f.chosen && <> <span className="text-gray-600">Escolha:</span> <strong>{f.chosen}</strong></>}
+                </p>
               ))}
             </div>
           ))}
@@ -608,7 +607,7 @@ export function PrintableSheet() {
             <div key={f.id} className="mb-1">
               <p className="text-xs">
                 <strong>{f.name}.</strong>
-                {origin && <span className="text-gray-600"> Talento racial ({origin})</span>}
+                <span className="text-gray-600"> {origin}</span>
               </p>
               <RuleText text={f.description} className="text-xs" />
             </div>

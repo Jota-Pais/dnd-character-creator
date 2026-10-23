@@ -3,11 +3,10 @@ import {
   getRace, getSubrace, getEffectiveSpeed,
   getEffectiveDarkvision, RACE_PRESENTATION, LANGUAGES, getAvailableInnateSpells, getEffectiveTraitsWithChoices,
 } from '../../utils/raceUtils'
-import { getFinalAbilityScores, getCharacterFeats } from '../../utils/asiUtils'
+import { getFinalAbilityScores, getCharacterFeats, getSheetClassFeatures } from '../../utils/asiUtils'
 import { RuleText } from '../common/RuleText'
 import {
-  getClass, getSubclass, CLASS_PRESENTATION,
-  isActiveCaster, getClassFeaturesUpToLevel,
+  getClass, CLASS_PRESENTATION, isActiveCaster,
 } from '../../utils/classUtils'
 import {
   allClassEntries, formatClassLevelLabel,
@@ -647,7 +646,7 @@ export function ReviewStep() {
                 <div key={feat.id}>
                   <p className="text-sm font-semibold font-fantasy text-parchment-200">
                     {feat.name}
-                    {origin && <span className="font-sans font-normal text-xs text-parchment-600"> · talento racial ({origin})</span>}
+                    <span className="font-sans font-normal text-xs text-parchment-600"> · {origin}</span>
                   </p>
                   <RuleText text={feat.description} className="text-sm text-parchment-500 leading-relaxed" />
                 </div>
@@ -664,8 +663,7 @@ export function ReviewStep() {
             {entries.map(e => {
               const ec = getClass(e.classId)
               if (!ec) return null
-              const sub = e.classChoices.subclass ? getSubclass(ec, e.classChoices.subclass) : null
-              const feats = getClassFeaturesUpToLevel(ec, sub ?? null, e.level)
+              const feats = getSheetClassFeatures(e)
               if (feats.length === 0) return null
               const byLevel = new Map<number, typeof feats>()
               for (const f of feats) {
@@ -689,6 +687,12 @@ export function ReviewStep() {
                           <div key={feat.name} className="mb-2 last:mb-0">
                             <span className="text-sm font-semibold font-fantasy text-parchment-200">{feat.name}. </span>
                             <span className="text-sm text-parchment-500 leading-relaxed">{feat.description}</span>
+                            {feat.chosen && (
+                              <span className="text-sm leading-relaxed">
+                                {' '}<span className="text-parchment-600">Escolha:</span>{' '}
+                                <span className="font-semibold" style={{ color: accent }}>{feat.chosen}</span>
+                              </span>
+                            )}
                           </div>
                         ))}
                       </div>

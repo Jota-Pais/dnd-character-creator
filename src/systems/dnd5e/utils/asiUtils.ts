@@ -1,10 +1,12 @@
 import type { AbilityScore } from '../types/race'
-import type { CharacterDraft, AsiChoice } from '../types/character'
+import type { CharacterDraft, AsiChoice, ClassEntry } from '../types/character'
 import type { Feat } from '../types/feat'
+import type { LevelFeature } from '../types/class'
 import { getRace, getSubrace, getEffectiveAbilityBonuses } from './raceUtils'
-import { ALL_ABILITY_SCORES } from './abilityScoreUtils'
+import { ALL_ABILITY_SCORES, ABILITY_LABELS } from './abilityScoreUtils'
 import { getFeat } from './featUtils'
 import { areFeatChoicesComplete } from './sheetEffects'
+import { getClass, getSubclass, getClassFeaturesUpToLevel } from './classUtils'
 import { allClassEntries, getAllAsiChoices } from './multiclassUtils'
 
 /**
@@ -60,32 +62,103 @@ export function getRaceFeatBonus(draft: CharacterDraft): Record<AbilityScore, nu
   return bonuses
 }
 
+/**
+ * O que o jogador fez num espaço de ASI, em texto de ficha: "+2 FOR", "+1 CAR, +1 SAB",
+ * "Talento: Ator (+1 CAR)", "Talento: Sortudo". `null` quando o espaço ainda está vazio.
+ * [a, a] vira +2 em a (o modelo de getAsiBonuses: cada entrada vale +1).
+ */
+export function describeAsiChoice(choice: AsiChoice | undefined): string | null {
+  if (!choice) return null
+  if (choice.kind === 'feat') {
+    const feat = choice.featId ? getFeat(choice.featId) : undefined
+    if (!feat) return null
+    // +1 do meio-talento só quando o atributo é opção do talento (o mesmo corte de isAsiChoiceComplete).
+    const ab = choice.abilities?.[0]
+    const half = ab && feat.abilityIncrease?.includes(ab) ? ` (+1 ${ABILITY_LABELS[ab].short})` : ''
+    return `Talento: ${feat.name}${half}`
+  }
+  const counts = new Map<AbilityScore, number>()
+  for (const ab of choice.abilities) counts.set(ab, (counts.get(ab) ?? 0) + 1)
+  if (counts.size === 0) return null
+  return [...counts].map(([ab, n]) => `+${n} ${ABILITY_LABELS[ab].short}`).join(', ')
+}
+
+export const ASI_FEATURE_NAME = 'Incremento no Valor de Habilidade'
+const ASI_FEATURE_DESCRIPTION =
+  'Aumente um valor de habilidade em 2, ou dois valores de habilidade em 1, sem passar de 20; ' +
+  'ou, pela regra opcional de talentos, troque o incremento por um talento.'
+
+/** Característica de classe como a ficha mostra: com a escolha feita, quando ela abre uma. */
+export type SheetClassFeature = LevelFeature & { chosen: string | null }
+
+/**
+ * Uma linha "Incremento no Valor de Habilidade" por espaço de ASI que a classe já alcançou (níveis
+ * de getAsiLevels, com os extras do guerreiro e do ladino), cada uma com a escolha do espaço. O
+ * espaço i é o i-ésimo nível alcançado, a mesma correspondência de isImprovementsStepComplete.
+ *
+ * As linhas saem daqui, e não de class-progression-features.json, para os níveis de ASI terem uma
+ * fonte só. Não têm `effects`: o número já entra em getFinalAbilityScores.
+ */
+export function getAsiFeatures(entry: ClassEntry): SheetClassFeature[] {
+  return getReachedAsiLevels(entry.classId, entry.level).map((level, i) => ({
+    level,
+    name: ASI_FEATURE_NAME,
+    description: ASI_FEATURE_DESCRIPTION,
+    chosen: describeAsiChoice(entry.asiChoices?.[i]),
+  }))
+}
+
+/**
+ * Habilidades de Classe de uma classe (da multiclasse, no nível que o personagem tem nela) para a
+ * ficha imprimível e a Revisão: features da classe e da subclasse mais os Incrementos, em ordem de
+ * nível (dentro do mesmo nível, a ordem dos dados: classe, subclasse, incremento).
+ */
+export function getSheetClassFeatures(entry: ClassEntry): SheetClassFeature[] {
+  const cls = getClass(entry.classId)
+  if (!cls) return []
+  const sub = entry.classChoices.subclass ? (getSubclass(cls, entry.classChoices.subclass) ?? null) : null
+  const features: SheetClassFeature[] = getClassFeaturesUpToLevel(cls, sub, entry.level).map(f => ({ ...f, chosen: null }))
+  return [...features, ...getAsiFeatures(entry)].sort((a, b) => a.level - b.level)
+}
+
 export type CharacterFeat = {
   feat: Feat
-  /** De onde veio, quando não é de um Aprimoramento: o talento racial diz a sub-raça ("Humano (Variante)"). */
-  origin: string | null
+  /**
+   * De onde o talento veio, em texto de ficha: "Talento racial (Humano (Variante))" ou
+   * "Incremento nv 4" (na multiclasse, com a classe: "Incremento nv 4 (Guerreiro)").
+   */
+  origin: string
 }
 
 /**
  * Talentos do personagem para a caixa Talentos da ficha e da Revisão: o talento racial (Humano
- * Variante, com a origem) e os dos Aprimoramentos de todas as classes, sem repetir.
+ * Variante) e os dos Aprimoramentos de todas as classes, cada um com a origem e sem repetir (se o
+ * mesmo talento vier de duas origens, as duas aparecem).
  */
 export function getCharacterFeats(draft: CharacterDraft): CharacterFeat[] {
   const result: CharacterFeat[] = []
-  const seen = new Set<string>()
-  const add = (featId: string, origin: string | null) => {
+  const add = (featId: string, origin: string) => {
     const feat = getFeat(featId)
-    if (!feat || seen.has(featId)) return
-    seen.add(featId)
-    result.push({ feat, origin })
+    if (!feat) return
+    const existing = result.find(r => r.feat.id === featId)
+    if (existing) existing.origin = `${existing.origin}, ${origin}`
+    else result.push({ feat, origin })
   }
   if (draft.raceChoices.feat) {
     const race = draft.race ? getRace(draft.race) : undefined
     const subrace = race && draft.subrace ? getSubrace(race, draft.subrace) : undefined
-    add(draft.raceChoices.feat, subrace?.name ?? race?.name ?? null)
+    const raceName = subrace?.name ?? race?.name
+    add(draft.raceChoices.feat, raceName ? `Talento racial (${raceName})` : 'Talento racial')
   }
-  for (const c of getAllAsiChoices(draft)) {
-    if (c.kind === 'feat' && c.featId) add(c.featId, null)
+  const entries = allClassEntries(draft)
+  for (const entry of entries) {
+    const reached = getReachedAsiLevels(entry.classId, entry.level)
+    const className = entries.length > 1 ? getClass(entry.classId)?.name : undefined
+    entry.asiChoices.forEach((c, i) => {
+      if (c?.kind !== 'feat' || !c.featId) return
+      const level = reached[i]
+      add(c.featId, `Incremento${level ? ` nv ${level}` : ''}${className ? ` (${className})` : ''}`)
+    })
   }
   return result
 }

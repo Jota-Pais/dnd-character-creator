@@ -95,7 +95,8 @@
     ],
     "startingEquipment": {
       "fixed": [
-        { "kind": "specific", "id": "leather", "itemType": "armor", "quantity": 1 }
+        { "kind": "specific", "id": "leather", "itemType": "armor", "quantity": 1 },
+        { "kind": "specific", "id": "dagger", "itemType": "weapon", "quantity": 1 }
       ],
       "choices": [
         {
@@ -714,7 +715,8 @@
           "options": [
             [
               { "kind": "specific", "id": "shortbow", "itemType": "weapon", "quantity": 1 },
-              { "kind": "specific", "id": "arrows", "itemType": "general", "quantity": 1 }
+              { "kind": "specific", "id": "arrows", "itemType": "general", "quantity": 1 },
+              { "kind": "specific", "id": "quiver", "itemType": "general", "quantity": 1 }
             ],
             [{ "kind": "specific", "id": "shortsword", "itemType": "weapon", "quantity": 1 }]
           ]
@@ -983,7 +985,8 @@
     "startingEquipment": {
       "fixed": [
         { "kind": "specific", "id": "longbow", "itemType": "weapon", "quantity": 1 },
-        { "kind": "specific", "id": "arrows", "itemType": "general", "quantity": 1 }
+        { "kind": "specific", "id": "arrows", "itemType": "general", "quantity": 1 },
+        { "kind": "specific", "id": "quiver", "itemType": "general", "quantity": 1 }
       ],
       "choices": [
         {

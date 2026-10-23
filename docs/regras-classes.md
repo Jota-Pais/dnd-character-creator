@@ -783,7 +783,7 @@
 **Equipamento inicial (padrão):**
 
 - choice: equipment | quantidade: 1 | de: rapier, longsword
-- choice: equipment | quantidade: 1 | de: shortbow e 20 arrows, shortsword
+- choice: equipment | quantidade: 1 | de: shortbow e quiver e 20 arrows, shortsword
 - choice: equipment | quantidade: 1 | de: burglars-pack, dungeoneers-pack, explorers-pack
 - item: leather-armor
 - item: 2x dagger
@@ -1062,7 +1062,7 @@
 - choice: equipment | quantidade: 1 | de: scale-mail, leather-armor
 - choice: equipment | quantidade: 1 | de: 2x shortsword, 2x qualquer-arma-simples-corpo-a-corpo
 - choice: equipment | quantidade: 1 | de: explorers-pack, dungeoneers-pack
-- item: longbow e 20 arrows
+- item: longbow e quiver e 20 arrows
 
 **Riqueza inicial (alternativa ao equipamento padrão):** 5d4 x 10 po
 

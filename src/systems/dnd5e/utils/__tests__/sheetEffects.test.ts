@@ -33,12 +33,17 @@ import {
   getSkillChecks, describeHalfProficiencyOnChecks,
 } from '../proficiencyUtils'
 import { getArmor, getWeaponById } from '../equipmentUtils'
+import { getFinalAbilityScores } from '../asiUtils'
 import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
 import progressionFeatures from '../../data/class-progression-features.json'
 
 function draft(overrides: Partial<CharacterDraft>): CharacterDraft {
   return { ...structuredClone(EMPTY_DRAFT), ...overrides }
 }
+
+/** O Deslocamento e as linhas como a Revisão e o PDF os pedem: com os atributos finais. */
+const sheetSpeed = (d: CharacterDraft) => getSheetSpeed(d, getFinalAbilityScores(d))
+const speedLines = (d: CharacterDraft) => describeSpeedBonuses(d, getFinalAbilityScores(d))
 
 describe('getOwnedFeats', () => {
   it('junta o talento do Humano Variante com os dos espaços de ASI', () => {
@@ -614,7 +619,7 @@ describe('bônus de deslocamento com condição de equipamento', () => {
     it('bárbaro 4 não tem; bárbaro 5 sem armadura ganha +10 pés', () => {
       expect(getSpeedBonusTotal(single('barbarian', 4))).toBe(0)
       expect(getSpeedBonusTotal(single('barbarian', 5))).toBe(10)
-      expect(getSheetSpeed(single('barbarian', 5))).toBe(40)
+      expect(sheetSpeed(single('barbarian', 5))).toBe(40)
     })
 
     it('de gibão (média) e de escudo continua valendo', () => {
@@ -622,19 +627,22 @@ describe('bônus de deslocamento com condição de equipamento', () => {
     })
 
     it('de placas fica de fora do número, com a linha dizendo por quê', () => {
-      const d = single('barbarian', 5, wearing('plate'))
+      // Força 15 final: a placa não tira os 3 m dela (p. 146), só o Movimento Rápido sai.
+      const d = single('barbarian', 5, {
+        ...wearing('plate'), abilityScores: { STR: 14, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 },
+      })
       expect(getSpeedBonusTotal(d)).toBe(0)
-      expect(getSheetSpeed(d)).toBe(30)
+      expect(sheetSpeed(d)).toBe(30)
       expect(getSpeedBonuses(d)).toEqual([{
         source: 'Movimento Rápido', value: 10, condition: 'sem armadura pesada', active: false, blockedBy: 'Placas',
       }])
-      expect(describeSpeedBonuses(d)).toEqual([
+      expect(speedLines(d)).toEqual([
         'Não somado: +3 m sem armadura pesada (Movimento Rápido) — você está de Placas.',
       ])
     })
 
     it('ativo, a linha diz que já está somado', () => {
-      expect(describeSpeedBonuses(single('barbarian', 5))).toEqual([
+      expect(speedLines(single('barbarian', 5))).toEqual([
         'Deslocamento inclui +3 m sem armadura pesada (Movimento Rápido).',
       ])
     })
@@ -648,13 +656,13 @@ describe('bônus de deslocamento com condição de equipamento', () => {
     })
 
     it('monge 2 humano sai com 12 m', () => {
-      expect(getSheetSpeed(single('monk', 2))).toBe(40)
+      expect(sheetSpeed(single('monk', 2))).toBe(40)
     })
 
     it('de escudo ou de armadura leve não soma', () => {
       const shield = single('monk', 6, wearing('shield'))
       expect(getSpeedBonusTotal(shield)).toBe(0)
-      expect(describeSpeedBonuses(shield)).toEqual([
+      expect(speedLines(shield)).toEqual([
         'Não somado: +4,5 m sem armadura nem escudo (Movimento sem Armadura) — você está de escudo.',
       ])
       const leather = single('monk', 6, wearing('leather', 'shield'))
@@ -667,8 +675,8 @@ describe('bônus de deslocamento com condição de equipamento', () => {
     const d = single('monk', 10, {
       equipment: { ...wearing('chain-shirt').equipment, method: 'standard' as const },
     })
-    expect(getSheetSpeed(d)).toBe(50)
-    expect(describeSpeedBonuses(d)).toEqual([
+    expect(sheetSpeed(d)).toBe(50)
+    expect(speedLines(d)).toEqual([
       'Deslocamento inclui +6 m sem armadura nem escudo (Movimento sem Armadura).',
     ])
   })
@@ -687,7 +695,7 @@ describe('bônus de deslocamento com condição de equipamento', () => {
     it('bárbaro 5 / monge 2 sem armadura soma as duas (características diferentes)', () => {
       const d = single('barbarian', 7, { multiclass: true, additionalClasses: [extraClass('monk', 2)] })
       expect(getSpeedBonusTotal(d)).toBe(20)
-      expect(getSheetSpeed(d)).toBe(50)
+      expect(sheetSpeed(d)).toBe(50)
     })
 
     it('bárbaro 5 / monge 2 de gibão fica só com o Movimento Rápido', () => {
@@ -704,15 +712,86 @@ describe('bônus de deslocamento com condição de equipamento', () => {
   it('a Mobilidade continua somando junto, sem linha de condição', () => {
     const d = single('monk', 2, { raceChoices: { feat: 'mobilidade' } })
     expect(getSpeedBonusTotal(d)).toBe(20)
-    expect(getSheetSpeed(d)).toBe(50)
-    expect(describeSpeedBonuses(d)).toHaveLength(1)
+    expect(sheetSpeed(d)).toBe(50)
+    expect(speedLines(d)).toHaveLength(1)
   })
 
   it('sem raça, não há deslocamento', () => {
-    expect(getSheetSpeed(draft({ level: 2, class: 'monk' }))).toBeNull()
+    expect(sheetSpeed(draft({ level: 2, class: 'monk' }))).toBeNull()
   })
 
   it('a raça e a sub-raça dão a base (elfo da floresta: 35 pés)', () => {
-    expect(getSheetSpeed(single('monk', 2, { race: 'elf', subrace: 'wood-elf' }))).toBe(45)
+    expect(sheetSpeed(single('monk', 2, { race: 'elf', subrace: 'wood-elf' }))).toBe(45)
+  })
+})
+
+// p. 146: "For 13" / "For 15" na tabela tiram 3 m de quem não tem a Força listada.
+// p. 20: o deslocamento do anão "não é reduzido quando estiver usando armadura pesada".
+describe('armadura pesada sem a Força mínima', () => {
+  const wearing = (...itemIds: string[]) => ({
+    ...structuredClone(EMPTY_DRAFT.equipment),
+    method: 'wealth' as const,
+    purchasedItems: itemIds.map(itemId => ({ itemId, quantity: 1, source: 'purchased' as const })),
+  })
+  const scores = (STR: number) => ({ STR, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 })
+  const fighter = (STR: number, armor: string, overrides: Partial<CharacterDraft> = {}) =>
+    draft({ level: 1, class: 'fighter', race: 'human', abilityScores: scores(STR), equipment: wearing(armor), ...overrides })
+
+  it('placas com Força 14 (15 com o +1 do humano) não reduzem: vale a Força final', () => {
+    const d = fighter(14, 'plate')
+    expect(getFinalAbilityScores(d).STR).toBe(15)
+    expect(sheetSpeed(d)).toBe(30)
+    expect(speedLines(d)).toEqual([])
+  })
+
+  it('placas com Força 13 (14 final) tiram 3 m, com a linha do motivo', () => {
+    const d = fighter(13, 'plate')
+    expect(sheetSpeed(d)).toBe(20)
+    expect(speedLines(d)).toEqual(['Deslocamento reduzido em 3 m: Placas pede Força 15 e você tem 14.'])
+  })
+
+  it('cota de malha pede Força 13; cota de anéis e armadura média não pedem nada', () => {
+    expect(sheetSpeed(fighter(11, 'chain-mail'))).toBe(20)
+    expect(sheetSpeed(fighter(12, 'chain-mail'))).toBe(30)
+    expect(sheetSpeed(fighter(8, 'ring-mail'))).toBe(30)
+    expect(sheetSpeed(fighter(8, 'half-plate'))).toBe(30)
+  })
+
+  it('sem armadura vestida, nada muda', () => {
+    expect(sheetSpeed(draft({ level: 1, class: 'fighter', race: 'human', abilityScores: scores(8) }))).toBe(30)
+  })
+
+  it('compra que sobrou de outro método não está vestida', () => {
+    const d = fighter(8, 'plate')
+    d.equipment.method = 'standard'
+    expect(speedLines(d)).toEqual([])
+  })
+
+  it('anão de placas sem a Força: continua com 7,5 m e a linha diz por quê', () => {
+    const d = fighter(10, 'plate', { race: 'dwarf', subrace: 'hill-dwarf' })
+    expect(sheetSpeed(d)).toBe(25)
+    expect(speedLines(d)).toEqual([
+      'Deslocamento não reduzido: Placas pede Força 15 e você tem 10, mas Deslocamento (Anão da Colina) ignora a redução de 3 m.',
+    ])
+  })
+
+  it('anão com a Força não ganha linha', () => {
+    const d = fighter(13, 'plate', { race: 'dwarf', subrace: 'mountain-dwarf' })
+    expect(getFinalAbilityScores(d).STR).toBe(15)
+    expect(speedLines(d)).toEqual([])
+  })
+
+  it('a redução soma com os bônus: Mobilidade +3 m e placas sem Força dão 9 m', () => {
+    const d = fighter(8, 'plate', { raceChoices: { feat: 'mobilidade' } })
+    expect(sheetSpeed(d)).toBe(30)
+  })
+
+  it('o bárbaro de placas sem Força perde o Movimento Rápido e ainda leva a redução', () => {
+    const d = fighter(8, 'plate', { level: 5, class: 'barbarian' })
+    expect(sheetSpeed(d)).toBe(20)
+    expect(speedLines(d)).toEqual([
+      'Não somado: +3 m sem armadura pesada (Movimento Rápido) — você está de Placas.',
+      'Deslocamento reduzido em 3 m: Placas pede Força 15 e você tem 9.',
+    ])
   })
 })

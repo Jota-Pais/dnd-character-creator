@@ -28,7 +28,7 @@ import {
 
 /**
  * Agregador dos efeitos que a ficha aplica sozinha, atravessando as fontes de característica
- * (talentos, features de classe e, por ora só nos recursos e nos PV, traços raciais).
+ * (talentos, features de classe e, por ora só nos recursos, nos PV e no deslocamento, traços raciais).
  * Espelha `src/systems/ordem/utils/sheetEffects.ts`.
  *
  * Regra geral: efeito INCONDICIONAL entra no número da ficha; efeito CONDICIONAL vira linha
@@ -256,24 +256,64 @@ export function getSpeedBonusTotal(draft: CharacterDraft): number {
   return getSpeedBonuses(draft).reduce((sum, e) => (e.active ? sum + e.value : sum), 0)
 }
 
+/** Quanto a armadura pesada tira sem a Força da tabela: 3 m = 10 pés (p. 146). */
+const ARMOR_STRENGTH_SPEED_PENALTY = 10
+
 /**
- * O Deslocamento da ficha, em pés — a Revisão e o PDF chamam só isto: o da raça (sub-raça já
- * aplicada) mais os bônus ativos. `null` sem raça escolhida.
+ * A redução de deslocamento da armadura vestida: "For 13" / "For 15" na tabela tiram 3 m de quem
+ * não tem a Força listada (p. 146), com a Força FINAL. `ignoredBy` diz quem a anula — o
+ * Deslocamento do anão, que não é reduzido por armadura pesada (p. 20). `null` quando a armadura
+ * não pede Força ou o personagem a tem.
  */
-export function getSheetSpeed(draft: CharacterDraft): number | null {
-  const race = draft.race ? getRace(draft.race) : undefined
-  if (!race) return null
-  const subrace = draft.subrace ? getSubrace(race, draft.subrace) ?? null : null
-  return getEffectiveSpeed(race, subrace) + getSpeedBonusTotal(draft)
+export type ArmorSpeedPenalty = {
+  armor: string
+  strengthRequirement: number
+  strength: number
+  /** Em PÉS, como o deslocamento da raça. */
+  value: number
+  ignoredBy?: string
+}
+
+export function getArmorSpeedPenalty(
+  draft: CharacterDraft,
+  finalScores: FinalScores,
+): ArmorSpeedPenalty | null {
+  const { bodyArmor } = getDraftEquippedArmor(draft)
+  const requirement = bodyArmor?.strengthRequirement
+  if (!bodyArmor || !requirement || finalScores.STR >= requirement) return null
+  const racial = bodyArmor.category === 'heavy' ? getOwnedRacialTraits(draft) : null
+  const trait = racial?.traits.find(t => t.effects?.heavyArmorSpeedUnreduced)
+  return {
+    armor: bodyArmor.name,
+    strengthRequirement: requirement,
+    strength: finalScores.STR,
+    value: ARMOR_STRENGTH_SPEED_PENALTY,
+    ...(racial && trait ? { ignoredBy: `${trait.name} (${racial.source.name})` } : {}),
+  }
 }
 
 /**
- * As linhas dos bônus de deslocamento com condição, o mesmo texto na Revisão e no PDF: o que já
- * está somado e o que ficou de fora, com o motivo — pra valer na mesa quando o jogador troca de
- * equipamento. Os incondicionais (Mobilidade) não ganham linha: já estão no número, sem ressalva.
+ * O Deslocamento da ficha, em pés — a Revisão e o PDF chamam só isto: o da raça (sub-raça já
+ * aplicada) mais os bônus ativos, menos a redução da armadura pesada sem a Força mínima (quando
+ * nada a anula). `null` sem raça escolhida.
  */
-export function describeSpeedBonuses(draft: CharacterDraft): string[] {
-  return getSpeedBonuses(draft)
+export function getSheetSpeed(draft: CharacterDraft, finalScores: FinalScores): number | null {
+  const race = draft.race ? getRace(draft.race) : undefined
+  if (!race) return null
+  const subrace = draft.subrace ? getSubrace(race, draft.subrace) ?? null : null
+  const penalty = getArmorSpeedPenalty(draft, finalScores)
+  const reduction = penalty && !penalty.ignoredBy ? penalty.value : 0
+  return getEffectiveSpeed(race, subrace) + getSpeedBonusTotal(draft) - reduction
+}
+
+/**
+ * As linhas do deslocamento com condição, o mesmo texto na Revisão e no PDF: os bônus que já
+ * estão somados e os que ficaram de fora, com o motivo — pra valer na mesa quando o jogador troca
+ * de equipamento —, e a redução da armadura pesada sem a Força mínima, aplicada ou anulada pelo
+ * anão. Os incondicionais (Mobilidade) não ganham linha: já estão no número, sem ressalva.
+ */
+export function describeSpeedBonuses(draft: CharacterDraft, finalScores: FinalScores): string[] {
+  const lines = getSpeedBonuses(draft)
     .filter(b => b.condition)
     .map(b => {
       const text = `+${formatMeters(b.value)} ${b.condition} (${b.source})`
@@ -281,6 +321,14 @@ export function describeSpeedBonuses(draft: CharacterDraft): string[] {
         ? `Deslocamento inclui ${text}.`
         : `Não somado: ${text} — você está de ${b.blockedBy}.`
     })
+  const penalty = getArmorSpeedPenalty(draft, finalScores)
+  if (penalty) {
+    const why = `${penalty.armor} pede Força ${penalty.strengthRequirement} e você tem ${penalty.strength}`
+    lines.push(penalty.ignoredBy
+      ? `Deslocamento não reduzido: ${why}, mas ${penalty.ignoredBy} ignora a redução de ${formatMeters(penalty.value)}.`
+      : `Deslocamento reduzido em ${formatMeters(penalty.value)}: ${why}.`)
+  }
+  return lines
 }
 
 // ── Pontos de vida ─────────────────────────────────────────────────────────────

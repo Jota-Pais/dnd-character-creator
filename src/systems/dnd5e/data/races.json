@@ -20,6 +20,11 @@
     ],
     "traits": [
       {
+        "name": "Deslocamento",
+        "description": "Seu deslocamento não é reduzido quando estiver usando armadura pesada.",
+        "effects": { "heavyArmorSpeedUnreduced": true }
+      },
+      {
         "name": "Resiliência Anã",
         "description": "Vantagem em testes de resistência contra veneno e resistência a dano de veneno."
       },

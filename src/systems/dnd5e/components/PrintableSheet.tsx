@@ -131,8 +131,8 @@ export function PrintableSheet() {
   const ac = acResult.value
   const acBreakdown = formatArmorClassBreakdown(acResult)
   const hp: number | null = cls ? getTotalHp(draft, conMod) : null
-  const speed = getSheetSpeed(draft)
-  const speedLines = describeSpeedBonuses(draft)
+  const speed = getSheetSpeed(draft, finalScores)
+  const speedLines = describeSpeedBonuses(draft, finalScores)
   const initiative = dexMod + getInitiativeBonusTotal(draft)
   const conditionalAc = getConditionalAcBonuses(draft)
   const darkvision = race ? getEffectiveDarkvision(race, subrace) : 0

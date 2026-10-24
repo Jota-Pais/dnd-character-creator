@@ -107,8 +107,8 @@ export function ReviewStep() {
 
   // Deslocamento e iniciativa já com os efeitos somados (Mobilidade, Movimento sem Armadura com o
   // equipamento atual, Alerta); as condições de equipamento viram linha, o mesmo texto do PDF.
-  const speed = getSheetSpeed(draft)
-  const speedLines = describeSpeedBonuses(draft)
+  const speed = getSheetSpeed(draft, finalScores)
+  const speedLines = describeSpeedBonuses(draft, finalScores)
   const initiative = dexMod + getInitiativeBonusTotal(draft)
   const conditionalAc = getConditionalAcBonuses(draft)
   // Ataque Extra (e a Lâmina Sedenta, com a condição): o mesmo texto da ficha imprimível.

@@ -627,8 +627,8 @@ export function ReviewStep() {
       {race && (
         <Section title="Traços Raciais">
           <div className="space-y-3">
-            {getEffectiveTraitsWithChoices(race, subrace ?? null, draft.raceChoices).map(({ trait, chosen }) => (
-              <div key={trait.name}>
+            {getEffectiveTraitsWithChoices(race, subrace ?? null, draft.raceChoices).map(({ trait, chosen }, i) => (
+              <div key={`${i}-${trait.name}`}>
                 <span className="text-sm font-semibold font-fantasy text-parchment-200">
                   {trait.name}.{' '}
                 </span>

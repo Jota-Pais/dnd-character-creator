@@ -37,9 +37,9 @@ export function SubraceCard({ subrace, selected, accent, onSelect }: Props) {
             {ABILITY_LABELS[b.ability].short} {formatBonus(b.value)}
           </span>
         ))}
-        {subrace.traits.map(t => (
+        {subrace.traits.map((t, i) => (
           <span
-            key={t.name}
+            key={`${i}-${t.name}`}
             className="px-1.5 py-0.5 rounded text-xs text-parchment-400 bg-parchment-900/60"
           >
             {t.name}

@@ -344,7 +344,7 @@
         "grantedProficiencies": [],
         "traits": [
           { "name": "Tipo de Dano", "description": "Fogo." },
-          { "name": "Arma de Sopro", "description": "Cone de 15 pés. Teste de resistência de Destreza." }
+          { "name": "Área do Sopro", "description": "Cone de 4,5 m. Teste de resistência de Destreza." }
         ],
         "overrides": {}
       },
@@ -357,7 +357,7 @@
         "grantedProficiencies": [],
         "traits": [
           { "name": "Tipo de Dano", "description": "Elétrico." },
-          { "name": "Arma de Sopro", "description": "Linha de 5 por 30 pés. Teste de resistência de Destreza." }
+          { "name": "Área do Sopro", "description": "Linha de 1,5 m por 9 m. Teste de resistência de Destreza." }
         ],
         "overrides": {}
       },
@@ -370,7 +370,7 @@
         "grantedProficiencies": [],
         "traits": [
           { "name": "Tipo de Dano", "description": "Veneno." },
-          { "name": "Arma de Sopro", "description": "Cone de 15 pés. Teste de resistência de Constituição." }
+          { "name": "Área do Sopro", "description": "Cone de 4,5 m. Teste de resistência de Constituição." }
         ],
         "overrides": {}
       },
@@ -383,7 +383,7 @@
         "grantedProficiencies": [],
         "traits": [
           { "name": "Tipo de Dano", "description": "Frio." },
-          { "name": "Arma de Sopro", "description": "Cone de 15 pés. Teste de resistência de Constituição." }
+          { "name": "Área do Sopro", "description": "Cone de 4,5 m. Teste de resistência de Constituição." }
         ],
         "overrides": {}
       },
@@ -396,7 +396,7 @@
         "grantedProficiencies": [],
         "traits": [
           { "name": "Tipo de Dano", "description": "Ácido." },
-          { "name": "Arma de Sopro", "description": "Linha de 5 por 30 pés. Teste de resistência de Destreza." }
+          { "name": "Área do Sopro", "description": "Linha de 1,5 m por 9 m. Teste de resistência de Destreza." }
         ],
         "overrides": {}
       },
@@ -409,7 +409,7 @@
         "grantedProficiencies": [],
         "traits": [
           { "name": "Tipo de Dano", "description": "Fogo." },
-          { "name": "Arma de Sopro", "description": "Cone de 15 pés. Teste de resistência de Destreza." }
+          { "name": "Área do Sopro", "description": "Cone de 4,5 m. Teste de resistência de Destreza." }
         ],
         "overrides": {}
       },
@@ -422,7 +422,7 @@
         "grantedProficiencies": [],
         "traits": [
           { "name": "Tipo de Dano", "description": "Frio." },
-          { "name": "Arma de Sopro", "description": "Cone de 15 pés. Teste de resistência de Constituição." }
+          { "name": "Área do Sopro", "description": "Cone de 4,5 m. Teste de resistência de Constituição." }
         ],
         "overrides": {}
       },
@@ -435,7 +435,7 @@
         "grantedProficiencies": [],
         "traits": [
           { "name": "Tipo de Dano", "description": "Elétrico." },
-          { "name": "Arma de Sopro", "description": "Linha de 5 por 30 pés. Teste de resistência de Destreza." }
+          { "name": "Área do Sopro", "description": "Linha de 1,5 m por 9 m. Teste de resistência de Destreza." }
         ],
         "overrides": {}
       },
@@ -448,7 +448,7 @@
         "grantedProficiencies": [],
         "traits": [
           { "name": "Tipo de Dano", "description": "Ácido." },
-          { "name": "Arma de Sopro", "description": "Linha de 5 por 30 pés. Teste de resistência de Destreza." }
+          { "name": "Área do Sopro", "description": "Linha de 1,5 m por 9 m. Teste de resistência de Destreza." }
         ],
         "overrides": {}
       },
@@ -461,7 +461,7 @@
         "grantedProficiencies": [],
         "traits": [
           { "name": "Tipo de Dano", "description": "Fogo." },
-          { "name": "Arma de Sopro", "description": "Linha de 5 por 30 pés. Teste de resistência de Destreza." }
+          { "name": "Área do Sopro", "description": "Linha de 1,5 m por 9 m. Teste de resistência de Destreza." }
         ],
         "overrides": {}
       }

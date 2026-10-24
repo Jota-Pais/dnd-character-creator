@@ -232,6 +232,34 @@ describe('integridade dos dados: escolha da raça ↔ traço', () => {
     const kinds = getAllChoices(race, subrace).map(c => c.kind)
     expect(new Set(kinds).size).toBe(kinds.length)
   })
+
+  // Revisão, PDF e etapa Raça listam os traços efetivos lado a lado: dois com o mesmo nome (a Arma
+  // de Sopro do draconato e a da sub-raça) apareciam como dois cabeçalhos iguais.
+  it.each(combos)('$label: nenhum traço efetivo repete o nome de outro', ({ race, subrace }) => {
+    const names = getEffectiveTraits(race, subrace).map(t => t.name)
+    expect(new Set(names).size, names.join(', ')).toBe(names.length)
+  })
+})
+
+describe('draconato: área da Arma de Sopro por ancestral (tabela Ancestral Dracônico, p. 34)', () => {
+  const dragonborn = getRace('dragonborn')!
+  const area = (id: string) =>
+    getEffectiveTraits(dragonborn, getSubrace(dragonborn, id)!).find(t => t.name === 'Área do Sopro')?.description
+
+  it('cone de 4,5 m: vermelho e ouro com Destreza; verde, branco e prata com Constituição', () => {
+    for (const id of ['red-dragonborn', 'gold-dragonborn']) {
+      expect(area(id), id).toBe('Cone de 4,5 m. Teste de resistência de Destreza.')
+    }
+    for (const id of ['green-dragonborn', 'white-dragonborn', 'silver-dragonborn']) {
+      expect(area(id), id).toBe('Cone de 4,5 m. Teste de resistência de Constituição.')
+    }
+  })
+
+  it('linha de 1,5 m por 9 m com Destreza: azul, negro, bronze, cobre e latão', () => {
+    for (const id of ['blue-dragonborn', 'black-dragonborn', 'bronze-dragonborn', 'copper-dragonborn', 'brass-dragonborn']) {
+      expect(area(id), id).toBe('Linha de 1,5 m por 9 m. Teste de resistência de Destreza.')
+    }
+  })
 })
 
 describe('describeRaceChoice', () => {

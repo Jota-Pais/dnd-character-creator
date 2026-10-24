@@ -477,8 +477,8 @@ export function PrintableSheet() {
 
       {/* Traços & Features */}
       <Box title="Traços Raciais" className="mb-4">
-        {(race ? getEffectiveTraitsWithChoices(race, subrace ?? null, draft.raceChoices) : []).map(({ trait: t, chosen }) => (
-          <p key={t.name} className="text-xs mb-1">
+        {(race ? getEffectiveTraitsWithChoices(race, subrace ?? null, draft.raceChoices) : []).map(({ trait: t, chosen }, i) => (
+          <p key={`${i}-${t.name}`} className="text-xs mb-1">
             <strong>{t.name}.</strong> {t.description}
             {chosen && <> <span className="text-gray-600">Escolha:</span> <strong>{chosen}</strong></>}
           </p>

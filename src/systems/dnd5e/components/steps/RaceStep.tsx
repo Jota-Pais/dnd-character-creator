@@ -178,8 +178,8 @@ export function RaceStep() {
               <div className="rounded-xl border border-parchment-900 bg-parchment-950/60 p-4">
                 <SectionTitle>Traços Raciais</SectionTitle>
                 <div className="space-y-2.5">
-                  {getEffectiveTraits(selectedRace, selectedSubrace ?? null).map(trait => (
-                    <div key={trait.name}>
+                  {getEffectiveTraits(selectedRace, selectedSubrace ?? null).map((trait, i) => (
+                    <div key={`${i}-${trait.name}`}>
                       <span className="text-sm font-semibold text-parchment-200 font-fantasy">
                         {trait.name}.{' '}
                       </span>

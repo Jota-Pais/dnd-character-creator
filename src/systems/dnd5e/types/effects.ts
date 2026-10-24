@@ -3,7 +3,7 @@ import type { AbilityScore } from './race'
 
 /**
  * Efeitos mecânicos estruturados de uma característica — talentos, features de classe e (por ora só
- * os `resources`) traços raciais. Espelha `src/systems/ordem/types/effects.ts`.
+ * `resources` e `hpPerLevel`) traços raciais. Espelha `src/systems/ordem/types/effects.ts`.
  *
  * Só entra aqui o que é PERMANENTE e automático: o que o jogador ativa em jogo ("gaste um ponto
  * de sorte para...") fica só na descrição, porque a ficha não tem como aplicar sozinha. A exceção
@@ -48,8 +48,10 @@ export type FeatureEffects = {
   /** Bônus de deslocamento, em PÉS, a unidade em que a raça guarda (Mobilidade: +10 pés = +3 m). */
   speedBonus?: number
   /**
-   * PV extras por nível de personagem (Robusto: +2). O livro soma 2 × nível ao adquirir e mais 2
-   * a cada nível seguinte — o efeito acumulado é sempre 2 × nível, então basta o valor por nível.
+   * PV extras por nível de personagem (Robusto: +2; Tenacidade Anã: +1). O livro soma 2 × nível
+   * ao adquirir e mais 2 a cada nível seguinte — o efeito acumulado é sempre 2 × nível, então
+   * basta o valor por nível. A Tenacidade Anã (p. 20) segue o mesmo raciocínio: +1 já no 1º nível
+   * e +1 a cada nível seguinte, ou seja, 1 × nível de personagem.
    */
   hpPerLevel?: number
   /** Bônus nos valores PASSIVOS destas perícias (Observador: +5 em Percepção e Investigação). */

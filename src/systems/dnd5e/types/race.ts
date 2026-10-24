@@ -72,11 +72,12 @@ export type InnateSpell = {
 }
 
 /**
- * Efeitos que um traço racial declara. Por ora só os recursos (Arma de Sopro, Resistência
- * Implacável): é o único efeito de traço que `sheetEffects` agrega — os outros entram aqui quando
- * forem ligados, pra não declarar no dado algo que a ficha ignoraria.
+ * Efeitos que um traço racial declara. Por ora os recursos (Arma de Sopro, Resistência
+ * Implacável) e os PV por nível (Tenacidade Anã): são os únicos efeitos de traço que
+ * `sheetEffects` agrega — os outros entram aqui quando forem ligados, pra não declarar no dado
+ * algo que a ficha ignoraria.
  */
-export type RacialTraitEffects = Pick<FeatureEffects, 'resources'>
+export type RacialTraitEffects = Pick<FeatureEffects, 'resources' | 'hpPerLevel'>
 
 export type RacialTrait = {
   name: string

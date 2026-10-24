@@ -1,7 +1,7 @@
 import type { CharacterDraft, ClassEntry, FeatSelections } from '../types/character'
 import type { Feat } from '../types/feat'
 import type { ArmorProficiency, LevelFeature } from '../types/class'
-import type { AbilityScore } from '../types/race'
+import type { AbilityScore, RacialTrait } from '../types/race'
 import type { ConditionalAcBonus, ResourceEffect } from '../types/effects'
 import { getFeat } from './featUtils'
 import { getClass, getSubclass, getClassFeaturesUpToLevel } from './classUtils'
@@ -16,7 +16,7 @@ import {
 
 /**
  * Agregador dos efeitos que a ficha aplica sozinha, atravessando as fontes de característica
- * (talentos, features de classe e, por ora só nos recursos, traços raciais).
+ * (talentos, features de classe e, por ora só nos recursos e nos PV, traços raciais).
  * Espelha `src/systems/ordem/utils/sheetEffects.ts`.
  *
  * Regra geral: efeito INCONDICIONAL entra no número da ficha; efeito CONDICIONAL vira linha
@@ -69,6 +69,22 @@ export function getOwnedClassFeaturesByEntry(
     const sub = entry.classChoices.subclass ? getSubclass(cls, entry.classChoices.subclass) : null
     return [{ entry, features: getClassFeaturesUpToLevel(cls, sub ?? null, entry.level) }]
   })
+}
+
+/**
+ * Traços raciais que o personagem tem, já com a sub-raça aplicada (ela pode substituir os da
+ * raça-mãe), e quem os concede — a sub-raça, quando houver. `null` sem raça escolhida.
+ */
+function getOwnedRacialTraits(
+  draft: CharacterDraft,
+): { source: ResourceSource; traits: RacialTrait[] } | null {
+  const race = draft.race ? getRace(draft.race) : undefined
+  if (!race) return null
+  const subrace = draft.subrace ? getSubrace(race, draft.subrace) ?? null : null
+  return {
+    source: { kind: 'race', id: subrace?.id ?? race.id, name: subrace?.name ?? race.name },
+    traits: getEffectiveTraits(race, subrace),
+  }
 }
 
 /** Percorre os talentos possuídos extraindo um efeito, junto com o nome de quem concedeu. */
@@ -145,15 +161,31 @@ export function getFeatHpBonus(draft: CharacterDraft, level: number): number {
 }
 
 /**
- * PV totais da ficha: o poço de dados de vida das classes mais os extras de talento. Mora aqui,
- * e não em `multiclassUtils`, porque só este módulo enxerga os talentos — e `multiclassUtils`
+ * PV extras de traço racial no nível dado (Tenacidade Anã: 1 × nível, p. 20). Como o Robusto,
+ * vão no máximo de PV, não no dado de vida — valem igual na média e na rolagem.
+ */
+export function getRacialHpBonus(draft: CharacterDraft, level: number): number {
+  const owned = getOwnedRacialTraits(draft)
+  if (!owned) return 0
+  return owned.traits.reduce((sum, t) => sum + (t.effects?.hpPerLevel ?? 0) * level, 0)
+}
+
+/** Todos os PV extras por nível, de talento e de traço racial. Os dois se acumulam. */
+export function getHpPerLevelBonus(draft: CharacterDraft, level: number): number {
+  return getFeatHpBonus(draft, level) + getRacialHpBonus(draft, level)
+}
+
+/**
+ * PV totais da ficha: o poço de dados de vida das classes mais os extras de talento e de traço
+ * racial, no nível de PERSONAGEM (na multiclasse, a soma de todas as classes). Mora aqui, e não
+ * em `multiclassUtils`, porque só este módulo enxerga talentos e traços — e `multiclassUtils`
  * não pode importá-lo (é ele quem fornece `getAllAsiChoices`).
  */
 export function getTotalHp(draft: CharacterDraft, conModifier: number): number {
   const base = draft.hpMethod === 'roll'
     ? getTotalHpRolled(draft, conModifier)
     : getTotalHpAverage(draft, conModifier)
-  return base + getFeatHpBonus(draft, draft.level ?? 1)
+  return base + getHpPerLevelBonus(draft, draft.level ?? 1)
 }
 
 // ── Recursos (classe, raça, talento) ───────────────────────────────────────────
@@ -184,12 +216,12 @@ function getResourceDeclarations(draft: CharacterDraft): ResourceDeclaration[] {
   }
 
   const charLevel = draft.level ?? 1
-  const race = draft.race ? getRace(draft.race) : undefined
-  if (race) {
-    const subrace = draft.subrace ? getSubrace(race, draft.subrace) ?? null : null
-    const source: ResourceSource = { kind: 'race', id: subrace?.id ?? race.id, name: subrace?.name ?? race.name }
-    for (const trait of getEffectiveTraits(race, subrace)) {
-      for (const effect of trait.effects?.resources ?? []) out.push({ effect, source, level: charLevel })
+  const racial = getOwnedRacialTraits(draft)
+  if (racial) {
+    for (const trait of racial.traits) {
+      for (const effect of trait.effects?.resources ?? []) {
+        out.push({ effect, source: racial.source, level: charLevel })
+      }
     }
   }
 

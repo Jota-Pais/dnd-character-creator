@@ -7,6 +7,8 @@ import {
   getCheckProficiencyBonus,
   getSpeedBonusTotal,
   getFeatHpBonus,
+  getRacialHpBonus,
+  getHpPerLevelBonus,
   getTotalHp,
   getPassiveScoreBonus,
   getConditionalAcBonuses,
@@ -78,6 +80,52 @@ describe('efeitos incondicionais entram no número', () => {
     const base = draft({ level: 3, class: 'fighter' })
     const comRobusto = draft({ level: 3, class: 'fighter', raceChoices: { feat: 'robusto' } })
     expect(getTotalHp(comRobusto, 2) - getTotalHp(base, 2)).toBe(6)
+  })
+})
+
+// Tenacidade Anã (p. 20): +1 no máximo de PV e +1 a cada nível = sempre 1 × nível de personagem.
+describe('Tenacidade Anã soma nos PV', () => {
+  const dwarf = (subrace: string, overrides: Partial<CharacterDraft> = {}) =>
+    draft({ race: 'dwarf', subrace, class: 'fighter', ...overrides })
+
+  it('anão da colina nível 5 tem 5 PV a mais que o da montanha', () => {
+    const hill = dwarf('hill-dwarf', { level: 5 })
+    const mountain = dwarf('mountain-dwarf', { level: 5 })
+    expect(getRacialHpBonus(hill, 5)).toBe(5)
+    expect(getTotalHp(hill, 2) - getTotalHp(mountain, 2)).toBe(5)
+  })
+
+  it('já soma +1 no 1º nível', () => {
+    expect(getTotalHp(dwarf('hill-dwarf'), 2)).toBe(10 + 2 + 1)
+  })
+
+  it('vale também no método de rolagem', () => {
+    const hill = dwarf('hill-dwarf', { level: 3, hpMethod: 'roll', hpRolls: [4, 7] })
+    const mountain = dwarf('mountain-dwarf', { level: 3, hpMethod: 'roll', hpRolls: [4, 7] })
+    expect(getTotalHp(hill, 1) - getTotalHp(mountain, 1)).toBe(3)
+  })
+
+  it('na multiclasse conta o nível de personagem, não o de uma classe', () => {
+    const extra = {
+      classId: 'wizard', level: 2, classChoices: structuredClone(EMPTY_DRAFT.classChoices),
+      spellChoices: structuredClone(EMPTY_DRAFT.spellChoices), asiChoices: [], hpRolls: [],
+    }
+    const hill = dwarf('hill-dwarf', { level: 5, additionalClasses: [extra] })
+    const mountain = dwarf('mountain-dwarf', { level: 5, additionalClasses: [extra] })
+    expect(getTotalHp(hill, 0) - getTotalHp(mountain, 0)).toBe(5)
+  })
+
+  it('acumula com o Robusto: +3 por nível', () => {
+    const hill = dwarf('hill-dwarf', { level: 4, asiChoices: [{ kind: 'feat', featId: 'robusto' }] })
+    const mountain = dwarf('mountain-dwarf', { level: 4 })
+    expect(getHpPerLevelBonus(hill, 4)).toBe(12)
+    expect(getTotalHp(hill, 0) - getTotalHp(mountain, 0)).toBe(12)
+  })
+
+  it('outra raça (ou nenhuma) não ganha nada', () => {
+    expect(getRacialHpBonus(dwarf('mountain-dwarf', { level: 5 }), 5)).toBe(0)
+    expect(getRacialHpBonus(draft({ race: 'elf', subrace: 'high-elf', level: 5 }), 5)).toBe(0)
+    expect(getRacialHpBonus(draft({ level: 5 }), 5)).toBe(0)
   })
 })
 

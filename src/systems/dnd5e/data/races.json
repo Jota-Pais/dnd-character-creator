@@ -44,7 +44,8 @@
         "traits": [
           {
             "name": "Tenacidade Anã",
-            "description": "Máximo de PV aumenta em 1, e ganha +1 PV adicional a cada nível."
+            "description": "Seu máximo de pontos de vida aumenta em 1, e cada vez que sobe de nível, ganha 1 ponto de vida adicional.",
+            "effects": { "hpPerLevel": 1 }
           }
         ],
         "overrides": {}

@@ -183,7 +183,7 @@ describe('escolhas abertas pelos talentos', () => {
 
   it('a resistência do Resiliente entra junto com as da classe', () => {
     const d = draft({ class: 'wizard', raceChoices: { feat: 'resiliente', featAbility: 'CON' } })
-    expect(getSavingThrowProficiencies(d)).toEqual(['INT', 'WIS', 'CON'])
+    expect(getSavingThrowProficiencies(d)).toEqual(['CON', 'INT', 'WIS']) // na ordem da ficha
   })
 
   it('as perícias do Perito viram proficiência de verdade na ficha', () => {

@@ -106,6 +106,13 @@ export type FeatureEffects = {
    */
   halfProficiencyOnChecks?: boolean
   /**
+   * Proficiência em testes de resistência dada por característica de classe — Mente Escorregadia
+   * (ladino 15, Sabedoria, p. 91) e Alma de Diamante (monge 14, `'all'`, p. 105). Incondicional:
+   * entra no número da ficha. Só lido em features de classe e subclasse, e vale pelo nível NA
+   * classe dona — a restrição da multiclasse (p. 166) é só sobre as proficiências INICIAIS.
+   */
+  savingThrowProficiencies?: AbilityScore[] | 'all'
+  /**
    * Ataque Extra: TOTAL de ataques da ação de Atacar, em degraus por nível NA classe dona da
    * característica (guerreiro: 2 no 5º, 3 no 11º, 4 no 20º — p. 85). Só lido em features de
    * classe e subclasse. Não se soma entre fontes: "se você ganhar a característica Ataque Extra

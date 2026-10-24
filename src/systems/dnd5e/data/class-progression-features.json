@@ -164,7 +164,8 @@
       {
         "level": 15,
         "name": "Mente Escorregadia",
-        "description": "Você ganha proficiência em testes de resistência de Sabedoria."
+        "description": "Você ganha proficiência em testes de resistência de Sabedoria.",
+        "effects": { "savingThrowProficiencies": ["WIS"] }
       },
       {
         "level": 18,
@@ -275,7 +276,8 @@
       {
         "level": 14,
         "name": "Alma de Diamante",
-        "description": "Você é proficiente em todos os testes de resistência; ao falhar em um, pode gastar 1 ponto de chi para refazer e ficar com o novo resultado."
+        "description": "Você é proficiente em todos os testes de resistência; ao falhar em um, pode gastar 1 ponto de chi para refazer e ficar com o novo resultado.",
+        "effects": { "savingThrowProficiencies": "all" }
       },
       {
         "level": 15,

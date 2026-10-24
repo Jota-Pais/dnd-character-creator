@@ -20,7 +20,7 @@ import {
 import { getFinalAbilityScores, getCharacterFeats, getSheetClassFeatures } from '../utils/asiUtils'
 import {
   getAllGrantedTools, getLanguageLabels, EXOTIC_LANGUAGE_NOTE, getExpertiseTools, getSkillChecks,
-  getPassiveScore, getArmorProficiencyLabels, getWeaponProficiencyLabels, getUnproficientArmor, hasWeaponProficiency,
+  getSavingThrowChecks, getPassiveScore, getArmorProficiencyLabels, getWeaponProficiencyLabels, getUnproficientArmor, hasWeaponProficiency,
   getUnproficientTools, formatUnproficientTool,
 } from '../utils/proficiencyUtils'
 import { formatArmorClassBreakdown } from '../utils/armorClassUtils'
@@ -189,7 +189,7 @@ export function PrintableSheet() {
   const passivePerception = getPassiveScore(draft, 'perception', skillChecks)
   // Versatilidade: o que entra nas perícias sem proficiência (0 para quem não tem).
   const halfProficiency = getCheckProficiencyBonus(draft, 'none')
-  const saves = cls?.savingThrows ?? []
+  const saveChecks = getSavingThrowChecks(draft, finalScores)
   const allTools = getAllGrantedTools(draft)
   const expertiseTools = getExpertiseTools(draft)
 
@@ -355,10 +355,9 @@ export function PrintableSheet() {
         {/* Resistências */}
         <Box title="Testes de Resistência">
           {ALL_ABILITY_SCORES.map(ab => {
-            const proficient = saves.includes(ab)
-            const val = mod(ab) + (proficient ? prof : 0)
+            const { proficient, bonus } = saveChecks[ab]
             return (
-              <Row key={ab} mark={proficient} label={ABILITY_LABELS[ab].long} value={formatModifier(val)} />
+              <Row key={ab} mark={proficient} label={ABILITY_LABELS[ab].long} value={formatModifier(bonus)} />
             )
           })}
         </Box>

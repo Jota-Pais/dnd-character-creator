@@ -13,6 +13,7 @@ import {
   getWeaponProficiencies,
   getWeaponProficiencyLabels,
   getSavingThrowProficiencies,
+  getSavingThrowChecks,
   hasWeaponProficiency,
   getExpertiseSkills,
   getExpertiseTools,
@@ -210,7 +211,7 @@ describe('proficiência de armadura, arma e resistência', () => {
     )
   })
 
-  // p. 163: multiclassar concede só o subconjunto da Tabela de Proficiências de Multiclasse.
+  // p. 166: multiclassar concede só o subconjunto da Tabela de Proficiências de Multiclasse.
   it('a classe adicional concede só o subconjunto de multiclasse', () => {
     const d = draft({
       class: 'wizard', // nenhuma armadura
@@ -254,7 +255,7 @@ describe('proficiência de armadura, arma e resistência', () => {
     expect(hasWeaponProficiency(sorcerer, getWeaponById('mace')!)).toBe(false)
   })
 
-  // p. 163: multiclassar NUNCA concede proficiência em teste de resistência.
+  // p. 166: multiclassar NUNCA concede proficiência em teste de resistência.
   it('só a classe inicial concede resistências', () => {
     const d = draft({
       class: 'wizard', // INT, SAB
@@ -681,5 +682,75 @@ describe('describeToolWithoutProficiency', () => {
   it('só acrescenta o foco quando ele se aplica', () => {
     expect(describeToolWithoutProficiency(false)).toBe('pode usar, mas não soma o bônus de proficiência nos testes com ele')
     expect(describeToolWithoutProficiency(true)).toMatch(/; continua servindo de foco de conjuração$/)
+  })
+})
+
+describe('getSavingThrowProficiencies / getSavingThrowChecks', () => {
+  const scores = { STR: 10, DEX: 14, CON: 12, INT: 16, WIS: 13, CHA: 8 }
+  const extra = (classId: string, level: number): ClassEntry => ({
+    classId, level, classChoices: { ...EMPTY_CLASS_CHOICES },
+    spellChoices: { cantrips: [], spells: [] }, asiChoices: [], hpRolls: [],
+  })
+  const single = (classId: string, level: number, overrides: Partial<CharacterDraft> = {}) =>
+    draft({ class: classId, level, ...overrides })
+  const multi = (primary: string, primaryLevel: number, other: string, otherLevel: number) => draft({
+    level: primaryLevel + otherLevel, multiclass: true, class: primary,
+    additionalClasses: [extra(other, otherLevel)],
+  })
+
+  // p. 172: Resiliente dá proficiência na resistência do atributo escolhido — pela raça...
+  it('mago com Resiliente (CON) pelo Humano Variante marca INT, SAB e CON', () => {
+    const d = single('wizard', 1, {
+      race: 'human', subrace: 'variant-human', raceChoices: { feat: 'resiliente', featAbility: 'CON' },
+    })
+    expect(getSavingThrowProficiencies(d)).toEqual(['CON', 'INT', 'WIS'])
+    const checks = getSavingThrowChecks(d, scores)
+    expect(checks.CON).toEqual({ proficient: true, bonus: 3 }) // +1 CON +2 proficiência
+    expect(checks.STR).toEqual({ proficient: false, bonus: 0 })
+    expect(checks.INT.bonus).toBe(5)
+  })
+
+  // ...ou por um espaço de ASI.
+  it('Resiliente num espaço de ASI também conta', () => {
+    const d = single('wizard', 4, { asiChoices: [{ kind: 'feat', featId: 'resiliente', abilities: ['DEX'] }] })
+    expect(getSavingThrowProficiencies(d)).toEqual(['DEX', 'INT', 'WIS'])
+  })
+
+  it('Resiliente num atributo que a classe já tem não duplica', () => {
+    const d = single('wizard', 1, { raceChoices: { feat: 'resiliente', featAbility: 'WIS' } })
+    expect(getSavingThrowProficiencies(d)).toEqual(['INT', 'WIS'])
+  })
+
+  // p. 105: Alma de Diamante (monge 14) — proficiência em todos os testes de resistência.
+  it('monge 14 é proficiente nas seis; monge 13, só em FOR e DES', () => {
+    expect(getSavingThrowProficiencies(single('monk', 13))).toEqual(['STR', 'DEX'])
+    expect(getSavingThrowProficiencies(single('monk', 14))).toEqual(['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'])
+    const checks = getSavingThrowChecks(single('monk', 14), scores)
+    expect(checks.CHA).toEqual({ proficient: true, bonus: 4 }) // -1 CAR +5 proficiência
+  })
+
+  // p. 91: Mente Escorregadia (ladino 15) — proficiência em resistência de Sabedoria.
+  it('ladino 15 ganha SAB; ladino 14, não', () => {
+    expect(getSavingThrowProficiencies(single('rogue', 14))).toEqual(['DEX', 'INT'])
+    expect(getSavingThrowProficiencies(single('rogue', 15))).toEqual(['DEX', 'INT', 'WIS'])
+  })
+
+  // p. 166 corta só as proficiências INICIAIS da classe adicional, não as características por nível.
+  it('guerreiro 1 / ladino 15 ganha SAB pela Mente Escorregadia, sem DES e INT do ladino', () => {
+    expect(getSavingThrowProficiencies(multi('fighter', 1, 'rogue', 15))).toEqual(['STR', 'CON', 'WIS'])
+  })
+
+  it('a característica conta o nível NA classe: guerreiro 6 / ladino 14 não tem SAB', () => {
+    expect(getSavingThrowProficiencies(multi('fighter', 6, 'rogue', 14))).toEqual(['STR', 'CON'])
+  })
+
+  it('Alma de Diamante como segunda classe também dá as seis', () => {
+    expect(getSavingThrowProficiencies(multi('wizard', 1, 'monk', 14))).toEqual(['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'])
+  })
+
+  it('a Versatilidade do bardo não entra na resistência', () => {
+    const checks = getSavingThrowChecks(single('bard', 2), scores)
+    expect(checks.STR).toEqual({ proficient: false, bonus: 0 })
+    expect(checks.CHA).toEqual({ proficient: true, bonus: 1 })
   })
 })

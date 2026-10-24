@@ -547,3 +547,17 @@ export function getFeatSavingThrows(draft: CharacterDraft): AbilityScore[] {
   }
   return [...new Set(out)]
 }
+
+/**
+ * Resistências ganhas por característica de classe ou subclasse (Mente Escorregadia, Alma de
+ * Diamante), cada classe da multiclasse no nível que tem nela: um guerreiro 5 / ladino 15 ganha
+ * Sabedoria. A regra da p. 166 corta só as proficiências INICIAIS da classe adicional, não o que
+ * ela dá por nível.
+ */
+export function getClassFeatureSavingThrows(draft: CharacterDraft): AbilityScore[] {
+  const out = getOwnedClassFeatures(draft).flatMap(f => {
+    const granted = f.effects?.savingThrowProficiencies
+    return granted === 'all' ? ALL_ABILITY_SCORES : (granted ?? [])
+  })
+  return [...new Set(out)]
+}

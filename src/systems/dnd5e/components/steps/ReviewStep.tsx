@@ -30,6 +30,7 @@ import {
 import { formatArmorClassBreakdown } from '../../utils/armorClassUtils'
 import {
   getAllGrantedTools, getLanguageLabels, EXOTIC_LANGUAGE_NOTE, getExpertiseTools, getSkillChecks,
+  getSavingThrowChecks,
   getPassiveScore, getArmorProficiencyLabels, getWeaponProficiencyLabels, getUnproficientArmor,
   getUnproficientTools, formatUnproficientTool,
 } from '../../utils/proficiencyUtils'
@@ -117,7 +118,7 @@ export function ReviewStep() {
 
   // Proficiencies
   const skillChecks = getSkillChecks(draft, finalScores)
-  const savingThrows = cls?.savingThrows ?? []
+  const saveChecks = getSavingThrowChecks(draft, finalScores)
   const passivePerception = getPassiveScore(draft, 'perception', skillChecks)
   // Versatilidade: o que entra nas perícias sem proficiência (0 para quem não tem).
   const halfProficiency = getCheckProficiencyBonus(draft, 'none')
@@ -338,9 +339,7 @@ export function ReviewStep() {
         <Section title="Resistências">
           <div className="space-y-1.5">
             {ALL_ABILITY_SCORES.map(ab => {
-              const isProficient = savingThrows.includes(ab)
-              const abilityMod = calculateModifier(finalScores[ab])
-              const bonus = abilityMod + (isProficient ? profBonus : 0)
+              const { proficient: isProficient, bonus } = saveChecks[ab]
               return (
                 <div key={ab} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">

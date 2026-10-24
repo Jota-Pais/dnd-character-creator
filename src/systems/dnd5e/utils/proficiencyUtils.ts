@@ -14,10 +14,11 @@ import {
 } from './equipmentUtils'
 import {
   getFeatArmorProficiencies, getFeatWeaponProficiencies, getFeatSavingThrows,
+  getClassFeatureSavingThrows,
   getFeatGrantedSkills, getFeatGrantedTools, getFeatGrantedLanguages,
   getCheckProficiencyBonus, getPassiveScoreBonus, type CheckProficiency,
 } from './sheetEffects'
-import { calculateModifier } from './abilityScoreUtils'
+import { calculateModifier, getProficiencyBonus, ALL_ABILITY_SCORES } from './abilityScoreUtils'
 
 /**
  * Deduplicação de proficiências entre raça, classe e antecedente (PHB 2014).
@@ -402,12 +403,38 @@ export function getWeaponProficiencies(draft: CharacterDraft): string[] {
 }
 
 /**
- * Testes de resistência com proficiência. Só a classe INICIAL concede: multiclassar nunca dá
- * proficiência em resistência (p. 163) — é a diferença mais esquecida da tabela.
+ * Testes de resistência com proficiência. Das proficiências INICIAIS, só a classe inicial concede:
+ * multiclassar nunca dá proficiência em resistência (p. 166) — é a diferença mais esquecida da
+ * tabela. Somam-se o talento (Resiliente) e as características de classe que dão resistência
+ * (Mente Escorregadia, Alma de Diamante), estas de qualquer classe da multiclasse.
  */
 export function getSavingThrowProficiencies(draft: CharacterDraft): AbilityScore[] {
   const fromClass = draft.class ? (getClass(draft.class)?.savingThrows ?? []) : []
-  return uniq([...fromClass, ...getFeatSavingThrows(draft)]) as AbilityScore[]
+  const granted = new Set([
+    ...fromClass, ...getFeatSavingThrows(draft), ...getClassFeatureSavingThrows(draft),
+  ])
+  // Na ordem da ficha (FOR, DES, CON, INT, SAB, CAR), não na ordem das fontes.
+  return ALL_ABILITY_SCORES.filter(ab => granted.has(ab))
+}
+
+export type SavingThrowCheck = { proficient: boolean; bonus: number }
+
+/**
+ * O número de cada teste de resistência: modificador do atributo + o bônus de proficiência, se
+ * proficiente. Fonte única da Revisão e do PDF, que antes liam só `savingThrows` da classe e
+ * perdiam o Resiliente. A Versatilidade não entra: ela vale para testes de habilidade, não de
+ * resistência (p. 54).
+ */
+export function getSavingThrowChecks(
+  draft: CharacterDraft,
+  finalScores: Record<AbilityScore, number>,
+): Record<AbilityScore, SavingThrowCheck> {
+  const proficient = new Set(getSavingThrowProficiencies(draft))
+  const prof = getProficiencyBonus(draft.level ?? 1)
+  return Object.fromEntries(ALL_ABILITY_SCORES.map(ab => {
+    const isProficient = proficient.has(ab)
+    return [ab, { proficient: isProficient, bonus: calculateModifier(finalScores[ab]) + (isProficient ? prof : 0) }]
+  })) as Record<AbilityScore, SavingThrowCheck>
 }
 
 /** O catálogo de armaduras diz 'shield'; a proficiência de classe diz 'shields'. */

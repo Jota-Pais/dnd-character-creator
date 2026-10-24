@@ -128,6 +128,11 @@ describe('weaponFormat', () => {
       expect(atk.damage).toBe('1d6+1 concussão')
     })
 
+    it('zarabatana (dano fixo 1) sai com a conta resolvida', () => {
+      expect(getWeaponAttack(getWeaponById('blowgun')!, ctx(0, 3, 2, true)).damage).toBe('4 perfurante')
+      expect(getWeaponAttack(getWeaponById('blowgun')!, ctx(0, -1, 2, true)).damage).toBe('0 perfurante')
+    })
+
     it('modificador 0 não aparece no dano', () => {
       // Porrete (1d4 concussão), Força 0, Destreza 0, prof +2 → dano sem "+0"
       const atk = getWeaponAttack(getWeaponById('club')!, ctx(0, 0, 2, true))
@@ -258,8 +263,13 @@ describe('weaponFormat', () => {
       const atk = getUnarmedStrike({ strMod: 3, dexMod: 1, proficiencyBonus: 2 })
       expect(atk).toEqual({
         name: 'Golpe desarmado', ability: 'Força', attackBonus: '+5', proficient: true,
-        damage: '1+3 concussão', properties: '', notes: [],
+        damage: '4 concussão', properties: '', notes: [],
       })
+    })
+
+    it('dano fixo sai resolvido: Força 8 dá 0, Força 6 dá -1 (sem piso inventado)', () => {
+      expect(getUnarmedStrike({ strMod: -1, dexMod: 0, proficiencyBonus: 2 }).damage).toBe('0 concussão')
+      expect(getUnarmedStrike({ strMod: -2, dexMod: 0, proficiencyBonus: 2 }).damage).toBe('-1 concussão')
     })
 
     it('Força 10: só o 1', () => {

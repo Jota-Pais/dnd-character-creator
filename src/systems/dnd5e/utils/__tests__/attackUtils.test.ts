@@ -46,7 +46,7 @@ describe('getSheetAttacks', () => {
   it('todo personagem tem o golpe desarmado no fim: 1 + Força, proficiente (p. 196)', () => {
     const attacks = getSheetAttacks(draft({ level: 1, class: 'wizard', ...carrying('dagger') }), scores({ STR: 14 }))
     expect(attacks.map(a => a.key)).toEqual(['dagger', 'unarmed'])
-    expect(attacks[1]).toMatchObject({ name: 'Golpe desarmado', attackBonus: '+4', damage: '1+2 concussão', proficient: true })
+    expect(attacks[1]).toMatchObject({ name: 'Golpe desarmado', attackBonus: '+4', damage: '3 concussão', proficient: true })
   })
 
   it('guerreiro de Arquearia: +2 no arco longo, nada na espada longa', () => {

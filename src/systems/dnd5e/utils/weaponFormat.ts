@@ -113,8 +113,15 @@ function withMartialArtsDie(damage: DamageRoll, die: number | undefined): Damage
   return { dice: 1, sides: die }
 }
 
+/**
+ * O dano com o modificador. Sem dado (golpe desarmado, zarabatana), a conta sai resolvida — "1+4"
+ * vira 5 e "1-1" vira 0; com dado, o fixo da arma e o modificador viram um número só ("1d8+3").
+ * Resultado negativo (Força 6-7) sai como está, -1: piso para o dano ainda não decidido.
+ */
 function formatRoll(damage: DamageRoll, mod: number): string {
-  return `${formatDamageRoll(damage)}${mod !== 0 ? signed(mod) : ''}`
+  if (!('dice' in damage && damage.dice)) return String((damage.flat ?? 0) + mod)
+  const bonus = (damage.flat ?? 0) + mod
+  return `${damage.dice}d${damage.sides}${bonus !== 0 ? signed(bonus) : ''}`
 }
 
 /** Um efeito de ataque com o nome de quem o dá (o `SheetEffect` de `sheetEffects`). */

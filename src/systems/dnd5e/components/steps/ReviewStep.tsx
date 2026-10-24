@@ -7,7 +7,7 @@ import {
 import { getFinalAbilityScores, getCharacterFeats, getSheetClassFeatures } from '../../utils/asiUtils'
 import { RuleText } from '../common/RuleText'
 import {
-  getClass, CLASS_PRESENTATION, isActiveCaster,
+  getClass, CLASS_PRESENTATION,
 } from '../../utils/classUtils'
 import {
   allClassEntries, formatClassLevelLabel,
@@ -45,6 +45,7 @@ import {
   formatSpellAttackBonus,
   getCombinedSpellSlots,
   getPactSlots,
+  getCasterEntries,
   SCHOOL_EMOJI,
   describeCastingAids,
 } from '../../utils/spellUtils'
@@ -818,10 +819,7 @@ export function ReviewStep() {
 
       {/* Magias — slots combinados (pool único) + seleção por classe conjuradora */}
       {(() => {
-        const casters = entries.flatMap(e => {
-          const ec = getClass(e.classId)
-          return ec && ec.spellcasting && isActiveCaster(ec, e.level) ? [{ e, ec }] : []
-        })
+        const casters = getCasterEntries(draft)
         if (casters.length === 0) return null
         const combined = getCombinedSpellSlots(draft).map((count, i) => ({ spellLevel: i + 1, count })).filter(s => s.count > 0)
         const pact = getPactSlots(draft)
@@ -851,18 +849,20 @@ export function ReviewStep() {
             )}
 
             <div className="space-y-4">
-              {casters.map(({ e, ec }) => {
-                const sc_ = ec.spellcasting!
+              {casters.map(caster => {
+                const sc_ = caster.casting.spellcasting
                 const dc = getSpellSaveDC(sc_, finalScores, level)
                 const attackBonus = formatSpellAttackBonus(sc_, finalScores, level)
                 const aids = describeCastingAids(sc_)
-                const cantrips = e.spellChoices.cantrips.map(id => getSpell(id)).filter(Boolean)
-                const spells = e.spellChoices.spells.map(id => getSpell(id)).filter(Boolean)
+                const cantrips = caster.cantrips.map(id => getSpell(id)).filter(Boolean)
+                const spells = caster.spells.map(id => getSpell(id)).filter(Boolean)
+                // Conjuração de subclasse (Cavaleiro/Trapaceiro Arcano) se identifica mesmo sem multiclasse.
+                const showLabel = isMc || caster.casting.casterId !== caster.cls.id
                 return (
-                  <div key={e.classId}>
-                    {isMc && (
+                  <div key={caster.cls.id}>
+                    {showLabel && (
                       <p className="text-sm font-fantasy font-bold mb-2" style={{ color: accent }}>
-                        {ec.name} · {ABILITY_LABELS[sc_.ability].short}
+                        {caster.casting.label} · {ABILITY_LABELS[sc_.ability].short}
                       </p>
                     )}
                     <div className="grid grid-cols-2 gap-3 mb-3">

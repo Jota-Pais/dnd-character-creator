@@ -1,10 +1,10 @@
-import type { Spell, SpellClass, SpellChoices } from '../types/spell'
+import type { Spell, SpellClass, SpellChoices, SpellSchool } from '../types/spell'
 import type { GameClass, ClassSpellcasting } from '../types/class'
 import type { AbilityScore } from '../types/race'
-import type { CharacterDraft } from '../types/character'
+import type { CharacterDraft, ClassEntry } from '../types/character'
 import { calculateModifier, getProficiencyBonus } from './abilityScoreUtils'
-import { isActiveCaster, getClass } from './classUtils'
-import { allClassEntries } from './multiclassUtils'
+import { isActiveCaster, getClass, getSpellcastingSource } from './classUtils'
+import { allClassEntries, getCasterProgression, getCombinedCasterLevel } from './multiclassUtils'
 import spellsData from '../data/spells.json'
 import progressionData from '../data/progression.json'
 
@@ -32,17 +32,31 @@ export function getSpellsByLevel(classId: SpellClass | string, level: number): S
 
 // ── Progression helpers ───────────────────────────────────────────────────────
 
-type CasterType = 'full' | 'half' | 'warlock'
+/** Tabela de espaços que a classe usa sozinha: plena, meia, um terço (via subclasse) ou Pacto. */
+export type CasterType = 'full' | 'half' | 'third' | 'warlock'
 
-const CASTER_TYPES = progressionData.casterType as Record<string, CasterType>
-
-export function getCasterType(classId: string): CasterType | null {
-  return CASTER_TYPES[classId] ?? null
+/**
+ * Tipo de conjurador da classe, já resolvendo a subclasse: guerreiro e ladino só conjuram como
+ * Cavaleiro Arcano / Trapaceiro Arcano (um terço). Vem do `casterProgression` de classes.json.
+ */
+export function getCasterType(classId: string, subclassId?: string | null): CasterType | null {
+  const cls = getClass(classId)
+  if (!cls) return null
+  const progression = getCasterProgression(cls, subclassId)
+  if (progression === 'pact') return 'warlock'
+  return progression === 'none' ? null : progression
 }
 
-/** Number of spell slots per spell level (9-element array, index 0 = 1st level). */
-export function getSpellSlots(classId: string, charLevel: number): number[] {
-  const ctype = getCasterType(classId)
+function padSlots(row: number[]): number[] {
+  return [...row, ...Array(9 - row.length).fill(0)]
+}
+
+/**
+ * Espaços de magia por nível de magia (9 elementos, índice 0 = 1º nível) na tabela da própria
+ * classe — ou da subclasse que conjura (Cavaleiro Arcano p. 86, Trapaceiro Arcano p. 93).
+ */
+export function getSpellSlots(classId: string, charLevel: number, subclassId?: string | null): number[] {
+  const ctype = getCasterType(classId, subclassId)
   if (!ctype) return Array(9).fill(0)
   const idx = Math.max(1, Math.min(20, charLevel)) - 1
 
@@ -52,10 +66,8 @@ export function getSpellSlots(classId: string, charLevel: number): number[] {
     arr[entry.slotLevel - 1] = entry.slots
     return arr
   }
-  if (ctype === 'half') {
-    const half = progressionData.spellSlots.half[idx]
-    return [...half, ...Array(9 - half.length).fill(0)]
-  }
+  if (ctype === 'half') return padSlots(progressionData.spellSlots.half[idx])
+  if (ctype === 'third') return padSlots(progressionData.spellSlots.third[idx])
   return progressionData.spellSlots.full[idx]
 }
 
@@ -67,29 +79,33 @@ export function getWarlockPactSlots(charLevel: number): { slots: number; slotLev
 
 // ── Multiclasse: pool de espaços combinado (PHB pág. 166-167) ───────────────────
 
-/** Classes conjuradoras que compartilham o pool combinado (full/half, ativas). Bruxo fica de fora (Pacto). */
-function pooledCasterEntries(draft: CharacterDraft): { classId: string; level: number }[] {
+/**
+ * Classes que compartilham o pool combinado: plenas, meias e um terço (Cavaleiro/Trapaceiro
+ * Arcano), já conjurando no nível que têm. O Bruxo fica de fora (Pacto).
+ */
+function pooledCasterEntries(draft: CharacterDraft): ClassEntry[] {
   return allClassEntries(draft).filter(e => {
-    const ct = getCasterType(e.classId)
+    const ct = getCasterType(e.classId, e.classChoices.subclass)
     const cls = getClass(e.classId)
-    return (ct === 'full' || ct === 'half') && !!cls && isActiveCaster(cls, e.level)
+    return (ct === 'full' || ct === 'half' || ct === 'third') && !!cls
+      && isActiveCaster(cls, e.level, e.classChoices.subclass)
   })
 }
 
 /**
  * Espaços de magia do pool combinado (9 elementos, índice 0 = 1º nível). Com UMA classe
- * conjuradora usa a tabela própria dela (regra da classe); com DUAS ou mais, soma níveis
- * inteiros dos plenos + metade (⌊÷2⌋) dos meio-conjuradores e indexa a tabela de pleno.
+ * conjuradora usa a tabela própria dela (regra da classe); com DUAS ou mais, indexa a tabela
+ * Multiclasse para Conjurador (= a de pleno, p. 167) pelo nível de conjurador combinado
+ * (getCombinedCasterLevel: plenos inteiros, ⌊÷2⌋ dos meios, ⌊÷3⌋ dos de subclasse — p. 166).
  * O Bruxo (Pacto) nunca entra aqui — ver getPactSlots.
  */
 export function getCombinedSpellSlots(draft: CharacterDraft): number[] {
   const pooled = pooledCasterEntries(draft)
   if (pooled.length === 0) return Array(9).fill(0)
-  if (pooled.length === 1) return getSpellSlots(pooled[0].classId, pooled[0].level)
-  let level = 0
-  for (const e of pooled) level += getCasterType(e.classId) === 'full' ? e.level : Math.floor(e.level / 2)
-  const idx = Math.max(1, Math.min(20, level)) - 1
-  return progressionData.spellSlots.full[idx]
+  if (pooled.length === 1) return getSpellSlots(pooled[0].classId, pooled[0].level, pooled[0].classChoices.subclass)
+  const level = getCombinedCasterLevel(draft)
+  if (level < 1) return Array(9).fill(0)
+  return progressionData.spellSlots.full[Math.min(20, level) - 1]
 }
 
 /** Espaços de Magia de Pacto do bruxo (separados do pool combinado), ou null se não houver bruxo. */
@@ -100,27 +116,156 @@ export function getPactSlots(draft: CharacterDraft): { slots: number; slotLevel:
   return getWarlockPactSlots(warlock.level)
 }
 
-/** Highest spell level the class can access at charLevel (0 = no spells). */
-export function getMaxSpellLevel(classId: string, charLevel: number): number {
-  const slots = getSpellSlots(classId, charLevel)
+/**
+ * Maior nível de magia que a classe aprende, pela tabela DELA (0 = nenhum). Na multiclasse as
+ * magias conhecidas seguem cada classe "como se fosse um membro de única classe" (p. 166).
+ */
+export function getMaxSpellLevel(classId: string, charLevel: number, subclassId?: string | null): number {
+  const slots = getSpellSlots(classId, charLevel, subclassId)
   for (let i = slots.length - 1; i >= 0; i--) {
     if (slots[i] > 0) return i + 1
   }
   return 0
 }
 
-/** Number of cantrips known at a given character level (0 if class has none). */
-export function getCantripsKnownCount(classId: string, charLevel: number): number {
-  const table = (progressionData.cantripsKnown as Record<string, number[]>)[classId]
+/**
+ * Truques conhecidos no nível dado (0 se não houver tabela). `casterId` é a classe, ou a
+ * subclasse que conjura (eldritch-knight, arcane-trickster) — ver getSpellcastingSource.
+ */
+export function getCantripsKnownCount(casterId: string, charLevel: number): number {
+  const table = (progressionData.cantripsKnown as Record<string, number[]>)[casterId]
   if (!table) return 0
   return table[Math.max(1, Math.min(20, charLevel)) - 1]
 }
 
-/** Spells known for "known"-type casters at a given character level. */
-export function getSpellsKnownCount(classId: string, charLevel: number): number {
-  const table = (progressionData.spellsKnown as Record<string, number[]>)[classId]
+/** Magias conhecidas (conjuradores `known`) no nível dado; `casterId` como em getCantripsKnownCount. */
+export function getSpellsKnownCount(casterId: string, charLevel: number): number {
+  const table = (progressionData.spellsKnown as Record<string, number[]>)[casterId]
   if (!table) return 0
   return table[Math.max(1, Math.min(20, charLevel)) - 1]
+}
+
+// ── Conjuração por classe da ficha (classe ou subclasse) ──────────────────────
+
+/**
+ * A conjuração de uma classe da ficha, já resolvida: quem conjura (a classe ou a subclasse que dá
+ * conjuração), a lista de onde escolhe e o rótulo. É a fonte única que a etapa Magias, a
+ * Revisão, a ficha imprimível e a validação consultam — nunca `cls.spellcasting` direto.
+ */
+export type EntrySpellcasting = {
+  spellcasting: ClassSpellcasting
+  /** Chave das tabelas de progression.json: id da classe, ou da subclasse que conjura. */
+  casterId: string
+  /** Lista de magias de onde escolhe (o mago, para o Cavaleiro e o Trapaceiro Arcano). */
+  spellList: SpellClass
+  /** "Mago", ou "Guerreiro (Cavaleiro Arcano)" quando a conjuração vem da subclasse. */
+  label: string
+}
+
+export function getEntrySpellcasting(
+  cls: GameClass | null | undefined,
+  subclassId?: string | null,
+): EntrySpellcasting | null {
+  if (!cls) return null
+  const source = getSpellcastingSource(cls, subclassId)
+  if (!source) return null
+  return {
+    spellcasting: source.spellcasting,
+    casterId: source.id,
+    spellList: source.spellcasting.spellList ?? (cls.id as SpellClass),
+    label: source.subclass ? `${cls.name} (${source.subclass.name})` : cls.name,
+  }
+}
+
+/** Truques que a conjuração dá sem escolha (Trapaceiro Arcano: mãos mágicas). */
+export function getRequiredCantrips(spellcasting: ClassSpellcasting): string[] {
+  return spellcasting.requiredCantrips ?? []
+}
+
+/** Total de truques conhecidos no nível (os dados de graça inclusos). */
+export function getCantripsNeeded(casting: EntrySpellcasting, classLevel: number): number {
+  return getCantripsKnownCount(casting.casterId, classLevel) || casting.spellcasting.cantripsKnown
+}
+
+/** Truques conhecidos: os que a característica dá, mais os escolhidos (sem repetir). */
+export function getKnownCantrips(spellcasting: ClassSpellcasting, choices: SpellChoices): string[] {
+  return [...new Set([...getRequiredCantrips(spellcasting), ...choices.cantrips])]
+}
+
+/** Uma classe da ficha que conjura no nível que tem nela, com as magias que conhece. */
+export type CasterEntry = {
+  entry: ClassEntry
+  cls: GameClass
+  casting: EntrySpellcasting
+  /** Truques conhecidos, os dados pela característica inclusos (mãos mágicas do Trapaceiro). */
+  cantrips: string[]
+  spells: string[]
+}
+
+/** Classes conjuradoras ativas da ficha (primária + adicionais), na ordem da multiclasse. */
+export function getCasterEntries(draft: CharacterDraft): CasterEntry[] {
+  return allClassEntries(draft).flatMap(entry => {
+    const cls = getClass(entry.classId)
+    const subclass = entry.classChoices.subclass
+    const casting = getEntrySpellcasting(cls, subclass)
+    if (!cls || !casting || !isActiveCaster(cls, entry.level, subclass)) return []
+    return [{
+      entry,
+      cls,
+      casting,
+      cantrips: getKnownCantrips(casting.spellcasting, entry.spellChoices),
+      spells: entry.spellChoices.spells,
+    }]
+  })
+}
+
+// ── Restrição de escola (Cavaleiro Arcano p. 86, Trapaceiro Arcano p. 93) ──────
+
+export type SchoolRestrictionStatus = {
+  schools: SpellSchool[]
+  /** Quantas magias conhecidas podem ser de qualquer escola até este nível da classe. */
+  freeSlots: number
+  /** Quantas das escolhidas já estão fora das escolas. */
+  freeUsed: number
+}
+
+/** A magia (de 1° nível ou superior) cai fora das escolas da restrição? Truques nunca. */
+export function isOutsideSchoolRestriction(spellcasting: ClassSpellcasting, spell: Spell): boolean {
+  const restriction = spellcasting.schoolRestriction
+  return !!restriction && spell.level > 0 && !restriction.schools.includes(spell.school)
+}
+
+/**
+ * Situação da restrição de escola: as escolhas livres acumuladas até o nível da classe (uma das três
+ * iniciais e as do 8°, 14° e 20°) contra as escolhidas fora da escola. null sem restrição.
+ */
+export function getSchoolRestrictionStatus(
+  spellcasting: ClassSpellcasting,
+  classLevel: number,
+  spellIds: string[],
+): SchoolRestrictionStatus | null {
+  const restriction = spellcasting.schoolRestriction
+  if (!restriction) return null
+  const freeSlots = restriction.freeChoices
+    .filter(c => classLevel >= c.level)
+    .reduce((sum, c) => sum + c.count, 0)
+  const freeUsed = spellIds.filter(id => {
+    const spell = getSpell(id)
+    return !!spell && isOutsideSchoolRestriction(spellcasting, spell)
+  }).length
+  return { schools: restriction.schools, freeSlots, freeUsed }
+}
+
+/** A restrição de escola ainda deixa acrescentar esta magia? (fora da escola só com escolha livre sobrando) */
+export function isAllowedBySchoolRestriction(
+  spellcasting: ClassSpellcasting,
+  classLevel: number,
+  spellIds: string[],
+  spell: Spell,
+): boolean {
+  if (!isOutsideSchoolRestriction(spellcasting, spell)) return true
+  const status = getSchoolRestrictionStatus(spellcasting, classLevel, spellIds)
+  return !status || status.freeUsed < status.freeSlots
 }
 
 /** Wizard spellbook size at a given level (6 at level 1, +2 per level). */
@@ -198,23 +343,44 @@ export function getMaxPreparedSpells(
   return Math.max(1, modifier + level)
 }
 
+/**
+ * Quantas magias de 1° nível ou superior a classe escolhe na etapa: preparadas (fórmula), o
+ * grimório do mago, ou as conhecidas da tabela (a da subclasse, no Cavaleiro/Trapaceiro Arcano).
+ */
+export function getSpellsToChoose(
+  casting: EntrySpellcasting,
+  classLevel: number,
+  abilityScores: Partial<Record<AbilityScore, number | null>>,
+): number {
+  const sc = casting.spellcasting
+  if (sc.type === 'prepared') return getMaxPreparedSpells(sc, abilityScores, classLevel)
+  if (sc.type === 'hybrid') return getWizardSpellbookSize(classLevel)
+  return getSpellsKnownCount(casting.casterId, classLevel) || sc.spellsAtLevel1
+}
+
 export function isSpellStepComplete(
   cls: GameClass | null,
   choices: SpellChoices,
   level = 1,
+  subclassId?: string | null,
 ): boolean {
-  if (!cls || !cls.spellcasting) return true
-  if (!isActiveCaster(cls, level)) return true
+  const casting = getEntrySpellcasting(cls, subclassId)
+  if (!cls || !casting) return true
+  if (!isActiveCaster(cls, level, subclassId)) return true
 
-  const sc = cls.spellcasting
-  const cantripsNeeded = getCantripsKnownCount(cls.id, level) || sc.cantripsKnown
+  const sc = casting.spellcasting
+  const cantripsNeeded = getCantripsNeeded(casting, level)
 
-  if (cantripsNeeded > 0 && choices.cantrips.length < cantripsNeeded) return false
+  if (cantripsNeeded > 0 && getKnownCantrips(sc, choices).length < cantripsNeeded) return false
 
   if (sc.type === 'known') {
-    const needed = getSpellsKnownCount(cls.id, level) || sc.spellsAtLevel1
+    const needed = getSpellsKnownCount(casting.casterId, level) || sc.spellsAtLevel1
     if (needed > 0 && choices.spells.length < needed) return false
   }
+
+  // Cavaleiro/Trapaceiro Arcano: mais magias fora da escola do que as escolhas livres permitem.
+  const school = getSchoolRestrictionStatus(sc, level, choices.spells)
+  if (school && school.freeUsed > school.freeSlots) return false
 
   if (sc.type === 'hybrid') {
     const needed = getWizardSpellbookSize(level)

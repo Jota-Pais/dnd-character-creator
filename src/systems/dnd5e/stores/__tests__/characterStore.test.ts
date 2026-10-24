@@ -130,3 +130,34 @@ describe('sair para a galeria global unificada (F14)', () => {
     expect(useAppStore.getState().activeSystemId).toBeNull()
   })
 })
+
+describe('troca de subclasse x magias escolhidas', () => {
+  it('sair do Cavaleiro Arcano zera as magias do guerreiro; trocar a escola do mago não', () => {
+    const store = useCharacterStore.getState()
+    store.setClass('fighter')
+    store.setLevel(3)
+    useCharacterStore.getState().updateClassChoices({ subclass: 'eldritch-knight' })
+    useCharacterStore.getState().updateSpellChoices({ cantrips: ['fire-bolt'], spells: ['shield'] })
+    useCharacterStore.getState().updateClassChoices({ skills: ['athletics'] })
+    expect(useCharacterStore.getState().draft.spellChoices.spells).toEqual(['shield'])
+    useCharacterStore.getState().updateClassChoices({ subclass: 'champion' })
+    expect(useCharacterStore.getState().draft.spellChoices).toEqual({ cantrips: [], spells: [] })
+
+    useCharacterStore.getState().setClass('wizard')
+    useCharacterStore.getState().updateClassChoices({ subclass: 'evocation' })
+    useCharacterStore.getState().updateSpellChoices({ spells: ['shield'] })
+    useCharacterStore.getState().updateClassChoices({ subclass: 'abjuration' })
+    expect(useCharacterStore.getState().draft.spellChoices.spells).toEqual(['shield'])
+  })
+
+  it('vale também para a classe adicional da multiclasse', () => {
+    useCharacterStore.getState().setClass('wizard')
+    useCharacterStore.getState().setLevel(5)
+    useCharacterStore.getState().addClass('rogue')
+    useCharacterStore.getState().setAdditionalClassLevel('rogue', 3)
+    useCharacterStore.getState().updateAdditionalClassChoices('rogue', { subclass: 'arcane-trickster' })
+    useCharacterStore.getState().updateAdditionalSpellChoices('rogue', { spells: ['sleep'] })
+    useCharacterStore.getState().updateAdditionalClassChoices('rogue', { subclass: 'thief' })
+    expect(useCharacterStore.getState().draft.additionalClasses[0].spellChoices.spells).toEqual([])
+  })
+})

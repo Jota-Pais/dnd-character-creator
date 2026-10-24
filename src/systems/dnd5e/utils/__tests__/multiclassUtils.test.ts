@@ -355,6 +355,39 @@ describe('multiclasse — pool de espaços de magia combinado', () => {
     expect(getCombinedSpellSlots(mix).slice(0, 3)).toEqual([4, 3, 2])
     expect(getPactSlots(mix)).not.toBeNull()
   })
+
+  const ek = { ...EMPTY_DRAFT.classChoices, subclass: 'eldritch-knight' }
+
+  it('Cavaleiro Arcano sozinho usa a tabela de 1/3 dele (Guerreiro 7 → 4×1º, 2×2º)', () => {
+    expect(getCombinedSpellSlots(makeDraft({ class: 'fighter', level: 7, classChoices: ek })).slice(0, 3)).toEqual([4, 2, 0])
+  })
+
+  it('Mago 5 / Cavaleiro Arcano 3 → 5 + ⌊3/3⌋ = 6 (4/3/3), não a tabela do mago 5', () => {
+    const d = makeDraft({ class: 'wizard', level: 8, additionalClasses: [entry({ classId: 'fighter', level: 3, classChoices: ek })] })
+    expect(getCombinedSpellSlots(d).slice(0, 4)).toEqual([4, 3, 3, 0])
+  })
+
+  it('Paladino 2 / Cavaleiro Arcano 6 → ⌊2/2⌋ + ⌊6/3⌋ = 3 (4/2)', () => {
+    const d = makeDraft({ class: 'fighter', level: 8, classChoices: ek, additionalClasses: [entry({ classId: 'paladin', level: 2 })] })
+    expect(getCombinedSpellSlots(d).slice(0, 3)).toEqual([4, 2, 0])
+  })
+
+  it('Trapaceiro Arcano 3 numa multiclasse com Bárbaro usa a tabela própria', () => {
+    const d = makeDraft({
+      class: 'rogue', level: 5,
+      classChoices: { ...EMPTY_DRAFT.classChoices, subclass: 'arcane-trickster' },
+      additionalClasses: [entry({ classId: 'barbarian', level: 2 })],
+    })
+    expect(getCombinedSpellSlots(d).slice(0, 2)).toEqual([2, 0])
+  })
+
+  it('Guerreiro Campeão não entra no pool', () => {
+    const d = makeDraft({
+      class: 'wizard', level: 8,
+      additionalClasses: [entry({ classId: 'fighter', level: 3, classChoices: { ...EMPTY_DRAFT.classChoices, subclass: 'champion' } })],
+    })
+    expect(getCombinedSpellSlots(d).slice(0, 3)).toEqual([4, 3, 2])
+  })
 })
 
 describe('formatClassLevelLabel — cabeçalho de identidade (Revisão e ficha imprimível)', () => {

@@ -12,6 +12,7 @@ import {
   getSubclassFeaturesUpToLevel,
 } from '../../utils/classUtils'
 import { getPrimaryLevel } from '../../utils/multiclassUtils'
+import { getEntrySpellcasting, getCantripsNeeded } from '../../utils/spellUtils'
 import { isStepComplete } from '../../utils/draftValidation'
 import { ABILITY_LABELS } from '../../utils/abilityScoreUtils'
 import { getClassSlotProficiencies } from '../../utils/proficiencyUtils'
@@ -40,7 +41,10 @@ export function ClassStep() {
 
   // Em multiclasse, a classe primária ocupa só parte do nível total (o resto vai pras adicionais).
   const primaryLevel = draft.multiclass ? getPrimaryLevel(draft) : draft.level
-  const activeCaster = selectedClass ? isActiveCaster(selectedClass, primaryLevel) : false
+  // A subclasse pode dar conjuração (Cavaleiro Arcano, Trapaceiro Arcano).
+  const subclassId = draft.classChoices.subclass
+  const activeCaster = selectedClass ? isActiveCaster(selectedClass, primaryLevel, subclassId) : false
+  const casting = getEntrySpellcasting(selectedClass, subclassId)
 
   // Valida o passo inteiro (primária + adicionais + orçamento), não só a primária.
   const canAdvance = isStepComplete(draft, 'class')
@@ -163,16 +167,16 @@ export function ClassStep() {
                       value={selectedClass.toolProficiencies.granted.join(', ')}
                     />
                   )}
-                  {activeCaster && selectedClass.spellcasting && (
+                  {activeCaster && casting && (
                     <>
                       <Stat
                         label="📖 Magia"
-                        value={ABILITY_LABELS[selectedClass.spellcasting.ability].long}
+                        value={ABILITY_LABELS[casting.spellcasting.ability].long}
                       />
-                      {selectedClass.spellcasting.cantripsKnown > 0 && (
+                      {getCantripsNeeded(casting, primaryLevel) > 0 && (
                         <Stat
                           label="✨ Truques"
-                          value={`${selectedClass.spellcasting.cantripsKnown}`}
+                          value={`${getCantripsNeeded(casting, primaryLevel)}`}
                         />
                       )}
                     </>

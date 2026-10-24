@@ -6,7 +6,7 @@ import {
   getRace, getSubrace, getRaceGrantedSkills, getRaceGrantedTools,
   getEffectiveGrantedProficiencies, getLanguageName, isExoticLanguage,
 } from './raceUtils'
-import { getClass, getSubclass, getExpertiseCount } from './classUtils'
+import { getClass, getSubclass, getExpertiseCount, getSpellcastingSource } from './classUtils'
 import { allClassEntries } from './multiclassUtils'
 import { getBackground, resolveBackgroundItems } from './backgroundUtils'
 import {
@@ -454,7 +454,8 @@ const INSTRUMENT_FOCUS = 'instrumento musical'
  */
 export function hasInstrumentSpellcastingFocus(draft: CharacterDraft): boolean {
   return allClassEntries(draft).some(entry => {
-    const sc = getClass(entry.classId)?.spellcasting
+    const cls = getClass(entry.classId)
+    const sc = cls ? getSpellcastingSource(cls, entry.classChoices.subclass)?.spellcasting : undefined
     return sc?.focus === INSTRUMENT_FOCUS && entry.level >= sc.castingStartsAtLevel
   })
 }

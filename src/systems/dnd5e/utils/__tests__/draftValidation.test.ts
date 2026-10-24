@@ -236,4 +236,58 @@ describe('isStepComplete', () => {
   it('review sempre completo', () => {
     expect(isStepComplete(structuredClone(EMPTY_DRAFT), 'review')).toBe(true)
   })
+
+  it('magias: Cavaleiro Arcano 3 sem magias está incompleto; Campeão não tem o que escolher', () => {
+    const ek: CharacterDraft = {
+      ...structuredClone(EMPTY_DRAFT), class: 'fighter', level: 3,
+      classChoices: { ...EMPTY_DRAFT.classChoices, subclass: 'eldritch-knight' },
+    }
+    expect(isStepComplete(ek, 'spells')).toBe(false)
+    expect(isStepComplete({
+      ...ek, spellChoices: { cantrips: ['fire-bolt', 'light'], spells: ['shield', 'magic-missile', 'find-familiar'] },
+    }, 'spells')).toBe(true)
+    expect(isStepComplete({
+      ...ek, classChoices: { ...EMPTY_DRAFT.classChoices, subclass: 'champion' },
+    }, 'spells')).toBe(true)
+  })
+
+  it('magias: Trapaceiro Arcano numa classe adicional também é validado', () => {
+    const d: CharacterDraft = {
+      ...structuredClone(EMPTY_DRAFT), class: 'wizard', level: 4, multiclass: true,
+      spellChoices: {
+        cantrips: ['fire-bolt', 'light', 'prestidigitation'],
+        spells: ['shield', 'magic-missile', 'burning-hands', 'thunderwave', 'mage-armor', 'find-familiar'],
+      },
+      additionalClasses: [{
+        classId: 'rogue', level: 3,
+        classChoices: { ...EMPTY_DRAFT.classChoices, subclass: 'arcane-trickster' },
+        spellChoices: { cantrips: [], spells: [] }, asiChoices: [], hpRolls: [],
+      }],
+    }
+    expect(isStepComplete(d, 'spells')).toBe(false)
+    d.additionalClasses[0].spellChoices = { cantrips: ['minor-illusion', 'light'], spells: ['sleep', 'disguise-self', 'shield'] }
+    expect(isStepComplete(d, 'spells')).toBe(true)
+  })
+})
+
+describe('sanitizeImportedDraft: magias de quem conjura pela subclasse', () => {
+  const base = { name: 'Vex', level: 3, class: 'fighter', abilityScores: { STR: 15 } }
+
+  it('mantém as magias do Cavaleiro Arcano', () => {
+    const d = sanitizeImportedDraft({
+      ...base,
+      classChoices: { subclass: 'eldritch-knight' },
+      spellChoices: { cantrips: ['fire-bolt'], spells: ['shield'] },
+    })!
+    expect(d.spellChoices).toEqual({ cantrips: ['fire-bolt'], spells: ['shield'] })
+  })
+
+  it('descarta magias de um guerreiro que não conjura (Campeão)', () => {
+    const d = sanitizeImportedDraft({
+      ...base,
+      classChoices: { subclass: 'champion' },
+      spellChoices: { cantrips: ['fire-bolt'], spells: ['shield'] },
+    })!
+    expect(d.spellChoices).toEqual({ cantrips: [], spells: [] })
+  })
 })

@@ -16,6 +16,8 @@ import {
   CLASSES,
   getClass,
   getSubclass,
+  getSpellcastingSource,
+  subclassChangesSpellcasting,
 } from '../classUtils'
 import type { GameClass } from '../../types/class'
 import { EMPTY_CLASS_CHOICES } from '../../types/class'
@@ -167,6 +169,32 @@ describe('isActiveCaster', () => {
     expect(isActiveCaster(lateCasterClass, 1)).toBe(false))
   it('paladino nível 2 com castingStartsAtLevel 2 retorna true', () =>
     expect(isActiveCaster(lateCasterClass, 2)).toBe(true))
+  it('guerreiro conjura só como Cavaleiro Arcano, e só a partir do 3° nível', () => {
+    const fighter = getClass('fighter')!
+    expect(isActiveCaster(fighter, 3)).toBe(false)
+    expect(isActiveCaster(fighter, 3, 'champion')).toBe(false)
+    expect(isActiveCaster(fighter, 2, 'eldritch-knight')).toBe(false)
+    expect(isActiveCaster(fighter, 3, 'eldritch-knight')).toBe(true)
+    expect(isActiveCaster(getClass('rogue')!, 3, 'arcane-trickster')).toBe(true)
+  })
+})
+
+describe('getSpellcastingSource / subclassChangesSpellcasting', () => {
+  const fighter = getClass('fighter')!
+  const wizard = getClass('wizard')!
+
+  it('a conjuração da classe tem precedência; a subclasse só entra quando a classe não conjura', () => {
+    expect(getSpellcastingSource(wizard, wizard.subclasses[0].id)).toMatchObject({ id: 'wizard', subclass: null })
+    expect(getSpellcastingSource(fighter, 'eldritch-knight')).toMatchObject({ id: 'eldritch-knight' })
+    expect(getSpellcastingSource(fighter, 'battle-master')).toBeNull()
+  })
+
+  it('trocar para/de Cavaleiro Arcano muda quem conjura; trocar a escola do mago não', () => {
+    expect(subclassChangesSpellcasting(fighter, 'champion', 'eldritch-knight')).toBe(true)
+    expect(subclassChangesSpellcasting(fighter, 'eldritch-knight', null)).toBe(true)
+    expect(subclassChangesSpellcasting(fighter, 'champion', 'battle-master')).toBe(false)
+    expect(subclassChangesSpellcasting(wizard, wizard.subclasses[0].id, wizard.subclasses[1].id)).toBe(false)
+  })
 })
 
 describe('isClassStepComplete', () => {

@@ -3,7 +3,7 @@ import type { WizardStep, CharacterDraft, ClassEntry, RaceChoiceSelections, Clas
 import type { AbilityScore } from '../types/race'
 import type { ChoiceResolution } from '../types/equipment'
 import { WIZARD_STEPS, EMPTY_DRAFT } from '../types/character'
-import { getClass } from '../utils/classUtils'
+import { getClass, subclassChangesSpellcasting } from '../utils/classUtils'
 import { getAdditionalLevelsUsed } from '../utils/multiclassUtils'
 import { EMPTY_EQUIPMENT_DRAFT } from '../types/equipment'
 import { EMPTY_SPELL_CHOICES } from '../types/spell'
@@ -12,6 +12,24 @@ import { getFirstIncompleteStep } from '../utils/draftValidation'
 import { useAppStore } from '../../../core/stores/appStore'
 
 const initialLibrary = loadLibrary()
+
+/**
+ * Magias que sobrevivem a uma mudança nas escolhas de classe: trocar para (ou de) uma subclasse que
+ * conjura (Cavaleiro Arcano, Trapaceiro Arcano) muda a lista e as tabelas, então as escolhas zeram.
+ * Qualquer outra troca (a escola do mago, perícias) preserva as magias.
+ */
+function spellChoicesAfter(
+  classId: string | null,
+  current: ClassChoiceSelections,
+  patch: Partial<ClassChoiceSelections>,
+  spellChoices: SpellChoices,
+): SpellChoices {
+  const cls = classId ? getClass(classId) : undefined
+  if (!cls || patch.subclass === undefined) return spellChoices
+  return subclassChangesSpellcasting(cls, current.subclass, patch.subclass)
+    ? { ...EMPTY_SPELL_CHOICES }
+    : spellChoices
+}
 
 export type AppView = 'gallery' | 'wizard' | 'print'
 
@@ -198,6 +216,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
       draft: {
         ...state.draft,
         classChoices: { ...state.draft.classChoices, ...choices },
+        spellChoices: spellChoicesAfter(state.draft.class, state.draft.classChoices, choices, state.draft.spellChoices),
       },
     })),
 
@@ -281,7 +300,13 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
       draft: {
         ...state.draft,
         additionalClasses: state.draft.additionalClasses.map(c =>
-          c.classId === classId ? { ...c, classChoices: { ...c.classChoices, ...choices } } : c,
+          c.classId === classId
+            ? {
+                ...c,
+                classChoices: { ...c.classChoices, ...choices },
+                spellChoices: spellChoicesAfter(c.classId, c.classChoices, choices, c.spellChoices),
+              }
+            : c,
         ),
       },
     })),

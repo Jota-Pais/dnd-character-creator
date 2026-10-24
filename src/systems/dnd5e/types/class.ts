@@ -1,6 +1,7 @@
 import type { AbilityScore } from './race'
 import type { ClassStartingEquipment } from './equipment'
 import type { FeatureEffects } from './effects'
+import type { SpellClass, SpellSchool } from './spell'
 
 export type SpellcastingType = 'known' | 'prepared' | 'hybrid'
 
@@ -15,6 +16,29 @@ export type ClassSpellcasting = {
   /** Foco de conjuração da classe; `null` quando o livro não dá um (patrulheiro do PHB 2014). */
   focus: string | null
   castingStartsAtLevel: number
+  /**
+   * Lista de magias de onde se escolhe. Omitida = a lista da própria classe; o Cavaleiro Arcano e o
+   * Trapaceiro Arcano conjuram da lista de mago (p. 86 e 93).
+   */
+  spellList?: SpellClass
+  /** Escolas a que as magias de 1° nível ou superior se restringem (Cavaleiro e Trapaceiro Arcano). */
+  schoolRestriction?: SpellSchoolRestriction
+  /**
+   * Truques que a característica já dá, sem escolha (Trapaceiro Arcano: mãos mágicas, p. 93). Contam
+   * no total de truques conhecidos da tabela, mas não são gravados no draft: vêm sempre dos dados.
+   */
+  requiredCantrips?: string[]
+}
+
+/**
+ * Restrição de escola das magias conhecidas de 1° nível ou superior. `freeChoices` são as levas que
+ * podem vir de qualquer escola, pelo nível NA classe: no Cavaleiro e no Trapaceiro Arcano, uma das
+ * três iniciais (3° nível) e as aprendidas no 8°, 14° e 20° nível (p. 86 e 93). Truques não têm
+ * restrição de escola.
+ */
+export type SpellSchoolRestriction = {
+  schools: SpellSchool[]
+  freeChoices: { level: number; count: number }[]
 }
 
 export type SubclassExtraChoices = {
@@ -53,6 +77,11 @@ export type ClassSubclass = {
   description: string
   /** Só Cavaleiro Arcano / Trapaceiro Arcano conjuram (third-caster); as demais subclasses omitem. */
   casterProgression?: CasterProgression
+  /**
+   * Conjuração que a subclasse dá a uma classe que não conjura (Cavaleiro Arcano, Trapaceiro
+   * Arcano). As tabelas de truques e magias conhecidas ficam em progression.json pelo id da subclasse.
+   */
+  spellcasting?: ClassSpellcasting
   extras: SubclassExtraChoices | null
 }
 

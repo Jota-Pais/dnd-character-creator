@@ -12,7 +12,18 @@ import {
   getMaxPreparedSpells,
   isSpellStepComplete,
   describeCastingAids,
+  getSpell,
+  getEntrySpellcasting,
+  getRequiredCantrips,
+  getCantripsNeeded,
+  getKnownCantrips,
+  getSpellsToChoose,
+  getSchoolRestrictionStatus,
+  isAllowedBySchoolRestriction,
+  isOutsideSchoolRestriction,
+  getCasterEntries,
 } from '../spellUtils'
+import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
 import { getClass } from '../classUtils'
 import type { GameClass, ClassSpellcasting } from '../../types/class'
 import type { SpellChoices } from '../../types/spell'
@@ -256,4 +267,227 @@ describe('describeCastingAids', () => {
   it('patrulheiro do PHB 2014 não tem foco nem rituais', () => {
     expect(describeCastingAids(sc('ranger'))).toEqual({ focus: null, ritual: null })
   })
+})
+
+// ── Conjuradores de 1/3 via subclasse (Cavaleiro Arcano p. 86, Trapaceiro Arcano p. 93) ────
+
+describe('getCasterEntries: o que a Revisão e a ficha imprimível listam', () => {
+  const at = { ...EMPTY_DRAFT.classChoices, subclass: 'arcane-trickster' }
+
+  it('Trapaceiro Arcano 3 entra como conjurador, com mãos mágicas entre os truques', () => {
+    const draft: CharacterDraft = {
+      ...EMPTY_DRAFT, class: 'rogue', level: 3, classChoices: at,
+      spellChoices: { cantrips: ['fire-bolt', 'light'], spells: ['sleep'] },
+    }
+    const [caster] = getCasterEntries(draft)
+    expect(caster.casting.label).toBe('Ladino (Trapaceiro Arcano)')
+    expect(caster.cantrips).toEqual(['mage-hand', 'fire-bolt', 'light'])
+    expect(caster.spells).toEqual(['sleep'])
+  })
+
+  it('Ladino 2 (antes do arquétipo) e Ladino Ladrão não conjuram', () => {
+    expect(getCasterEntries({ ...EMPTY_DRAFT, class: 'rogue', level: 2, classChoices: at })).toEqual([])
+    expect(getCasterEntries({
+      ...EMPTY_DRAFT, class: 'rogue', level: 5, classChoices: { ...EMPTY_DRAFT.classChoices, subclass: 'thief' },
+    })).toEqual([])
+  })
+
+  it('multiclasse: cada classe com a própria conjuração, na ordem da ficha', () => {
+    const draft: CharacterDraft = {
+      ...EMPTY_DRAFT, class: 'wizard', level: 8,
+      additionalClasses: [{
+        classId: 'fighter', level: 3,
+        classChoices: { ...EMPTY_DRAFT.classChoices, subclass: 'eldritch-knight' },
+        spellChoices: { cantrips: [], spells: [] }, asiChoices: [], hpRolls: [],
+      }],
+    }
+    expect(getCasterEntries(draft).map(c => c.casting.label)).toEqual(['Mago', 'Guerreiro (Cavaleiro Arcano)'])
+  })
+})
+
+describe('Cavaleiro Arcano e Trapaceiro Arcano: tabela própria de conjuração', () => {
+  it('o tipo de conjurador vem da subclasse: um terço', () => {
+    expect(getCasterType('fighter', 'eldritch-knight')).toBe('third')
+    expect(getCasterType('rogue', 'arcane-trickster')).toBe('third')
+    expect(getCasterType('fighter', 'champion')).toBeNull()
+    expect(getCasterType('rogue')).toBeNull()
+  })
+
+  it('espaços da tabela do livro, do 3° ao 20° nível', () => {
+    const slots = (lvl: number) => getSpellSlots('fighter', lvl, 'eldritch-knight').filter(n => n > 0)
+    expect(slots(2)).toEqual([])
+    expect(slots(3)).toEqual([2])
+    expect(slots(4)).toEqual([3])
+    expect(slots(7)).toEqual([4, 2])
+    expect(slots(10)).toEqual([4, 3])
+    expect(slots(13)).toEqual([4, 3, 2])
+    expect(slots(16)).toEqual([4, 3, 3])
+    expect(slots(19)).toEqual([4, 3, 3, 1])
+    expect(getSpellSlots('rogue', 20, 'arcane-trickster').slice(0, 5)).toEqual([4, 3, 3, 1, 0])
+  })
+
+  it('nível máximo de magia: 1° no 3°, 2° no 7°, 3° no 13°, 4° no 19°', () => {
+    expect(getMaxSpellLevel('fighter', 3, 'eldritch-knight')).toBe(1)
+    expect(getMaxSpellLevel('fighter', 7, 'eldritch-knight')).toBe(2)
+    expect(getMaxSpellLevel('rogue', 13, 'arcane-trickster')).toBe(3)
+    expect(getMaxSpellLevel('rogue', 19, 'arcane-trickster')).toBe(4)
+  })
+
+  it('truques: Cavaleiro 2 (3 no 10°); Trapaceiro 3 com mãos mágicas (4 no 10°)', () => {
+    expect(getCantripsKnownCount('eldritch-knight', 3)).toBe(2)
+    expect(getCantripsKnownCount('eldritch-knight', 10)).toBe(3)
+    expect(getCantripsKnownCount('arcane-trickster', 3)).toBe(3)
+    expect(getCantripsKnownCount('arcane-trickster', 9)).toBe(3)
+    expect(getCantripsKnownCount('arcane-trickster', 10)).toBe(4)
+  })
+
+  it('magias conhecidas: 3 no 3°, 6 no 8°, 7 no 10°, 13 no 20°', () => {
+    for (const id of ['eldritch-knight', 'arcane-trickster']) {
+      expect(getSpellsKnownCount(id, 3)).toBe(3)
+      expect(getSpellsKnownCount(id, 8)).toBe(6)
+      expect(getSpellsKnownCount(id, 10)).toBe(7)
+      expect(getSpellsKnownCount(id, 20)).toBe(13)
+    }
+  })
+})
+
+describe('getEntrySpellcasting: conjuração resolvida pela subclasse', () => {
+  const fighter = getClass('fighter')!
+  const rogue = getClass('rogue')!
+
+  it('Cavaleiro Arcano: lista de mago, INT, sem foco nem rituais, rótulo com a subclasse', () => {
+    const casting = getEntrySpellcasting(fighter, 'eldritch-knight')!
+    expect(casting.spellList).toBe('wizard')
+    expect(casting.casterId).toBe('eldritch-knight')
+    expect(casting.label).toBe('Guerreiro (Cavaleiro Arcano)')
+    expect(casting.spellcasting.ability).toBe('INT')
+    expect(casting.spellcasting.type).toBe('known')
+    expect(describeCastingAids(casting.spellcasting)).toEqual({ focus: null, ritual: null })
+  })
+
+  it('guerreiro sem subclasse conjuradora não conjura', () => {
+    expect(getEntrySpellcasting(fighter, 'champion')).toBeNull()
+    expect(getEntrySpellcasting(fighter, null)).toBeNull()
+  })
+
+  it('classe conjuradora continua com a própria conjuração e lista', () => {
+    const wizard = getClass('wizard')!
+    const casting = getEntrySpellcasting(wizard, wizard.subclasses[0].id)!
+    expect(casting.casterId).toBe('wizard')
+    expect(casting.spellList).toBe('wizard')
+    expect(casting.label).toBe('Mago')
+  })
+
+  it('CD e ataque de magia do Cavaleiro Arcano usam INT (INT 16, nível 5: CD 14, +6)', () => {
+    const sc = getEntrySpellcasting(fighter, 'eldritch-knight')!.spellcasting
+    expect(getSpellSaveDC(sc, { INT: 16, STR: 18 }, 5)).toBe(14)
+    expect(getSpellAttackBonus(sc, { INT: 16, STR: 18 }, 5)).toBe(6)
+  })
+
+  it('Trapaceiro Arcano: mãos mágicas vem de graça e conta nos 3 truques', () => {
+    const casting = getEntrySpellcasting(rogue, 'arcane-trickster')!
+    expect(getRequiredCantrips(casting.spellcasting)).toEqual(['mage-hand'])
+    expect(getCantripsNeeded(casting, 3)).toBe(3)
+    expect(getKnownCantrips(casting.spellcasting, { cantrips: ['fire-bolt'], spells: [] }))
+      .toEqual(['mage-hand', 'fire-bolt'])
+    // escolher mãos mágicas de novo não conta duas vezes
+    expect(getKnownCantrips(casting.spellcasting, { cantrips: ['mage-hand', 'fire-bolt'], spells: [] }))
+      .toEqual(['mage-hand', 'fire-bolt'])
+  })
+
+  it('magias a escolher vêm da tabela da subclasse', () => {
+    const casting = getEntrySpellcasting(fighter, 'eldritch-knight')!
+    expect(getSpellsToChoose(casting, 3, { INT: 10 })).toBe(3)
+    expect(getSpellsToChoose(casting, 20, { INT: 10 })).toBe(13)
+  })
+})
+
+describe('restrição de escola (Cavaleiro: abjuração/evocação; Trapaceiro: encantamento/ilusão)', () => {
+  const ek = getClass('fighter')!.subclasses.find(s => s.id === 'eldritch-knight')!.spellcasting!
+  const at = getClass('rogue')!.subclasses.find(s => s.id === 'arcane-trickster')!.spellcasting!
+
+  it('escolhas livres: 1 das 3 iniciais, +1 no 8°, 14° e 20°', () => {
+    expect(getSchoolRestrictionStatus(ek, 3, [])!.freeSlots).toBe(1)
+    expect(getSchoolRestrictionStatus(ek, 7, [])!.freeSlots).toBe(1)
+    expect(getSchoolRestrictionStatus(ek, 8, [])!.freeSlots).toBe(2)
+    expect(getSchoolRestrictionStatus(ek, 14, [])!.freeSlots).toBe(3)
+    expect(getSchoolRestrictionStatus(ek, 20, [])!.freeSlots).toBe(4)
+  })
+
+  it('conta só as magias fora das escolas', () => {
+    const status = getSchoolRestrictionStatus(ek, 3, ['shield', 'magic-missile', 'find-familiar'])!
+    expect(status).toEqual({ schools: ['abjuração', 'evocação'], freeSlots: 1, freeUsed: 1 })
+    expect(getSchoolRestrictionStatus(at, 3, ['sleep', 'disguise-self', 'shield'])!.freeUsed).toBe(1)
+  })
+
+  it('fora da escola só entra com escolha livre sobrando', () => {
+    const findFamiliar = getSpell('find-familiar')!
+    const shield = getSpell('shield')!
+    expect(isAllowedBySchoolRestriction(ek, 3, ['shield'], findFamiliar)).toBe(true)
+    expect(isAllowedBySchoolRestriction(ek, 3, ['detect-magic'], findFamiliar)).toBe(false)
+    expect(isAllowedBySchoolRestriction(ek, 3, ['detect-magic'], shield)).toBe(true)
+    expect(isAllowedBySchoolRestriction(ek, 8, ['detect-magic'], findFamiliar)).toBe(true)
+  })
+
+  it('truques não têm restrição de escola; sem restrição, tudo passa', () => {
+    expect(isOutsideSchoolRestriction(at, getSpell('mage-hand')!)).toBe(false)
+    expect(isOutsideSchoolRestriction(ek, getSpell('fire-bolt')!)).toBe(false)
+    expect(getSchoolRestrictionStatus(getClass('wizard')!.spellcasting!, 3, ['find-familiar'])).toBeNull()
+  })
+})
+
+describe('isSpellStepComplete: Cavaleiro Arcano e Trapaceiro Arcano', () => {
+  const fighter = getClass('fighter')!
+  const rogue = getClass('rogue')!
+  const ekCantrips = ['fire-bolt', 'light', 'minor-illusion']
+
+  it('Cavaleiro Arcano 3 sem magias está incompleto', () =>
+    expect(isSpellStepComplete(fighter, emptyChoices, 3, 'eldritch-knight')).toBe(false))
+
+  it('Cavaleiro Arcano 3 com 2 truques e 3 magias (1 fora da escola) está completo', () =>
+    expect(isSpellStepComplete(fighter, {
+      cantrips: ['fire-bolt', 'light'],
+      spells: ['shield', 'magic-missile', 'find-familiar'],
+    }, 3, 'eldritch-knight')).toBe(true))
+
+  it('2 magias fora da escola no 3° nível é inválido', () =>
+    expect(isSpellStepComplete(fighter, {
+      cantrips: ['fire-bolt', 'light'],
+      spells: ['shield', 'detect-magic', 'find-familiar'],
+    }, 3, 'eldritch-knight')).toBe(false))
+
+  it('4 magias fora da escola no 20° nível é válido; a 5ª não', () => {
+    const outside = ['find-familiar', 'detect-magic', 'misty-step', 'sleep']
+    const inside = ['shield', 'magic-missile', 'burning-hands', 'thunderwave', 'fireball',
+      'mage-armor', 'counterspell', 'scorching-ray', 'lightning-bolt']
+    expect(isSpellStepComplete(fighter, { cantrips: ekCantrips, spells: [...outside, ...inside] }, 20, 'eldritch-knight')).toBe(true)
+    expect(isSpellStepComplete(fighter, {
+      cantrips: ekCantrips,
+      spells: [...outside, ...inside.slice(0, 8), 'silent-image'],
+    }, 20, 'eldritch-knight')).toBe(false)
+  })
+
+  it('Guerreiro 2 com Cavaleiro Arcano ainda não conjura (completo)', () =>
+    expect(isSpellStepComplete(fighter, emptyChoices, 2, 'eldritch-knight')).toBe(true))
+
+  it('Guerreiro Campeão não tem etapa de magia', () =>
+    expect(isSpellStepComplete(fighter, emptyChoices, 5, 'champion')).toBe(true))
+
+  it('Trapaceiro Arcano completa com 2 truques escolhidos (mãos mágicas vem de graça)', () =>
+    expect(isSpellStepComplete(rogue, {
+      cantrips: ['fire-bolt', 'minor-illusion'],
+      spells: ['sleep', 'disguise-self', 'shield'],
+    }, 3, 'arcane-trickster')).toBe(true))
+
+  it('Trapaceiro Arcano sem mãos mágicas nas escolhas continua sabendo mãos mágicas', () =>
+    expect(isSpellStepComplete(rogue, {
+      cantrips: ['fire-bolt', 'light'],
+      spells: ['sleep', 'disguise-self', 'charm-person'],
+    }, 3, 'arcane-trickster')).toBe(true))
+
+  it('Trapaceiro Arcano com só 1 truque além de mãos mágicas está incompleto', () =>
+    expect(isSpellStepComplete(rogue, {
+      cantrips: ['fire-bolt'],
+      spells: ['sleep', 'disguise-self', 'shield'],
+    }, 3, 'arcane-trickster')).toBe(false))
 })

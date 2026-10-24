@@ -17,7 +17,7 @@ import type { ChoiceResolution, InventoryItem } from '../types/equipment'
 import type { AbilityScore } from '../types/race'
 import type { Background } from '../types/background'
 import { getRace, getSubrace, isRaceStepComplete } from './raceUtils'
-import { getClass, getSubclass, isClassStepComplete } from './classUtils'
+import { getClass, getSubclass, getSpellcastingSource, isClassStepComplete } from './classUtils'
 import { getBackground, isBackgroundStepComplete, sanitizeBackgroundItemSelections } from './backgroundUtils'
 import { isAbilitiesStepComplete } from './abilityScoreUtils'
 import { getSpell, isSpellStepComplete } from './spellUtils'
@@ -141,8 +141,12 @@ function sanitizeClassChoices(raw: unknown, cls: GameClass | null): ClassChoiceS
   }
 }
 
-function sanitizeSpellChoices(raw: unknown): SpellChoices {
-  if (!isRecord(raw)) return { cantrips: [], spells: [] }
+/**
+ * Magias de uma classe da ficha importada. Sem conjuração (nem da classe, nem da subclasse — um
+ * guerreiro Campeão com magias de um Cavaleiro Arcano antigo) as escolhas são descartadas.
+ */
+function sanitizeSpellChoices(raw: unknown, cls: GameClass | null, subclassId: string | null): SpellChoices {
+  if (!isRecord(raw) || !cls || !getSpellcastingSource(cls, subclassId)) return { cantrips: [], spells: [] }
   return {
     cantrips: toStringArray(raw.cantrips).filter(id => getSpell(id) !== undefined),
     spells: toStringArray(raw.spells).filter(id => getSpell(id) !== undefined),
@@ -196,11 +200,12 @@ function sanitizeClassEntry(raw: unknown): ClassEntry | null {
     const roll = toIntInRange(value, 1, cls.hitDie)
     if (roll !== null) hpRolls[i] = roll
   })
+  const classChoices = sanitizeClassChoices(raw.classChoices, cls)
   return {
     classId: cls.id,
     level,
-    classChoices: sanitizeClassChoices(raw.classChoices, cls),
-    spellChoices: sanitizeSpellChoices(raw.spellChoices),
+    classChoices,
+    spellChoices: sanitizeSpellChoices(raw.spellChoices, cls, classChoices.subclass),
     asiChoices: sanitizeAsiChoices(raw.asiChoices),
     hpRolls,
   }
@@ -304,6 +309,7 @@ export function sanitizeImportedDraft(raw: unknown): CharacterDraft | null {
 
   const asiChoices = sanitizeAsiChoices(raw.asiChoices)
   const additionalClasses = cls ? sanitizeAdditionalClasses(raw.additionalClasses, cls.id) : []
+  const classChoices = sanitizeClassChoices(raw.classChoices, cls)
 
   return {
     name: raw.name.slice(0, 60),
@@ -312,8 +318,8 @@ export function sanitizeImportedDraft(raw: unknown): CharacterDraft | null {
     subrace: subrace?.id ?? null,
     raceChoices: race ? sanitizeRaceChoices(raw.raceChoices) : {},
     class: cls?.id ?? null,
-    classChoices: sanitizeClassChoices(raw.classChoices, cls),
-    spellChoices: cls ? sanitizeSpellChoices(raw.spellChoices) : { cantrips: [], spells: [] },
+    classChoices,
+    spellChoices: sanitizeSpellChoices(raw.spellChoices, cls, classChoices.subclass),
     additionalClasses,
     multiclass: typeof raw.multiclass === 'boolean' ? raw.multiclass : additionalClasses.length > 0,
     abilityMethod,
@@ -364,7 +370,7 @@ export function isStepComplete(draft: CharacterDraft, step: WizardStep): boolean
       // Cada classe conjuradora valida suas magias no nível que tem NELA.
       for (const entry of allClassEntries(draft)) {
         const ec = getClass(entry.classId) ?? null
-        if (!isSpellStepComplete(ec, entry.spellChoices, entry.level)) return false
+        if (!isSpellStepComplete(ec, entry.spellChoices, entry.level, entry.classChoices.subclass)) return false
       }
       return true
     }

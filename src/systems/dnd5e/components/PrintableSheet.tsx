@@ -5,7 +5,7 @@ import {
   getAvailableInnateSpells, getEffectiveTraitsWithChoices, TOOL_NAMES, describeInnateSpellUsage,
 } from '../utils/raceUtils'
 import {
-  getClass, isActiveCaster, FIGHTING_STYLES,
+  getClass, FIGHTING_STYLES,
 } from '../utils/classUtils'
 import {
   allClassEntries, getHitDicePool, formatClassLevelLabel,
@@ -36,7 +36,7 @@ import { getProgressionSlotsUpToLevel } from '../utils/progressionChoiceUtils'
 import { getProgressionOptions } from '../utils/progressionOptions'
 import {
   getSpell, getSpellSaveDC, formatSpellAttackBonus, getCombinedSpellSlots, getPactSlots,
-  getMaxPreparedSpells, describeCastingAids,
+  getMaxPreparedSpells, describeCastingAids, getCasterEntries,
 } from '../utils/spellUtils'
 import { RuleText } from './common/RuleText'
 import { getWeaponAttack } from '../utils/weaponFormat'
@@ -46,7 +46,7 @@ import {
 } from '../utils/sheetEffects'
 import type { CharacterDraft } from '../types/character'
 import type { Weapon } from '../types/equipment'
-import type { GameClass } from '../types/class'
+import type { ClassSpellcasting } from '../types/class'
 
 function metersLabel(feet: number): string {
   const m = feet * 0.3
@@ -131,12 +131,10 @@ function gatherInventory(draft: CharacterDraft): string[] {
  * - `hybrid` (mago): o grimório é fixo, mas prepara N dele a cada descanso longo.
  */
 function describeSpellRefresh(
-  cls: GameClass,
+  sc: ClassSpellcasting,
   classLevel: number,
   scores: Record<AbilityScore, number>,
 ): string {
-  const sc = cls.spellcasting
-  if (!sc) return ''
   const abilityLabel = ABILITY_LABELS[sc.ability].short
   const abilityMod = calculateModifier(scores[sc.ability])
   const prepared = getMaxPreparedSpells(sc, scores, classLevel)
@@ -224,10 +222,7 @@ export function PrintableSheet() {
   const innateSpells = race ? getAvailableInnateSpells(race, subrace, level) : []
   const racialCantrip = draft.raceChoices.cantrip ? getSpell(draft.raceChoices.cantrip) : undefined
 
-  const casters = entries.flatMap(e => {
-    const ec = getClass(e.classId)
-    return ec && ec.spellcasting && isActiveCaster(ec, e.level) ? [{ e, ec }] : []
-  })
+  const casters = getCasterEntries(draft)
   const isCaster = casters.length > 0
 
   /**
@@ -281,7 +276,7 @@ export function PrintableSheet() {
         .flatMap(slot => e.classChoices.progressionChoices[slot.id] ?? []),
     )
     const ids = [
-      ...casters.flatMap(({ e }) => [...e.spellChoices.cantrips, ...e.spellChoices.spells]),
+      ...casters.flatMap(c => [...c.cantrips, ...c.spells]),
       ...(draft.raceChoices.cantrip ? [draft.raceChoices.cantrip] : []),
       ...entries.flatMap(e => e.classChoices.subclassExtras.cantrip ? [e.classChoices.subclassExtras.cantrip] : []),
       ...innateSpells.map(s => s.spellId),
@@ -436,14 +431,17 @@ export function PrintableSheet() {
             Ataque Extra: você faz {attacksPerAction} ataques ao usar a ação de Atacar.
           </p>
         )}
-        {casters.map(({ e, ec }) => {
-          const aids = describeCastingAids(ec.spellcasting!)
+        {casters.map(({ cls, casting }) => {
+          const sc = casting.spellcasting
+          const aids = describeCastingAids(sc)
+          // Conjuração de subclasse (Cavaleiro/Trapaceiro Arcano) se identifica mesmo sem multiclasse.
+          const showLabel = isMc || casting.casterId !== cls.id
           return (
-            <div key={e.classId}>
+            <div key={cls.id}>
               <p className="text-xs text-gray-700">
-                {isMc && <strong>{ec.name} — </strong>}Magia · CD: <strong>{getSpellSaveDC(ec.spellcasting!, finalScores, level)}</strong> ·
-                {' '}Ataque: <strong>{formatSpellAttackBonus(ec.spellcasting!, finalScores, level)}</strong> ·
-                {' '}Atributo: {ABILITY_LABELS[ec.spellcasting!.ability].short}
+                {showLabel && <strong>{casting.label} — </strong>}Magia · CD: <strong>{getSpellSaveDC(sc, finalScores, level)}</strong> ·
+                {' '}Ataque: <strong>{formatSpellAttackBonus(sc, finalScores, level)}</strong> ·
+                {' '}Atributo: {ABILITY_LABELS[sc.ability].short}
               </p>
               {aids.focus && <p className="text-[10px] text-gray-600">{aids.focus}</p>}
               {aids.ritual && <p className="text-[10px] text-gray-600">{aids.ritual}</p>}
@@ -470,19 +468,19 @@ export function PrintableSheet() {
                 {pact.slotLevel}º: {trackCircles(pact.slots) || pact.slots} (recupera em descanso curto)
               </p>
             )}
-            {casters.map(({ e, ec }) => {
-              const cantrips = e.spellChoices.cantrips.map(id => getSpell(id)?.name).filter(Boolean)
-              const spells = e.spellChoices.spells.map(id => getSpell(id)).filter(Boolean)
+            {casters.map(({ entry, cls, casting, cantrips: cantripIds, spells: spellIds }) => {
+              const cantrips = cantripIds.map(id => getSpell(id)?.name).filter(Boolean)
+              const spells = spellIds.map(id => getSpell(id)).filter(Boolean)
               const byLevel = new Map<number, string[]>()
               for (const s of spells) { const a = byLevel.get(s!.level) ?? []; a.push(s!.name); byLevel.set(s!.level, a) }
               if (cantrips.length === 0 && spells.length === 0) return null
               return (
-                <div key={e.classId} className="mb-1">
-                  {isMc && <p className="text-xs font-bold text-gray-700 mt-1">{ec.name}</p>}
+                <div key={cls.id} className="mb-1">
+                  {isMc && <p className="text-xs font-bold text-gray-700 mt-1">{casting.label}</p>}
                   {/* Quantas magias esta classe tem a cada descanso — o número que se refaz na mesa. */}
                   <p className="text-xs mb-0.5">
-                    <span className="text-gray-600">{isMc ? '' : `${ec.name}: `}</span>
-                    {describeSpellRefresh(ec, e.level, finalScores)}
+                    <span className="text-gray-600">{isMc ? '' : `${casting.label}: `}</span>
+                    {describeSpellRefresh(casting.spellcasting, entry.level, finalScores)}
                   </p>
                   {cantrips.length > 0 && <p className="text-xs mb-0.5"><span className="text-gray-600">Truques (sempre disponíveis): </span>{cantrips.join(', ')}</p>}
                   {[...byLevel.keys()].sort((a, b) => a - b).map(lvl => (

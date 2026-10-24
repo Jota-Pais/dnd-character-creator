@@ -1,4 +1,4 @@
-import type { GameClass, ClassSubclass, ClassChoiceSelections, LevelFeature } from '../types/class'
+import type { GameClass, ClassSubclass, ClassChoiceSelections, ClassSpellcasting, LevelFeature } from '../types/class'
 import { SKILLS } from './raceUtils'
 import classesData from '../data/classes.json'
 import progressionFeatures from '../data/class-progression-features.json'
@@ -134,8 +134,35 @@ export function getClassFeaturesUpToLevel(
   ].sort((a, b) => a.level - b.level)
 }
 
-export function isActiveCaster(cls: GameClass, level = 1): boolean {
-  return cls.isCaster && level >= (cls.spellcasting?.castingStartsAtLevel ?? 1)
+/**
+ * De onde vem a conjuração de uma classe da ficha: da própria classe ou, quando a classe não
+ * conjura, da subclasse que dá conjuração (Cavaleiro Arcano, p. 86; Trapaceiro Arcano, p. 93).
+ * `id` é quem conjura (classe ou subclasse): é a chave das tabelas de truques e magias conhecidas
+ * em progression.json. null quando nada ali conjura.
+ */
+export function getSpellcastingSource(
+  cls: GameClass,
+  subclassId?: string | null,
+): { id: string; spellcasting: ClassSpellcasting; subclass: ClassSubclass | null } | null {
+  if (cls.spellcasting) return { id: cls.id, spellcasting: cls.spellcasting, subclass: null }
+  const subclass = subclassId ? getSubclass(cls, subclassId) : undefined
+  if (subclass?.spellcasting) return { id: subclass.id, spellcasting: subclass.spellcasting, subclass }
+  return null
+}
+
+/** Trocar a subclasse de `from` para `to` muda quem conjura? (aí as magias escolhidas deixam de valer) */
+export function subclassChangesSpellcasting(
+  cls: GameClass,
+  from: string | null | undefined,
+  to: string | null | undefined,
+): boolean {
+  return getSpellcastingSource(cls, from)?.spellcasting !== getSpellcastingSource(cls, to)?.spellcasting
+}
+
+/** A classe já conjura no nível que tem NELA? A subclasse conta (Cavaleiro/Trapaceiro Arcano, do 3°). */
+export function isActiveCaster(cls: GameClass, level = 1, subclassId?: string | null): boolean {
+  const source = getSpellcastingSource(cls, subclassId)
+  return !!source && level >= source.spellcasting.castingStartsAtLevel
 }
 
 export function getHpAtLevel1(cls: GameClass, conModifier: number): number {

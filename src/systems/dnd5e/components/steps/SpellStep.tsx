@@ -1,28 +1,31 @@
 import { useState } from 'react'
 import { useCharacterStore } from '../../stores/characterStore'
-import { getClass, isActiveCaster } from '../../utils/classUtils'
-import { allClassEntries, getPrimaryLevel } from '../../utils/multiclassUtils'
+import { getClass } from '../../utils/classUtils'
+import { getPrimaryLevel } from '../../utils/multiclassUtils'
 import { isStepComplete } from '../../utils/draftValidation'
 import { InfoTooltip } from '../common/InfoTooltip'
 import { StepNav } from '../../../../components/wizard/StepNav'
 import { RuleText } from '../common/RuleText'
 import {
+  getSpell,
   getCantrips,
   getSpellsByLevel,
-  getMaxPreparedSpells,
   getMaxSpellLevel,
-  getCantripsKnownCount,
-  getSpellsKnownCount,
-  getWizardSpellbookSize,
+  getCantripsNeeded,
+  getRequiredCantrips,
+  getSpellsToChoose,
+  getSchoolRestrictionStatus,
+  isAllowedBySchoolRestriction,
+  getCasterEntries,
   getCombinedSpellSlots,
   getPactSlots,
   SCHOOL_COLORS,
   SCHOOL_EMOJI,
+  type CasterEntry,
 } from '../../utils/spellUtils'
 import { calculateModifier } from '../../utils/abilityScoreUtils'
 import type { Spell } from '../../types/spell'
-import type { GameClass } from '../../types/class'
-import type { SpellChoices, BaseAbilityScores, ClassEntry } from '../../types/character'
+import type { SpellChoices, BaseAbilityScores } from '../../types/character'
 
 type Tab = 'cantrips' | number // number = spell level
 
@@ -39,11 +42,9 @@ export function SpellStep() {
 
   const [detail, setDetail] = useState<Spell | null>(null)
 
-  // Classes conjuradoras (com magias selecionáveis) ativas no nível que têm: primária + adicionais.
-  const casters = allClassEntries(draft)
-    .map(e => ({ entry: e, cls: getClass(e.classId) }))
-    .filter((x): x is { entry: ClassEntry; cls: GameClass } =>
-      !!x.cls && !!x.cls.spellcasting && isActiveCaster(x.cls, x.entry.level))
+  // Classes conjuradoras ativas no nível que têm (primária + adicionais); a subclasse conta
+  // (Cavaleiro Arcano, Trapaceiro Arcano).
+  const casters = getCasterEntries(draft)
 
   const canAdvance = isStepComplete(draft, 'spells')
 
@@ -70,7 +71,7 @@ export function SpellStep() {
       {/* ── Lista (seções por classe) ── */}
       <div className="lg:w-3/5">
         <h2 className="font-fantasy text-2xl font-bold text-parchment-200 mb-1">
-          {multi ? 'Magias' : `Magias de ${casters[0].cls.name}`}
+          {multi ? 'Magias' : `Magias de ${casters[0].casting.label}`}
         </h2>
         <p className="text-parchment-500 text-sm mb-4">
           {multi
@@ -80,20 +81,18 @@ export function SpellStep() {
 
         <CombinedSlotSummary slots={combinedSlots} pact={pact} />
 
-        {casters.map(({ entry, cls }) => (
+        {casters.map(caster => (
           <ClassSpellSection
-            key={cls.id}
-            cls={cls}
-            level={entry.level}
-            choices={entry.spellChoices}
+            key={caster.cls.id}
+            caster={caster}
             abilityScores={draft.abilityScores}
             multi={multi}
             onDetail={setDetail}
             detailId={detail?.id}
             onChange={patch =>
-              cls.id === draft.class
+              caster.cls.id === draft.class
                 ? updateSpellChoices(patch)
-                : updateAdditionalSpellChoices(cls.id, patch)}
+                : updateAdditionalSpellChoices(caster.cls.id, patch)}
           />
         ))}
       </div>
@@ -127,46 +126,53 @@ export function SpellStep() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function ClassSpellSection({
-  cls, level, choices, abilityScores, multi, onDetail, detailId, onChange,
+  caster, abilityScores, multi, onDetail, detailId, onChange,
 }: {
-  cls: GameClass
-  level: number
-  choices: SpellChoices
+  caster: CasterEntry
   abilityScores: BaseAbilityScores
   multi: boolean
   onDetail: (s: Spell) => void
   detailId?: string
   onChange: (patch: Partial<SpellChoices>) => void
 }) {
-  const sc = cls.spellcasting!
+  const { cls, casting, entry } = caster
+  const { level, spellChoices: choices } = entry
+  const sc = casting.spellcasting
+  const subclassId = entry.classChoices.subclass
   const [tab, setTab] = useState<Tab>('cantrips')
 
-  const cantripsNeeded = getCantripsKnownCount(cls.id, level) || sc.cantripsKnown
-  const maxSpellLevel = getMaxSpellLevel(cls.id, level)
-  const maxSpells =
-    sc.type === 'prepared' ? getMaxPreparedSpells(sc, abilityScores, level)
-    : sc.type === 'hybrid' ? getWizardSpellbookSize(level)
-    : getSpellsKnownCount(cls.id, level) || sc.spellsAtLevel1
+  const cantripsNeeded = getCantripsNeeded(casting, level)
+  const required = getRequiredCantrips(sc)
+  const maxSpellLevel = getMaxSpellLevel(cls.id, level, subclassId)
+  const maxSpells = getSpellsToChoose(casting, level, abilityScores)
+  const school = getSchoolRestrictionStatus(sc, level, choices.spells)
 
   const score = abilityScores[sc.ability]
   const abilityMod = calculateModifier(typeof score === 'number' ? score : 10)
 
-  const cantrips = cantripsNeeded > 0 ? getCantrips(cls.id) : []
+  const cantrips = cantripsNeeded > 0 ? getCantrips(casting.spellList) : []
   const hasTabs = cantripsNeeded > 0 || maxSpellLevel > 0
   const spellLevelTabs = Array.from({ length: maxSpellLevel }, (_, i) => i + 1)
   const activeTab: Tab = tab === 'cantrips'
     ? (cantripsNeeded > 0 ? 'cantrips' : (spellLevelTabs[0] ?? 'cantrips'))
     : tab
 
+  // Os truques dados pela característica (mãos mágicas do Trapaceiro) aparecem marcados e
+  // travados; contam no total, mas não são gravados nas escolhas.
   function toggleCantrip(id: string) {
-    const cur = choices.cantrips
+    if (required.includes(id)) return
+    const cur = choices.cantrips.filter(c => !required.includes(c))
     if (cur.includes(id)) onChange({ cantrips: cur.filter(c => c !== id) })
-    else if (cur.length < cantripsNeeded) onChange({ cantrips: [...cur, id] })
+    else if (cur.length + required.length < cantripsNeeded) onChange({ cantrips: [...cur, id] })
   }
   function toggleSpell(id: string) {
     const cur = choices.spells
+    const spell = getSpell(id)
     if (cur.includes(id)) onChange({ spells: cur.filter(s => s !== id) })
-    else if (maxSpells === Infinity || cur.length < maxSpells) onChange({ spells: [...cur, id] })
+    else if (
+      (maxSpells === Infinity || cur.length < maxSpells)
+      && (!spell || isAllowedBySchoolRestriction(sc, level, cur, spell))
+    ) onChange({ spells: [...cur, id] })
   }
 
   const spellsLabel =
@@ -177,7 +183,7 @@ function ClassSpellSection({
   return (
     <div className="mb-6 rounded-xl border border-parchment-900 bg-parchment-950/40 p-4">
       <h3 className="font-fantasy text-lg font-bold text-parchment-200">
-        {multi && <span className="text-parchment-500">{cls.name} · </span>}
+        {multi && <span className="text-parchment-500">{casting.label} · </span>}
         <span className="text-parchment-400 text-sm font-normal">
           {ABILITY_LABELS[sc.ability]} ({abilityMod >= 0 ? '+' : ''}{abilityMod}) · nível {level}
         </span>
@@ -187,7 +193,7 @@ function ClassSpellSection({
         <div className="flex flex-wrap gap-2 mb-3 mt-3">
           {cantripsNeeded > 0 && (
             <TabButton active={activeTab === 'cantrips'} onClick={() => setTab('cantrips')} accent={ACCENT}>
-              ✦ Truques <Counter current={choices.cantrips.length} max={cantripsNeeded} />
+              ✦ Truques <Counter current={caster.cantrips.length} max={cantripsNeeded} />
             </TabButton>
           )}
           {spellLevelTabs.map(lvl => (
@@ -204,9 +210,11 @@ function ClassSpellSection({
       {activeTab === 'cantrips' && (
         <>
           <SectionHint>
-            Escolha {cantripsNeeded} truque{cantripsNeeded !== 1 ? 's' : ''} <InfoTooltip term="truque" />.
+            {required.length > 0
+              ? <>Você conhece {cantripsNeeded} truques <InfoTooltip term="truque" />: {formatSpellNames(required)} já {required.length > 1 ? 'vêm' : 'vem'} com a característica; escolha os outros {cantripsNeeded - required.length}.</>
+              : <>Escolha {cantripsNeeded} truque{cantripsNeeded !== 1 ? 's' : ''} <InfoTooltip term="truque" />.</>}
           </SectionHint>
-          <SpellGrid spells={cantrips} selected={choices.cantrips} max={cantripsNeeded} onToggle={toggleCantrip} onDetail={onDetail} detailId={detailId} />
+          <SpellGrid spells={cantrips} selected={caster.cantrips} locked={required} max={cantripsNeeded} onToggle={toggleCantrip} onDetail={onDetail} detailId={detailId} />
         </>
       )}
       {typeof activeTab === 'number' && (
@@ -218,7 +226,22 @@ function ClassSpellSection({
                 ? `Adicione magias de ${ORDINALS[activeTab]} nível ao grimório.`
                 : `Escolha magias de ${ORDINALS[activeTab]} nível.`}
           </SectionHint>
-          <SpellGrid spells={getSpellsByLevel(cls.id, activeTab)} selected={choices.spells} max={maxSpells} onToggle={toggleSpell} onDetail={onDetail} detailId={detailId} />
+          {school && (
+            <p className="text-xs mb-3" style={{ color: school.freeUsed > school.freeSlots ? '#e74c3c' : '#a08a6a' }}>
+              Escolas: {formatSchools(school.schools)}. Fora delas, só nas escolhas livres:{' '}
+              <strong>{school.freeUsed}/{school.freeSlots}</strong>
+              {' '}(uma a cada um destes níveis da classe: {sc.schoolRestriction!.freeChoices.map(c => `${c.level}°`).join(', ')}).
+            </p>
+          )}
+          <SpellGrid
+            spells={getSpellsByLevel(casting.spellList, activeTab)}
+            selected={choices.spells}
+            max={maxSpells}
+            isAllowed={spell => isAllowedBySchoolRestriction(sc, level, choices.spells, spell)}
+            onToggle={toggleSpell}
+            onDetail={onDetail}
+            detailId={detailId}
+          />
         </>
       )}
     </div>
@@ -336,37 +359,59 @@ function SectionHint({ children }: { children: React.ReactNode }) {
 }
 
 function SpellGrid({
-  spells, selected, max, onToggle, onDetail, detailId,
+  spells, selected, locked = [], max, isAllowed, onToggle, onDetail, detailId,
 }: {
   spells: Spell[]
   selected: string[]
+  /** Já conhecidas pela característica: marcadas e sem como desmarcar. */
+  locked?: string[]
   max: number
+  /** Regra extra pra acrescentar (restrição de escola); sem ela, só o teto conta. */
+  isAllowed?: (spell: Spell) => boolean
   onToggle: (id: string) => void
   onDetail: (spell: Spell) => void
   detailId?: string
 }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[50vh] overflow-y-auto pr-1">
-      {spells.map(spell => (
-        <SpellCard
-          key={spell.id}
-          spell={spell}
-          selected={selected.includes(spell.id)}
-          disabled={!selected.includes(spell.id) && max !== Infinity && selected.length >= max}
-          active={detailId === spell.id}
-          onToggle={() => onToggle(spell.id)}
-          onDetail={() => onDetail(spell)}
-        />
-      ))}
+      {spells.map(spell => {
+        const isSelected = selected.includes(spell.id)
+        const isLocked = locked.includes(spell.id)
+        return (
+          <SpellCard
+            key={spell.id}
+            spell={spell}
+            selected={isSelected || isLocked}
+            locked={isLocked}
+            disabled={!isSelected && !isLocked && (
+              (max !== Infinity && selected.length >= max) || (isAllowed ? !isAllowed(spell) : false)
+            )}
+            active={detailId === spell.id}
+            onToggle={() => onToggle(spell.id)}
+            onDetail={() => onDetail(spell)}
+          />
+        )
+      })}
     </div>
   )
 }
 
+function formatSpellNames(ids: string[]): string {
+  return ids.map(id => getSpell(id)?.name ?? id).join(', ')
+}
+
+function formatSchools(schools: string[]): string {
+  return schools.length > 1
+    ? `${schools.slice(0, -1).join(', ')} ou ${schools[schools.length - 1]}`
+    : schools.join('')
+}
+
 function SpellCard({
-  spell, selected, disabled, active, onToggle, onDetail,
+  spell, selected, locked = false, disabled, active, onToggle, onDetail,
 }: {
   spell: Spell
   selected: boolean
+  locked?: boolean
   disabled: boolean
   active: boolean
   onToggle: () => void
@@ -394,11 +439,13 @@ function SpellCard({
           </div>
         </div>
         <button
-          onClick={e => { e.stopPropagation(); if (!disabled || selected) onToggle() }}
+          onClick={e => { e.stopPropagation(); if (!locked && (!disabled || selected)) onToggle() }}
+          disabled={locked}
+          title={locked ? 'Vem com a característica — não sai da lista' : undefined}
           className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center transition-all text-sm"
           style={{ backgroundColor: selected ? `${color}30` : '#1a1208', border: `1.5px solid ${selected ? color : '#3a2e1e'}`, color: selected ? color : '#4a3e2e' }}
         >
-          {selected ? '✓' : '+'}
+          {locked ? '🔒' : selected ? '✓' : '+'}
         </button>
       </div>
       <p className="text-xs text-parchment-700 mt-1.5">{spell.castingTime} · {spell.range}</p>

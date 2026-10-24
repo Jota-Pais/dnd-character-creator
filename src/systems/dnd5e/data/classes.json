@@ -550,7 +550,7 @@
     "subclasses": [
       { "id": "champion", "name": "Campeão", "description": "Maximiza o potencial físico bruto para alcançar a perfeição marcial através de treinamento intenso.", "extras": null },
       { "id": "battle-master", "name": "Mestre de Batalha", "description": "Aprende manobras militares para explorar as fraquezas do inimigo com precisão tática.", "extras": { "expertiseSkills": null, "skillChoice": null, "languages": null, "cantripChoice": null, "toolChoice": { "count": 1, "from": "artisan" }, "grantedLanguages": [], "grantedArmorProficiencies": [], "grantedWeaponProficiencies": [], "grantedTools": [] } },
-      { "id": "eldritch-knight", "casterProgression": "third", "name": "Cavaleiro Arcano", "description": "Combina arte marcial com estudo de magia arcana de abjuração e evocação.", "extras": null }
+      { "id": "eldritch-knight", "casterProgression": "third", "name": "Cavaleiro Arcano", "description": "Combina arte marcial com estudo de magia arcana de abjuração e evocação.", "spellcasting": { "ability": "INT", "cantripsKnown": 2, "type": "known", "spellsAtLevel1": 0, "preparedFormula": null, "ritualCasting": false, "focus": null, "castingStartsAtLevel": 3, "spellList": "wizard", "schoolRestriction": { "schools": ["abjuração", "evocação"], "freeChoices": [{ "level": 3, "count": 1 }, { "level": 8, "count": 1 }, { "level": 14, "count": 1 }, { "level": 20, "count": 1 }] } }, "extras": null }
     ],
     "startingEquipment": {
       "fixed": [],
@@ -620,7 +620,7 @@
     "subclasses": [
       { "id": "thief", "name": "Ladrão", "description": "Aprimora habilidades de escalar, esconder e roubar com versatilidade incomum.", "extras": null },
       { "id": "assassin", "name": "Assassino", "description": "Especializado em eliminar alvos de surpresa com letalidade máxima.", "extras": { "expertiseSkills": null, "skillChoice": null, "languages": null, "cantripChoice": null, "toolChoice": null, "grantedLanguages": [], "grantedArmorProficiencies": [], "grantedWeaponProficiencies": [], "grantedTools": ["disguise-kit", "poisoners-kit"] } },
-      { "id": "arcane-trickster", "casterProgression": "third", "name": "Trapaceiro Arcano", "description": "Combina furtividade com truques arcanos de ilusão e encantamento.", "extras": null }
+      { "id": "arcane-trickster", "casterProgression": "third", "name": "Trapaceiro Arcano", "description": "Combina furtividade com truques arcanos de ilusão e encantamento.", "spellcasting": { "ability": "INT", "cantripsKnown": 3, "type": "known", "spellsAtLevel1": 0, "preparedFormula": null, "ritualCasting": false, "focus": null, "castingStartsAtLevel": 3, "spellList": "wizard", "schoolRestriction": { "schools": ["encantamento", "ilusão"], "freeChoices": [{ "level": 3, "count": 1 }, { "level": 8, "count": 1 }, { "level": 14, "count": 1 }, { "level": 20, "count": 1 }] }, "requiredCantrips": ["mage-hand"] }, "extras": null }
     ],
     "startingEquipment": {
       "fixed": [

@@ -172,9 +172,10 @@ export function formatAttackDamage(attack: WeaponAttack): string {
 }
 
 /**
- * Ataque de uma arma. Escolhe o atributo — Destreza para arma à distância; o melhor dos dois para
- * arma de acuidade e, com Artes Marciais, para arma de monge; Força nos outros casos — e soma o
- * modificador no ataque e no dano.
+ * Ataque de uma arma. Escolhe o atributo — o melhor dos dois para arma de acuidade (p. 148), mesmo
+ * à distância como o dardo, e, com Artes Marciais, para arma de monge; fora disso Destreza para
+ * arma à distância e Força para corpo a corpo, inclusive as de arremesso (p. 195: "Acuidade ou
+ * Arremesso quebram essa regra") — e soma o modificador no ataque e no dano.
  *
  * Aplica a regra de ouro dos efeitos: o que vale SEMPRE com aquela arma entra no número
  * (Arquearia numa arma à distância; Artes Marciais numa arma de monge, com o dado maior); o que
@@ -191,7 +192,7 @@ export function getWeaponAttack(weapon: Weapon, ctx: AttackContext): WeaponAttac
   const martialArts = ctx.martialArts && isMonkWeapon(weapon) ? ctx.martialArts : undefined
 
   const finesse = hasProperty(weapon, 'finesse')
-  const useDex = weapon.weaponType === 'ranged' || ((finesse || martialArts !== undefined) && dexMod >= strMod)
+  const useDex = finesse || martialArts !== undefined ? dexMod >= strMod : weapon.weaponType === 'ranged'
   const mod = useDex ? dexMod : strMod
   const notes: string[] = []
 

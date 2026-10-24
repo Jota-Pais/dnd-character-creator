@@ -91,6 +91,15 @@ describe('weaponFormat', () => {
       expect(atk.damage).toBe('1d8+2 perfurante')
     })
 
+    it('acuidade vale também na arma à distância: dardo com Força melhor usa Força (p. 148, p. 195)', () => {
+      const dart = getWeaponAttack(getWeaponById('dart')!, ctx(3, 2, 2, true))
+      expect(dart.ability).toBe('Força')
+      expect(dart.attackBonus).toBe('+5')
+      expect(dart.damage).toBe('1d4+3 perfurante')
+      // Funda: à distância sem acuidade, segue na Destreza mesmo com Força melhor.
+      expect(getWeaponAttack(getWeaponById('sling')!, ctx(3, 2, 2, true)).ability).toBe('Destreza')
+    })
+
     it('leva as propriedades da arma: a adaga do bardo mostra o alcance de arremesso (p. 149)', () => {
       // Adaga (1d4 perfurante; acuidade, leve, arremesso 6/18 m), Força 0, Destreza +1, prof +2
       const atk = getWeaponAttack(getWeaponById('dagger')!, ctx(0, 1, 2, true))

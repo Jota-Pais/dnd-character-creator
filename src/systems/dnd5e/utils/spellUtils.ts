@@ -157,6 +157,33 @@ export function formatSpellAttackBonus(
   return bonus >= 0 ? `+${bonus}` : `${bonus}`
 }
 
+/** Foco e rituais de uma classe conjuradora, já em texto — a Revisão e a ficha imprimível leem daqui. */
+export type CastingAids = {
+  /** `null` quando o livro não dá foco à classe (patrulheiro do PHB 2014). */
+  focus: string | null
+  /** `null` quando a classe não conjura rituais. */
+  ritual: string | null
+}
+
+/**
+ * O foco substitui os componentes materiais que não têm custo indicado (p. 204) — é o que faz o
+ * alaúde do bardo valer pela "lã" da Ilusão Menor. O ritual leva 10 minutos a mais e não gasta
+ * espaço (p. 202); quais magias valem depende da classe: o mago usa qualquer uma do grimório, mesmo
+ * sem prepará-la (p. 96); os demais, as que têm preparadas ou conhecem (p. 202).
+ */
+export function describeCastingAids(spellcasting: ClassSpellcasting): CastingAids {
+  const focus = spellcasting.focus
+    ? `Foco de conjuração: ${spellcasting.focus} — substitui componentes materiais sem custo indicado.`
+    : null
+  if (!spellcasting.ritualCasting) return { focus, ritual: null }
+  const which = spellcasting.type === 'hybrid'
+    ? 'qualquer magia com o descritor ritual que esteja no grimório, mesmo sem prepará-la'
+    : spellcasting.type === 'prepared'
+      ? 'as magias com o descritor ritual que você tem preparadas'
+      : 'as magias com o descritor ritual que você conhece'
+  return { focus, ritual: `Rituais: conjura como ritual ${which} (+10 minutos, sem gastar espaço).` }
+}
+
 export function getMaxPreparedSpells(
   spellcasting: ClassSpellcasting,
   abilityScores: Partial<Record<AbilityScore, number | null>>,

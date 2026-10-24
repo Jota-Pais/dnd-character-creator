@@ -4,7 +4,13 @@
       {
         "level": 1,
         "name": "Fúria",
-        "description": "Como ação bônus, entre em fúria por 1 minuto: vantagem em testes e resistências de Força, bônus de dano corpo-a-corpo com Força e resistência a dano de concussão, cortante e perfurante. Não funciona vestindo armadura pesada."
+        "description": "Como ação bônus, entre em fúria por 1 minuto: vantagem em testes e resistências de Força, bônus de dano corpo-a-corpo com Força e resistência a dano de concussão, cortante e perfurante. Não funciona vestindo armadura pesada.",
+        "effects": {
+          "resources": [
+            { "id": "rage", "name": "Fúria", "uses": { "byLevel": [{ "from": 1, "value": 2 }, { "from": 3, "value": 3 }, { "from": 6, "value": 4 }, { "from": 12, "value": 5 }, { "from": 17, "value": 6 }] }, "unlimitedFrom": 20, "recharge": "long" },
+            { "id": "rage-damage", "name": "Dano de Fúria", "amount": { "value": { "byLevel": [{ "from": 1, "value": 2 }, { "from": 9, "value": 3 }, { "from": 16, "value": 4 }] }, "unit": "bonus" } }
+          ]
+        }
       },
       {
         "level": 1,
@@ -71,12 +77,22 @@
       {
         "level": 1,
         "name": "Retomar o Fôlego",
-        "description": "Como ação bônus, recupere 1d10 + seu nível de guerreiro pontos de vida. Recupera em descanso curto ou longo."
+        "description": "Como ação bônus, recupere 1d10 + seu nível de guerreiro pontos de vida. Recupera em descanso curto ou longo.",
+        "effects": {
+          "resources": [
+            { "id": "second-wind", "name": "Retomar o Fôlego", "die": { "count": 1, "size": 10, "bonus": { "perClassLevel": 1 } }, "uses": 1, "recharge": "short" }
+          ]
+        }
       },
       {
         "level": 2,
         "name": "Surto de Ação",
-        "description": "No seu turno, você pode realizar uma ação adicional. Uma vez por descanso (duas a partir do 17° nível, mas só uma por turno)."
+        "description": "No seu turno, você pode realizar uma ação adicional. Uma vez por descanso (duas a partir do 17° nível, mas só uma por turno).",
+        "effects": {
+          "resources": [
+            { "id": "action-surge", "name": "Surto de Ação", "uses": { "byLevel": [{ "from": 2, "value": 1 }, { "from": 17, "value": 2 }] }, "recharge": "short", "note": "no máximo uma vez por turno" }
+          ]
+        }
       },
       {
         "level": 5,
@@ -86,7 +102,12 @@
       {
         "level": 9,
         "name": "Indomável",
-        "description": "Você pode refazer um teste de resistência que falhou, usando o novo resultado. Uma vez por descanso longo (duas no 13° nível, três no 17°)."
+        "description": "Você pode refazer um teste de resistência que falhou, usando o novo resultado. Uma vez por descanso longo (duas no 13° nível, três no 17°).",
+        "effects": {
+          "resources": [
+            { "id": "indomitable", "name": "Indomável", "uses": { "byLevel": [{ "from": 9, "value": 1 }, { "from": 13, "value": 2 }, { "from": 17, "value": 3 }] }, "recharge": "long" }
+          ]
+        }
       }
     ],
     "rogue": [
@@ -98,7 +119,12 @@
       {
         "level": 1,
         "name": "Ataque Furtivo",
-        "description": "Uma vez por turno, cause 1d6 de dano extra a um alvo que você acerte tendo vantagem no ataque (ou com um aliado adjacente ao alvo), usando arma sutil ou à distância. O dado aumenta conforme o nível."
+        "description": "Uma vez por turno, cause 1d6 de dano extra a um alvo que você acerte tendo vantagem no ataque (ou com um aliado adjacente ao alvo), usando arma sutil ou à distância. O dado aumenta conforme o nível.",
+        "effects": {
+          "resources": [
+            { "id": "sneak-attack", "name": "Ataque Furtivo", "die": { "count": { "halfClassLevel": "up" }, "size": 6 } }
+          ]
+        }
       },
       {
         "level": 1,
@@ -143,7 +169,12 @@
       {
         "level": 20,
         "name": "Golpe de Sorte",
-        "description": "Transforme uma falha de ataque em acerto, ou trate um teste falho como 20 natural. Uma vez por descanso."
+        "description": "Transforme uma falha de ataque em acerto, ou trate um teste falho como 20 natural. Uma vez por descanso.",
+        "effects": {
+          "resources": [
+            { "id": "stroke-of-luck", "name": "Golpe de Sorte", "uses": 1, "recharge": "short" }
+          ]
+        }
       }
     ],
     "monk": [
@@ -155,17 +186,32 @@
       {
         "level": 1,
         "name": "Artes Marciais",
-        "description": "Com golpes desarmados e armas de monge, você pode usar Destreza no ataque e no dano, causa dano igual ao dado de artes marciais e pode fazer um ataque desarmado como ação bônus."
+        "description": "Com golpes desarmados e armas de monge, você pode usar Destreza no ataque e no dano, causa dano igual ao dado de artes marciais e pode fazer um ataque desarmado como ação bônus.",
+        "effects": {
+          "resources": [
+            { "id": "martial-arts", "name": "Artes Marciais", "die": { "size": { "byLevel": [{ "from": 1, "value": 4 }, { "from": 5, "value": 6 }, { "from": 11, "value": 8 }, { "from": 17, "value": 10 }] } } }
+          ]
+        }
       },
       {
         "level": 2,
         "name": "Chi",
-        "description": "Você tem pontos de chi (iguais ao seu nível de monge) que alimentam Rajada de Golpes, Defesa Paciente e Passo do Vento. Recuperam-se em descanso curto ou longo."
+        "description": "Você tem pontos de chi (iguais ao seu nível de monge) que alimentam Rajada de Golpes, Defesa Paciente e Passo do Vento. Recuperam-se em descanso curto ou longo.",
+        "effects": {
+          "resources": [
+            { "id": "ki", "name": "Pontos de Chi", "uses": { "perClassLevel": 1 }, "unit": "points", "recharge": "short" }
+          ]
+        }
       },
       {
         "level": 2,
         "name": "Movimento sem Armadura",
-        "description": "Seu deslocamento aumenta em 3 metros enquanto você não usar armadura nem escudo (o bônus cresce em níveis superiores)."
+        "description": "Seu deslocamento aumenta em 3 metros enquanto você não usar armadura nem escudo (o bônus cresce em níveis superiores).",
+        "effects": {
+          "resources": [
+            { "id": "unarmored-movement", "name": "Movimento sem Armadura", "amount": { "value": { "byLevel": [{ "from": 2, "value": 10 }, { "from": 6, "value": 15 }, { "from": 10, "value": 20 }, { "from": 14, "value": 25 }, { "from": 18, "value": 30 }] }, "unit": "feet" } }
+          ]
+        }
       },
       {
         "level": 3,
@@ -237,12 +283,17 @@
       {
         "level": 1,
         "name": "Conjuração",
-        "description": "Você conjura magias de clérigo usando Sabedoria; prepara um número de magias igual ao mod. de Sabedoria + seu nível de clérigo e pode conjurar rituais com um símbolo sagrado."
+        "description": "Você conjura magias de clérigo usando Sabedoria; prepara um número de magias igual ao mod. de Sabedoria + seu nível de clérigo. Pode conjurar como ritual as que tiverem o descritor ritual e usar um símbolo sagrado como foco de conjuração."
       },
       {
         "level": 2,
         "name": "Canalizar Divindade",
-        "description": "Você canaliza energia divina: começa com Expulsar Mortos-Vivos e um efeito do seu domínio. Recupera em descanso curto ou longo (2 usos no 6° nível, 3 no 18°)."
+        "description": "Você canaliza energia divina: começa com Expulsar Mortos-Vivos e um efeito do seu domínio. Recupera em descanso curto ou longo (2 usos no 6° nível, 3 no 18°).",
+        "effects": {
+          "resources": [
+            { "id": "channel-divinity", "name": "Canalizar Divindade", "uses": { "byLevel": [{ "from": 2, "value": 1 }, { "from": 6, "value": 2 }, { "from": 18, "value": 3 }] }, "recharge": "short" }
+          ]
+        }
       },
       {
         "level": 2,
@@ -257,7 +308,12 @@
       {
         "level": 10,
         "name": "Intervenção Divina",
-        "description": "Com uma ação, role d100; se o resultado for menor ou igual ao seu nível de clérigo, sua divindade intervém. No 20° nível o sucesso é automático."
+        "description": "Com uma ação, role d100; se o resultado for menor ou igual ao seu nível de clérigo, sua divindade intervém. No 20° nível o sucesso é automático.",
+        "effects": {
+          "resources": [
+            { "id": "divine-intervention", "name": "Intervenção Divina", "uses": 1, "recharge": "long", "note": "se a divindade intervier, só de novo após 7 dias" }
+          ]
+        }
       }
     ],
     "druid": [
@@ -269,12 +325,17 @@
       {
         "level": 1,
         "name": "Conjuração",
-        "description": "Você conjura magias de druida usando Sabedoria; prepara um número de magias igual ao mod. de Sabedoria + seu nível de druida e pode conjurar rituais com um foco druídico."
+        "description": "Você conjura magias de druida usando Sabedoria; prepara um número de magias igual ao mod. de Sabedoria + seu nível de druida. Pode conjurar como ritual as que tiverem o descritor ritual e usar um foco druídico como foco de conjuração."
       },
       {
         "level": 2,
         "name": "Forma Selvagem",
-        "description": "Com uma ação, assuma a forma de uma besta que já tenha visto (limites de VD e de capacidades conforme o nível). Duas vezes por descanso."
+        "description": "Com uma ação, assuma a forma de uma besta que já tenha visto (limites de VD e de capacidades conforme o nível). Duas vezes por descanso.",
+        "effects": {
+          "resources": [
+            { "id": "wild-shape", "name": "Forma Selvagem", "uses": 2, "recharge": "short", "unlimitedFrom": 20 }
+          ]
+        }
       },
       {
         "level": 18,
@@ -296,12 +357,17 @@
       {
         "level": 1,
         "name": "Conjuração",
-        "description": "Você conjura magias de mago usando Inteligência, a partir do seu grimório, e pode conjurar rituais que estejam nele."
+        "description": "Você conjura magias de mago usando Inteligência, a partir do seu grimório. Pode conjurar como ritual qualquer magia de ritual que esteja no grimório, mesmo sem prepará-la, e usar um foco arcano como foco de conjuração."
       },
       {
         "level": 1,
         "name": "Recuperação Arcana",
-        "description": "Uma vez por dia, ao terminar um descanso curto, recupere espaços de magia gastos somando até metade do seu nível de mago (arredondado para cima), nenhum acima do 5° nível."
+        "description": "Uma vez por dia, ao terminar um descanso curto, recupere espaços de magia gastos somando até metade do seu nível de mago (arredondado para cima), nenhum acima do 5° nível.",
+        "effects": {
+          "resources": [
+            { "id": "arcane-recovery", "name": "Recuperação Arcana", "uses": 1, "recharge": "day", "amount": { "value": { "halfClassLevel": "up" }, "unit": "slotLevels" }, "note": "ao terminar um descanso curto; nenhum espaço de 6º nível ou superior" }
+          ]
+        }
       },
       {
         "level": 18,
@@ -311,19 +377,29 @@
       {
         "level": 20,
         "name": "Assinatura Mágica",
-        "description": "Escolha duas magias de 3° nível do grimório: ficam sempre preparadas e você pode conjurar cada uma uma vez por descanso sem gastar espaço de magia."
+        "description": "Escolha duas magias de 3° nível do grimório: ficam sempre preparadas e você pode conjurar cada uma uma vez por descanso sem gastar espaço de magia.",
+        "effects": {
+          "resources": [
+            { "id": "signature-spells", "name": "Assinatura Mágica", "uses": 2, "recharge": "short", "note": "uma vez cada magia, como 3º nível, sem gastar espaço" }
+          ]
+        }
       }
     ],
     "sorcerer": [
       {
         "level": 1,
         "name": "Conjuração",
-        "description": "Você conjura magias de feiticeiro usando Carisma, a partir de uma lista de magias conhecidas."
+        "description": "Você conjura magias de feiticeiro usando Carisma, a partir de uma lista de magias conhecidas, e pode usar um foco arcano como foco de conjuração."
       },
       {
         "level": 2,
         "name": "Fonte de Magia",
-        "description": "Você tem pontos de feitiçaria que pode converter em espaços de magia, ou converter espaços em pontos, como ação bônus."
+        "description": "Você tem pontos de feitiçaria que pode converter em espaços de magia, ou converter espaços em pontos, como ação bônus.",
+        "effects": {
+          "resources": [
+            { "id": "sorcery-points", "name": "Pontos de Feitiçaria", "uses": { "perClassLevel": 1 }, "unit": "points", "recharge": "long" }
+          ]
+        }
       },
       {
         "level": 3,
@@ -340,12 +416,17 @@
       {
         "level": 1,
         "name": "Conjuração",
-        "description": "Você conjura magias de bardo usando Carisma, a partir de magias conhecidas, e pode conjurar rituais."
+        "description": "Você conjura magias de bardo usando Carisma, a partir de magias conhecidas. Pode conjurar como ritual as que tiverem o descritor ritual e usar um instrumento musical como foco de conjuração."
       },
       {
         "level": 1,
         "name": "Inspiração de Bardo",
-        "description": "Como ação bônus, dê a uma criatura a até 18 m um dado de Inspiração de Bardo (d6) que ela pode somar a um teste, ataque ou resistência nos próximos 10 minutos. Usos iguais ao mod. de Carisma; o dado cresce com o nível."
+        "description": "Como ação bônus, dê a outra criatura a até 18 m que possa ouvi-lo um dado de Inspiração de Bardo, que ela pode somar a um teste de habilidade, ataque ou resistência nos próximos 10 minutos. Usos iguais ao mod. de Carisma (mínimo 1); o dado e os usos estão em Recursos de Classe.",
+        "effects": {
+          "resources": [
+            { "id": "bardic-inspiration", "name": "Inspiração de Bardo", "die": { "size": { "byLevel": [{ "from": 1, "value": 6 }, { "from": 5, "value": 8 }, { "from": 10, "value": 10 }, { "from": 15, "value": 12 }] } }, "uses": { "ability": "CHA", "min": 1 }, "recharge": [{ "from": 1, "value": "long" }, { "from": 5, "value": "short" }] }
+          ]
+        }
       },
       {
         "level": 2,
@@ -356,7 +437,12 @@
       {
         "level": 2,
         "name": "Canção de Descanso",
-        "description": "Aliados que ouvem sua música num descanso curto recuperam pontos de vida adicionais (1d6, crescendo com o nível)."
+        "description": "Se você ou criaturas amigáveis que ouçam sua atuação recuperarem pontos de vida gastando Dados de Vida no fim de um descanso curto, cada uma recupera também o dado de Canção de Descanso (ver Recursos de Classe).",
+        "effects": {
+          "resources": [
+            { "id": "song-of-rest", "name": "Canção de Descanso", "die": { "size": { "byLevel": [{ "from": 2, "value": 6 }, { "from": 9, "value": 8 }, { "from": 13, "value": 10 }, { "from": 17, "value": 12 }] } } }
+          ]
+        }
       },
       {
         "level": 3,
@@ -388,7 +474,7 @@
       {
         "level": 1,
         "name": "Magia de Pacto",
-        "description": "Você conjura magias de bruxo usando Carisma. Seus poucos espaços são sempre do nível máximo disponível e recuperam-se em descanso curto ou longo."
+        "description": "Você conjura magias de bruxo usando Carisma. Seus poucos espaços são sempre do nível máximo disponível e recuperam-se em descanso curto ou longo. Pode usar um foco arcano como foco de conjuração."
       },
       {
         "level": 2,
@@ -403,29 +489,49 @@
       {
         "level": 11,
         "name": "Arcana Mística",
-        "description": "Escolha uma magia de 6° nível da lista de bruxo para conjurar uma vez por descanso longo sem gastar espaço (7° nível no 13°, 8° no 15°, 9° no 17°)."
+        "description": "Escolha uma magia de 6° nível da lista de bruxo para conjurar uma vez por descanso longo sem gastar espaço (7° nível no 13°, 8° no 15°, 9° no 17°).",
+        "effects": {
+          "resources": [
+            { "id": "mystic-arcanum", "name": "Arcana Mística", "uses": { "byLevel": [{ "from": 11, "value": 1 }, { "from": 13, "value": 2 }, { "from": 15, "value": 3 }, { "from": 17, "value": 4 }] }, "recharge": "long", "note": "uma vez cada magia de arcana, sem gastar espaço" }
+          ]
+        }
       },
       {
         "level": 20,
         "name": "Mestre Místico",
-        "description": "Uma vez por dia, gaste 1 minuto suplicando ao patrono para recuperar todos os espaços de Magia de Pacto gastos."
+        "description": "Gaste 1 minuto suplicando ao patrono para recuperar todos os espaços de Magia de Pacto gastos. Depois, só de novo após um descanso longo.",
+        "effects": {
+          "resources": [
+            { "id": "eldritch-master", "name": "Mestre Místico", "uses": 1, "recharge": "long" }
+          ]
+        }
       }
     ],
     "paladin": [
       {
         "level": 1,
         "name": "Sentido Divino",
-        "description": "Com uma ação, detecte a localização de celestiais, corruptores e mortos-vivos a até 18 m (não protegidos por cobertura total). Usos iguais a 1 + mod. de Carisma por descanso longo."
+        "description": "Com uma ação, detecte a localização de celestiais, corruptores e mortos-vivos a até 18 m (não protegidos por cobertura total). Usos iguais a 1 + mod. de Carisma por descanso longo.",
+        "effects": {
+          "resources": [
+            { "id": "divine-sense", "name": "Sentido Divino", "uses": { "ability": "CHA", "plus": 1 }, "recharge": "long" }
+          ]
+        }
       },
       {
         "level": 1,
         "name": "Cura pelas Mãos",
-        "description": "Você tem um poço de cura igual a 5 × seu nível de paladino, que restaura pontos de vida ao toque (ou 5 pontos para curar uma doença ou veneno). Renova em descanso longo."
+        "description": "Você tem um poço de cura igual a 5 × seu nível de paladino, que restaura pontos de vida ao toque (ou 5 pontos para curar uma doença ou veneno). Renova em descanso longo.",
+        "effects": {
+          "resources": [
+            { "id": "lay-on-hands", "name": "Cura pelas Mãos", "uses": { "perClassLevel": 5 }, "unit": "hp", "recharge": "long" }
+          ]
+        }
       },
       {
         "level": 2,
         "name": "Conjuração",
-        "description": "Você conjura magias de paladino usando Carisma; prepara magias iguais ao mod. de Carisma + metade do seu nível de paladino."
+        "description": "Você conjura magias de paladino usando Carisma; prepara magias iguais ao mod. de Carisma + metade do seu nível de paladino. Pode usar um símbolo sagrado como foco de conjuração."
       },
       {
         "level": 2,
@@ -465,7 +571,12 @@
       {
         "level": 14,
         "name": "Toque Purificador",
-        "description": "Com uma ação, termine uma magia em si mesmo ou em uma criatura voluntária que tocar. Usos iguais ao mod. de Carisma por descanso longo."
+        "description": "Com uma ação, termine uma magia em si mesmo ou em uma criatura voluntária que tocar. Usos iguais ao mod. de Carisma (mínimo 1) por descanso longo.",
+        "effects": {
+          "resources": [
+            { "id": "cleansing-touch", "name": "Toque Purificador", "uses": { "ability": "CHA", "min": 1 }, "recharge": "long" }
+          ]
+        }
       }
     ],
     "ranger": [
@@ -605,7 +716,12 @@
       {
         "level": 17,
         "name": "Visões do Passado",
-        "description": "Após alguns minutos de meditação e prece, você obtém vislumbres e eventos recentes sobre o histórico de um objeto que você segura ou do local em que você está (até 15 metros cúbicos)."
+        "description": "Após alguns minutos de meditação e prece, você obtém vislumbres e eventos recentes sobre o histórico de um objeto que você segura ou do local em que você está (até 15 metros cúbicos).",
+        "effects": {
+          "resources": [
+            { "id": "visions-of-the-past", "name": "Visões do Passado", "uses": 1, "recharge": "short" }
+          ]
+        }
       }
     ],
     "trickery-domain": [
@@ -639,7 +755,12 @@
       {
         "level": 1,
         "name": "Proficiência Adicional e Sacerdote da Guerra",
-        "description": "Ganha proficiência com armaduras pesadas e armas marciais. Ao usar a ação de Ataque, realize um ataque com arma como ação bônus. Usos iguais ao mod. de Sabedoria por descanso longo."
+        "description": "Ganha proficiência com armaduras pesadas e armas marciais. Ao usar a ação de Ataque, realize um ataque com arma como ação bônus. Usos iguais ao mod. de Sabedoria (mínimo 1) por descanso longo.",
+        "effects": {
+          "resources": [
+            { "id": "war-priest", "name": "Sacerdote da Guerra", "uses": { "ability": "WIS", "min": 1 }, "recharge": "long" }
+          ]
+        }
       },
       {
         "level": 2,
@@ -666,7 +787,12 @@
       {
         "level": 1,
         "name": "Truque Adicional e Labareda Protetora",
-        "description": "Você ganha o truque luz. Ao ser atacado por uma criatura a até 9 m, use sua reação para impor desvantagem na jogada de ataque ofuscando o alvo com luz."
+        "description": "Você ganha o truque luz. Ao ser atacado por uma criatura a até 9 m, use sua reação para impor desvantagem na jogada de ataque ofuscando o alvo com luz.",
+        "effects": {
+          "resources": [
+            { "id": "warding-flare", "name": "Labareda Protetora", "uses": { "ability": "WIS", "min": 1 }, "recharge": "long" }
+          ]
+        }
       },
       {
         "level": 2,
@@ -720,7 +846,12 @@
       {
         "level": 1,
         "name": "Proficiência Adicional e Ira da Tormenta",
-        "description": "Proficiência em armas marciais e armaduras pesadas. Ao ser atingido em corpo-a-corpo, você usa uma reação para forçar a criatura a um teste de Destreza. Falha: 2d8 de dano elétrico ou trovejante, e metade se passar."
+        "description": "Proficiência em armas marciais e armaduras pesadas. Ao ser atingido em corpo-a-corpo, você usa uma reação para forçar a criatura a um teste de Destreza. Falha: 2d8 de dano elétrico ou trovejante, e metade se passar.",
+        "effects": {
+          "resources": [
+            { "id": "wrath-of-the-storm", "name": "Ira da Tormenta", "uses": { "ability": "WIS", "min": 1 }, "recharge": "long" }
+          ]
+        }
       },
       {
         "level": 2,
@@ -779,7 +910,12 @@
       {
         "level": 2,
         "name": "Recuperação Natural",
-        "description": "Durante um descanso curto, você recupera espaços de magia gastos cujo total de níveis seja até metade do seu nível de druida (uma vez por dia)."
+        "description": "Durante um descanso curto, você recupera espaços de magia gastos cujo total de níveis seja até metade do seu nível de druida (arredondado para baixo), nenhum de 6° nível ou superior. Depois, só de novo após um descanso longo.",
+        "effects": {
+          "resources": [
+            { "id": "natural-recovery", "name": "Recuperação Natural", "uses": 1, "recharge": "long", "amount": { "value": { "halfClassLevel": "down" }, "unit": "slotLevels" }, "note": "durante um descanso curto; nenhum espaço de 6º nível ou superior" }
+          ]
+        }
       },
       {
         "level": 6,
@@ -855,7 +991,12 @@
       {
         "level": 3,
         "name": "Superioridade em Combate",
-        "description": "Você aprende 3 manobras (de uma lista) alimentadas por 4 dados de superioridade (d8), recuperados em descanso curto ou longo. A CD das manobras é 8 + bônus de proficiência + seu modificador de Força ou Destreza."
+        "description": "Você aprende 3 manobras (de uma lista) alimentadas por dados de superioridade (quantos e de qual tamanho, em Recursos de Classe), recuperados em descanso curto ou longo. A CD das manobras é 8 + bônus de proficiência + seu modificador de Força ou Destreza.",
+        "effects": {
+          "resources": [
+            { "id": "superiority-dice", "name": "Dados de Superioridade", "die": { "size": { "byLevel": [{ "from": 3, "value": 8 }, { "from": 10, "value": 10 }, { "from": 18, "value": 12 }] } }, "uses": { "byLevel": [{ "from": 3, "value": 4 }, { "from": 7, "value": 5 }, { "from": 15, "value": 6 }] }, "unit": "dice", "recharge": "short" }
+          ]
+        }
       },
       {
         "level": 3,
@@ -924,7 +1065,12 @@
       {
         "level": 6,
         "name": "Integridade Corporal",
-        "description": "Com uma ação, você recupera uma quantidade de pontos de vida igual a três vezes seu nível de monge. Requer um descanso longo para usar novamente."
+        "description": "Com uma ação, você recupera uma quantidade de pontos de vida igual a três vezes seu nível de monge. Requer um descanso longo para usar novamente.",
+        "effects": {
+          "resources": [
+            { "id": "wholeness-of-body", "name": "Integridade Corporal", "uses": 1, "recharge": "long", "amount": { "value": { "perClassLevel": 3 }, "unit": "hp" } }
+          ]
+        }
       },
       {
         "level": 11,
@@ -990,7 +1136,12 @@
       {
         "level": 3,
         "name": "Canalizar Divindade",
-        "description": "Você tem duas opções: Arma Sagrada (imbui arma com seu mod. de Carisma no ataque e emite luz) e Expulsar o Profano (força corruptores e mortos-vivos a fugirem de você)."
+        "description": "Você tem duas opções: Arma Sagrada (imbui arma com seu mod. de Carisma no ataque e emite luz) e Expulsar o Profano (força corruptores e mortos-vivos a fugirem de você).",
+        "effects": {
+          "resources": [
+            { "id": "channel-divinity", "name": "Canalizar Divindade", "uses": 1, "recharge": "short" }
+          ]
+        }
       },
       {
         "level": 7,
@@ -1005,7 +1156,12 @@
       {
         "level": 20,
         "name": "Halo Sagrado",
-        "description": "Com uma ação, você emana luz solar em um raio de 9 metros por 1 minuto. Inimigos que começarem o turno na luz plena sofrem 10 de dano radiante, e você tem vantagem em testes de resistência contra magias de corruptores ou mortos-vivos."
+        "description": "Com uma ação, você emana luz solar em um raio de 9 metros por 1 minuto. Inimigos que começarem o turno na luz plena sofrem 10 de dano radiante, e você tem vantagem em testes de resistência contra magias de corruptores ou mortos-vivos.",
+        "effects": {
+          "resources": [
+            { "id": "holy-nimbus", "name": "Halo Sagrado", "uses": 1, "recharge": "long" }
+          ]
+        }
       }
     ],
     "oath-of-the-ancients": [
@@ -1017,7 +1173,12 @@
       {
         "level": 3,
         "name": "Canalizar Divindade",
-        "description": "Você tem duas opções: Fúria da Natureza (enreda um inimigo com vinhas espectrais) e Expulsar os Infiéis (força fadas e corruptores a fugirem de você)."
+        "description": "Você tem duas opções: Fúria da Natureza (enreda um inimigo com vinhas espectrais) e Expulsar os Infiéis (força fadas e corruptores a fugirem de você).",
+        "effects": {
+          "resources": [
+            { "id": "channel-divinity", "name": "Canalizar Divindade", "uses": 1, "recharge": "short" }
+          ]
+        }
       },
       {
         "level": 7,
@@ -1027,12 +1188,22 @@
       {
         "level": 15,
         "name": "Sentinela Imortal",
-        "description": "Uma vez por descanso longo, ao ser reduzido a 0 PV, você pode escolher ficar com 1 PV. Você também não sofre os efeitos de envelhecimento natural nem mágico."
+        "description": "Uma vez por descanso longo, ao ser reduzido a 0 PV, você pode escolher ficar com 1 PV. Você também não sofre os efeitos de envelhecimento natural nem mágico.",
+        "effects": {
+          "resources": [
+            { "id": "undying-sentinel", "name": "Sentinela Imortal", "uses": 1, "recharge": "long" }
+          ]
+        }
       },
       {
         "level": 20,
         "name": "Campeão dos Anciões",
-        "description": "Usando uma ação, você assume uma forma da natureza por 1 minuto. Nela, você recupera 10 PV no início dos turnos, conjura magias de paladino com ação bônus, e inimigos a até 3 metros têm desvantagem contra suas magias e Canalizar Divindade."
+        "description": "Usando uma ação, você assume uma forma da natureza por 1 minuto. Nela, você recupera 10 PV no início dos turnos, conjura magias de paladino com ação bônus, e inimigos a até 3 metros têm desvantagem contra suas magias e Canalizar Divindade.",
+        "effects": {
+          "resources": [
+            { "id": "elder-champion", "name": "Campeão dos Anciões", "uses": 1, "recharge": "long" }
+          ]
+        }
       }
     ],
     "oath-of-vengeance": [
@@ -1044,7 +1215,12 @@
       {
         "level": 3,
         "name": "Canalizar Divindade",
-        "description": "Você tem duas opções: Abjurar Inimigo (amedronta e reduz a 0 o deslocamento de uma criatura) e Voto de Inimizade (concede vantagem em suas jogadas de ataque contra o alvo por 1 minuto)."
+        "description": "Você tem duas opções: Abjurar Inimigo (amedronta e reduz a 0 o deslocamento de uma criatura) e Voto de Inimizade (concede vantagem em suas jogadas de ataque contra o alvo por 1 minuto).",
+        "effects": {
+          "resources": [
+            { "id": "channel-divinity", "name": "Canalizar Divindade", "uses": 1, "recharge": "short" }
+          ]
+        }
       },
       {
         "level": 7,
@@ -1059,7 +1235,12 @@
       {
         "level": 20,
         "name": "Anjo Vingador",
-        "description": "Com uma ação, você ganha asas e voo de 18 metros por 1 hora. Você emana uma aura de 9 metros que amedronta inimigos no primeiro turno deles na área, além de conceder vantagem em ataques contra as criaturas amedrontadas."
+        "description": "Com uma ação, você ganha asas e voo de 18 metros por 1 hora. Você emana uma aura de 9 metros que amedronta inimigos no primeiro turno deles na área, além de conceder vantagem em ataques contra as criaturas amedrontadas.",
+        "effects": {
+          "resources": [
+            { "id": "avenging-angel", "name": "Anjo Vingador", "uses": 1, "recharge": "long" }
+          ]
+        }
       }
     ],
     "beast-master": [
@@ -1211,7 +1392,12 @@
       {
         "level": 17,
         "name": "Ladrão de Magias",
-        "description": "Quando uma criatura conjurar uma magia que tenha você como alvo ou o inclua na área, você pode usar sua reação para forçá-la a fazer um teste de resistência. Se ela falhar, a magia é anulada em você e você rouba o conhecimento dela para conjurá-la por 8 horas."
+        "description": "Quando uma criatura conjurar uma magia que tenha você como alvo ou o inclua na área, você pode usar sua reação para forçá-la a fazer um teste de resistência. Se ela falhar, a magia é anulada em você e você rouba o conhecimento dela para conjurá-la por 8 horas.",
+        "effects": {
+          "resources": [
+            { "id": "spell-thief", "name": "Ladrão de Magias", "uses": 1, "recharge": "long" }
+          ]
+        }
       }
     ],
     "draconic-bloodline": [
@@ -1250,7 +1436,12 @@
       {
         "level": 1,
         "name": "Marés de Caos",
-        "description": "Ganhe vantagem em uma jogada de ataque, teste ou resistência 1 vez por descanso longo. O Mestre pode restaurar esse uso antecipadamente forçando um Surto de Magia Selvagem ao conjurar magias de nível 1+."
+        "description": "Ganhe vantagem em uma jogada de ataque, teste ou resistência 1 vez por descanso longo. O Mestre pode restaurar esse uso antecipadamente forçando um Surto de Magia Selvagem ao conjurar magias de nível 1+.",
+        "effects": {
+          "resources": [
+            { "id": "tides-of-chaos", "name": "Marés de Caos", "uses": 1, "recharge": "long", "note": "também volta quando o Mestre rola na tabela de Surto de Magia Selvagem" }
+          ]
+        }
       },
       {
         "level": 6,
@@ -1277,7 +1468,12 @@
       {
         "level": 2,
         "name": "Proteção Arcana",
-        "description": "Ao conjurar uma magia de abjuração de 1° nível ou superior, você cria uma proteção mágica que absorve dano até um limite (dobro do nível + mod. de Inteligência)."
+        "description": "Ao conjurar uma magia de abjuração de 1° nível ou superior, você cria uma proteção mágica que absorve dano até um limite (dobro do nível + mod. de Inteligência).",
+        "effects": {
+          "resources": [
+            { "id": "arcane-ward", "name": "Proteção Arcana", "uses": { "perClassLevel": 2, "ability": "INT" }, "unit": "hp", "recharge": "long", "note": "criada ao conjurar abjuração de 1º nível ou superior; cada abjuração depois devolve 2 × o nível da magia" }
+          ]
+        }
       },
       {
         "level": 6,
@@ -1304,7 +1500,12 @@
       {
         "level": 2,
         "name": "Prodígio",
-        "description": "Após um descanso longo, role dois d20 e registre os valores. Pode substituir qualquer jogada (ataque, teste ou resistência) de uma criatura visível por um desses resultados antes da rolagem original."
+        "description": "Após um descanso longo, role dois d20 e registre os valores. Pode substituir qualquer jogada (ataque, teste ou resistência) de uma criatura visível por um desses resultados antes da rolagem original.",
+        "effects": {
+          "resources": [
+            { "id": "portent", "name": "Prodígio", "die": { "size": 20 }, "uses": { "byLevel": [{ "from": 2, "value": 2 }, { "from": 14, "value": 3 }] }, "unit": "dice", "recharge": "long", "note": "role ao terminar o descanso longo e anote; as rolagens não usadas se perdem" }
+          ]
+        }
       },
       {
         "level": 6,
@@ -1314,7 +1515,12 @@
       {
         "level": 10,
         "name": "O Terceiro Olho",
-        "description": "Com uma ação, escolha aumentar sua percepção adquirindo visão no escuro, visão etérea, capacidade de ler qualquer idioma ou ver invisibilidade até o próximo descanso."
+        "description": "Com uma ação, escolha aumentar sua percepção adquirindo visão no escuro, visão etérea, capacidade de ler qualquer idioma ou ver invisibilidade até o próximo descanso.",
+        "effects": {
+          "resources": [
+            { "id": "the-third-eye", "name": "O Terceiro Olho", "uses": 1, "recharge": "long" }
+          ]
+        }
       },
       {
         "level": 14,
@@ -1336,7 +1542,12 @@
       {
         "level": 6,
         "name": "Transposição Benigna",
-        "description": "Use sua ação para se teletransportar até 9 metros ou trocar de lugar com uma criatura voluntária visível no mesmo alcance. Recupera com descanso ou conjurando magias de conjuração."
+        "description": "Use sua ação para se teletransportar até 9 metros ou trocar de lugar com uma criatura voluntária visível no mesmo alcance. Recupera com descanso ou conjurando magias de conjuração.",
+        "effects": {
+          "resources": [
+            { "id": "benign-transposition", "name": "Transposição Benigna", "uses": 1, "recharge": "long", "note": "ou ao conjurar uma magia de conjuração de 1º nível ou superior" }
+          ]
+        }
       },
       {
         "level": 10,
@@ -1422,7 +1633,12 @@
       {
         "level": 10,
         "name": "Eu Ilusório",
-        "description": "Uma vez por descanso longo, ao ser atacado, você pode usar uma reação para criar uma duplicata ilusória e forçar o ataque a errar você automaticamente."
+        "description": "Uma vez por descanso longo, ao ser atacado, você pode usar uma reação para criar uma duplicata ilusória e forçar o ataque a errar você automaticamente.",
+        "effects": {
+          "resources": [
+            { "id": "illusory-self", "name": "Eu Ilusório", "uses": 1, "recharge": "long" }
+          ]
+        }
       },
       {
         "level": 14,
@@ -1476,12 +1692,22 @@
       {
         "level": 10,
         "name": "Metamorfo",
-        "description": "Adiciona a magia metamorfose ao grimório. Você pode conjurá-la em si mesmo para virar besta de VD 1 ou menor sem gastar espaço de magia, uma vez por descanso."
+        "description": "Adiciona a magia metamorfose ao grimório. Você pode conjurá-la em si mesmo para virar besta de VD 1 ou menor sem gastar espaço de magia, uma vez por descanso.",
+        "effects": {
+          "resources": [
+            { "id": "shapechanger", "name": "Metamorfo", "uses": 1, "recharge": "short", "note": "metamorfose em si mesmo sem gastar espaço" }
+          ]
+        }
       },
       {
         "level": 14,
         "name": "Mestre Transmutador",
-        "description": "Ao destruir a Pedra de Transmutador (só pode criar outra no dia seguinte) pode reviver mortos, remover doenças, alterar aparência em 3d10 anos, ou realizar grande transmutação permanente."
+        "description": "Ao destruir a Pedra de Transmutador (só pode criar outra após um descanso longo) pode reviver mortos, remover doenças, alterar aparência em 3d10 anos, ou realizar grande transmutação permanente.",
+        "effects": {
+          "resources": [
+            { "id": "master-transmuter", "name": "Mestre Transmutador", "uses": 1, "recharge": "long", "note": "consome a pedra de transmutador" }
+          ]
+        }
       }
     ],
     "college-of-lore": [
@@ -1532,12 +1758,22 @@
       {
         "level": 1,
         "name": "Presença Feérica",
-        "description": "Com uma ação, force criaturas num cubo de 3 m a testar Sabedoria. Falha: enfeitiçadas ou amedrontadas até seu próximo turno. Recarrega em descanso curto ou longo."
+        "description": "Com uma ação, force criaturas num cubo de 3 m a testar Sabedoria. Falha: enfeitiçadas ou amedrontadas até seu próximo turno. Recarrega em descanso curto ou longo.",
+        "effects": {
+          "resources": [
+            { "id": "fey-presence", "name": "Presença Feérica", "uses": 1, "recharge": "short" }
+          ]
+        }
       },
       {
         "level": 6,
         "name": "Névoa de Fuga",
-        "description": "Ao sofrer dano, use sua reação para ficar invisível e se teletransportar a até 18 m para um espaço desocupado que possa ver, permanecendo invisível até o início do seu próximo turno ou até atacar/conjurar uma magia. Recarrega em descanso curto ou longo."
+        "description": "Ao sofrer dano, use sua reação para ficar invisível e se teletransportar a até 18 m para um espaço desocupado que possa ver, permanecendo invisível até o início do seu próximo turno ou até atacar/conjurar uma magia. Recarrega em descanso curto ou longo.",
+        "effects": {
+          "resources": [
+            { "id": "misty-escape", "name": "Névoa de Fuga", "uses": 1, "recharge": "short" }
+          ]
+        }
       },
       {
         "level": 10,
@@ -1547,7 +1783,12 @@
       {
         "level": 14,
         "name": "Delírio Sombrio",
-        "description": "Com uma ação, escolha uma criatura a até 18 m; se falhar num teste de Sabedoria (CD de bruxo), ela fica enfeitiçada ou amedrontada por você (à sua escolha) por 1 minuto ou até você perder concentração, acreditando estar presa num reino enevoado onde só vê você, a si mesma e sua ilusão. Efeito termina antes se ela sofrer dano. Recarrega em descanso curto ou longo."
+        "description": "Com uma ação, escolha uma criatura a até 18 m; se falhar num teste de Sabedoria (CD de bruxo), ela fica enfeitiçada ou amedrontada por você (à sua escolha) por 1 minuto ou até você perder concentração, acreditando estar presa num reino enevoado onde só vê você, a si mesma e sua ilusão. Efeito termina antes se ela sofrer dano. Recarrega em descanso curto ou longo.",
+        "effects": {
+          "resources": [
+            { "id": "dark-delirium", "name": "Delírio Sombrio", "uses": 1, "recharge": "short" }
+          ]
+        }
       }
     ],
     "the-fiend": [
@@ -1559,7 +1800,12 @@
       {
         "level": 6,
         "name": "Sorte do Próprio Obscuro",
-        "description": "Ao fazer um teste de habilidade ou de resistência, você pode somar 1d10 ao resultado (decidindo após ver a jogada, mas antes de qualquer efeito). Recarrega em descanso curto ou longo."
+        "description": "Ao fazer um teste de habilidade ou de resistência, você pode somar 1d10 ao resultado (decidindo após ver a jogada, mas antes de qualquer efeito). Recarrega em descanso curto ou longo.",
+        "effects": {
+          "resources": [
+            { "id": "dark-ones-own-luck", "name": "Sorte do Próprio Obscuro", "uses": 1, "recharge": "short" }
+          ]
+        }
       },
       {
         "level": 10,
@@ -1569,7 +1815,12 @@
       {
         "level": 14,
         "name": "Lançar no Inferno",
-        "description": "Ao acertar uma criatura com um ataque, transporte-a instantaneamente para os planos inferiores; ela retorna ao fim do seu turno e, se não for um corruptor, sofre 10d10 de dano psíquico. Recarrega em descanso curto ou longo."
+        "description": "Ao acertar uma criatura com um ataque, transporte-a instantaneamente para os planos inferiores; ela retorna ao fim do seu turno e, se não for um corruptor, sofre 10d10 de dano psíquico. Recarrega em descanso curto ou longo.",
+        "effects": {
+          "resources": [
+            { "id": "hurl-through-hell", "name": "Lançar no Inferno", "uses": 1, "recharge": "short" }
+          ]
+        }
       }
     ],
     "the-great-old-one": [
@@ -1581,7 +1832,12 @@
       {
         "level": 6,
         "name": "Proteção Entrópica",
-        "description": "Quando uma criatura fizer uma jogada de ataque contra você, use sua reação para impor desvantagem nessa jogada. Se o ataque errar, seu próximo ataque contra essa criatura recebe vantagem até o fim do seu próximo turno. Recarrega em descanso curto ou longo."
+        "description": "Quando uma criatura fizer uma jogada de ataque contra você, use sua reação para impor desvantagem nessa jogada. Se o ataque errar, seu próximo ataque contra essa criatura recebe vantagem até o fim do seu próximo turno. Recarrega em descanso curto ou longo.",
+        "effects": {
+          "resources": [
+            { "id": "entropic-ward", "name": "Proteção Entrópica", "uses": 1, "recharge": "short" }
+          ]
+        }
       },
       {
         "level": 10,

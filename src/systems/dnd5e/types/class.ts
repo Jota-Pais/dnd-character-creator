@@ -10,8 +10,10 @@ export type ClassSpellcasting = {
   type: SpellcastingType
   spellsAtLevel1: number
   preparedFormula: string | null
+  /** Conjura magias de ritual (bardo, clérigo, druida, mago — cada um com a sua regra de quais). */
   ritualCasting: boolean
-  focus: string
+  /** Foco de conjuração da classe; `null` quando o livro não dá um (patrulheiro do PHB 2014). */
+  focus: string | null
   castingStartsAtLevel: number
 }
 

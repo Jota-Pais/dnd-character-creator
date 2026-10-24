@@ -969,7 +969,7 @@
       "spellsAtLevel1": 0,
       "preparedFormula": null,
       "ritualCasting": false,
-      "focus": "bolsa de componentes",
+      "focus": null,
       "castingStartsAtLevel": 2
     },
     "features": [

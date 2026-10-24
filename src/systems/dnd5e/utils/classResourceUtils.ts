@@ -1,91 +1,219 @@
-import progressionData from '../data/progression.json'
+import type { AbilityScore } from '../types/race'
+import type {
+  LevelStep, ResourceAmountUnit, ResourceEffect, ResourceQuantity, ResourceRecharge, ResourceUnit,
+} from '../types/effects'
+import { calculateModifier } from './abilityScoreUtils'
+import { getClass } from './classUtils'
 
 /**
- * Recursos de classe não-mágicos derivados por nível (PHB 2014): fúrias, ki,
- * ataque furtivo, inspiração de bardo, pontos de feitiçaria, invocações,
- * canalizar divindade, forma selvagem. Fonte: progression.json (tabelas do livro).
+ * Recursos de classe: a CONTA e o TEXTO de um recurso declarado nos dados (`effects.resources`
+ * em `class-progression-features.json`). Quem junta os recursos do personagem é
+ * `getClassResources`, em `sheetEffects` — aqui fica só o que é puro: avaliar uma declaração num
+ * nível de classe com os atributos finais, e escrever o resultado do jeito que a Revisão e a ficha
+ * imprimível mostram (as duas leem `describeResource`, pra não divergirem).
  */
-const RESOURCES = progressionData.classResources as Record<string, Record<string, number[]>>
 
-function valueAtLevel(table: number[] | undefined, level: number): number | undefined {
-  if (!table) return undefined
-  return table[Math.max(1, Math.min(20, level)) - 1]
+export type FinalScores = Record<AbilityScore, number>
+
+/** Valor do degrau alcançado no nível dado; `undefined` antes do primeiro degrau. */
+export function stepValue<T>(steps: LevelStep<T>[], level: number): T | undefined {
+  let value: T | undefined
+  for (const step of [...steps].sort((a, b) => a.from - b.from)) {
+    if (step.from <= level) value = step.value
+  }
+  return value
 }
 
-export type ClassResource = {
-  key: string
-  label: string
-  value: string
+/** Avalia uma quantidade declarada: soma das parcelas presentes, depois o mínimo. */
+export function evaluateQuantity(q: ResourceQuantity, classLevel: number, scores: FinalScores): number {
+  if (typeof q === 'number') return q
+  let total = 0
+  if (q.byLevel) total += stepValue(q.byLevel, classLevel) ?? 0
+  if (q.perClassLevel) total += q.perClassLevel * classLevel
+  if (q.halfClassLevel) {
+    total += q.halfClassLevel === 'up' ? Math.ceil(classLevel / 2) : Math.floor(classLevel / 2)
+  }
+  if (q.ability) total += calculateModifier(scores[q.ability])
+  if (q.plus) total += q.plus
+  return q.min !== undefined ? Math.max(q.min, total) : total
 }
 
-/** Rótulos e formatação de cada recurso, por classe. */
-type ResourceSpec = {
-  field: string
-  label: string
-  format?: (v: number) => string
+/** Um recurso já calculado para o personagem. */
+export type SheetResource = {
+  id: string
+  name: string
+  /** Classe cujo nível alimentou a conta. */
+  classId: string
+  /** "d6", "3d6", "1d10+5". */
+  die?: string
+  uses?: number | 'unlimited'
+  unit: ResourceUnit
+  amount?: { value: number; unit: ResourceAmountUnit }
+  recharge?: ResourceRecharge
+  note?: string
+  /**
+   * Outras classes que também dão este recurso. O livro não soma os usos (p. 166) — fica o maior,
+   * e a ficha avisa que é um poço só.
+   */
+  sharedWith: string[]
 }
 
-const dieFmt = (v: number) => `d${v}`
-const feetToMeters = (ft: number) => {
+/** Calcula uma declaração de recurso no nível que o personagem tem NA classe dona dela. */
+export function evaluateResource(
+  effect: ResourceEffect,
+  classId: string,
+  classLevel: number,
+  scores: FinalScores,
+): SheetResource {
+  const q = (v: ResourceQuantity) => evaluateQuantity(v, classLevel, scores)
+
+  let die: string | undefined
+  if (effect.die) {
+    const size = q(effect.die.size)
+    const count = effect.die.count !== undefined ? q(effect.die.count) : undefined
+    const bonus = effect.die.bonus !== undefined ? q(effect.die.bonus) : 0
+    die = `${count ?? ''}d${size}${bonus > 0 ? `+${bonus}` : bonus < 0 ? `${bonus}` : ''}`
+  }
+
+  const unlimited = effect.unlimitedFrom !== undefined && classLevel >= effect.unlimitedFrom
+  const recharge = typeof effect.recharge === 'string'
+    ? effect.recharge
+    : effect.recharge ? stepValue(effect.recharge, classLevel) : undefined
+
+  return {
+    id: effect.id,
+    name: effect.name,
+    classId,
+    ...(die ? { die } : {}),
+    // Usos nunca ficam negativos: Sentido Divino (1 + CAR, sem mínimo no livro) com CAR 6 dá 0, não −1.
+    ...(unlimited
+      ? { uses: 'unlimited' as const }
+      : effect.uses !== undefined ? { uses: Math.max(0, q(effect.uses)) } : {}),
+    unit: effect.unit ?? 'uses',
+    ...(effect.amount ? { amount: { value: q(effect.amount.value), unit: effect.amount.unit } } : {}),
+    ...(recharge && !unlimited ? { recharge } : {}),
+    ...(effect.note ? { note: effect.note } : {}),
+    sharedWith: [],
+  }
+}
+
+// ── Texto ──────────────────────────────────────────────────────────────────────
+
+/** Como a ficha mostra um recurso. Os pedaços vazios ficam de fora. */
+export type ResourceDisplay = {
+  name: string
+  /** "d6", "3d6". */
+  die?: string
+  /** A grandeza que não se gasta: "+2", "+3 m", "cura 18 PV", "até 2 níveis de espaço". */
+  amount?: string
+  /** Os usos: "4 usos", "20 PV", "5 pontos", "usos ilimitados". */
+  quantity?: string
+  /**
+   * Como marcar na mesa: N círculos (○), uma linha "___ restantes" (poço grande ou de PV) ou nada
+   * (recurso que é só dado, ou ilimitado).
+   */
+  track: { kind: 'circles'; count: number } | { kind: 'remaining' } | null
+  /** "recupera em descanso longo". */
+  recharge?: string
+  notes: string[]
+}
+
+/** Acima disso, círculos viram linha de "restantes" — 20 bolinhas não cabem nem ajudam. */
+const MAX_CIRCLES = 12
+
+const UNIT_LABEL: Record<Exclude<ResourceUnit, 'hp'>, [string, string]> = {
+  uses: ['uso', 'usos'],
+  points: ['ponto', 'pontos'],
+  dice: ['dado', 'dados'],
+}
+
+const RECHARGE_LABEL: Record<ResourceRecharge, string> = {
+  short: 'recupera em descanso curto ou longo',
+  long: 'recupera em descanso longo',
+  day: 'uma vez por dia',
+}
+
+function formatFeet(ft: number): string {
   const m = ft * 0.3
   return Number.isInteger(m) ? `+${m} m` : `+${m.toFixed(1).replace('.', ',')} m`
 }
-const ragesFmt = (v: number) => (v < 0 ? 'Ilimitadas' : String(v))
 
-const SPECS: Record<string, ResourceSpec[]> = {
-  barbarian: [
-    { field: 'rages', label: 'Fúrias', format: ragesFmt },
-    { field: 'rageDamage', label: 'Dano de Fúria', format: v => `+${v}` },
-  ],
-  monk: [
-    { field: 'kiPoints', label: 'Pontos de Chi' },
-    { field: 'martialArtsDie', label: 'Artes Marciais', format: dieFmt },
-    { field: 'unarmoredMovementFt', label: 'Movimento sem Armadura', format: feetToMeters },
-  ],
-  rogue: [
-    { field: 'sneakAttackDice', label: 'Ataque Furtivo', format: v => `${v}d6` },
-  ],
-  bard: [
-    { field: 'bardicInspirationDie', label: 'Inspiração de Bardo', format: dieFmt },
-  ],
-  sorcerer: [
-    { field: 'sorceryPoints', label: 'Pontos de Feitiçaria' },
-  ],
-  warlock: [
-    { field: 'invocationsKnown', label: 'Invocações Místicas' },
-  ],
-  cleric: [
-    { field: 'channelDivinityUses', label: 'Canalizar Divindade (usos)' },
-  ],
-  paladin: [
-    { field: 'channelDivinityUses', label: 'Canalizar Divindade (usos)' },
-  ],
-  druid: [
-    { field: 'wildShapeUses', label: 'Forma Selvagem (usos)' },
-  ],
+function formatAmount(amount: NonNullable<SheetResource['amount']>): string {
+  switch (amount.unit) {
+    case 'bonus': return amount.value >= 0 ? `+${amount.value}` : `${amount.value}`
+    case 'feet': return formatFeet(amount.value)
+    case 'hp': return `cura ${amount.value} PV`
+    case 'slotLevels':
+      return `até ${amount.value} ${amount.value === 1 ? 'nível' : 'níveis'} de espaço`
+  }
 }
 
-/** Valor bruto de um recurso específico no nível dado (ou undefined se não existe). */
-export function getClassResourceValue(classId: string, field: string, level: number): number | undefined {
-  return valueAtLevel(RESOURCES[classId]?.[field], level)
+export function describeResource(r: SheetResource): ResourceDisplay {
+  let quantity: string | undefined
+  let track: ResourceDisplay['track'] = null
+  if (r.uses === 'unlimited') {
+    quantity = 'usos ilimitados'
+  } else if (r.uses !== undefined) {
+    if (r.unit === 'hp') {
+      quantity = `${r.uses} PV`
+      // PV se gastam aos poucos (5 numa cura, 2 noutra): círculo não serve, só o que sobrou.
+      track = { kind: 'remaining' }
+    } else {
+      const [one, many] = UNIT_LABEL[r.unit]
+      quantity = `${r.uses} ${r.uses === 1 ? one : many}`
+      if (r.uses > MAX_CIRCLES) track = { kind: 'remaining' }
+      else if (r.uses > 0) track = { kind: 'circles', count: r.uses }
+    }
+  }
+
+  const notes: string[] = []
+  if (r.note) notes.push(r.note)
+  if (r.sharedWith.length > 0) {
+    const names = r.sharedWith.map(id => getClass(id)?.name ?? id).join(', ')
+    notes.push(`um só recurso com o de ${names} — os usos não se somam (p. 166)`)
+  }
+
+  return {
+    name: r.name,
+    ...(r.die ? { die: r.die } : {}),
+    ...(r.amount ? { amount: formatAmount(r.amount) } : {}),
+    ...(quantity ? { quantity } : {}),
+    track,
+    ...(r.recharge ? { recharge: RECHARGE_LABEL[r.recharge] } : {}),
+    notes,
+  }
+}
+
+/** Círculos vazios (○) pra marcar a lápis. */
+export function formatTrackCircles(count: number): string {
+  return Array(Math.max(0, count)).fill('○').join(' ')
 }
 
 /**
- * Lista os recursos de classe disponíveis no nível dado, já formatados para exibição.
- * Recursos com valor 0 (ainda não desbloqueados) são omitidos.
+ * A linha do recurso na ficha imprimível, inteira:
+ * "Inspiração de Bardo d6 — 4 usos ○ ○ ○ ○ (recupera em descanso longo)"
+ * "Cura pelas Mãos — 20 PV, ___ restantes (recupera em descanso longo)"
  */
-export function getClassResources(classId: string, level: number): ClassResource[] {
-  const specs = SPECS[classId]
-  if (!specs) return []
-  const result: ClassResource[] = []
-  for (const spec of specs) {
-    const raw = getClassResourceValue(classId, spec.field, level)
-    if (raw === undefined || raw === 0) continue
-    result.push({
-      key: spec.field,
-      label: spec.label,
-      value: spec.format ? spec.format(raw) : String(raw),
-    })
+export function formatResourceLine(r: SheetResource): string {
+  const d = describeResource(r)
+  const head = d.die ? `${d.name} ${d.die}` : d.name
+  let body = [d.amount, d.quantity].filter(Boolean).join(' · ')
+  if (d.track?.kind === 'circles') body += ` ${formatTrackCircles(d.track.count)}`
+  if (d.track?.kind === 'remaining') body += ', ___ restantes'
+  const tail = [d.recharge, ...d.notes].filter(Boolean).join('; ')
+  return `${head}${body ? ` — ${body}` : ''}${tail ? ` (${tail})` : ''}`
+}
+
+/**
+ * Agrupa os recursos pela classe que alimentou a conta, na ordem em que aparecem — na multiclasse a
+ * ficha e a Revisão mostram um bloco por classe.
+ */
+export function groupResourcesByClass(resources: SheetResource[]): { classId: string; resources: SheetResource[] }[] {
+  const groups: { classId: string; resources: SheetResource[] }[] = []
+  for (const r of resources) {
+    const g = groups.find(x => x.classId === r.classId)
+    if (g) g.resources.push(r)
+    else groups.push({ classId: r.classId, resources: [r] })
   }
-  return result
+  return groups
 }

@@ -26,18 +26,18 @@ import {
   getEquippedArmor, getWeaponById, formatInventoryItem, describeResolvedOption,
   getStartingMoney, describeStartingMoneySource, formatCoins,
 } from '../utils/equipmentUtils'
-import { getClassResources } from '../utils/classResourceUtils'
+import { formatResourceLine, groupResourcesByClass } from '../utils/classResourceUtils'
 import { getProgressionSlotsUpToLevel } from '../utils/progressionChoiceUtils'
 import { getProgressionOptions } from '../utils/progressionOptions'
 import {
   getSpell, getSpellSaveDC, formatSpellAttackBonus, getCombinedSpellSlots, getPactSlots,
-  getMaxPreparedSpells,
+  getMaxPreparedSpells, describeCastingAids,
 } from '../utils/spellUtils'
 import { RuleText } from './common/RuleText'
 import { getWeaponAttack } from '../utils/weaponFormat'
 import {
   getTotalHp, getInitiativeBonusTotal, getSpeedBonusTotal,
-  getConditionalAcBonuses, getCheckProficiencyBonus,
+  getConditionalAcBonuses, getCheckProficiencyBonus, getClassResources,
 } from '../utils/sheetEffects'
 import type { CharacterDraft } from '../types/character'
 import type { Weapon } from '../types/equipment'
@@ -218,9 +218,7 @@ export function PrintableSheet() {
   // Features por classe (multiclasse): cada classe no nível que tem nela, com os Incrementos.
   const featureBlocks = entries.map(e => ({ e, ec: getClass(e.classId), features: getSheetClassFeatures(e) }))
   const feats = getCharacterFeats(draft)
-  const resourceBlocks = entries
-    .map(e => ({ e, resources: getClassResources(e.classId, e.level) }))
-    .filter(b => b.resources.length > 0)
+  const resourceBlocks = groupResourcesByClass(getClassResources(draft, finalScores))
   const inventory = gatherInventory(draft)
   const money = getStartingMoney(draft.equipment, bg?.equipment.goldPo ?? 0)
   const moneySource = describeStartingMoneySource(money)
@@ -438,13 +436,20 @@ export function PrintableSheet() {
             Ataque Extra: você faz {attacksPerAction} ataques ao usar a ação de Atacar.
           </p>
         )}
-        {casters.map(({ e, ec }) => (
-          <p key={e.classId} className="text-xs text-gray-700">
-            {isMc && <strong>{ec.name} — </strong>}Magia · CD: <strong>{getSpellSaveDC(ec.spellcasting!, finalScores, level)}</strong> ·
-            {' '}Ataque: <strong>{formatSpellAttackBonus(ec.spellcasting!, finalScores, level)}</strong> ·
-            {' '}Atributo: {ABILITY_LABELS[ec.spellcasting!.ability].short}
-          </p>
-        ))}
+        {casters.map(({ e, ec }) => {
+          const aids = describeCastingAids(ec.spellcasting!)
+          return (
+            <div key={e.classId}>
+              <p className="text-xs text-gray-700">
+                {isMc && <strong>{ec.name} — </strong>}Magia · CD: <strong>{getSpellSaveDC(ec.spellcasting!, finalScores, level)}</strong> ·
+                {' '}Ataque: <strong>{formatSpellAttackBonus(ec.spellcasting!, finalScores, level)}</strong> ·
+                {' '}Atributo: {ABILITY_LABELS[ec.spellcasting!.ability].short}
+              </p>
+              {aids.focus && <p className="text-[10px] text-gray-600">{aids.focus}</p>}
+              {aids.ritual && <p className="text-[10px] text-gray-600">{aids.ritual}</p>}
+            </div>
+          )
+        })}
       </Box>
 
       {/* Magias — pool combinado + Pacto; listas por classe conjuradora */}
@@ -493,17 +498,14 @@ export function PrintableSheet() {
       {/* Recursos de classe (por classe) */}
       {resourceBlocks.length > 0 && (
         <Box title="Recursos de Classe" className="mb-4">
-          {resourceBlocks.map(({ e, resources }) => (
-            <p key={e.classId} className="text-xs mb-0.5">
-              {isMc && <span className="font-bold text-gray-700">{getClass(e.classId)?.name}: </span>}
-              {resources.map(r => {
-                // Recursos que são um número de usos (Fúrias, Ki...) ganham círculos pra marcar;
-                // os que são dado (Ataque Furtivo 2d6, Artes Marciais d6) ficam só com o valor.
-                const isPool = /^\d+$/.test(String(r.value))
-                const circles = isPool ? trackCircles(Number(r.value)) : ''
-                return `${r.label}: ${r.value}${circles ? ` ${circles}` : ''}`
-              }).join(' · ')}
-            </p>
+          {/* Um recurso por linha: dado, usos com círculos (ou "___ restantes") e quando voltam. */}
+          {resourceBlocks.map(({ classId, resources }) => (
+            <div key={classId} className="mb-0.5">
+              {isMc && <p className="text-xs font-bold text-gray-700">{getClass(classId)?.name}</p>}
+              {resources.map(r => (
+                <p key={r.id} className="text-xs">{formatResourceLine(r)}</p>
+              ))}
+            </div>
           ))}
         </Box>
       )}

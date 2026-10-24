@@ -1,4 +1,4 @@
-import type { CharacterDraft, FeatSelections } from '../types/character'
+import type { CharacterDraft, ClassEntry, FeatSelections } from '../types/character'
 import type { Feat } from '../types/feat'
 import type { ArmorProficiency, LevelFeature } from '../types/class'
 import type { AbilityScore } from '../types/race'
@@ -6,6 +6,7 @@ import type { ConditionalAcBonus } from '../types/effects'
 import { getFeat } from './featUtils'
 import { getClass, getSubclass, getClassFeaturesUpToLevel } from './classUtils'
 import { getProficiencyBonus } from './abilityScoreUtils'
+import { evaluateResource, type FinalScores, type SheetResource } from './classResourceUtils'
 import {
   allClassEntries, getAllAsiChoices, getTotalHpAverage, getTotalHpRolled,
 } from './multiclassUtils'
@@ -49,11 +50,21 @@ export function getOwnedFeats(draft: CharacterDraft): Feat[] {
  * Guerreiro 5 / Bardo 1 não tem a Versatilidade do bardo 2.
  */
 export function getOwnedClassFeatures(draft: CharacterDraft): LevelFeature[] {
+  return getOwnedClassFeaturesByEntry(draft).flatMap(b => b.features)
+}
+
+/**
+ * O mesmo que `getOwnedClassFeatures`, agrupado por classe — para o efeito que depende do nível
+ * NA classe dona da feature (os recursos: Chi = nível de monge, não de personagem).
+ */
+export function getOwnedClassFeaturesByEntry(
+  draft: CharacterDraft,
+): { entry: ClassEntry; features: LevelFeature[] }[] {
   return allClassEntries(draft).flatMap(entry => {
     const cls = getClass(entry.classId)
     if (!cls) return []
     const sub = entry.classChoices.subclass ? getSubclass(cls, entry.classChoices.subclass) : null
-    return getClassFeaturesUpToLevel(cls, sub ?? null, entry.level)
+    return [{ entry, features: getClassFeaturesUpToLevel(cls, sub ?? null, entry.level) }]
   })
 }
 
@@ -140,6 +151,45 @@ export function getTotalHp(draft: CharacterDraft, conModifier: number): number {
     ? getTotalHpRolled(draft, conModifier)
     : getTotalHpAverage(draft, conModifier)
   return base + getFeatHpBonus(draft, draft.level ?? 1)
+}
+
+// ── Recursos de classe ─────────────────────────────────────────────────────────
+
+/** Mais usos ganha; ilimitado ganha de qualquer número. */
+function usesRank(r: SheetResource): number {
+  if (r.uses === 'unlimited') return Infinity
+  return r.uses ?? -Infinity
+}
+
+/**
+ * Recursos de classe e subclasse do personagem — usos, poços e dados declarados em
+ * `effects.resources` de cada feature —, cada um calculado no nível que o personagem tem NA
+ * classe dona da feature e com os atributos finais (a Inspiração de Bardo depende do Carisma).
+ *
+ * Recebe os atributos prontos, como `getSkillChecks`: quem os calcula (`asiUtils`) já importa
+ * este módulo.
+ *
+ * O mesmo `id` vindo de duas classes vira um recurso só, com os usos da que dá mais: clérigo 6 /
+ * paladino 4 tem Canalizar Divindade 2 vezes, não 3 (p. 166).
+ */
+export function getClassResources(draft: CharacterDraft, finalScores: FinalScores): SheetResource[] {
+  const out: SheetResource[] = []
+  for (const { entry, features } of getOwnedClassFeaturesByEntry(draft)) {
+    for (const feature of features) {
+      for (const effect of feature.effects?.resources ?? []) {
+        const resource = evaluateResource(effect, entry.classId, entry.level, finalScores)
+        const i = out.findIndex(r => r.id === resource.id)
+        if (i < 0) {
+          out.push(resource)
+          continue
+        }
+        if (out[i].classId === resource.classId) continue
+        const [keep, other] = usesRank(resource) > usesRank(out[i]) ? [resource, out[i]] : [out[i], resource]
+        out[i] = { ...keep, sharedWith: [...new Set([...keep.sharedWith, other.classId, ...other.sharedWith])] }
+      }
+    }
+  }
+  return out
 }
 
 // ── Valores passivos ───────────────────────────────────────────────────────────

@@ -11,7 +11,7 @@ import {
 import {
   allClassEntries, formatClassLevelLabel,
 } from '../../utils/multiclassUtils'
-import { getClassResources } from '../../utils/classResourceUtils'
+import { describeResource, groupResourcesByClass } from '../../utils/classResourceUtils'
 import {
   getBackground, BACKGROUND_PRESENTATION, getToolName, SKILLS, resolveBackgroundItems,
 } from '../../utils/backgroundUtils'
@@ -32,7 +32,7 @@ import {
 import { getProgressionSlotsUpToLevel } from '../../utils/progressionChoiceUtils'
 import {
   getTotalHp, getInitiativeBonusTotal, getSpeedBonusTotal,
-  getConditionalAcBonuses, getCheckProficiencyBonus,
+  getConditionalAcBonuses, getCheckProficiencyBonus, getClassResources,
 } from '../../utils/sheetEffects'
 import { getProgressionOptions } from '../../utils/progressionOptions'
 import {
@@ -42,6 +42,7 @@ import {
   getCombinedSpellSlots,
   getPactSlots,
   SCHOOL_EMOJI,
+  describeCastingAids,
 } from '../../utils/spellUtils'
 import { exportCharacter } from '../../utils/storage'
 import { getMissingSteps, isStepComplete } from '../../utils/draftValidation'
@@ -770,25 +771,32 @@ export function ReviewStep() {
 
       {/* Recursos de Classe (por classe) */}
       {cls && (() => {
-        const blocks = entries
-          .map(e => ({ e, resources: getClassResources(e.classId, e.level) }))
-          .filter(b => b.resources.length > 0)
+        const blocks = groupResourcesByClass(getClassResources(draft, finalScores))
         if (blocks.length === 0) return null
         return (
           <Section title="Recursos de Classe">
             <div className="space-y-3">
-              {blocks.map(({ e, resources }) => (
-                <div key={e.classId}>
+              {blocks.map(({ classId, resources }) => (
+                <div key={classId}>
                   {isMc && (
-                    <p className="text-xs font-fantasy mb-1.5" style={{ color: accent }}>{getClass(e.classId)?.name}</p>
+                    <p className="text-xs font-fantasy mb-1.5" style={{ color: accent }}>{getClass(classId)?.name}</p>
                   )}
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {resources.map(r => (
-                      <div key={r.key} className="rounded-lg border border-parchment-800/60 bg-parchment-950/60 p-2.5 text-center">
-                        <p className="text-base font-bold font-fantasy leading-none" style={{ color: accent }}>{r.value}</p>
-                        <p className="text-xs text-parchment-600 font-fantasy mt-1 leading-tight">{r.label}</p>
-                      </div>
-                    ))}
+                    {resources.map(r => {
+                      // Mesmo texto da ficha imprimível (describeResource): dado, usos e recarga.
+                      const d = describeResource(r)
+                      const headline = [d.die, d.amount, d.quantity].filter(Boolean).join(' · ')
+                      return (
+                        <div key={r.id} className="rounded-lg border border-parchment-800/60 bg-parchment-950/60 p-2.5 text-center">
+                          <p className="text-base font-bold font-fantasy leading-none" style={{ color: accent }}>{headline}</p>
+                          <p className="text-xs text-parchment-600 font-fantasy mt-1 leading-tight">{d.name}</p>
+                          {d.recharge && <p className="text-[11px] text-parchment-700 mt-1 leading-tight">{d.recharge}</p>}
+                          {d.notes.map(n => (
+                            <p key={n} className="text-[11px] text-parchment-700 italic mt-0.5 leading-tight">{n}</p>
+                          ))}
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
               ))}
@@ -836,6 +844,7 @@ export function ReviewStep() {
                 const sc_ = ec.spellcasting!
                 const dc = getSpellSaveDC(sc_, finalScores, level)
                 const attackBonus = formatSpellAttackBonus(sc_, finalScores, level)
+                const aids = describeCastingAids(sc_)
                 const cantrips = e.spellChoices.cantrips.map(id => getSpell(id)).filter(Boolean)
                 const spells = e.spellChoices.spells.map(id => getSpell(id)).filter(Boolean)
                 return (
@@ -849,6 +858,12 @@ export function ReviewStep() {
                       <SpellStat label="CD de Magia" value={String(dc)} accent={accent} term="cd-de-magia" />
                       <SpellStat label="Bônus de Ataque" value={attackBonus} accent={accent} term="bonus-ataque-magia" />
                     </div>
+                    {(aids.focus || aids.ritual) && (
+                      <div className="mb-3 space-y-0.5">
+                        {aids.focus && <p className="text-xs text-parchment-500">{aids.focus}</p>}
+                        {aids.ritual && <p className="text-xs text-parchment-500">{aids.ritual}</p>}
+                      </div>
+                    )}
                     {cantrips.length > 0 && (
                       <div className="mb-3">
                         <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">Truques ({cantrips.length})</p>

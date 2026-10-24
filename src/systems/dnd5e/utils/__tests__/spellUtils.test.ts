@@ -11,7 +11,9 @@ import {
   getSpellAttackBonus,
   getMaxPreparedSpells,
   isSpellStepComplete,
+  describeCastingAids,
 } from '../spellUtils'
+import { getClass } from '../classUtils'
 import type { GameClass, ClassSpellcasting } from '../../types/class'
 import type { SpellChoices } from '../../types/spell'
 
@@ -218,4 +220,41 @@ describe('isSpellStepComplete', () => {
       cantrips: ['c1', 'c2'],
       spells: ['s1', 's2', 's3'],
     }, 1)).toBe(false))
+})
+
+// ── Foco e rituais (p. 53, 64, 72, 78, 96, 110; regras gerais nas p. 202 e 204) ───────────
+
+describe('describeCastingAids', () => {
+  const sc = (id: string) => getClass(id)!.spellcasting!
+
+  it('bardo: instrumento musical e rituais das magias que conhece', () => {
+    const aids = describeCastingAids(sc('bard'))
+    expect(aids.focus).toBe('Foco de conjuração: instrumento musical — substitui componentes materiais sem custo indicado.')
+    expect(aids.ritual).toBe('Rituais: conjura como ritual as magias com o descritor ritual que você conhece (+10 minutos, sem gastar espaço).')
+  })
+
+  it('clérigo e druida: rituais das magias preparadas, foco separado do ritual', () => {
+    expect(describeCastingAids(sc('cleric')).focus).toContain('símbolo sagrado')
+    expect(describeCastingAids(sc('cleric')).ritual).toContain('que você tem preparadas')
+    expect(describeCastingAids(sc('druid')).focus).toContain('foco druídico')
+    expect(describeCastingAids(sc('druid')).ritual).toContain('que você tem preparadas')
+  })
+
+  it('mago: qualquer magia de ritual do grimório, mesmo sem prepará-la', () => {
+    expect(describeCastingAids(sc('wizard')).focus).toContain('foco arcano')
+    expect(describeCastingAids(sc('wizard')).ritual).toContain('que esteja no grimório, mesmo sem prepará-la')
+  })
+
+  it('feiticeiro, bruxo e paladino têm foco mas não conjuram rituais', () => {
+    for (const id of ['sorcerer', 'warlock']) {
+      expect(describeCastingAids(sc(id))).toMatchObject({ ritual: null })
+      expect(describeCastingAids(sc(id)).focus).toContain('foco arcano')
+    }
+    expect(describeCastingAids(sc('paladin'))).toMatchObject({ ritual: null })
+    expect(describeCastingAids(sc('paladin')).focus).toContain('símbolo sagrado')
+  })
+
+  it('patrulheiro do PHB 2014 não tem foco nem rituais', () => {
+    expect(describeCastingAids(sc('ranger'))).toEqual({ focus: null, ritual: null })
+  })
 })

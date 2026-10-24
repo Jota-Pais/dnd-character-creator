@@ -2,11 +2,13 @@ import type { CharacterDraft, ClassEntry, FeatSelections } from '../types/charac
 import type { Feat } from '../types/feat'
 import type { ArmorProficiency, LevelFeature } from '../types/class'
 import type { AbilityScore, RacialTrait } from '../types/race'
-import type { ConditionalAcBonus, ResourceEffect } from '../types/effects'
+import type { ConditionalAcBonus, EquipmentRequirement, ResourceEffect } from '../types/effects'
 import { getFeat } from './featUtils'
 import { getClass, getSubclass, getClassFeaturesUpToLevel } from './classUtils'
-import { getRace, getSubrace, getEffectiveTraits } from './raceUtils'
-import { getProficiencyBonus, calculateModifier, ALL_ABILITY_SCORES } from './abilityScoreUtils'
+import { getRace, getSubrace, getEffectiveTraits, getEffectiveSpeed } from './raceUtils'
+import {
+  getProficiencyBonus, calculateModifier, formatMeters, ALL_ABILITY_SCORES,
+} from './abilityScoreUtils'
 import { getEquippedArmor } from './equipmentUtils'
 import {
   calculateArmorClass, type ArmorClassResult, type UnarmoredAcOption,
@@ -147,13 +149,90 @@ export function getInitiativeBonusTotal(draft: CharacterDraft): number {
 
 // ── Deslocamento ───────────────────────────────────────────────────────────────
 
-export function getSpeedBonuses(draft: CharacterDraft): SheetEffect<number>[] {
-  return collect(draft, f => f.effects?.speedBonus)
+/** A armadura e o escudo equipados — o mesmo critério para a CA e para o deslocamento. */
+function getDraftEquippedArmor(draft: CharacterDraft): ReturnType<typeof getEquippedArmor> {
+  const cls = draft.class ? getClass(draft.class) : undefined
+  return getEquippedArmor(draft.equipment, cls?.startingEquipment)
 }
 
-/** Bônus de deslocamento em PÉS, a unidade da raça (Mobilidade +10 pés). */
+/**
+ * Um bônus de deslocamento, em PÉS. Os de talento (Mobilidade) são incondicionais: sem
+ * `condition`, sempre ativos. Os de equipamento trazem a condição e se ela está cumprida agora;
+ * quando não está, `blockedBy` diz o que a impede ("Placas", "escudo").
+ */
+export type SheetSpeedBonus = SheetEffect<number> & {
+  active: boolean
+  condition?: string
+  blockedBy?: string
+}
+
+/** O que, no equipamento atual, impede a condição — `undefined` quando ela está cumprida. */
+function equipmentBlocker(
+  requires: EquipmentRequirement,
+  { bodyArmor, hasShield }: ReturnType<typeof getEquippedArmor>,
+): string | undefined {
+  if (requires === 'noHeavyArmor') {
+    return bodyArmor?.category === 'heavy' ? bodyArmor.name : undefined
+  }
+  const worn = [bodyArmor?.name, hasShield ? 'escudo' : undefined].filter(Boolean)
+  return worn.length > 0 ? worn.join(' e ') : undefined
+}
+
+/**
+ * Todos os bônus de deslocamento: os de talento e os de feature de classe com condição de
+ * equipamento (Movimento Rápido, Movimento sem Armadura), estes no nível NA classe dona — um
+ * guerreiro 5 / monge 2 ganha os +10 pés do monge 2. A condição é avaliada com o equipamento
+ * da ficha, do mesmo jeito que a CA lê a armadura vestida.
+ */
+export function getSpeedBonuses(draft: CharacterDraft): SheetSpeedBonus[] {
+  const out: SheetSpeedBonus[] = collect(draft, f => f.effects?.speedBonus)
+    .map(e => ({ ...e, active: true }))
+  const equipped = getDraftEquippedArmor(draft)
+  for (const { entry, features } of getOwnedClassFeaturesByEntry(draft)) {
+    for (const feature of features) {
+      const bonus = feature.effects?.equipmentSpeedBonus
+      const value = bonus ? stepValue(bonus.byLevel, entry.level) : undefined
+      if (!bonus || !value) continue
+      const blockedBy = equipmentBlocker(bonus.requires, equipped)
+      out.push({
+        source: feature.name, value, condition: bonus.condition, active: !blockedBy,
+        ...(blockedBy ? { blockedBy } : {}),
+      })
+    }
+  }
+  return out
+}
+
+/** Bônus de deslocamento em PÉS, a unidade da raça: só os ativos (Mobilidade +10 pés). */
 export function getSpeedBonusTotal(draft: CharacterDraft): number {
-  return getSpeedBonuses(draft).reduce((sum, e) => sum + e.value, 0)
+  return getSpeedBonuses(draft).reduce((sum, e) => (e.active ? sum + e.value : sum), 0)
+}
+
+/**
+ * O Deslocamento da ficha, em pés — a Revisão e o PDF chamam só isto: o da raça (sub-raça já
+ * aplicada) mais os bônus ativos. `null` sem raça escolhida.
+ */
+export function getSheetSpeed(draft: CharacterDraft): number | null {
+  const race = draft.race ? getRace(draft.race) : undefined
+  if (!race) return null
+  const subrace = draft.subrace ? getSubrace(race, draft.subrace) ?? null : null
+  return getEffectiveSpeed(race, subrace) + getSpeedBonusTotal(draft)
+}
+
+/**
+ * As linhas dos bônus de deslocamento com condição, o mesmo texto na Revisão e no PDF: o que já
+ * está somado e o que ficou de fora, com o motivo — pra valer na mesa quando o jogador troca de
+ * equipamento. Os incondicionais (Mobilidade) não ganham linha: já estão no número, sem ressalva.
+ */
+export function describeSpeedBonuses(draft: CharacterDraft): string[] {
+  return getSpeedBonuses(draft)
+    .filter(b => b.condition)
+    .map(b => {
+      const text = `+${formatMeters(b.value)} ${b.condition} (${b.source})`
+      return b.active
+        ? `Deslocamento inclui ${text}.`
+        : `Não somado: ${text} — você está de ${b.blockedBy}.`
+    })
 }
 
 // ── Pontos de vida ─────────────────────────────────────────────────────────────
@@ -336,8 +415,7 @@ export function getUnarmoredAcOptions(draft: CharacterDraft): UnarmoredAcOption[
  * fórmulas sem armadura das features e o Estilo de Luta Defesa de qualquer classe.
  */
 export function getSheetArmorClass(draft: CharacterDraft, finalScores: FinalScores): ArmorClassResult {
-  const cls = draft.class ? getClass(draft.class) : undefined
-  const { bodyArmor, hasShield } = getEquippedArmor(draft.equipment, cls?.startingEquipment)
+  const { bodyArmor, hasShield } = getDraftEquippedArmor(draft)
   const mods = Object.fromEntries(
     ALL_ABILITY_SCORES.map(ab => [ab, calculateModifier(finalScores[ab])]),
   ) as Record<AbilityScore, number>

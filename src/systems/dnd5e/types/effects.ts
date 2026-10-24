@@ -32,6 +32,31 @@ export type ConditionalAttacks = {
 }
 
 /**
+ * Condição de equipamento que a ficha confere sozinha, pelo que está equipado — o mesmo critério
+ * da CA (`getEquippedArmor`):
+ * - `noHeavyArmor`: sem armadura pesada (Movimento Rápido, p. 49);
+ * - `noArmorNoShield`: sem armadura nenhuma e sem escudo (Movimento sem Armadura, p. 104).
+ */
+export type EquipmentRequirement = 'noHeavyArmor' | 'noArmorNoShield'
+
+/**
+ * Bônus de deslocamento que vale só com o equipamento certo. Diferente da CA condicional, a ficha
+ * SABE o que está equipado: entra no número quando a condição é cumprida, e a condição vira linha
+ * própria — somada ou não — pra quem troca de equipamento na mesa.
+ */
+export type EquipmentSpeedBonus = {
+  /**
+   * Bônus em PÉS (a unidade da raça), em degraus pelo nível NA classe dona da característica: o
+   * monge ganha +10 pés no 2º, +15 no 6º, +20 no 10º, +25 no 14º e +30 no 18º (tabela O Monge,
+   * p. 103). Antes do primeiro degrau, nada.
+   */
+  byLevel: LevelStep[]
+  requires: EquipmentRequirement
+  /** Condição do livro, em português, exibida junto do número. */
+  condition: string
+}
+
+/**
  * Fórmula alternativa de CA para quem não veste armadura: `base` + os modificadores de `abilities`.
  * Não se soma às outras — "se você tem vários recursos que o concedem diferentes formas de
  * calcular a CA, você escolhe qual usar" (p. 14); a ficha mostra a maior.
@@ -78,6 +103,12 @@ export type FeatureEffects = {
   initiativeBonus?: number
   /** Bônus de deslocamento, em PÉS, a unidade em que a raça guarda (Mobilidade: +10 pés = +3 m). */
   speedBonus?: number
+  /**
+   * Bônus de deslocamento que depende do equipamento (Movimento Rápido, Movimento sem Armadura).
+   * Só lido em features de classe e subclasse, no nível NA classe dona. Características diferentes
+   * se somam: o livro só barra o acúmulo da Defesa sem Armadura e do Ataque Extra (p. 166).
+   */
+  equipmentSpeedBonus?: EquipmentSpeedBonus
   /**
    * PV extras por nível de personagem (Robusto: +2; Tenacidade Anã: +1). O livro soma 2 × nível
    * ao adquirir e mais 2 a cada nível seguinte — o efeito acumulado é sempre 2 × nível, então
@@ -178,11 +209,12 @@ export type ResourceRecharge = 'short' | 'long' | 'day'
 export type ResourceUnit = 'uses' | 'points' | 'hp' | 'dice'
 
 /**
- * Grandeza que NÃO se gasta, mas a ficha precisa mostrar: bônus de dano (Fúria), deslocamento
- * extra em pés (Movimento sem Armadura), PV curados por uso (Integridade Corporal), níveis de
- * espaço recuperados (Recuperação Arcana), CD do teste de resistência (Arma de Sopro).
+ * Grandeza que NÃO se gasta, mas a ficha precisa mostrar: bônus de dano (Fúria), PV curados por
+ * uso (Integridade Corporal), níveis de espaço recuperados (Recuperação Arcana), CD do teste de
+ * resistência (Arma de Sopro). Deslocamento extra não é recurso: entra no número do Deslocamento
+ * (`speedBonus`, `equipmentSpeedBonus`).
  */
-export type ResourceAmountUnit = 'bonus' | 'feet' | 'hp' | 'slotLevels' | 'saveDc'
+export type ResourceAmountUnit = 'bonus' | 'hp' | 'slotLevels' | 'saveDc'
 
 export type ResourceEffect = {
   /**

@@ -6,6 +6,9 @@ import {
   hasHalfProficiencyOnChecks,
   getCheckProficiencyBonus,
   getSpeedBonusTotal,
+  getSpeedBonuses,
+  getSheetSpeed,
+  describeSpeedBonuses,
   getFeatHpBonus,
   getRacialHpBonus,
   getHpPerLevelBonus,
@@ -507,5 +510,115 @@ describe('integridade dos dados: Ataque Extra', () => {
     const extra = all.filter(f => f.name === 'Ataque Extra')
     expect(extra.length).toBeGreaterThanOrEqual(6)
     for (const f of extra) expect(f.effects?.attacksPerAction).toBeDefined()
+  })
+})
+
+// ── Deslocamento: Movimento Rápido e Movimento sem Armadura ───────────────────
+
+describe('bônus de deslocamento com condição de equipamento', () => {
+  const wearing = (...itemIds: string[]) => ({
+    equipment: {
+      ...structuredClone(EMPTY_DRAFT.equipment),
+      purchasedItems: itemIds.map(itemId => ({ itemId, quantity: 1, source: 'purchased' as const })),
+    },
+  })
+  const single = (classId: string, level: number, overrides: Partial<CharacterDraft> = {}) =>
+    draft({ level, class: classId, race: 'human', ...overrides })
+
+  // p. 49: +3 m a partir do 5º, "enquanto você não estiver vestindo uma armadura pesada".
+  describe('Movimento Rápido (bárbaro 5)', () => {
+    it('bárbaro 4 não tem; bárbaro 5 sem armadura ganha +10 pés', () => {
+      expect(getSpeedBonusTotal(single('barbarian', 4))).toBe(0)
+      expect(getSpeedBonusTotal(single('barbarian', 5))).toBe(10)
+      expect(getSheetSpeed(single('barbarian', 5))).toBe(40)
+    })
+
+    it('de gibão (média) e de escudo continua valendo', () => {
+      expect(getSpeedBonusTotal(single('barbarian', 5, wearing('hide', 'shield')))).toBe(10)
+    })
+
+    it('de placas fica de fora do número, com a linha dizendo por quê', () => {
+      const d = single('barbarian', 5, wearing('plate'))
+      expect(getSpeedBonusTotal(d)).toBe(0)
+      expect(getSheetSpeed(d)).toBe(30)
+      expect(getSpeedBonuses(d)).toEqual([{
+        source: 'Movimento Rápido', value: 10, condition: 'sem armadura pesada', active: false, blockedBy: 'Placas',
+      }])
+      expect(describeSpeedBonuses(d)).toEqual([
+        'Não somado: +3 m sem armadura pesada (Movimento Rápido) — você está de Placas.',
+      ])
+    })
+
+    it('ativo, a linha diz que já está somado', () => {
+      expect(describeSpeedBonuses(single('barbarian', 5))).toEqual([
+        'Deslocamento inclui +3 m sem armadura pesada (Movimento Rápido).',
+      ])
+    })
+  })
+
+  // p. 104 e tabela O Monge (p. 103): +3 / 4,5 / 6 / 7,5 / 9 m nos níveis 2 / 6 / 10 / 14 / 18.
+  describe('Movimento sem Armadura (monge 2)', () => {
+    it('segue a tabela do monge', () => {
+      expect([1, 2, 5, 6, 9, 10, 14, 17, 18, 20].map(l => getSpeedBonusTotal(single('monk', l))))
+        .toEqual([0, 10, 10, 15, 15, 20, 25, 25, 30, 30])
+    })
+
+    it('monge 2 humano sai com 12 m', () => {
+      expect(getSheetSpeed(single('monk', 2))).toBe(40)
+    })
+
+    it('de escudo ou de armadura leve não soma', () => {
+      const shield = single('monk', 6, wearing('shield'))
+      expect(getSpeedBonusTotal(shield)).toBe(0)
+      expect(describeSpeedBonuses(shield)).toEqual([
+        'Não somado: +4,5 m sem armadura nem escudo (Movimento sem Armadura) — você está de escudo.',
+      ])
+      const leather = single('monk', 6, wearing('leather', 'shield'))
+      expect(getSpeedBonusTotal(leather)).toBe(0)
+      expect(getSpeedBonuses(leather)[0].blockedBy).toBe('Couro e escudo')
+    })
+  })
+
+  describe('multiclasse', () => {
+    it('conta o nível no monge, não o de personagem: guerreiro 5 / monge 2 ganha +10', () => {
+      const d = single('fighter', 7, { multiclass: true, additionalClasses: [extraClass('monk', 2)] })
+      expect(getSpeedBonusTotal(d)).toBe(10)
+    })
+
+    it('monge 1 numa multiclasse ainda não tem', () => {
+      const d = single('fighter', 6, { multiclass: true, additionalClasses: [extraClass('monk', 1)] })
+      expect(getSpeedBonuses(d)).toEqual([])
+    })
+
+    it('bárbaro 5 / monge 2 sem armadura soma as duas (características diferentes)', () => {
+      const d = single('barbarian', 7, { multiclass: true, additionalClasses: [extraClass('monk', 2)] })
+      expect(getSpeedBonusTotal(d)).toBe(20)
+      expect(getSheetSpeed(d)).toBe(50)
+    })
+
+    it('bárbaro 5 / monge 2 de gibão fica só com o Movimento Rápido', () => {
+      const d = single('barbarian', 7, {
+        multiclass: true, additionalClasses: [extraClass('monk', 2)], ...wearing('hide'),
+      })
+      expect(getSpeedBonusTotal(d)).toBe(10)
+      expect(getSpeedBonuses(d).map(b => [b.source, b.active])).toEqual([
+        ['Movimento Rápido', true], ['Movimento sem Armadura', false],
+      ])
+    })
+  })
+
+  it('a Mobilidade continua somando junto, sem linha de condição', () => {
+    const d = single('monk', 2, { raceChoices: { feat: 'mobilidade' } })
+    expect(getSpeedBonusTotal(d)).toBe(20)
+    expect(getSheetSpeed(d)).toBe(50)
+    expect(describeSpeedBonuses(d)).toHaveLength(1)
+  })
+
+  it('sem raça, não há deslocamento', () => {
+    expect(getSheetSpeed(draft({ level: 2, class: 'monk' }))).toBeNull()
+  })
+
+  it('a raça e a sub-raça dão a base (elfo da floresta: 35 pés)', () => {
+    expect(getSheetSpeed(single('monk', 2, { race: 'elf', subrace: 'wood-elf' }))).toBe(45)
   })
 })

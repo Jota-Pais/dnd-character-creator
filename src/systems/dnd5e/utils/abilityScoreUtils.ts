@@ -80,13 +80,18 @@ export function formatBonus(value: number): string {
   return value >= 0 ? `+${value}` : `${value}`
 }
 
+/**
+ * Distância em pés (a unidade dos dados) escrita em metros, como o PHB em português: 5 pés = 1,5 m.
+ * Fonte única do texto em metros — deslocamento, visão no escuro, bônus de deslocamento.
+ */
+export function formatMeters(feet: number): string {
+  // Arredonda pra 1 casa antes de testar o inteiro: 40 × 0,3 dá 12.000000000000002.
+  const meters = Math.round(feet * 3) / 10
+  return Number.isInteger(meters) ? `${meters} m` : `${meters.toFixed(1).replace('.', ',')} m`
+}
+
 export function formatSpeed(feet: number): string {
-  const meters = feet * 0.3
-  const squares = feet / 5
-  const metersStr = Number.isInteger(meters)
-    ? `${meters} m`
-    : `${meters.toFixed(1).replace('.', ',')} m`
-  return `${metersStr} (${squares} quad.)`
+  return `${formatMeters(feet)} (${feet / 5} quad.)`
 }
 
 export function getPointBuyCost(score: number): number {

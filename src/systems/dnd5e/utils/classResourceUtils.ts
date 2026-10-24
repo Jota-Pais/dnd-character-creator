@@ -162,15 +162,9 @@ const RECHARGE_LABEL: Record<ResourceRecharge, string> = {
   day: 'uma vez por dia',
 }
 
-function formatFeet(ft: number): string {
-  const m = ft * 0.3
-  return Number.isInteger(m) ? `+${m} m` : `+${m.toFixed(1).replace('.', ',')} m`
-}
-
 function formatAmount(amount: NonNullable<SheetResource['amount']>): string {
   switch (amount.unit) {
     case 'bonus': return amount.value >= 0 ? `+${amount.value}` : `${amount.value}`
-    case 'feet': return formatFeet(amount.value)
     case 'hp': return `cura ${amount.value} PV`
     case 'slotLevels':
       return `até ${amount.value} ${amount.value === 1 ? 'nível' : 'níveis'} de espaço`

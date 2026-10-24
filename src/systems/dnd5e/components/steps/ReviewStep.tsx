@@ -1,6 +1,6 @@
 import { useCharacterStore } from '../../stores/characterStore'
 import {
-  getRace, getSubrace, getEffectiveSpeed,
+  getRace, getSubrace,
   getEffectiveDarkvision, RACE_PRESENTATION, getAvailableInnateSpells, getEffectiveTraitsWithChoices,
   describeInnateSpellUsage,
 } from '../../utils/raceUtils'
@@ -21,7 +21,7 @@ import {
 } from '../../utils/backgroundUtils'
 import {
   calculateModifier, formatModifier, ALL_ABILITY_SCORES, ABILITY_LABELS,
-  getProficiencyBonus, formatXpProgress,
+  getProficiencyBonus, formatXpProgress, formatMeters,
 } from '../../utils/abilityScoreUtils'
 import {
   formatInventoryItem, describeResolvedOption,
@@ -36,7 +36,7 @@ import {
 } from '../../utils/proficiencyUtils'
 import { getProgressionSlotsUpToLevel } from '../../utils/progressionChoiceUtils'
 import {
-  getTotalHp, getInitiativeBonusTotal, getSpeedBonusTotal,
+  getTotalHp, getInitiativeBonusTotal, getSheetSpeed, describeSpeedBonuses,
   getConditionalAcBonuses, getCheckProficiencyBonus, getSheetResources, getSheetArmorClass,
   describeAttacksPerAction,
 } from '../../utils/sheetEffects'
@@ -103,8 +103,10 @@ export function ReviewStep() {
   // inicial usa o dado máximo). Para classe única equivale ao cálculo anterior.
   const hp: number | null = cls ? getTotalHp(draft, conMod) : null
 
-  // Deslocamento e iniciativa já com os efeitos de talento somados (Mobilidade, Alerta).
-  const speed = race ? getEffectiveSpeed(race, subrace ?? null) + getSpeedBonusTotal(draft) : null
+  // Deslocamento e iniciativa já com os efeitos somados (Mobilidade, Movimento sem Armadura com o
+  // equipamento atual, Alerta); as condições de equipamento viram linha, o mesmo texto do PDF.
+  const speed = getSheetSpeed(draft)
+  const speedLines = describeSpeedBonuses(draft)
   const initiative = dexMod + getInitiativeBonusTotal(draft)
   const conditionalAc = getConditionalAcBonuses(draft)
   // Ataque Extra (e a Lâmina Sedenta, com a condição): o mesmo texto da ficha imprimível.
@@ -142,19 +144,8 @@ export function ReviewStep() {
     bg ? `${BACKGROUND_PRESENTATION[bg.id]?.emoji ?? ''} ${bg.name}` : null,
   ].filter(Boolean).join(' · ')
 
-  const speedStr = speed !== null
-    ? (() => {
-        const m = speed * 0.3
-        return Number.isInteger(m) ? `${m} m` : `${m.toFixed(1).replace('.', ',')} m`
-      })()
-    : '—'
-
-  const darkvisionStr = darkvision > 0
-    ? (() => {
-        const m = darkvision * 0.3
-        return Number.isInteger(m) ? `${m} m` : `${m.toFixed(1).replace('.', ',')} m`
-      })()
-    : null
+  const speedStr = speed !== null ? formatMeters(speed) : '—'
+  const darkvisionStr = darkvision > 0 ? formatMeters(darkvision) : null
 
   function handleExport() {
     exportCharacter(draft)
@@ -243,6 +234,9 @@ export function ReviewStep() {
             * Armadura impõe desvantagem em Furtividade
           </p>
         )}
+        {speedLines.map(line => (
+          <p key={line} className="text-xs text-parchment-700 mt-1 text-center">{line}</p>
+        ))}
         {attackLines.map(line => (
           <p key={line} className="text-xs text-parchment-700 mt-1 text-center">{line}</p>
         ))}

@@ -1,7 +1,7 @@
 import { useCharacterStore } from '../stores/characterStore'
 import type { AbilityScore } from '../types/race'
 import {
-  getRace, getSubrace, getEffectiveSpeed, getEffectiveDarkvision, SKILLS,
+  getRace, getSubrace, getEffectiveDarkvision, SKILLS,
   getAvailableInnateSpells, getEffectiveTraitsWithChoices, TOOL_NAMES, describeInnateSpellUsage,
 } from '../utils/raceUtils'
 import {
@@ -14,7 +14,7 @@ import {
   getBackground, getToolName, resolveBackgroundItems, getBackgroundDetailPrompt, ROLEPLAY_FIELDS,
 } from '../utils/backgroundUtils'
 import {
-  calculateModifier, formatModifier, getProficiencyBonus, formatXpProgress,
+  calculateModifier, formatModifier, getProficiencyBonus, formatXpProgress, formatMeters,
   ALL_ABILITY_SCORES, ABILITY_LABELS,
 } from '../utils/abilityScoreUtils'
 import { getFinalAbilityScores, getCharacterFeats, getSheetClassFeatures } from '../utils/asiUtils'
@@ -41,18 +41,13 @@ import {
 import { RuleText } from './common/RuleText'
 import { getWeaponAttack } from '../utils/weaponFormat'
 import {
-  getTotalHp, getInitiativeBonusTotal, getSpeedBonusTotal,
+  getTotalHp, getInitiativeBonusTotal, getSheetSpeed, describeSpeedBonuses,
   getConditionalAcBonuses, getCheckProficiencyBonus, getSheetResources, getSheetArmorClass,
   getAttacksPerAction, describeAttacksPerAction,
 } from '../utils/sheetEffects'
 import type { CharacterDraft } from '../types/character'
 import type { Weapon } from '../types/equipment'
 import type { ClassSpellcasting } from '../types/class'
-
-function metersLabel(feet: number): string {
-  const m = feet * 0.3
-  return Number.isInteger(m) ? `${m} m` : `${m.toFixed(1).replace('.', ',')} m`
-}
 
 /** Armas efetivamente equipadas (do equipamento inicial / compradas / antecedente), sem repetir. */
 function gatherEquippedWeapons(draft: CharacterDraft): Weapon[] {
@@ -180,7 +175,8 @@ export function PrintableSheet() {
   const ac = acResult.value
   const acBreakdown = formatArmorClassBreakdown(acResult)
   const hp: number | null = cls ? getTotalHp(draft, conMod) : null
-  const speed = race ? getEffectiveSpeed(race, subrace) + getSpeedBonusTotal(draft) : 0
+  const speed = getSheetSpeed(draft)
+  const speedLines = describeSpeedBonuses(draft)
   const initiative = dexMod + getInitiativeBonusTotal(draft)
   const conditionalAc = getConditionalAcBonuses(draft)
   const darkvision = race ? getEffectiveDarkvision(race, subrace) : 0
@@ -316,9 +312,9 @@ export function PrintableSheet() {
         <Stat label="Iniciativa" value={formatModifier(initiative)} />
         <Stat label="Pontos de Vida" value={hp !== null ? String(hp) : '—'} />
         <Stat label="Dados de Vida" value={cls ? getHitDicePool(draft).map(p => `${p.count}d${p.die}`).join(' + ') : '—'} />
-        <Stat label="Deslocamento" value={metersLabel(speed)} />
+        <Stat label="Deslocamento" value={speed !== null ? formatMeters(speed) : '—'} />
         <Stat label="Percepção Passiva" value={String(passivePerception)} />
-        <Stat label="Visão no Escuro" value={darkvision > 0 ? metersLabel(darkvision) : '—'} />
+        <Stat label="Visão no Escuro" value={darkvision > 0 ? formatMeters(darkvision) : '—'} />
         <Stat label="Nível" value={String(level)} />
       </Grid>
 
@@ -328,6 +324,11 @@ export function PrintableSheet() {
           <span className="text-gray-600"> · armadura impõe desvantagem em Furtividade</span>
         )}
       </p>
+
+      {/* Bônus de deslocamento com condição de equipamento: somado ou não, com o motivo. */}
+      {speedLines.length > 0 && (
+        <p className="text-xs mb-1">{speedLines.join(' · ')}</p>
+      )}
 
       {/* CA condicional: fora do número, com a condição, pra valer na mesa sem inflar a ficha. */}
       {conditionalAc.length > 0 && (

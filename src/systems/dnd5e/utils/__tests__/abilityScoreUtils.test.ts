@@ -4,6 +4,7 @@ import {
   formatModifier,
   formatBonus,
   formatSpeed,
+  formatMeters,
   getPointBuyCost,
   getTotalPointsSpent,
   getRemainingPoints,
@@ -95,6 +96,7 @@ describe('formatSpeed', () => {
   it('25 pés → 7,5 m (5 quad.)', () => expect(formatSpeed(25)).toBe('7,5 m (5 quad.)'))
   it('35 pés → 10,5 m (7 quad.)', () => expect(formatSpeed(35)).toBe('10,5 m (7 quad.)'))
   it('60 pés → 18 m (12 quad.)', () => expect(formatSpeed(60)).toBe('18 m (12 quad.)'))
+  it('40 pés → 12 m (sem o 12,0 do ponto flutuante)', () => expect(formatSpeed(40)).toBe('12 m (8 quad.)'))
 })
 
 describe('getPointBuyCost', () => {
@@ -254,5 +256,18 @@ describe('clampCustomScore', () => {
     expect(clampCustomScore(1)).toBe(3)
     expect(clampCustomScore(13)).toBe(13)
     expect(clampCustomScore(12.6)).toBe(13)
+  })
+})
+
+describe('formatMeters', () => {
+  it('inteiro sem casa decimal', () => {
+    expect(formatMeters(30)).toBe('9 m')
+    expect(formatMeters(40)).toBe('12 m')
+    expect(formatMeters(60)).toBe('18 m')
+  })
+  it('meio metro com vírgula', () => {
+    expect(formatMeters(45)).toBe('13,5 m')
+    expect(formatMeters(25)).toBe('7,5 m')
+    expect(formatMeters(15)).toBe('4,5 m')
   })
 })

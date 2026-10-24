@@ -2,9 +2,11 @@ import type { CharacterDraft, ClassEntry, FeatSelections } from '../types/charac
 import type { Feat } from '../types/feat'
 import type { ArmorProficiency, LevelFeature } from '../types/class'
 import type { AbilityScore, RacialTrait } from '../types/race'
-import type { ConditionalAcBonus, EquipmentRequirement, ResourceEffect } from '../types/effects'
+import type {
+  ConditionalAcBonus, EquipmentRequirement, ResourceEffect, WeaponAttackEffect,
+} from '../types/effects'
 import { getFeat } from './featUtils'
-import { getClass, getSubclass, getClassFeaturesUpToLevel } from './classUtils'
+import { getClass, getSubclass, getClassFeaturesUpToLevel, FIGHTING_STYLES } from './classUtils'
 import { getRace, getSubrace, getEffectiveTraits, getEffectiveSpeed } from './raceUtils'
 import {
   getProficiencyBonus, calculateModifier, formatMeters, ALL_ABILITY_SCORES,
@@ -14,7 +16,7 @@ import {
   calculateArmorClass, type ArmorClassResult, type UnarmoredAcOption,
 } from './armorClassUtils'
 import {
-  evaluateResource, stepValue, type FinalScores, type ResourceSource, type SheetResource,
+  evaluateQuantity, evaluateResource, stepValue, type FinalScores, type ResourceSource, type SheetResource,
 } from './classResourceUtils'
 import { getProgressionSlotsUpToLevel } from './progressionChoiceUtils'
 import { getProgressionOptions, type ProgressionOption } from './progressionOptions'
@@ -424,7 +426,7 @@ export function getSheetArmorClass(draft: CharacterDraft, finalScores: FinalScor
     bodyArmor,
     hasShield,
     unarmoredAc: getUnarmoredAcOptions(draft),
-    hasDefenseFightingStyle: allClassEntries(draft).some(e => e.classChoices.fightingStyle === 'defense'),
+    hasDefenseFightingStyle: getOwnedFightingStyleIds(draft).includes('defense'),
   })
 }
 
@@ -526,6 +528,92 @@ export function describeAttacksPerAction(draft: CharacterDraft): string[] {
     lines.push(`${c.source}: você faz ${c.value} ataques ao usar a ação de Atacar, ${c.condition}.`)
   }
   return lines
+}
+
+// ── Linhas de ataque: Estilo de Luta, Artes Marciais, golpe desarmado ──────────
+
+/**
+ * Os Estilos de Luta que o personagem tem: o de cada classe da multiclasse que dá um (guerreiro,
+ * paladino, patrulheiro) e o Estilo de Luta Adicional do campeão 10, escolhido num slot de
+ * progressão. Sem repetir — o mesmo estilo não vale duas vezes.
+ */
+export function getOwnedFightingStyleIds(draft: CharacterDraft): string[] {
+  const ids = allClassEntries(draft).flatMap(entry => {
+    const fromClass = entry.classChoices.fightingStyle ? [entry.classChoices.fightingStyle] : []
+    const fromSlots = getProgressionSlotsUpToLevel(entry.classId, entry.classChoices.subclass, entry.level)
+      .filter(slot => slot.optionsListId === 'FIGHTING_STYLES')
+      .flatMap(slot => entry.classChoices.progressionChoices[slot.id] ?? [])
+    return [...fromClass, ...fromSlots]
+  })
+  return [...new Set(ids)].filter(id => FIGHTING_STYLES.some(s => s.id === id))
+}
+
+/**
+ * O que as características fazem nas linhas de ataque (`effects.weaponAttacks`): o Estilo de Luta
+ * escolhido, features de classe (Golpes de Chi) e talentos. Cada fonte entra uma vez só. Quem
+ * aplica numa arma é `getWeaponAttack` — o bônus incondicional no número, o resto como nota.
+ */
+export function getWeaponAttackEffects(draft: CharacterDraft): SheetEffect<WeaponAttackEffect>[] {
+  const out: SheetEffect<WeaponAttackEffect>[] = []
+  const seen = new Set<string>()
+  const add = (source: string, effects: WeaponAttackEffect[] | undefined) => {
+    if (!effects || seen.has(source)) return
+    seen.add(source)
+    for (const value of effects) out.push({ source, value })
+  }
+  for (const id of getOwnedFightingStyleIds(draft)) {
+    const style = FIGHTING_STYLES.find(s => s.id === id)
+    if (style) add(style.name, style.effects?.weaponAttacks)
+  }
+  for (const feature of getOwnedClassFeatures(draft)) add(feature.name, feature.effects?.weaponAttacks)
+  for (const feat of getOwnedFeats(draft)) add(feat.name, feat.effects?.weaponAttacks)
+  return out
+}
+
+/**
+ * Artes Marciais na ficha: o dado (lados) no nível de monge e se o equipamento deixa usá-la
+ * agora. Como o Movimento sem Armadura, a ficha confere a armadura e o escudo equipados; quando
+ * algo impede, `blockedBy` diz o quê. `null` para quem não tem.
+ */
+export type SheetMartialArts = {
+  source: string
+  die: number
+  condition: string
+  active: boolean
+  blockedBy?: string
+}
+
+export function getMartialArts(draft: CharacterDraft, finalScores: FinalScores): SheetMartialArts | null {
+  let best: SheetMartialArts | null = null
+  for (const { entry, features } of getOwnedClassFeaturesByEntry(draft)) {
+    for (const feature of features) {
+      const martialArts = feature.effects?.martialArts
+      if (!martialArts) continue
+      const resource = feature.effects?.resources?.find(r => r.id === martialArts.dieResource)
+      const die = resource?.die ? evaluateQuantity(resource.die.size, entry.level, finalScores) : 0
+      if (die <= 0 || (best && best.die >= die)) continue
+      const blockedBy = equipmentBlocker(martialArts.requires, getDraftEquippedArmor(draft))
+      best = {
+        source: feature.name, die, condition: martialArts.condition, active: !blockedBy,
+        ...(blockedBy ? { blockedBy } : {}),
+      }
+    }
+  }
+  return best
+}
+
+/**
+ * Dado de dano do golpe desarmado que uma característica dá no lugar do 1 fixo (Especialista em
+ * Briga: d4, p. 169). Vale o maior; `null` sem nenhum.
+ */
+export function getUnarmedDamageDie(draft: CharacterDraft): SheetEffect<number> | null {
+  let best: SheetEffect<number> | null = null
+  const consider = (source: string, die: number | undefined) => {
+    if (die && (!best || die > best.value)) best = { source, value: die }
+  }
+  for (const feat of getOwnedFeats(draft)) consider(feat.name, feat.effects?.unarmedDamageDie)
+  for (const feature of getOwnedClassFeatures(draft)) consider(feature.name, feature.effects?.unarmedDamageDie)
+  return best
 }
 
 // ── Proficiências concedidas ───────────────────────────────────────────────────

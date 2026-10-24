@@ -120,7 +120,8 @@
     "abilityIncrease": [
       "STR",
       "CON"
-    ]
+    ],
+    "effects": { "unarmedDamageDie": 4 }
   },
   {
     "id": "explorador-de-cavernas",

@@ -1,0 +1,137 @@
+import { describe, it, expect } from 'vitest'
+import { getEquippedWeapons, getSheetAttacks } from '../attackUtils'
+import {
+  getMartialArts, getOwnedFightingStyleIds, getSheetArmorClass, getUnarmedDamageDie,
+  getWeaponAttackEffects,
+} from '../sheetEffects'
+import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
+import type { ClassChoiceSelections } from '../../types/class'
+
+function draft(overrides: Partial<CharacterDraft>): CharacterDraft {
+  return { ...structuredClone(EMPTY_DRAFT), race: 'human', ...overrides }
+}
+
+const choices = (c: Partial<ClassChoiceSelections>): ClassChoiceSelections =>
+  ({ ...structuredClone(EMPTY_DRAFT.classChoices), ...c })
+
+function extraClass(classId: string, level: number, classChoices: Partial<ClassChoiceSelections> = {}) {
+  return {
+    classId, level, classChoices: choices(classChoices),
+    spellChoices: { cantrips: [], spells: [] }, asiChoices: [], hpRolls: [],
+  }
+}
+
+/** Itens comprados pelo método riqueza — armas e armadura que a ficha considera equipadas. */
+const carrying = (...itemIds: string[]) => ({
+  equipment: {
+    ...structuredClone(EMPTY_DRAFT.equipment),
+    method: 'wealth' as const,
+    purchasedItems: itemIds.map(itemId => ({ itemId, quantity: 1, source: 'purchased' as const })),
+  },
+})
+
+const scores = (m: Partial<Record<'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA', number>>) =>
+  ({ STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10, ...m })
+
+const monk = (level: number, ...items: string[]) => draft({ level, class: 'monk', ...carrying(...items) })
+
+describe('getEquippedWeapons', () => {
+  it('pega as armas compradas, sem repetir, e ignora o que não é arma', () => {
+    const d = draft({ class: 'fighter', ...carrying('longsword', 'longsword', 'leather', 'dagger') })
+    expect(getEquippedWeapons(d).map(w => w.id)).toEqual(['longsword', 'dagger'])
+  })
+})
+
+describe('getSheetAttacks', () => {
+  it('todo personagem tem o golpe desarmado no fim: 1 + Força, proficiente (p. 196)', () => {
+    const attacks = getSheetAttacks(draft({ level: 1, class: 'wizard', ...carrying('dagger') }), scores({ STR: 14 }))
+    expect(attacks.map(a => a.key)).toEqual(['dagger', 'unarmed'])
+    expect(attacks[1]).toMatchObject({ name: 'Golpe desarmado', attackBonus: '+4', damage: '1+2 concussão', proficient: true })
+  })
+
+  it('guerreiro de Arquearia: +2 no arco longo, nada na espada longa', () => {
+    const d = draft({ level: 1, class: 'fighter', classChoices: choices({ fightingStyle: 'archery' }), ...carrying('longbow', 'longsword') })
+    const [bow, sword] = getSheetAttacks(d, scores({ STR: 14, DEX: 16 }))
+    expect(bow.attackBonus).toBe('+7')
+    expect(sword.attackBonus).toBe('+4')
+    expect(sword.damage).toBe('1d8+2 cortante')
+    expect(sword.versatileDamage).toBe('1d10+2')
+  })
+
+  it('monge 1 sem armadura: bordão e golpe desarmado com Destreza e o d4', () => {
+    const [staff, unarmed] = getSheetAttacks(monk(1, 'quarterstaff'), scores({ STR: 10, DEX: 16 }))
+    expect(staff).toMatchObject({ ability: 'Destreza', attackBonus: '+5', damage: '1d6+3 concussão' })
+    expect(unarmed).toMatchObject({ ability: 'Destreza', attackBonus: '+5', damage: '1d4+3 concussão' })
+  })
+
+  it('monge 6 ganha a nota dos Golpes de Chi no golpe desarmado', () => {
+    const unarmed = getSheetAttacks(monk(6), scores({ DEX: 16 })).at(-1)!
+    expect(unarmed.damage).toBe('1d6+3 concussão')
+    expect(unarmed.notes).toContain('conta como arma mágica contra resistência e imunidade a dano não-mágico (Golpes de Chi)')
+  })
+
+  it('monge de armadura ou escudo perde Artes Marciais, e a linha diz por quê', () => {
+    for (const worn of [['leather'], ['shield']]) {
+      const [staff, unarmed] = getSheetAttacks(monk(5, 'quarterstaff', ...worn), scores({ STR: 10, DEX: 16 }))
+      expect(staff.ability).toBe('Força')
+      expect(staff.damage).toBe('1d6 concussão')
+      expect(unarmed.damage).toBe('1 concussão')
+      expect(unarmed.notes.at(-1)).toMatch(/^Artes Marciais \(d6, Destreza\) fora deste número e das armas de monge: você está de /)
+    }
+  })
+
+  it('guerreiro 1 de Arquearia / monge 5: os dois valem ao mesmo tempo', () => {
+    const d = draft({
+      level: 6, class: 'fighter', multiclass: true,
+      classChoices: choices({ fightingStyle: 'archery' }),
+      additionalClasses: [extraClass('monk', 5)],
+      ...carrying('shortbow', 'shortsword'),
+    })
+    const [bow, sword, unarmed] = getSheetAttacks(d, scores({ STR: 10, DEX: 16 }))
+    expect(bow.attackBonus).toBe('+8') // prof 3 + DES 3 + Arquearia 2
+    expect(sword.damage).toBe('1d6+3 perfurante') // d6 da espada curta = d6 de Artes Marciais
+    expect(unarmed.damage).toBe('1d6+3 concussão')
+  })
+
+  it('Especialista em Briga dá 1d4 ao golpe desarmado de quem não é monge', () => {
+    const d = draft({ level: 1, class: 'fighter', raceChoices: { feat: 'especialista-em-briga' } })
+    expect(getUnarmedDamageDie(d)).toEqual({ source: 'Especialista em Briga', value: 4 })
+    expect(getSheetAttacks(d, scores({ STR: 16 })).at(-1)!.damage).toBe('1d4+3 concussão')
+  })
+})
+
+describe('getMartialArts', () => {
+  it('dado pelo nível de monge (p. 103): d4, d6, d8, d10', () => {
+    expect([1, 5, 11, 17].map(l => getMartialArts(monk(l), scores({}))?.die)).toEqual([4, 6, 8, 10])
+  })
+
+  it('na multiclasse segue o nível NA classe de monge', () => {
+    const d = draft({ level: 7, class: 'fighter', multiclass: true, additionalClasses: [extraClass('monk', 2)] })
+    expect(getMartialArts(d, scores({}))).toMatchObject({ die: 4, active: true })
+  })
+
+  it('quem não é monge não tem', () => {
+    expect(getMartialArts(draft({ level: 5, class: 'fighter' }), scores({}))).toBeNull()
+  })
+})
+
+describe('Estilo de Luta Adicional do campeão (guerreiro 10)', () => {
+  const champion = (extra: string) => draft({
+    level: 10, class: 'fighter',
+    classChoices: choices({
+      subclass: 'champion', fightingStyle: 'archery',
+      progressionChoices: { 'champion-fighting-style-10': [extra] },
+    }),
+  })
+
+  it('soma o estilo do slot ao da classe', () => {
+    expect(getOwnedFightingStyleIds(champion('dueling'))).toEqual(['archery', 'dueling'])
+    expect(getWeaponAttackEffects(champion('dueling')).map(e => e.source)).toEqual(['Arquearia', 'Duelismo'])
+  })
+
+  it('Defesa escolhida no slot entra na CA', () => {
+    const withArmor = { ...champion('defense'), ...carrying('chain-mail') }
+    const without = { ...champion('dueling'), ...carrying('chain-mail') }
+    expect(getSheetArmorClass(withArmor, scores({})).value - getSheetArmorClass(without, scores({})).value).toBe(1)
+  })
+})

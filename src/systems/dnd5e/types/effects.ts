@@ -57,6 +57,50 @@ export type EquipmentSpeedBonus = {
 }
 
 /**
+ * A que ataques um efeito de ataque se aplica:
+ * - `ranged`: arma de ataque à distância (Arquearia, p. 85). Adaga e azagaia arremessadas
+ *   continuam armas corpo a corpo e não entram;
+ * - `melee-one-handed`: arma corpo a corpo sem a propriedade duas mãos — a versátil entra, pelo
+ *   uso numa mão (Duelismo);
+ * - `melee-two-handed`: arma corpo a corpo com duas mãos ou versátil (Combate com Armas Grandes);
+ * - `melee-light`: arma corpo a corpo leve, a do combate com duas armas (p. 196);
+ * - `unarmed`: o golpe desarmado, que não é arma (p. 196) — nenhum dos escopos de arma o alcança.
+ */
+export type AttackScope = 'ranged' | 'melee-one-handed' | 'melee-two-handed' | 'melee-light' | 'unarmed'
+
+/**
+ * Efeito de uma característica nas linhas de ataque. A regra de ouro decide o campo:
+ * - `attackBonus` vale SEMPRE que se ataca com aquela arma — entra no número (Arquearia +2);
+ * - `note` depende da situação (Duelismo: "sem outra arma"; Armas Grandes: "com as duas mãos")
+ *   ou não cabe num número (rerrolar) — vira nota na linha da arma, com a condição;
+ * - `offHandAddsModifier`: o ataque da outra mão soma o modificador no dano (Combate com Duas
+ *   Armas, p. 85), trocando a regra-base da p. 196, que o deixa de fora.
+ */
+export type WeaponAttackEffect = {
+  weapons: AttackScope
+  attackBonus?: number
+  note?: string
+  offHandAddsModifier?: boolean
+}
+
+/**
+ * Artes Marciais (monge, p. 104): com golpe desarmado ou arma de monge, e sem armadura nem escudo,
+ * pode usar Destreza em vez de Força e rolar o dado de Artes Marciais no lugar do dano normal.
+ * Como o Movimento sem Armadura, a ficha confere o equipamento (`requires`) e aplica no número
+ * quando a condição é cumprida.
+ */
+export type MartialArtsEffect = {
+  /**
+   * Id do recurso, declarado na MESMA característica, que carrega o dado (d4 → d10 pelo nível de
+   * monge). Um dado só, nos dados: o da caixa de Recursos é o mesmo da linha de ataque.
+   */
+  dieResource: string
+  requires: EquipmentRequirement
+  /** Condição do livro, em português, exibida quando o equipamento a impede. */
+  condition: string
+}
+
+/**
  * Fórmula alternativa de CA para quem não veste armadura: `base` + os modificadores de `abilities`.
  * Não se soma às outras — "se você tem vários recursos que o concedem diferentes formas de
  * calcular a CA, você escolhe qual usar" (p. 14); a ficha mostra a maior.
@@ -156,6 +200,19 @@ export type FeatureEffects = {
    * arma é a do pacto. Some quando o personagem já tem Ataque Extra (p. 166).
    */
   conditionalAttacksPerAction?: ConditionalAttacks
+  /**
+   * Efeitos nas linhas de ataque: Estilos de Luta (Arquearia no número; Duelismo, Armas Grandes e
+   * Duas Armas como nota) e notas do golpe desarmado (Golpes de Chi). Lidos de features de classe,
+   * talentos e do Estilo de Luta escolhido (inclusive o Adicional do campeão).
+   */
+  weaponAttacks?: WeaponAttackEffect[]
+  /** Artes Marciais do monge — só lido em features de classe, no nível NA classe dona. */
+  martialArts?: MartialArtsEffect
+  /**
+   * Dado de dano do golpe desarmado no lugar do 1 fixo (Especialista em Briga: "seus ataques
+   * desarmados causam 1d4 de dano", p. 169). Com Artes Marciais, fica o maior dado.
+   */
+  unarmedDamageDie?: number
   /**
    * Recursos que a característica dá: usos que se gastam e voltam no descanso (Fúria, Surto de
    * Ação), poços (Chi, Cura pelas Mãos) e dados que crescem com o nível (Ataque Furtivo). A ficha

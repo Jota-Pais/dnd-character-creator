@@ -38,8 +38,10 @@ import { getProgressionSlotsUpToLevel } from '../../utils/progressionChoiceUtils
 import {
   getTotalHp, getInitiativeBonusTotal, getSheetSpeed, describeSpeedBonuses,
   getConditionalAcBonuses, getCheckProficiencyBonus, getSheetResources, getSheetArmorClass,
-  describeAttacksPerAction,
+  describeAttacksPerAction, getAttacksPerAction,
 } from '../../utils/sheetEffects'
+import { getSheetAttacks } from '../../utils/attackUtils'
+import { formatAttackDamage } from '../../utils/weaponFormat'
 import { getProgressionOptions } from '../../utils/progressionOptions'
 import {
   getSpell,
@@ -111,6 +113,8 @@ export function ReviewStep() {
   const conditionalAc = getConditionalAcBonuses(draft)
   // Ataque Extra (e a Lâmina Sedenta, com a condição): o mesmo texto da ficha imprimível.
   const attackLines = describeAttacksPerAction(draft)
+  const attacksPerAction = getAttacksPerAction(draft).value
+  const sheetAttacks = getSheetAttacks(draft, finalScores)
   const darkvision = race ? getEffectiveDarkvision(race, subrace ?? null) : 0
   const classEquipment = cls?.startingEquipment
   const acResult = getSheetArmorClass(draft, finalScores)
@@ -468,6 +472,29 @@ export function ReviewStep() {
           </div>
         </Section>
       )}
+
+      {/* Ataques: a mesma tabela do PDF (getSheetAttacks), com o golpe desarmado no fim. */}
+      <Section title="Ataques">
+        <div className="space-y-2">
+          {sheetAttacks.map(atk => (
+            <div key={atk.key} className="text-sm">
+              <div className="flex flex-wrap items-baseline gap-x-3">
+                <span className="text-parchment-200 font-fantasy">
+                  {attacksPerAction > 1 && <span className="text-parchment-600">{attacksPerAction}× </span>}
+                  {atk.name}
+                  {!atk.proficient && <span className="text-xs text-parchment-600"> (sem proficiência)</span>}
+                </span>
+                <span className="font-fantasy font-bold text-gold-500">{atk.attackBonus}</span>
+                <span className="text-parchment-400">{formatAttackDamage(atk)}</span>
+                <span className="text-xs text-parchment-600">{atk.ability}{atk.properties && ` · ${atk.properties}`}</span>
+              </div>
+              {atk.notes.length > 0 && (
+                <p className="text-xs text-parchment-700 mt-0.5">{atk.notes.join(' · ')}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      </Section>
 
       {/* Equipment */}
       <Section title="Equipamento Inicial">

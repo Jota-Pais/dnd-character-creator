@@ -200,6 +200,7 @@
         "name": "Artes Marciais",
         "description": "Desarmado ou empunhando arma de monge (espada curta ou arma simples corpo-a-corpo sem as propriedades duas mãos ou pesada), e sem armadura nem escudo: você pode usar Destreza em vez de Força no ataque e no dano, pode rolar o dado de Artes Marciais no lugar do dano normal e, quando usar a ação de Ataque com golpe desarmado ou arma de monge no seu turno, pode fazer um golpe desarmado como ação bônus.",
         "effects": {
+          "martialArts": { "dieResource": "martial-arts", "requires": "noArmorNoShield", "condition": "sem armadura nem escudo" },
           "resources": [
             { "id": "martial-arts", "name": "Artes Marciais", "die": { "size": { "byLevel": [{ "from": 1, "value": 4 }, { "from": 5, "value": 6 }, { "from": 11, "value": 8 }, { "from": 17, "value": 10 }] } } }
           ]
@@ -247,7 +248,10 @@
       {
         "level": 6,
         "name": "Golpes de Chi",
-        "description": "Seus golpes desarmados contam como armas mágicas para superar resistência e imunidade a dano não-mágico."
+        "description": "Seus golpes desarmados contam como armas mágicas para superar resistência e imunidade a dano não-mágico.",
+        "effects": {
+          "weaponAttacks": [{ "weapons": "unarmed", "note": "conta como arma mágica contra resistência e imunidade a dano não-mágico" }]
+        }
       },
       {
         "level": 7,

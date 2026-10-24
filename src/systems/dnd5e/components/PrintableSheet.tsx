@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import { useCharacterStore } from '../stores/characterStore'
 import type { AbilityScore } from '../types/race'
 import {
@@ -20,12 +21,12 @@ import {
 import { getFinalAbilityScores, getCharacterFeats, getSheetClassFeatures } from '../utils/asiUtils'
 import {
   getAllGrantedTools, getLanguageLabels, EXOTIC_LANGUAGE_NOTE, getExpertiseTools, getSkillChecks,
-  getSavingThrowChecks, getPassiveScore, getArmorProficiencyLabels, getWeaponProficiencyLabels, getUnproficientArmor, hasWeaponProficiency,
+  getSavingThrowChecks, getPassiveScore, getArmorProficiencyLabels, getWeaponProficiencyLabels, getUnproficientArmor,
   getUnproficientTools, formatUnproficientTool,
 } from '../utils/proficiencyUtils'
 import { formatArmorClassBreakdown } from '../utils/armorClassUtils'
 import {
-  getWeaponById, formatInventoryItem, describeResolvedOption,
+  formatInventoryItem, describeResolvedOption,
   getStartingMoney, describeStartingMoneySource, formatCoins,
 } from '../utils/equipmentUtils'
 import {
@@ -39,57 +40,15 @@ import {
   getMaxPreparedSpells, describeCastingAids, getCasterEntries,
 } from '../utils/spellUtils'
 import { RuleText } from './common/RuleText'
-import { getWeaponAttack } from '../utils/weaponFormat'
+import { formatAttackDamage } from '../utils/weaponFormat'
+import { getSheetAttacks } from '../utils/attackUtils'
 import {
   getTotalHp, getInitiativeBonusTotal, getSheetSpeed, describeSpeedBonuses,
   getConditionalAcBonuses, getCheckProficiencyBonus, getSheetResources, getSheetArmorClass,
   getAttacksPerAction, describeAttacksPerAction,
 } from '../utils/sheetEffects'
 import type { CharacterDraft } from '../types/character'
-import type { Weapon } from '../types/equipment'
 import type { ClassSpellcasting } from '../types/class'
-
-/** Armas efetivamente equipadas (do equipamento inicial / compradas / antecedente), sem repetir. */
-function gatherEquippedWeapons(draft: CharacterDraft): Weapon[] {
-  const ids: string[] = []
-  const cls = draft.class ? getClass(draft.class) : undefined
-  const bg = draft.background ? getBackground(draft.background) : undefined
-  const eq = draft.equipment
-
-  if (eq.method === 'standard' && cls) {
-    for (const item of cls.startingEquipment.fixed) ids.push(item.id)
-    cls.startingEquipment.choices.forEach((choice, i) => {
-      const res = eq.classResolutions[i]
-      if (res && res.optionIndex >= 0) {
-        const option = choice.options[res.optionIndex]
-        if (!option) return
-        let pickIdx = 0
-        for (const item of option) {
-          if (item.kind === 'specific') {
-            ids.push(item.id)
-          } else if (item.kind === 'weapon-filter' || item.kind === 'tool-filter' || item.kind === 'focus-group') {
-            ids.push(...res.pickedIds.slice(pickIdx, pickIdx + item.picks))
-            pickIdx += item.picks
-          }
-        }
-      }
-    })
-  }
-  if (eq.method === 'wealth') for (const p of eq.purchasedItems) ids.push(p.itemId)
-  if (bg) {
-    for (const item of resolveBackgroundItems(bg, draft.backgroundChoices)) if (item.id) ids.push(item.id)
-  }
-
-  const seen = new Set<string>()
-  const weapons: Weapon[] = []
-  for (const id of ids) {
-    if (seen.has(id)) continue
-    seen.add(id)
-    const w = getWeaponById(id)
-    if (w) weapons.push(w)
-  }
-  return weapons
-}
 
 function gatherInventory(draft: CharacterDraft): string[] {
   const items: string[] = []
@@ -212,9 +171,9 @@ export function PrintableSheet() {
   const moneySource = describeStartingMoneySource(money)
   const bgDetail = getBackgroundDetailPrompt(bg)
 
-  // Ataques por arma equipada (F5). O número de ataques por ação vem do motor de efeitos.
-  const weapons = gatherEquippedWeapons(draft)
-  const strMod = mod('STR')
+  // Ataques por arma carregada e o golpe desarmado, com Estilo de Luta e Artes Marciais já
+  // aplicados (attackUtils). O número de ataques por ação vem do motor de efeitos.
+  const attacks = getSheetAttacks(draft, finalScores)
   const attacksPerAction = getAttacksPerAction(draft).value
   const attackLines = describeAttacksPerAction(draft)
   const innateSpells = race ? getAvailableInnateSpells(race, subrace, level) : []
@@ -391,43 +350,42 @@ export function PrintableSheet() {
 
       {/* Ataques & Magia */}
       <Box title="Ataques & Conjuração" className="mb-4">
-        {weapons.length > 0 ? (
-          <table className="w-full text-xs mb-1">
-            <thead>
-              <tr className="text-gray-500 text-left">
-                <th className="font-semibold pr-2">Arma</th>
-                <th className="font-semibold pr-2">Ataque</th>
-                <th className="font-semibold pr-2">Dano</th>
-                <th className="font-semibold pr-2">Atributo</th>
-                <th className="font-semibold">Propriedades</th>
-              </tr>
-            </thead>
-            <tbody>
-              {weapons.map(w => {
-                const atk = getWeaponAttack(w, strMod, dexMod, prof, hasWeaponProficiency(draft, w))
-                return (
-                  <tr key={w.id} className="text-gray-800">
-                    <td className="pr-2 py-0.5">
-                      {attacksPerAction > 1 && <span className="font-bold text-gray-500">{attacksPerAction}× </span>}
-                      {atk.name}
-                      {!atk.proficient && <span className="text-[10px] text-gray-500"> (sem proficiência)</span>}
+        {/* Uma linha por arma e o golpe desarmado; o que depende da situação vai na nota de baixo. */}
+        <table className="w-full text-xs mb-1">
+          <thead>
+            <tr className="text-gray-500 text-left">
+              <th className="font-semibold pr-2">Ataque</th>
+              <th className="font-semibold pr-2">Bônus</th>
+              <th className="font-semibold pr-2">Dano</th>
+              <th className="font-semibold pr-2">Atributo</th>
+              <th className="font-semibold">Propriedades</th>
+            </tr>
+          </thead>
+          <tbody>
+            {attacks.map(atk => (
+              <Fragment key={atk.key}>
+                <tr className="text-gray-800 align-top">
+                  <td className="pr-2 pt-0.5">
+                    {attacksPerAction > 1 && <span className="font-bold text-gray-500">{attacksPerAction}× </span>}
+                    {atk.name}
+                    {!atk.proficient && <span className="text-[10px] text-gray-500"> (sem proficiência)</span>}
+                  </td>
+                  <td className="pr-2 pt-0.5"><strong>{atk.attackBonus}</strong></td>
+                  <td className="pr-2 pt-0.5">{formatAttackDamage(atk)}</td>
+                  <td className="pr-2 pt-0.5 text-gray-600">{atk.ability}</td>
+                  <td className="pt-0.5 text-[10px] text-gray-600">{atk.properties || '—'}</td>
+                </tr>
+                {atk.notes.length > 0 && (
+                  <tr>
+                    <td colSpan={5} className="pb-0.5 pl-3 text-[10px] text-gray-500 leading-snug">
+                      {atk.notes.join(' · ')}
                     </td>
-                    <td className="pr-2 py-0.5"><strong>{atk.attackBonus}</strong></td>
-                    <td className="pr-2 py-0.5">{atk.damage}</td>
-                    <td className="pr-2 py-0.5 text-gray-600">{atk.ability}</td>
-                    <td className="py-0.5 text-[10px] text-gray-600">{atk.properties || '—'}</td>
                   </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        ) : (
-          <p className="text-xs text-gray-700 mb-1">
-            Ataque corpo-a-corpo (Força): <strong>{formatModifier(prof + strMod)}</strong> ·
-            {' '}À distância / com acuidade (Destreza): <strong>{formatModifier(prof + dexMod)}</strong>
-            {' '}(+ o dano da arma)
-          </p>
-        )}
+                )}
+              </Fragment>
+            ))}
+          </tbody>
+        </table>
         {/* Ataque Extra e, em linha própria com a condição, a Lâmina Sedenta (fora do número). */}
         {attackLines.map(line => (
           <p key={line} className="text-[10px] text-gray-500 mb-1">{line}</p>

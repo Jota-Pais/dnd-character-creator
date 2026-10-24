@@ -1,4 +1,5 @@
 import type { GameClass, ClassSubclass, ClassChoiceSelections, ClassSpellcasting, LevelFeature } from '../types/class'
+import type { FeatureEffects } from '../types/effects'
 import { SKILLS } from './raceUtils'
 import classesData from '../data/classes.json'
 import progressionFeatures from '../data/class-progression-features.json'
@@ -49,11 +50,18 @@ export const CLASS_PRESENTATION: Record<string, ClassPresentation> = {
   ranger:    { emoji: '🏹', accent: '#196f3d', roles: ['ranged', 'damage'] },
 }
 
-export const FIGHTING_STYLES: { id: string; name: string; description: string }[] = [
+/**
+ * Estilos de Luta (o texto do guerreiro, p. 85; paladino e patrulheiro escolhem da mesma lista).
+ * O que cada um faz na linha de ataque vem declarado em `effects.weaponAttacks`, agregado por
+ * `getWeaponAttackEffects` (sheetEffects): Arquearia entra no número; Duelismo, Armas Grandes e Duas
+ * Armas dependem de como a arma é empunhada e viram nota na arma. Defesa fica na CA.
+ */
+export const FIGHTING_STYLES: { id: string; name: string; description: string; effects?: FeatureEffects }[] = [
   {
     id: 'archery',
     name: 'Arquearia',
     description: '+2 nas jogadas de ataque com armas de ataque à distância.',
+    effects: { weaponAttacks: [{ weapons: 'ranged', attackBonus: 2 }] },
   },
   {
     id: 'defense',
@@ -64,11 +72,13 @@ export const FIGHTING_STYLES: { id: string; name: string; description: string }[
     id: 'dueling',
     name: 'Duelismo',
     description: 'Empunhando uma arma corpo a corpo numa mão e nenhuma outra arma, receba +2 de bônus de dano com ela.',
+    effects: { weaponAttacks: [{ weapons: 'melee-one-handed', note: '+2 de dano empunhando-a numa mão, sem outra arma' }] },
   },
   {
     id: 'great-weapon-fighting',
     name: 'Combate com Armas Grandes',
-    description: 'Ao rolar 1 ou 2 no dado de dano de uma arma pesada empunhada com as duas mãos, role novamente.',
+    description: 'Ao rolar 1 ou 2 num dado de dano de um ataque com arma corpo a corpo empunhada com as duas mãos (a arma precisa ter a propriedade duas mãos ou versátil), role de novo e use o novo resultado, mesmo que seja 1 ou 2.',
+    effects: { weaponAttacks: [{ weapons: 'melee-two-handed', note: 'rerrola 1 e 2 nos dados de dano empunhando-a com as duas mãos' }] },
   },
   {
     id: 'protection',
@@ -79,6 +89,7 @@ export const FIGHTING_STYLES: { id: string; name: string; description: string }[
     id: 'two-weapon-fighting',
     name: 'Combate com Duas Armas',
     description: 'Adicione seu modificador de habilidade ao dano da segunda arma no combate com duas armas.',
+    effects: { weaponAttacks: [{ weapons: 'melee-light', offHandAddsModifier: true }] },
   },
 ]
 

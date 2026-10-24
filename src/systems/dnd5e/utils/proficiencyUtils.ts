@@ -1,15 +1,17 @@
 import type { CharacterDraft, ClassEntry } from '../types/character'
 import type { ClassChoiceSelections, ArmorProficiency } from '../types/class'
 import type { AbilityScore } from '../types/race'
-import type { Armor, ArmorCategory, Weapon } from '../types/equipment'
+import type { Armor, ArmorCategory, Tool, Weapon } from '../types/equipment'
 import {
   getRace, getSubrace, getRaceGrantedSkills, getRaceGrantedTools,
   getEffectiveGrantedProficiencies, getLanguageName, isExoticLanguage,
 } from './raceUtils'
 import { getClass, getSubclass, getExpertiseCount } from './classUtils'
 import { allClassEntries } from './multiclassUtils'
-import { getBackground } from './backgroundUtils'
-import { getEquippedArmor, getArmor, getWeaponById, ALL_WEAPONS } from './equipmentUtils'
+import { getBackground, resolveBackgroundItems } from './backgroundUtils'
+import {
+  getEquippedArmor, getArmor, getWeaponById, ALL_WEAPONS, getCarriedToolIds, getToolById,
+} from './equipmentUtils'
 import {
   getFeatArmorProficiencies, getFeatWeaponProficiencies, getFeatSavingThrows,
   getFeatGrantedSkills, getFeatGrantedTools, getFeatGrantedLanguages,
@@ -441,6 +443,67 @@ export function getUnproficientArmor(draft: CharacterDraft): Armor[] {
   const shield = hasShield ? getArmor('shield') : undefined
   const worn = [bodyArmor, shield].filter((a): a is Armor => a !== undefined)
   return worn.filter(armor => !hasArmorProficiency(draft, armor))
+}
+
+/** O foco do bardo (p. 53), como `spellcasting.focus` o grava em classes.json. */
+const INSTRUMENT_FOCUS = 'instrumento musical'
+
+/**
+ * Alguma classe do personagem (multiclasse inclusa) já conjura usando um instrumento musical
+ * como foco — o bardo, desde o 1º nível (p. 53).
+ */
+export function hasInstrumentSpellcastingFocus(draft: CharacterDraft): boolean {
+  return allClassEntries(draft).some(entry => {
+    const sc = getClass(entry.classId)?.spellcasting
+    return sc?.focus === INSTRUMENT_FOCUS && entry.level >= sc.castingStartsAtLevel
+  })
+}
+
+export type UnproficientTool = {
+  tool: Tool
+  /** Instrumento de quem conjura com foco instrumento musical: serve de foco mesmo sem proficiência. */
+  spellcastingFocus: boolean
+}
+
+/**
+ * Ferramentas e instrumentos carregados (equipamento de classe, escolhas, compras e itens do
+ * antecedente) sem a proficiência correspondente. Não é erro de regra: o livro deixa usar, só
+ * não soma o bônus de proficiência nos testes com ela (p. 156). E o instrumento continua sendo
+ * foco de conjuração do bardo, que não exige proficiência (p. 53).
+ *
+ * Como `getUnproficientArmor`, vira aviso na ficha e não bloqueia nada.
+ */
+export function getUnproficientTools(draft: CharacterDraft): UnproficientTool[] {
+  const classEquipment = draft.class ? getClass(draft.class)?.startingEquipment : undefined
+  const bg = draft.background ? getBackground(draft.background) : undefined
+  const backgroundIds = bg
+    ? resolveBackgroundItems(bg, draft.backgroundChoices)
+      .map(item => item.id)
+      .filter((id): id is string => id !== null)
+    : []
+  const carried = uniq([...getCarriedToolIds(draft.equipment, classEquipment), ...backgroundIds])
+  const granted = new Set(getAllGrantedTools(draft))
+  const instrumentFocus = hasInstrumentSpellcastingFocus(draft)
+  return carried
+    .filter(id => !granted.has(id))
+    .map(getToolById)
+    .filter((tool): tool is Tool => tool !== undefined)
+    .map(tool => ({ tool, spellcastingFocus: instrumentFocus && tool.category === 'musical-instrument' }))
+}
+
+/**
+ * O que significa carregar a ferramenta sem proficiência, pra ler ao lado do nome: "pode usar,
+ * mas não soma o bônus de proficiência nos testes com ele; continua servindo de foco de
+ * conjuração". Fonte única do texto da etapa Equipamento, da Revisão e da ficha imprimível.
+ */
+export function describeToolWithoutProficiency(spellcastingFocus: boolean): string {
+  const base = 'pode usar, mas não soma o bônus de proficiência nos testes com ele'
+  return spellcastingFocus ? `${base}; continua servindo de foco de conjuração` : base
+}
+
+/** Linha da Revisão e da ficha: "Sem proficiência: Alaúde — pode usar, mas não soma...". */
+export function formatUnproficientTool({ tool, spellcastingFocus }: UnproficientTool): string {
+  return `Sem proficiência: ${tool.name} — ${describeToolWithoutProficiency(spellcastingFocus)}`
 }
 
 // ── Rótulos ────────────────────────────────────────────────────────────────────

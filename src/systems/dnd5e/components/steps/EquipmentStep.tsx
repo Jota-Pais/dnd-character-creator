@@ -6,6 +6,7 @@ import {
   getItemName, isEquipmentStepComplete, getShopCatalog, getPurchasesTotalCopper,
   formatCurrency, type ShopCategory,
 } from '../../utils/equipmentUtils'
+import { getAllGrantedTools, hasInstrumentSpellcastingFocus } from '../../utils/proficiencyUtils'
 import type { FixedItem, InventoryItem } from '../../types/equipment'
 import type { Background, BackgroundChoiceSelections } from '../../types/background'
 import { EquipmentMethodSelector } from '../equipment/EquipmentMethodSelector'
@@ -30,6 +31,10 @@ export function EquipmentStep() {
 
   const accent = cls ? (CLASS_PRESENTATION[cls.id]?.accent ?? '#c0961a') : '#c0961a'
   const canAdvance = isEquipmentStepComplete(equipment, classEquipment)
+  // A etapa vem depois de Classe e Antecedente: já dá pra mostrar quais instrumentos/ferramentas
+  // o personagem domina (p. 156) e que o instrumento do bardo é foco mesmo sem proficiência (p. 53).
+  const proficientToolIds = getAllGrantedTools(draft)
+  const instrumentFocus = hasInstrumentSpellcastingFocus(draft)
 
   // Auto-resolve single-option choices (player has no selection to make)
   useEffect(() => {
@@ -116,6 +121,8 @@ export function EquipmentStep() {
                   choice={choice}
                   resolution={equipment.classResolutions[idx]}
                   onResolve={res => resolveEquipmentChoice(idx, res)}
+                  proficientToolIds={proficientToolIds}
+                  instrumentFocus={instrumentFocus}
                 />
               ))}
             </div>

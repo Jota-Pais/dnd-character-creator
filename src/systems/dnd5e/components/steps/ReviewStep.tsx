@@ -27,6 +27,7 @@ import { getUnarmoredDefense, calculateArmorClass } from '../../utils/armorClass
 import {
   getAllGrantedTools, getLanguageLabels, EXOTIC_LANGUAGE_NOTE, getExpertiseTools, getSkillChecks,
   getPassiveScore, getArmorProficiencyLabels, getWeaponProficiencyLabels, getUnproficientArmor,
+  getUnproficientTools, formatUnproficientTool,
 } from '../../utils/proficiencyUtils'
 import { getProgressionSlotsUpToLevel } from '../../utils/progressionChoiceUtils'
 import {
@@ -132,6 +133,7 @@ export function ReviewStep() {
   const armorProficiencies = getArmorProficiencyLabels(draft)
   const weaponProficiencies = getWeaponProficiencyLabels(draft)
   const unproficientArmor = getUnproficientArmor(draft)
+  const unproficientTools = getUnproficientTools(draft)
 
   const allTools = getAllGrantedTools(draft)
   const expertiseTools = getExpertiseTools(draft)
@@ -398,7 +400,7 @@ export function ReviewStep() {
       </div>
 
       {/* Languages & Tools */}
-      {(allTools.length > 0 || allLanguages.length > 0 || armorProficiencies.length > 0) && (
+      {(allTools.length > 0 || allLanguages.length > 0 || armorProficiencies.length > 0 || unproficientTools.length > 0) && (
         <Section title="Proficiências & Idiomas">
           <div className="space-y-3">
             {armorProficiencies.length > 0 && (
@@ -432,6 +434,16 @@ export function ReviewStep() {
                   Desvantagem em testes de habilidade, testes de resistência e jogadas de ataque
                   que usem Força ou Destreza — e você não pode conjurar magias.
                 </p>
+              </div>
+            )}
+            {/* p. 156: ferramenta sem proficiência não é erro, só não soma o bônus — nota, não alerta. */}
+            {unproficientTools.length > 0 && (
+              <div className="rounded-lg border border-parchment-800 bg-parchment-950/40 px-3 py-2 space-y-0.5">
+                {unproficientTools.map(u => (
+                  <p key={u.tool.id} className="text-xs text-parchment-500 leading-relaxed">
+                    {formatUnproficientTool(u)}
+                  </p>
+                ))}
               </div>
             )}
             {allTools.length > 0 && (

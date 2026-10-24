@@ -5,16 +5,25 @@ import type {
 import {
   describeEquipmentOption, isChoiceResolved,
   getWeaponsForFilter, getToolsForCategory, getFocusGroupItems,
-  getWeaponById, getArmorById, getPackById, formatPackContents,
+  getWeaponById, getArmorById, getPackById, formatPackContents, getToolById,
 } from '../../utils/equipmentUtils'
+import { describeToolWithoutProficiency } from '../../utils/proficiencyUtils'
 import { formatWeaponSummary, formatArmorSummary } from '../../utils/weaponFormat'
+
+/** O que o personagem já domina, pra guiar a escolha de ferramenta/instrumento sem decidir por ele. */
+type ToolGuidance = {
+  proficientToolIds: string[]
+  /** Conjura com instrumento musical como foco (bardo, p. 53). */
+  instrumentFocus: boolean
+}
 
 /**
  * Detalhes dos itens específicos de uma opção, pra decidir sem abrir o livro:
- * armas (dano/propriedades), armaduras/escudos (CA/propriedades) e pacotes (conteúdo).
+ * armas (dano/propriedades), armaduras/escudos (CA/propriedades), pacotes (conteúdo) e
+ * ferramentas sem proficiência (o que isso custa, p. 156).
  * Itens triviais (corda, tocha...) não geram linha — o nome já basta.
  */
-function optionItemDetails(option: EquipmentChoiceItem[]): { name: string; detail: string }[] {
+function optionItemDetails(option: EquipmentChoiceItem[], guidance: ToolGuidance): { name: string; detail: string }[] {
   const out: { name: string; detail: string }[] = []
   for (const it of option) {
     if (it.kind !== 'specific') continue
@@ -24,6 +33,11 @@ function optionItemDetails(option: EquipmentChoiceItem[]): { name: string; detai
     if (a) { out.push({ name: a.name, detail: formatArmorSummary(a) }); continue }
     const p = getPackById(it.id)
     if (p) { out.push({ name: p.name, detail: formatPackContents(p) }); continue }
+    const t = getToolById(it.id)
+    if (t && !guidance.proficientToolIds.includes(t.id)) {
+      const focus = guidance.instrumentFocus && t.category === 'musical-instrument'
+      out.push({ name: t.name, detail: `sem proficiência — ${describeToolWithoutProficiency(focus)}` })
+    }
   }
   return out
 }
@@ -35,9 +49,15 @@ type Props = {
   choice: EquipmentChoice
   resolution: ChoiceResolution | undefined
   onResolve: (resolution: ChoiceResolution) => void
+  /** Ferramentas/instrumentos que o personagem já domina (getAllGrantedTools). */
+  proficientToolIds?: string[]
+  instrumentFocus?: boolean
 }
 
-export function EquipmentChoiceCard({ choiceIndex, choice, resolution, onResolve }: Props) {
+export function EquipmentChoiceCard({
+  choiceIndex, choice, resolution, onResolve, proficientToolIds = [], instrumentFocus = false,
+}: Props) {
+  const guidance: ToolGuidance = { proficientToolIds, instrumentFocus }
   const label = String.fromCharCode(65 + choiceIndex)
   const resolved = isChoiceResolved(choice, resolution)
   const hasMultipleOptions = choice.options.length > 1
@@ -88,7 +108,7 @@ export function EquipmentChoiceCard({ choiceIndex, choice, resolution, onResolve
         <div className="flex flex-col gap-2 mb-3">
           {choice.options.map((option, optIdx) => {
             const isSelected = effectiveResolution.optionIndex === optIdx
-            const details = optionItemDetails(option)
+            const details = optionItemDetails(option, guidance)
             return (
               <button
                 key={optIdx}
@@ -124,6 +144,7 @@ export function EquipmentChoiceCard({ choiceIndex, choice, resolution, onResolve
             item={filterItem}
             pickedIds={effectiveResolution.pickedIds}
             onToggle={togglePick}
+            proficientToolIds={proficientToolIds}
           />
         </div>
       )}
@@ -135,18 +156,27 @@ function SubPicker({
   item,
   pickedIds,
   onToggle,
+  proficientToolIds,
 }: {
   item: FilterItem
   pickedIds: string[]
   onToggle: (id: string, max: number) => void
+  proficientToolIds: string[]
 }) {
   if (item.kind === 'weapon-filter') {
     const weapons = getWeaponsForFilter(item.filter)
     return <ItemGrid items={weapons} pickedIds={pickedIds} max={item.picks} onToggle={onToggle} />
   }
   if (item.kind === 'tool-filter') {
+    // Os que o personagem domina vêm primeiro, com selo — guia sem pré-selecionar nada.
+    const proficient = new Set(proficientToolIds)
     const tools = getToolsForCategory(item.category)
-    return <ItemGrid items={tools} pickedIds={pickedIds} max={item.picks} onToggle={onToggle} />
+      .map((tool, i) => ({ tool, i }))
+      .sort((a, b) => Number(proficient.has(b.tool.id)) - Number(proficient.has(a.tool.id)) || a.i - b.i)
+      .map(({ tool }) => tool)
+    return (
+      <ItemGrid items={tools} pickedIds={pickedIds} max={item.picks} onToggle={onToggle} proficientIds={proficient} />
+    )
   }
   if (item.kind === 'focus-group') {
     const focusItems = getFocusGroupItems(item.group)
@@ -171,11 +201,14 @@ function ItemGrid({
   pickedIds,
   max,
   onToggle,
+  proficientIds,
 }: {
   items: (Weapon | Tool | GeneralItem)[]
   pickedIds: string[]
   max: number
   onToggle: (id: string, max: number) => void
+  /** Itens marcados com "✓ você é proficiente" (ferramentas/instrumentos). */
+  proficientIds?: Set<string>
 }) {
   return (
     <div className="flex flex-wrap gap-1.5">
@@ -200,6 +233,9 @@ function ItemGrid({
             <span className={isWeapon ? 'font-semibold' : ''}>{item.name}</span>
             {isWeapon && (
               <span className="block text-[11px] opacity-80 mt-0.5">{formatWeaponSummary(item as Weapon)}</span>
+            )}
+            {proficientIds?.has(item.id) && (
+              <span className="block text-[10px] text-green-600 mt-0.5">✓ você é proficiente</span>
             )}
           </button>
         )

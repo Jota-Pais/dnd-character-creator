@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatCurrency, resolvePackContents, validatePackRefs, FOCUS_GROUP_IDS, getEquippedArmor, getShopCatalog, getPurchasesTotalCopper, getItemCostCopper, formatInventoryItem, describeResolvedOption, formatCoins, getStartingMoney, describeStartingMoneySource } from '../equipmentUtils'
+import { formatCurrency, resolvePackContents, validatePackRefs, FOCUS_GROUP_IDS, getEquippedArmor, getShopCatalog, getPurchasesTotalCopper, getItemCostCopper, formatInventoryItem, describeResolvedOption, formatCoins, getStartingMoney, describeStartingMoneySource, getCarriedToolIds, getToolById } from '../equipmentUtils'
 import type { InventoryItem } from '../../types/equipment'
 import { getClass } from '../classUtils'
 import type { EquipmentDraft } from '../../types/equipment'
@@ -272,5 +272,52 @@ describe('getStartingMoney / describeStartingMoneySource', () => {
       purchasedItems: [{ itemId: 'lute', quantity: 1, source: 'purchased' }],
     })
     expect(getStartingMoney(standard, 10).totalCopper).toBe(1000)
+  })
+})
+
+describe('getCarriedToolIds', () => {
+  const bardEquipment = getClass('bard')!.startingEquipment
+  const rogueEquipment = getClass('rogue')!.startingEquipment
+
+  it('itens fixos da classe (ferramentas de ladrão do ladino)', () => {
+    expect(getCarriedToolIds(fighterEquipment(), rogueEquipment)).toEqual(['thieves-tools'])
+  })
+
+  it('opção específica (alaúde) e conteúdo do pacote (kit de disfarce do Pacote de Artista)', () => {
+    const eq = fighterEquipment({
+      classResolutions: [{ optionIndex: 0, pickedIds: [] }, { optionIndex: 1, pickedIds: [] }, { optionIndex: 0, pickedIds: [] }],
+    })
+    expect(getCarriedToolIds(eq, bardEquipment)).toEqual(['disguise-kit', 'lute'])
+  })
+
+  it('escolha num tool-filter entra; arma escolhida num weapon-filter não', () => {
+    const eq = fighterEquipment({
+      classResolutions: [{ optionIndex: 2, pickedIds: ['club'] }, { optionIndex: 0, pickedIds: [] }, { optionIndex: 1, pickedIds: ['lyre'] }],
+    })
+    expect(getCarriedToolIds(eq, bardEquipment)).toEqual(['lyre'])
+  })
+
+  it('compras do método riqueza (e ignora as escolhas de classe que sobraram)', () => {
+    const eq = fighterEquipment({
+      method: 'wealth',
+      classResolutions: [{ optionIndex: 0, pickedIds: [] }, { optionIndex: 0, pickedIds: [] }, { optionIndex: 0, pickedIds: [] }],
+      purchasedItems: [
+        { itemId: 'drum', quantity: 1, source: 'purchased' },
+        { itemId: 'entertainers-pack', quantity: 1, source: 'purchased' },
+        { itemId: 'dagger', quantity: 2, source: 'purchased' },
+      ],
+    })
+    expect(getCarriedToolIds(eq, bardEquipment)).toEqual(['drum', 'disguise-kit'])
+  })
+
+  it('sem método escolhido, nada', () => {
+    expect(getCarriedToolIds(fighterEquipment({ method: null }), rogueEquipment)).toEqual([])
+  })
+})
+
+describe('getToolById', () => {
+  it('acha instrumento e devolve undefined pra item que não é ferramenta', () => {
+    expect(getToolById('lute')?.category).toBe('musical-instrument')
+    expect(getToolById('dagger')).toBeUndefined()
   })
 })

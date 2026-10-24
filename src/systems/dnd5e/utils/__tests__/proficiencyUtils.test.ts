@@ -22,6 +22,10 @@ import {
   getChosenExoticLanguages,
   getLanguageLabels,
   EXOTIC_LANGUAGE_NOTE,
+  getUnproficientTools,
+  hasInstrumentSpellcastingFocus,
+  formatUnproficientTool,
+  describeToolWithoutProficiency,
 } from '../proficiencyUtils'
 import { getWeaponById } from '../equipmentUtils'
 import { EMPTY_CLASS_CHOICES } from '../../types/class'
@@ -566,5 +570,116 @@ describe('getSkillChecks / getPassiveScore', () => {
   it('passiva sem proficiência leva a Versatilidade e o Observador soma por cima', () => {
     const d = draft({ level: 4, class: 'bard', raceChoices: { feat: 'observador' } })
     expect(getPassiveScore(d, 'investigation', getSkillChecks(d, scores))).toBe(10 + 1 + 1 + 5)
+  })
+})
+
+describe('getUnproficientTools — ferramenta carregada sem proficiência (p. 156)', () => {
+  // Escolhas do bardo: A rapieira, B pacote de diplomata, C alaúde (opção 1) ou instrumento à escolha.
+  const bard = (instruments: string[], choiceC: { optionIndex: number; pickedIds: string[] }, over: Partial<CharacterDraft> = {}) => draft({
+    class: 'bard',
+    classChoices: { ...EMPTY_CLASS_CHOICES, tools: instruments },
+    background: 'charlatan',
+    equipment: {
+      method: 'standard',
+      classResolutions: [{ optionIndex: 0, pickedIds: [] }, { optionIndex: 0, pickedIds: [] }, choiceC],
+      rolledGold: null,
+      purchasedItems: [],
+    },
+    ...over,
+  })
+
+  it('bardo com Flauta, Lira e Tambor que leva o alaúde: aviso, e o alaúde segue foco (p. 53)', () => {
+    const result = getUnproficientTools(bard(['flute', 'lyre', 'drum'], { optionIndex: 0, pickedIds: [] }))
+    expect(result.map(u => u.tool.id)).toEqual(['lute'])
+    expect(result[0].spellcastingFocus).toBe(true)
+    expect(formatUnproficientTool(result[0])).toBe(
+      'Sem proficiência: Alaúde — pode usar, mas não soma o bônus de proficiência nos testes com ele; continua servindo de foco de conjuração',
+    )
+  })
+
+  it('bardo que domina o alaúde não recebe aviso', () => {
+    expect(getUnproficientTools(bard(['lute', 'lyre', 'drum'], { optionIndex: 0, pickedIds: [] }))).toEqual([])
+  })
+
+  it('instrumento escolhido no tool-filter entre os dominados não gera aviso; fora deles, gera', () => {
+    expect(getUnproficientTools(bard(['flute', 'lyre', 'drum'], { optionIndex: 1, pickedIds: ['lyre'] }))).toEqual([])
+    expect(getUnproficientTools(bard(['flute', 'lyre', 'drum'], { optionIndex: 1, pickedIds: ['viol'] })).map(u => u.tool.id))
+      .toEqual(['viol'])
+  })
+
+  it('conteúdo do pacote conta: kit de disfarce do Pacote de Artista sem proficiência avisa, sem foco', () => {
+    const d = bard(['flute', 'lyre', 'drum'], { optionIndex: 1, pickedIds: ['lyre'] }, { background: 'sage' })
+    d.equipment.classResolutions[1] = { optionIndex: 1, pickedIds: [] } // Pacote de Artista
+    const result = getUnproficientTools(d)
+    expect(result.map(u => u.tool.id)).toEqual(['disguise-kit'])
+    expect(result[0].spellcastingFocus).toBe(false)
+    // Charlatão domina o kit de disfarce: some o aviso.
+    d.background = 'charlatan'
+    expect(getUnproficientTools(d)).toEqual([])
+  })
+
+  it('compras do método riqueza: guerreiro com alaúde e ferramentas de ladrão, sem foco', () => {
+    const d = draft({
+      class: 'fighter',
+      equipment: {
+        method: 'wealth',
+        classResolutions: [],
+        rolledGold: 100,
+        purchasedItems: [
+          { itemId: 'lute', quantity: 1, source: 'purchased' },
+          { itemId: 'thieves-tools', quantity: 1, source: 'purchased' },
+          { itemId: 'hempen-rope', quantity: 1, source: 'purchased' },
+        ],
+      },
+    })
+    const result = getUnproficientTools(d)
+    expect(result.map(u => u.tool.id)).toEqual(['lute', 'thieves-tools'])
+    expect(result.every(u => !u.spellcastingFocus)).toBe(true)
+  })
+
+  it('item do antecedente: baralho do Soldado com proficiência em dados avisa; com baralho, não', () => {
+    const soldier = (gamingSet: string) => draft({
+      class: 'fighter',
+      background: 'soldier',
+      backgroundChoices: { tools: [gamingSet], items: { 'gaming-set': 'playing-card-set' } },
+    })
+    expect(getUnproficientTools(soldier('dice-set')).map(u => u.tool.id)).toEqual(['playing-card-set'])
+    expect(getUnproficientTools(soldier('playing-card-set'))).toEqual([])
+  })
+
+  it('ferramenta do antecedente que é a própria proficiência (Artista) não avisa', () => {
+    const d = draft({ background: 'entertainer', backgroundChoices: { tools: ['lute'] } })
+    expect(getUnproficientTools(d)).toEqual([])
+  })
+
+  it('sem equipamento escolhido, nada a avisar', () => {
+    expect(getUnproficientTools(draft({ class: 'bard' }))).toEqual([])
+  })
+})
+
+describe('hasInstrumentSpellcastingFocus (p. 53)', () => {
+  it('bardo conjura com instrumento; guerreiro não', () => {
+    expect(hasInstrumentSpellcastingFocus(draft({ class: 'bard' }))).toBe(true)
+    expect(hasInstrumentSpellcastingFocus(draft({ class: 'fighter' }))).toBe(false)
+  })
+
+  it('bardo como classe secundária da multiclasse também conta', () => {
+    const d = draft({
+      level: 2,
+      multiclass: true,
+      class: 'fighter',
+      additionalClasses: [{
+        classId: 'bard', level: 1, classChoices: { ...EMPTY_CLASS_CHOICES },
+        spellChoices: { cantrips: [], spells: [] }, asiChoices: [], hpRolls: [],
+      }],
+    })
+    expect(hasInstrumentSpellcastingFocus(d)).toBe(true)
+  })
+})
+
+describe('describeToolWithoutProficiency', () => {
+  it('só acrescenta o foco quando ele se aplica', () => {
+    expect(describeToolWithoutProficiency(false)).toBe('pode usar, mas não soma o bônus de proficiência nos testes com ele')
+    expect(describeToolWithoutProficiency(true)).toMatch(/; continua servindo de foco de conjuração$/)
   })
 })

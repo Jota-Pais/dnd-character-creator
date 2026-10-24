@@ -19,6 +19,7 @@ import { getFinalAbilityScores, getCharacterFeats, getSheetClassFeatures } from 
 import {
   getAllGrantedTools, getLanguageLabels, EXOTIC_LANGUAGE_NOTE, getExpertiseTools, getSkillChecks,
   getPassiveScore, getArmorProficiencyLabels, getWeaponProficiencyLabels, getUnproficientArmor, hasWeaponProficiency,
+  getUnproficientTools, formatUnproficientTool,
 } from '../utils/proficiencyUtils'
 import { calculateArmorClass, getUnarmoredDefense } from '../utils/armorClassUtils'
 import {
@@ -206,6 +207,7 @@ export function PrintableSheet() {
   const armorProficiencies = getArmorProficiencyLabels(draft)
   const weaponProficiencies = getWeaponProficiencyLabels(draft)
   const unproficientArmor = getUnproficientArmor(draft)
+  const unproficientTools = getUnproficientTools(draft)
 
   const identity = [
     subrace ? subrace.name : race?.name,
@@ -520,6 +522,10 @@ export function PrintableSheet() {
             Desvantagem em testes, resistências e ataques de Força ou Destreza; não conjura magias.
           </p>
         )}
+        {/* p. 156 (e p. 53 pro foco do bardo): carregar ferramenta sem proficiência é permitido. */}
+        {unproficientTools.map(u => (
+          <p key={u.tool.id} className="text-xs mt-0.5 text-gray-700">{formatUnproficientTool(u)}</p>
+        ))}
       </Box>
 
       {/* Magias raciais */}

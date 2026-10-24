@@ -72,6 +72,54 @@ export function getEquippedArmor(
 }
 
 /**
+ * Ferramentas e instrumentos que o personagem carrega pelo equipamento de classe (itens fixos e
+ * opções escolhidas, inclusive os escolhidos num `tool-filter` e o conteúdo dos pacotes — o de
+ * Artista traz um kit de disfarce, p. 153) e pelas compras do método riqueza. Irmã de
+ * `getEquippedArmor`; o equipamento do antecedente entra em `getUnproficientTools`
+ * (proficiencyUtils), que tem o resolvedor dele.
+ */
+export function getCarriedToolIds(
+  equipment: EquipmentDraft,
+  classEquipment: ClassStartingEquipment | undefined,
+): string[] {
+  const ids: string[] = []
+  const addItem = (id: string) => {
+    const pack = getPackById(id)
+    if (pack) ids.push(...pack.contents.map(c => c.ref))
+    else ids.push(id)
+  }
+
+  if (equipment.method === 'standard' && classEquipment) {
+    for (const item of classEquipment.fixed) addItem(item.id)
+    for (let i = 0; i < classEquipment.choices.length; i++) {
+      const res = equipment.classResolutions[i]
+      if (!res || res.optionIndex < 0) continue
+      const option = classEquipment.choices[i]?.options[res.optionIndex]
+      if (!option) continue
+      // Mesmo fatiamento de `describeResolvedOption`: cada filtro consome os seus `picks`.
+      let pickIdx = 0
+      for (const item of option) {
+        if (item.kind === 'specific') {
+          addItem(item.id)
+        } else {
+          res.pickedIds.slice(pickIdx, pickIdx + item.picks).forEach(addItem)
+          pickIdx += item.picks
+        }
+      }
+    }
+  }
+
+  for (const item of equipment.purchasedItems) addItem(item.itemId)
+
+  return [...new Set(ids.filter(id => TOOL_IDS.has(id)))]
+}
+
+/** Ferramenta (inclui instrumentos e kits de jogo) pelo id, ou undefined. */
+export function getToolById(id: string): Tool | undefined {
+  return ALL_TOOLS.find(t => t.id === id)
+}
+
+/**
  * Converte um custo canônico em peças de cobre (pc) para string legível.
  * null → '—' (item sem preço publicado no PHB)
  */

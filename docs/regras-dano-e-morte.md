@@ -228,11 +228,12 @@ interface HitPointState {
 ```
 
 - Dois máximos: `sheetMaxHp` vem **sempre** da ficha (derivado). Um efeito **incondicional** que mexa no máximo (ex.: exaustão nível 4, PV máximo pela metade, linha 28545, decisão já tomada) dá o `effectiveMaxHp`. Uma característica que impeça a redução do máximo (ex.: Acostumado à Morte-Vida, "seu máximo de pontos de vida não pode mais ser reduzido", `class-progression-features.json`) deve ser declarada como efeito e anula a redução.
-- **Uma fórmula só (proposta, ver Ponto em aberto 5):**
-  - `currentHp = clamp(sheetMaxHp - damageTaken, 0, effectiveMaxHp)`.
-  - Toda operação (dano, cura) age sobre o **valor visível** `currentHp` e depois regrava `damageTaken = sheetMaxHp - novoCurrentHp`. Assim a cura nunca "some" e o teto é sempre o máximo efetivo (é a conta que `docs/regras-descanso.md`, seção 6.1, já pede: novo atual = min(máx. efetivo, atual + cura)).
-  - **Reduzir o máximo nunca leva a 0 PV sozinho.** Pela fórmula, quem tem PV acima do novo máximo fica no novo máximo, nunca em 0, e `lifeState` só muda pelo pipeline de dano. Ex.: máximo 40, `damageTaken` 25 (PV 15), exaustão 4 → efetivo 20 → PV 15 (não 0); cura de 3 → PV 18.
-  - Efeito colateral a decidir: ao sair da exaustão 4 fora de um descanso longo, os PV "cortados" pelo teto voltam (máx. 40, cheio, exaustão 4 → PV 20; a exaustão cai para 3 → PV 40 de novo). A alternativa é normalizar `damageTaken` no momento da redução (os PV acima do novo máximo se perdem). O texto da exaustão (linha 28545) só diz "Máximo de pontos de vida reduzido à metade" e não diz o que acontece com os PV atuais acima do novo máximo.
+- **Uma fórmula só (Ponto em aberto 5: (a) assumido (C), (b) decidido):**
+  - **Corte gravado ao reduzir o máximo** (decisão 4 do dono, 2026-10-24): ao entrar na exaustão 4 (ou em qualquer redução incondicional do máximo), `damageTaken = max(damageTaken, sheetMaxHp - effectiveMaxHp)`. O PV atual acima do novo máximo **se perde** e **não volta** quando a redução acaba.
+  - Daí o invariante **`sheetMaxHp - damageTaken ≤ effectiveMaxHp`**, mantido por toda operação, e a fórmula **`currentHp = max(0, sheetMaxHp - damageTaken)`**, sem teto na leitura.
+  - Toda operação (dano, cura) age sobre o **valor visível** `currentHp` e depois regrava `damageTaken = sheetMaxHp - novoCurrentHp`. Assim a cura nunca "some" e o teto é sempre o máximo **efetivo** (assumido (C); é a conta de `docs/regras-descanso.md`, seção 6.1: novo atual = min(máx. efetivo, atual + cura)).
+  - **Reduzir o máximo nunca leva a 0 PV sozinho** (com efetivo ≥ 1; ver Ponto em aberto 17). Quem tem PV acima do novo máximo fica no novo máximo, nunca em 0, e `lifeState` só muda pelo pipeline de dano. Ex.: máximo 40, `damageTaken` 25 (PV 15), exaustão 4 → efetivo 20 → PV 15, nada a cortar; cura de 3 → PV 18. Ex. do corte: máximo 40, cheio, exaustão 4 → `damageTaken` 20, PV 20; a exaustão cai para 3 → máximo 40, PV **continua** 20.
+  - O descanso longo recupera até o máximo efetivo depois do −1 de exaustão (`docs/regras-descanso.md`, seção 6.1 e Ponto em aberto 12).
 - `lifeState` é derivável em parte (`dead` e `stable` não são), por isso fica explícito. `dying` = 0 PV, inconsciente, fazendo testes.
 
 ### Máquina de estados de vida
@@ -252,19 +253,25 @@ interface HitPointState {
          ├─ 20 natural ──▶ conscious com 1 PV ──────┘
          ├─ 3º sucesso ──▶ stable
          ├─ 3º fracasso (1 = 2 fracassos) ──▶ dead
-         └─ sofre dano: +1 fracasso (crítico: +2); dano ≥ maxHp ──▶ dead
+         └─ sofre dano: +1 fracasso (crítico: +2), mesmo
+            se os PV temporários absorvem tudo; dano ≥ maxHp efetivo ──▶ dead
 
  stable: não testa; continua inconsciente
-         ├─ sofre dano ──▶ dying (ver Pontos em aberto, item 3)
+         ├─ sofre dano ──▶ dying com +1 fracasso (crítico: +2) (assumido (D))
          ├─ cura > 0 ──▶ conscious
          └─ 1d4 horas sem cura ──▶ conscious com 1 PV
 
- dead:   cura não tem efeito (só "reviver" e afins; fora do MVP)
+ qualquer: exaustão 6 ──▶ dead (assumido (F))
+
+ dead:   cura não tem efeito; sai só pelo botão "fui revivido"
+         (conscious com 1 PV, contadores zerados; decisão 13) ou pelo desfazer
 ```
 
-- **Zerar contadores** (`deathSaves`) ao entrar em `conscious` (recuperou PV) e ao entrar em `stable`.
-- **PV temporários não mudam `lifeState`.** Recebê-los a 0 PV não acorda nem estabiliza.
-- Enquanto `dying`/`stable`, a UI aplica a condição **Inconsciente** (pág. 292) como efeito incondicional: falha automática em TR de For/Des (no número). As vantagens dos ataques contra o personagem e o crítico a 1,5 metro viram **aviso** (são do atacante).
+- **Zerar contadores** (`deathSaves`) ao entrar em `conscious` (recuperou PV, ou "fui revivido") e ao entrar em `stable`.
+- **"Fui revivido"** (decisão 13): grava `lifeState = 'conscious'`, `damageTaken = sheetMaxHp - 1` (1 PV) e `deathSaves` zerados, num evento desfazível. É ação manual do jogador (o MVP não modela *reviver* e afins). O que fazer com a exaustão quando a morte veio da exaustão 6 é o Ponto em aberto 18.
+- **PV temporários não mudam `lifeState`** e **não somem ao cair a 0 PV** (decisão 6). Recebê-los a 0 PV não acorda nem estabiliza.
+- **Inconsciente derivado do `lifeState`** (modelo de `regras-condicoes.md`, 6.4): enquanto `dying`/`stable`, a condição **Inconsciente** (pág. 292) está ativa **sem ser gravada** em `conditions`, e seus efeitos saem do mesmo agregador `sheetEffects.ts`, com o estado de jogo como fonte (decisão 11). Falha automática em TR de For/Des entra como falha (mostrada como falha, com "rolar mesmo assim" discreto; decisão 12). As vantagens dos ataques contra o personagem e o crítico a 1,5 metro viram **aviso** (são do atacante).
+- **Efeitos na transição para 0 PV** (o `onApply` do Inconsciente, que não tem "aplicar" para dispará-lo): ao entrar em `dying` **ou** `stable` (inclusive pelo nocaute, que vai direto a `stable`), no **mesmo evento desfazível** do dano: grava **Caído** como condição própria, avisa que o personagem largou o que segurava e **encerra a concentração** (assumido (F)). Ao recuperar PV, o Inconsciente some sozinho e o **Caído continua** até o personagem se levantar (decisão 14).
 
 ### Ordem de aplicação de um dano recebido
 
@@ -273,24 +280,26 @@ Entrada: lista de parcelas `{ amount, damageType, isCritical, isMagical? }` (um 
 O modelo de entrada fica **flexível** porque o livro não decide os ataques com vários tipos (Ponto em aberto 12): a redução fixa fica no evento, não copiada em cada parcela, e a resistência é por tipo. A ordem abaixo é **proposta**.
 
 1. **Modificadores de dano** que não são resistência (ex.: redução fixa de uma aura), **uma vez por evento** (proposta; como repartir entre tipos é o Ponto em aberto 12).
-2. **Resistência / vulnerabilidade por tipo**, depois do passo 1 (pág. 199). Várias resistências ao mesmo tipo contam como uma (idem vulnerabilidade). Metade arredonda **para baixo** (pág. 7). Proposta: somar as parcelas do mesmo tipo e arredondar uma vez por tipo (Ponto em aberto 12).
-3. **Soma** os tipos = `total`. Piso do total com modificador negativo: Ponto em aberto 14.
+2. **Resistência / vulnerabilidade por tipo**, depois do passo 1 (pág. 199). Várias resistências ao mesmo tipo contam como uma (idem vulnerabilidade). Metade arredonda **para baixo** (pág. 7). Proposta: somar as parcelas do mesmo tipo e arredondar uma vez por tipo (Ponto em aberto 12). **Resistência e vulnerabilidade ao mesmo tipo:** o app aplica **só a resistência** (metade, para baixo); qualquer outro ajuste é manual (decisão 10).
+3. **Soma** os tipos = `total`, com **piso 0**: modificador negativo nunca leva o dano abaixo de 0 nem o transforma em cura (decisão 3). Este `total` é o "dano recebido" da concentração: CD = `max(10, floor(total / 2))`, já contando o que os PV temporários vão absorver, **um teste por evento** (assumido (E); `regras-rolagens-e-concentracao.md`, 11.4).
 4. **PV temporários absorvem primeiro:** `absorbed = min(tempHp, total)`; `tempHp -= absorbed`; `rest = total - absorbed`.
 5. Se `lifeState === 'conscious'`:
-   - `current = currentHp` (fórmula acima, já com o teto do máximo efetivo). Se `rest < current`: `damageTaken = sheetMaxHp - (current - rest)`. Fim.
+   - `current = currentHp` (fórmula acima; pelo invariante, nunca acima do máximo efetivo). Se `rest < current`: `damageTaken = sheetMaxHp - (current - rest)`. Fim.
    - Senão, `overflow = rest - current` e o personagem vai a 0 (`damageTaken = sheetMaxHp`, o que dá `currentHp = 0` com qualquer máximo efetivo):
-     - `overflow ≥ maxHp` → `dead` (morte instantânea). Qual máximo (`sheetMaxHp` ou `effectiveMaxHp`) é o Ponto em aberto 5;
-     - senão, `knockout` → `stable`; caso contrário → `dying` com contadores zerados.
+     - `overflow ≥ effectiveMaxHp` → `dead` (morte instantânea; o máximo **efetivo**, assumido (C));
+     - senão, `knockout` → `stable`; caso contrário → `dying` com contadores zerados. Nos dois casos, disparam os efeitos da transição para 0 PV (Caído gravado, aviso de largar o que segura, fim da concentração; seção anterior).
      - A morte instantânea é avaliada **antes** do nocaute, então o dano massivo vence o nocaute. É **leitura assumida**: o texto do nocaute (linhas 17937-17941) não trata dessa interação (Ponto em aberto 13).
+     - `tempHp` restante **não** é zerado ao cair a 0 (decisão 6).
 6. Se `lifeState` é `dying` ou `stable` (já a 0 PV):
-   - `rest ≥ maxHp` → `dead` (mesmo máximo do passo 5);
-   - senão, `failures += isCritical ? 2 : 1` (limitado a 3; 3 → `dead`), e `stable` vira `dying`.
-   - Caso `rest === 0` (tudo absorvido pelos temporários): **decisão em aberto** (item 2).
-7. Tudo vira um **evento de log desfazível** (o estado anterior é guardado), coerente com o "desfazer" do crítico.
+   - `rest ≥ effectiveMaxHp` → `dead` (mesmo máximo do passo 5);
+   - senão, `failures += isCritical ? 2 : 1` (limitado a 3; 3 → `dead`), e `stable` vira `dying` (assumido (D)).
+   - **Inclusive com `rest === 0`** (tudo absorvido pelos temporários): conta o fracasso, porque a regra fala em "qualquer dano" (decisão 5). Se um evento com `total === 0` depois do piso conta é o Ponto em aberto 19.
+7. Toda transição para `dead` (passos 5 e 6, terceiro fracasso, exaustão 6) encerra a concentração no mesmo evento (assumido (F)).
+8. Tudo vira um **evento de log desfazível** (o estado anterior é guardado), coerente com o "desfazer" do crítico.
 
-**Cura:** `dead` → sem efeito. Caso contrário, `novo = min(effectiveMaxHp, currentHp + heal)` e `damageTaken = sheetMaxHp - novo`. O excedente se perde. Se estava a 0 e `heal > 0` → `conscious`, contadores zerados. Cura **não** toca `tempHp`.
+**Cura:** `dead` → sem efeito (só "fui revivido"). Caso contrário, `novo = min(effectiveMaxHp, currentHp + heal)` e `damageTaken = sheetMaxHp - novo`, com `heal` de **piso 0** (decisão 3). O excedente se perde. Se estava a 0 e `heal > 0` → `conscious`, contadores zerados, e o Caído gravado continua (decisão 14). Cura **não** toca `tempHp`.
 
-**Ganhar PV temporários:** se `tempHp > 0`, a UI pergunta "manter X ou ficar com Y?" (escolha do jogador, regra do livro). O padrão sugerido é o maior, sem decidir sozinha. **No MVP o estado guarda só o número**, e o **descanso longo zera `tempHp`** sempre, como em `docs/regras-descanso.md` (seção 6.1). Fontes com duração própria ficam para depois: aí guardar `{ amount, sourceId, expiresAt? }`. Se uma fonte com duração própria sobrevive ao descanso longo é o Ponto em aberto 15.
+**Ganhar PV temporários:** se `tempHp > 0`, a UI pergunta "manter X ou ficar com Y?" (escolha do jogador, regra do livro). O padrão sugerido é o maior, sem decidir sozinha. **No MVP o estado guarda só o número**, e o **descanso longo zera `tempHp`**, como em `docs/regras-descanso.md` (seção 6.1), **exceto** quando o personagem começou o descanso com 0 PV: aí o descanso não dá nenhum benefício e os temporários ficam (assumido (A)). Fontes com duração própria ficam para depois: aí guardar `{ amount, sourceId, expiresAt? }`. Se uma fonte com duração própria sobrevive ao descanso longo é o Ponto em aberto 15.
 
 ### Resistências e vulnerabilidades do personagem
 
@@ -298,7 +307,7 @@ O passo 2 recebe as resistências do **próprio personagem**. Elas vêm de **efe
 
 Segue a regra de ouro dos efeitos:
 
-- **Incondicional** → o pipeline aplica sozinho. Ex.: Acostumado à Morte-Vida, "resistência a dano necrótico" (`class-progression-features.json`, linha 1452).
+- **Incondicional** → o pipeline aplica sozinho. Ex.: Acostumado à Morte-Vida, "resistência a dano necrótico" (`class-progression-features.json`, linha 1452); a condição **Petrificado** ("resistência a todos os tipos de dano", pág. 293), que chega pelo mesmo agregador com o estado de jogo como fonte (decisão 11; `regras-condicoes.md`, 6.3).
 - **Condicional** → vira **toggle/linha própria** perguntada antes de aplicar o dano, desligada por padrão. Ex.: Fúria do bárbaro, resistência a concussão, cortante e perfurante só enquanto em fúria e sem armadura pesada (linha 7: "em fúria?"); resistência "proveniente de ataques com armas não-mágicas" (linha 662: "o ataque era de arma não-mágica?", que casa com o `isMagical?` da parcela).
 
 ### Cobertura do personagem
@@ -314,37 +323,40 @@ O motor é puro e agnóstico de sistema; o D&D monta a expressão.
 - **Os dados extras do crítico ficam guardados à parte** (`critExtraRolls`), para o **desfazer** removê-los sem rerrolar a jogada normal.
 - **Detecção de crítico:** a partir do **d20 natural** (o dado que valeu, após vantagem/desvantagem), nunca do total. O motor separa duas coisas:
   - **acerto automático:** só `natural === 20` (linhas 17528-17532);
-  - **crítico:** `natural >= critThreshold` **e o ataque acertou** (o total iguala ou passa a CA, ou é o 20 natural). É o que o texto sustenta; se o 19/18 da margem ampliada também acerta automaticamente é o Ponto em aberto 16. O motor deve deixar essa troca num lugar só.
+  - **crítico:** `natural >= critThreshold` **e o ataque acertou** (o total iguala ou passa a CA, ou é o 20 natural). Decidido (decisão 7, Ponto em aberto 16): o 19/18 da margem ampliada **não** acerta automaticamente; só é crítico se o total acertar. O motor deixa essa regra num lugar só.
   - `critThreshold` vem da ficha: padrão 20; Campeão 19 (nível 3+) e 18 (nível 15+), declarado como efeito nos dados (`sheetEffects`), não como `if` na UI.
   - `natural === 1` → erro automático, sem efeito extra.
   - Quando a CA do alvo é desconhecida (o caso comum, o jogador não sabe a CA do monstro), um 19/18 natural do Campeão vira pergunta "acertou?" antes de dobrar os dados.
 - O motor também precisa aceitar **crítico forçado** (sem d20; ex.: o dano recebido veio de um crítico contra o personagem inconsciente). A entrada manual de dano recebido tem um "foi crítico?" que alimenta o passo 6.
 - **Dano em área:** uma rolagem só (pág. 198). O motor não rerrola por alvo.
 - **Entrada manual (dado físico):** o jogador informa o valor de cada dado (ou o d20 natural). As regras de natural 1/20, crítico e teste contra a morte rodam igual sobre o valor informado.
-- **Teste contra a morte:** `1d20` + só os bônus marcados como "a todos os testes de resistência" (o livro diz "magias e características que melhoram suas chances"). **Nada** de modificador de habilidade ou proficiência. 1 e 20 avaliados no **natural**.
+- **Teste contra a morte:** `1d20` + só os bônus marcados como "a todos os testes de resistência" (o livro diz "magias e características que melhoram suas chances"). **Nada** de modificador de habilidade ou proficiência.
+  - **Modo:** o teste também recebe as fontes de **vantagem/desvantagem** que valem para todos os testes de resistência, montadas como `advantageSources[]`/`disadvantageSources[]` (`regras-rolagens-e-concentracao.md`, 11.2). Ex.: a **Exaustão 3** ("desvantagem nos testes de resistência", pág. 292) dá desvantagem no teste contra a morte. É a proposta de `regras-condicoes.md`, Ponto em aberto 16, seguida até decisão em contrário.
+  - **Desfecho:** o **10 é comparado ao total** (d20 + bônus); o **1 e o 20 são do d20 natural** (o dado mantido, depois de vantagem/desvantagem) (decisão 8).
+  - Não há falha automática: a do Inconsciente vale só para TR de Força e Destreza, e o teste contra a morte não é vinculado a habilidade.
 - **Estável → 1 PV em 1d4 horas:** o motor rola 1d4 e a UI mostra "recupera 1 PV em N horas". O app não conta tempo real; o jogador confirma.
 - **Tipos de dano:** `DamageType` em `src/systems/dnd5e/types/equipment.ts` hoje só tem `bludgeoning | piercing | slashing` (armas). Para resistências e magias, ampliar para os 13 `id` da seção 5 (e `DAMAGE_TYPE_PT` em `utils/weaponFormat.ts`).
 
 ## Pontos em aberto (decidir com o dono)
 
-1. **Resistência + vulnerabilidade ao mesmo tipo ao mesmo tempo:** o texto (pág. 199) não trata do caso. Só diz que várias do **mesmo** tipo (resistência ou vulnerabilidade) contam como uma. O que o motor faz?
-2. **Dano totalmente absorvido por PV temporários a 0 PV conta fracasso?** "Sofrendo Dano com 0 PV" (linhas 17901-17906) diz "qualquer dano". "PV temporários" (linhas 17966-17970) diz que você "ainda pode sofrer dano, direcionando o dano sofrido aos pontos de vida temporários". O texto não resolve.
-3. **Dano em criatura estável:** o texto (linhas 17921-17923) diz que ela "não estará mais estável e precisa fazer de novo um teste de resistência contra a morte". Não diz explicitamente se aquele dano já conta 1 fracasso (2 se crítico), como na regra geral de dano a 0 PV. A nota de implementação assume que conta, porque a criatura estável também está a 0 PV. Confirmar.
-4. **"Tirar 10 ou mais" com bônus:** com uma magia ou característica que soma ao teste contra a morte, o 10 é sobre o **total** (leitura assumida). O 1 e o 20 são do d20 natural ("obtém um 1 no d20"). Confirmar, e definir quais efeitos do app contam como "melhoram suas chances de ser bem sucedido em um teste de resistência".
-5. **PV máximo reduzido** (ex.: exaustão 4, já decidido que entra no número): duas decisões juntas.
-   - (a) **Qual máximo vale** para a morte instantânea (passos 5 e 6) e para o teto da cura: o da ficha ou o **efetivo** (reduzido)? O texto do Cap. 9 só diz "seu máximo de pontos de vida".
-   - (b) **O que acontece com os PV atuais acima do novo máximo.** O texto da exaustão (linha 28545) só diz "Máximo de pontos de vida reduzido à metade". Proposta das Notas: `currentHp = clamp(sheetMaxHp - damageTaken, 0, effectiveMaxHp)`, com dano e cura agindo sobre o valor visível. Efeito: os PV cortados voltam se a redução acabar fora de um descanso longo. A alternativa é normalizar `damageTaken` na redução (os PV cortados se perdem). Restrição em qualquer opção: a redução do máximo **nunca** pode deixar alguém a 0 PV sem transição de estado. Obs.: o exemplo de `docs/regras-descanso.md`, seção 6.1 (máx. 20, efetivo 10, `damageTaken` 15, "PV atual 0"), supõe a leitura antiga (efetivo − `damageTaken`). Pela fórmula proposta, o PV atual ali seria 5. Alinhar aquele doc depois da decisão.
-6. **Quais dados extras dobram no crítico:** o livro diz "todos os dados de dano" e "outros dados de dano" que o ataque envolva, com o Ataque Furtivo como único exemplo (linhas 17762-17764). Para dados que vêm de outras características ou magias junto com o ataque, o texto não lista. Proposta: o motor dobra todo grupo de dados da expressão do ataque, e o jogador pode desmarcar um grupo (junto com o "desfazer" já decidido).
-7. **PV temporários ao cair a 0 PV:** o texto não diz que somem, só que duram até acabar, até o fim da duração própria ou até o descanso longo. Manter como estão?
-8. **Morte instantânea com PV temporários:** confirmar que o "dano que sobrou" é contado **depois** de os temporários absorverem (leitura assumida na ordem de aplicação).
-9. **Tradução, cobertura (linhas 17703-17706):** o parágrafo começa com "três-quartos de cobertura" (+5) e na frase seguinte chama o mesmo grau de "cobertura superior", nome que também aparece no exemplo da linha 17696. É a mesma coisa, com nomes diferentes. Escolher um termo para a UI ("três-quartos" parece mais claro).
-10. **Tradução, crítico (linha 17763-17764):** "ele joga esses dados duas vezes também". O "ele" parece se referir ao jogador, e não muda a regra. Só registro.
-11. **Morte e "reviver":** o MVP não modela ressurreição. Um personagem `dead` só sai desse estado por ação manual do jogador ("o Mestre me reviveu")? Precisa de botão de "desfazer morte" além do desfazer do último evento?
-12. **Ataque com vários tipos de dano** (linhas 17816-17823; o exemplo do livro tem um tipo só):
-    - (a) uma redução fixa de "todo o dano" vale **uma vez por ataque/evento** ou **uma vez por parcela/tipo**? Por parcela, a aura de −5 desconta 10 num ataque cortante + fogo. E, se for uma vez por evento, como repartir entre os tipos quando só um deles sofre resistência?
-    - (b) a metade da resistência arredonda **por parcela** ou **sobre a soma** das parcelas do mesmo tipo?
-    - Proposta das Notas: redução no nível do evento, resistência e arredondamento por tipo.
-13. **Nocaute com dano que sobra ≥ PV máximo:** morte instantânea ou nocaute? O texto do nocaute (linhas 17937-17941) só diz que, ao reduzir a 0 PV com ataque corpo-a-corpo, o atacante pode nocautear, e a criatura "cai inconsciente e está estável". O da morte instantânea (linhas 17854-17857) não fala de nocaute. As Notas avaliam a morte primeiro (leitura assumida, só proposta).
-14. **Dano total ≤ 0 com modificador negativo:** piso 0, piso 1 ou sem piso? O texto não diz (ataque desarmado, linhas 17601-17602; duas armas, linhas 17637-17639), e o grep do extrato não achou piso de dano. Coerência com `docs/regras-descanso.md`, Ponto em aberto 4 (cura com CON negativa, recomendado piso 0): para dano, "sem piso" faria um dano virar cura. Sugestão de produto: piso 0, mas é decisão do dono.
-15. **PV temporários com duração própria e o descanso longo:** o texto (linhas 17970-17973) diz que, **sem** duração própria, duram até acabarem ou até o descanso longo. Não diz se uma fonte **com** duração própria que ainda não venceu sobrevive ao descanso longo. No MVP (só o número) o descanso longo zera sempre, como em `docs/regras-descanso.md`.
-16. **Margem de crítico ampliada e acerto automático:** um 19 natural do Campeão (18 no nível 15) contra CA alta **acerta automaticamente** ou só é crítico **se o total acertar**? O acerto automático está escrito só para o 20 (linhas 17528-17532). O Crítico Aprimorado e o Crítico Superior dão só "margem de acerto crítico" (linhas 7312-7314 e 7329-7331). As Notas seguem o texto (acerto automático só no 20; crítico na margem só se acertar), com a troca isolada num lugar só do motor.
+1. **Resistência + vulnerabilidade ao mesmo tipo ao mesmo tempo** (pág. 199 não trata). **Decidido (2026-10-24):** o app aplica só a resistência (metade, arredondada para baixo); o resto é manual.
+2. **Dano totalmente absorvido por PV temporários a 0 PV conta fracasso?** (linhas 17901-17906 × 17966-17970). **Decidido (2026-10-24):** conta, porque a regra fala em "qualquer dano".
+3. **Dano em criatura estável** (linhas 17921-17923): aquele dano já conta 1 fracasso (2 se crítico)? **Assumido (2026-10-24), a confirmar (D):** conta 1 fracasso (2 se crítico) e a criatura volta a `dying`.
+4. **"Tirar 10 ou mais" com bônus.** **Decidido (2026-10-24):** o 10 é comparado ao **total**; o 1 e o 20 são do d20 natural. Quais efeitos contam como "melhoram suas chances": sem decisão; segue a proposta das Notas (bônus e fontes de vantagem/desvantagem que valem para todos os testes de resistência, ex.: Exaustão 3) até decisão em contrário.
+5. **PV máximo reduzido** (ex.: exaustão 4).
+   - (a) **Qual máximo vale** para a morte instantânea e para o teto da cura? **Assumido (2026-10-24), a confirmar (C):** o máximo **efetivo** (já reduzido).
+   - (b) **O que acontece com os PV atuais acima do novo máximo?** **Decidido (2026-10-24):** se perdem; o corte é gravado em `damageTaken` e não volta quando a exaustão sai. `docs/regras-descanso.md`, seção 6.1, já foi alinhado (invariante `sheetMaxHp − damageTaken ≤ effectiveMaxHp`).
+6. **Quais dados extras dobram no crítico** (linhas 17762-17764). Sem decisão. Segue a proposta (o motor dobra todo grupo de dados da expressão do ataque e o jogador pode desmarcar um grupo, junto com o desfazer) até decisão em contrário.
+7. **PV temporários ao cair a 0 PV.** **Decidido (2026-10-24):** não somem.
+8. **Morte instantânea com PV temporários:** o "dano que sobrou" é contado depois de os temporários absorverem? Sem decisão. Segue a leitura assumida na ordem de aplicação (depois) até decisão em contrário.
+9. **Tradução, cobertura (linhas 17703-17706):** "três-quartos" e "cobertura superior" são o mesmo grau. Sem decisão. Segue a proposta ("três-quartos" na UI) até decisão em contrário.
+10. **Tradução, crítico (linha 17763-17764):** "ele joga esses dados duas vezes também". Não muda a regra. Só registro.
+11. **Morte e "reviver":** botão de "desfazer morte" além do desfazer? **Decidido (2026-10-24):** botão "fui revivido", que volta a `conscious` com 1 PV e contadores zerados, além do desfazer.
+12. **Ataque com vários tipos de dano** (linhas 17816-17823): (a) redução fixa por evento ou por parcela; (b) metade por parcela ou sobre a soma do tipo. Sem decisão. Segue a proposta (redução no nível do evento, resistência e arredondamento por tipo) até decisão em contrário.
+13. **Nocaute com dano que sobra ≥ PV máximo** (linhas 17937-17941 × 17854-17857). Sem decisão. Segue a proposta (a morte instantânea é avaliada antes do nocaute) até decisão em contrário.
+14. **Dano total ≤ 0 com modificador negativo.** **Decidido (2026-10-24):** piso 0. O dano nunca vira cura.
+15. **PV temporários com duração própria e o descanso longo** (linhas 17970-17973). Sem decisão. Segue a proposta do MVP (só o número; o descanso longo zera, salvo com 0 PV no início, assumido (A)) até decisão em contrário.
+16. **Margem de crítico ampliada e acerto automático** (linhas 17528-17532, 7312-7314 e 7329-7331). **Decidido (2026-10-24):** só o 20 natural acerta automaticamente; 19/18 é crítico se o total acertar.
+17. **Máximo efetivo 0.** Com PV máximo da ficha 1, a exaustão 4 dá `floor(1 / 2) = 0` (pág. 7), e o corte gravado levaria o personagem a 0 PV sem passar pelo pipeline de dano, contra a restrição "reduzir o máximo nunca leva a 0 PV sozinho". O livro não trata do caso. Caso de borda, sem proposta.
+18. **"Fui revivido" depois de morte por exaustão 6.** A decisão 13 diz o que o botão faz com PV e contadores, mas não com o nível de exaustão. Se ele fica em 6, a morte derivada continua. Sem decisão.
+19. **Evento de dano com total 0 a 0 PV.** Com o piso 0 (decisão 3), um dano pode dar 0 (ex.: ataque desarmado com Força negativa). Isso é "qualquer dano" e conta fracasso, como o dano absorvido pelos temporários (decisão 5)? Sem decisão.

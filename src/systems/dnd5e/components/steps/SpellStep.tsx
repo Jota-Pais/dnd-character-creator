@@ -19,13 +19,16 @@ import {
   getCasterEntries,
   getCombinedSpellSlots,
   getPactSlots,
+  getSpellChoiceOverflow,
   SCHOOL_COLORS,
   SCHOOL_EMOJI,
   type CasterEntry,
 } from '../../utils/spellUtils'
 import { calculateModifier } from '../../utils/abilityScoreUtils'
+import { getFinalAbilityScores } from '../../utils/asiUtils'
 import type { Spell } from '../../types/spell'
-import type { SpellChoices, BaseAbilityScores } from '../../types/character'
+import type { SpellChoices } from '../../types/character'
+import type { AbilityScore } from '../../types/race'
 
 type Tab = 'cantrips' | number // number = spell level
 
@@ -45,6 +48,9 @@ export function SpellStep() {
   // Classes conjuradoras ativas no nível que têm (primária + adicionais); a subclasse conta
   // (Cavaleiro Arcano, Trapaceiro Arcano).
   const casters = getCasterEntries(draft)
+  // Magias vem depois de Atributos e Aprimoramentos justamente para usar os valores finais
+  // (raça + aumentos + talentos) — os mesmos da Revisão e da ficha imprimível.
+  const finalScores = getFinalAbilityScores(draft)
 
   const canAdvance = isStepComplete(draft, 'spells')
 
@@ -85,7 +91,7 @@ export function SpellStep() {
           <ClassSpellSection
             key={caster.cls.id}
             caster={caster}
-            abilityScores={draft.abilityScores}
+            abilityScores={finalScores}
             multi={multi}
             onDetail={setDetail}
             detailId={detail?.id}
@@ -129,7 +135,8 @@ function ClassSpellSection({
   caster, abilityScores, multi, onDetail, detailId, onChange,
 }: {
   caster: CasterEntry
-  abilityScores: BaseAbilityScores
+  /** Atributos finais (getFinalAbilityScores), nunca os base. */
+  abilityScores: Record<AbilityScore, number>
   multi: boolean
   onDetail: (s: Spell) => void
   detailId?: string
@@ -146,9 +153,9 @@ function ClassSpellSection({
   const maxSpellLevel = getMaxSpellLevel(cls.id, level, subclassId)
   const maxSpells = getSpellsToChoose(casting, level, abilityScores)
   const school = getSchoolRestrictionStatus(sc, level, choices.spells)
+  const overflow = getSpellChoiceOverflow(caster, abilityScores)
 
-  const score = abilityScores[sc.ability]
-  const abilityMod = calculateModifier(typeof score === 'number' ? score : 10)
+  const abilityMod = calculateModifier(abilityScores[sc.ability])
 
   const cantrips = cantripsNeeded > 0 ? getCantrips(casting.spellList) : []
   const hasTabs = cantripsNeeded > 0 || maxSpellLevel > 0
@@ -206,6 +213,13 @@ function ClassSpellSection({
       )}
 
       <p className="text-parchment-600 text-xs mb-3 font-fantasy">{spellsLabel}</p>
+
+      {/* Atributo baixado depois da escolha: a etapa não apaga nada, só avisa do excesso. */}
+      {overflow && (
+        <p className="text-xs mb-3 rounded-lg border border-red-900/60 bg-red-950/20 px-3 py-2 text-red-400">
+          ⚠ {overflow.text}
+        </p>
+      )}
 
       {activeTab === 'cantrips' && (
         <>

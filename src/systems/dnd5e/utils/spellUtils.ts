@@ -358,6 +358,45 @@ export function getSpellsToChoose(
   return getSpellsKnownCount(casting.casterId, classLevel) || sc.spellsAtLevel1
 }
 
+/** Magias escolhidas além do teto da classe (ver getSpellChoiceOverflow). */
+export type SpellChoiceOverflow = {
+  /** "Clérigo", ou "Guerreiro (Cavaleiro Arcano)". */
+  label: string
+  chosen: number
+  max: number
+  excess: number
+  /** Texto pronto para a etapa Magias, a Revisão e a ficha imprimível. */
+  text: string
+}
+
+/**
+ * Mais magias escolhidas do que o teto da classe permite com os atributos FINAIS (raça +
+ * aprimoramentos) — tipicamente o jogador voltou e baixou o atributo de conjuração de um
+ * conjurador preparado. A ficha não decide qual magia sai: nada é apagado, vira aviso.
+ * null quando está dentro do teto.
+ */
+export function getSpellChoiceOverflow(
+  caster: CasterEntry,
+  finalScores: Partial<Record<AbilityScore, number | null>>,
+): SpellChoiceOverflow | null {
+  const max = getSpellsToChoose(caster.casting, caster.entry.level, finalScores)
+  const chosen = caster.spells.length
+  if (max === Infinity || chosen <= max) return null
+  const excess = chosen - max
+  const type = caster.casting.spellcasting.type
+  const what = type === 'prepared' ? 'magias preparadas'
+    : type === 'hybrid' ? 'magias no grimório'
+    : 'magias conhecidas'
+  const label = caster.casting.label
+  return {
+    label,
+    chosen,
+    max,
+    excess,
+    text: `${label}: ${chosen} ${what}, mas o máximo é ${max} — ${excess} a mais. Desmarque ${excess === 1 ? 'uma' : excess} na etapa Magias.`,
+  }
+}
+
 export function isSpellStepComplete(
   cls: GameClass | null,
   choices: SpellChoices,

@@ -22,7 +22,9 @@ import {
   isAllowedBySchoolRestriction,
   isOutsideSchoolRestriction,
   getCasterEntries,
+  getSpellChoiceOverflow,
 } from '../spellUtils'
+import { getFinalAbilityScores } from '../asiUtils'
 import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
 import { getClass } from '../classUtils'
 import type { GameClass, ClassSpellcasting } from '../../types/class'
@@ -490,4 +492,34 @@ describe('isSpellStepComplete: Cavaleiro Arcano e Trapaceiro Arcano', () => {
       cantrips: ['fire-bolt'],
       spells: ['sleep', 'disguise-self', 'shield'],
     }, 3, 'arcane-trickster')).toBe(false))
+})
+
+// ── Etapa Magias com os atributos finais (raça + aprimoramentos), como a Revisão e o PDF ──
+
+describe('magias preparadas pelos atributos finais', () => {
+  const PREPARED = ['bless', 'cure-wounds', 'guiding-bolt', 'healing-word', 'shield-of-faith', 'sanctuary']
+  const clerigaAna = (wis: number): CharacterDraft => ({
+    ...EMPTY_DRAFT, race: 'dwarf', subrace: 'hill-dwarf', class: 'cleric', level: 3,
+    abilityScores: { STR: 10, DEX: 10, CON: 14, INT: 10, WIS: wis, CHA: 10 },
+    spellChoices: { cantrips: [], spells: PREPARED },
+  })
+
+  it('Clériga Anã da Colina 3 com Sab 15 (+1 racial = 16) prepara 6, não 5', () => {
+    const draft = clerigaAna(15)
+    const [caster] = getCasterEntries(draft)
+    const finalScores = getFinalAbilityScores(draft)
+    expect(finalScores.WIS).toBe(16)
+    expect(getSpellsToChoose(caster.casting, 3, finalScores)).toBe(6)
+    expect(getSpellsToChoose(caster.casting, 3, draft.abilityScores)).toBe(5) // o defeito: atributo base
+    expect(getSpellChoiceOverflow(caster, finalScores)).toBeNull()
+  })
+
+  it('atributo baixado depois da escolha: nada some, vira aviso com o excesso', () => {
+    const draft = clerigaAna(13) // 13 + 1 = 14 → mod +2 → 5 preparadas
+    const [caster] = getCasterEntries(draft)
+    const overflow = getSpellChoiceOverflow(caster, getFinalAbilityScores(draft))
+    expect(caster.spells).toHaveLength(6)
+    expect(overflow).toMatchObject({ label: 'Clérigo', chosen: 6, max: 5, excess: 1 })
+    expect(overflow?.text).toContain('6 magias preparadas, mas o máximo é 5')
+  })
 })

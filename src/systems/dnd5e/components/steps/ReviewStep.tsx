@@ -52,6 +52,7 @@ import {
   getCasterEntries,
   SCHOOL_EMOJI,
   describeCastingAids,
+  getSpellChoiceOverflow,
 } from '../../utils/spellUtils'
 import { exportCharacter } from '../../utils/storage'
 import { getMissingSteps, isStepComplete } from '../../utils/draftValidation'
@@ -899,6 +900,7 @@ export function ReviewStep() {
                 const dc = getSpellSaveDC(sc_, finalScores, level)
                 const attackBonus = formatSpellAttackBonus(sc_, finalScores, level)
                 const aids = describeCastingAids(sc_)
+                const overflow = getSpellChoiceOverflow(caster, finalScores)
                 const cantrips = caster.cantrips.map(id => getSpell(id)).filter(Boolean)
                 const spells = caster.spells.map(id => getSpell(id)).filter(Boolean)
                 // Conjuração de subclasse (Cavaleiro/Trapaceiro Arcano) se identifica mesmo sem multiclasse.
@@ -918,6 +920,12 @@ export function ReviewStep() {
                       <div className="mb-3 space-y-0.5">
                         {aids.focus && <p className="text-xs text-parchment-500">{aids.focus}</p>}
                         {aids.ritual && <p className="text-xs text-parchment-500">{aids.ritual}</p>}
+                      </div>
+                    )}
+                    {/* Mais magias que o teto dos atributos finais: aviso, nunca escolha apagada. */}
+                    {overflow && (
+                      <div className="mb-3 rounded-lg border border-red-900/60 bg-red-950/20 px-3 py-2">
+                        <p className="text-xs font-semibold text-red-400">⚠ {overflow.text}</p>
                       </div>
                     )}
                     {cantrips.length > 0 && (

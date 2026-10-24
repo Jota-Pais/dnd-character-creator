@@ -311,8 +311,10 @@ export function getSheetSpeed(draft: CharacterDraft, finalScores: FinalScores): 
  * estão somados e os que ficaram de fora, com o motivo — pra valer na mesa quando o jogador troca
  * de equipamento —, e a redução da armadura pesada sem a Força mínima, aplicada ou anulada pelo
  * anão. Os incondicionais (Mobilidade) não ganham linha: já estão no número, sem ressalva.
+ * Sem raça não há número (`getSheetSpeed` dá `null`, a ficha mostra "—"), então nem linha.
  */
 export function describeSpeedBonuses(draft: CharacterDraft, finalScores: FinalScores): string[] {
+  if (!draft.race || !getRace(draft.race)) return []
   const lines = getSpeedBonuses(draft)
     .filter(b => b.condition)
     .map(b => {

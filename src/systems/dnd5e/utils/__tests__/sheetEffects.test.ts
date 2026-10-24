@@ -786,6 +786,13 @@ describe('armadura pesada sem a Força mínima', () => {
     expect(sheetSpeed(d)).toBe(30)
   })
 
+  it('sem raça não há Deslocamento ("—"), então nem linha de redução ou de bônus embaixo', () => {
+    const noRace = fighter(10, 'plate', { race: null })
+    expect(sheetSpeed(noRace)).toBeNull()
+    expect(speedLines(noRace)).toEqual([])
+    expect(speedLines(fighter(8, 'plate', { race: null, level: 5, class: 'barbarian' }))).toEqual([])
+  })
+
   it('o bárbaro de placas sem Força perde o Movimento Rápido e ainda leva a redução', () => {
     const d = fighter(8, 'plate', { level: 5, class: 'barbarian' })
     expect(sheetSpeed(d)).toBe(20)

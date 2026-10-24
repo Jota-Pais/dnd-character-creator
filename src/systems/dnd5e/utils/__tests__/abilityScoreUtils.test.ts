@@ -11,6 +11,9 @@ import {
   isAbilitiesStepComplete,
   getProficiencyBonus,
   clampCustomScore,
+  getXpThreshold,
+  getNextXpThreshold,
+  formatXpProgress,
 } from '../abilityScoreUtils'
 import type { AbilityScore } from '../../types/race'
 
@@ -39,6 +42,39 @@ describe('getProficiencyBonus', () => {
   it('nível 20 retorna +6', () => expect(getProficiencyBonus(20)).toBe(6))
   it('clampeia nível abaixo de 1 para +2', () => expect(getProficiencyBonus(0)).toBe(2))
   it('clampeia nível acima de 20 para +6', () => expect(getProficiencyBonus(25)).toBe(6))
+})
+
+// Tabela Avanço de Personagem, PHB p. 15.
+describe('getXpThreshold', () => {
+  it('nível 1 começa em 0 XP', () => expect(getXpThreshold(1)).toBe(0))
+  it('nível 2 começa em 300 XP', () => expect(getXpThreshold(2)).toBe(300))
+  it('nível 4 começa em 2.700 XP', () => expect(getXpThreshold(4)).toBe(2700))
+  it('nível 5 começa em 6.500 XP', () => expect(getXpThreshold(5)).toBe(6500))
+  it('nível 11 começa em 85.000 XP', () => expect(getXpThreshold(11)).toBe(85000))
+  it('nível 12 começa em 100.000 XP', () => expect(getXpThreshold(12)).toBe(100000))
+  it('nível 20 começa em 355.000 XP', () => expect(getXpThreshold(20)).toBe(355000))
+  it('clampeia fora de 1–20', () => {
+    expect(getXpThreshold(0)).toBe(0)
+    expect(getXpThreshold(25)).toBe(355000)
+  })
+  it('a tabela é estritamente crescente', () => {
+    for (let lvl = 2; lvl <= 20; lvl++) expect(getXpThreshold(lvl)).toBeGreaterThan(getXpThreshold(lvl - 1))
+  })
+})
+
+describe('getNextXpThreshold', () => {
+  it('nível 4 sobe em 6.500 XP', () => expect(getNextXpThreshold(4)).toBe(6500))
+  it('nível 19 sobe em 355.000 XP', () => expect(getNextXpThreshold(19)).toBe(355000))
+  it('nível 20 não tem próximo', () => expect(getNextXpThreshold(20)).toBeNull())
+})
+
+describe('formatXpProgress', () => {
+  it('mostra o mínimo do nível e o do próximo', () =>
+    expect(formatXpProgress(4)).toBe('nível 4 a partir de 2.700 XP · próximo nível em 6.500 XP'))
+  it('nível 1 parte de 0', () =>
+    expect(formatXpProgress(1)).toBe('nível 1 a partir de 0 XP · próximo nível em 300 XP'))
+  it('nível 20 não tem "próximo"', () =>
+    expect(formatXpProgress(20)).toBe('nível 20 a partir de 355.000 XP'))
 })
 
 describe('formatModifier', () => {

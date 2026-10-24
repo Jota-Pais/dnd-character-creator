@@ -17,10 +17,11 @@ import {
 } from '../../utils/classResourceUtils'
 import {
   getBackground, BACKGROUND_PRESENTATION, getToolName, SKILLS, resolveBackgroundItems,
+  getBackgroundDetailPrompt, ROLEPLAY_FIELDS,
 } from '../../utils/backgroundUtils'
 import {
   calculateModifier, formatModifier, ALL_ABILITY_SCORES, ABILITY_LABELS,
-  getProficiencyBonus,
+  getProficiencyBonus, formatXpProgress,
 } from '../../utils/abilityScoreUtils'
 import {
   getEquippedArmor, formatInventoryItem, describeResolvedOption,
@@ -74,6 +75,7 @@ export function ReviewStep() {
   const subrace = race && draft.subrace ? getSubrace(race, draft.subrace) : null
   const cls = draft.class ? getClass(draft.class) : undefined
   const bg = draft.background ? getBackground(draft.background) : undefined
+  const bgDetail = getBackgroundDetailPrompt(bg)
 
   // Todas as classes (primária + adicionais), com o nível derivado da primária.
   const entries = allClassEntries(draft)
@@ -223,6 +225,7 @@ export function ReviewStep() {
             {draft.name || '—'}
           </p>
           <p className="text-parchment-500 text-sm font-fantasy">{identityParts}</p>
+          <p className="text-parchment-700 text-xs mt-1">XP: {formatXpProgress(level)}</p>
         </div>
 
         <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
@@ -590,6 +593,26 @@ export function ReviewStep() {
           </p>
         </Section>
       )}
+
+      {/* O mesmo que a caixa "Personagem" da ficha imprimível: nada aqui é escolhido no app. */}
+      <Section title="Personagem">
+        <p className="text-parchment-600 text-sm leading-relaxed">
+          A ficha impressa traz linhas para preencher a lápis:{' '}
+          {ROLEPLAY_FIELDS.map(f => f.label).join(', ')}
+          {bgDetail ? ` e ${bgDetail.label}` : ''}. O livro dá sugestões, mas você pode inventar.
+        </p>
+        {bgDetail && (
+          <p className="text-parchment-700 text-xs leading-relaxed mt-2">
+            <span className="font-semibold text-parchment-500">{bgDetail.label}</span>{' '}
+            ({bgDetail.instruction}): {bgDetail.optionsLine}
+          </p>
+        )}
+        <p className="text-parchment-700 text-xs leading-relaxed mt-2">
+          <span className="font-semibold text-parchment-500">Inspiração</span> (marcador ○ na ficha):
+          o Mestre a concede quando você interpreta esses traços; você a tem ou não tem, e pode
+          gastá-la para ter vantagem numa jogada de ataque, teste de resistência ou de habilidade.
+        </p>
+      </Section>
 
       {/* Racial Traits */}
       {race && (

@@ -39,6 +39,31 @@
       "description": "Como membro respeitado de uma guilda, você pode contar com auxílio de outros membros em viagens. Recebe abrigo gratuito ou alojamento básico em casas de membros, acessa redes de contatos políticos e comerciais, e a guilda paga sua fiança em casos legais menores. Em troca, paga taxas mensais de 5 po e mantém os princípios da guilda."
     },
     "variant": "Comerciante: substitui a proficiência em ferramentas de artesão por proficiência em ferramentas de navegação ou em um idioma adicional. A feature representa contatos comerciais em vez de filiação a guilda.",
+    "detailTable": {
+      "label": "Negócios da guilda",
+      "options": [
+        "Alquimistas e boticários",
+        "Armeiros, chaveiros e ferreiros finos",
+        "Cervejeiros, destiladores e viticultores",
+        "Calígrafos, escribas e escrivães",
+        "Carpinteiros, construtores de telhado e estucadores",
+        "Cartógrafos, agrimensores e desenhistas",
+        "Remendões e sapateiros",
+        "Cozinheiros e padeiros",
+        "Vidraceiros e escultores",
+        "Joalheiros e lapidários",
+        "Coureiros, peleiros e curtidores",
+        "Pedreiros e marceneiros",
+        "Pintores, iluminadores e construtores de placas",
+        "Oleiros e telheiros",
+        "Armadores e veleiros",
+        "Ferreiros e forjadores",
+        "Funileiros, latoeiros e galheteiros",
+        "Fabricantes de carroças e fabricantes de rodas",
+        "Tecelões e tintureiros",
+        "Entalhadores, tanoeiros e construtores de arcos"
+      ]
+    },
     "equipment": {
       "items": [
         { "kind": "chosen-tool" },
@@ -62,6 +87,22 @@
       "description": "Você sempre encontra um lugar para se apresentar — em estalagens, tavernas, festivais, circos, teatros ou cortes nobres. Em troca da apresentação, recebe alojamento e alimentação gratuitos por padrão de vida modesto ou confortável. Tende a ser reconhecido em lugares onde já se apresentou antes."
     },
     "variant": "Gladiador: substitui a proficiência em instrumento musical por proficiência em uma arma incomum usada como acessório de palco, como uma rede ou tridente.",
+    "detailTable": {
+      "label": "Rotinas de artista",
+      "note": "escolha de uma a três ou role 1d10",
+      "options": [
+        "Acrobata",
+        "Ator",
+        "Bufão",
+        "Cantor",
+        "Dançarino",
+        "Engolidor de fogo",
+        "Instrumentista",
+        "Malabarista",
+        "Narrador",
+        "Poeta"
+      ]
+    },
     "equipment": {
       "items": [
         { "kind": "chosen-tool" },
@@ -83,6 +124,17 @@
       "description": "Você criou uma segunda identidade que inclui documentos, conhecidos estabelecidos e disfarces que permitem assumir essa persona. Pode também forjar documentos, incluindo papéis oficiais e cartas pessoais, desde que tenha visto um exemplo do tipo de documento ou da assinatura que está reproduzindo."
     },
     "variant": null,
+    "detailTable": {
+      "label": "Tramoia predileta",
+      "options": [
+        "Eu trapaceio em jogos de azar.",
+        "Eu falsifico moedas ou forjo documentos.",
+        "Eu me infiltro na vida das pessoas para descobrir suas fraquezas e ficar com suas fortunas.",
+        "Eu troco de identidade como troco de roupa.",
+        "Eu faço furtos rápidos nas esquinas das ruas.",
+        "Eu convenço as pessoas que tranqueiras inúteis valem seu suado dinheiro."
+      ]
+    },
     "equipment": {
       "items": [
         { "kind": "specific", "id": "fine-clothes", "itemType": "general", "quantity": 1 },
@@ -106,6 +158,19 @@
       "description": "Você possui um contato confiável no submundo que serve como ligação com uma rede maior de outros criminosos. Sabe como trocar mensagens com esse contato à distância, mesmo a longas distâncias — usando intermediários locais que distribuem informações por uma rede maior."
     },
     "variant": "Espião: mecanicamente idêntico, mas representa um agente de inteligência a serviço de um governo, organização ou figura poderosa em vez de um criminoso de rua.",
+    "detailTable": {
+      "label": "Especialidade criminosa",
+      "options": [
+        "Assaltante",
+        "Assassino de aluguel",
+        "Batedor de carteira",
+        "Chantagista",
+        "Contrabandista",
+        "Executor",
+        "Ladrão de estrada",
+        "Receptador"
+      ]
+    },
     "equipment": {
       "items": [
         { "kind": "specific", "id": "crowbar", "itemType": "general", "quantity": 1 },
@@ -128,6 +193,19 @@
       "description": "O isolamento da sua reclusão proveu acesso a uma descoberta única e poderosa. A natureza exata da revelação depende do tipo de eremita que você foi — pode ser uma verdade cósmica esquecida, o paradeiro de algo perdido, a localização de uma pessoa importante, ou um segredo guardado por culto. O Mestre ajuda a determinar a natureza desta descoberta."
     },
     "variant": null,
+    "detailTable": {
+      "label": "Vida de isolamento",
+      "options": [
+        "Eu estava em busca de esclarecimento espiritual.",
+        "Eu estava participando da vida comunal de acordo com os ditames de uma ordem religiosa.",
+        "Eu fui exilado por um crime que não cometi.",
+        "Eu me afastei da sociedade após um evento que mudou minha vida.",
+        "Eu precisava de um lugar tranquilo para trabalhar minha arte, literatura, música ou manifesto.",
+        "Eu precisava comungar com a natureza, longe da civilização.",
+        "Eu era o guardião de uma ruína ou relíquia antiga.",
+        "Eu era um peregrino em busca de uma pessoa, lugar ou relíquia de grande significância espiritual."
+      ]
+    },
     "equipment": {
       "items": [
         { "kind": "specific", "id": "scroll-case", "itemType": "general", "quantity": 1 },
@@ -153,6 +231,21 @@
       "description": "Você possui memória excelente para mapas e geografia. Sempre consegue se lembrar do layout geral de terrenos, povoados e características da região por onde já passou. Adicionalmente, consegue caçar e forragear comida fresca e água limpa para si mesmo e até cinco pessoas adicionais por dia, desde que a região tenha recursos disponíveis."
     },
     "variant": null,
+    "detailTable": {
+      "label": "Origem",
+      "options": [
+        "Assentado",
+        "Armadilheiro",
+        "Caçador de recompensa",
+        "Exilado ou pária",
+        "Forrageador",
+        "Guia",
+        "Mateiro",
+        "Nômade tribal",
+        "Peregrino",
+        "Saqueador tribal"
+      ]
+    },
     "equipment": {
       "items": [
         { "kind": "specific", "id": "quarterstaff", "itemType": "weapon", "quantity": 1 },
@@ -177,6 +270,22 @@
       "description": "Como você vem do povo comum, é facilmente reconhecido como um deles. Pode encontrar abrigo entre plebeus comuns, a menos que tenha demonstrado ser um perigo. Eles te esconderão de autoridades buscando capturá-lo (sem se colocarem em risco direto), compartilharão refeições simples e cuidarão de seus ferimentos."
     },
     "variant": null,
+    "detailTable": {
+      "label": "Evento definidor",
+      "note": "escolha aleatoriamente: role 1d10",
+      "options": [
+        "Eu me opus contra agentes de um tirano.",
+        "Eu salvei pessoas durante um desastre natural.",
+        "Eu enfrentei sozinho um terrível monstro.",
+        "Eu roubei de um mercador corrupto para ajudar os pobres.",
+        "Eu liderei uma milícia na batalha contra um exército.",
+        "Eu invadi o castelo de um tirano e roubei armas para entregar ao povo.",
+        "Eu treinei os camponeses no uso de ferramentas do campo como armas para enfrentar soldados de um tirano.",
+        "Um lorde rescindiu um decreto que desfavorecia o povo após eu protestar contra ele.",
+        "Um ser celestial, feérico, ou similar, deu-me uma bênção ou revelou minha origem secreta.",
+        "Recrutado para o exército de um lorde, eu prevaleci na liderança e fui condecorado por heroísmo."
+      ]
+    },
     "equipment": {
       "items": [
         { "kind": "chosen-tool" },
@@ -270,6 +379,19 @@
       "description": "Quando você tenta lembrar de algum conhecimento mas não sabe a informação específica, frequentemente sabe onde e de quem pode obtê-la. Geralmente isso significa uma biblioteca, scriptorium, universidade ou um sábio que conhece o assunto. O Mestre pode determinar que o conhecimento simplesmente não está disponível, ou que exige extensa pesquisa."
     },
     "variant": null,
+    "detailTable": {
+      "label": "Especialidade",
+      "options": [
+        "Acadêmico desacreditado",
+        "Alquimista",
+        "Aprendiz de mago",
+        "Astrônomo",
+        "Bibliotecário",
+        "Escriba",
+        "Pesquisador",
+        "Professor"
+      ]
+    },
     "equipment": {
       "items": [
         { "kind": "specific", "id": "ink-bottle", "itemType": "general", "quantity": 1 },
@@ -295,6 +417,19 @@
       "description": "Você tem uma patente militar do seu serviço como soldado. Soldados leais à hierarquia que originalmente concedeu sua patente ainda reconhecem sua autoridade e influência. Pode invocar essa patente para influenciar outros soldados, requisitar equipamento ou cavalos simples para uso temporário, e ganhar acesso a acampamentos e fortalezas militares onde sua patente é reconhecida."
     },
     "variant": null,
+    "detailTable": {
+      "label": "Especialidade",
+      "options": [
+        "Batedor",
+        "Cavaleiro",
+        "Contramestre",
+        "Equipe de apoio (cozinheiro, ferreiro)",
+        "Infantaria",
+        "Médico",
+        "Oficial",
+        "Porta-estandarte"
+      ]
+    },
     "equipment": {
       "items": [
         { "kind": "specific", "id": "rank-insignia", "itemType": "general", "quantity": 1 },

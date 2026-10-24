@@ -9,6 +9,8 @@ import {
   resolveBackgroundItems,
   getBackgroundItemChoices,
   sanitizeBackgroundItemSelections,
+  getBackgroundDetailPrompt,
+  ROLEPLAY_FIELDS,
 } from '../backgroundUtils'
 import type { Background } from '../../types/background'
 import { FOCUS_GROUP_IDS, getItemName } from '../equipmentUtils'
@@ -257,5 +259,53 @@ describe('item-choice — um item entre as opções do livro', () => {
       'con-tools': 'con-tools-bottles', // chave que o Acólito não tem
       lixo: 42,
     })).toEqual({ 'holy-symbol': 'reliquary' })
+  })
+})
+
+// Tabelas de detalhe dos antecedentes, PHB p. 130-142.
+describe('getBackgroundDetailPrompt', () => {
+  it('Charlatão: Tramoia predileta, d6, com as opções do livro em ordem', () => {
+    const prompt = getBackgroundDetailPrompt(getBackground('charlatan'))
+    expect(prompt?.label).toBe('Tramoia predileta')
+    expect(prompt?.instruction).toBe('escolha ou role 1d6')
+    expect(prompt?.optionsLine.startsWith('1. Eu trapaceio em jogos de azar. · 2. Eu falsifico')).toBe(true)
+    expect(prompt?.optionsLine).toContain('6. Eu convenço as pessoas que tranqueiras inúteis valem seu suado dinheiro.')
+  })
+
+  it('o dado é o tamanho da tabela (Artesão de Guilda usa d20)', () => {
+    expect(getBackground('guild-artisan')?.detailTable?.options).toHaveLength(20)
+    expect(getBackgroundDetailPrompt(getBackground('soldier'))?.instruction).toBe('escolha ou role 1d8')
+    expect(getBackgroundDetailPrompt(getBackground('outlander'))?.instruction).toBe('escolha ou role 1d10')
+  })
+
+  it('usa a instrução própria do livro quando há uma (Artista escolhe de uma a três)', () => {
+    expect(getBackgroundDetailPrompt(getBackground('entertainer'))?.instruction).toBe('escolha de uma a três ou role 1d10')
+    expect(getBackgroundDetailPrompt(getBackground('folk-hero'))?.instruction).toBe('escolha aleatoriamente: role 1d10')
+  })
+
+  it('exatamente os 9 antecedentes com tabela de detalhe têm uma', () => {
+    const withTable = BACKGROUNDS.filter(b => getBackgroundDetailPrompt(b) !== null).map(b => b.id).sort()
+    expect(withTable).toEqual([
+      'charlatan', 'criminal', 'entertainer', 'folk-hero', 'guild-artisan', 'hermit', 'outlander', 'sage', 'soldier',
+    ])
+  })
+
+  it('cada tabela tem um tamanho de dado (6, 8, 10 ou 20)', () => {
+    for (const b of BACKGROUNDS) {
+      if (b.detailTable) expect([6, 8, 10, 20]).toContain(b.detailTable.options.length)
+    }
+  })
+
+  it('sem antecedente, ou antecedente sem tabela, não há linha', () => {
+    expect(getBackgroundDetailPrompt(undefined)).toBeNull()
+    expect(getBackgroundDetailPrompt(getBackground('acolyte'))).toBeNull()
+  })
+})
+
+describe('ROLEPLAY_FIELDS', () => {
+  it('Tendência, dois Traços de Personalidade, Ideal, Vínculo e Defeito', () => {
+    expect(ROLEPLAY_FIELDS.map(f => `${f.label}×${f.lines}`)).toEqual([
+      'Tendência×1', 'Traços de Personalidade×2', 'Ideal×1', 'Vínculo×1', 'Defeito×1',
+    ])
   })
 })

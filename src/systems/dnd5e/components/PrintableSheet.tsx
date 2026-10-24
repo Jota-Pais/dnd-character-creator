@@ -10,9 +10,11 @@ import {
 import {
   allClassEntries, getHitDicePool, formatClassLevelLabel,
 } from '../utils/multiclassUtils'
-import { getBackground, getToolName, resolveBackgroundItems } from '../utils/backgroundUtils'
 import {
-  calculateModifier, formatModifier, getProficiencyBonus,
+  getBackground, getToolName, resolveBackgroundItems, getBackgroundDetailPrompt, ROLEPLAY_FIELDS,
+} from '../utils/backgroundUtils'
+import {
+  calculateModifier, formatModifier, getProficiencyBonus, formatXpProgress,
   ALL_ABILITY_SCORES, ABILITY_LABELS,
 } from '../utils/abilityScoreUtils'
 import { getFinalAbilityScores, getCharacterFeats, getSheetClassFeatures } from '../utils/asiUtils'
@@ -226,6 +228,7 @@ export function PrintableSheet() {
   const inventory = gatherInventory(draft)
   const money = getStartingMoney(draft.equipment, bg?.equipment.goldPo ?? 0)
   const moneySource = describeStartingMoneySource(money)
+  const bgDetail = getBackgroundDetailPrompt(bg)
 
   // Ataques por arma equipada (F5). Ataque Extra NÃO empilha entre classes (PHB): usa o máximo.
   const weapons = gatherEquippedWeapons(draft)
@@ -355,6 +358,12 @@ export function PrintableSheet() {
           <span>PV Atual: <span className="inline-block border-b border-gray-500 w-14" />{hp !== null ? ` / ${hp}` : ''}</span>
           <span>PV Temporário: <span className="inline-block border-b border-gray-500 w-14" /></span>
           <span>Testes contra a Morte — Sucessos: ○ ○ ○ · Falhas: ○ ○ ○</span>
+          {/* XP pela tabela da p. 15; Inspiração (p. 127): ou você tem, ou não tem — um só ○. */}
+          <span>
+            XP: <span className="inline-block border-b border-gray-500 w-16" />
+            <span className="text-gray-600"> ({formatXpProgress(level)})</span>
+          </span>
+          <span>Inspiração: ○</span>
         </div>
       </Box>
 
@@ -567,6 +576,30 @@ export function PrintableSheet() {
           <p className="text-xs"><strong>{bg.feature.name}.</strong> {bg.feature.description}</p>
         </Box>
       )}
+
+      {/* Interpretação (cap. 4): o app não escolhe nada disso — linhas pra preencher a lápis,
+          com a tabela de detalhe do antecedente (Tramoia, Especialidade…) quando ele tem uma. */}
+      <Box title="Personagem (preencha a lápis)" className="mb-4">
+        <div className="text-xs text-gray-700 space-y-2">
+          {ROLEPLAY_FIELDS.flatMap(field => Array.from({ length: field.lines }, (_, i) => (
+            <div key={`${field.label}-${i}`} className="flex items-baseline gap-1">
+              <span className="shrink-0">{i === 0 ? `${field.label}:` : ''}</span>
+              <span className="flex-1 border-b border-gray-500 h-4" />
+            </div>
+          )))}
+          {bgDetail && (
+            <div>
+              <div className="flex items-baseline gap-1">
+                <span className="shrink-0">{bgDetail.label}:</span>
+                <span className="flex-1 border-b border-gray-500 h-4" />
+              </div>
+              <p className="text-[9px] text-gray-500 mt-0.5 leading-snug">
+                ({bgDetail.instruction}) {bgDetail.optionsLine}
+              </p>
+            </div>
+          )}
+        </div>
+      </Box>
 
       {/* Estilo de Luta: só o accent da CA usava; o texto (ex.: Arquearia +2) nunca saía na ficha. */}
       {fightingStyles.length > 0 && (

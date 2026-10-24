@@ -162,3 +162,41 @@ export function sanitizeBackgroundItemSelections(
   }
   return out
 }
+
+// ── Detalhes de interpretação (cap. 4) ──────────────────────────────────────
+
+/**
+ * Linhas que a ficha imprimível deixa em branco pra preencher a lápis: Tendência (p. 124),
+ * Traços de Personalidade, Ideal, Vínculo e Defeito (p. 125-126). O livro sugere tabelas por
+ * antecedente mas deixa inventar — o app não escolhe nem cobra nada disso.
+ */
+export const ROLEPLAY_FIELDS: ReadonlyArray<{ label: string; lines: number }> = [
+  { label: 'Tendência', lines: 1 },
+  { label: 'Traços de Personalidade', lines: 2 },
+  { label: 'Ideal', lines: 1 },
+  { label: 'Vínculo', lines: 1 },
+  { label: 'Defeito', lines: 1 },
+]
+
+export type BackgroundDetailPrompt = {
+  /** "Tramoia predileta", "Especialidade", "Origem"… */
+  label: string
+  /** "escolha ou role 1d6", ou a instrução própria do livro (Artista, Herói do Povo). */
+  instruction: string
+  /** As opções numeradas na ordem do dado: "1. Acrobata · 2. Ator · …". */
+  optionsLine: string
+}
+
+/**
+ * A tabela de detalhe do antecedente pronta pra ficha e Revisão (linha a lápis + opções do
+ * livro), ou null quando o antecedente não tem uma (Acólito, Marinheiro, Nobre, Órfão).
+ */
+export function getBackgroundDetailPrompt(background: Background | undefined): BackgroundDetailPrompt | null {
+  const table = background?.detailTable
+  if (!table || table.options.length === 0) return null
+  return {
+    label: table.label,
+    instruction: table.note ?? `escolha ou role 1d${table.options.length}`,
+    optionsLine: table.options.map((o, i) => `${i + 1}. ${o}`).join(' · '),
+  }
+}

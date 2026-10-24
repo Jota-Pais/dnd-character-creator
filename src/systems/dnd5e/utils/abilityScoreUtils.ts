@@ -39,6 +39,35 @@ export function getProficiencyBonus(level: number): number {
   return PROFICIENCY_BY_LEVEL[Math.max(1, Math.min(20, level)) - 1]
 }
 
+/** Pontos de experiência a partir dos quais se está em cada nível (tabela Avanço de Personagem, p. 15). */
+const XP_BY_LEVEL: number[] = progressionData.xpThresholds
+
+/** XP mínimo do nível (p. 15). Nível fora de 1–20 é limitado à faixa. */
+export function getXpThreshold(level: number): number {
+  return XP_BY_LEVEL[Math.max(1, Math.min(20, level)) - 1]
+}
+
+/** XP com que se chega ao nível seguinte; `null` no nível 20, que é o último. */
+export function getNextXpThreshold(level: number): number | null {
+  return level >= 20 ? null : getXpThreshold(level + 1)
+}
+
+/** Número com separador de milhar do pt-BR (2.700), sem depender do ICU do ambiente. */
+function formatThousands(n: number): string {
+  return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+}
+
+/**
+ * Onde o nível fica na tabela de XP, pra ficha e Revisão:
+ * "nível 4 a partir de 2.700 XP · próximo nível em 6.500 XP" (no 20, sem o "próximo").
+ */
+export function formatXpProgress(level: number): string {
+  const lvl = Math.max(1, Math.min(20, level))
+  const next = getNextXpThreshold(lvl)
+  const base = `nível ${lvl} a partir de ${formatThousands(getXpThreshold(lvl))} XP`
+  return next === null ? base : `${base} · próximo nível em ${formatThousands(next)} XP`
+}
+
 export function calculateModifier(score: number): number {
   return Math.floor((score - 10) / 2)
 }

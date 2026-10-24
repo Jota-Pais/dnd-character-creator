@@ -20,6 +20,18 @@ export type BackgroundChoiceSelections = {
   items?: Record<string, string>
 }
 
+/**
+ * Tabela de detalhe do antecedente (Tramoia do charlatão, Especialidade do soldado…, cap. 4).
+ * O dado é o tamanho da lista (d6, d8, d10, d20). É interpretação: a ficha só imprime a linha
+ * pra preencher a lápis com as opções do livro — não entra no draft nem em validação.
+ */
+export type BackgroundDetailTable = {
+  label: string
+  options: string[]
+  /** Instrução própria quando o livro foge do "escolha ou role" (ex.: Artista escolhe 1 a 3). */
+  note?: string
+}
+
 export type Background = {
   id: string
   name: string
@@ -32,5 +44,6 @@ export type Background = {
     description: string
   }
   variant: string | null
+  detailTable?: BackgroundDetailTable
   equipment: BackgroundEquipment
 }

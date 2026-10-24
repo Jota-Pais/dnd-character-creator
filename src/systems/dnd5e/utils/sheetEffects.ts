@@ -6,7 +6,9 @@ import type {
   ConditionalAcBonus, EquipmentRequirement, LoadingOverride, ResourceEffect, WeaponAttackEffect,
 } from '../types/effects'
 import { getFeat } from './featUtils'
-import { getClass, getSubclass, getClassFeaturesUpToLevel, FIGHTING_STYLES } from './classUtils'
+import {
+  getClass, getSubclass, getClassFeaturesUpToLevel, getClassFightingStyleOptions, FIGHTING_STYLES,
+} from './classUtils'
 import { getRace, getSubrace, getEffectiveTraits, getEffectiveSpeed } from './raceUtils'
 import {
   getProficiencyBonus, calculateModifier, formatMeters, ALL_ABILITY_SCORES,
@@ -584,13 +586,26 @@ export function describeAttacksPerAction(draft: CharacterDraft): string[] {
  */
 export function getOwnedFightingStyleIds(draft: CharacterDraft): string[] {
   const ids = allClassEntries(draft).flatMap(entry => {
-    const fromClass = entry.classChoices.fightingStyle ? [entry.classChoices.fightingStyle] : []
+    const own = getEntryFightingStyle(entry)
+    const fromClass = own ? [own.id] : []
     const fromSlots = getProgressionSlotsUpToLevel(entry.classId, entry.classChoices.subclass, entry.level)
       .filter(slot => slot.optionsListId === 'FIGHTING_STYLES')
       .flatMap(slot => entry.classChoices.progressionChoices[slot.id] ?? [])
     return [...fromClass, ...fromSlots]
   })
   return [...new Set(ids)].filter(id => FIGHTING_STYLES.some(s => s.id === id))
+}
+
+/**
+ * O Estilo de Luta que a classe da entrada dá e que conta na ficha: o escolhido, se a classe já o
+ * deu no nível que se tem NELA (guerreiro no 1º; paladino e patrulheiro no 2º, p. 110 e 117) e se
+ * ele está na lista da classe. Abaixo do nível a escolha continua no draft — volta a valer quando
+ * o nível volta — mas não mexe em CA nem em ataque.
+ */
+function getEntryFightingStyle(entry: ClassEntry): (typeof FIGHTING_STYLES)[number] | undefined {
+  const cls = getClass(entry.classId)
+  if (!cls) return undefined
+  return getClassFightingStyleOptions(cls, entry.level).find(s => s.id === entry.classChoices.fightingStyle)
 }
 
 /** Um Estilo de Luta como a ficha o mostra: a classe que o deu e o estilo, com nome e texto. */
@@ -604,7 +619,7 @@ export type SheetFightingStyle = { classId: string; style: (typeof FIGHTING_STYL
  */
 export function getSheetFightingStyles(draft: CharacterDraft): SheetFightingStyle[] {
   return allClassEntries(draft).flatMap(entry => {
-    const style = FIGHTING_STYLES.find(s => s.id === entry.classChoices.fightingStyle)
+    const style = getEntryFightingStyle(entry)
     return style ? [{ classId: entry.classId, style }] : []
   })
 }

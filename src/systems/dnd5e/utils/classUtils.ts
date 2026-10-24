@@ -51,7 +51,8 @@ export const CLASS_PRESENTATION: Record<string, ClassPresentation> = {
 }
 
 /**
- * Estilos de Luta (o texto do guerreiro, p. 85; paladino e patrulheiro escolhem da mesma lista).
+ * Estilos de Luta (o texto do guerreiro, p. 85). Paladino e patrulheiro escolhem quatro deles
+ * (p. 110 e 117) — quais, e em que nível, está em `fightingStyleGrant` (classes.json).
  * O que cada um faz na linha de ataque vem declarado em `effects.weaponAttacks`, agregado por
  * `getWeaponAttackEffects` (sheetEffects): Arquearia entra no número; Duelismo, Armas Grandes e Duas
  * Armas dependem de como a arma é empunhada e viram nota na arma. Defesa fica na CA.
@@ -92,6 +93,17 @@ export const FIGHTING_STYLES: { id: string; name: string; description: string; e
     effects: { weaponAttacks: [{ weapons: 'melee-light', offHandAddsModifier: true }] },
   },
 ]
+
+/**
+ * Os Estilos de Luta que a classe deixa escolher com `level` níveis NELA — vazio para quem não
+ * tem e abaixo do nível em que ela o dá (paladino e patrulheiro, 2º). Fonte única do seletor da
+ * etapa Classe, da validação e da ficha: estilo salvo fora desta lista não conta.
+ */
+export function getClassFightingStyleOptions(cls: GameClass, level: number): typeof FIGHTING_STYLES {
+  const grant = cls.fightingStyleGrant
+  if (!grant || level < grant.level) return []
+  return FIGHTING_STYLES.filter(s => grant.styles.includes(s.id))
+}
 
 /** Nome da categoria de subclasse por classe, conforme o PHB (para o rótulo do seletor). */
 export const SUBCLASS_LABEL: Record<string, string> = {
@@ -276,7 +288,9 @@ export function isClassStepComplete(
   const requiredTools = multiclass ? 0 : cls.toolProficiencies.choices.reduce((sum, c) => sum + c.count, 0)
   if (choices.tools.length < requiredTools) return false
 
-  if (cls.hasFightingStyle && !choices.fightingStyle) return false
+  // Estilo de Luta só a partir do nível em que a classe o dá (paladino e patrulheiro, 2º).
+  const fightingStyles = getClassFightingStyleOptions(cls, currentLevel)
+  if (fightingStyles.length > 0 && !fightingStyles.some(s => s.id === choices.fightingStyle)) return false
 
   if (cls.subclassLevel <= currentLevel) {
     if (!choices.subclass) return false

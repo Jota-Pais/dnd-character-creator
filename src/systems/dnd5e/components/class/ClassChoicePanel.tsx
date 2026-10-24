@@ -5,7 +5,7 @@ import {
   getExpertiseCount,
   getExpertiseOptions,
   resolveSkillOptions,
-  FIGHTING_STYLES,
+  getClassFightingStyleOptions,
   SUBCLASS_LABEL,
   getSubclassFeaturesUpToLevel,
 } from '../../utils/classUtils'
@@ -59,6 +59,8 @@ export function ClassChoicePanel({ cls, choices, accent, level, onChange, profic
   const skillLimit = multiclass ? (cls.multiclassProficiencies.skills?.count ?? 0) : cls.skillChoices.count
   // Especialização chega em levas (ladino no 1º e 6º, bardo no 3º e 10º), pelo nível NESTA classe.
   const expertiseCount = getExpertiseCount(cls, level)
+  // Estilo de Luta também pelo nível NESTA classe: o paladino 1 ainda não tem.
+  const fightingStyleOptions = getClassFightingStyleOptions(cls, level)
 
   // Especialização vale sobre proficiências que o personagem TEM: se a perícia sai, a escolha sai
   // junto; se outra fonte passou a dobrá-la, também (o bônus só dobra uma vez); se o nível baixa,
@@ -186,11 +188,11 @@ export function ClassChoicePanel({ cls, choices, accent, level, onChange, profic
         )
       })}
 
-      {/* ── Estilo de Luta (Guerreiro) ── */}
-      {cls.hasFightingStyle && (
+      {/* ── Estilo de Luta (guerreiro no 1º nível; paladino e patrulheiro no 2º, da lista deles) ── */}
+      {fightingStyleOptions.length > 0 && (
         <ChoiceSection title="Estilo de Luta" accent={accent} term="estilo-de-luta">
           <div className="space-y-2">
-            {FIGHTING_STYLES.map(style => {
+            {fightingStyleOptions.map(style => {
               const selected = choices.fightingStyle === style.id
               return (
                 <button

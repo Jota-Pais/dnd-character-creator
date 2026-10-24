@@ -148,9 +148,21 @@ export type GameClass = {
   spellcasting: ClassSpellcasting | null
   subclassLevel: number
   subclasses: ClassSubclass[]
-  hasFightingStyle: boolean
+  /** Estilo de Luta da classe; `null` para quem não tem. */
+  fightingStyleGrant: ClassFightingStyleGrant | null
   expertise: ClassExpertise | null
   startingEquipment: ClassStartingEquipment
+}
+
+/**
+ * Quando a classe dá Estilo de Luta e de que lista: guerreiro no 1º nível, os seis (p. 85);
+ * paladino no 2º, quatro (p. 110); patrulheiro no 2º, quatro (p. 117). O nível é NA classe — na
+ * multiclasse vale o de cada classe. Abaixo dele a escolha fica no draft mas não conta na ficha.
+ */
+export type ClassFightingStyleGrant = {
+  level: number
+  /** Ids de `FIGHTING_STYLES` (classUtils) que a classe oferece. */
+  styles: string[]
 }
 
 export type SubclassChoiceSelections = {

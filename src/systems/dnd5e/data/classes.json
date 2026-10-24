@@ -46,7 +46,7 @@
       "wealthMultiplier": 10,
       "wealthUnit": "po"
     },
-    "hasFightingStyle": false,
+    "fightingStyleGrant": null,
     "expertise": null
   },
   {
@@ -115,7 +115,7 @@
       "wealthMultiplier": 10,
       "wealthUnit": "po"
     },
-    "hasFightingStyle": false,
+    "fightingStyleGrant": null,
     "expertise": { "grants": [{ "level": 3, "count": 2 }, { "level": 10, "count": 2 }], "includesThievesTools": false }
   },
   {
@@ -204,7 +204,7 @@
       "wealthMultiplier": 10,
       "wealthUnit": "po"
     },
-    "hasFightingStyle": false,
+    "fightingStyleGrant": null,
     "expertise": null
   },
   {
@@ -373,7 +373,7 @@
       "wealthMultiplier": 10,
       "wealthUnit": "po"
     },
-    "hasFightingStyle": false,
+    "fightingStyleGrant": null,
     "expertise": null
   },
   {
@@ -437,7 +437,7 @@
       "wealthMultiplier": 10,
       "wealthUnit": "po"
     },
-    "hasFightingStyle": false,
+    "fightingStyleGrant": null,
     "expertise": null
   },
   {
@@ -524,7 +524,7 @@
       "wealthMultiplier": 10,
       "wealthUnit": "po"
     },
-    "hasFightingStyle": false,
+    "fightingStyleGrant": null,
     "expertise": null
   },
   {
@@ -594,7 +594,7 @@
       "wealthMultiplier": 10,
       "wealthUnit": "po"
     },
-    "hasFightingStyle": true,
+    "fightingStyleGrant": { "level": 1, "styles": ["archery", "defense", "dueling", "great-weapon-fighting", "protection", "two-weapon-fighting"] },
     "expertise": null
   },
   {
@@ -657,7 +657,7 @@
       "wealthMultiplier": 10,
       "wealthUnit": "po"
     },
-    "hasFightingStyle": false,
+    "fightingStyleGrant": null,
     "expertise": { "grants": [{ "level": 1, "count": 2 }, { "level": 6, "count": 2 }], "includesThievesTools": true }
   },
   {
@@ -727,7 +727,7 @@
       "wealthMultiplier": 10,
       "wealthUnit": "po"
     },
-    "hasFightingStyle": false,
+    "fightingStyleGrant": null,
     "expertise": null
   },
   {
@@ -780,7 +780,7 @@
       "wealthMultiplier": 1,
       "wealthUnit": "po"
     },
-    "hasFightingStyle": false,
+    "fightingStyleGrant": null,
     "expertise": null
   },
   {
@@ -853,7 +853,7 @@
       "wealthMultiplier": 10,
       "wealthUnit": "po"
     },
-    "hasFightingStyle": false,
+    "fightingStyleGrant": { "level": 2, "styles": ["defense", "dueling", "great-weapon-fighting", "protection"] },
     "expertise": null
   },
   {
@@ -920,7 +920,7 @@
       "wealthMultiplier": 10,
       "wealthUnit": "po"
     },
-    "hasFightingStyle": false,
+    "fightingStyleGrant": { "level": 2, "styles": ["archery", "defense", "dueling", "two-weapon-fighting"] },
     "expertise": null
   }
 ]

@@ -94,7 +94,7 @@ const baseClass: GameClass = {
   spellcasting: null,
   subclassLevel: 3,
   subclasses: [],
-  hasFightingStyle: true,
+  fightingStyleGrant: { level: 1, styles: ['archery', 'defense', 'dueling', 'great-weapon-fighting', 'protection', 'two-weapon-fighting'] },
   expertise: null,
   startingEquipment: { fixed: [], choices: [], wealthDice: '2d4', wealthMultiplier: 10, wealthUnit: 'po' },
 }

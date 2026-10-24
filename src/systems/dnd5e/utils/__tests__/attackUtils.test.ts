@@ -203,6 +203,38 @@ describe('getSheetFightingStyles — o bloco "Estilo de Luta" da Revisão e da f
     expect(getSheetFightingStyles(draft({ level: 1, class: 'fighter' }))).toEqual([])
   })
 
+  // Paladino e patrulheiro só ganham Estilo de Luta no 2º nível (p. 110 e 117); o guerreiro no 1º.
+  it('paladino e patrulheiro do 1º nível: a escolha fica no draft mas não conta na ficha', () => {
+    const paladin1 = draft({ level: 1, class: 'paladin', classChoices: choices({ fightingStyle: 'defense' }), ...carrying('chain-mail') })
+    expect(getSheetFightingStyles(paladin1)).toEqual([])
+    expect(getOwnedFightingStyleIds(paladin1)).toEqual([])
+    expect(getSheetArmorClass(paladin1, scores({})).value).toBe(16) // cota de malha, sem o +1 da Defesa
+    expect(paladin1.classChoices.fightingStyle).toBe('defense')
+
+    const paladin2 = { ...paladin1, level: 2 }
+    expect(getSheetFightingStyles(paladin2).map(s => s.style.id)).toEqual(['defense'])
+    expect(getSheetArmorClass(paladin2, scores({})).value).toBe(17)
+
+    const ranger = (level: number) => draft({ level, class: 'ranger', classChoices: choices({ fightingStyle: 'archery' }), ...carrying('longbow') })
+    expect(getSheetAttacks(ranger(1), scores({ DEX: 16 }))[0].attackBonus).toBe('+5')
+    expect(getSheetAttacks(ranger(2), scores({ DEX: 16 }))[0].attackBonus).toBe('+7')
+  })
+
+  it('o nível é NA classe: guerreiro 5 / paladino 1 não tem o estilo do paladino', () => {
+    const d = draft({
+      level: 6, class: 'fighter', multiclass: true,
+      classChoices: choices({ fightingStyle: 'archery' }),
+      additionalClasses: [extraClass('paladin', 1, { fightingStyle: 'defense' })],
+    })
+    expect(getOwnedFightingStyleIds(d)).toEqual(['archery'])
+  })
+
+  it('estilo fora da lista da classe não conta (paladino não tem Arquearia)', () => {
+    const d = draft({ level: 2, class: 'paladin', classChoices: choices({ fightingStyle: 'archery' }) })
+    expect(getSheetFightingStyles(d)).toEqual([])
+    expect(getOwnedFightingStyleIds(draft({ level: 5, class: 'wizard', classChoices: choices({ fightingStyle: 'defense' }) }))).toEqual([])
+  })
+
   it('o Estilo Adicional do campeão (slot de progressão) não entra — sai em Escolhas de Progressão', () => {
     const d = draft({
       level: 10, class: 'fighter',

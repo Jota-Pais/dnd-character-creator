@@ -7,6 +7,7 @@ import {
   getRolledHpAtLevel,
   isActiveCaster,
   isClassStepComplete,
+  getClassFightingStyleOptions,
   getExpertiseCount,
   getExpertiseOptions,
   getClassFeaturesUpToLevel,
@@ -40,7 +41,7 @@ const baseClass: GameClass = {
   spellcasting: null,
   subclassLevel: 3,
   subclasses: [],
-  hasFightingStyle: true,
+  fightingStyleGrant: { level: 1, styles: ['archery', 'defense', 'dueling', 'great-weapon-fighting', 'protection', 'two-weapon-fighting'] },
   expertise: null,
   startingEquipment: { fixed: [], choices: [], wealthDice: '2d4', wealthMultiplier: 10, wealthUnit: 'po' },
 }
@@ -74,7 +75,7 @@ const casterClass: GameClass = {
   subclasses: [
     { id: 'life-domain', name: 'Domínio da Vida', description: '', extras: null },
   ],
-  hasFightingStyle: false,
+  fightingStyleGrant: null,
   expertise: null,
   startingEquipment: { fixed: [], choices: [], wealthDice: '2d4', wealthMultiplier: 10, wealthUnit: 'po' },
 }
@@ -108,7 +109,7 @@ const rogueClass: GameClass = {
   spellcasting: null,
   subclassLevel: 3,
   subclasses: [],
-  hasFightingStyle: false,
+  fightingStyleGrant: null,
   expertise: { grants: [{ level: 1, count: 2 }, { level: 6, count: 2 }], includesThievesTools: true },
   startingEquipment: { fixed: [], choices: [], wealthDice: '2d4', wealthMultiplier: 10, wealthUnit: 'po' },
 }
@@ -213,6 +214,27 @@ describe('isClassStepComplete', () => {
       skills: ['athletics', 'perception'],
       fightingStyle: 'defense',
     })).toBe(true))
+
+  it('paladino só exige Estilo de Luta a partir do 2º nível, e da lista dele (p. 110)', () => {
+    const paladin = getClass('paladin')!
+    const base = { ...EMPTY_CLASS_CHOICES, skills: paladin.skillChoices.from.slice(0, paladin.skillChoices.count) }
+    expect(getClassFightingStyleOptions(paladin, 1)).toEqual([])
+    expect(getClassFightingStyleOptions(paladin, 2).map(s => s.id))
+      .toEqual(['defense', 'dueling', 'great-weapon-fighting', 'protection'])
+    expect(isClassStepComplete(paladin, base, 1)).toBe(true)
+    expect(isClassStepComplete(paladin, base, 2)).toBe(false)
+    expect(isClassStepComplete(paladin, { ...base, fightingStyle: 'archery' }, 2)).toBe(false)
+    expect(isClassStepComplete(paladin, { ...base, fightingStyle: 'defense' }, 2)).toBe(true)
+  })
+
+  it('patrulheiro: Estilo de Luta no 2º nível, da lista dele (p. 117)', () => {
+    const ranger = getClass('ranger')!
+    expect(getClassFightingStyleOptions(ranger, 1)).toEqual([])
+    expect(getClassFightingStyleOptions(ranger, 2).map(s => s.id))
+      .toEqual(['archery', 'defense', 'dueling', 'two-weapon-fighting'])
+    expect(getClassFightingStyleOptions(getClass('fighter')!, 1)).toHaveLength(6)
+    expect(getClassFightingStyleOptions(getClass('wizard')!, 20)).toEqual([])
+  })
 
   it('Guerreiro (subclassLevel 3) nível 1 NÃO exige subclasse', () =>
     expect(isClassStepComplete(baseClass, {

@@ -19,6 +19,9 @@ import {
   getFeatChoiceSlots,
   areFeatChoicesComplete,
   getFeatSavingThrows,
+  getAttacksPerAction,
+  getConditionalAttacks,
+  describeAttacksPerAction,
 } from '../sheetEffects'
 import {
   getArmorProficiencies, hasArmorProficiency, hasWeaponProficiency,
@@ -27,6 +30,7 @@ import {
 } from '../proficiencyUtils'
 import { getArmor, getWeaponById } from '../equipmentUtils'
 import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
+import progressionFeatures from '../../data/class-progression-features.json'
 
 function draft(overrides: Partial<CharacterDraft>): CharacterDraft {
   return { ...structuredClone(EMPTY_DRAFT), ...overrides }
@@ -397,5 +401,111 @@ describe('getSheetArmorClass', () => {
       additionalClasses: [extraClass('sorcerer', 1, 'draconic-bloodline')],
     })
     expect(getSheetArmorClass(d, scores({ DEX: 16, WIS: 18 })).value).toBe(18) // 13 + 3 + 2
+  })
+})
+
+// ── Ataques por ação: Ataque Extra e Lâmina Sedenta ───────────────────────────
+
+describe('getAttacksPerAction (Ataque Extra)', () => {
+  const single = (classId: string, level: number, subclass: string | null = null) =>
+    draft({ level, class: classId, classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), subclass } })
+  const attacks = (d: CharacterDraft) => getAttacksPerAction(d).value
+
+  // p. 85: duas vezes no 5º, três no 11º, quatro no 20º nível de guerreiro.
+  it('guerreiro 4/5/11/19/20 faz 1/2/3/3/4 ataques', () => {
+    expect([4, 5, 11, 19, 20].map(l => attacks(single('fighter', l)))).toEqual([1, 2, 3, 3, 4])
+  })
+
+  it('bárbaro, monge, paladino e patrulheiro fazem 2 a partir do 5º', () => {
+    expect(attacks(single('barbarian', 4))).toBe(1)
+    for (const c of ['barbarian', 'monk', 'paladin', 'ranger']) {
+      expect(attacks(single(c, 5))).toBe(2)
+      expect(attacks(single(c, 20))).toBe(2)
+    }
+  })
+
+  it('nomeia a característica que dá o número', () => {
+    expect(getAttacksPerAction(single('fighter', 11))).toEqual({ value: 3, source: 'Ataque Extra' })
+    expect(getAttacksPerAction(single('wizard', 20))).toEqual({ value: 1, source: null })
+  })
+
+  // p. 55: o Ataque Extra do Colégio da Bravura chega no 6º nível de bardo.
+  it('bardo do Colégio da Bravura faz 2 a partir do 6º; o de outro colégio, não', () => {
+    expect(attacks(single('bard', 5, 'college-of-valor'))).toBe(1)
+    expect(attacks(single('bard', 6, 'college-of-valor'))).toBe(2)
+    expect(attacks(single('bard', 6, 'college-of-lore'))).toBe(1)
+  })
+
+  // p. 166: Ataque Extra de mais de uma classe não se acumula; o do guerreiro 11 vale.
+  it('multiclasse vale o maior, sem somar', () => {
+    const mc = (primary: string, primaryLevel: number, other: string, otherLevel: number) => draft({
+      level: primaryLevel + otherLevel, multiclass: true, class: primary,
+      additionalClasses: [extraClass(other, otherLevel)],
+    })
+    expect(attacks(mc('fighter', 11, 'paladin', 5))).toBe(3)
+    expect(attacks(mc('paladin', 5, 'fighter', 11))).toBe(3)
+    expect(attacks(mc('barbarian', 5, 'paladin', 5))).toBe(2)
+  })
+
+  it('conta o nível NA classe: guerreiro 4 / paladino 4 não tem', () => {
+    const d = draft({
+      level: 8, multiclass: true, class: 'fighter', additionalClasses: [extraClass('paladin', 4)],
+    })
+    expect(attacks(d)).toBe(1)
+    expect(describeAttacksPerAction(d)).toEqual([])
+  })
+})
+
+describe('Lâmina Sedenta (ataques condicionais)', () => {
+  const warlock = (level: number, slotId: string, overrides: Partial<CharacterDraft> = {}) => draft({
+    level, class: 'warlock',
+    classChoices: {
+      ...structuredClone(EMPTY_DRAFT.classChoices),
+      progressionChoices: { [slotId]: ['lamina-sedenta'] },
+    },
+    ...overrides,
+  })
+
+  it('bruxo 5 com Lâmina Sedenta: 1 ataque no número, 2 numa linha com a condição', () => {
+    const d = warlock(5, 'warlock-invocations-5')
+    expect(getAttacksPerAction(d).value).toBe(1)
+    expect(getConditionalAttacks(d)).toEqual([
+      { value: 2, condition: 'com a arma do pacto', source: 'Lâmina Sedenta' },
+    ])
+    expect(describeAttacksPerAction(d)).toEqual([
+      'Lâmina Sedenta: você faz 2 ataques ao usar a ação de Atacar, com a arma do pacto.',
+    ])
+  })
+
+  it('antes do 5º nível de bruxo (pré-requisito) não dá nada', () => {
+    expect(getConditionalAttacks(warlock(4, 'warlock-invocations-2'))).toEqual([])
+  })
+
+  it('bruxo sem a invocação não tem a linha', () => {
+    expect(getConditionalAttacks(draft({ level: 5, class: 'warlock' }))).toEqual([])
+  })
+
+  // p. 166: "Lâmina Sedenta não lhe concede ataques adicionais se você também tiver Ataque Extra".
+  it('bruxo 5 com Lâmina Sedenta / guerreiro 5: 2 ataques, sem a linha condicional', () => {
+    const d = warlock(10, 'warlock-invocations-5', {
+      multiclass: true, additionalClasses: [extraClass('fighter', 5)],
+    })
+    expect(getAttacksPerAction(d).value).toBe(2)
+    expect(getConditionalAttacks(d)).toEqual([])
+    expect(describeAttacksPerAction(d)).toEqual([
+      'Ataque Extra: você faz 2 ataques ao usar a ação de Atacar.',
+    ])
+  })
+})
+
+describe('integridade dos dados: Ataque Extra', () => {
+  it('toda feature "Ataque Extra" declara attacksPerAction', () => {
+    const all = [
+      ...Object.values(progressionFeatures.classes),
+      ...Object.values(progressionFeatures.subclasses),
+    ].flat() as { name: string; effects?: { attacksPerAction?: unknown } }[]
+    const extra = all.filter(f => f.name === 'Ataque Extra')
+    expect(extra.length).toBeGreaterThanOrEqual(6)
+    for (const f of extra) expect(f.effects?.attacksPerAction).toBeDefined()
   })
 })

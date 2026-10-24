@@ -22,6 +22,16 @@ export type ConditionalAcBonus = {
 }
 
 /**
+ * Ataques por ação que só valem numa situação. `byLevel` segue o nível NA classe dona (é assim que
+ * o pré-requisito "5° nível" da Lâmina Sedenta entra na conta: antes dele, nada).
+ */
+export type ConditionalAttacks = {
+  byLevel: LevelStep[]
+  /** Condição do livro, em português, exibida junto do número. */
+  condition: string
+}
+
+/**
  * Fórmula alternativa de CA para quem não veste armadura: `base` + os modificadores de `abilities`.
  * Não se soma às outras — "se você tem vários recursos que o concedem diferentes formas de
  * calcular a CA, você escolhe qual usar" (p. 14); a ficha mostra a maior.
@@ -95,6 +105,19 @@ export type FeatureEffects = {
    * de atributo puro. Não vale para resistência nem ataque.
    */
   halfProficiencyOnChecks?: boolean
+  /**
+   * Ataque Extra: TOTAL de ataques da ação de Atacar, em degraus por nível NA classe dona da
+   * característica (guerreiro: 2 no 5º, 3 no 11º, 4 no 20º — p. 85). Só lido em features de
+   * classe e subclasse. Não se soma entre fontes: "se você ganhar a característica Ataque Extra
+   * de mais de uma classe, elas não se acumulam" (p. 166) — vale o maior.
+   */
+  attacksPerAction?: LevelStep[]
+  /**
+   * Ataques a mais que só valem numa situação (Lâmina Sedenta: dois ataques "com sua arma do
+   * pacto", p. 61). Vira linha própria na ficha, nunca o número das armas — a ficha não sabe qual
+   * arma é a do pacto. Some quando o personagem já tem Ataque Extra (p. 166).
+   */
+  conditionalAttacksPerAction?: ConditionalAttacks
   /**
    * Recursos que a característica dá: usos que se gastam e voltam no descanso (Fúria, Surto de
    * Ação), poços (Chi, Cura pelas Mãos) e dados que crescem com o nível (Ataque Furtivo). A ficha

@@ -12,8 +12,10 @@ import {
   calculateArmorClass, type ArmorClassResult, type UnarmoredAcOption,
 } from './armorClassUtils'
 import {
-  evaluateResource, type FinalScores, type ResourceSource, type SheetResource,
+  evaluateResource, stepValue, type FinalScores, type ResourceSource, type SheetResource,
 } from './classResourceUtils'
+import { getProgressionSlotsUpToLevel } from './progressionChoiceUtils'
+import { getProgressionOptions, type ProgressionOption } from './progressionOptions'
 import {
   allClassEntries, getAllAsiChoices, getTotalHpAverage, getTotalHpRolled,
 } from './multiclassUtils'
@@ -360,6 +362,92 @@ export function getConditionalAcBonuses(draft: CharacterDraft): SheetConditional
   return getOwnedFeats(draft).flatMap(feat =>
     (feat.effects?.conditionalAcBonus ?? []).map(bonus => ({ ...bonus, source: feat.name })),
   )
+}
+
+// ── Ataques por ação ───────────────────────────────────────────────────────────
+
+/** O total de ataques da ação de Atacar e a característica que o dá. */
+export type SheetAttacksPerAction = { value: number; source: string | null }
+
+/**
+ * Quantos ataques a ação de Atacar faz — o número que vai em cada arma. Vem do `attacksPerAction`
+ * das features de classe e subclasse (Ataque Extra), cada uma no nível que se tem NA classe dona:
+ * o guerreiro 11 faz 3 (p. 85), o bardo do Colégio da Bravura 6 faz 2 (p. 55).
+ *
+ * Não soma entre fontes — "se você ganhar a característica Ataque Extra de mais de uma classe,
+ * elas não se acumulam" (p. 166): vale a maior, e só o Ataque Extra do guerreiro passa de dois.
+ * Sem nenhuma, 1 ataque e `source` nula.
+ */
+export function getAttacksPerAction(draft: CharacterDraft): SheetAttacksPerAction {
+  let best: SheetAttacksPerAction = { value: 1, source: null }
+  for (const { entry, features } of getOwnedClassFeaturesByEntry(draft)) {
+    for (const feature of features) {
+      const steps = feature.effects?.attacksPerAction
+      const value = steps ? stepValue(steps, entry.level) ?? 1 : 1
+      if (value > best.value) best = { value, source: feature.name }
+    }
+  }
+  return best
+}
+
+/**
+ * Opções escolhidas nos slots de progressão de cada classe (invocações, manobras, metamágicas...),
+ * só as dos slots que o nível NA classe já liberou, com a entrada de quem as escolheu.
+ */
+function getOwnedProgressionOptions(
+  draft: CharacterDraft,
+): { entry: ClassEntry; option: ProgressionOption }[] {
+  return allClassEntries(draft).flatMap(entry => {
+    const slots = getProgressionSlotsUpToLevel(entry.classId, entry.classChoices.subclass, entry.level)
+    return slots.flatMap(slot => {
+      const picked = entry.classChoices.progressionChoices[slot.id] ?? []
+      if (picked.length === 0) return []
+      const options = getProgressionOptions(slot.optionsListId)
+      return picked
+        .map(id => options.find(o => o.id === id))
+        .filter((o): o is ProgressionOption => o !== undefined)
+        .map(option => ({ entry, option }))
+    })
+  })
+}
+
+/** Ataques por ação que só valem numa situação, com a condição e quem os dá. */
+export type SheetConditionalAttacks = { value: number; condition: string; source: string }
+
+/**
+ * Ataques a mais que dependem de uma situação (Lâmina Sedenta: dois "com sua arma do pacto",
+ * p. 61). Ficam FORA do número das armas, cada um numa linha com a condição — a ficha não sabe
+ * qual arma é a do pacto. O degrau segue o nível na classe que escolheu a opção (o "5° nível" do
+ * pré-requisito). Somem quando o personagem já faz tantos ataques quanto eles dão: "a invocação
+ * mística de bruxo Lâmina Sedenta não lhe concede ataques adicionais se você também tiver Ataque
+ * Extra" (p. 166).
+ */
+export function getConditionalAttacks(draft: CharacterDraft): SheetConditionalAttacks[] {
+  const base = getAttacksPerAction(draft).value
+  const out: SheetConditionalAttacks[] = []
+  for (const { entry, option } of getOwnedProgressionOptions(draft)) {
+    const conditional = option.effects?.conditionalAttacksPerAction
+    if (!conditional) continue
+    const value = stepValue(conditional.byLevel, entry.level) ?? 1
+    if (value <= base || out.some(o => o.source === option.name)) continue
+    out.push({ value, condition: conditional.condition, source: option.name })
+  }
+  return out
+}
+
+/**
+ * As linhas de ataques por ação que a Revisão e a ficha imprimível mostram — o mesmo texto nas
+ * duas. Vazio para quem faz um ataque só.
+ */
+export function describeAttacksPerAction(draft: CharacterDraft): string[] {
+  const { value, source } = getAttacksPerAction(draft)
+  const lines = value > 1 && source
+    ? [`${source}: você faz ${value} ataques ao usar a ação de Atacar.`]
+    : []
+  for (const c of getConditionalAttacks(draft)) {
+    lines.push(`${c.source}: você faz ${c.value} ataques ao usar a ação de Atacar, ${c.condition}.`)
+  }
+  return lines
 }
 
 // ── Proficiências concedidas ───────────────────────────────────────────────────

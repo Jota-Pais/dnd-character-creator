@@ -54,7 +54,8 @@
     "id": "lamina-sedenta",
     "name": "Lâmina Sedenta",
     "description": "Você pode atacar com sua arma do pacto duas vezes, ao invés de apenas uma, quando você usa a ação de Ataque no seu turno.",
-    "prerequisite": "5° nível, característica Pacto da Lâmina"
+    "prerequisite": "5° nível, característica Pacto da Lâmina",
+    "effects": { "conditionalAttacksPerAction": { "byLevel": [{ "from": 5, "value": 2 }], "condition": "com a arma do pacto" } }
   },
   {
     "id": "lanca-mistica",

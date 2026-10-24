@@ -10,6 +10,7 @@ import hunterMultiattack from '../data/hunter-multiattack.json'
 import hunterSuperiorDefense from '../data/hunter-superior-defense.json'
 import spells from '../data/spells.json'
 import type { Spell } from '../types/spell'
+import type { FeatureEffects } from '../types/effects'
 import { FIGHTING_STYLES } from './classUtils'
 
 export type ProgressionOption = {
@@ -20,6 +21,11 @@ export type ProgressionOption = {
   tier3?: string
   tier6?: string
   tier14?: string
+  /**
+   * Efeitos declarados da opção escolhida (ex.: Lâmina Sedenta). Os níveis dos degraus são os da
+   * classe em que a escolha foi feita. Agregados em `sheetEffects`.
+   */
+  effects?: FeatureEffects
 }
 
 export function getProgressionOptions(optionsListId: string): ProgressionOption[] {

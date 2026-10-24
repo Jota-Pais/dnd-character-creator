@@ -43,6 +43,7 @@ import { getWeaponAttack } from '../utils/weaponFormat'
 import {
   getTotalHp, getInitiativeBonusTotal, getSpeedBonusTotal,
   getConditionalAcBonuses, getCheckProficiencyBonus, getSheetResources, getSheetArmorClass,
+  getAttacksPerAction, describeAttacksPerAction,
 } from '../utils/sheetEffects'
 import type { CharacterDraft } from '../types/character'
 import type { Weapon } from '../types/equipment'
@@ -215,10 +216,11 @@ export function PrintableSheet() {
   const moneySource = describeStartingMoneySource(money)
   const bgDetail = getBackgroundDetailPrompt(bg)
 
-  // Ataques por arma equipada (F5). Ataque Extra NÃO empilha entre classes (PHB): usa o máximo.
+  // Ataques por arma equipada (F5). O número de ataques por ação vem do motor de efeitos.
   const weapons = gatherEquippedWeapons(draft)
   const strMod = mod('STR')
-  const attacksPerAction = 1 + Math.max(0, ...featureBlocks.map(b => b.features.filter(f => f.name === 'Ataque Extra').length))
+  const attacksPerAction = getAttacksPerAction(draft).value
+  const attackLines = describeAttacksPerAction(draft)
   const innateSpells = race ? getAvailableInnateSpells(race, subrace, level) : []
   const racialCantrip = draft.raceChoices.cantrip ? getSpell(draft.raceChoices.cantrip) : undefined
 
@@ -426,11 +428,10 @@ export function PrintableSheet() {
             {' '}(+ o dano da arma)
           </p>
         )}
-        {attacksPerAction > 1 && weapons.length > 0 && (
-          <p className="text-[10px] text-gray-500 mb-1">
-            Ataque Extra: você faz {attacksPerAction} ataques ao usar a ação de Atacar.
-          </p>
-        )}
+        {/* Ataque Extra e, em linha própria com a condição, a Lâmina Sedenta (fora do número). */}
+        {attackLines.map(line => (
+          <p key={line} className="text-[10px] text-gray-500 mb-1">{line}</p>
+        ))}
         {casters.map(({ cls, casting }) => {
           const sc = casting.spellcasting
           const aids = describeCastingAids(sc)

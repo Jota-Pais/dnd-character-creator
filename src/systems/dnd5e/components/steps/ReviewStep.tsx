@@ -37,6 +37,7 @@ import { getProgressionSlotsUpToLevel } from '../../utils/progressionChoiceUtils
 import {
   getTotalHp, getInitiativeBonusTotal, getSpeedBonusTotal,
   getConditionalAcBonuses, getCheckProficiencyBonus, getSheetResources, getSheetArmorClass,
+  describeAttacksPerAction,
 } from '../../utils/sheetEffects'
 import { getProgressionOptions } from '../../utils/progressionOptions'
 import {
@@ -105,6 +106,8 @@ export function ReviewStep() {
   const speed = race ? getEffectiveSpeed(race, subrace ?? null) + getSpeedBonusTotal(draft) : null
   const initiative = dexMod + getInitiativeBonusTotal(draft)
   const conditionalAc = getConditionalAcBonuses(draft)
+  // Ataque Extra (e a Lâmina Sedenta, com a condição): o mesmo texto da ficha imprimível.
+  const attackLines = describeAttacksPerAction(draft)
   const darkvision = race ? getEffectiveDarkvision(race, subrace ?? null) : 0
   const classEquipment = cls?.startingEquipment
   const acResult = getSheetArmorClass(draft, finalScores)
@@ -239,6 +242,9 @@ export function ReviewStep() {
             * Armadura impõe desvantagem em Furtividade
           </p>
         )}
+        {attackLines.map(line => (
+          <p key={line} className="text-xs text-parchment-700 mt-1 text-center">{line}</p>
+        ))}
 
         {cls && level > 1 && (
           <div className="mt-4 pt-4 border-t border-parchment-900/60">

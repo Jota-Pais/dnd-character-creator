@@ -10,6 +10,9 @@ import {
   getRacialHpBonus,
   getHpPerLevelBonus,
   getTotalHp,
+  getClassFeatureHpBonus,
+  getUnarmoredAcOptions,
+  getSheetArmorClass,
   getPassiveScoreBonus,
   getConditionalAcBonuses,
   getFeatArmorProficiencies,
@@ -279,5 +282,120 @@ describe('Versatilidade (efeito de feature de classe)', () => {
     expect(getCheckProficiencyBonus(d, 'proficient')).toBe(2)
     expect(getCheckProficiencyBonus(d, 'expertise')).toBe(4)
     expect(getCheckProficiencyBonus(draft({ level: 4, class: 'fighter' }), 'none')).toBe(0)
+  })
+})
+
+// ── Resiliência Dracônica e CA sem armadura das features de classe ─────────────
+
+/** Classe adicional da multiclasse, com subclasse opcional. */
+function extraClass(classId: string, level: number, subclass: string | null = null) {
+  return {
+    classId, level, classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), subclass },
+    spellChoices: { cantrips: [], spells: [] }, asiChoices: [], hpRolls: [],
+  }
+}
+
+const scores = (m: Partial<Record<'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA', number>>) =>
+  ({ STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10, ...m })
+
+// p. 80: +1 PV no 1º nível e +1 a cada nível na classe = 1 × nível de FEITICEIRO.
+describe('Resiliência Dracônica soma nos PV', () => {
+  const sorcerer = (level: number, subclass: string | null = 'draconic-bloodline', overrides: Partial<CharacterDraft> = {}) =>
+    draft({ level, class: 'sorcerer', classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), subclass }, ...overrides })
+
+  it('feiticeiro dracônico 1 = 6 + CON + 1', () => {
+    expect(getClassFeatureHpBonus(sorcerer(1))).toBe(1)
+    expect(getTotalHp(sorcerer(1), 2)).toBe(6 + 2 + 1)
+  })
+
+  it('feiticeiro dracônico 5 = média + 5', () => {
+    expect(getTotalHp(sorcerer(5), 2)).toBe(6 + 2 + 4 * (4 + 2) + 5)
+    expect(getTotalHp(sorcerer(5), 2) - getTotalHp(sorcerer(5, null), 2)).toBe(5)
+  })
+
+  it('vale também no método de rolagem', () => {
+    const roll = { hpMethod: 'roll' as const, hpRolls: [3, 5] }
+    expect(getTotalHp(sorcerer(3, 'draconic-bloodline', roll), 1) - getTotalHp(sorcerer(3, null, roll), 1)).toBe(3)
+  })
+
+  it('feiticeiro sem a Linhagem Dracônica não ganha nada', () => {
+    expect(getClassFeatureHpBonus(sorcerer(5, null))).toBe(0)
+    expect(getClassFeatureHpBonus(draft({ level: 5, class: 'fighter' }))).toBe(0)
+  })
+
+  it('na multiclasse conta só o nível de feiticeiro: guerreiro 3 / feiticeiro dracônico 2 ganha +2', () => {
+    const mc = (sub: string | null) => draft({
+      level: 5, multiclass: true, class: 'fighter',
+      additionalClasses: [extraClass('sorcerer', 2, sub)],
+    })
+    expect(getClassFeatureHpBonus(mc('draconic-bloodline'))).toBe(2)
+    expect(getTotalHp(mc('draconic-bloodline'), 1) - getTotalHp(mc(null), 1)).toBe(2)
+  })
+
+  it('soma com a Tenacidade Anã (nível de personagem) sem se confundir com ela', () => {
+    const d = sorcerer(4, 'draconic-bloodline', { race: 'dwarf', subrace: 'hill-dwarf' })
+    expect(getTotalHp(d, 0) - getTotalHp(sorcerer(4, null, { race: 'dwarf', subrace: 'mountain-dwarf' }), 0)).toBe(4 + 4)
+  })
+})
+
+describe('getUnarmoredAcOptions', () => {
+  it('lê a fórmula das features, com o nome delas', () => {
+    const d = draft({ level: 1, class: 'sorcerer', classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), subclass: 'draconic-bloodline' } })
+    expect(getUnarmoredAcOptions(d)).toEqual([
+      { id: 'draconic-resilience', base: 13, abilities: ['DEX'], source: 'Resiliência Dracônica' },
+    ])
+  })
+
+  it('bárbaro / monge: uma Defesa sem Armadura só, a da classe que veio primeiro (p. 166)', () => {
+    const d = draft({ level: 3, multiclass: true, class: 'barbarian', additionalClasses: [extraClass('monk', 1)] })
+    const opts = getUnarmoredAcOptions(d)
+    expect(opts).toHaveLength(1)
+    expect(opts[0].abilities).toEqual(['DEX', 'CON'])
+  })
+
+  it('Defesa sem Armadura e Resiliência Dracônica ficam as duas (características diferentes)', () => {
+    const d = draft({ level: 3, multiclass: true, class: 'barbarian', additionalClasses: [extraClass('sorcerer', 1, 'draconic-bloodline')] })
+    expect(getUnarmoredAcOptions(d).map(o => o.id)).toEqual(['unarmored-defense', 'draconic-resilience'])
+  })
+})
+
+describe('getSheetArmorClass', () => {
+  const sorcererDraft = (overrides: Partial<CharacterDraft> = {}) => draft({
+    level: 1, class: 'sorcerer',
+    classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), subclass: 'draconic-bloodline' },
+    ...overrides,
+  })
+  const withShield = { equipment: { ...structuredClone(EMPTY_DRAFT.equipment), purchasedItems: [{ itemId: 'shield', quantity: 1, source: 'purchased' as const }] } }
+
+  it('feiticeiro dracônico sem armadura: 13 + DES', () => {
+    expect(getSheetArmorClass(sorcererDraft(), scores({ DEX: 14 })).value).toBe(15)
+  })
+
+  it('feiticeiro dracônico com escudo: 13 + DES + 2', () => {
+    expect(getSheetArmorClass(sorcererDraft(withShield), scores({ DEX: 14 })).value).toBe(17)
+  })
+
+  it('feiticeiro de outra origem fica no 10 + DES', () => {
+    const d = draft({ level: 1, class: 'sorcerer' })
+    expect(getSheetArmorClass(d, scores({ DEX: 14 })).value).toBe(12)
+  })
+
+  it('regressão: bárbaro e monge com a CA de antes', () => {
+    expect(getSheetArmorClass(draft({ level: 1, class: 'barbarian' }), scores({ DEX: 14, CON: 16 })).value).toBe(15)
+    expect(getSheetArmorClass(draft({ level: 1, class: 'monk' }), scores({ DEX: 16, WIS: 14 })).value).toBe(15)
+    expect(getSheetArmorClass(draft({ level: 1, class: 'monk', ...withShield }), scores({ DEX: 16, WIS: 14 })).value).toBe(15)
+  })
+
+  it('a Defesa sem Armadura vale de classe adicional, não só da primária', () => {
+    const d = draft({ level: 3, multiclass: true, class: 'fighter', additionalClasses: [extraClass('barbarian', 1)] })
+    expect(getSheetArmorClass(d, scores({ DEX: 14, CON: 18 })).value).toBe(16) // 10 + 2 + 4
+  })
+
+  it('monge / feiticeiro dracônico de escudo usa a dracônica', () => {
+    const d = draft({
+      level: 3, multiclass: true, class: 'monk', ...withShield,
+      additionalClasses: [extraClass('sorcerer', 1, 'draconic-bloodline')],
+    })
+    expect(getSheetArmorClass(d, scores({ DEX: 16, WIS: 18 })).value).toBe(18) // 13 + 3 + 2
   })
 })

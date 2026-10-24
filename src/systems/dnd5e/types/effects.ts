@@ -22,6 +22,27 @@ export type ConditionalAcBonus = {
 }
 
 /**
+ * Fórmula alternativa de CA para quem não veste armadura: `base` + os modificadores de `abilities`.
+ * Não se soma às outras — "se você tem vários recursos que o concedem diferentes formas de
+ * calcular a CA, você escolhe qual usar" (p. 14); a ficha mostra a maior.
+ *
+ * O escudo segue a regra geral ("empunhar um escudo aumenta sua CA em 2", p. 146) e soma por cima,
+ * a menos que a característica o proíba (`noShield`, a Defesa sem Armadura do monge, p. 104).
+ */
+export type UnarmoredAcFormula = {
+  /**
+   * Identifica a característica. Duas classes que dão a MESMA (mesmo id) não a dão duas vezes:
+   * "se você já tiver a característica Defesa sem Armadura, você não pode ganhá-la de outra
+   * classe" (p. 166) — fica a da classe que a deu primeiro.
+   */
+  id: string
+  base: number
+  abilities: AbilityScore[]
+  /** A característica só vale sem escudo (monge). */
+  noShield?: boolean
+}
+
+/**
  * Escolhas que o talento ABRE e que o jogador ainda precisa fazer. Viram slot na etapa dona do
  * talento (Raça, no Humano Variante; Aprimoramentos, nos espaços de ASI) — nunca um catálogo
  * aninhado dentro do card, que já é uma escolha.
@@ -54,6 +75,14 @@ export type FeatureEffects = {
    * e +1 a cada nível seguinte, ou seja, 1 × nível de personagem.
    */
   hpPerLevel?: number
+  /**
+   * PV extras por nível NA CLASSE dona da feature — só lido em features de classe e subclasse.
+   * Resiliência Dracônica (p. 80): +1 no 1º nível e +1 "sempre que você ganhar um nível na
+   * classe", ou seja, 1 × nível de feiticeiro (um guerreiro 3 / feiticeiro 2 ganha só +2).
+   */
+  hpPerClassLevel?: number
+  /** Outra forma de calcular a CA sem armadura (Defesa sem Armadura, Resiliência Dracônica). */
+  unarmoredAc?: UnarmoredAcFormula
   /** Bônus nos valores PASSIVOS destas perícias (Observador: +5 em Percepção e Investigação). */
   passiveScoreBonus?: { skills: string[]; value: number }
   /** Bônus de CA condicionais — nunca somados no total da ficha. */

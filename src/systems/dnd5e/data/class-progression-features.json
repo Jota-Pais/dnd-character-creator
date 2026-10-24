@@ -15,7 +15,10 @@
       {
         "level": 1,
         "name": "Defesa sem Armadura",
-        "description": "Sem armadura, sua CA é 10 + mod. de Destreza + mod. de Constituição. Você ainda pode usar escudo."
+        "description": "Sem armadura, sua CA é 10 + mod. de Destreza + mod. de Constituição. Você ainda pode usar escudo.",
+        "effects": {
+          "unarmoredAc": { "id": "unarmored-defense", "base": 10, "abilities": ["DEX", "CON"] }
+        }
       },
       {
         "level": 2,
@@ -181,7 +184,10 @@
       {
         "level": 1,
         "name": "Defesa sem Armadura",
-        "description": "Sem armadura nem escudo, sua CA é 10 + mod. de Destreza + mod. de Sabedoria."
+        "description": "Sem armadura nem escudo, sua CA é 10 + mod. de Destreza + mod. de Sabedoria.",
+        "effects": {
+          "unarmoredAc": { "id": "unarmored-defense", "base": 10, "abilities": ["DEX", "WIS"], "noShield": true }
+        }
       },
       {
         "level": 1,
@@ -1454,7 +1460,11 @@
       {
         "level": 1,
         "name": "Resiliência Dracônica",
-        "description": "Seu máximo de PV aumenta em 1 no nível 1 e mais 1 por nível subsequente de feiticeiro. Sua CA base sem armadura passa a ser 13 + seu modificador de Destreza."
+        "description": "Seu máximo de PV aumenta em 1 no nível 1 e mais 1 por nível subsequente de feiticeiro. Sua CA base sem armadura passa a ser 13 + seu modificador de Destreza.",
+        "effects": {
+          "hpPerClassLevel": 1,
+          "unarmoredAc": { "id": "draconic-resilience", "base": 13, "abilities": ["DEX"] }
+        }
       },
       {
         "level": 6,

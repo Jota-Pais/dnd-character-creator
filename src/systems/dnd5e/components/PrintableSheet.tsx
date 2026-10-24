@@ -23,9 +23,9 @@ import {
   getPassiveScore, getArmorProficiencyLabels, getWeaponProficiencyLabels, getUnproficientArmor, hasWeaponProficiency,
   getUnproficientTools, formatUnproficientTool,
 } from '../utils/proficiencyUtils'
-import { calculateArmorClass, getUnarmoredDefense } from '../utils/armorClassUtils'
+import { formatArmorClassBreakdown } from '../utils/armorClassUtils'
 import {
-  getEquippedArmor, getWeaponById, formatInventoryItem, describeResolvedOption,
+  getWeaponById, formatInventoryItem, describeResolvedOption,
   getStartingMoney, describeStartingMoneySource, formatCoins,
 } from '../utils/equipmentUtils'
 import {
@@ -42,7 +42,7 @@ import { RuleText } from './common/RuleText'
 import { getWeaponAttack } from '../utils/weaponFormat'
 import {
   getTotalHp, getInitiativeBonusTotal, getSpeedBonusTotal,
-  getConditionalAcBonuses, getCheckProficiencyBonus, getSheetResources,
+  getConditionalAcBonuses, getCheckProficiencyBonus, getSheetResources, getSheetArmorClass,
 } from '../utils/sheetEffects'
 import type { CharacterDraft } from '../types/character'
 import type { Weapon } from '../types/equipment'
@@ -175,24 +175,11 @@ export function PrintableSheet() {
   const mod = (ab: AbilityScore) => calculateModifier(finalScores[ab])
   const dexMod = mod('DEX')
   const conMod = mod('CON')
-  const wisMod = mod('WIS')
 
   // Combate
-  const { bodyArmor, hasShield } = getEquippedArmor(draft.equipment, cls?.startingEquipment)
-  const acResult = calculateArmorClass({
-    dexMod, conMod, wisMod, bodyArmor, hasShield,
-    unarmoredDefense: getUnarmoredDefense(entries.find(e => e.classId === 'barbarian' || e.classId === 'monk')?.classId ?? cls?.id),
-    hasDefenseFightingStyle: entries.some(e => e.classChoices.fightingStyle === 'defense'),
-  })
+  const acResult = getSheetArmorClass(draft, finalScores)
   const ac = acResult.value
-  // A conta da CA aberta: na mesa se troca de armadura e se larga o escudo, e sem as parcelas
-  // o jogador teria que abrir o app pra saber o que recalcular.
-  const acBreakdown = acResult.components
-    .map((c, i) => {
-      if (i === 0) return c.label === 'Base' ? `${c.value}` : `${c.value} (${c.label})`
-      return `${c.value >= 0 ? '+' : '−'} ${Math.abs(c.value)} (${c.label})`
-    })
-    .join(' ')
+  const acBreakdown = formatArmorClassBreakdown(acResult)
   const hp: number | null = cls ? getTotalHp(draft, conMod) : null
   const speed = race ? getEffectiveSpeed(race, subrace) + getSpeedBonusTotal(draft) : 0
   const initiative = dexMod + getInitiativeBonusTotal(draft)

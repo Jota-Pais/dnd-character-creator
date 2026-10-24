@@ -6,7 +6,11 @@ import type { ConditionalAcBonus, ResourceEffect } from '../types/effects'
 import { getFeat } from './featUtils'
 import { getClass, getSubclass, getClassFeaturesUpToLevel } from './classUtils'
 import { getRace, getSubrace, getEffectiveTraits } from './raceUtils'
-import { getProficiencyBonus } from './abilityScoreUtils'
+import { getProficiencyBonus, calculateModifier, ALL_ABILITY_SCORES } from './abilityScoreUtils'
+import { getEquippedArmor } from './equipmentUtils'
+import {
+  calculateArmorClass, type ArmorClassResult, type UnarmoredAcOption,
+} from './armorClassUtils'
 import {
   evaluateResource, type FinalScores, type ResourceSource, type SheetResource,
 } from './classResourceUtils'
@@ -170,6 +174,18 @@ export function getRacialHpBonus(draft: CharacterDraft, level: number): number {
   return owned.traits.reduce((sum, t) => sum + (t.effects?.hpPerLevel ?? 0) * level, 0)
 }
 
+/**
+ * PV extras de feature de classe, cada uma pelo nível NA classe dona dela (Resiliência Dracônica:
+ * 1 × nível de feiticeiro, p. 80). Na multiclasse, um guerreiro 3 / feiticeiro dracônico 2 ganha 2.
+ */
+export function getClassFeatureHpBonus(draft: CharacterDraft): number {
+  return getOwnedClassFeaturesByEntry(draft).reduce(
+    (sum, { entry, features }) =>
+      sum + features.reduce((s, f) => s + (f.effects?.hpPerClassLevel ?? 0) * entry.level, 0),
+    0,
+  )
+}
+
 /** Todos os PV extras por nível, de talento e de traço racial. Os dois se acumulam. */
 export function getHpPerLevelBonus(draft: CharacterDraft, level: number): number {
   return getFeatHpBonus(draft, level) + getRacialHpBonus(draft, level)
@@ -177,7 +193,8 @@ export function getHpPerLevelBonus(draft: CharacterDraft, level: number): number
 
 /**
  * PV totais da ficha: o poço de dados de vida das classes mais os extras de talento e de traço
- * racial, no nível de PERSONAGEM (na multiclasse, a soma de todas as classes). Mora aqui, e não
+ * racial, no nível de PERSONAGEM (na multiclasse, a soma de todas as classes), e os de feature de
+ * classe, no nível de cada classe. Mora aqui, e não
  * em `multiclassUtils`, porque só este módulo enxerga talentos e traços — e `multiclassUtils`
  * não pode importá-lo (é ele quem fornece `getAllAsiChoices`).
  */
@@ -185,7 +202,7 @@ export function getTotalHp(draft: CharacterDraft, conModifier: number): number {
   const base = draft.hpMethod === 'roll'
     ? getTotalHpRolled(draft, conModifier)
     : getTotalHpAverage(draft, conModifier)
-  return base + getHpPerLevelBonus(draft, draft.level ?? 1)
+  return base + getHpPerLevelBonus(draft, draft.level ?? 1) + getClassFeatureHpBonus(draft)
 }
 
 // ── Recursos (classe, raça, talento) ───────────────────────────────────────────
@@ -289,6 +306,46 @@ export function getPassiveScoreBonus(draft: CharacterDraft, skillId: string): nu
     const bonus = f.effects?.passiveScoreBonus
     return bonus?.skills.includes(skillId) ? sum + bonus.value : sum
   }, 0)
+}
+
+// ── Classe de Armadura ─────────────────────────────────────────────────────────
+
+/**
+ * As formas alternativas de calcular a CA sem armadura que as features de classe dão (Defesa sem
+ * Armadura do bárbaro e do monge, Resiliência Dracônica), de todas as classes da multiclasse.
+ *
+ * A mesma característica vinda de duas classes fica só a da primeira: bárbaro / monge tem UMA
+ * Defesa sem Armadura (p. 166), a da classe que a deu primeiro. Características diferentes
+ * (Defesa sem Armadura e Resiliência Dracônica) ficam as duas — quem escolhe entre elas é
+ * `calculateArmorClass`, pela regra geral da p. 14.
+ */
+export function getUnarmoredAcOptions(draft: CharacterDraft): UnarmoredAcOption[] {
+  const out: UnarmoredAcOption[] = []
+  for (const feature of getOwnedClassFeatures(draft)) {
+    const formula = feature.effects?.unarmoredAc
+    if (!formula || out.some(o => o.id === formula.id)) continue
+    out.push({ ...formula, source: feature.name })
+  }
+  return out
+}
+
+/**
+ * A CA da ficha — a Revisão e o PDF chamam só isto. Junta a armadura e o escudo equipados, as
+ * fórmulas sem armadura das features e o Estilo de Luta Defesa de qualquer classe.
+ */
+export function getSheetArmorClass(draft: CharacterDraft, finalScores: FinalScores): ArmorClassResult {
+  const cls = draft.class ? getClass(draft.class) : undefined
+  const { bodyArmor, hasShield } = getEquippedArmor(draft.equipment, cls?.startingEquipment)
+  const mods = Object.fromEntries(
+    ALL_ABILITY_SCORES.map(ab => [ab, calculateModifier(finalScores[ab])]),
+  ) as Record<AbilityScore, number>
+  return calculateArmorClass({
+    mods,
+    bodyArmor,
+    hasShield,
+    unarmoredAc: getUnarmoredAcOptions(draft),
+    hasDefenseFightingStyle: allClassEntries(draft).some(e => e.classChoices.fightingStyle === 'defense'),
+  })
 }
 
 // ── Classe de Armadura condicional ─────────────────────────────────────────────

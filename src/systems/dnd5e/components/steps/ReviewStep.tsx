@@ -24,10 +24,10 @@ import {
   getProficiencyBonus, formatXpProgress,
 } from '../../utils/abilityScoreUtils'
 import {
-  getEquippedArmor, formatInventoryItem, describeResolvedOption,
+  formatInventoryItem, describeResolvedOption,
   getStartingMoney, describeStartingMoneySource, formatCoins,
 } from '../../utils/equipmentUtils'
-import { getUnarmoredDefense, calculateArmorClass } from '../../utils/armorClassUtils'
+import { formatArmorClassBreakdown } from '../../utils/armorClassUtils'
 import {
   getAllGrantedTools, getLanguageLabels, EXOTIC_LANGUAGE_NOTE, getExpertiseTools, getSkillChecks,
   getPassiveScore, getArmorProficiencyLabels, getWeaponProficiencyLabels, getUnproficientArmor,
@@ -36,7 +36,7 @@ import {
 import { getProgressionSlotsUpToLevel } from '../../utils/progressionChoiceUtils'
 import {
   getTotalHp, getInitiativeBonusTotal, getSpeedBonusTotal,
-  getConditionalAcBonuses, getCheckProficiencyBonus, getSheetResources,
+  getConditionalAcBonuses, getCheckProficiencyBonus, getSheetResources, getSheetArmorClass,
 } from '../../utils/sheetEffects'
 import { getProgressionOptions } from '../../utils/progressionOptions'
 import {
@@ -95,7 +95,6 @@ export function ReviewStep() {
   }
   const dexMod = calculateModifier(finalScores.DEX)
   const conMod = calculateModifier(finalScores.CON)
-  const wisMod = calculateModifier(finalScores.WIS)
 
   // PV total: soma o poço de dados de vida de todas as classes (só o 1º nível da classe
   // inicial usa o dado máximo). Para classe única equivale ao cálculo anterior.
@@ -107,24 +106,10 @@ export function ReviewStep() {
   const conditionalAc = getConditionalAcBonuses(draft)
   const darkvision = race ? getEffectiveDarkvision(race, subrace ?? null) : 0
   const classEquipment = cls?.startingEquipment
-  const { bodyArmor, hasShield } = getEquippedArmor(draft.equipment, classEquipment)
-  const acResult = calculateArmorClass({
-    dexMod,
-    conMod,
-    wisMod,
-    bodyArmor,
-    hasShield,
-    unarmoredDefense: getUnarmoredDefense(entries.find(e => e.classId === 'barbarian' || e.classId === 'monk')?.classId ?? cls?.id),
-    hasDefenseFightingStyle: entries.some(e => e.classChoices.fightingStyle === 'defense'),
-  })
+  const acResult = getSheetArmorClass(draft, finalScores)
   const ac = acResult.value
   const acNote = acResult.stealthDisadvantage ? '*' : ''
-  const acBreakdown = acResult.components
-    .map((c, i) => {
-      if (i === 0) return c.label === 'Base' ? `${c.value}` : `${c.value} (${c.label})`
-      return `${c.value >= 0 ? '+' : '−'} ${Math.abs(c.value)} (${c.label})`
-    })
-    .join(' ')
+  const acBreakdown = formatArmorClassBreakdown(acResult)
 
   // Proficiencies
   const skillChecks = getSkillChecks(draft, finalScores)

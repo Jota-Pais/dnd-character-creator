@@ -4,7 +4,7 @@
       {
         "level": 1,
         "name": "Fúria",
-        "description": "Como ação bônus, entre em fúria por 1 minuto: vantagem em testes e resistências de Força, bônus de dano corpo-a-corpo com Força e resistência a dano de concussão, cortante e perfurante. Não funciona vestindo armadura pesada.",
+        "description": "No seu turno, como ação bônus, entre em fúria por 1 minuto. Sem armadura pesada, você tem: vantagem em testes e testes de resistência de Força; o bônus de Dano de Fúria nas jogadas de dano de ataques com arma corpo-a-corpo usando Força; resistência a dano de concussão, cortante e perfurante. Em fúria você não pode conjurar magias nem se concentrar nelas. A fúria termina antes se você cair inconsciente ou se seu turno acabar sem que você tenha atacado uma criatura hostil nem sofrido dano desde o seu último turno; você também pode encerrá-la no seu turno com uma ação bônus. Usos e Dano de Fúria do seu nível em Recursos; os usos voltam num descanso longo.",
         "effects": {
           "resources": [
             { "id": "rage", "name": "Fúria", "uses": { "byLevel": [{ "from": 1, "value": 2 }, { "from": 3, "value": 3 }, { "from": 6, "value": 4 }, { "from": 12, "value": 5 }, { "from": 17, "value": 6 }] }, "unlimitedFrom": 20, "recharge": "long" },
@@ -20,7 +20,7 @@
       {
         "level": 2,
         "name": "Ataque Descuidado",
-        "description": "No seu primeiro ataque do turno, você pode atacar descuidadamente: ganha vantagem nos ataques corpo-a-corpo com Força no turno, mas ataques contra você têm vantagem até o seu próximo turno."
+        "description": "Ao fazer o primeiro ataque do seu turno, você pode atacar descuidadamente: tem vantagem nas jogadas de ataque com armas corpo-a-corpo usando Força durante este turno, mas jogadas de ataque contra você têm vantagem até o início do seu próximo turno."
       },
       {
         "level": 2,
@@ -40,7 +40,7 @@
       {
         "level": 7,
         "name": "Instinto Selvagem",
-        "description": "Você tem vantagem nas jogadas de iniciativa. Se estiver surpreso no início do combate e não incapacitado, pode agir normalmente no primeiro turno, desde que entre em fúria antes de qualquer outra ação."
+        "description": "Você tem vantagem nas jogadas de iniciativa. Se estiver surpreso no início do combate e não estiver incapacitado, pode agir normalmente no seu primeiro turno, mas apenas se entrar em fúria antes de fazer qualquer outra coisa nesse turno."
       },
       {
         "level": 9,
@@ -50,7 +50,7 @@
       {
         "level": 11,
         "name": "Fúria Implacável",
-        "description": "Se você cair a 0 pontos de vida em fúria e não morrer, pode fazer uma resistência de Constituição (CD 10, +5 a cada uso, reinicia após descanso) para ficar com 1 ponto de vida."
+        "description": "Se você cair a 0 pontos de vida enquanto estiver em fúria e não morrer, pode fazer um teste de resistência de Constituição CD 10; se passar, fica com 1 ponto de vida em vez disso. Cada uso após o primeiro aumenta a CD em 5; ela volta a 10 quando você termina um descanso curto ou longo."
       },
       {
         "level": 15,
@@ -77,7 +77,7 @@
       {
         "level": 1,
         "name": "Retomar o Fôlego",
-        "description": "Como ação bônus, recupere 1d10 + seu nível de guerreiro pontos de vida. Recupera em descanso curto ou longo.",
+        "description": "No seu turno, como ação bônus, recupere 1d10 + seu nível de guerreiro em pontos de vida. Um uso; volta após um descanso curto ou longo.",
         "effects": {
           "resources": [
             { "id": "second-wind", "name": "Retomar o Fôlego", "die": { "count": 1, "size": 10, "bonus": { "perClassLevel": 1 } }, "uses": 1, "recharge": "short" }
@@ -87,7 +87,7 @@
       {
         "level": 2,
         "name": "Surto de Ação",
-        "description": "No seu turno, você pode realizar uma ação adicional. Uma vez por descanso (duas a partir do 17° nível, mas só uma por turno).",
+        "description": "No seu turno, você realiza uma ação adicional além da sua ação e de uma possível ação bônus. Os usos do seu nível (em Recursos) voltam num descanso curto ou longo; no máximo um uso por turno.",
         "effects": {
           "resources": [
             { "id": "action-surge", "name": "Surto de Ação", "uses": { "byLevel": [{ "from": 2, "value": 1 }, { "from": 17, "value": 2 }] }, "recharge": "short", "note": "no máximo uma vez por turno" }
@@ -114,12 +114,12 @@
       {
         "level": 1,
         "name": "Especialização",
-        "description": "Escolha duas perícias em que é proficiente (ou uma perícia e ferramentas de ladrão): seu bônus de proficiência é dobrado em testes com elas."
+        "description": "Escolha duas perícias em que é proficiente (ou uma perícia e ferramentas de ladrão): seu bônus de proficiência é dobrado em qualquer teste de habilidade com elas. No 6° nível, escolha mais duas (perícias ou ferramentas de ladrão)."
       },
       {
         "level": 1,
         "name": "Ataque Furtivo",
-        "description": "Uma vez por turno, cause 1d6 de dano extra a um alvo que você acerte tendo vantagem no ataque (ou com um aliado adjacente ao alvo), usando arma sutil ou à distância. O dado aumenta conforme o nível.",
+        "description": "Uma vez por turno, ao acertar uma criatura com ataque de arma de acuidade ou à distância, adicione os dados de Ataque Furtivo do seu nível (em Recursos) ao dano se tiver vantagem na jogada. Sem vantagem também vale se outro inimigo do alvo, não incapacitado, estiver a até 1,5 m dele e você não tiver desvantagem.",
         "effects": {
           "resources": [
             { "id": "sneak-attack", "name": "Ataque Furtivo", "die": { "count": { "halfClassLevel": "up" }, "size": 6 } }
@@ -129,12 +129,12 @@
       {
         "level": 1,
         "name": "Gíria de Ladrão",
-        "description": "Você conhece as gírias de ladrão, um código secreto que permite trocar mensagens ocultas numa conversa normal."
+        "description": "Você conhece a gíria de ladrão: passa mensagens secretas numa conversa aparentemente normal, que só quem conhece a gíria entende. A mensagem leva quatro vezes mais tempo do que falar a ideia claramente. Você também entende sinais e símbolos secretos para mensagens curtas (perigo, território de guilda, saque, alvos fáceis, esconderijos)."
       },
       {
         "level": 2,
         "name": "Ação Ardilosa",
-        "description": "Em cada turno, você pode usar uma ação bônus para Disparar, Desengajar ou Esconder-se."
+        "description": "Em cada um dos seus turnos em combate, você pode usar uma ação bônus para Disparada, Desengajar ou Esconder."
       },
       {
         "level": 5,
@@ -169,7 +169,7 @@
       {
         "level": 20,
         "name": "Golpe de Sorte",
-        "description": "Transforme uma falha de ataque em acerto, ou trate um teste falho como 20 natural. Uma vez por descanso.",
+        "description": "Se errar um ataque contra um alvo ao seu alcance, transforme a falha em acerto; ou, se falhar num teste, trate a jogada do d20 como 20 natural. Uma vez por descanso curto ou longo.",
         "effects": {
           "resources": [
             { "id": "stroke-of-luck", "name": "Golpe de Sorte", "uses": 1, "recharge": "short" }
@@ -186,7 +186,7 @@
       {
         "level": 1,
         "name": "Artes Marciais",
-        "description": "Com golpes desarmados e armas de monge, você pode usar Destreza no ataque e no dano, causa dano igual ao dado de artes marciais e pode fazer um ataque desarmado como ação bônus.",
+        "description": "Desarmado ou empunhando arma de monge (espada curta ou arma simples corpo-a-corpo sem as propriedades duas mãos ou pesada), e sem armadura nem escudo: você pode usar Destreza em vez de Força no ataque e no dano, pode rolar o dado de Artes Marciais no lugar do dano normal e, quando usar a ação de Ataque com golpe desarmado ou arma de monge no seu turno, pode fazer um golpe desarmado como ação bônus.",
         "effects": {
           "resources": [
             { "id": "martial-arts", "name": "Artes Marciais", "die": { "size": { "byLevel": [{ "from": 1, "value": 4 }, { "from": 5, "value": 6 }, { "from": 11, "value": 8 }, { "from": 17, "value": 10 }] } } }
@@ -196,7 +196,7 @@
       {
         "level": 2,
         "name": "Chi",
-        "description": "Você tem pontos de chi (iguais ao seu nível de monge) que alimentam Rajada de Golpes, Defesa Paciente e Passo do Vento. Recuperam-se em descanso curto ou longo.",
+        "description": "Você tem pontos de chi (iguais ao seu nível de monge), recuperados ao fim de um descanso curto ou longo se passar ao menos 30 minutos dele meditando. CD de resistência de chi = 8 + bônus de proficiência + mod. de Sabedoria. Rajada de Golpes: logo após usar a ação de Ataque no seu turno, gaste 1 chi para fazer dois golpes desarmados como ação bônus. Defesa Paciente: gaste 1 chi para usar Esquivar como ação bônus no seu turno. Passo do Vento: gaste 1 chi para usar Desengajar ou Disparada como ação bônus no seu turno; sua distância de salto dobra nesse turno.",
         "effects": {
           "resources": [
             { "id": "ki", "name": "Pontos de Chi", "uses": { "perClassLevel": 1 }, "unit": "points", "recharge": "short" }
@@ -206,7 +206,7 @@
       {
         "level": 2,
         "name": "Movimento sem Armadura",
-        "description": "Seu deslocamento aumenta em 3 metros enquanto você não usar armadura nem escudo (o bônus cresce em níveis superiores).",
+        "description": "Seu deslocamento aumenta enquanto você não usar armadura nem empunhar escudo; o bônus do seu nível está em Recursos.",
         "effects": {
           "resources": [
             { "id": "unarmored-movement", "name": "Movimento sem Armadura", "amount": { "value": { "byLevel": [{ "from": 2, "value": 10 }, { "from": 6, "value": 15 }, { "from": 10, "value": 20 }, { "from": 14, "value": 25 }, { "from": 18, "value": 30 }] }, "unit": "feet" } }
@@ -216,7 +216,7 @@
       {
         "level": 3,
         "name": "Defletir Projéteis",
-        "description": "Use sua reação para reduzir o dano de um ataque à distância; se reduzir a 0, pode apanhar o projétil e arremessá-lo gastando 1 ponto de chi."
+        "description": "Como reação ao ser atingido por um ataque com arma à distância, reduza o dano em 1d10 + mod. de Destreza + seu nível de monge. Se o dano cair a 0, o projétil couber em uma mão e você tiver uma mão livre, você pode apanhá-lo; então, gastando 1 ponto de chi, pode fazer como parte da mesma reação um ataque à distância (6/18 m) com ele, com proficiência e contando como arma de monge."
       },
       {
         "level": 4,
@@ -231,7 +231,7 @@
       {
         "level": 5,
         "name": "Ataque Atordoante",
-        "description": "Ao acertar um ataque corpo-a-corpo com arma, gaste 1 ponto de chi para tentar atordoar o alvo (resistência de Constituição)."
+        "description": "Ao atingir outra criatura com um ataque corpo-a-corpo com arma, você pode gastar 1 ponto de chi: o alvo faz uma resistência de Constituição contra sua CD de chi ou fica atordoado até o fim do seu próximo turno."
       },
       {
         "level": 6,
@@ -247,6 +247,11 @@
         "level": 7,
         "name": "Mente Tranquila",
         "description": "Com uma ação, você pode terminar um efeito que o esteja enfeitiçando ou amedrontando."
+      },
+      {
+        "level": 9,
+        "name": "Aprimoramento de Movimento sem Armadura",
+        "description": "No seu turno, você pode se mover por superfícies verticais e sobre líquidos sem cair durante o movimento."
       },
       {
         "level": 10,
@@ -266,12 +271,12 @@
       {
         "level": 15,
         "name": "Corpo Atemporal",
-        "description": "Seu chi sustenta você: não sofre os efeitos da velhice, não pode ser envelhecido magicamente e não precisa de comida ou água."
+        "description": "Seu chi sustenta você: não sofre os efeitos da velhice e não pode ser envelhecido magicamente (mas ainda morre de velhice). Você não precisa mais de comida nem de água."
       },
       {
         "level": 18,
         "name": "Corpo Vazio",
-        "description": "Gaste 4 pontos de chi para ficar invisível por 1 minuto, com resistência a todo dano exceto energético; ou 8 pontos de chi para conjurar projeção astral."
+        "description": "Com uma ação, gaste 4 pontos de chi para ficar invisível por 1 minuto, com resistência a todo dano exceto de energia durante esse tempo. Ou gaste 8 pontos de chi para conjurar projeção astral sem componentes materiais; você não pode levar nenhuma outra criatura."
       },
       {
         "level": 20,
@@ -283,12 +288,12 @@
       {
         "level": 1,
         "name": "Conjuração",
-        "description": "Você conjura magias de clérigo usando Sabedoria; prepara um número de magias igual ao mod. de Sabedoria + seu nível de clérigo. Pode conjurar como ritual as que tiverem o descritor ritual e usar um símbolo sagrado como foco de conjuração."
+        "description": "Você conjura magias de clérigo usando Sabedoria (CD e ataque de magia na ficha). Ao terminar um descanso longo, prepara da lista de clérigo um número de magias igual ao mod. de Sabedoria + nível de clérigo (mínimo 1), de níveis para os quais tenha espaços; magias de domínio ficam sempre preparadas e não contam nesse limite. Você pode conjurar como ritual as magias de clérigo com o descritor ritual que tiver preparadas, e pode usar um símbolo sagrado como foco de conjuração."
       },
       {
         "level": 2,
         "name": "Canalizar Divindade",
-        "description": "Você canaliza energia divina: começa com Expulsar Mortos-Vivos e um efeito do seu domínio. Recupera em descanso curto ou longo (2 usos no 6° nível, 3 no 18°).",
+        "description": "A cada uso, você escolhe um efeito: Expulsar Mortos-Vivos ou um dos efeitos de Canalizar Divindade do seu domínio. Efeitos que pedem teste de resistência usam a CD das suas magias de clérigo. Os usos (em Recursos) voltam ao terminar um descanso curto ou longo.",
         "effects": {
           "resources": [
             { "id": "channel-divinity", "name": "Canalizar Divindade", "uses": { "byLevel": [{ "from": 2, "value": 1 }, { "from": 6, "value": 2 }, { "from": 18, "value": 3 }] }, "recharge": "short" }
@@ -297,18 +302,18 @@
       },
       {
         "level": 2,
-        "name": "Expulsar Mortos-Vivos",
-        "description": "Com uma ação, cada morto-vivo a até 9 m que falhar numa resistência de Sabedoria fica expulso por 1 minuto (ou até sofrer dano), fugindo de você."
+        "name": "Canalizar Divindade: Expulsar Mortos-Vivos",
+        "description": "Gaste um uso de Canalizar Divindade e uma ação: cada morto-vivo a até 9 m que possa ver ou ouvir você faz um teste de resistência de Sabedoria. Se falhar, fica expulso por 1 minuto ou até sofrer dano. Expulso, ele usa o turno para fugir de você, não pode se aproximar voluntariamente a menos de 9 m de você nem usar reações, e como ação só pode Disparar ou tentar escapar de um efeito que o impeça de se mover (Esquivar, se não tiver para onde ir)."
       },
       {
         "level": 5,
         "name": "Destruir Mortos-Vivos",
-        "description": "Um morto-vivo que falhe no Expulsar Mortos-Vivos é destruído instantaneamente se seu nível de desafio for baixo o suficiente (aumenta com o nível de clérigo)."
+        "description": "Quando um morto-vivo falha na resistência contra o seu Expulsar Mortos-Vivos, ele é destruído na hora se o seu ND for igual ou menor que o limite do seu nível de clérigo: ND 1/2 (5º), 1 (8º), 2 (11º), 3 (14º), 4 (17º)."
       },
       {
         "level": 10,
         "name": "Intervenção Divina",
-        "description": "Com uma ação, role d100; se o resultado for menor ou igual ao seu nível de clérigo, sua divindade intervém. No 20° nível o sucesso é automático.",
+        "description": "Com uma ação, descreva o auxílio que pede à sua divindade e role d100: se o resultado for menor ou igual ao seu nível de clérigo, ela intervém (o Mestre escolhe como; o efeito de qualquer magia de clérigo ou de domínio é apropriado). Se ela intervier, você só pode usar de novo após 7 dias; se não, após um descanso longo. No 20º nível o pedido funciona automaticamente, sem rolagem.",
         "effects": {
           "resources": [
             { "id": "divine-intervention", "name": "Intervenção Divina", "uses": 1, "recharge": "long", "note": "se a divindade intervier, só de novo após 7 dias" }
@@ -320,17 +325,17 @@
       {
         "level": 1,
         "name": "Druídico",
-        "description": "Você conhece o Druídico, idioma secreto dos druidas, usado para deixar mensagens ocultas."
+        "description": "Você fala o Druídico, idioma secreto dos druidas, e pode usá-lo para deixar mensagens escondidas. Quem conhece o idioma vê a mensagem automaticamente; outros percebem que ela existe com um teste de Sabedoria (Percepção) CD 15, mas não conseguem decifrá-la sem magia."
       },
       {
         "level": 1,
         "name": "Conjuração",
-        "description": "Você conjura magias de druida usando Sabedoria; prepara um número de magias igual ao mod. de Sabedoria + seu nível de druida. Pode conjurar como ritual as que tiverem o descritor ritual e usar um foco druídico como foco de conjuração."
+        "description": "Você conjura magias de druida usando Sabedoria (CD e ataque de magia usam Sabedoria). Prepara um número de magias igual ao mod. de Sabedoria + seu nível de druida (mínimo 1), de níveis para os quais tenha espaços de magia, e pode trocar a lista ao terminar um descanso longo. Conjurar uma magia não a tira da lista. Você pode conjurar como ritual as magias de druida preparadas que tenham o descritor ritual e pode usar um foco druídico como foco de conjuração."
       },
       {
         "level": 2,
         "name": "Forma Selvagem",
-        "description": "Com uma ação, assuma a forma de uma besta que já tenha visto (limites de VD e de capacidades conforme o nível). Duas vezes por descanso.",
+        "description": "Com uma ação, assuma magicamente a forma de uma besta que você já tenha visto. Os usos voltam num descanso curto ou longo. Limites: nível 2, ND até 1/4 e sem deslocamento de voo ou natação; nível 4, ND até 1/2 e sem voo; nível 8, ND até 1. Dura até metade do seu nível de druida em horas (arredondado para baixo). Você reverte antes com uma ação bônus no seu turno, ou automaticamente se cair inconsciente, chegar a 0 PV ou morrer. Transformado: usa as estatísticas da besta, inclusive PV e Dados de Vida, mas mantém tendência, personalidade, Int/Sab/Car e suas proficiências em perícias e resistências (se a besta tiver a mesma com bônus maior, usa o dela). Não usa ações lendárias nem de covil. Ao reverter, volta aos PV que tinha; se reverteu por chegar a 0, o dano excedente passa para a forma normal. Não pode conjurar magias, mas não perde a concentração numa magia já conjurada. Fala e ações que exigem mãos ficam limitadas pela forma. Mantém características de classe, raça etc. se a forma for capaz de usá-las, mas não seus sentidos especiais (ex.: visão no escuro), a não ser que a besta os tenha. O equipamento cai no chão, é absorvido ou é vestido pela forma (o Mestre decide o que serve).",
         "effects": {
           "resources": [
             { "id": "wild-shape", "name": "Forma Selvagem", "uses": 2, "recharge": "short", "unlimitedFrom": 20 }
@@ -350,14 +355,14 @@
       {
         "level": 20,
         "name": "Arquidruida",
-        "description": "Você usa Forma Selvagem um número ilimitado de vezes e pode ignorar os componentes verbais, somáticos e materiais sem custo das suas magias de druida."
+        "description": "Você pode usar Forma Selvagem um número ilimitado de vezes. Além disso, pode ignorar os componentes verbais e somáticos das suas magias de druida e os componentes materiais que não tenham custo e não sejam consumidos pela magia, tanto na forma normal quanto em Forma Selvagem."
       }
     ],
     "wizard": [
       {
         "level": 1,
         "name": "Conjuração",
-        "description": "Você conjura magias de mago usando Inteligência, a partir do seu grimório. Pode conjurar como ritual qualquer magia de ritual que esteja no grimório, mesmo sem prepará-la, e usar um foco arcano como foco de conjuração."
+        "description": "Você prepara magias de mago do seu grimório (modificador de Inteligência + nível de mago, mínimo 1), trocando a lista ao fim de um descanso longo; Inteligência define a CD e o ataque das magias, e você pode usar um foco arcano. Conjura como ritual qualquer magia com o descritor ritual que esteja no grimório, mesmo sem prepará-la. A cada nível de mago, adiciona duas magias de mago ao grimório; copiar uma magia encontrada custa 2 horas e 50 po por nível dela."
       },
       {
         "level": 1,
@@ -372,12 +377,12 @@
       {
         "level": 18,
         "name": "Dominar Magia",
-        "description": "Escolha uma magia de 1° e uma de 2° nível do grimório: você pode conjurá-las à vontade no nível mínimo, sem gastar espaços, enquanto estiverem preparadas."
+        "description": "Escolha uma magia de mago de 1° e uma de 2° nível do grimório: enquanto estiverem preparadas, você as conjura no nível mínimo sem gastar espaços de magia. Para conjurá-las em nível superior, gasta o espaço normalmente."
       },
       {
         "level": 20,
         "name": "Assinatura Mágica",
-        "description": "Escolha duas magias de 3° nível do grimório: ficam sempre preparadas e você pode conjurar cada uma uma vez por descanso sem gastar espaço de magia.",
+        "description": "Escolha duas magias de mago de 3° nível do grimório: ficam sempre preparadas, sem contar no limite de magias preparadas. Você pode conjurar cada uma uma vez como magia de 3° nível sem gastar espaço, recuperando o uso ao terminar um descanso curto ou longo. Em nível superior, gasta o espaço normalmente.",
         "effects": {
           "resources": [
             { "id": "signature-spells", "name": "Assinatura Mágica", "uses": 2, "recharge": "short", "note": "uma vez cada magia, como 3º nível, sem gastar espaço" }
@@ -389,12 +394,12 @@
       {
         "level": 1,
         "name": "Conjuração",
-        "description": "Você conjura magias de feiticeiro usando Carisma, a partir de uma lista de magias conhecidas, e pode usar um foco arcano como foco de conjuração."
+        "description": "Você conjura magias de feiticeiro usando Carisma, a partir de magias conhecidas, e recupera os espaços gastos num descanso longo. Pode usar um foco arcano como foco de conjuração. Ao ganhar um nível de feiticeiro, pode trocar uma magia conhecida por outra da lista de feiticeiro de um nível para o qual tenha espaços."
       },
       {
         "level": 2,
         "name": "Fonte de Magia",
-        "description": "Você tem pontos de feitiçaria que pode converter em espaços de magia, ou converter espaços em pontos, como ação bônus.",
+        "description": "Você tem pontos de feitiçaria (total em Recursos), que voltam todos num descanso longo e nunca passam do máximo do seu nível. Com uma ação bônus no seu turno, transforme pontos em um espaço de magia (custo: 1° = 2, 2° = 3, 3° = 5, 4° = 6, 5° = 7; nada acima do 5° nível). Os espaços criados somem ao fim de um descanso longo. Também com uma ação bônus no seu turno, gaste um espaço de magia para ganhar pontos iguais ao nível dele.",
         "effects": {
           "resources": [
             { "id": "sorcery-points", "name": "Pontos de Feitiçaria", "uses": { "perClassLevel": 1 }, "unit": "points", "recharge": "long" }
@@ -403,8 +408,8 @@
       },
       {
         "level": 3,
-        "name": "Metamagia",
-        "description": "Você aprende duas opções de Metamagia (mais uma no 10° e no 17° nível) para alterar suas magias gastando pontos de feitiçaria."
+        "name": "Metamágica",
+        "description": "Você aprende duas opções de Metamágica (mais uma no 10° e outra no 17° nível) para alterar suas magias gastando pontos de feitiçaria. Só pode usar uma opção por magia ao conjurá-la, salvo quando a opção diz o contrário (ex.: Magia Potencializada)."
       },
       {
         "level": 20,
@@ -416,12 +421,12 @@
       {
         "level": 1,
         "name": "Conjuração",
-        "description": "Você conjura magias de bardo usando Carisma, a partir de magias conhecidas. Pode conjurar como ritual as que tiverem o descritor ritual e usar um instrumento musical como foco de conjuração."
+        "description": "Você conjura magias de bardo usando Carisma, a partir dos truques e magias que conhece, e pode usar um instrumento musical como foco de conjuração. Pode conjurar como ritual as magias conhecidas que tenham o descritor ritual. Ao ganhar um nível de bardo, pode trocar uma magia conhecida por outra da lista de bardo de um nível que tenha espaços."
       },
       {
         "level": 1,
         "name": "Inspiração de Bardo",
-        "description": "Como ação bônus, dê a outra criatura a até 18 m que possa ouvi-lo um dado de Inspiração de Bardo, que ela pode somar a um teste de habilidade, ataque ou resistência nos próximos 10 minutos. Usos iguais ao mod. de Carisma (mínimo 1); o dado e os usos estão em Recursos.",
+        "description": "Como ação bônus, escolha outra criatura (não você) a até 18 m que possa ouvi-lo: ela ganha um dado de Inspiração de Bardo. Uma vez nos próximos 10 minutos, ela pode rolá-lo e somar a um teste de habilidade, jogada de ataque ou teste de resistência, decidindo depois de rolar o d20 mas antes de o Mestre dizer o resultado. O dado é gasto ao ser rolado, e uma criatura só pode ter um por vez. Usos iguais ao mod. de Carisma (mínimo 1); o dado e a recarga do seu nível estão em Recursos.",
         "effects": {
           "resources": [
             { "id": "bardic-inspiration", "name": "Inspiração de Bardo", "die": { "size": { "byLevel": [{ "from": 1, "value": 6 }, { "from": 5, "value": 8 }, { "from": 10, "value": 10 }, { "from": 15, "value": 12 }] } }, "uses": { "ability": "CHA", "min": 1 }, "recharge": [{ "from": 1, "value": "long" }, { "from": 5, "value": "short" }] }
@@ -437,7 +442,7 @@
       {
         "level": 2,
         "name": "Canção de Descanso",
-        "description": "Se você ou criaturas amigáveis que ouçam sua atuação recuperarem pontos de vida gastando Dados de Vida no fim de um descanso curto, cada uma recupera também o dado de Canção de Descanso (ver Recursos).",
+        "description": "Durante um descanso curto, você e as criaturas amigáveis que puderem ouvir sua atuação e recuperarem pontos de vida gastando Dados de Vida ao fim do descanso recuperam, cada uma, pontos de vida adicionais iguais a uma rolagem do dado de Canção de Descanso do seu nível (em Recursos).",
         "effects": {
           "resources": [
             { "id": "song-of-rest", "name": "Canção de Descanso", "die": { "size": { "byLevel": [{ "from": 2, "value": 6 }, { "from": 9, "value": 8 }, { "from": 13, "value": 10 }, { "from": 17, "value": 12 }] } } }
@@ -446,8 +451,8 @@
       },
       {
         "level": 3,
-        "name": "Especialização",
-        "description": "Escolha duas perícias em que é proficiente: seu bônus de proficiência é dobrado nos testes com elas (mais duas no 10° nível)."
+        "name": "Aptidão",
+        "description": "Escolha duas perícias em que é proficiente: seu bônus de proficiência é dobrado nos testes de habilidade com elas (mais duas no 10° nível)."
       },
       {
         "level": 5,
@@ -457,12 +462,12 @@
       {
         "level": 6,
         "name": "Canção de Proteção",
-        "description": "Com uma ação, inicie uma atuação: você e aliados a até 9 m têm vantagem em resistências para não ser amedrontados ou enfeitiçados."
+        "description": "Com uma ação, comece uma atuação que dura até o fim do seu próximo turno: você e as criaturas amigáveis a até 9 m que puderem ouvi-lo têm vantagem em testes de resistência para não ficarem amedrontados ou enfeitiçados. A atuação termina antes se você ficar incapacitado ou silenciado, ou quando você quiser (sem gastar ação)."
       },
       {
         "level": 10,
         "name": "Segredos Mágicos",
-        "description": "Escolha duas magias de qualquer classe (mais duas no 14° e no 18° nível); elas passam a contar como magias de bardo para você."
+        "description": "Escolha duas magias de qualquer classe (mais duas no 14° e no 18° nível), cada uma um truque ou de um nível que você possa conjurar. Elas passam a contar como magias de bardo para você e entram no seu total de Magias Conhecidas."
       },
       {
         "level": 20,
@@ -474,7 +479,7 @@
       {
         "level": 1,
         "name": "Magia de Pacto",
-        "description": "Você conjura magias de bruxo usando Carisma. Seus poucos espaços são sempre do nível máximo disponível e recuperam-se em descanso curto ou longo. Pode usar um foco arcano como foco de conjuração."
+        "description": "Você conjura magias de bruxo usando Carisma e pode usar um foco arcano. Todos os seus espaços de magia têm o mesmo nível (o da tabela) e toda magia de 1° nível ou superior é conjurada nesse nível. Você recupera todos os espaços gastos ao terminar um descanso curto ou longo."
       },
       {
         "level": 2,
@@ -484,7 +489,7 @@
       {
         "level": 3,
         "name": "Dádiva do Pacto",
-        "description": "Seu patrono concede um dom, à sua escolha: Pacto da Corrente (familiar), Pacto da Lâmina (arma de pacto) ou Pacto do Tomo (grimório com truques)."
+        "description": "Escolha um dom. Corrente: você aprende convocar familiar (não conta nas magias conhecidas) e pode conjurá-la como ritual. O familiar pode ter forma de diabrete, pseudodragão, quasit ou sprite. Ao usar a ação de Ataque, você pode abrir mão de um dos seus ataques para o familiar atacar com a reação dele. Lâmina: com uma ação, crie na mão vazia uma arma corpo-a-corpo de pacto, na forma que quiser. Você é proficiente com ela, e ela conta como mágica para superar resistência e imunidade a dano não-mágico. Ela some se ficar a mais de 1,5 m de você por 1 minuto, se você usar a característica de novo, se você dissipá-la (sem ação) ou se morrer. Um ritual de 1 hora (pode ser feito num descanso curto) torna uma arma mágica a sua arma de pacto. Tomo: o Livro das Sombras dá três truques de qualquer lista, que você conjura à vontade enquanto estiver com o livro. Eles contam como magias de bruxo e não entram nos truques conhecidos. Se perder o livro, uma cerimônia de 1 hora num descanso curto ou longo dá um substituto."
       },
       {
         "level": 11,
@@ -499,7 +504,7 @@
       {
         "level": 20,
         "name": "Mestre Místico",
-        "description": "Gaste 1 minuto suplicando ao patrono para recuperar todos os espaços de Magia de Pacto gastos. Depois, só de novo após um descanso longo.",
+        "description": "Gaste 1 minuto suplicando ao patrono para recuperar todos os espaços de Magia de Pacto gastos. Depois de usar, só pode de novo após terminar um descanso longo.",
         "effects": {
           "resources": [
             { "id": "eldritch-master", "name": "Mestre Místico", "uses": 1, "recharge": "long" }
@@ -511,7 +516,7 @@
       {
         "level": 1,
         "name": "Sentido Divino",
-        "description": "Com uma ação, detecte a localização de celestiais, corruptores e mortos-vivos a até 18 m (não protegidos por cobertura total). Usos iguais a 1 + mod. de Carisma por descanso longo.",
+        "description": "Com uma ação, até o fim do seu próximo turno você sabe a localização e o tipo (mas não a identidade) de qualquer celestial, corruptor ou morto-vivo a até 18 m que não esteja sob cobertura total, e detecta lugares ou objetos consagrados ou conspurcados no mesmo raio. Usos: 1 + mod. de Carisma; recupera todos em descanso longo.",
         "effects": {
           "resources": [
             { "id": "divine-sense", "name": "Sentido Divino", "uses": { "ability": "CHA", "plus": 1 }, "recharge": "long" }
@@ -521,7 +526,7 @@
       {
         "level": 1,
         "name": "Cura pelas Mãos",
-        "description": "Você tem um poço de cura igual a 5 × seu nível de paladino, que restaura pontos de vida ao toque (ou 5 pontos para curar uma doença ou veneno). Renova em descanso longo.",
+        "description": "Você tem um poço de cura de 5 × seu nível de paladino PV, que se renova em descanso longo. Com uma ação, toque uma criatura e restaure quantos PV quiser, até o que resta no poço; ou gaste 5 pontos para curar uma doença ou neutralizar um veneno (no mesmo uso dá pra tratar várias, pagando 5 por cada). Não afeta mortos-vivos nem constructos.",
         "effects": {
           "resources": [
             { "id": "lay-on-hands", "name": "Cura pelas Mãos", "uses": { "perClassLevel": 5 }, "unit": "hp", "recharge": "long" }
@@ -531,7 +536,7 @@
       {
         "level": 2,
         "name": "Conjuração",
-        "description": "Você conjura magias de paladino usando Carisma; prepara magias iguais ao mod. de Carisma + metade do seu nível de paladino. Pode usar um símbolo sagrado como foco de conjuração."
+        "description": "Você conjura magias de paladino usando Carisma, com um símbolo sagrado como foco. Prepara um número de magias igual ao mod. de Carisma + metade do seu nível de paladino (arredondado para baixo, mínimo 1), só de níveis para os quais tenha espaços, e pode trocar a lista ao fim de um descanso longo. Os espaços gastos voltam no descanso longo."
       },
       {
         "level": 2,
@@ -541,7 +546,7 @@
       {
         "level": 2,
         "name": "Destruição Divina",
-        "description": "Ao acertar um ataque corpo-a-corpo, gaste um espaço de magia para causar 2d8 de dano radiante (+1d8 por nível de espaço acima do 1°, até 5d8; +1d8 contra corruptores e mortos-vivos)."
+        "description": "Ao atingir uma criatura com um ataque corpo a corpo com arma, você pode gastar um espaço de magia (de qualquer classe) para causar dano radiante extra: 2d8 com espaço de 1° nível, +1d8 por nível de espaço acima do 1° (máximo 5d8), e +1d8 se o alvo for corruptor ou morto-vivo."
       },
       {
         "level": 3,
@@ -556,12 +561,12 @@
       {
         "level": 6,
         "name": "Aura de Proteção",
-        "description": "Você e criaturas amigáveis a até 3 metros somam seu mod. de Carisma (mín. +1) aos testes de resistência (alcance aumenta para 9 m no 18° nível)."
+        "description": "Enquanto você estiver consciente, você e as criaturas amigáveis a até 3 metros (9 metros a partir do 18° nível) somam seu mod. de Carisma (mínimo +1) aos testes de resistência."
       },
       {
         "level": 10,
         "name": "Aura de Coragem",
-        "description": "Você e criaturas amigáveis a até 3 metros não podem ser amedrontados enquanto você estiver consciente."
+        "description": "Enquanto você estiver consciente, você e as criaturas amigáveis a até 3 metros (9 metros a partir do 18° nível) não podem ser amedrontados."
       },
       {
         "level": 11,
@@ -571,7 +576,7 @@
       {
         "level": 14,
         "name": "Toque Purificador",
-        "description": "Com uma ação, termine uma magia em si mesmo ou em uma criatura voluntária que tocar. Usos iguais ao mod. de Carisma (mínimo 1) por descanso longo.",
+        "description": "Com uma ação, termine uma magia em você ou em uma criatura voluntária que tocar. Usos: mod. de Carisma (mínimo 1); recupera todos em descanso longo.",
         "effects": {
           "resources": [
             { "id": "cleansing-touch", "name": "Toque Purificador", "uses": { "ability": "CHA", "min": 1 }, "recharge": "long" }
@@ -583,17 +588,17 @@
       {
         "level": 1,
         "name": "Inimigo Favorito",
-        "description": "Escolha um tipo de inimigo (bestas, fadas, humanoides, monstruosidades ou mortos-vivos): +2 no dano com armas contra ele, vantagem para rastreá-lo e recordar informações, e um idioma associado."
+        "description": "Escolha um tipo de inimigo favorito (bestas, fadas, humanoides, monstruosidades ou mortos-vivos): +2 nas jogadas de dano com ataques com arma contra criaturas desse tipo, vantagem em testes de Sabedoria (Sobrevivência) para rastreá-las e em testes de Inteligência para lembrar informações sobre elas. Você aprende um idioma falado por elas, se falarem algum."
       },
       {
         "level": 1,
         "name": "Explorador Natural",
-        "description": "Você domina um tipo de terreno: ignora terreno difícil, tem vantagem na iniciativa e no primeiro turno contra criaturas que ainda não agiram, além de benefícios de viagem (rastrear, forragear, mover-se furtivamente)."
+        "description": "Você ignora terreno difícil e tem vantagem nas jogadas de iniciativa. No seu primeiro turno de combate, tem vantagem nas jogadas de ataque contra criaturas que ainda não agiram. Quando viaja por 1 hora ou mais: terreno difícil não atrasa o grupo; o grupo só se perde por meios mágicos; você continua alerta ao perigo mesmo fazendo outra atividade (forragear, navegar, rastrear); sozinho, pode se mover furtivamente em ritmo normal; ao forragear, encontra o dobro de comida; ao rastrear, descobre o número exato de criaturas, seus tamanhos e há quanto tempo passaram."
       },
       {
         "level": 2,
         "name": "Conjuração",
-        "description": "Você conjura magias de patrulheiro usando Sabedoria, a partir de magias conhecidas."
+        "description": "Você conjura magias de patrulheiro usando Sabedoria (CD e ataque de magia na ficha), a partir das magias que conhece. Recupera todos os espaços de magia gastos num descanso longo. Ao subir um nível nesta classe, pode trocar uma magia de patrulheiro conhecida por outra da lista, de um nível para o qual tenha espaços."
       },
       {
         "level": 2,
@@ -603,7 +608,7 @@
       {
         "level": 3,
         "name": "Consciência Primitiva",
-        "description": "Você pode se comunicar de forma simples com bestas e, gastando 1 minuto de concentração, sentir se há inimigos favoritos nas redondezas."
+        "description": "Com uma ação, você comunica ideias simples a uma besta por sons e gestos e entende o ânimo e a intenção dela: o estado emocional, as necessidades imediatas e o que você poderia fazer para convencê-la a não atacar. Não funciona com criaturas que você atacou nos últimos 10 minutos. Além disso, com 1 minuto ininterrupto de concentração (como numa magia), você sente se algum inimigo favorito seu está a até 8 km: descobre quais tipos estão presentes, quantos são e a direção e distância aproximadas de cada grupo."
       },
       {
         "level": 5,
@@ -613,7 +618,7 @@
       {
         "level": 6,
         "name": "Inimigo Favorito Maior",
-        "description": "Escolha um inimigo favorito adicional (com idioma); o bônus de dano contra inimigos favoritos aumenta para +4 e você resiste melhor às magias e habilidades deles."
+        "description": "Escolha um inimigo favorito maior (aberrações, celestiais, constructos, corruptores, dragões, elementais ou gigantes): você ganha contra ele todos os benefícios de Inimigo Favorito, incluindo um idioma adicional. O bônus de dano contra todos os seus inimigos favoritos passa a ser +4. Você tem vantagem em testes de resistência contra magias e habilidades usadas por um inimigo favorito maior."
       },
       {
         "level": 8,
@@ -623,7 +628,7 @@
       {
         "level": 10,
         "name": "Mimetismo",
-        "description": "Ao tentar se esconder no seu turno, você pode ficar imóvel para preparar emboscada e permanecer escondido até ser detectado."
+        "description": "Quando tentar se esconder no seu turno, você pode optar por não se mover nesse turno. Se fizer isso, criaturas que tentarem detectá-lo sofrem –10 em testes de Sabedoria (Percepção) até o início do seu próximo turno. Você perde o benefício se se mover ou cair no chão (voluntariamente ou não), e é detectado normalmente se algo fizer você deixar de estar escondido. Se continuar escondido no seu turno, pode permanecer imóvel e manter o benefício até ser detectado."
       },
       {
         "level": 14,
@@ -633,12 +638,12 @@
       {
         "level": 18,
         "name": "Sentidos Selvagens",
-        "description": "Atacar uma criatura que você não vê não impõe desvantagem, e você percebe a localização de criaturas invisíveis a até 9 metros."
+        "description": "Atacar uma criatura que você não pode ver não impõe desvantagem às suas jogadas de ataque contra ela. Você também sabe a localização de qualquer criatura invisível a até 9 metros, desde que ela não esteja se escondendo de você e você não esteja cego nem surdo."
       },
       {
         "level": 20,
         "name": "Matador de Inimigos",
-        "description": "Uma vez por turno, some seu mod. de Sabedoria a uma jogada de ataque ou de dano de um ataque seu."
+        "description": "Uma vez em cada um dos seus turnos, você pode somar seu modificador de Sabedoria à jogada de ataque ou à jogada de dano de um ataque seu. Você decide antes ou depois de rolar, mas antes de os efeitos da jogada serem aplicados."
       }
     ]
   },
@@ -647,7 +652,7 @@
       {
         "level": 3,
         "name": "Frenesi",
-        "description": "Ao entrar em fúria, você pode entrar em frenesi: pela duração da fúria, pode fazer um ataque corpo-a-corpo com arma como ação bônus em cada turno. Ao acabar a fúria, sofre um nível de exaustão."
+        "description": "Ao entrar em fúria, você pode escolher entrar em frenesi: pela duração da fúria, em cada um dos seus turnos seguintes você pode fazer um único ataque corpo-a-corpo com arma como ação bônus. Quando a fúria acabar, você sofre um nível de exaustão."
       },
       {
         "level": 6,
@@ -657,12 +662,12 @@
       {
         "level": 10,
         "name": "Presença Intimidante",
-        "description": "Com uma ação, amedronte uma criatura a até 9 m (resistência de Sabedoria); pode manter o medo gastando ações nos turnos seguintes."
+        "description": "Com uma ação, escolha uma criatura que você possa ver a até 9 m. Se ela puder ver ou ouvir você, faz um teste de resistência de Sabedoria (CD 8 + bônus de proficiência + mod. de Carisma) ou fica amedrontada por você até o fim do seu próximo turno. Nos turnos seguintes, você pode usar sua ação para estender o efeito até o início do seu próximo turno. O efeito termina se a criatura terminar o turno fora da sua linha de visão ou a mais de 18 m de você. Se ela passar na resistência, você não pode usar esta característica nela de novo por 24 horas."
       },
       {
         "level": 14,
         "name": "Retaliação",
-        "description": "Quando sofrer dano de uma criatura a até 1,5 m, use sua reação para fazer um ataque corpo-a-corpo contra ela."
+        "description": "Quando sofrer dano de uma criatura a até 1,5 m de você, você pode usar sua reação para fazer um ataque corpo-a-corpo com arma contra ela."
       }
     ],
     "totem-warrior": [
@@ -674,12 +679,12 @@
       {
         "level": 3,
         "name": "Totem Espiritual",
-        "description": "Escolha um totem — Águia, Lobo ou Urso — e ganhe seu benefício em fúria (mobilidade, vantagem para aliados ou resistência a quase todo dano)."
+        "description": "Escolha um totem (Águia, Lobo ou Urso); o benefício vale enquanto você estiver em fúria. Águia (sem armadura pesada): outras criaturas têm desvantagem em ataques de oportunidade contra você, e você pode usar a ação Disparada como ação bônus no seu turno. Lobo: seus aliados têm vantagem em ataques corpo-a-corpo contra qualquer criatura hostil a você que esteja a até 1,5 m de você. Urso: você tem resistência a todos os tipos de dano, exceto psíquico."
       },
       {
         "level": 6,
         "name": "Aspecto da Besta",
-        "description": "Você ganha um benefício místico do totem escolhido (visão aguçada da águia, faro rastreador do lobo ou força do urso)."
+        "description": "Escolha um benefício de totem (o mesmo animal do 3° nível ou outro). Águia: você enxerga até 1,6 km sem dificuldade, distingue os menores detalhes a até 30 m, e penumbra não impõe desvantagem nos seus testes de Sabedoria (Percepção). Lobo: você pode rastrear criaturas viajando em passo rápido e se mover furtivamente viajando em passo normal. Urso: sua capacidade de carga (incluindo carga máxima e de erguer) dobra, e você tem vantagem em testes de Força para empurrar, puxar, erguer ou quebrar objetos."
       },
       {
         "level": 10,
@@ -689,10 +694,15 @@
       {
         "level": 14,
         "name": "Sintonia Totêmica",
-        "description": "Você ganha um benefício mágico em fúria conforme o totem escolhido (voo curto da águia, investida do lobo ou provocar/resistir do urso)."
+        "description": "Escolha um benefício de totem (o mesmo animal de antes ou outro), ativo enquanto você estiver em fúria. Águia: deslocamento de voo igual ao de caminhada, só em arrancadas curtas: você cai se terminar o turno no ar sem ter onde se agarrar. Lobo: quando atingir uma criatura Grande ou menor com ataque corpo-a-corpo com arma, você pode usar uma ação bônus no seu turno para derrubá-la. Urso: criaturas hostis a até 1,5 m de você têm desvantagem em ataques contra alvos que não sejam você ou outro personagem com esta característica; é imune quem não puder ver ou ouvir você ou não puder ser amedrontado."
       }
     ],
     "knowledge-domain": [
+      {
+        "level": 1,
+        "name": "Magias de Domínio",
+        "description": "Ao alcançar cada nível de clérigo abaixo, você ganha estas magias: ficam sempre preparadas, não contam no número de magias que você prepara e contam como magias de clérigo para você. 1°: comando, identificação. 3°: augúrio, sugestão. 5°: dificultar detecção, falar com os mortos. 7°: olho arcano, confusão. 9°: conhecimento lendário, vidência."
+      },
       {
         "level": 1,
         "name": "Bênçãos do Conhecimento",
@@ -706,7 +716,7 @@
       {
         "level": 6,
         "name": "Canalizar Divindade: Ler Pensamentos",
-        "description": "Com uma ação, você força uma criatura a até 18 m a fazer um teste de Sabedoria. Se falhar, você lê os pensamentos superficiais dela por 1 minuto e pode usar uma ação para conjurar 'sugestão' nela (ela falha automaticamente na resistência) sem gastar espaço de magia."
+        "description": "Com uma ação, escolha uma criatura que você possa ver a até 18 m; ela faz um teste de resistência de Sabedoria. Se passar, você não pode usar isto nela de novo até terminar um descanso longo. Se falhar, por 1 minuto você lê os pensamentos superficiais dela enquanto estiver a até 18 m. Durante esse tempo, você pode usar sua ação para encerrar o efeito e conjurar sugestão nela sem gastar espaço de magia; ela falha automaticamente na resistência."
       },
       {
         "level": 8,
@@ -716,7 +726,7 @@
       {
         "level": 17,
         "name": "Visões do Passado",
-        "description": "Após alguns minutos de meditação e prece, você obtém vislumbres e eventos recentes sobre o histórico de um objeto que você segura ou do local em que você está (até 15 metros cúbicos).",
+        "description": "Medite e reze por pelo menos 1 minuto (no máximo um número de minutos igual ao seu valor de Sabedoria, mantendo concentração como numa magia) para ter visões de eventos recentes. Uma vez usada, só volta após um descanso curto ou longo. Leitura de Objeto: segurando um objeto, após 1 minuto você descobre como o dono anterior o obteve e perdeu e o evento recente mais significativo envolvendo os dois; +1 minuto por dono adicional que o tenha portado nos últimos dias (igual ao seu valor de Sabedoria). Leitura Local: você vê eventos dos arredores (sala, rua, clareira, até um cubo de 15 m), voltando dias iguais ao seu valor de Sabedoria; a cada minuto, descobre um evento significativo, do mais recente para trás.",
         "effects": {
           "resources": [
             { "id": "visions-of-the-past", "name": "Visões do Passado", "uses": 1, "recharge": "short" }
@@ -727,13 +737,18 @@
     "trickery-domain": [
       {
         "level": 1,
+        "name": "Magias de Domínio",
+        "description": "Ao alcançar cada nível de clérigo abaixo, você ganha estas magias: ficam sempre preparadas, não contam no número de magias que você prepara e contam como magias de clérigo para você. 1°: enfeitiçar pessoa, disfarçar-se. 3°: reflexos, passos sem pegadas. 5°: piscar, dissipar magia. 7°: porta dimensional, metamorfose. 9°: dominar pessoa, modificar memória."
+      },
+      {
+        "level": 1,
         "name": "Bênção do Trapaceiro",
-        "description": "Use uma ação para tocar uma criatura voluntária (não você) e conceder-lhe vantagem em testes de Destreza (Furtividade) por 1 hora."
+        "description": "Com uma ação, toque uma criatura voluntária que não seja você para dar a ela vantagem em testes de Destreza (Furtividade) por 1 hora ou até você usar esta característica de novo."
       },
       {
         "level": 2,
         "name": "Canalizar Divindade: Invocar Duplicidade",
-        "description": "Como ação, você cria uma ilusão perfeita de si mesmo num espaço a até 9 m, durando 1 minuto. Você pode conjurar magias a partir da ilusão e recebe vantagem em ataques contra criaturas a 1,5 m de você e da sua cópia."
+        "description": "Com uma ação, você cria uma ilusão perfeita de si mesmo num espaço desocupado que possa ver a até 9 m, que dura 1 minuto ou até você perder a concentração (como numa magia). Com uma ação bônus no seu turno, você pode movê-la até 9 m para um espaço que possa ver, desde que fique a até 36 m de você. Enquanto durar, você pode conjurar magias como se estivesse no espaço dela, mas usando os seus próprios sentidos. Quando você e a ilusão estão a até 1,5 m de uma criatura que possa ver a ilusão, você tem vantagem nas jogadas de ataque contra ela."
       },
       {
         "level": 6,
@@ -748,14 +763,19 @@
       {
         "level": 17,
         "name": "Duplicidade Aprimorada",
-        "description": "Quando usar a característica Invocar Duplicidade, você passa a criar até quatro cópias ilusórias de si mesmo em vez de uma e pode mover todas como ação bônus."
+        "description": "Seu Invocar Duplicidade cria até quatro duplicatas em vez de uma. Com uma ação bônus no seu turno, você pode mover quantas quiser até 9 m cada, sem ultrapassar 36 m de você."
       }
     ],
     "war-domain": [
       {
         "level": 1,
+        "name": "Magias de Domínio",
+        "description": "Ao alcançar cada nível de clérigo abaixo, você ganha estas magias: ficam sempre preparadas, não contam no número de magias que você prepara e contam como magias de clérigo para você. 1°: auxílio divino, escudo da fé. 3°: arma mágica, arma espiritual. 5°: manto do cruzado, espíritos guardiões. 7°: movimentação livre, pele de pedra. 9°: coluna de chamas, imobilizar monstro."
+      },
+      {
+        "level": 1,
         "name": "Proficiência Adicional e Sacerdote da Guerra",
-        "description": "Ganha proficiência com armaduras pesadas e armas marciais. Ao usar a ação de Ataque, realize um ataque com arma como ação bônus. Usos iguais ao mod. de Sabedoria (mínimo 1) por descanso longo.",
+        "description": "Você ganha proficiência com armas marciais e armaduras pesadas. Quando usa a ação de Ataque, pode fazer um ataque com arma como ação bônus. Usos iguais ao seu mod. de Sabedoria (mínimo 1), recuperados ao terminar um descanso longo.",
         "effects": {
           "resources": [
             { "id": "war-priest", "name": "Sacerdote da Guerra", "uses": { "ability": "WIS", "min": 1 }, "recharge": "long" }
@@ -786,8 +806,13 @@
     "light-domain": [
       {
         "level": 1,
+        "name": "Magias de Domínio",
+        "description": "Ao alcançar cada nível de clérigo abaixo, você ganha estas magias: ficam sempre preparadas, não contam no número de magias que você prepara e contam como magias de clérigo para você. 1°: mãos flamejantes, fogo das fadas. 3°: esfera flamejante, raio ardente. 5°: luz do dia, bola de fogo. 7°: guardião da fé, muralha de fogo. 9°: coluna de chamas, vidência."
+      },
+      {
+        "level": 1,
         "name": "Truque Adicional e Labareda Protetora",
-        "description": "Você ganha o truque luz. Ao ser atacado por uma criatura a até 9 m, use sua reação para impor desvantagem na jogada de ataque ofuscando o alvo com luz.",
+        "description": "Você ganha o truque luz, se ainda não o conhecia. Quando uma criatura que você possa ver a até 9 m ataca você, você pode usar sua reação para impor desvantagem nessa jogada de ataque (antes de ela acertar ou errar). Um atacante que não pode ser cegado é imune. Usos iguais ao seu mod. de Sabedoria (mínimo 1), recuperados ao terminar um descanso longo.",
         "effects": {
           "resources": [
             { "id": "warding-flare", "name": "Labareda Protetora", "uses": { "ability": "WIS", "min": 1 }, "recharge": "long" }
@@ -797,12 +822,12 @@
       {
         "level": 2,
         "name": "Canalizar Divindade: Radiação do Amanhecer",
-        "description": "Como ação, você dissipa qualquer escuridão mágica a até 9 m. Cada criatura hostil na área deve fazer um teste de Constituição; em uma falha sofre 2d10 + seu nível de clérigo de dano radiante, e metade no sucesso."
+        "description": "Com uma ação, você ergue seu símbolo sagrado e dissipa qualquer escuridão mágica a até 9 m. Cada criatura hostil a até 9 m faz um teste de resistência de Constituição: sofre 2d10 + seu nível de clérigo de dano radiante se falhar, ou metade se passar. Uma criatura com cobertura total contra você não é afetada."
       },
       {
         "level": 6,
         "name": "Labareda Aprimorada",
-        "description": "Você agora pode usar sua característica de Labareda Protetora para proteger outras criaturas a até 9 metros de distância que estejam sendo atacadas."
+        "description": "Você também pode usar Labareda Protetora quando uma criatura que você possa ver a até 9 m atacar outra criatura que não seja você."
       },
       {
         "level": 8,
@@ -812,10 +837,15 @@
       {
         "level": 17,
         "name": "Coroa de Luz",
-        "description": "Como ação, emite uma aura de luz solar (18 m brilhante e 9 m penumbra) por 1 minuto. Inimigos na área de luz brilhante sofrem desvantagem em resistências contra suas magias que causem dano de fogo ou radiante."
+        "description": "Com uma ação, você ativa uma aura de luz solar por 1 minuto ou até dissipá-la com outra ação: luz plena num raio de 18 m e penumbra por mais 9 m além disso. Seus inimigos na luz plena têm desvantagem nos testes de resistência contra suas magias que causam dano de fogo ou radiante."
       }
     ],
     "nature-domain": [
+      {
+        "level": 1,
+        "name": "Magias de Domínio",
+        "description": "Ao alcançar cada nível de clérigo abaixo, você ganha estas magias: ficam sempre preparadas, não contam no número de magias que você prepara e contam como magias de clérigo para você. 1°: amizade animal, falar com animais. 3°: pele de árvore, crescer espinhos. 5°: ampliar plantas, muralha de vento. 7°: dominar besta, vinha esmagadora. 9°: praga de insetos, caminhar em árvores."
+      },
       {
         "level": 1,
         "name": "Proficiência Adicional e Acólito da Natureza",
@@ -824,7 +854,7 @@
       {
         "level": 2,
         "name": "Canalizar Divindade: Enfeitiçar Animais e Plantas",
-        "description": "Com uma ação, você obriga todos os animais e criaturas-planta a até 9 m a realizarem um teste de resistência de Sabedoria. Se falharem, ficam enfeitiçados e amigáveis por 1 minuto ou até sofrerem dano."
+        "description": "Com uma ação, você ergue seu símbolo sagrado: cada besta ou criatura-planta a até 9 m que possa ver você faz um teste de resistência de Sabedoria. Se falhar, fica enfeitiçada por você por 1 minuto ou até sofrer dano e, enquanto isso, é amistosa com você e com as criaturas que você designar."
       },
       {
         "level": 6,
@@ -839,14 +869,19 @@
       {
         "level": 17,
         "name": "Senhor da Natureza",
-        "description": "Você pode usar uma ação bônus para comandar os animais e criaturas-planta que estiverem sob efeito de sua característica Enfeitiçar Animais e Plantas a cumprirem ações específicas nos seus turnos."
+        "description": "Enquanto criaturas estiverem enfeitiçadas pelo seu Enfeitiçar Animais e Plantas, você pode usar uma ação bônus no seu turno para dizer verbalmente o que cada uma delas fará no próximo turno dela."
       }
     ],
     "tempest-domain": [
       {
         "level": 1,
+        "name": "Magias de Domínio",
+        "description": "Ao alcançar cada nível de clérigo abaixo, você ganha estas magias: ficam sempre preparadas, não contam no número de magias que você prepara e contam como magias de clérigo para você. 1°: névoa obscurecente, onda trovejante. 3°: lufada de vento, despedaçar. 5°: convocar relâmpagos, nevasca. 7°: controlar a água, tempestade de gelo. 9°: onda destrutiva, praga de insetos."
+      },
+      {
+        "level": 1,
         "name": "Proficiência Adicional e Ira da Tormenta",
-        "description": "Proficiência em armas marciais e armaduras pesadas. Ao ser atingido em corpo-a-corpo, você usa uma reação para forçar a criatura a um teste de Destreza. Falha: 2d8 de dano elétrico ou trovejante, e metade se passar.",
+        "description": "Você ganha proficiência com armas marciais e armaduras pesadas. Quando uma criatura que você possa ver a até 1,5 m atinge você com um ataque, você pode usar sua reação para forçá-la a fazer um teste de resistência de Destreza: sofre 2d8 de dano elétrico ou trovejante (à sua escolha) se falhar, ou metade se passar. Usos iguais ao seu mod. de Sabedoria (mínimo 1), recuperados ao terminar um descanso longo.",
         "effects": {
           "resources": [
             { "id": "wrath-of-the-storm", "name": "Ira da Tormenta", "uses": { "ability": "WIS", "min": 1 }, "recharge": "long" }
@@ -877,13 +912,18 @@
     "life-domain": [
       {
         "level": 1,
+        "name": "Magias de Domínio",
+        "description": "Ao alcançar cada nível de clérigo abaixo, você ganha estas magias: ficam sempre preparadas, não contam no número de magias que você prepara e contam como magias de clérigo para você. 1°: bênção, curar ferimentos. 3°: restauração menor, arma espiritual. 5°: sinal de esperança, revivificar. 7°: proteção contra a morte, guardião da fé. 9°: curar ferimentos em massa, reviver os mortos."
+      },
+      {
+        "level": 1,
         "name": "Proficiência Adicional e Discípulo da Vida",
         "description": "Ganha proficiência com armaduras pesadas. Quando curar pontos de vida de uma criatura com uma magia, ela recupera pontos adicionais iguais a 2 + o nível da magia."
       },
       {
         "level": 2,
         "name": "Canalizar Divindade: Preservar a Vida",
-        "description": "Com uma ação, você recupera um número de pontos de vida igual a 5 vezes o seu nível de clérigo. Você distribui esses pontos de cura entre aliados a até 9 m, mas sem curar nenhum alvo acima da metade dos seus pontos de vida máximos."
+        "description": "Com uma ação, você apresenta seu símbolo sagrado e reparte um total de PV igual a 5 × seu nível de clérigo entre quaisquer criaturas a até 9 m. Não pode levar nenhuma criatura acima da metade dos PV máximos dela, nem funciona em mortos-vivos ou constructos."
       },
       {
         "level": 6,
@@ -910,7 +950,7 @@
       {
         "level": 2,
         "name": "Recuperação Natural",
-        "description": "Durante um descanso curto, você recupera espaços de magia gastos cujo total de níveis seja até metade do seu nível de druida (arredondado para baixo), nenhum de 6° nível ou superior. Depois, só de novo após um descanso longo.",
+        "description": "Durante um descanso curto, recupere espaços de magia gastos cujo total de níveis seja até metade do seu nível de druida (arredondado para baixo), nenhum de 6° nível ou superior. Depois de usar, só pode usar de novo após terminar um descanso longo.",
         "effects": {
           "resources": [
             { "id": "natural-recovery", "name": "Recuperação Natural", "uses": 1, "recharge": "long", "amount": { "value": { "halfClassLevel": "down" }, "unit": "slotLevels" }, "note": "durante um descanso curto; nenhum espaço de 6º nível ou superior" }
@@ -918,9 +958,14 @@
         }
       },
       {
+        "level": 3,
+        "name": "Magias de Círculo",
+        "description": "No 3°, 5°, 7° e 9° nível você ganha as magias de círculo do terreno escolhido (listadas na escolha de terreno). Uma vez que tenha acesso a uma delas, ela fica sempre preparada e não conta no número de magias que você prepara; se não estiver na lista de druida, conta como magia de druida para você."
+      },
+      {
         "level": 6,
         "name": "Caminho da Floresta",
-        "description": "Você não sofre penalidade de movimento em terrenos difíceis não-mágicos ou plantas não-mágicas. Possui vantagem em testes de resistência contra plantas mágicas."
+        "description": "Terreno difícil não mágico não lhe custa movimento extra. Você atravessa plantas não mágicas sem ser atrasado e sem sofrer dano de espinhos ou perigos parecidos. Tem vantagem em testes de resistência contra plantas criadas ou manipuladas magicamente para impedir o movimento (ex.: a magia constrição)."
       },
       {
         "level": 10,
@@ -930,19 +975,19 @@
       {
         "level": 14,
         "name": "Santuário Natural",
-        "description": "Bestas e plantas que atacarem você devem ser bem-sucedidas em um teste de resistência de Sabedoria, caso contrário devem escolher um alvo diferente ou errarão o ataque."
+        "description": "Quando uma besta ou planta atacar você, ela faz um teste de resistência de Sabedoria contra a CD das suas magias de druida. Se falhar, precisa escolher outro alvo ou o ataque erra automaticamente. Se passar, fica imune a este efeito por 24 horas. A criatura sabe deste efeito antes de decidir atacar."
       }
     ],
     "circle-of-the-moon": [
       {
         "level": 2,
         "name": "Forma Selvagem de Combate",
-        "description": "Você pode usar Forma Selvagem como ação bônus e, transformado, gastar espaços de magia como ação bônus para recuperar pontos de vida."
+        "description": "Você pode usar Forma Selvagem no seu turno com uma ação bônus, em vez de uma ação. Enquanto estiver transformado, pode usar uma ação bônus para gastar um espaço de magia e recuperar 1d8 PV por nível do espaço gasto."
       },
       {
         "level": 2,
-        "name": "Formas do Círculo",
-        "description": "Você pode assumir formas de bestas mais poderosas (VD até 1, aumentando conforme sobe de nível)."
+        "name": "Formas de Círculo",
+        "description": "Sua Forma Selvagem pode virar bestas de ND até 1, ignorando a coluna de ND máximo da tabela de Formas de Besta, mas mantendo as limitações de voo e natação dela. A partir do 6° nível, o ND máximo passa a ser seu nível de druida dividido por 3 (arredondado para baixo)."
       },
       {
         "level": 6,
@@ -969,12 +1014,12 @@
       {
         "level": 7,
         "name": "Atletismo Extraordinário",
-        "description": "Você adiciona metade do seu bônus de proficiência a testes de Força, Destreza ou Constituição que não o utilizem. Seu salto longo com corrida aumenta em 0,3 vezes seu modificador de Força."
+        "description": "Você soma metade do seu bônus de proficiência (arredondado para cima) a qualquer teste de Força, Destreza ou Constituição que ainda não use seu bônus de proficiência. No salto longo com corrida, a distância aumenta em 0,3 m × seu modificador de Força."
       },
       {
         "level": 10,
         "name": "Estilo de Luta Adicional",
-        "description": "Você pode escolher um segundo Estilo de Combate da sua classe."
+        "description": "Você escolhe um segundo Estilo de Luta da classe, diferente do que já tem."
       },
       {
         "level": 15,
@@ -984,14 +1029,14 @@
       {
         "level": 18,
         "name": "Sobrevivente",
-        "description": "No início do seu turno, se estiver com menos da metade dos seus pontos de vida (e acima de 0), você recupera pontos de vida iguais a 5 + seu modificador de Constituição."
+        "description": "No início de cada um dos seus turnos, se você estiver com metade ou menos dos seus pontos de vida (e com mais de 0), recupera 5 + seu modificador de Constituição em pontos de vida."
       }
     ],
     "battle-master": [
       {
         "level": 3,
         "name": "Superioridade em Combate",
-        "description": "Você aprende 3 manobras (de uma lista) alimentadas por dados de superioridade (quantos e de qual tamanho, em Recursos), recuperados em descanso curto ou longo. A CD das manobras é 8 + bônus de proficiência + seu modificador de Força ou Destreza.",
+        "description": "Você aprende três manobras (mais duas no 7°, 10° e 15° nível; a cada vez que aprende novas, pode trocar uma conhecida). Elas usam dados de superioridade (quantidade e tamanho do seu nível em Recursos): cada dado é gasto ao ser usado, e todos voltam num descanso curto ou longo. Só uma manobra por ataque. CD das manobras = 8 + bônus de proficiência + modificador de Força ou Destreza (à sua escolha).",
         "effects": {
           "resources": [
             { "id": "superiority-dice", "name": "Dados de Superioridade", "die": { "size": { "byLevel": [{ "from": 3, "value": 8 }, { "from": 10, "value": 10 }, { "from": 18, "value": 12 }] } }, "uses": { "byLevel": [{ "from": 3, "value": 4 }, { "from": 7, "value": 5 }, { "from": 15, "value": 6 }] }, "unit": "dice", "recharge": "short" }
@@ -1006,7 +1051,7 @@
       {
         "level": 7,
         "name": "Conheça Seu Inimigo",
-        "description": "Ao observar ou interagir com uma criatura por 1 minuto fora de combate, você descobre se duas de suas estatísticas (Força, Destreza, Constituição, CA, PV ou nível) são iguais, superiores ou inferiores às suas."
+        "description": "Após passar pelo menos 1 minuto observando ou interagindo com outra criatura fora de combate, o Mestre lhe diz se ela é igual, superior ou inferior a você em duas destas características, à sua escolha: valor de Força, valor de Destreza, valor de Constituição, CA, pontos de vida atuais, nível total de classe ou níveis de guerreiro."
       },
       {
         "level": 10,
@@ -1028,12 +1073,12 @@
       {
         "level": 3,
         "name": "Conjuração",
-        "description": "Você amplia seu poderio marcial com magia de mago (usando Inteligência): aprende 2 truques e algumas magias de 1° nível, focadas em abjuração e evocação."
+        "description": "Você conjura magias de mago usando Inteligência, conforme a tabela do Cavaleiro Arcano (truques, magias conhecidas e espaços). As magias são memorizadas, sem grimório. Suas magias de 1° nível ou superior devem ser de abjuração ou evocação, exceto uma das três iniciais e as aprendidas no 8°, 14° e 20° nível, que podem ser de qualquer escola. Ao ganhar um nível de guerreiro, você pode trocar uma magia conhecida por outra de mago de um nível que tenha espaço. A nova deve ser de abjuração ou evocação, a menos que substitua uma das de escola livre. Espaços voltam no descanso longo."
       },
       {
         "level": 3,
         "name": "Vínculo com Arma",
-        "description": "Por um ritual de 1 hora, você forja um elo com até duas armas. Você não pode ser desarmado delas e pode invocá-las para sua mão como ação bônus, se estiverem no mesmo plano."
+        "description": "Com um ritual de 1 hora (pode ser feito durante um descanso curto), tocando a arma, você cria um vínculo com ela. Você não pode ser desarmado de uma arma vinculada, a menos que esteja incapacitado. No seu turno, pode usar uma ação bônus para teletransportá-la para sua mão, se ela estiver no mesmo plano de existência. Máximo de duas armas vinculadas, e cada ação bônus invoca só uma. Para vincular uma terceira, desfaça um dos vínculos."
       },
       {
         "level": 7,
@@ -1048,7 +1093,7 @@
       {
         "level": 15,
         "name": "Investida Arcana",
-        "description": "Ao usar sua ação de Surto de Ação, você pode se teletransportar até 9 metros para um espaço desocupado que possa ver, antes ou depois da ação adicional."
+        "description": "Quando usa seu Surto de Ação, você pode se teletransportar até 9 metros para um espaço desocupado que possa ver, antes ou depois da ação adicional."
       },
       {
         "level": 18,
@@ -1075,29 +1120,29 @@
       {
         "level": 11,
         "name": "Tranquilidade",
-        "description": "No final de um descanso longo, você ganha o efeito da magia santuário que dura até o começo do seu próximo descanso longo."
+        "description": "Ao fim de um descanso longo, você ganha o efeito da magia santuário até o começo do seu próximo descanso longo (ela pode terminar antes, como de costume). A CD da resistência é 8 + mod. de Sabedoria + bônus de proficiência."
       },
       {
         "level": 17,
         "name": "Palma Vibrante",
-        "description": "Ao atingir uma criatura com um golpe desarmado, você pode gastar 3 pontos de chi para iniciar vibrações letais. Usando uma ação posteriormente, você força a criatura a um teste de resistência de Constituição (falha: cai a 0 PV; sucesso: 10d10 de dano necrótico)."
+        "description": "Ao atingir uma criatura com um golpe desarmado, gaste 3 pontos de chi para iniciar vibrações inofensivas que duram um número de dias igual ao seu nível de monge. Com uma ação, estando no mesmo plano que o alvo, você as encerra: ele faz resistência de Constituição (CD de chi) e cai a 0 PV se falhar, ou sofre 10d10 de dano necrótico se passar. Só uma criatura por vez pode estar sob o efeito; você pode encerrar as vibrações inofensivamente sem usar ação."
       }
     ],
     "shadow": [
       {
         "level": 3,
         "name": "Artes Sombrias",
-        "description": "Você pode gastar 2 pontos de chi para conjurar escuridão, visão no escuro, passos sem pegadas ou silêncio, sem componentes materiais. Ganha o truque ilusão menor, se ainda não o conhecia."
+        "description": "Com uma ação, gaste 2 pontos de chi para conjurar escuridão, visão no escuro, passos sem pegadas ou silêncio, sem componentes materiais. Você também ganha o truque ilusão menor, se ainda não o conhecia."
       },
       {
         "level": 6,
         "name": "Passo das Sombras",
-        "description": "Com uma ação bônus, enquanto em penumbra ou escuridão, você pode se teletransportar até 18 metros para outro espaço sob penumbra ou escuridão. Você ganha vantagem no primeiro ataque corpo-a-corpo que fizer antes do fim do turno."
+        "description": "Com uma ação bônus, estando em penumbra ou escuridão, teletransporte-se até 18 metros para um espaço desocupado que você possa ver e que também esteja em penumbra ou escuridão. Você tem vantagem no primeiro ataque corpo-a-corpo que fizer antes do fim do turno."
       },
       {
         "level": 11,
         "name": "Manto de Sombras",
-        "description": "Quando estiver em uma área de penumbra ou escuridão, você pode usar sua ação para se tornar invisível. A invisibilidade dura até você atacar, conjurar uma magia ou ir para uma área iluminada."
+        "description": "Em uma área de penumbra ou escuridão, você pode usar sua ação para ficar invisível. A invisibilidade dura até você atacar, conjurar uma magia ou entrar em uma área de luz plena."
       },
       {
         "level": 17,
@@ -1109,7 +1154,7 @@
       {
         "level": 3,
         "name": "Discípulo dos Elementos",
-        "description": "Você aprende disciplinas mágicas que gastam pontos de chi para manipular os quatro elementos. Conhece a Sintonia Elemental e mais uma disciplina à sua escolha."
+        "description": "Você aprende disciplinas elementais, que custam pontos de chi a cada uso: conhece Sintonia Elemental e mais uma à sua escolha. Magias de disciplina usam o tempo de conjuração e as regras da magia, mas dispensam componentes materiais; resistências usam sua CD de chi. A partir do monge 5, você pode gastar chi adicional para elevar em 1 nível, por ponto, uma magia de disciplina que tenha efeito em nível superior. Máximo de chi numa só magia (custo base + extra): 3 (monge 5–8), 4 (9–12), 5 (13–16), 6 (17–20)."
       },
       {
         "level": 6,
@@ -1131,12 +1176,12 @@
       {
         "level": 3,
         "name": "Magias de Juramento",
-        "description": "Você recebe magias de juramento sempre preparadas conforme sobe de nível."
+        "description": "Estas magias ficam sempre preparadas, não contam no seu limite de magias preparadas e contam como magias de paladino para você. 3°: proteção contra o bem e mal, santuário. 5°: restauração menor, zona da verdade. 9°: sinal de esperança, dissipar magia. 13°: movimentação livre, guardião da fé. 17°: comunhão, coluna de chamas."
       },
       {
         "level": 3,
         "name": "Canalizar Divindade",
-        "description": "Você tem duas opções: Arma Sagrada (imbui arma com seu mod. de Carisma no ataque e emite luz) e Expulsar o Profano (força corruptores e mortos-vivos a fugirem de você).",
+        "description": "Escolha uma opção a cada uso; o uso volta em descanso curto ou longo, e a CD é a das suas magias de paladino. Arma Sagrada: com uma ação, por 1 minuto a arma que você empunha soma seu mod. de Carisma (mínimo +1) às jogadas de ataque, emite luz plena em 6 m e penumbra por mais 6 m, e conta como mágica. Termina se você soltar a arma ou ficar inconsciente, ou quando você quiser, no seu turno, como parte de qualquer ação. Expulsar o Profano: com uma ação, erguendo seu símbolo sagrado, cada corruptor ou morto-vivo a até 9 m que possa ver ou ouvir você faz resistência de Sabedoria. Quem falha fica expulso por 1 minuto ou até sofrer dano: precisa se afastar o máximo possível, não pode se aproximar a menos de 9 m de você nem usar reações, e só pode usar Disparada ou tentar escapar do que o prende (ou Esquivar, se não puder se mover).",
         "effects": {
           "resources": [
             { "id": "channel-divinity", "name": "Canalizar Divindade", "uses": 1, "recharge": "short" }
@@ -1151,12 +1196,12 @@
       {
         "level": 15,
         "name": "Pureza de Espírito",
-        "description": "Você está permanentemente sob o efeito da magia proteção contra o bem e o mal."
+        "description": "Você está sempre sob o efeito da magia proteção contra o bem e mal: aberrações, celestiais, corruptores, elementais, fadas e mortos-vivos têm desvantagem nas jogadas de ataque contra você e não podem enfeitiçar, amedrontar nem possuir você."
       },
       {
         "level": 20,
         "name": "Halo Sagrado",
-        "description": "Com uma ação, você emana luz solar em um raio de 9 metros por 1 minuto. Inimigos que começarem o turno na luz plena sofrem 10 de dano radiante, e você tem vantagem em testes de resistência contra magias de corruptores ou mortos-vivos.",
+        "description": "Com uma ação, por 1 minuto você emana luz solar: luz plena em 9 m e penumbra por mais 9 m. Cada criatura inimiga que começar o turno na luz plena sofre 10 de dano radiante, e você tem vantagem em testes de resistência contra magias conjuradas por corruptores ou mortos-vivos. Uma vez por descanso longo.",
         "effects": {
           "resources": [
             { "id": "holy-nimbus", "name": "Halo Sagrado", "uses": 1, "recharge": "long" }
@@ -1168,12 +1213,12 @@
       {
         "level": 3,
         "name": "Magias de Juramento",
-        "description": "Você recebe magias de juramento sempre preparadas conforme sobe de nível."
+        "description": "Estas magias ficam sempre preparadas, não contam no seu limite de magias preparadas e contam como magias de paladino para você. 3°: golpe constritor, falar com animais. 5°: raio lunar, passo nebuloso. 9°: ampliar plantas, proteção contra energia. 13°: tempestade de gelo, pele de pedra. 17°: comunhão com a natureza, caminhar em árvores."
       },
       {
         "level": 3,
         "name": "Canalizar Divindade",
-        "description": "Você tem duas opções: Fúria da Natureza (enreda um inimigo com vinhas espectrais) e Expulsar os Infiéis (força fadas e corruptores a fugirem de você).",
+        "description": "Escolha uma opção a cada uso; o uso volta em descanso curto ou longo, e a CD é a das suas magias de paladino. Fúria da Natureza: com uma ação, vinhas espectrais agarram uma criatura que você possa ver a até 3 m. Ela faz resistência de Força ou de Destreza (à escolha dela) ou fica impedida, e repete a resistência no fim de cada turno dela, se libertando no sucesso. Expulsar os Infiéis: com uma ação, erguendo seu símbolo sagrado, cada fada ou corruptor a até 9 m que possa ver ou ouvir você faz resistência de Sabedoria. Quem falha fica expulso por 1 minuto ou até sofrer dano: precisa se afastar o máximo possível, não pode se aproximar a menos de 9 m de você nem usar reações, e só pode usar Disparada ou tentar escapar do que o prende (ou Esquivar, se não puder se mover).",
         "effects": {
           "resources": [
             { "id": "channel-divinity", "name": "Canalizar Divindade", "uses": 1, "recharge": "short" }
@@ -1188,7 +1233,7 @@
       {
         "level": 15,
         "name": "Sentinela Imortal",
-        "description": "Uma vez por descanso longo, ao ser reduzido a 0 PV, você pode escolher ficar com 1 PV. Você também não sofre os efeitos de envelhecimento natural nem mágico.",
+        "description": "Quando você cai a 0 PV sem morrer na hora, pode escolher ficar com 1 PV; uma vez por descanso longo. Você também não sofre os efeitos da velhice e não pode ser envelhecido magicamente.",
         "effects": {
           "resources": [
             { "id": "undying-sentinel", "name": "Sentinela Imortal", "uses": 1, "recharge": "long" }
@@ -1198,7 +1243,7 @@
       {
         "level": 20,
         "name": "Campeão dos Anciões",
-        "description": "Usando uma ação, você assume uma forma da natureza por 1 minuto. Nela, você recupera 10 PV no início dos turnos, conjura magias de paladino com ação bônus, e inimigos a até 3 metros têm desvantagem contra suas magias e Canalizar Divindade.",
+        "description": "Com uma ação, você se transforma por 1 minuto: recupera 10 PV no início de cada um dos seus turnos, pode conjurar com uma ação bônus as magias de paladino de 1 ação, e criaturas inimigas a até 3 m têm desvantagem nos testes de resistência contra suas magias de paladino e seu Canalizar Divindade. Uma vez por descanso longo.",
         "effects": {
           "resources": [
             { "id": "elder-champion", "name": "Campeão dos Anciões", "uses": 1, "recharge": "long" }
@@ -1210,12 +1255,12 @@
       {
         "level": 3,
         "name": "Magias de Juramento",
-        "description": "Você recebe magias de juramento sempre preparadas conforme sobe de nível."
+        "description": "Estas magias ficam sempre preparadas, não contam no seu limite de magias preparadas e contam como magias de paladino para você. 3°: perdição, marca do caçador. 5°: imobilizar pessoa, passo nebuloso. 9°: velocidade, proteção contra energia. 13°: banimento, porta dimensional. 17°: imobilizar monstro, vidência."
       },
       {
         "level": 3,
         "name": "Canalizar Divindade",
-        "description": "Você tem duas opções: Abjurar Inimigo (amedronta e reduz a 0 o deslocamento de uma criatura) e Voto de Inimizade (concede vantagem em suas jogadas de ataque contra o alvo por 1 minuto).",
+        "description": "Escolha uma opção a cada uso; o uso volta em descanso curto ou longo, e a CD é a das suas magias de paladino. Abjurar Inimigo: com uma ação, erguendo seu símbolo sagrado, escolha uma criatura que você possa ver a até 18 m; ela faz resistência de Sabedoria (corruptores e mortos-vivos com desvantagem; imunes a amedrontado não são afetados). Se falhar, fica amedrontada por 1 minuto ou até sofrer dano, com deslocamento 0 e sem nenhum bônus de deslocamento. Se passar, tem o deslocamento reduzido à metade por 1 minuto ou até sofrer dano. Voto de Inimizade: com uma ação bônus, escolha uma criatura que você possa ver a até 3 m; você tem vantagem nas jogadas de ataque contra ela por 1 minuto ou até ela cair a 0 PV ou ficar inconsciente.",
         "effects": {
           "resources": [
             { "id": "channel-divinity", "name": "Canalizar Divindade", "uses": 1, "recharge": "short" }
@@ -1230,12 +1275,12 @@
       {
         "level": 15,
         "name": "Alma de Vingança",
-        "description": "Quando uma criatura sob o efeito do seu Voto de Inimizade realizar um ataque, você pode usar sua reação para fazer um ataque corpo-a-corpo contra ela."
+        "description": "Quando uma criatura sob o seu Voto de Inimizade fizer um ataque, você pode usar sua reação para fazer um ataque corpo a corpo com arma contra ela, se ela estiver ao seu alcance."
       },
       {
         "level": 20,
         "name": "Anjo Vingador",
-        "description": "Com uma ação, você ganha asas e voo de 18 metros por 1 hora. Você emana uma aura de 9 metros que amedronta inimigos no primeiro turno deles na área, além de conceder vantagem em ataques contra as criaturas amedrontadas.",
+        "description": "Com uma ação, você se transforma por 1 hora: ganha asas com deslocamento de voo de 18 m e emana uma aura de ameaça de 9 m. Na primeira vez em que uma criatura inimiga entra na aura ou começa o turno nela durante uma batalha, ela faz resistência de Sabedoria. Se falhar, fica amedrontada por você por 1 minuto ou até sofrer dano, e jogadas de ataque contra ela têm vantagem. Uma vez por descanso longo.",
         "effects": {
           "resources": [
             { "id": "avenging-angel", "name": "Anjo Vingador", "uses": 1, "recharge": "long" }
@@ -1247,7 +1292,7 @@
       {
         "level": 3,
         "name": "Companheiro Animal",
-        "description": "Você forma um vínculo mágico com uma besta (VD 1/4 ou inferior) que luta ao seu lado e obedece aos seus comandos. O companheiro utiliza o seu bônus de proficiência para diversas estatísticas."
+        "description": "Com 8 horas de trabalho e 50 po em ervas raras e boa comida, você chama um animal selvagem como companheiro leal: arminho gigante, javali, gorila, lobo, mula, pantera, texugo gigante ou urso negro (o Mestre pode limitar a escolha pelo terreno ou ampliar a lista). Você só pode ter um companheiro por vez. Se ele morrer, com 8 horas e 25 po você o traz de volta com um corpo novo, mesmo sem nenhuma parte do corpo antigo. Se já tiver outro companheiro, o atual vai embora e o ressuscitado assume o lugar."
       },
       {
         "level": 7,
@@ -1257,7 +1302,7 @@
       {
         "level": 11,
         "name": "Tempestade de Garras e Presas",
-        "description": "Seu companheiro animal pode usar a ação dele para realizar um ataque corpo a corpo contra cada criatura à escolha dele que esteja a até 1,5 metro de distância."
+        "description": "Seu companheiro animal pode usar a ação dele para fazer um ataque corpo a corpo contra cada criatura à escolha dele a até 1,5 metro dele, com uma jogada de ataque separada para cada alvo."
       },
       {
         "level": 15,
@@ -1269,34 +1314,34 @@
       {
         "level": 3,
         "name": "Presa do Caçador",
-        "description": "Escolha entre causar dano extra a alvos feridos (Assassino de Colossos), usar sua reação para atacar criaturas Grandes ou maiores que atacarem você (Matador de Gigantes) ou realizar um ataque adicional contra outra criatura próxima (Destruidor de Hordas)."
+        "description": "Escolha uma opção. Assassino de Colossos: quando você atinge com um ataque com arma uma criatura abaixo do máximo de pontos de vida dela, ela sofre 1d8 de dano extra (uma vez por turno). Matador de Gigantes: quando uma criatura Grande ou maior a até 1,5 metro de você atingir ou errar um ataque contra você, você pode usar sua reação para atacá-la logo depois do ataque dela, se puder vê-la. Destruidor de Hordas: uma vez em cada um dos seus turnos, quando fizer um ataque com arma, você pode fazer outro ataque com a mesma arma contra uma criatura diferente que esteja a até 1,5 metro do alvo original e no alcance da sua arma."
       },
       {
         "level": 7,
         "name": "Táticas Defensivas",
-        "description": "Escolha uma tática defensiva: impor desvantagem em ataques de oportunidade contra você, receber +4 na CA contra ataques subsequentes de uma criatura, ou ter vantagem em resistências contra medo."
+        "description": "Escolha uma opção. Escapar da Horda: ataques de oportunidade contra você são feitos com desvantagem. Defesa Contra Múltiplos Ataques: quando uma criatura atinge você com um ataque, você recebe +4 na CA contra todos os ataques seguintes dessa criatura até o fim do turno. Vontade de Aço: você tem vantagem em testes de resistência para não ficar amedrontado."
       },
       {
         "level": 11,
         "name": "Ataque Múltiplo",
-        "description": "Escolha entre realizar um ataque à distância contra várias criaturas num raio de 3 metros (Saraivada) ou fazer um ataque corpo a corpo contra qualquer número de criaturas a até 1,5 metro de você (Ataque Giratório)."
+        "description": "Escolha uma opção. Saraivada: com sua ação, você faz um ataque à distância contra qualquer número de criaturas a até 3 metros de um ponto que você possa ver, dentro do alcance da arma; precisa de munição para cada alvo e faz uma jogada de ataque separada para cada um. Ataque Giratório: com sua ação, você faz um ataque corpo a corpo contra qualquer número de criaturas a até 1,5 metro de você, com uma jogada de ataque separada para cada alvo."
       },
       {
         "level": 15,
         "name": "Defesa de Caçador Superior",
-        "description": "Escolha um benefício: Evasão (reduzir dano de efeitos em área), Manter-se Contra a Maré (forçar quem errar um ataque contra você a atacar outro alvo), ou Esquiva Sobrenatural (usar reação para sofrer metade do dano de um ataque)."
+        "description": "Escolha uma opção. Evasão: quando um efeito permite um teste de resistência de Destreza para sofrer metade do dano, você não sofre dano se passar e sofre só metade se falhar. Manter-se Contra a Maré: quando uma criatura hostil erra você com um ataque corpo a corpo, você pode usar sua reação para forçá-la a repetir o mesmo ataque contra outra criatura (não ela mesma), à sua escolha. Esquiva Sobrenatural: quando um atacante que você possa ver atinge você com um ataque, você pode usar sua reação para reduzir o dano desse ataque à metade."
       }
     ],
     "gloom-stalker": [
       {
         "level": 3,
         "name": "Batedor do Subterrâneo",
-        "description": "No primeiro turno de combate, você ganha +3 m de deslocamento e pode realizar um ataque adicional caso use a ação de Ataque. Criaturas com visão no escuro não ganham benefícios para detectá-lo."
+        "description": "No seu primeiro turno de cada combate, seu deslocamento aumenta em 3 metros e, se usar a ação de Ataque nesse turno, você pode fazer um ataque adicional. Criaturas com visão no escuro não ganham nenhum benefício dela para detectar você na escuridão ou na penumbra, nem quando o Mestre determina se você consegue se esconder delas."
       },
       {
         "level": 3,
         "name": "Magia do Rastreador Subterrâneo",
-        "description": "Você recebe visão no escuro de 27 metros e aprende magias adicionais conforme sobe de nível, que não contam no seu limite de magias conhecidas."
+        "description": "Você ganha visão no escuro de 27 metros. Também aprende magias adicionais, que contam como magias de patrulheiro mas não entram no limite de magias conhecidas: disfarçar-se (3º), truque de corda (5º), glifo de vigilância (9º), invisibilidade maior (13º) e similaridade (17º)."
       },
       {
         "level": 7,
@@ -1306,12 +1351,12 @@
       {
         "level": 11,
         "name": "Rajada do Rastreador",
-        "description": "Uma vez em cada um dos seus turnos, quando você errar um ataque com arma, pode realizar outro ataque imediatamente."
+        "description": "Uma vez em cada um dos seus turnos, quando errar um ataque, você pode fazer outro ataque."
       },
       {
         "level": 15,
         "name": "Esquiva do Rastreador",
-        "description": "Quando uma criatura atacar você sem vantagem, você pode usar sua reação para impor desvantagem nessa jogada de ataque."
+        "description": "Quando uma criatura atacar você sem ter vantagem, você pode usar sua reação para impor desvantagem a essa jogada de ataque. Pode decidir antes ou depois da rolagem, mas antes de o resultado ser determinado."
       }
     ],
     "thief": [
@@ -1338,7 +1383,7 @@
       {
         "level": 17,
         "name": "Reflexos de Ladrão",
-        "description": "Você pode realizar dois turnos durante a primeira rodada de qualquer combate. Você age na sua iniciativa normal e novamente na sua iniciativa menos 10."
+        "description": "Na primeira rodada de cada combate você tem dois turnos: o primeiro na sua iniciativa normal e o segundo na sua iniciativa menos 10. Não funciona se você estiver surpreso."
       }
     ],
     "assassin": [
@@ -1354,30 +1399,30 @@
       },
       {
         "level": 9,
-        "name": "Especialista em Infiltração",
-        "description": "Você pode criar identidades falsas, com histórico e contatos, requerendo 7 dias e 25 po. Isso permite que você se infiltre assumindo essa identidade sem despertar suspeitas."
+        "name": "Especialização em Infiltração",
+        "description": "Gastando 7 dias e 25 po, você cria uma identidade falsa infalível (histórico, profissão e filiações). Não pode ser a identidade de alguém que já existe. Ao adotá-la como disfarce, os outros acreditam que você é essa pessoa até terem um motivo óbvio para pensar o contrário."
       },
       {
         "level": 13,
         "name": "Impostor",
-        "description": "Você pode imitar a fala, caligrafia e comportamento de outra pessoa perfeitamente. É necessário gastar pelo menos três horas estudando o alvo para criar o disfarce."
+        "description": "Depois de estudar alguém por pelo menos 3 horas, você imita infalivelmente a fala, a escrita e o comportamento dessa pessoa. O ardil passa despercebido por observadores casuais. Se uma criatura desconfiada suspeitar, você tem vantagem nos testes de Carisma (Enganação) para não ser descoberto."
       },
       {
         "level": 17,
-        "name": "Golpe Mortal",
-        "description": "Quando você ataca e acerta uma criatura que está surpresa, ela deve realizar um teste de resistência de Constituição (CD 8 + proficiência + mod. de Destreza). Se falhar, o dano do seu ataque contra a criatura é dobrado."
+        "name": "Golpe Letal",
+        "description": "Quando você ataca e acerta uma criatura surpresa, ela faz um teste de resistência de Constituição (CD 8 + mod. de Destreza + bônus de proficiência). Se falhar, o dano desse ataque contra ela é dobrado."
       }
     ],
     "arcane-trickster": [
       {
         "level": 3,
         "name": "Conjuração",
-        "description": "Você adquire magia de mago (usando Inteligência), com foco em ilusão e encantamento: aprende 3 truques (incluindo mãos mágicas) e algumas magias de 1° nível."
+        "description": "Você conjura magias de mago usando Inteligência e recupera os espaços num descanso longo. Truques: mãos mágicas e mais dois de mago (um extra no 10° nível). Das 3 magias iniciais de 1° nível, 2 devem ser de encantamento ou ilusão. As seguintes também devem ser dessas escolas, exceto as aprendidas no 8°, 14° e 20° nível, que podem ser de qualquer escola. Ao subir de nível, você pode trocar uma magia conhecida por outra de mago de um nível que possa conjurar, também de encantamento ou ilusão."
       },
       {
         "level": 3,
         "name": "Mãos Mágicas Malabaristas",
-        "description": "Ao conjurar mãos mágicas você pode torná-la invisível, guardar/recuperar objetos em recipientes de outra criatura e usar ferramentas de ladrão à distância, controlando-a com a ação bônus da Ação Ardilosa."
+        "description": "Ao conjurar mãos mágicas, você pode deixar a mão invisível e usá-la para: guardar um objeto num recipiente vestido ou carregado por outra criatura, tirar um objeto de um recipiente desses, ou usar ferramentas de ladrão à distância (abrir fechaduras, desarmar armadilhas). Para fazer isso sem ser notado, vença um teste de Destreza (Prestidigitação) contra a Sabedoria (Percepção) da criatura. Você pode controlar a mão com a ação bônus da Ação Ardilosa."
       },
       {
         "level": 9,
@@ -1387,15 +1432,15 @@
       {
         "level": 13,
         "name": "Trapaceiro Versátil",
-        "description": "Usando a ação bônus da sua Ação Ardilosa, você pode distrair um alvo a até 1,5 metro de suas Mãos Mágicas. Isso lhe concede vantagem nas jogadas de ataque contra o alvo até o fim do turno."
+        "description": "Como ação bônus no seu turno, designe uma criatura a até 1,5 m da mão espectral das suas mãos mágicas: você tem vantagem nas jogadas de ataque contra ela até o fim do turno."
       },
       {
         "level": 17,
-        "name": "Ladrão de Magias",
-        "description": "Quando uma criatura conjurar uma magia que tenha você como alvo ou o inclua na área, você pode usar sua reação para forçá-la a fazer um teste de resistência. Se ela falhar, a magia é anulada em você e você rouba o conhecimento dela para conjurá-la por 8 horas.",
+        "name": "Ladrão de Magia",
+        "description": "Logo depois de uma criatura conjurar uma magia que tenha você como alvo ou inclua você na área, use sua reação: ela faz um teste de resistência com o modificador de conjuração dela contra a CD das suas magias. Se falhar, você ignora o efeito da magia sobre você. Se a magia for de 1° nível ou mais e de um nível que você possa conjurar (não precisa ser de mago), você a conhece por 8 horas e pode conjurá-la com seus espaços, enquanto a criatura não pode conjurá-la nesse período. Uma vez por descanso longo.",
         "effects": {
           "resources": [
-            { "id": "spell-thief", "name": "Ladrão de Magias", "uses": 1, "recharge": "long" }
+            { "id": "spell-thief", "name": "Ladrão de Magia", "uses": 1, "recharge": "long" }
           ]
         }
       }
@@ -1404,7 +1449,7 @@
       {
         "level": 1,
         "name": "Ancestral Dracônico",
-        "description": "Você escolhe um dragão ancestral, ganhando o idioma Dracônico e dobrando sua proficiência em testes de Carisma ao interagir com dragões."
+        "description": "Escolha um tipo de dragão como ancestral. O tipo de dano dele é usado por características futuras: Azul/Bronze = elétrico; Branco/Prata = frio; Cobre/Negro = ácido; Latão/Ouro/Vermelho = fogo; Verde = veneno. Você fala, lê e escreve Dracônico. Em testes de Carisma ao interagir com dragões, seu bônus de proficiência é dobrado, se ele se aplicar ao teste."
       },
       {
         "level": 1,
@@ -1414,29 +1459,29 @@
       {
         "level": 6,
         "name": "Afinidade Elemental",
-        "description": "Ao conjurar magias que causam o dano do seu ancestral dracônico, adicione seu modificador de Carisma ao dano. Você também pode gastar 1 ponto de feitiçaria para ganhar resistência a esse dano por 1 hora."
+        "description": "Quando conjurar uma magia que cause dano do tipo do seu ancestral dracônico, some seu modificador de Carisma a uma única rolagem de dano dessa magia. Ao mesmo tempo, pode gastar 1 ponto de feitiçaria para ganhar resistência a esse tipo de dano por 1 hora."
       },
       {
         "level": 14,
         "name": "Asas de Dragão",
-        "description": "Com uma ação bônus, você manifesta asas de dragão em suas costas, ganhando um deslocamento de voo igual ao seu deslocamento terrestre atual."
+        "description": "Com uma ação bônus no seu turno, você manifesta asas de dragão e ganha deslocamento de voo igual ao seu deslocamento atual. Elas duram até você dissipá-las com outra ação bônus no seu turno. Você não pode manifestá-las vestindo armadura, salvo se ela for feita para acomodá-las. Roupas não adaptadas às asas são destruídas."
       },
       {
         "level": 18,
         "name": "Presença Dracônica",
-        "description": "Com uma ação e 5 pontos de feitiçaria, você exala uma aura de 18 metros. Inimigos na área devem passar num teste de resistência de Sabedoria ou ficarão amedrontados ou enfeitiçados (à sua escolha) por 1 minuto."
+        "description": "Com uma ação e 5 pontos de feitiçaria, você exala uma aura de admiração ou de medo (à sua escolha) num raio de 18 m. Ela dura 1 minuto ou até você perder a concentração, como numa magia de concentração. Cada criatura hostil que começar o turno na aura faz um teste de resistência de Sabedoria. Se falhar, fica enfeitiçada (admiração) ou amedrontada (medo) até a aura terminar. Se passar, fica imune à sua aura por 24 horas."
       }
     ],
     "wild-magic": [
       {
         "level": 1,
         "name": "Surto de Magia Selvagem",
-        "description": "Quando conjurar magias de nível 1 ou superior, o Mestre pode pedir a rolagem de um d20. Se rolar 1, um efeito aleatório da tabela de Surto de Magia Selvagem acontece."
+        "description": "Logo após você conjurar uma magia de feiticeiro de 1° nível ou superior, o Mestre pode pedir que você role um d20. Com 1, role na tabela Surto de Magia Selvagem (p. 82) para um efeito aleatório. Só pode ocorrer um surto por turno. Se o efeito for uma magia, ela não pode ser afetada por Metamágica e não exige concentração: dura o tempo total."
       },
       {
         "level": 1,
         "name": "Marés de Caos",
-        "description": "Ganhe vantagem em uma jogada de ataque, teste ou resistência 1 vez por descanso longo. O Mestre pode restaurar esse uso antecipadamente forçando um Surto de Magia Selvagem ao conjurar magias de nível 1+.",
+        "description": "Ganhe vantagem em uma jogada de ataque, teste de habilidade ou teste de resistência. Depois disso, só pode usar de novo após terminar um descanso longo. Antes disso, o Mestre pode rolar direto na tabela Surto de Magia Selvagem logo após você conjurar uma magia de feiticeiro de 1° nível ou superior; aí você recupera o uso.",
         "effects": {
           "resources": [
             { "id": "tides-of-chaos", "name": "Marés de Caos", "uses": 1, "recharge": "long", "note": "também volta quando o Mestre rola na tabela de Surto de Magia Selvagem" }
@@ -1446,7 +1491,7 @@
       {
         "level": 6,
         "name": "Dobrar a Sorte",
-        "description": "Quando uma criatura visível fizer uma rolagem, você pode usar sua reação e 2 pontos de feitiçaria para rolar 1d4 e aplicar o resultado como bônus ou penalidade na jogada dela."
+        "description": "Quando outra criatura que você possa ver fizer uma jogada de ataque, teste de habilidade ou teste de resistência, você pode usar sua reação e gastar 2 pontos de feitiçaria. Role 1d4 e aplique o resultado como bônus ou penalidade (à sua escolha) na jogada. Pode fazer isso depois da rolagem, mas antes de o efeito ocorrer."
       },
       {
         "level": 14,
@@ -1456,7 +1501,7 @@
       {
         "level": 18,
         "name": "Bombardeio de Magia",
-        "description": "Uma vez por rodada, quando o dado de dano de uma magia sua atingir o valor máximo, você pode rolar o dado novamente e somar o novo valor ao dano total."
+        "description": "Quando rolar o dano de uma magia e algum dado tirar o valor máximo, escolha um desses dados, role-o de novo e some o novo resultado ao dano. Só uma vez por rodada."
       }
     ],
     "abjuration": [
@@ -1468,7 +1513,7 @@
       {
         "level": 2,
         "name": "Proteção Arcana",
-        "description": "Ao conjurar uma magia de abjuração de 1° nível ou superior, você cria uma proteção mágica que absorve dano até um limite (dobro do nível + mod. de Inteligência).",
+        "description": "Ao conjurar uma magia de abjuração de 1° nível ou superior, você pode criar em si mesmo uma proteção (uma vez por descanso longo; dura até o próximo descanso longo) com PV iguais ao dobro do seu nível de mago + mod. de Inteligência. Ela sofre o dano no seu lugar; o que exceder passa para você. A 0 PV ela não absorve dano, mas permanece: cada magia de abjuração de 1° nível ou superior que você conjurar restaura nela PV iguais ao dobro do nível da magia.",
         "effects": {
           "resources": [
             { "id": "arcane-ward", "name": "Proteção Arcana", "uses": { "perClassLevel": 2, "ability": "INT" }, "unit": "hp", "recharge": "long", "note": "criada ao conjurar abjuração de 1º nível ou superior; cada abjuração depois devolve 2 × o nível da magia" }
@@ -1478,7 +1523,7 @@
       {
         "level": 6,
         "name": "Proteção Projetada",
-        "description": "Como reação quando uma criatura visível a até 9 metros sofrer dano, sua Proteção Arcana pode absorver aquele dano em favor da criatura."
+        "description": "Reação: quando uma criatura que você possa ver a até 9 metros sofrer dano, sua Proteção Arcana absorve esse dano no lugar dela. Se a proteção chegar a 0 PV, a criatura sofre o restante."
       },
       {
         "level": 10,
@@ -1500,7 +1545,7 @@
       {
         "level": 2,
         "name": "Prodígio",
-        "description": "Após um descanso longo, role dois d20 e registre os valores. Pode substituir qualquer jogada (ataque, teste ou resistência) de uma criatura visível por um desses resultados antes da rolagem original.",
+        "description": "Ao terminar um descanso longo, role dois d20 (três com Prodígio Maior) e anote os resultados; os não usados se perdem no próximo descanso longo. Você pode substituir uma jogada de ataque, teste de resistência ou teste de habilidade feito por você ou por uma criatura que você possa ver por um desses resultados, decidindo antes da rolagem. Cada resultado só pode ser usado uma vez, e no máximo uma substituição por rodada.",
         "effects": {
           "resources": [
             { "id": "portent", "name": "Prodígio", "die": { "size": 20 }, "uses": { "byLevel": [{ "from": 2, "value": 2 }, { "from": 14, "value": 3 }] }, "unit": "dice", "recharge": "long", "note": "role ao terminar o descanso longo e anote; as rolagens não usadas se perdem" }
@@ -1510,12 +1555,12 @@
       {
         "level": 6,
         "name": "Especialista em Adivinhação",
-        "description": "Ao conjurar uma magia de adivinhação de 2° nível ou superior, você recupera um espaço de magia gasto de nível inferior (máximo 5° nível)."
+        "description": "Ao conjurar uma magia de adivinhação de 2° nível ou superior usando um espaço de magia, você recupera um espaço de magia gasto de nível inferior ao da magia conjurada e de no máximo 5° nível."
       },
       {
         "level": 10,
         "name": "O Terceiro Olho",
-        "description": "Com uma ação, escolha aumentar sua percepção adquirindo visão no escuro, visão etérea, capacidade de ler qualquer idioma ou ver invisibilidade até o próximo descanso.",
+        "description": "Ação: escolha um benefício, que dura até você ficar incapacitado ou terminar um descanso curto ou longo: visão no escuro de 18 m; ver o Plano Etéreo a até 18 m; ler qualquer idioma; ou ver criaturas e objetos invisíveis a até 3 m em linha de visão. Uma vez por descanso longo.",
         "effects": {
           "resources": [
             { "id": "the-third-eye", "name": "O Terceiro Olho", "uses": 1, "recharge": "long" }
@@ -1537,12 +1582,12 @@
       {
         "level": 2,
         "name": "Conjuração Menor",
-        "description": "Com uma ação, você conjura um objeto inanimado, não mágico e brilhante (até 5 kg e 90 cm) que dura até 1 hora ou até sofrer dano."
+        "description": "Ação: você conjura na sua mão, ou no chão em um espaço desocupado que possa ver a até 3 m, um objeto inanimado e não mágico que você já tenha visto (até 90 cm de largura e 5 kg). O objeto é visivelmente mágico e emite penumbra num raio de 1,5 m. Ele some após 1 hora, se sofrer qualquer dano ou se você usar esta característica de novo."
       },
       {
         "level": 6,
         "name": "Transposição Benigna",
-        "description": "Use sua ação para se teletransportar até 9 metros ou trocar de lugar com uma criatura voluntária visível no mesmo alcance. Recupera com descanso ou conjurando magias de conjuração.",
+        "description": "Ação: você se teletransporta até 9 metros para um espaço desocupado que possa ver, ou troca de lugar com uma criatura voluntária Pequena ou Média nesse alcance. Depois de usar, só pode usar de novo após um descanso longo ou após conjurar uma magia de conjuração de 1° nível ou superior.",
         "effects": {
           "resources": [
             { "id": "benign-transposition", "name": "Transposição Benigna", "uses": 1, "recharge": "long", "note": "ou ao conjurar uma magia de conjuração de 1º nível ou superior" }
@@ -1569,12 +1614,12 @@
       {
         "level": 2,
         "name": "Olhar Hipnotizante",
-        "description": "Com uma ação, se o alvo falhar em um teste de Sabedoria, ele fica aturdido e incapacitado até o fim do seu próximo turno, podendo ser mantido com ações sucessivas."
+        "description": "Ação: escolha uma criatura que você possa ver a até 1,5 m e que possa ver ou ouvir você; ela faz um teste de resistência de Sabedoria contra a CD das suas magias de mago. Se falhar, fica enfeitiçada por você até o fim do seu próximo turno, com deslocamento 0 e incapacitada. Nos turnos seguintes, você pode usar a ação para estender o efeito até o fim do seu próximo turno. O efeito termina se você se afastar mais de 1,5 m, se a criatura não puder nem ver nem ouvir você ou se ela sofrer dano. Quando o efeito termina, ou se ela passar no teste inicial, você não pode usar esta característica nela de novo até terminar um descanso longo."
       },
       {
         "level": 6,
         "name": "Encanto Instintivo",
-        "description": "Como reação ao ser atacado por um inimigo visível, exija um teste de Sabedoria; se falhar, ele ataca a criatura mais próxima que não seja você."
+        "description": "Reação: quando uma criatura que você possa ver a até 9 m fizer uma jogada de ataque contra você e houver outra criatura no alcance do ataque, decida antes de saber se acertou. O atacante faz um teste de resistência de Sabedoria contra a CD das suas magias de mago; se falhar, ataca a criatura mais próxima dele (ele escolhe entre as empatadas), exceto você ou ele mesmo. Se passar, você não pode usar isto contra ele de novo até terminar um descanso longo. Criaturas que não podem ser enfeitiçadas são imunes."
       },
       {
         "level": 10,
@@ -1584,7 +1629,7 @@
       {
         "level": 14,
         "name": "Alterar Memórias",
-        "description": "Pode tornar uma criatura inconsciente de ter sido enfeitiçada e tentar apagar a memória de algumas das horas (1 + mod. Carisma) durante as quais esteve sob seu encanto."
+        "description": "Ao conjurar uma magia de encantamento que enfeitice uma ou mais criaturas, você pode fazer uma delas não perceber que está enfeitiçada. Quando a magia termina, você pode usar sua ação para que essa criatura faça um teste de resistência de Inteligência contra a CD das suas magias de mago; se falhar, esquece até 1 + seu mod. de Carisma horas (mínimo 1) do tempo em que esteve enfeitiçada, sem exceder a duração da magia (você pode escolher menos)."
       }
     ],
     "evocation": [
@@ -1596,22 +1641,22 @@
       {
         "level": 2,
         "name": "Esculpir Magias",
-        "description": "Ao conjurar magias de evocação, você protege um número de criaturas igual a 1 + o nível da magia, fazendo-as passar na resistência e ignorar o dano."
+        "description": "Ao conjurar uma magia de evocação que afete outras criaturas que você possa ver, escolha até 1 + o nível da magia delas: passam automaticamente no teste de resistência contra a magia e, se a magia causaria metade do dano num sucesso, não sofrem dano algum."
       },
       {
         "level": 6,
         "name": "Truque Potente",
-        "description": "Quando uma criatura for bem sucedida no teste de resistência contra seus truques, ela agora sofre metade do dano em vez de não sofrer nada."
+        "description": "Quando uma criatura passa no teste de resistência contra um truque seu de dano, ela sofre metade do dano (se houver), mas nenhum efeito adicional."
       },
       {
         "level": 10,
         "name": "Evocação Potencializada",
-        "description": "Adicione seu modificador de Inteligência a uma jogada de dano de qualquer magia de evocação que você conjurar."
+        "description": "Some seu modificador de Inteligência a uma rolagem de dano de cada magia de evocação de mago que você conjurar (não a várias rolagens da mesma magia)."
       },
       {
         "level": 14,
         "name": "Sobrecarga",
-        "description": "Sua próxima magia de causar dano de até 5° nível causa o dano máximo. Usar isso novamente antes de um descanso gera retaliação em dano necrótico progressivo em você mesmo."
+        "description": "Ao conjurar uma magia de mago de 1° a 5° nível que cause dano (não truques), você pode fazê-la causar o dano máximo. O primeiro uso não tem custo; cada uso seguinte antes de terminar um descanso longo causa a você, logo após conjurar, 2d12 de dano necrótico por nível da magia, +1d12 por nível a cada uso adicional. Esse dano ignora resistência e imunidade."
       }
     ],
     "illusion": [
@@ -1623,12 +1668,12 @@
       {
         "level": 2,
         "name": "Ilusão Menor Aprimorada",
-        "description": "Você ganha o truque ilusão menor. Ao conjurá-lo, você pode criar simultaneamente um som e uma imagem com uma única ação."
+        "description": "Você aprende o truque ilusão menor (se já o conhece, aprende outro truque de mago à sua escolha), que não conta no seu limite de truques conhecidos. Ao conjurar ilusão menor, você pode criar um som e uma imagem com uma única conjuração."
       },
       {
         "level": 6,
         "name": "Ilusões Moldáveis",
-        "description": "Você pode usar uma ação para alterar livremente a natureza de uma de suas ilusões ativas cuja duração seja de 1 minuto ou maior."
+        "description": "Quando você conjura uma magia de ilusão com duração de 1 minuto ou mais, pode usar sua ação para mudar a natureza da ilusão, dentro dos parâmetros normais da magia, desde que possa vê-la."
       },
       {
         "level": 10,
@@ -1643,7 +1688,7 @@
       {
         "level": 14,
         "name": "Realidade Ilusória",
-        "description": "Como ação bônus enquanto mantem uma ilusão de 1º nível ou mais, transforme um objeto inanimado da ilusão em algo tangível e real por até 1 minuto."
+        "description": "Enquanto uma magia de ilusão de 1° nível ou superior sua estiver em efeito, você pode usar uma ação bônus no seu turno para tornar real um objeto inanimado e não mágico que faça parte da ilusão, por 1 minuto. O objeto não pode causar dano nem ferir ninguém diretamente."
       }
     ],
     "necromancy": [
@@ -1655,12 +1700,12 @@
       {
         "level": 2,
         "name": "Colheita Sinistra",
-        "description": "Ao matar criaturas com magia, você se cura em duas vezes o nível do feitiço, ou três vezes se a magia for de Necromancia."
+        "description": "Uma vez por turno, quando você mata uma ou mais criaturas com uma magia de 1° nível ou superior, recupera PV iguais ao dobro do nível da magia, ou ao triplo se a magia for de necromancia. Matar constructos ou mortos-vivos não conta."
       },
       {
         "level": 6,
         "name": "Escravos Mortos-Vivos",
-        "description": "Aprende animar mortos e pode criar uma criatura a mais por conjuração. Seus mortos-vivos criados por magias ganham PV máximo extra e somam sua proficiência no dano."
+        "description": "Você adiciona animar mortos ao grimório (se não a tiver) e, ao conjurá-la, pode animar um cadáver ou pilha de ossos a mais. Todo morto-vivo que você criar com uma magia de necromancia ganha PV máximo extra igual ao seu nível de mago e soma seu bônus de proficiência às jogadas de dano."
       },
       {
         "level": 10,
@@ -1670,7 +1715,7 @@
       {
         "level": 14,
         "name": "Comandar Mortos-Vivos",
-        "description": "Com uma ação e mediante falha em teste de Carisma, tome controle de qualquer morto-vivo (mesmo de outros mestres). Criaturas inteligentes podem tentar se libertar."
+        "description": "Ação: escolha um morto-vivo que você possa ver a até 18 m; ele faz um teste de resistência de Carisma contra a CD das suas magias de mago. Se passar, você nunca mais pode usar isto nele; se falhar, fica amistoso e obedece seus comandos até você usar esta característica de novo. Alvos com Inteligência 8 ou mais têm vantagem no teste; com Inteligência 12 ou mais, se falharem, repetem o teste ao fim de cada hora até se libertarem."
       }
     ],
     "transmutation": [
@@ -1682,17 +1727,17 @@
       {
         "level": 2,
         "name": "Alquimia Menor",
-        "description": "Pode gastar tempo (10 min) para alterar material não-mágico de madeira, pedra, ferro, cobre ou prata, em outro dessa mesma lista temporariamente (1 hora)."
+        "description": "Com um procedimento alquímico, você transforma um objeto não mágico feito inteiramente de madeira, pedra (não preciosa), ferro, cobre ou prata em outro desses materiais, 30 cm³ a cada 10 minutos de trabalho. O material volta ao original após 1 hora ou se você perder a concentração (como se mantivesse uma magia)."
       },
       {
         "level": 6,
         "name": "Pedra de Transmutador",
-        "description": "Cria magicamente uma pedra (após 8 horas) que concede um benefício ao portador, como visão no escuro, resistência elemental, proficiência em Constituição ou mais velocidade."
+        "description": "Em 8 horas, você cria uma pedra que dá um benefício a quem a possuir (você ou outra criatura), escolhido na criação: visão no escuro de 18 m; +3 m de deslocamento quando não estiver sobrecarregado; proficiência em testes de resistência de Constituição; ou resistência a ácido, frio, fogo, elétrico ou trovejante (à escolha). Ao conjurar uma magia de transmutação de 1° nível ou superior com a pedra em sua posse, você pode trocar o benefício. Criar uma pedra nova desativa a anterior."
       },
       {
         "level": 10,
         "name": "Metamorfo",
-        "description": "Adiciona a magia metamorfose ao grimório. Você pode conjurá-la em si mesmo para virar besta de VD 1 ou menor sem gastar espaço de magia, uma vez por descanso.",
+        "description": "Você adiciona metamorfose ao grimório (se não a tiver). Pode conjurá-la sem gastar espaço de magia, só em si mesmo, virando uma besta de nível de desafio 1 ou menor; depois disso, só pode fazê-lo de novo ao terminar um descanso curto ou longo (ainda pode conjurá-la normalmente com espaços).",
         "effects": {
           "resources": [
             { "id": "shapechanger", "name": "Metamorfo", "uses": 1, "recharge": "short", "note": "metamorfose em si mesmo sem gastar espaço" }
@@ -1702,7 +1747,7 @@
       {
         "level": 14,
         "name": "Mestre Transmutador",
-        "description": "Ao destruir a Pedra de Transmutador (só pode criar outra após um descanso longo) pode reviver mortos, remover doenças, alterar aparência em 3d10 anos, ou realizar grande transmutação permanente.",
+        "description": "Ação: você consome a magia da sua Pedra de Transmutador, que é destruída e só pode ser refeita após um descanso longo, e escolhe um efeito. Transformação Maior: transforma um objeto não mágico de até 1,5 m³ em outro não mágico de tamanho e massa parecidos e valor igual ou menor (10 minutos manipulando). Panaceia: uma criatura que você tocar com a pedra perde todas as maldições, doenças e venenos e recupera todos os PV. Restaurar Vida: conjura reviver os mortos numa criatura tocada, sem espaço e sem ter a magia no grimório. Restaurar Juventude: uma criatura voluntária tocada tem a idade aparente reduzida em 3d10 anos (mínimo 13), sem aumentar seu tempo de vida.",
         "effects": {
           "resources": [
             { "id": "master-transmuter", "name": "Mestre Transmutador", "uses": 1, "recharge": "long", "note": "consome a pedra de transmutador" }
@@ -1719,7 +1764,7 @@
       {
         "level": 3,
         "name": "Palavras de Interrupção",
-        "description": "Com sua reação e um uso de Inspiração de Bardo, subtraia o dado de inspiração da jogada de ataque, teste de habilidade ou jogada de dano de uma criatura a até 18 m."
+        "description": "Quando uma criatura que você possa ver a até 18 m fizer uma jogada de ataque, um teste de habilidade ou uma jogada de dano, você pode usar sua reação e gastar um uso de Inspiração de Bardo para rolar o dado e subtrair o resultado da rolagem dela. Decida depois que ela rolar, mas antes de o Mestre dizer se o ataque ou teste deu certo, ou antes de o dano ser causado. A criatura é imune se não puder ouvi-lo ou não puder ser enfeitiçada."
       },
       {
         "level": 6,
@@ -1735,13 +1780,13 @@
     "college-of-valor": [
       {
         "level": 3,
-        "name": "Proficiências Adicionais",
+        "name": "Proficiência Adicional",
         "description": "Você ganha proficiência com armaduras médias, escudos e armas marciais."
       },
       {
         "level": 3,
         "name": "Inspiração em Combate",
-        "description": "Uma criatura com sua Inspiração de Bardo pode somar o dado a uma jogada de dano ou, com uma reação, à CA contra um ataque."
+        "description": "Uma criatura com um dado de Inspiração de Bardo seu também pode gastá-lo assim: rolar e somar o resultado a uma jogada de dano que acabou de fazer; ou, quando for alvo de uma jogada de ataque, usar a reação dela para somar o resultado à CA contra esse ataque, depois da rolagem mas antes de saber se acertou."
       },
       {
         "level": 6,
@@ -1757,8 +1802,13 @@
     "the-archfey": [
       {
         "level": 1,
+        "name": "Lista de Magia Expandida",
+        "description": "Ao aprender magias de bruxo, você também pode escolher entre estas, que entram na sua lista de magias de bruxo. 1° nível de magia: fogo das fadas, sono. 2°: acalmar emoções, força fantasmagórica. 3°: piscar, ampliar plantas. 4°: dominar besta, invisibilidade maior. 5°: dominar pessoa, similaridade."
+      },
+      {
+        "level": 1,
         "name": "Presença Feérica",
-        "description": "Com uma ação, force criaturas num cubo de 3 m a testar Sabedoria. Falha: enfeitiçadas ou amedrontadas até seu próximo turno. Recarrega em descanso curto ou longo.",
+        "description": "Com uma ação, cada criatura num cubo de 3 m centrado em você faz um teste de resistência de Sabedoria contra a CD de magia de bruxo. Quem falhar fica enfeitiçado ou amedrontado por você (à sua escolha) até o início do seu próximo turno. Recarrega em descanso curto ou longo.",
         "effects": {
           "resources": [
             { "id": "fey-presence", "name": "Presença Feérica", "uses": 1, "recharge": "short" }
@@ -1783,7 +1833,7 @@
       {
         "level": 14,
         "name": "Delírio Sombrio",
-        "description": "Com uma ação, escolha uma criatura a até 18 m; se falhar num teste de Sabedoria (CD de bruxo), ela fica enfeitiçada ou amedrontada por você (à sua escolha) por 1 minuto ou até você perder concentração, acreditando estar presa num reino enevoado onde só vê você, a si mesma e sua ilusão. Efeito termina antes se ela sofrer dano. Recarrega em descanso curto ou longo.",
+        "description": "Com uma ação, escolha uma criatura que você possa ver a até 18 m. Ela faz um teste de resistência de Sabedoria contra a CD de magia de bruxo. Se falhar, fica enfeitiçada ou amedrontada por você (à sua escolha) por 1 minuto ou até sua concentração ser quebrada (como se mantivesse uma magia). O efeito termina antes se ela sofrer dano. Enquanto durar, ela se acredita perdida num reino enevoado e só pode ver e ouvir a si mesma, você e a ilusão. Recarrega em descanso curto ou longo.",
         "effects": {
           "resources": [
             { "id": "dark-delirium", "name": "Delírio Sombrio", "uses": 1, "recharge": "short" }
@@ -1792,6 +1842,11 @@
       }
     ],
     "the-fiend": [
+      {
+        "level": 1,
+        "name": "Lista de Magia Expandida",
+        "description": "Ao aprender magias de bruxo, você também pode escolher entre estas, que entram na sua lista de magias de bruxo. 1° nível de magia: mãos flamejantes, comando. 2°: cegueira/surdez, raio ardente. 3°: bola de fogo, névoa fétida. 4°: escudo de fogo, muralha de fogo. 5°: coluna de chamas, consagrar."
+      },
       {
         "level": 1,
         "name": "Bênção do Obscuro",
@@ -1815,7 +1870,7 @@
       {
         "level": 14,
         "name": "Lançar no Inferno",
-        "description": "Ao acertar uma criatura com um ataque, transporte-a instantaneamente para os planos inferiores; ela retorna ao fim do seu turno e, se não for um corruptor, sofre 10d10 de dano psíquico. Recarrega em descanso curto ou longo.",
+        "description": "Ao atingir uma criatura com um ataque, você pode transportá-la na hora para os planos inferiores, e ela desaparece. No fim do seu turno, ela volta ao espaço que ocupava (ou ao espaço desocupado mais próximo). Se não for um corruptor, sofre 10d10 de dano psíquico. Recarrega em descanso curto ou longo.",
         "effects": {
           "resources": [
             { "id": "hurl-through-hell", "name": "Lançar no Inferno", "uses": 1, "recharge": "short" }
@@ -1826,8 +1881,13 @@
     "the-great-old-one": [
       {
         "level": 1,
+        "name": "Lista de Magia Expandida",
+        "description": "Ao aprender magias de bruxo, você também pode escolher entre estas, que entram na sua lista de magias de bruxo. 1° nível de magia: sussurros dissonantes, riso histérico de Tasha. 2°: detectar pensamentos, força fantasmagórica. 3°: clarividência, enviar mensagem. 4°: dominar besta, tentáculos negros de Evard. 5°: dominar pessoa, telecinésia."
+      },
+      {
+        "level": 1,
         "name": "Despertar a Mente",
-        "description": "Comunique-se telepaticamente com qualquer criatura visível até 18 m. Ela deve entender ao menos um idioma para compreendê-lo."
+        "description": "Você pode se comunicar por telepatia com qualquer criatura que possa ver a até 18 m. Vocês não precisam ter um idioma em comum, mas a criatura precisa entender pelo menos um idioma."
       },
       {
         "level": 6,

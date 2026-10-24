@@ -11,6 +11,7 @@ import {
   getExpertiseOptions,
   getClassFeaturesUpToLevel,
   hasFeaturesByLevel,
+  CLASSES,
   getClass,
   getSubclass,
 } from '../classUtils'
@@ -378,5 +379,49 @@ describe('getClassFeaturesUpToLevel', () => {
     const f = getClassFeaturesUpToLevel(noTableClass, null, 10)
     expect(f.every(x => x.level === 1)).toBe(true)
     expect(f.length).toBe(noTableClass.features.length)
+  })
+})
+
+// Auditoria dos textos contra o livro (PHB 2014 pt-BR): a ficha impressa precisa bastar na mesa.
+describe('textos das características de classe', () => {
+  const bard = getClass('bard')!
+  const feature = (cls: string, sub: string | null, level: number, name: string) => {
+    const c = getClass(cls)!
+    return getClassFeaturesUpToLevel(c, sub ? getSubclass(c, sub) : null, level).find(f => f.name === name)
+  }
+
+  it('Palavras de Interrupção traz a imunidade, que fica depois da quebra de página (p. 55)', () => {
+    const f = feature('bard', 'college-of-lore', 3, 'Palavras de Interrupção')
+    expect(f?.description).toMatch(/imune/)
+    expect(f?.description).toMatch(/possa ver/)
+  })
+
+  it('nomes seguem o livro em pt-BR', () => {
+    expect(getClassFeaturesUpToLevel(bard, null, 3).map(f => f.name)).toContain('Aptidão') // p. 54
+    expect(feature('rogue', null, 1, 'Especialização')).toBeDefined() // p. 91, o do ladino continua
+    expect(feature('sorcerer', null, 3, 'Metamágica')).toBeDefined() // p. 79
+    expect(feature('rogue', 'assassin', 17, 'Golpe Letal')).toBeDefined() // p. 92
+    expect(feature('rogue', 'arcane-trickster', 17, 'Ladrão de Magia')?.effects?.resources?.[0].name).toBe('Ladrão de Magia')
+    expect(feature('cleric', null, 2, 'Canalizar Divindade: Expulsar Mortos-Vivos')).toBeDefined() // p. 66
+  })
+
+  it('magias de domínio, de juramento e listas expandidas aparecem na ficha', () => {
+    expect(feature('cleric', 'life-domain', 1, 'Magias de Domínio')?.description).toMatch(/curar ferimentos/)
+    expect(feature('warlock', 'the-fiend', 1, 'Lista de Magia Expandida')?.description).toMatch(/bola de fogo/)
+    expect(feature('druid', 'circle-of-the-land', 3, 'Magias de Círculo')).toBeDefined()
+    expect(feature('monk', null, 9, 'Aprimoramento de Movimento sem Armadura')).toBeDefined()
+  })
+
+  // Valor que muda com o nível e a ficha já calcula como recurso não se repete fixo no texto:
+  // foi assim que a Canção de Descanso dizia 1d6 a um bardo 9.
+  it('feature com dado que escala por nível não fixa o dado na descrição', () => {
+    for (const cls of CLASSES) {
+      for (const sub of [null, ...cls.subclasses]) {
+        for (const f of getClassFeaturesUpToLevel(cls, sub, 20)) {
+          const scaling = f.effects?.resources?.some(r => typeof r.die?.size === 'object')
+          if (scaling) expect(f.description, f.name).not.toMatch(/(?<![A-Za-zÀ-ÿ])d(4|6|8|10|12)\b/)
+        }
+      }
+    }
   })
 })

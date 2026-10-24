@@ -613,7 +613,7 @@ export function PrintableSheet() {
         </Box>
       )}
 
-      {/* Manobras, Invocações, Metamagia, Totem, Terreno, Presa — escolhas que se usam na mesa. */}
+      {/* Manobras, Invocações, Metamágica, Totem, Terreno, Presa — escolhas que se usam na mesa. */}
       {progressionBlocks.length > 0 && (
         <Box title="Escolhas de Progressão" className="mb-4">
           {progressionBlocks.map(({ e, slots }) => (

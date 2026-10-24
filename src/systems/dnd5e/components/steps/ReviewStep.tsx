@@ -24,7 +24,7 @@ import {
   getProficiencyBonus, formatXpProgress, formatMeters,
 } from '../../utils/abilityScoreUtils'
 import {
-  formatInventoryItem, describeResolvedOption,
+  formatInventoryItem, describeResolvedOption, getActivePurchases,
   getStartingMoney, describeStartingMoneySource, formatCoins,
 } from '../../utils/equipmentUtils'
 import { formatArmorClassBreakdown } from '../../utils/armorClassUtils'
@@ -516,7 +516,7 @@ export function ReviewStep() {
         )}
 
         {draft.equipment.method === 'wealth' && (() => {
-          const purchased = draft.equipment.purchasedItems
+          const purchased = getActivePurchases(draft.equipment)
           return (
             <div className="space-y-4">
               {purchased.length > 0 && (

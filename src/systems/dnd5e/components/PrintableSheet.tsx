@@ -26,7 +26,7 @@ import {
 } from '../utils/proficiencyUtils'
 import { formatArmorClassBreakdown } from '../utils/armorClassUtils'
 import {
-  formatInventoryItem, describeResolvedOption,
+  formatInventoryItem, describeResolvedOption, getActivePurchases,
   getStartingMoney, describeStartingMoneySource, formatCoins,
 } from '../utils/equipmentUtils'
 import {
@@ -68,10 +68,8 @@ function gatherInventory(draft: CharacterDraft): string[] {
       }
     })
   }
-  if (eq.method === 'wealth') {
-    for (const p of eq.purchasedItems) {
-      items.push(formatInventoryItem(p.itemId, p.quantity))
-    }
+  for (const p of getActivePurchases(eq)) {
+    items.push(formatInventoryItem(p.itemId, p.quantity))
   }
   if (bg) items.push(...resolveBackgroundItems(bg, draft.backgroundChoices).map(item => item.label))
   return items

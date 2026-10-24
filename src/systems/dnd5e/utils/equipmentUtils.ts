@@ -30,7 +30,7 @@ export const FOCUS_GROUP_IDS: Record<'arcane' | 'druidic' | 'holy', string[]> = 
 /**
  * Localiza a armadura de corpo e o escudo efetivamente equipados a partir do
  * equipamento resolvido. Considera itens fixos + escolhas da classe (método
- * padrão) e itens comprados (método riqueza). Escudo é reportado à parte, pois
+ * padrão) e itens comprados (só no método riqueza, `getActivePurchases`). Escudo é reportado à parte, pois
  * empilha com a armadura e com a Defesa sem Armadura do bárbaro.
  */
 export function getEquippedArmor(
@@ -60,8 +60,8 @@ export function getEquippedArmor(
     }
   }
 
-  // Itens comprados (método riqueza) — vazio até a loja da fase 5, mas mantém a CA correta
-  for (const item of equipment.purchasedItems) {
+  // Itens comprados: só valem no método riqueza (p. 145: o equipamento inicial OU a compra)
+  for (const item of getActivePurchases(equipment)) {
     const a = getArmor(item.itemId)
     if (a) armors.push(a)
   }
@@ -109,9 +109,19 @@ export function getCarriedToolIds(
     }
   }
 
-  for (const item of equipment.purchasedItems) addItem(item.itemId)
+  for (const item of getActivePurchases(equipment)) addItem(item.itemId)
 
   return [...new Set(ids.filter(id => TOOL_IDS.has(id)))]
+}
+
+/**
+ * As compras que valem: só as do método riqueza. O livro (p. 145) dá o equipamento de classe e
+ * antecedente OU a compra com o ouro, nunca os dois. Trocar de método não apaga o carrinho (o
+ * jogador volta à riqueza e o reencontra), então toda leitura de compra passa por aqui — CA,
+ * deslocamento, Artes Marciais, avisos de proficiência, ataques, inventário e dinheiro.
+ */
+export function getActivePurchases(equipment: EquipmentDraft): InventoryItem[] {
+  return equipment.method === 'wealth' ? equipment.purchasedItems : []
 }
 
 /** Ferramenta (inclui instrumentos e kits de jogo) pelo id, ou undefined. */
@@ -284,7 +294,7 @@ export function getStartingMoney(equipment: EquipmentDraft, backgroundGoldPo: nu
   const backgroundCopper = backgroundGoldPo * 100
   const isWealth = equipment.method === 'wealth'
   const wealthCopper = isWealth && equipment.rolledGold !== null ? equipment.rolledGold * 100 : null
-  const spentCopper = isWealth ? getPurchasesTotalCopper(equipment.purchasedItems) : 0
+  const spentCopper = getPurchasesTotalCopper(getActivePurchases(equipment))
   return {
     totalCopper: backgroundCopper + (wealthCopper ?? 0) - spentCopper,
     backgroundCopper,

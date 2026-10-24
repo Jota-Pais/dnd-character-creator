@@ -372,7 +372,7 @@ describe('getSheetArmorClass', () => {
     classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), subclass: 'draconic-bloodline' },
     ...overrides,
   })
-  const withShield = { equipment: { ...structuredClone(EMPTY_DRAFT.equipment), purchasedItems: [{ itemId: 'shield', quantity: 1, source: 'purchased' as const }] } }
+  const withShield = { equipment: { ...structuredClone(EMPTY_DRAFT.equipment), method: 'wealth' as const, purchasedItems: [{ itemId: 'shield', quantity: 1, source: 'purchased' as const }] } }
 
   it('feiticeiro dracônico sem armadura: 13 + DES', () => {
     expect(getSheetArmorClass(sorcererDraft(), scores({ DEX: 14 })).value).toBe(15)
@@ -519,6 +519,7 @@ describe('bônus de deslocamento com condição de equipamento', () => {
   const wearing = (...itemIds: string[]) => ({
     equipment: {
       ...structuredClone(EMPTY_DRAFT.equipment),
+      method: 'wealth' as const,
       purchasedItems: itemIds.map(itemId => ({ itemId, quantity: 1, source: 'purchased' as const })),
     },
   })
@@ -577,6 +578,16 @@ describe('bônus de deslocamento com condição de equipamento', () => {
       expect(getSpeedBonusTotal(leather)).toBe(0)
       expect(getSpeedBonuses(leather)[0].blockedBy).toBe('Couro e escudo')
     })
+  })
+
+  it('compra que sobrou do método riqueza não bloqueia: monge 10 no padrão com Camisão de Malha', () => {
+    const d = single('monk', 10, {
+      equipment: { ...wearing('chain-shirt').equipment, method: 'standard' as const },
+    })
+    expect(getSheetSpeed(d)).toBe(50)
+    expect(describeSpeedBonuses(d)).toEqual([
+      'Deslocamento inclui +6 m sem armadura nem escudo (Movimento sem Armadura).',
+    ])
   })
 
   describe('multiclasse', () => {

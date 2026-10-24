@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatCurrency, resolvePackContents, validatePackRefs, FOCUS_GROUP_IDS, getEquippedArmor, getShopCatalog, getPurchasesTotalCopper, getItemCostCopper, formatInventoryItem, describeResolvedOption, formatCoins, getStartingMoney, describeStartingMoneySource, getCarriedToolIds, getToolById } from '../equipmentUtils'
+import { formatCurrency, resolvePackContents, validatePackRefs, FOCUS_GROUP_IDS, getEquippedArmor, getShopCatalog, getPurchasesTotalCopper, getItemCostCopper, formatInventoryItem, describeResolvedOption, formatCoins, getStartingMoney, describeStartingMoneySource, getCarriedToolIds, getToolById, getActivePurchases } from '../equipmentUtils'
 import type { InventoryItem } from '../../types/equipment'
 import { getClass } from '../classUtils'
 import type { EquipmentDraft } from '../../types/equipment'
@@ -312,6 +312,37 @@ describe('getCarriedToolIds', () => {
 
   it('sem método escolhido, nada', () => {
     expect(getCarriedToolIds(fighterEquipment({ method: null }), rogueEquipment)).toEqual([])
+  })
+})
+
+describe('compras que sobraram de outro método (p. 145: equipamento inicial OU compra)', () => {
+  const stale: InventoryItem[] = [
+    { itemId: 'chain-shirt', quantity: 1, source: 'purchased' },
+    { itemId: 'shield', quantity: 1, source: 'purchased' },
+    { itemId: 'smiths-tools', quantity: 1, source: 'purchased' },
+  ]
+  const monkEquipment = getClass('monk')!.startingEquipment
+
+  it('getActivePurchases só devolve o carrinho no método riqueza', () => {
+    expect(getActivePurchases(fighterEquipment({ method: 'wealth', purchasedItems: stale }))).toEqual(stale)
+    expect(getActivePurchases(fighterEquipment({ method: 'standard', purchasedItems: stale }))).toEqual([])
+    expect(getActivePurchases(fighterEquipment({ method: null, purchasedItems: stale }))).toEqual([])
+  })
+
+  it('riqueza → padrão: nem armadura, nem escudo, nem ferramenta comprada', () => {
+    for (const method of ['standard', null] as const) {
+      const eq = fighterEquipment({ method, purchasedItems: stale })
+      expect(getEquippedArmor(eq, monkEquipment)).toEqual({ bodyArmor: undefined, hasShield: false })
+      expect(getCarriedToolIds(eq, monkEquipment)).toEqual([])
+    }
+  })
+
+  it('de volta à riqueza, o carrinho vale de novo', () => {
+    const eq = fighterEquipment({ method: 'wealth', purchasedItems: stale })
+    const { bodyArmor, hasShield } = getEquippedArmor(eq, monkEquipment)
+    expect(bodyArmor?.id).toBe('chain-shirt')
+    expect(hasShield).toBe(true)
+    expect(getCarriedToolIds(eq, monkEquipment)).toEqual(['smiths-tools'])
   })
 })
 

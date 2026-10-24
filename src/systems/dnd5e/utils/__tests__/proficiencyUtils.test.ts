@@ -24,6 +24,7 @@ import {
   getLanguageLabels,
   EXOTIC_LANGUAGE_NOTE,
   getUnproficientTools,
+  getUnproficientArmor,
   hasInstrumentSpellcastingFocus,
   formatUnproficientTool,
   describeToolWithoutProficiency,
@@ -636,6 +637,26 @@ describe('getUnproficientTools — ferramenta carregada sem proficiência (p. 15
     const result = getUnproficientTools(d)
     expect(result.map(u => u.tool.id)).toEqual(['lute', 'thieves-tools'])
     expect(result.every(u => !u.spellcastingFocus)).toBe(true)
+  })
+
+  it('compras que sobraram de outro método não avisam (nem ferramenta, nem armadura)', () => {
+    const d = draft({
+      class: 'monk',
+      equipment: {
+        method: 'standard',
+        classResolutions: [],
+        rolledGold: 100,
+        purchasedItems: [
+          { itemId: 'chain-mail', quantity: 1, source: 'purchased' },
+          { itemId: 'smiths-tools', quantity: 1, source: 'purchased' },
+        ],
+      },
+    })
+    expect(getUnproficientTools(d)).toEqual([])
+    expect(getUnproficientArmor(d)).toEqual([])
+    d.equipment.method = 'wealth'
+    expect(getUnproficientTools(d).map(u => u.tool.id)).toEqual(['smiths-tools'])
+    expect(getUnproficientArmor(d).length).toBeGreaterThan(0)
   })
 
   it('item do antecedente: baralho do Soldado com proficiência em dados avisa; com baralho, não', () => {

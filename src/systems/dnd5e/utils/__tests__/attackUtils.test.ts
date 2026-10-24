@@ -100,6 +100,26 @@ describe('getSheetAttacks', () => {
   })
 })
 
+describe('compras de outro método não vestem o monge', () => {
+  it('monge 10 no método padrão com Camisão de Malha que sobrou da riqueza: Defesa sem Armadura e Artes Marciais', () => {
+    const d = draft({
+      level: 10, class: 'monk',
+      equipment: {
+        ...structuredClone(EMPTY_DRAFT.equipment),
+        method: 'standard',
+        purchasedItems: [
+          { itemId: 'chain-shirt', quantity: 1, source: 'purchased' },
+          { itemId: 'smiths-tools', quantity: 1, source: 'purchased' },
+        ],
+      },
+    })
+    const s = scores({ DEX: 18, WIS: 16 })
+    expect(getSheetArmorClass(d, s).value).toBe(17) // 10 + DES 4 + SAB 3
+    expect(getMartialArts(d, s)).toMatchObject({ die: 6, active: true })
+    expect(getSheetAttacks(d, s).at(-1)).toMatchObject({ ability: 'Destreza', damage: '1d6+4 concussão' })
+  })
+})
+
 describe('getMartialArts', () => {
   it('dado pelo nível de monge (p. 103): d4, d6, d8, d10', () => {
     expect([1, 5, 11, 17].map(l => getMartialArts(monk(l), scores({}))?.die)).toEqual([4, 6, 8, 10])

@@ -2,7 +2,7 @@ import type { CharacterDraft } from '../types/character'
 import type { Weapon } from '../types/equipment'
 import { getClass } from './classUtils'
 import { getBackground, resolveBackgroundItems } from './backgroundUtils'
-import { getWeaponById } from './equipmentUtils'
+import { getActivePurchases, getWeaponById } from './equipmentUtils'
 import { calculateModifier, getProficiencyBonus } from './abilityScoreUtils'
 import { hasWeaponProficiency } from './proficiencyUtils'
 import {
@@ -40,7 +40,7 @@ export function getEquippedWeapons(draft: CharacterDraft): Weapon[] {
       }
     })
   }
-  if (eq.method === 'wealth') for (const p of eq.purchasedItems) ids.push(p.itemId)
+  for (const p of getActivePurchases(eq)) ids.push(p.itemId)
   if (bg) {
     for (const item of resolveBackgroundItems(bg, draft.backgroundChoices)) if (item.id) ids.push(item.id)
   }

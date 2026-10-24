@@ -32,6 +32,8 @@ Dois motores, um em cada arquivo, espelhando o que o Ordem já fazia:
 
 Ao adicionar uma característica nova, prefira declará-la como efeito nos dados a espalhar `if` pela UI.
 
+**Texto das características de classe** mora só em `class-progression-features.json` (classes.json não tem mais cópia; etapa Classe, Revisão e ficha leem via `classUtils`). É texto de mesa, não resumo de card: alvo, alcance, ação/reação, momento, duração, término, imunidade e recarga, conferidos com o livro. Valor que escala e já é recurso calculado aponta para "Recursos", nunca número fixo.
+
 ## Versão de D&D
 
 - **D&D 5e clássico — PHB de 2014**

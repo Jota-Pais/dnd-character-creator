@@ -110,7 +110,10 @@
     "id": "especialista-em-besta",
     "name": "Especialista em Besta",
     "prerequisite": null,
-    "description": "Graças a sua pratica extensiva com bestas, você ganha os seguintes benefícios:\n- Você ignora a qualidade de recarga de bestas nas quais você é proficiente.\n- Estar a 1,5 metro de uma criatura hostil não impõem desvantagem nas suas jogadas de ataque à distância.\n- Quando você usa a ação de Ataque e ataca com uma arma de uma mão, você pode usar sua ação bônus para atacar com uma besta de mão carregada que você esteja empunhando."
+    "description": "Graças a sua pratica extensiva com bestas, você ganha os seguintes benefícios:\n- Você ignora a qualidade de recarga de bestas nas quais você é proficiente.\n- Estar a 1,5 metro de uma criatura hostil não impõem desvantagem nas suas jogadas de ataque à distância.\n- Quando você usa a ação de Ataque e ataca com uma arma de uma mão, você pode usar sua ação bônus para atacar com uma besta de mão carregada que você esteja empunhando.",
+    "effects": {
+      "ignoresLoading": { "weapons": ["hand-crossbow", "light-crossbow", "heavy-crossbow"], "requiresProficiency": true }
+    }
   },
   {
     "id": "especialista-em-briga",

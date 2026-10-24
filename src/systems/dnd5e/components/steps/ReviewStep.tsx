@@ -37,7 +37,7 @@ import {
 import {
   getTotalHp, getInitiativeBonusTotal, getSheetSpeed, describeSpeedBonuses,
   getConditionalAcBonuses, getCheckProficiencyBonus, getSheetResources, getSheetArmorClass,
-  describeAttacksPerAction, getAttacksPerAction, getSheetFightingStyles,
+  describeAttacksPerAction, getSheetFightingStyles,
 } from '../../utils/sheetEffects'
 import { getSheetAttacks } from '../../utils/attackUtils'
 import { formatAttackDamage } from '../../utils/weaponFormat'
@@ -113,7 +113,6 @@ export function ReviewStep() {
   const conditionalAc = getConditionalAcBonuses(draft)
   // Ataque Extra (e a Lâmina Sedenta, com a condição): o mesmo texto da ficha imprimível.
   const attackLines = describeAttacksPerAction(draft)
-  const attacksPerAction = getAttacksPerAction(draft).value
   const sheetAttacks = getSheetAttacks(draft, finalScores)
   const darkvision = race ? getEffectiveDarkvision(race, subrace ?? null) : 0
   const classEquipment = cls?.startingEquipment
@@ -480,7 +479,7 @@ export function ReviewStep() {
             <div key={atk.key} className="text-sm">
               <div className="flex flex-wrap items-baseline gap-x-3">
                 <span className="text-parchment-200 font-fantasy">
-                  {attacksPerAction > 1 && <span className="text-parchment-600">{attacksPerAction}× </span>}
+                  {atk.attacksPerAction > 1 && <span className="text-parchment-600">{atk.attacksPerAction}× </span>}
                   {atk.name}
                   {!atk.proficient && <span className="text-xs text-parchment-600"> (sem proficiência)</span>}
                 </span>

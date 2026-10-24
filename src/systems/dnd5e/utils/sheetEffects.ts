@@ -3,7 +3,7 @@ import type { Feat } from '../types/feat'
 import type { ArmorProficiency, LevelFeature } from '../types/class'
 import type { AbilityScore, RacialTrait } from '../types/race'
 import type {
-  ConditionalAcBonus, EquipmentRequirement, ResourceEffect, WeaponAttackEffect,
+  ConditionalAcBonus, EquipmentRequirement, LoadingOverride, ResourceEffect, WeaponAttackEffect,
 } from '../types/effects'
 import { getFeat } from './featUtils'
 import { getClass, getSubclass, getClassFeaturesUpToLevel, FIGHTING_STYLES } from './classUtils'
@@ -450,7 +450,8 @@ export function getConditionalAcBonuses(draft: CharacterDraft): SheetConditional
 export type SheetAttacksPerAction = { value: number; source: string | null }
 
 /**
- * Quantos ataques a ação de Atacar faz — o número que vai em cada arma. Vem do `attacksPerAction`
+ * Quantos ataques a ação de Atacar faz — o "2×" de cada arma, via `getSheetAttacks` (arma de recarga
+ * fica em 1, p. 149). Vem do `attacksPerAction`
  * das features de classe e subclasse (Ataque Extra), cada uma no nível que se tem NA classe dona:
  * o guerreiro 11 faz 3 (p. 85), o bardo do Colégio da Bravura 6 faz 2 (p. 55).
  *
@@ -630,6 +631,21 @@ export function getUnarmedDamageDie(draft: CharacterDraft): SheetEffect<number> 
   for (const feat of getOwnedFeats(draft)) consider(feat.name, feat.effects?.unarmedDamageDie)
   for (const feature of getOwnedClassFeatures(draft)) consider(feature.name, feature.effects?.unarmedDamageDie)
   return best
+}
+
+/**
+ * O que ignora a propriedade recarga (Especialista em Besta, p. 169), de talentos e features.
+ * Quem decide se vale numa arma — id e proficiência — é `getWeaponAttack`.
+ */
+export function getLoadingOverrides(draft: CharacterDraft): SheetEffect<LoadingOverride>[] {
+  const out: SheetEffect<LoadingOverride>[] = []
+  for (const feat of getOwnedFeats(draft)) {
+    if (feat.effects?.ignoresLoading) out.push({ source: feat.name, value: feat.effects.ignoresLoading })
+  }
+  for (const feature of getOwnedClassFeatures(draft)) {
+    if (feature.effects?.ignoresLoading) out.push({ source: feature.name, value: feature.effects.ignoresLoading })
+  }
+  return out
 }
 
 // ── Proficiências concedidas ───────────────────────────────────────────────────

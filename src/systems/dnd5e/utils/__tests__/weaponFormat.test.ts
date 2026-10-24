@@ -74,13 +74,13 @@ describe('weaponFormat', () => {
     it('arma de acuidade usa Destreza quando ela é melhor', () => {
       // Rapieira (acuidade), Força +1, Destreza +3, prof +2 → usa Destreza
       const atk = getWeaponAttack(getWeaponById('rapier')!, ctx(1, 3, 2, true))
-      expect(atk).toEqual({ name: 'Rapieira', ability: 'Destreza', attackBonus: '+5', proficient: true, damage: '1d8+3 perfurante', properties: 'acuidade', notes: [] })
+      expect(atk).toEqual({ name: 'Rapieira', ability: 'Destreza', attackBonus: '+5', proficient: true, damage: '1d8+3 perfurante', properties: 'acuidade', attacksPerAction: 1, notes: [] })
     })
 
     it('arma corpo a corpo sem acuidade usa Força', () => {
       // Espada Grande (2d6, sem acuidade), Força +3, Destreza +1, prof +2 → usa Força
       const atk = getWeaponAttack(getWeaponById('greatsword')!, ctx(3, 1, 2, true))
-      expect(atk).toEqual({ name: 'Espada Grande', ability: 'Força', attackBonus: '+5', proficient: true, damage: '2d6+3 cortante', properties: 'pesada, duas mãos', notes: [] })
+      expect(atk).toEqual({ name: 'Espada Grande', ability: 'Força', attackBonus: '+5', proficient: true, damage: '2d6+3 cortante', properties: 'pesada, duas mãos', attacksPerAction: 1, notes: [] })
     })
 
     it('arma à distância usa Destreza', () => {
@@ -110,6 +110,7 @@ describe('weaponFormat', () => {
         proficient: true,
         damage: '1d4+1 perfurante',
         properties: 'acuidade, leve, arremesso (6/18 m)',
+        attacksPerAction: 1,
         notes: [TWF_BASE],
       })
     })
@@ -196,6 +197,54 @@ describe('weaponFormat', () => {
     })
   })
 
+  // p. 149: arma de recarga dispara uma munição por ação, "não importando quantos ataques você
+  // possua"; o Especialista em Besta ignora a recarga das bestas com que se é proficiente (p. 169).
+  describe('recarga e ataques por ação', () => {
+    const extraAttack = (value: number) => ({ attacksPerAction: { value, source: 'Ataque Extra' } })
+    const crossbowExpert = {
+      loadingOverrides: [{
+        source: 'Especialista em Besta',
+        value: { weapons: ['hand-crossbow', 'light-crossbow', 'heavy-crossbow'], requiresProficiency: true },
+      }],
+    }
+    const RELOAD = 'recarga: um disparo por ação, ação bônus ou reação, mesmo com os 2 ataques de Ataque Extra'
+
+    it('sem Ataque Extra: 1 ataque, sem nota de recarga', () => {
+      const atk = getWeaponAttack(getWeaponById('light-crossbow')!, ctx(0, 3, 2, true))
+      expect(atk.attacksPerAction).toBe(1)
+      expect(atk.notes).toEqual([])
+    })
+
+    it('com Ataque Extra: a espada leva o total, a besta leve fica em 1 e diz por quê', () => {
+      expect(getWeaponAttack(getWeaponById('longsword')!, ctx(3, 0, 3, true, extraAttack(3))).attacksPerAction).toBe(3)
+      const bow = getWeaponAttack(getWeaponById('light-crossbow')!, ctx(0, 3, 3, true, extraAttack(2)))
+      expect(bow.attacksPerAction).toBe(1)
+      expect(bow.notes).toEqual([RELOAD])
+    })
+
+    it('zarabatana também tem recarga, e o Especialista em Besta não a alcança (não é besta)', () => {
+      const blowgun = getWeaponAttack(getWeaponById('blowgun')!, ctx(0, 3, 3, true, { ...extraAttack(2), ...crossbowExpert }))
+      expect(blowgun.attacksPerAction).toBe(1)
+      expect(blowgun.notes).toEqual([RELOAD])
+    })
+
+    it('Especialista em Besta proficiente: a besta pesada volta ao total, com a nota de onde veio', () => {
+      const heavy = getWeaponAttack(getWeaponById('heavy-crossbow')!, ctx(0, 3, 3, true, { ...extraAttack(2), ...crossbowExpert }))
+      expect(heavy.attacksPerAction).toBe(2)
+      expect(heavy.notes).toEqual(['inclui Especialista em Besta (ignora a recarga)'])
+    })
+
+    it('Especialista em Besta sem proficiência na besta: a recarga continua valendo', () => {
+      const hand = getWeaponAttack(getWeaponById('hand-crossbow')!, ctx(0, 3, 3, false, { ...extraAttack(2), ...crossbowExpert }))
+      expect(hand.attacksPerAction).toBe(1)
+      expect(hand.notes).toEqual([RELOAD])
+    })
+
+    it('o golpe desarmado leva o total de ataques', () => {
+      expect(getUnarmedStrike({ strMod: 3, dexMod: 0, proficiencyBonus: 3, ...extraAttack(2) }).attacksPerAction).toBe(2)
+    })
+  })
+
   // p. 149: "Um valor de dano aparece entre parênteses [...] quando usada com as duas mãos".
   describe('arma versátil', () => {
     it('espada longa mostra o dano a duas mãos como segundo valor', () => {
@@ -263,7 +312,7 @@ describe('weaponFormat', () => {
       const atk = getUnarmedStrike({ strMod: 3, dexMod: 1, proficiencyBonus: 2 })
       expect(atk).toEqual({
         name: 'Golpe desarmado', ability: 'Força', attackBonus: '+5', proficient: true,
-        damage: '4 concussão', properties: '', notes: [],
+        damage: '4 concussão', properties: '', attacksPerAction: 1, notes: [],
       })
     })
 

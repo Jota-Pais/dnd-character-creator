@@ -44,7 +44,7 @@ import { getSheetAttacks } from '../utils/attackUtils'
 import {
   getTotalHp, getInitiativeBonusTotal, getSheetSpeed, describeSpeedBonuses,
   getConditionalAcBonuses, getCheckProficiencyBonus, getSheetResources, getSheetArmorClass,
-  getAttacksPerAction, describeAttacksPerAction, getSheetFightingStyles,
+  describeAttacksPerAction, getSheetFightingStyles,
 } from '../utils/sheetEffects'
 import type { CharacterDraft } from '../types/character'
 import type { ClassSpellcasting } from '../types/class'
@@ -171,7 +171,6 @@ export function PrintableSheet() {
   // Ataques por arma carregada e o golpe desarmado, com Estilo de Luta e Artes Marciais já
   // aplicados (attackUtils). O número de ataques por ação vem do motor de efeitos.
   const attacks = getSheetAttacks(draft, finalScores)
-  const attacksPerAction = getAttacksPerAction(draft).value
   const attackLines = describeAttacksPerAction(draft)
   const innateSpells = race ? getAvailableInnateSpells(race, subrace, level) : []
   const racialCantrip = draft.raceChoices.cantrip ? getSpell(draft.raceChoices.cantrip) : undefined
@@ -326,7 +325,7 @@ export function PrintableSheet() {
               <Fragment key={atk.key}>
                 <tr className="text-gray-800 align-top">
                   <td className="pr-2 pt-0.5">
-                    {attacksPerAction > 1 && <span className="font-bold text-gray-500">{attacksPerAction}× </span>}
+                    {atk.attacksPerAction > 1 && <span className="font-bold text-gray-500">{atk.attacksPerAction}× </span>}
                     {atk.name}
                     {!atk.proficient && <span className="text-[10px] text-gray-500"> (sem proficiência)</span>}
                   </td>

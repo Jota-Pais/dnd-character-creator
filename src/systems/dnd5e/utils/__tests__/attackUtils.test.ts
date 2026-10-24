@@ -93,6 +93,22 @@ describe('getSheetAttacks', () => {
     expect(unarmed.damage).toBe('1d6+3 concussão')
   })
 
+  it('guerreiro 5: Ataque Extra na espada e no golpe desarmado, mas não na besta leve (recarga, p. 149)', () => {
+    const d = draft({ level: 5, class: 'fighter', ...carrying('longsword', 'light-crossbow') })
+    const [sword, crossbow, unarmed] = getSheetAttacks(d, scores({ STR: 16, DEX: 14 }))
+    expect([sword.attacksPerAction, crossbow.attacksPerAction, unarmed.attacksPerAction]).toEqual([2, 1, 2])
+    expect(crossbow.notes).toContain('recarga: um disparo por ação, ação bônus ou reação, mesmo com os 2 ataques de Ataque Extra')
+  })
+
+  it('guerreiro 5 com Especialista em Besta: a besta leve faz os 2 ataques (p. 169)', () => {
+    const d = draft({
+      level: 5, class: 'fighter', raceChoices: { feat: 'especialista-em-besta' }, ...carrying('light-crossbow'),
+    })
+    const [crossbow] = getSheetAttacks(d, scores({ DEX: 16 }))
+    expect(crossbow.attacksPerAction).toBe(2)
+    expect(crossbow.notes).toContain('inclui Especialista em Besta (ignora a recarga)')
+  })
+
   it('Especialista em Briga dá 1d4 ao golpe desarmado de quem não é monge', () => {
     const d = draft({ level: 1, class: 'fighter', raceChoices: { feat: 'especialista-em-briga' } })
     expect(getUnarmedDamageDie(d)).toEqual({ source: 'Especialista em Briga', value: 4 })

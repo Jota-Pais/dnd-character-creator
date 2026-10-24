@@ -6,7 +6,7 @@ import { getActivePurchases, getWeaponById } from './equipmentUtils'
 import { calculateModifier, getProficiencyBonus } from './abilityScoreUtils'
 import { hasWeaponProficiency } from './proficiencyUtils'
 import {
-  getWeaponAttackEffects, getMartialArts, getUnarmedDamageDie,
+  getWeaponAttackEffects, getMartialArts, getUnarmedDamageDie, getAttacksPerAction, getLoadingOverrides,
 } from './sheetEffects'
 import type { FinalScores } from './classResourceUtils'
 import { getUnarmedStrike, getWeaponAttack, type WeaponAttack } from './weaponFormat'
@@ -60,7 +60,8 @@ export type SheetAttack = WeaponAttack & { key: string }
  * Cada linha já vem com o que as características fazem nela (`getWeaponAttackEffects`): Arquearia
  * no número; Duelismo, Armas Grandes e o ataque da outra mão como nota. Artes Marciais entra no
  * número das armas de monge e do golpe desarmado quando o equipamento deixa (sem armadura nem
- * escudo); quando não deixa, a linha do golpe desarmado diz o que a impede.
+ * escudo); quando não deixa, a linha do golpe desarmado diz o que a impede. O "2×" do Ataque Extra
+ * vem em cada linha (`attacksPerAction`): arma de recarga fica em 1 (p. 149), salvo Especialista em Besta.
  */
 export function getSheetAttacks(draft: CharacterDraft, finalScores: FinalScores): SheetAttack[] {
   const base = {
@@ -68,6 +69,8 @@ export function getSheetAttacks(draft: CharacterDraft, finalScores: FinalScores)
     dexMod: calculateModifier(finalScores.DEX),
     proficiencyBonus: getProficiencyBonus(draft.level ?? 1),
     effects: getWeaponAttackEffects(draft),
+    attacksPerAction: getAttacksPerAction(draft),
+    loadingOverrides: getLoadingOverrides(draft),
   }
   const ma = getMartialArts(draft, finalScores)
   const martialArts = ma?.active ? { source: ma.source, die: ma.die, condition: ma.condition } : undefined

@@ -1,5 +1,5 @@
 import type { Armor, DamageRoll, DamageType, Weapon, WeaponProperty } from '../types/equipment'
-import type { AttackScope, WeaponAttackEffect } from '../types/effects'
+import type { AttackScope, LoadingOverride, WeaponAttackEffect } from '../types/effects'
 
 /** Nomes em português dos tipos de dano (padrão do PHB pt-BR, como usado em classes.json). */
 export const DAMAGE_TYPE_PT: Record<DamageType, string> = {
@@ -145,6 +145,10 @@ export type AttackContext = {
   effects?: SourcedAttackEffect[]
   /** Artes Marciais, só quando o equipamento deixa usá-la (sem armadura nem escudo). */
   martialArts?: ActiveMartialArts
+  /** Ataques da ação de Atacar e quem os dá (`getAttacksPerAction`: Ataque Extra). Sem ele, 1. */
+  attacksPerAction?: { value: number; source: string | null }
+  /** O que ignora a propriedade recarga (`getLoadingOverrides`: Especialista em Besta). */
+  loadingOverrides?: { source: string; value: LoadingOverride }[]
 }
 
 export type WeaponAttack = {
@@ -164,6 +168,11 @@ export type WeaponAttack = {
    * Sem elas a ficha não diz o alcance de arremesso/munição.
    */
   properties: string
+  /**
+   * Quantos ataques a ação de Atacar faz com esta arma — o "2×" da linha. É o Ataque Extra, salvo
+   * em arma de recarga, que dispara uma vez por ação (p. 149).
+   */
+  attacksPerAction: number
   /**
    * O que fica FORA do número, cada um com a condição e a fonte (Duelismo, Armas Grandes, o ataque
    * da outra mão), e o que já foi somado nele, pra o jogador saber de onde veio.
@@ -230,6 +239,8 @@ export function getWeaponAttack(weapon: Weapon, ctx: AttackContext): WeaponAttac
     if (value.note) notes.push(`${value.note} (${source})`)
   }
 
+  const attacksPerAction = getWeaponAttacksPerAction(weapon, ctx, notes)
+
   // Combater com duas armas (p. 196): o ataque da outra mão é de ação bônus e não soma o
   // modificador no dano, a menos que seja negativo — salvo com o Estilo de Luta (p. 85).
   if (isWeaponInScope(weapon, 'melee-light')) {
@@ -247,8 +258,29 @@ export function getWeaponAttack(weapon: Weapon, ctx: AttackContext): WeaponAttac
     damage,
     ...(versatileDamage ? { versatileDamage } : {}),
     properties: formatWeaponProperties(weapon.properties),
+    attacksPerAction,
     notes,
   }
+}
+
+/**
+ * Os ataques da ação de Atacar com esta arma. Arma de recarga dispara "apenas uma peça de munição
+ * da arma quando usa uma ação, ação bônus, ou reação para disparar, não importando quantos ataques
+ * você possua" (p. 149): fica em 1, com nota quando isso tira ataques do personagem. O Especialista
+ * em Besta ignora a recarga das bestas com que se é proficiente (p. 169) — aí vale o total.
+ */
+function getWeaponAttacksPerAction(weapon: Weapon, ctx: AttackContext, notes: string[]): number {
+  const total = ctx.attacksPerAction?.value ?? 1
+  if (!hasProperty(weapon, 'loading') || total <= 1) return total
+  const override = (ctx.loadingOverrides ?? []).find(({ value }) =>
+    value.weapons.includes(weapon.id) && (ctx.proficient || !value.requiresProficiency))
+  if (override) {
+    notes.push(`inclui ${override.source} (ignora a recarga)`)
+    return total
+  }
+  const from = ctx.attacksPerAction?.source ? ` de ${ctx.attacksPerAction.source}` : ''
+  notes.push(`recarga: um disparo por ação, ação bônus ou reação, mesmo com os ${total} ataques${from}`)
+  return 1
 }
 
 export const UNARMED_STRIKE_NAME = 'Golpe desarmado'
@@ -296,6 +328,7 @@ export function getUnarmedStrike(ctx: UnarmedStrikeContext): WeaponAttack {
     proficient: true,
     damage: `${formatRoll(roll, mod)} ${DAMAGE_TYPE_PT.bludgeoning}`,
     properties: '',
+    attacksPerAction: ctx.attacksPerAction?.value ?? 1,
     notes,
   }
 }

@@ -84,6 +84,17 @@ export type WeaponAttackEffect = {
 }
 
 /**
+ * Armas cuja propriedade recarga a característica ignora (Especialista em Besta: "você ignora a
+ * qualidade de recarga de bestas nas quais você é proficiente", p. 169). Sem a recarga, a arma
+ * volta a fazer todos os ataques da ação de Atacar (p. 149). `weapons` são ids de weapons.json.
+ */
+export type LoadingOverride = {
+  weapons: string[]
+  /** Só vale nas armas com que o personagem é proficiente. */
+  requiresProficiency: boolean
+}
+
+/**
  * Artes Marciais (monge, p. 104): com golpe desarmado ou arma de monge, e sem armadura nem escudo,
  * pode usar Destreza em vez de Força e rolar o dado de Artes Marciais no lugar do dano normal.
  * Como o Movimento sem Armadura, a ficha confere o equipamento (`requires`) e aplica no número
@@ -213,6 +224,8 @@ export type FeatureEffects = {
    * desarmados causam 1d4 de dano", p. 169). Com Artes Marciais, fica o maior dado.
    */
   unarmedDamageDie?: number
+  /** Ignora a recarga destas armas (Especialista em Besta, p. 169). Lido em talentos e features. */
+  ignoresLoading?: LoadingOverride
   /**
    * Recursos que a característica dá: usos que se gastam e voltam no descanso (Fúria, Surto de
    * Ação), poços (Chi, Cura pelas Mãos) e dados que crescem com o nível (Ataque Furtivo). A ficha

@@ -149,6 +149,12 @@ export type AttackContext = {
   attacksPerAction?: { value: number; source: string | null }
   /** O que ignora a propriedade recarga (`getLoadingOverrides`: Especialista em Besta). */
   loadingOverrides?: { source: string; value: LoadingOverride }[]
+  /**
+   * Se o personagem carrega duas armas leves corpo a corpo (`carriesTwoLightMeleeWeapons`). Sem
+   * isso, a regra-base do ataque da outra mão (p. 196) fica fora da linha — só o Estilo de Luta
+   * Combate com Duas Armas a mostra mesmo assim.
+   */
+  twoLightMeleeWeapons?: boolean
 }
 
 export type WeaponAttack = {
@@ -242,12 +248,15 @@ export function getWeaponAttack(weapon: Weapon, ctx: AttackContext): WeaponAttac
   const attacksPerAction = getWeaponAttacksPerAction(weapon, ctx, notes)
 
   // Combater com duas armas (p. 196): o ataque da outra mão é de ação bônus e não soma o
-  // modificador no dano, a menos que seja negativo — salvo com o Estilo de Luta (p. 85).
+  // modificador no dano, a menos que seja negativo — salvo com o Estilo de Luta (p. 85). A
+  // regra-base só aparece pra quem carrega duas armas leves; o Estilo, sempre.
   if (isWeaponInScope(weapon, 'melee-light')) {
     const style = effects.find(e => e.value.offHandAddsModifier)
-    notes.push(style
-      ? `com outra arma leve na outra mão: ataque extra como ação bônus, somando o modificador no dano (${style.source})`
-      : 'com outra arma leve na outra mão: ataque extra como ação bônus, sem somar o modificador no dano (a menos que seja negativo)')
+    if (style) {
+      notes.push(`com outra arma leve na outra mão: ataque extra como ação bônus, somando o modificador no dano (${style.source})`)
+    } else if (ctx.twoLightMeleeWeapons) {
+      notes.push('com outra arma leve na outra mão: ataque extra como ação bônus, sem somar o modificador no dano (a menos que seja negativo)')
+    }
   }
 
   return {

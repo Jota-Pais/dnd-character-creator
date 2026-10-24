@@ -111,7 +111,7 @@ describe('weaponFormat', () => {
         damage: '1d4+1 perfurante',
         properties: 'acuidade, leve, arremesso (6/18 m)',
         attacksPerAction: 1,
-        notes: [TWF_BASE],
+        notes: [],
       })
     })
 
@@ -186,14 +186,18 @@ describe('weaponFormat', () => {
     })
 
     it('arma leve: a regra-base do ataque da outra mão (p. 196), trocada pelo Combate com Duas Armas', () => {
-      expect(getWeaponAttack(getWeaponById('shortsword')!, ctx(0, 3, 2, true)).notes).toEqual([TWF_BASE])
+      const pair = { twoLightMeleeWeapons: true }
+      expect(getWeaponAttack(getWeaponById('shortsword')!, ctx(0, 3, 2, true, pair)).notes).toEqual([TWF_BASE])
+      // uma arma leve só: a regra-base não tem o que dizer
+      expect(getWeaponAttack(getWeaponById('shortsword')!, ctx(0, 3, 2, true)).notes).toEqual([])
+      // o Estilo de Luta aparece mesmo sem o par (é a escolha do personagem que ele lembra)
       const twf = getWeaponAttack(getWeaponById('shortsword')!, ctx(0, 3, 2, true, { effects: style('two-weapon-fighting') }))
       expect(twf.notes).toEqual([
         'com outra arma leve na outra mão: ataque extra como ação bônus, somando o modificador no dano (Combate com Duas Armas)',
       ])
       expect(twf.damage).toBe('1d6+3 perfurante')
       // besta de mão é leve, mas à distância: não é combate com duas armas
-      expect(getWeaponAttack(getWeaponById('hand-crossbow')!, ctx(0, 3, 2, true)).notes).toEqual([])
+      expect(getWeaponAttack(getWeaponById('hand-crossbow')!, ctx(0, 3, 2, true, pair)).notes).toEqual([])
     })
   })
 

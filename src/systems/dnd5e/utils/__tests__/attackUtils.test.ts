@@ -109,6 +109,37 @@ describe('getSheetAttacks', () => {
     expect(crossbow.notes).toContain('inclui Especialista em Besta (ignora a recarga)')
   })
 
+  describe('nota do ataque da outra mão (p. 196): só com duas armas leves corpo a corpo', () => {
+    const TWF_BASE = 'com outra arma leve na outra mão: ataque extra como ação bônus, sem somar o modificador no dano (a menos que seja negativo)'
+    const daggerNotes = (d: CharacterDraft) => getSheetAttacks(d, scores({ DEX: 14 })).find(a => a.key === 'dagger')!.notes
+
+    it('mago com uma adaga só: sem a nota', () => {
+      expect(daggerNotes(draft({ level: 1, class: 'wizard', ...carrying('dagger') }))).toEqual([])
+    })
+
+    it('adaga + espada curta, ou duas adagas compradas: com a nota', () => {
+      expect(daggerNotes(draft({ level: 1, class: 'rogue', ...carrying('dagger', 'shortsword') }))).toEqual([TWF_BASE])
+      const twoDaggers = draft({
+        level: 1, class: 'wizard',
+        equipment: {
+          ...structuredClone(EMPTY_DRAFT.equipment),
+          method: 'wealth',
+          purchasedItems: [{ itemId: 'dagger', quantity: 2, source: 'purchased' }],
+        },
+      })
+      expect(daggerNotes(twoDaggers)).toEqual([TWF_BASE])
+    })
+
+    it('feiticeiro no equipamento padrão: as duas adagas fixas da classe contam', () => {
+      const d = draft({ level: 1, class: 'sorcerer', equipment: { ...structuredClone(EMPTY_DRAFT.equipment), method: 'standard' } })
+      expect(daggerNotes(d)).toEqual([TWF_BASE])
+    })
+
+    it('adaga + besta de mão (leve, mas à distância): sem a nota', () => {
+      expect(daggerNotes(draft({ level: 1, class: 'rogue', ...carrying('dagger', 'hand-crossbow') }))).toEqual([])
+    })
+  })
+
   it('Especialista em Briga dá 1d4 ao golpe desarmado de quem não é monge', () => {
     const d = draft({ level: 1, class: 'fighter', raceChoices: { feat: 'especialista-em-briga' } })
     expect(getUnarmedDamageDie(d)).toEqual({ source: 'Especialista em Briga', value: 4 })

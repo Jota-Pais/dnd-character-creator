@@ -9,21 +9,21 @@ import {
   getWeaponAttackEffects, getMartialArts, getUnarmedDamageDie, getAttacksPerAction, getLoadingOverrides,
 } from './sheetEffects'
 import type { FinalScores } from './classResourceUtils'
-import { getUnarmedStrike, getWeaponAttack, type WeaponAttack } from './weaponFormat'
+import { getUnarmedStrike, getWeaponAttack, isWeaponInScope, type WeaponAttack } from './weaponFormat'
 
 /**
- * Armas que o personagem carrega — do equipamento inicial da classe (itens fixos e opções
- * escolhidas, inclusive as de um filtro de arma), das compras do método riqueza e do antecedente
- * —, sem repetir.
+ * Itens que o personagem carrega, com a quantidade — do equipamento inicial da classe (itens fixos
+ * e opções escolhidas, inclusive as de um filtro, uma unidade por escolha), das compras do método
+ * riqueza e do antecedente. Pode repetir id (duas fontes da mesma arma).
  */
-export function getEquippedWeapons(draft: CharacterDraft): Weapon[] {
-  const ids: string[] = []
+function getCarriedItems(draft: CharacterDraft): { id: string; quantity: number }[] {
+  const items: { id: string; quantity: number }[] = []
   const cls = draft.class ? getClass(draft.class) : undefined
   const bg = draft.background ? getBackground(draft.background) : undefined
   const eq = draft.equipment
 
   if (eq.method === 'standard' && cls) {
-    for (const item of cls.startingEquipment.fixed) ids.push(item.id)
+    for (const item of cls.startingEquipment.fixed) items.push({ id: item.id, quantity: item.quantity })
     cls.startingEquipment.choices.forEach((choice, i) => {
       const res = eq.classResolutions[i]
       if (!res || res.optionIndex < 0) return
@@ -32,22 +32,42 @@ export function getEquippedWeapons(draft: CharacterDraft): Weapon[] {
       let pickIdx = 0
       for (const item of option) {
         if (item.kind === 'specific') {
-          ids.push(item.id)
+          items.push({ id: item.id, quantity: item.quantity })
         } else if (item.kind === 'weapon-filter' || item.kind === 'tool-filter' || item.kind === 'focus-group') {
-          ids.push(...res.pickedIds.slice(pickIdx, pickIdx + item.picks))
+          for (const id of res.pickedIds.slice(pickIdx, pickIdx + item.picks)) items.push({ id, quantity: 1 })
           pickIdx += item.picks
         }
       }
     })
   }
-  for (const p of getActivePurchases(eq)) ids.push(p.itemId)
+  for (const p of getActivePurchases(eq)) items.push({ id: p.itemId, quantity: p.quantity })
   if (bg) {
-    for (const item of resolveBackgroundItems(bg, draft.backgroundChoices)) if (item.id) ids.push(item.id)
+    for (const item of resolveBackgroundItems(bg, draft.backgroundChoices)) {
+      if (item.id) items.push({ id: item.id, quantity: item.quantity })
+    }
   }
+  return items
+}
 
-  return [...new Set(ids)]
+/** Armas que o personagem carrega (`getCarriedItems`), sem repetir. */
+export function getEquippedWeapons(draft: CharacterDraft): Weapon[] {
+  return [...new Set(getCarriedItems(draft).map(item => item.id))]
     .map(getWeaponById)
     .filter((w): w is Weapon => w !== undefined)
+}
+
+/**
+ * Se o personagem carrega ao menos duas armas leves corpo a corpo (contando a quantidade: duas
+ * adagas valem) — o que combater com duas armas pede (p. 196). Sem isso, a nota do ataque da
+ * outra mão não tem o que dizer.
+ */
+export function carriesTwoLightMeleeWeapons(draft: CharacterDraft): boolean {
+  let count = 0
+  for (const { id, quantity } of getCarriedItems(draft)) {
+    const weapon = getWeaponById(id)
+    if (weapon && isWeaponInScope(weapon, 'melee-light')) count += quantity
+  }
+  return count >= 2
 }
 
 /** Uma linha da tabela de ataques, com a chave estável pra lista. */
@@ -71,6 +91,7 @@ export function getSheetAttacks(draft: CharacterDraft, finalScores: FinalScores)
     effects: getWeaponAttackEffects(draft),
     attacksPerAction: getAttacksPerAction(draft),
     loadingOverrides: getLoadingOverrides(draft),
+    twoLightMeleeWeapons: carriesTwoLightMeleeWeapons(draft),
   }
   const ma = getMartialArts(draft, finalScores)
   const martialArts = ma?.active ? { source: ma.source, die: ma.die, condition: ma.condition } : undefined

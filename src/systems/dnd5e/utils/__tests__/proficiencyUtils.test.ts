@@ -18,6 +18,7 @@ import {
   getExpertiseSkills,
   getExpertiseTools,
   getClassSlotProficiencies,
+  getExcludedLanguagesForClassSlot,
   getSkillChecks,
   getPassiveScore,
   getChosenExoticLanguages,
@@ -309,6 +310,57 @@ describe('getAllGrantedLanguages', () => {
     const d = draft({ race: 'human', subrace: 'variant-human' })
     expect(getAllGrantedLanguages(d)).toEqual(['common'])
     expect(getExcludedLanguages(d, 'background')).toContain('common')
+  })
+})
+
+describe('getExcludedLanguagesForClassSlot — idiomas do Domínio do Conhecimento (p. 125)', () => {
+  const knowledge = (languages: string[]) => ({
+    ...EMPTY_DRAFT.classChoices,
+    subclass: 'knowledge-domain',
+    subclassExtras: { languages },
+  })
+
+  it('clérigo humano: Comum e o idioma extra da raça ficam de fora; os do próprio slot, não', () => {
+    const d = draft({
+      race: 'human', raceChoices: { languages: ['elvish'] },
+      class: 'cleric', classChoices: knowledge(['dwarvish']),
+    })
+    const excluded = getExcludedLanguagesForClassSlot(d, 'cleric')
+    expect(excluded).toEqual(expect.arrayContaining(['common', 'elvish']))
+    expect(excluded).not.toContain('dwarvish')
+    expect(getClassSlotProficiencies(d, 'cleric').excludedSubclassLanguages).toEqual(excluded)
+  })
+
+  it('idiomas do antecedente e do Poliglota também ficam de fora', () => {
+    const d = draft({
+      race: 'human', subrace: 'variant-human',
+      raceChoices: { feat: 'poliglota' },
+      featSelections: { poliglota: { languages: ['sylvan', 'goblin', 'halfling'] } },
+      background: 'acolyte',
+      backgroundChoices: { languages: ['celestial', 'giant'] },
+      class: 'cleric', classChoices: knowledge([]),
+    })
+    expect(getExcludedLanguagesForClassSlot(d, 'cleric')).toEqual(
+      expect.arrayContaining(['common', 'sylvan', 'goblin', 'halfling', 'celestial', 'giant']),
+    )
+  })
+
+  it('multiclasse com feiticeiro dracônico: o Dracônico da outra classe fica de fora', () => {
+    const d = draft({
+      race: 'human',
+      class: 'cleric', classChoices: knowledge(['orc']),
+      additionalClasses: [{
+        classId: 'sorcerer',
+        level: 1,
+        classChoices: { ...EMPTY_CLASS_CHOICES, subclass: 'draconic-bloodline' },
+        spellChoices: { cantrips: [], spells: [] },
+        asiChoices: [],
+        hpRolls: [],
+      }],
+    })
+    const excluded = getExcludedLanguagesForClassSlot(d, 'cleric')
+    expect(excluded).toContain('draconic')
+    expect(excluded).not.toContain('orc')
   })
 })
 

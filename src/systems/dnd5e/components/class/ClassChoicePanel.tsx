@@ -252,6 +252,7 @@ export function ClassChoicePanel({ cls, choices, accent, level, onChange, profic
           accent={accent}
           excludedSkills={proficiencies.excludedSubclassSkills}
           excludedTools={proficiencies.excludedSubclassTools}
+          excludedLanguages={proficiencies.excludedSubclassLanguages}
           onChangeExtras={(patch) =>
             onChange({ subclassExtras: { ...choices.subclassExtras, ...patch } })
           }
@@ -328,6 +329,8 @@ type SubclassExtrasPanelProps = {
   /** Perícias já vindas de outra fonte — o livro manda escolher outra em vez de repetir. */
   excludedSkills: string[]
   excludedTools: string[]
+  /** Idiomas que o personagem já fala por outra fonte (raça, antecedente, talento, outra classe). */
+  excludedLanguages: string[]
   onChangeExtras: (patch: Partial<import('../../types/class').SubclassChoiceSelections>) => void
 }
 
@@ -339,7 +342,7 @@ const ARMOR_LABELS: Record<string, string> = {
 }
 
 function SubclassExtrasPanel({
-  extras, subclassExtras, accent, excludedSkills, excludedTools, onChangeExtras,
+  extras, subclassExtras, accent, excludedSkills, excludedTools, excludedLanguages, onChangeExtras,
 }: SubclassExtrasPanelProps) {
   const [cantripInput, setCantripInput] = useState(subclassExtras.cantrip ?? '')
   const excludedSkillSet = new Set(excludedSkills)
@@ -424,6 +427,7 @@ function SubclassExtrasPanel({
           <LanguagePicker
             count={extras.languages.count}
             selected={subclassExtras.languages ?? []}
+            excluded={excludedLanguages}
             accent={accent}
             onChange={languages => onChangeExtras({ languages })}
           />

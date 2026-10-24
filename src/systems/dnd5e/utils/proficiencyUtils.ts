@@ -183,24 +183,25 @@ export function getExcludedToolsForClassSlot(draft: CharacterDraft, slot: ClassS
 // ── Exclusões dos pickers de talento ───────────────────────────────────────────
 
 /**
- * O que o picker de UM talento não pode oferecer: tudo que o personagem já tem por outra via,
- * menos o que o próprio talento já escolheu (senão não daria pra desmarcar).
+ * O que o picker de UM slot (talento, idiomas de subclasse) não pode oferecer: tudo que o
+ * personagem já tem por outra via, menos o que o próprio slot já escolheu (senão não daria pra
+ * desmarcar).
  */
-function excludedForFeat(all: string[], own: string[]): string[] {
+function excludedExceptOwn(all: string[], own: string[]): string[] {
   const mine = new Set(own)
   return uniq(all.filter(id => !mine.has(id)))
 }
 
 export function getExcludedSkillsForFeat(draft: CharacterDraft, featId: string): string[] {
-  return excludedForFeat(getAllGrantedSkills(draft), draft.featSelections[featId]?.skills ?? [])
+  return excludedExceptOwn(getAllGrantedSkills(draft), draft.featSelections[featId]?.skills ?? [])
 }
 
 export function getExcludedToolsForFeat(draft: CharacterDraft, featId: string): string[] {
-  return excludedForFeat(getAllGrantedTools(draft), draft.featSelections[featId]?.tools ?? [])
+  return excludedExceptOwn(getAllGrantedTools(draft), draft.featSelections[featId]?.tools ?? [])
 }
 
 export function getExcludedLanguagesForFeat(draft: CharacterDraft, featId: string): string[] {
-  return excludedForFeat(getAllGrantedLanguages(draft), draft.featSelections[featId]?.languages ?? [])
+  return excludedExceptOwn(getAllGrantedLanguages(draft), draft.featSelections[featId]?.languages ?? [])
 }
 
 /** Armas que o personagem já sabe usar (por categoria ou nominalmente) não entram no picker. */
@@ -327,6 +328,7 @@ export type ClassSlotProficiencies = {
   excludedBaseTools: string[]
   excludedSubclassSkills: string[]
   excludedSubclassTools: string[]
+  excludedSubclassLanguages: string[]
   grantedSkills: string[]
   grantedTools: string[]
   excludedExpertise: string[]
@@ -343,6 +345,7 @@ export function getClassSlotProficiencies(
     excludedBaseTools: getExcludedToolsForClassSlot(draft, base),
     excludedSubclassSkills: getExcludedSkillsForClassSlot(draft, subclass),
     excludedSubclassTools: getExcludedToolsForClassSlot(draft, subclass),
+    excludedSubclassLanguages: getExcludedLanguagesForClassSlot(draft, classId),
     grantedSkills: getAllGrantedSkills(draft),
     grantedTools: getAllGrantedTools(draft),
     excludedExpertise: expertiseOutsideClassPicker(draft, classId),
@@ -596,6 +599,18 @@ export function getExcludedLanguages(draft: CharacterDraft, source: ProficiencyS
     ...ALL_SOURCES.filter(s => s !== source).flatMap(s => bySource[s]),
     ...getFeatGrantedLanguages(draft),
   ])
+}
+
+/**
+ * O que o seletor de idiomas da subclasse de UMA classe (Domínio do Conhecimento) não pode
+ * oferecer: todo idioma que o personagem já fala — raça, antecedente, talento, idiomas fixos e
+ * escolhidos de subclasse das outras classes da multiclasse — menos os que este slot escolheu.
+ * `getExcludedLanguages(draft, 'class')` não serve: ignora a fonte 'class' inteira, então
+ * deixaria livres os idiomas de subclasse de outra classe.
+ */
+export function getExcludedLanguagesForClassSlot(draft: CharacterDraft, classId: string): string[] {
+  const own = classEntries(draft).find(e => e.classId === classId)?.choices.subclassExtras.languages ?? []
+  return excludedExceptOwn(getAllGrantedLanguages(draft), own)
 }
 
 /** Todos os idiomas que o personagem fala (união das fontes). */

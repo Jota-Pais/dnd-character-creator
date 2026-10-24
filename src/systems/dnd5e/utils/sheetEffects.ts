@@ -112,36 +112,80 @@ function collect<T>(draft: CharacterDraft, pick: (feat: Feat) => T | undefined):
 /** Quanto do bônus de proficiência um teste de habilidade leva: nada, inteiro ou dobrado. */
 export type CheckProficiency = 'none' | 'proficient' | 'expertise'
 
-/** Tem Versatilidade (bardo 2+)? Metade do bônus em todo teste de habilidade sem proficiência. */
-export function hasHalfProficiencyOnChecks(draft: CharacterDraft): boolean {
-  return getOwnedClassFeatures(draft).some(f => f.effects?.halfProficiencyOnChecks)
+/**
+ * Uma fonte de metade do bônus de proficiência nos testes sem proficiência (Versatilidade,
+ * Atletismo Extraordinário), já com o valor no nível de personagem e os atributos em que vale.
+ */
+export type HalfProficiencySource = SheetEffect<number> & { abilities: AbilityScore[] }
+
+/**
+ * As fontes de meia proficiência que o personagem tem — features de classe com
+ * `halfProficiencyOnChecks`, de cada classe no nível que tem NELA. O valor é metade do bônus de
+ * proficiência (do nível de personagem), arredondada como a característica manda.
+ */
+export function getHalfProficiencySources(draft: CharacterDraft): HalfProficiencySource[] {
+  const prof = getProficiencyBonus(draft.level ?? 1)
+  const out: HalfProficiencySource[] = []
+  for (const feature of getOwnedClassFeatures(draft)) {
+    const half = feature.effects?.halfProficiencyOnChecks
+    if (!half || out.some(s => s.source === feature.name)) continue
+    const value = half.rounding === 'up' ? Math.ceil(prof / 2) : Math.floor(prof / 2)
+    if (value > 0) out.push({ source: feature.name, value, abilities: half.abilities ?? ALL_ABILITY_SCORES })
+  }
+  return out
 }
 
 /**
- * A parcela do bônus de proficiência num TESTE DE HABILIDADE — perícia, iniciativa, valor passivo.
+ * A fonte que vale num teste do atributo: as fontes não se somam (o bônus de proficiência entra
+ * uma vez só, p. 175), então fica a maior. No empate fica a de alcance mais largo — a
+ * Versatilidade, que vale em todo teste, em vez do Atletismo Extraordinário.
+ */
+export function getBestHalfProficiencySource(
+  sources: HalfProficiencySource[],
+  ability: AbilityScore,
+): HalfProficiencySource | undefined {
+  let best: HalfProficiencySource | undefined
+  for (const s of sources) {
+    if (!s.abilities.includes(ability)) continue
+    if (!best || s.value > best.value || (s.value === best.value && s.abilities.length > best.abilities.length)) {
+      best = s
+    }
+  }
+  return best
+}
+
+/**
+ * A parcela do bônus de proficiência num TESTE DE HABILIDADE do atributo — perícia, iniciativa,
+ * valor passivo.
  *
  * O livro aplica o bônus uma vez só e o multiplica uma vez só (p. 175): dobrado com
- * Especialização, inteiro com proficiência e, sem proficiência, metade arredondada para baixo
- * para quem tem Versatilidade. Os três nunca se somam. Resistência e ataque não passam por aqui —
- * Versatilidade é só de teste de habilidade.
+ * Especialização, inteiro com proficiência e, sem proficiência, metade para quem tem Versatilidade
+ * (qualquer atributo, para baixo) ou Atletismo Extraordinário (FOR/DES/CON, para cima) — a maior
+ * das duas. Nunca se somam. Resistência e ataque não passam por aqui — as duas são só de teste
+ * de habilidade.
  */
-export function getCheckProficiencyBonus(draft: CharacterDraft, proficiency: CheckProficiency): number {
+export function getCheckProficiencyBonus(
+  draft: CharacterDraft,
+  proficiency: CheckProficiency,
+  ability: AbilityScore,
+): number {
   const prof = getProficiencyBonus(draft.level ?? 1)
   if (proficiency === 'expertise') return prof * 2
   if (proficiency === 'proficient') return prof
-  return hasHalfProficiencyOnChecks(draft) ? Math.floor(prof / 2) : 0
+  return getBestHalfProficiencySource(getHalfProficiencySources(draft), ability)?.value ?? 0
 }
 
 // ── Iniciativa ─────────────────────────────────────────────────────────────────
 
 /**
  * Bônus de iniciativa além da Destreza. Iniciativa é um teste de Destreza (p. 179) sem
- * proficiência, então a Versatilidade entra aqui como linha própria.
+ * proficiência, então a Versatilidade ou o Atletismo Extraordinário (a maior, não os dois) entra
+ * aqui como linha própria.
  */
 export function getInitiativeBonuses(draft: CharacterDraft): SheetEffect<number>[] {
   const fromFeats = collect(draft, f => f.effects?.initiativeBonus)
-  const half = getCheckProficiencyBonus(draft, 'none')
-  return half > 0 ? [...fromFeats, { source: 'Versatilidade', value: half }] : fromFeats
+  const half = getBestHalfProficiencySource(getHalfProficiencySources(draft), 'DEX')
+  return half ? [...fromFeats, { source: half.source, value: half.value }] : fromFeats
 }
 
 /** Soma dos bônus de iniciativa (Alerta +5, Versatilidade). Entra direto no número da ficha. */

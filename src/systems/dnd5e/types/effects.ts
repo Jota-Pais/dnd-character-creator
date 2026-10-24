@@ -14,6 +14,17 @@ import type { AbilityScore } from './race'
  * já que ele só vale empunhando duas armas.
  */
 
+/**
+ * Metade do bônus de proficiência nos testes de habilidade sem proficiência. Duas fontes não se
+ * somam — é o mesmo bônus de proficiência, que entra uma vez só (p. 175): em cada teste vale a
+ * maior, e quem decide é `getHalfProficiencyBonus` (sheetEffects).
+ */
+export type HalfProficiencyOnChecks = {
+  rounding: 'down' | 'up'
+  /** Só testes destes atributos; ausente, todo teste de habilidade. */
+  abilities?: AbilityScore[]
+}
+
 /** Bônus de CA que só vale numa situação (ex.: Ambidestro, "empunhando duas armas"). */
 export type ConditionalAcBonus = {
   value: number
@@ -186,11 +197,12 @@ export type FeatureEffects = {
   /** Proficiências de armadura concedidas (Proteção Leve / Moderada / Pesada). */
   grantedArmorProficiencies?: ArmorProficiency[]
   /**
-   * Versatilidade (bardo 2): metade do bônus de proficiência, arredondada para baixo, em todo
-   * TESTE DE HABILIDADE que ainda não tenha o bônus — perícia sem proficiência, iniciativa, teste
-   * de atributo puro. Não vale para resistência nem ataque.
+   * Metade do bônus de proficiência em TESTE DE HABILIDADE que ainda não tenha o bônus — perícia
+   * sem proficiência, iniciativa, teste de atributo puro ou de ferramenta. Não vale para
+   * resistência nem ataque. Versatilidade (bardo 2, p. 54): todo teste, arredondada para baixo;
+   * Atletismo Extraordinário (campeão 7, p. 85): só Força, Destreza e Constituição, para cima.
    */
-  halfProficiencyOnChecks?: boolean
+  halfProficiencyOnChecks?: HalfProficiencyOnChecks
   /**
    * Proficiência em testes de resistência dada por característica de classe — Mente Escorregadia
    * (ladino 15, Sabedoria, p. 91) e Alma de Diamante (monge 14, `'all'`, p. 105). Incondicional:

@@ -453,7 +453,7 @@
         "level": 2,
         "name": "Versatilidade",
         "description": "Você soma metade do seu bônus de proficiência (arredondado para baixo) em testes de habilidade em que ainda não seja proficiente.",
-        "effects": { "halfProficiencyOnChecks": true }
+        "effects": { "halfProficiencyOnChecks": { "rounding": "down" } }
       },
       {
         "level": 2,
@@ -1032,7 +1032,8 @@
       {
         "level": 7,
         "name": "Atletismo Extraordinário",
-        "description": "Você soma metade do seu bônus de proficiência (arredondado para cima) a qualquer teste de Força, Destreza ou Constituição que ainda não use seu bônus de proficiência. No salto longo com corrida, a distância aumenta em 0,3 m × seu modificador de Força."
+        "description": "Você soma metade do seu bônus de proficiência (arredondado para cima) a qualquer teste de Força, Destreza ou Constituição que ainda não use seu bônus de proficiência. No salto longo com corrida, a distância aumenta em 0,3 m × seu modificador de Força.",
+        "effects": { "halfProficiencyOnChecks": { "rounding": "up", "abilities": ["STR", "DEX", "CON"] } }
       },
       {
         "level": 10,

@@ -3,7 +3,7 @@ import {
   getOwnedFeats,
   getInitiativeBonusTotal,
   getInitiativeBonuses,
-  hasHalfProficiencyOnChecks,
+  getHalfProficiencySources,
   getCheckProficiencyBonus,
   getSpeedBonusTotal,
   getSpeedBonuses,
@@ -30,6 +30,7 @@ import {
   getArmorProficiencies, hasArmorProficiency, hasWeaponProficiency,
   getSavingThrowProficiencies, getAllGrantedSkills, getAllGrantedLanguages,
   getExcludedSkillsForFeat, getExcludedWeaponsForFeat,
+  getSkillChecks, describeHalfProficiencyOnChecks,
 } from '../proficiencyUtils'
 import { getArmor, getWeaponById } from '../equipmentUtils'
 import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
@@ -253,12 +254,12 @@ describe('Versatilidade (efeito de feature de classe)', () => {
   const bard = (level: number) => draft({ level, class: 'bard' })
 
   it('bardo do 1º nível ainda não tem', () => {
-    expect(hasHalfProficiencyOnChecks(bard(1))).toBe(false)
+    expect(getHalfProficiencySources(bard(1))).toEqual([])
     expect(getInitiativeBonusTotal(bard(1))).toBe(0)
   })
 
   it('a partir do 2º nível soma metade do bônus de proficiência na iniciativa', () => {
-    expect(hasHalfProficiencyOnChecks(bard(2))).toBe(true)
+    expect(getHalfProficiencySources(bard(2)).map(s => s.source)).toEqual(['Versatilidade'])
     expect(getInitiativeBonusTotal(bard(2))).toBe(1) // ⌊2/2⌋
     expect(getInitiativeBonusTotal(bard(5))).toBe(1) // ⌊3/2⌋, arredonda para baixo
     expect(getInitiativeBonusTotal(bard(9))).toBe(2) // ⌊4/2⌋
@@ -280,15 +281,97 @@ describe('Versatilidade (efeito de feature de classe)', () => {
         spellChoices: { cantrips: [], spells: [] }, asiChoices: [], hpRolls: [],
       }],
     })
-    expect(hasHalfProficiencyOnChecks(d)).toBe(false)
+    expect(getHalfProficiencySources(d)).toEqual([])
   })
 
   it('a parcela do bônus nunca soma: metade, inteiro ou dobrado', () => {
     const d = bard(4) // proficiência +2
-    expect(getCheckProficiencyBonus(d, 'none')).toBe(1)
-    expect(getCheckProficiencyBonus(d, 'proficient')).toBe(2)
-    expect(getCheckProficiencyBonus(d, 'expertise')).toBe(4)
-    expect(getCheckProficiencyBonus(draft({ level: 4, class: 'fighter' }), 'none')).toBe(0)
+    expect(getCheckProficiencyBonus(d, 'none', 'INT')).toBe(1)
+    expect(getCheckProficiencyBonus(d, 'proficient', 'INT')).toBe(2)
+    expect(getCheckProficiencyBonus(d, 'expertise', 'INT')).toBe(4)
+    expect(getCheckProficiencyBonus(draft({ level: 4, class: 'fighter' }), 'none', 'INT')).toBe(0)
+  })
+
+  it('a linha da Revisão e do PDF diz onde já entrou e onde mais vale', () => {
+    expect(describeHalfProficiencyOnChecks(bard(2))).toEqual([{
+      source: 'Versatilidade',
+      text: '+1 já somado nas perícias sem proficiência e na iniciativa; vale também em testes de atributo e de ferramenta sem proficiência.',
+    }])
+    expect(describeHalfProficiencyOnChecks(bard(1))).toEqual([])
+  })
+})
+
+// Atletismo Extraordinário do campeão 7 (p. 85): metade do bônus de proficiência, arredondada
+// para CIMA, em teste de Força, Destreza ou Constituição que ainda não use o bônus. Com a
+// Versatilidade não soma — é o mesmo bônus de proficiência (p. 175): vale o maior.
+describe('Atletismo Extraordinário (efeito de feature de subclasse)', () => {
+  const champion = (level: number, extra: Partial<CharacterDraft> = {}) => draft({
+    level, class: 'fighter',
+    classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), subclass: 'champion' },
+    ...extra,
+  })
+  const scores = { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 }
+
+  it('só a partir do 7º nível de guerreiro', () => {
+    expect(getHalfProficiencySources(champion(6))).toEqual([])
+    expect(getInitiativeBonusTotal(champion(6))).toBe(0)
+  })
+
+  it('arredonda para cima e entra na iniciativa', () => {
+    expect(getInitiativeBonusTotal(champion(7))).toBe(2) // ⌈3/2⌉
+    expect(getInitiativeBonuses(champion(7)).map(e => e.source)).toEqual(['Atletismo Extraordinário'])
+    expect(getInitiativeBonusTotal(champion(9))).toBe(2) // ⌈4/2⌉
+    expect(getInitiativeBonusTotal(champion(13))).toBe(3) // ⌈5/2⌉
+  })
+
+  it('só em Força, Destreza e Constituição, e só sem proficiência', () => {
+    const d = champion(7, {
+      classChoices: {
+        ...structuredClone(EMPTY_DRAFT.classChoices), subclass: 'champion', skills: ['athletics', 'perception'],
+      },
+    })
+    const checks = getSkillChecks(d, scores)
+    expect(checks.athletics.bonus).toBe(3) // proficiente: o bônus inteiro, sem a metade por cima
+    expect(checks.acrobatics.bonus).toBe(2) // DES sem proficiência
+    expect(checks.stealth.bonus).toBe(2)
+    expect(checks.arcana.bonus).toBe(0) // INT não leva
+    expect(checks.insight.bonus).toBe(0) // SAB não leva
+    expect(getCheckProficiencyBonus(d, 'none', 'CON')).toBe(2)
+    expect(getCheckProficiencyBonus(d, 'none', 'CHA')).toBe(0)
+  })
+
+  it('conta o nível NA classe: bardo 6 / campeão 3 não tem', () => {
+    const d = draft({
+      level: 9, multiclass: true, class: 'bard',
+      additionalClasses: [extraClass('fighter', 3, 'champion')],
+    })
+    expect(getHalfProficiencySources(d).map(s => s.source)).toEqual(['Versatilidade'])
+  })
+
+  it('com a Versatilidade, vale o maior em cada teste — nunca a soma', () => {
+    // Campeão 7 / bardo 2 = 9º nível, proficiência +4: as duas dão +2 — empate, fica a Versatilidade.
+    const tie = champion(7, { level: 9, multiclass: true, additionalClasses: [extraClass('bard', 2)] })
+    expect(getInitiativeBonusTotal(tie)).toBe(2)
+    expect(getInitiativeBonuses(tie).map(e => e.source)).toEqual(['Versatilidade'])
+    expect(describeHalfProficiencyOnChecks(tie).map(l => l.source)).toEqual(['Versatilidade'])
+    expect(describeHalfProficiencyOnChecks(tie)[0].text).toContain('Não se soma com Atletismo Extraordinário')
+
+    // Campeão 11 / bardo 2 = 13º nível, proficiência +5: Atletismo +3, Versatilidade +2.
+    const d = champion(11, { level: 13, multiclass: true, additionalClasses: [extraClass('bard', 2)] })
+    expect(getInitiativeBonusTotal(d)).toBe(3)
+    const checks = getSkillChecks(d, scores)
+    expect(checks.acrobatics.bonus).toBe(3)
+    expect(checks.arcana.bonus).toBe(2)
+    expect(describeHalfProficiencyOnChecks(d)).toEqual([
+      {
+        source: 'Atletismo Extraordinário',
+        text: '+3 já somado nas perícias de Força e Destreza sem proficiência e na iniciativa; vale também em testes de Força, Destreza ou Constituição sem proficiência (de atributo ou de ferramenta). Não se soma com Versatilidade: em cada teste vale o maior.',
+      },
+      {
+        source: 'Versatilidade',
+        text: '+2 já somado nas perícias de Inteligência, Sabedoria e Carisma sem proficiência; vale também em testes de Inteligência, Sabedoria ou Carisma sem proficiência (de atributo ou de ferramenta). Não se soma com Atletismo Extraordinário: em cada teste vale o maior.',
+      },
+    ])
   })
 })
 

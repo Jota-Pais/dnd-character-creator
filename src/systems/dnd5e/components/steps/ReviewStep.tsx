@@ -32,11 +32,11 @@ import {
   getAllGrantedTools, getLanguageLabels, EXOTIC_LANGUAGE_NOTE, getExpertiseTools, getSkillChecks,
   getSavingThrowChecks,
   getPassiveScore, getArmorProficiencyLabels, getWeaponProficiencyLabels, getUnproficientArmor,
-  getUnproficientTools, formatUnproficientTool,
+  getUnproficientTools, formatUnproficientTool, describeHalfProficiencyOnChecks,
 } from '../../utils/proficiencyUtils'
 import {
   getTotalHp, getInitiativeBonusTotal, getSheetSpeed, describeSpeedBonuses,
-  getConditionalAcBonuses, getCheckProficiencyBonus, getSheetResources, getSheetArmorClass,
+  getConditionalAcBonuses, getSheetResources, getSheetArmorClass,
   describeAttacksPerAction, getSheetFightingStyles,
 } from '../../utils/sheetEffects'
 import { getSheetAttacks } from '../../utils/attackUtils'
@@ -125,8 +125,8 @@ export function ReviewStep() {
   const skillChecks = getSkillChecks(draft, finalScores)
   const saveChecks = getSavingThrowChecks(draft, finalScores)
   const passivePerception = getPassiveScore(draft, 'perception', skillChecks)
-  // Versatilidade: o que entra nas perícias sem proficiência (0 para quem não tem).
-  const halfProficiency = getCheckProficiencyBonus(draft, 'none')
+  // Versatilidade / Atletismo Extraordinário: onde a meia proficiência já entrou e onde mais vale.
+  const halfProficiencyLines = describeHalfProficiencyOnChecks(draft)
 
   // Languages & tools
   // Exótico escolhido sai com "*" e a nota da p. 125 — o mesmo texto do PDF.
@@ -384,13 +384,11 @@ export function ReviewStep() {
               )
             })}
           </div>
-          {halfProficiency > 0 && (
-            <p className="text-parchment-600 text-xs mt-2 leading-relaxed">
-              <span className="text-parchment-400 font-semibold">Versatilidade:</span> +{halfProficiency} já
-              somado nas perícias sem proficiência e na iniciativa — vale também em testes de atributo e
-              de ferramenta sem proficiência.
+          {halfProficiencyLines.map(line => (
+            <p key={line.source} className="text-parchment-600 text-xs mt-2 leading-relaxed">
+              <span className="text-parchment-400 font-semibold">{line.source}:</span> {line.text}
             </p>
-          )}
+          ))}
         </Section>
       </div>
 

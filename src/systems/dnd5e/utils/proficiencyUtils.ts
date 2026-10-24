@@ -17,8 +17,11 @@ import {
   getClassFeatureSavingThrows,
   getFeatGrantedSkills, getFeatGrantedTools, getFeatGrantedLanguages,
   getCheckProficiencyBonus, getPassiveScoreBonus, type CheckProficiency,
+  getHalfProficiencySources, getBestHalfProficiencySource,
 } from './sheetEffects'
-import { calculateModifier, getProficiencyBonus, ALL_ABILITY_SCORES } from './abilityScoreUtils'
+import {
+  calculateModifier, getProficiencyBonus, ALL_ABILITY_SCORES, ABILITY_LABELS,
+} from './abilityScoreUtils'
 
 /**
  * Deduplicação de proficiências entre raça, classe e antecedente (PHB 2014).
@@ -274,7 +277,8 @@ export type SkillCheck = { ability: AbilityScore; proficiency: CheckProficiency;
 
 /**
  * O número de cada perícia: modificador do atributo + a parcela do bônus de proficiência que cabe
- * — dobrada com Especialização, inteira com proficiência, metade com Versatilidade, nunca somadas.
+ * — dobrada com Especialização, inteira com proficiência, metade com Versatilidade ou Atletismo
+ * Extraordinário (este só nas de Força e Destreza), nunca somadas.
  * Fonte única da Revisão e do PDF, que antes repetiam a conta cada um do seu jeito e só
  * enxergavam a Especialização da classe inicial.
  */
@@ -287,14 +291,63 @@ export function getSkillChecks(
   return Object.fromEntries(Object.entries(SKILL_ABILITY).map(([skillId, ability]) => {
     const proficiency: CheckProficiency =
       doubled.has(skillId) ? 'expertise' : granted.has(skillId) ? 'proficient' : 'none'
-    const bonus = calculateModifier(finalScores[ability]) + getCheckProficiencyBonus(draft, proficiency)
+    const bonus = calculateModifier(finalScores[ability]) + getCheckProficiencyBonus(draft, proficiency, ability)
     return [skillId, { ability, proficiency, bonus }]
   }))
 }
 
+/** "a", "a e b", "a, b e c" — com a conjunção pedida. */
+function joinPt(items: string[], conjunction: 'e' | 'ou'): string {
+  if (items.length <= 1) return items.join('')
+  return `${items.slice(0, -1).join(', ')} ${conjunction} ${items[items.length - 1]}`
+}
+
+/** Uma linha explicativa de meia proficiência na Revisão e no PDF: a fonte e o que ela faz. */
+export type HalfProficiencyLine = { source: string; text: string }
+
+/**
+ * As linhas de Versatilidade / Atletismo Extraordinário que a Revisão e o PDF mostram embaixo das
+ * perícias. O número das perícias e da iniciativa já leva a parcela; a linha diz onde ela já está
+ * somada e onde mais vale (teste de atributo puro e de ferramenta, que a ficha não imprime).
+ *
+ * Com as duas, cada uma aparece só nos atributos em que é a que vale (a maior, p. 175) — a que
+ * não vale em nenhum (empate ou menor) some, porque não muda nada na mesa.
+ */
+export function describeHalfProficiencyOnChecks(draft: CharacterDraft): HalfProficiencyLine[] {
+  const sources = getHalfProficiencySources(draft)
+  const skillAbilities = new Set(Object.values(SKILL_ABILITY))
+  const names = (abilities: AbilityScore[], conjunction: 'e' | 'ou') =>
+    joinPt(abilities.map(ab => ABILITY_LABELS[ab].long), conjunction)
+
+  return sources.flatMap(source => {
+    const wins = ALL_ABILITY_SCORES.filter(ab => getBestHalfProficiencySource(sources, ab) === source)
+    if (wins.length === 0) return []
+    const everyAbility = wins.length === ALL_ABILITY_SCORES.length
+
+    const withSkills = wins.filter(ab => skillAbilities.has(ab))
+    const skillsPart = withSkills.length === 0 ? []
+      : everyAbility ? ['nas perícias sem proficiência']
+        : [`nas perícias de ${names(withSkills, 'e')} sem proficiência`]
+    const added = [...skillsPart, ...(wins.includes('DEX') ? ['na iniciativa'] : [])]
+    const also = everyAbility
+      ? 'em testes de atributo e de ferramenta sem proficiência'
+      : `em testes de ${names(wins, 'ou')} sem proficiência (de atributo ou de ferramenta)`
+    const others = sources.filter(s => s !== source).map(s => s.source)
+
+    const text = [
+      added.length > 0
+        ? `+${source.value} já somado ${joinPt(added, 'e')}; vale também ${also}.`
+        : `+${source.value} ${also}.`,
+      ...(others.length > 0 ? [`Não se soma com ${joinPt(others, 'e')}: em cada teste vale o maior.`] : []),
+    ].join(' ')
+    return [{ source: source.source, text }]
+  })
+}
+
 /**
  * Valor passivo de uma perícia (p. 177): "10 + todos os modificadores que se aplicam normalmente
- * ao teste" — então leva a Especialização e a Versatilidade junto — mais o que só vale no
+ * ao teste" — então leva a Especialização e a Versatilidade (ou o Atletismo Extraordinário) junto
+ * — mais o que só vale no
  * passivo (Observador +5).
  */
 export function getPassiveScore(

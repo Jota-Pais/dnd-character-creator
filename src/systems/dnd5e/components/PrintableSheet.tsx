@@ -22,7 +22,7 @@ import { getFinalAbilityScores, getCharacterFeats, getSheetClassFeatures } from 
 import {
   getAllGrantedTools, getLanguageLabels, EXOTIC_LANGUAGE_NOTE, getExpertiseTools, getSkillChecks,
   getSavingThrowChecks, getPassiveScore, getArmorProficiencyLabels, getWeaponProficiencyLabels, getUnproficientArmor,
-  getUnproficientTools, formatUnproficientTool,
+  getUnproficientTools, formatUnproficientTool, describeHalfProficiencyOnChecks,
 } from '../utils/proficiencyUtils'
 import { formatArmorClassBreakdown } from '../utils/armorClassUtils'
 import {
@@ -43,7 +43,7 @@ import { formatAttackDamage } from '../utils/weaponFormat'
 import { getSheetAttacks } from '../utils/attackUtils'
 import {
   getTotalHp, getInitiativeBonusTotal, getSheetSpeed, describeSpeedBonuses,
-  getConditionalAcBonuses, getCheckProficiencyBonus, getSheetResources, getSheetArmorClass,
+  getConditionalAcBonuses, getSheetResources, getSheetArmorClass,
   describeAttacksPerAction, getSheetFightingStyles,
 } from '../utils/sheetEffects'
 import type { CharacterDraft } from '../types/character'
@@ -139,8 +139,8 @@ export function PrintableSheet() {
 
   const skillChecks = getSkillChecks(draft, finalScores)
   const passivePerception = getPassiveScore(draft, 'perception', skillChecks)
-  // Versatilidade: o que entra nas perícias sem proficiência (0 para quem não tem).
-  const halfProficiency = getCheckProficiencyBonus(draft, 'none')
+  // Versatilidade / Atletismo Extraordinário: onde a meia proficiência já entrou e onde mais vale.
+  const halfProficiencyLines = describeHalfProficiencyOnChecks(draft)
   const saveChecks = getSavingThrowChecks(draft, finalScores)
   const allTools = getAllGrantedTools(draft)
   const expertiseTools = getExpertiseTools(draft)
@@ -296,14 +296,13 @@ export function PrintableSheet() {
             )
           })}
           <p className="text-[10px] text-gray-500 mt-1">● proficiente · ◉ bônus de proficiência dobrado</p>
-          {/* O número das perícias já tem a Versatilidade; o que não está impresso (atributo puro,
-              ferramenta) o jogador precisa saber que também leva. */}
-          {halfProficiency > 0 && (
-            <p className="text-[10px] text-gray-500">
-              Versatilidade: +{halfProficiency} já somado nas perícias sem proficiência e na iniciativa;
-              vale também em testes de atributo e de ferramenta sem proficiência.
+          {/* O número das perícias já tem a Versatilidade / o Atletismo Extraordinário; o que não
+              está impresso (atributo puro, ferramenta) o jogador precisa saber que também leva. */}
+          {halfProficiencyLines.map(line => (
+            <p key={line.source} className="text-[10px] text-gray-500">
+              {line.source}: {line.text}
             </p>
-          )}
+          ))}
         </Box>
       </div>
 

@@ -42,6 +42,9 @@ Ao adicionar uma característica nova, prefira declará-la como efeito nos dados
 
 **Conjuração** (`utils/spellUtils.ts`) vem da classe ou, quando a classe não conjura, da subclasse: o Cavaleiro Arcano e o Trapaceiro Arcano têm `spellcasting` próprio em `classes.json` (lista de mago, `schoolRestriction`, `requiredCantrips`), e as tabelas de truques e magias conhecidas ficam em `progression.json` pelo id da subclasse (espaços na tabela `third`). Nunca ler `cls.spellcasting` direto: `getSpellcastingSource` (classUtils) / `getEntrySpellcasting` resolvem quem conjura, e `getCasterEntries` é a lista que a etapa Magias, a Revisão e o PDF usam. Truque dado pela característica (mãos mágicas) é derivado, não gravado no draft. O tipo de conjurador vem do `casterProgression` de `classes.json`; o pool da multiclasse usa `getCombinedCasterLevel` (p. 166-167).
 
+- **Atributo de conjuração é sempre o final** (`getFinalAbilityScores`: raça + aprimoramentos), na etapa Magias, na Revisão e no PDF — nunca `draft.abilityScores`. Magias escolhidas acima do teto (atributo baixado depois) não são apagadas: `getSpellChoiceOverflow` vira aviso nas três telas.
+- **Segredos Mágicos** (bardo 10/14/18, Colégio do Conhecimento 6) são escolhas de progressão (`SPELL_OPTIONS_LIST_ID`), mas são magias da classe: saem em `bonusSpells` de `getCasterEntries` e aparecem com as magias do bardo. As **Escolhas de Progressão** da Revisão e do PDF vêm de `getProgressionChoiceBlocks` (`progressionOptions.ts`), que deixa esses slots de fora.
+
 ## Versão de D&D
 
 - **D&D 5e clássico — PHB de 2014**

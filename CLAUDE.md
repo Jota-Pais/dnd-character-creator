@@ -81,8 +81,9 @@ Ao adicionar uma característica nova, prefira declará-la como efeito nos dados
 
 ## Persistência
 
-- Toda leitura/escrita de ficha deve passar por uma camada abstraída em `/src/utils/storage.ts`
-- A V1 implementa essa camada usando localStorage
+- Toda leitura/escrita de ficha passa pela camada de storage **do próprio sistema**: `src/systems/<sistema>/utils/storage.ts` (hoje `dnd5e` e `ordem`). O núcleo (`src/core`) e a galeria global (`src/GlobalGallery.tsx`) não acessam localStorage: usam as funções exportadas por essas camadas
+- No `storage.ts` do dnd5e ficam a sessão do wizard (versionada por `SESSION_VERSION`) e a biblioteca; campo novo no draft ganha default em `withDraftDefaults` (e sanitização em `utils/draftValidation.ts`)
+- A V1 implementa essas camadas usando localStorage
 - Componentes e stores **nunca** acessam localStorage diretamente
 - Isso permite migrar para IndexedDB no futuro sem refatorar a aplicação
 

@@ -18,11 +18,12 @@ Toda decisão de produto e design serve a esse objetivo: guiar o iniciante sem t
 
 Dois motores, um em cada arquivo, espelhando o que o Ordem já fazia:
 
-- **`utils/proficiencyUtils.ts` — quem tem o quê.** Fonte única de perícias, ferramentas, idiomas, armaduras, armas e resistências, agregando raça, classe (com o subconjunto de multiclasse da p. 163), subclasse e talento. Nada de agregação paralela em outro módulo.
+- **`utils/proficiencyUtils.ts` — quem tem o quê.** Fonte única de perícias, ferramentas, idiomas, armaduras, armas e resistências, agregando raça, classe (com o subconjunto de multiclasse da p. 166), subclasse e talento. Nada de agregação paralela em outro módulo.
   - A exclusão é **por slot**, não por fonte: a lista de perícias da classe e os extras da subclasse são concessões independentes, e cada classe da multiclasse tem as suas. É o que impede repetir uma perícia (regra da p. 125).
   - Exceção: o picker de *expertise* (Domínio do Conhecimento) **não** exclui — lá dobrar uma perícia que você já tem é o ponto.
   - **Especialização** também mora aqui: `getExpertiseSkills` junta a de cada classe da multiclasse (só as levas que o nível NELA libera — `expertise.grants` em `classes.json`) e a do Domínio do Conhecimento. O seletor de uma classe não oferece o que outra fonte já dobra (o bônus só se multiplica uma vez, p. 175).
   - **`getSkillChecks` é o número de cada perícia** na Revisão e no PDF (modificador + bônus dobrado, inteiro ou metade, nunca somados), e `getPassiveScore` o valor passivo. Não refazer a conta no componente — foi assim que a Especialização do bardo e a Versatilidade sumiram da ficha.
+  - **`getSavingThrowChecks` é o número de cada resistência**, sobre `getSavingThrowProficiencies`: classe inicial (a multiclasse não dá resistência inicial, p. 166) + Resiliente + features de classe com `savingThrowProficiencies` (Mente Escorregadia, Alma de Diamante), estas de qualquer classe da multiclasse. Ler `cls.savingThrows` no componente foi o que sumiu com o Resiliente da ficha.
 - **`utils/sheetEffects.ts` — o que as características fazem.** Efeitos declarados nos dados (`types/effects.ts`), agregados aqui. Regra de ouro herdada do Ordem: **efeito incondicional entra no número da ficha; efeito condicional vira linha própria com a condição** (somar o +1 do Ambidestro mentiria pra quem usa escudo).
   - Escolhas que uma característica abre (Perito, Poliglota, Mestre de Armas, Colégio do Conhecimento) viram **slot na etapa dona dela**, ao lado do catálogo — nunca um catálogo aninhado dentro do card.
   - Consequência de regra que a ficha não deve "resolver" sozinha vira **aviso**, não alteração de número: armadura sem proficiência (p. 144) avisa da desvantagem em vez de mexer nos valores.

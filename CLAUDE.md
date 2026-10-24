@@ -28,6 +28,8 @@ Dois motores, um em cada arquivo, espelhando o que o Ordem já fazia:
   - Consequência de regra que a ficha não deve "resolver" sozinha vira **aviso**, não alteração de número: armadura sem proficiência (p. 144) avisa da desvantagem em vez de mexer nos valores.
   - Features de classe também declaram efeito (`effects` em `class-progression-features.json`, ex.: a Versatilidade do bardo 2), agregadas por `getOwnedClassFeatures` — cada classe da multiclasse no nível que tem nela.
 
+  - **Recursos de classe** (usos, poços, dados que crescem: Fúria, Chi, Inspiração de Bardo, Cura pelas Mãos) também são efeito: `effects.resources` na feature de classe/subclasse, calculados por `getClassResources` no nível NA classe dona e com os atributos finais. A conta e o texto (`describeResource` / `formatResourceLine`) moram em `utils/classResourceUtils.ts` — a Revisão e o PDF leem de lá.
+
 Ao adicionar uma característica nova, prefira declará-la como efeito nos dados a espalhar `if` pela UI.
 
 ## Versão de D&D

@@ -219,7 +219,7 @@ export function ReviewStep() {
           <QuickStat label="Percep. Passiva" value={String(passivePerception)} accent={accent} />
           <QuickStat label="Deslocamento" value={speedStr} accent={accent} />
           {darkvisionStr && (
-            <QuickStat label="Escuridão" value={darkvisionStr} accent={accent} />
+            <QuickStat label="Visão no Escuro" value={darkvisionStr} accent={accent} />
           )}
         </div>
         <p className="text-xs text-parchment-700 mt-2 text-center">
@@ -932,7 +932,7 @@ export function ReviewStep() {
                           {secrets.map(s => (
                             <SpellChip
                               key={s.id}
-                              name={`${s.name} (${s.level === 0 ? 'truque' : `${s.level}°`})`}
+                              name={`${s.name} (${s.level === 0 ? 'truque' : `${s.level}º`})`}
                               school={s.school}
                               concentration={s.concentration}
                               ritual={s.ritual}

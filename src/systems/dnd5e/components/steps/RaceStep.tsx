@@ -15,7 +15,7 @@ import {
 } from '../../utils/raceUtils'
 import { getExcludedSkills, getExcludedTools, getExcludedLanguages } from '../../utils/proficiencyUtils'
 import { isStepComplete } from '../../utils/draftValidation'
-import { ABILITY_LABELS, formatBonus, formatSpeed } from '../../utils/abilityScoreUtils'
+import { ABILITY_LABELS, formatBonus, formatMeters, formatSpeed } from '../../utils/abilityScoreUtils'
 import { RaceCard } from '../race/RaceCard'
 import { SubraceCard } from '../race/SubraceCard'
 import { ChoicePanel } from '../race/ChoicePanel'
@@ -148,7 +148,7 @@ export function RaceStep() {
                     label="👁️ Visão no Escuro"
                     value={
                       getEffectiveDarkvision(selectedRace, selectedSubrace ?? null) > 0
-                        ? `${getEffectiveDarkvision(selectedRace, selectedSubrace ?? null)} pés`
+                        ? formatMeters(getEffectiveDarkvision(selectedRace, selectedSubrace ?? null))
                         : 'Não possui'
                     }
                   />

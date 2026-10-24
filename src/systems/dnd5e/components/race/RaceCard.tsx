@@ -1,5 +1,5 @@
 import type { Race } from '../../types/race'
-import { ABILITY_LABELS, formatBonus, formatSpeed } from '../../utils/abilityScoreUtils'
+import { ABILITY_LABELS, formatBonus, formatMeters, formatSpeed } from '../../utils/abilityScoreUtils'
 import { RACE_PRESENTATION } from '../../utils/raceUtils'
 
 type Props = {
@@ -85,7 +85,7 @@ export function RaceCard({ race, selected, onSelect }: Props) {
         {/* Stats */}
         <div className="flex items-center gap-2 text-xs text-parchment-700">
           <span>🏃 {formatSpeed(race.speed)}</span>
-          {race.darkvision > 0 && <span>· 👁️ {race.darkvision} pés</span>}
+          {race.darkvision > 0 && <span>· 👁️ {formatMeters(race.darkvision)}</span>}
           {race.subraces.length > 0 && (
             <span className="ml-auto text-parchment-800">
               {race.subraces.length} subraças

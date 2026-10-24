@@ -35,6 +35,8 @@ Ao adicionar uma característica nova, prefira declará-la como efeito nos dados
 
 **Texto das características de classe** mora só em `class-progression-features.json` (classes.json não tem mais cópia; etapa Classe, Revisão e ficha leem via `classUtils`). É texto de mesa, não resumo de card: alvo, alcance, ação/reação, momento, duração, término, imunidade e recarga, conferidos com o livro. Valor que escala e já é recurso calculado aponta para "Recursos", nunca número fixo.
 
+**Conjuração** (`utils/spellUtils.ts`) vem da classe ou, quando a classe não conjura, da subclasse: o Cavaleiro Arcano e o Trapaceiro Arcano têm `spellcasting` próprio em `classes.json` (lista de mago, `schoolRestriction`, `requiredCantrips`), e as tabelas de truques e magias conhecidas ficam em `progression.json` pelo id da subclasse (espaços na tabela `third`). Nunca ler `cls.spellcasting` direto: `getSpellcastingSource` (classUtils) / `getEntrySpellcasting` resolvem quem conjura, e `getCasterEntries` é a lista que a etapa Magias, a Revisão e o PDF usam. Truque dado pela característica (mãos mágicas) é derivado, não gravado no draft. O tipo de conjurador vem do `casterProgression` de `classes.json`; o pool da multiclasse usa `getCombinedCasterLevel` (p. 166-167).
+
 ## Versão de D&D
 
 - **D&D 5e clássico — PHB de 2014**

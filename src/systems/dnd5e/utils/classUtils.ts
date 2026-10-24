@@ -7,9 +7,9 @@ import { isProgressionChoicesComplete } from './progressionChoiceUtils'
 const CLASS_FEATURES_BY_LEVEL = progressionFeatures.classes as Record<string, LevelFeature[]>
 const SUBCLASS_FEATURES_BY_LEVEL = progressionFeatures.subclasses as Record<string, LevelFeature[]>
 
-/** Uma classe tem tabela de features por nível digitada (fase 3)? */
-export function hasFeaturesByLevel(classId: string): boolean {
-  return Array.isArray(CLASS_FEATURES_BY_LEVEL[classId])
+/** A classe (ou subclasse, com `subclass: true`) tem tabela de features por nível? */
+export function hasFeaturesByLevel(id: string, subclass = false): boolean {
+  return Array.isArray((subclass ? SUBCLASS_FEATURES_BY_LEVEL : CLASS_FEATURES_BY_LEVEL)[id])
 }
 
 export const CLASSES: GameClass[] = classesData as GameClass[]
@@ -106,36 +106,32 @@ export function getSubclass(cls: GameClass, subclassId: string): ClassSubclass |
   return cls.subclasses.find(s => s.id === subclassId)
 }
 
+/** Features da classe base até o nível dado, na tabela de `class-progression-features.json`. */
+export function getBaseClassFeaturesUpToLevel(classId: string, level: number): LevelFeature[] {
+  return (CLASS_FEATURES_BY_LEVEL[classId] ?? []).filter(f => f.level <= level)
+}
+
 /**
- * Features de classe + subclasse disponíveis até o nível dado, agrupadas por nível.
- * Usa a tabela por nível de `class-progression-features.json` quando existe (fase 3);
- * senão cai no formato atual (`features` da classe = nível 1; `features` da subclasse
- * = nível de escolha).
+ * Features da subclasse até o nível dado. Com `cls.subclassLevel` vira o que a subclasse dá ao ser
+ * escolhida — o que o card da etapa Classe mostra para comparar as opções.
+ */
+export function getSubclassFeaturesUpToLevel(subclassId: string, level: number): LevelFeature[] {
+  return (SUBCLASS_FEATURES_BY_LEVEL[subclassId] ?? []).filter(f => f.level <= level)
+}
+
+/**
+ * Features de classe + subclasse disponíveis até o nível dado, ordenadas por nível. A tabela por
+ * nível é a única fonte do texto: classes.json não guarda mais cópia (as duas já divergiam).
  */
 export function getClassFeaturesUpToLevel(
   cls: GameClass,
   subclass: ClassSubclass | null | undefined,
   level: number,
 ): LevelFeature[] {
-  const out: LevelFeature[] = []
-
-  const clsByLevel = CLASS_FEATURES_BY_LEVEL[cls.id]
-  if (clsByLevel) {
-    out.push(...clsByLevel.filter(f => f.level <= level))
-  } else {
-    out.push(...cls.features.map(f => ({ ...f, level: 1 })))
-  }
-
-  if (subclass) {
-    const subByLevel = SUBCLASS_FEATURES_BY_LEVEL[subclass.id]
-    if (subByLevel) {
-      out.push(...subByLevel.filter(f => f.level <= level))
-    } else if (cls.subclassLevel <= level) {
-      out.push(...subclass.features.map(f => ({ ...f, level: cls.subclassLevel })))
-    }
-  }
-
-  return out.sort((a, b) => a.level - b.level)
+  return [
+    ...getBaseClassFeaturesUpToLevel(cls.id, level),
+    ...(subclass ? getSubclassFeaturesUpToLevel(subclass.id, level) : []),
+  ].sort((a, b) => a.level - b.level)
 }
 
 export function isActiveCaster(cls: GameClass, level = 1): boolean {

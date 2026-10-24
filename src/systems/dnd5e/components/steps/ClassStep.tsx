@@ -8,6 +8,8 @@ import {
   getSubclass,
   isActiveCaster,
   getHpFormula,
+  getBaseClassFeaturesUpToLevel,
+  getSubclassFeaturesUpToLevel,
 } from '../../utils/classUtils'
 import { getPrimaryLevel } from '../../utils/multiclassUtils'
 import { isStepComplete } from '../../utils/draftValidation'
@@ -188,11 +190,14 @@ export function ClassStep() {
               <div className="rounded-xl border border-parchment-900 bg-parchment-950/60 p-4">
                 <SectionTitle>Features de Nível 1</SectionTitle>
                 <div className="space-y-2.5">
+                  {/* Mesmo texto da ficha impressa: a tabela por nível é a única fonte. */}
                   {[
-                    ...selectedClass.features,
-                    ...(selectedSubclass?.features ?? []),
+                    ...getBaseClassFeaturesUpToLevel(selectedClass.id, 1),
+                    ...(selectedSubclass
+                      ? getSubclassFeaturesUpToLevel(selectedSubclass.id, selectedClass.subclassLevel)
+                      : []),
                   ].map(feature => (
-                    <div key={feature.name}>
+                    <div key={`${feature.level}-${feature.name}`}>
                       <span className="text-sm font-semibold text-parchment-200 font-fantasy">
                         {feature.name}.{' '}
                       </span>

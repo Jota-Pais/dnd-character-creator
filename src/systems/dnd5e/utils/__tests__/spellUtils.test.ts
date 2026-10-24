@@ -79,7 +79,6 @@ const baseClass: GameClass = {
   multiclassProficiencies: { armor: [], weapons: [], tools: [], skills: null, instruments: 0 },
   isCaster: false,
   spellcasting: null,
-  features: [],
   subclassLevel: 3,
   subclasses: [],
   hasFightingStyle: true,

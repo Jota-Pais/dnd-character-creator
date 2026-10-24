@@ -10,6 +10,8 @@ import {
   getExpertiseCount,
   getExpertiseOptions,
   getClassFeaturesUpToLevel,
+  getBaseClassFeaturesUpToLevel,
+  getSubclassFeaturesUpToLevel,
   hasFeaturesByLevel,
   CLASSES,
   getClass,
@@ -34,7 +36,6 @@ const baseClass: GameClass = {
   multiclassProficiencies: { armor: [], weapons: [], tools: [], skills: null, instruments: 0 },
   isCaster: false,
   spellcasting: null,
-  features: [],
   subclassLevel: 3,
   subclasses: [],
   hasFightingStyle: true,
@@ -67,10 +68,9 @@ const casterClass: GameClass = {
     focus: 'holy-symbol',
     castingStartsAtLevel: 1,
   },
-  features: [],
   subclassLevel: 1,
   subclasses: [
-    { id: 'life-domain', name: 'Domínio da Vida', description: '', features: [], extras: null },
+    { id: 'life-domain', name: 'Domínio da Vida', description: '', extras: null },
   ],
   hasFightingStyle: false,
   expertise: null,
@@ -104,7 +104,6 @@ const rogueClass: GameClass = {
   multiclassProficiencies: { armor: [], weapons: [], tools: [], skills: null, instruments: 0 },
   isCaster: false,
   spellcasting: null,
-  features: [],
   subclassLevel: 3,
   subclasses: [],
   hasFightingStyle: false,
@@ -323,19 +322,23 @@ describe('getExpertiseOptions', () => {
 
 describe('getClassFeaturesUpToLevel', () => {
   const barbarian = getClass('barbarian')!
-  // classe sintética que nunca estará na tabela de progressão (testa o fallback)
-  const noTableClass: GameClass = {
-    ...baseClass,
-    id: 'sem-tabela-de-progressao',
-    features: [
-      { name: 'Feature Fake 1', description: '' },
-      { name: 'Feature Fake 2', description: '' },
-    ],
-  }
 
   it('hasFeaturesByLevel: bárbaro sim, classe sem tabela não', () => {
     expect(hasFeaturesByLevel('barbarian')).toBe(true)
     expect(hasFeaturesByLevel('sem-tabela-de-progressao')).toBe(false)
+    expect(hasFeaturesByLevel('berserker', true)).toBe(true)
+  })
+
+  // A tabela por nível é a única fonte do texto (classes.json não tem mais cópia): toda classe e
+  // subclasse do catálogo precisa estar nela, senão a etapa Classe e a ficha ficam sem texto.
+  it('toda classe e subclasse do catálogo tem tabela, e a subclasse dá algo ao ser escolhida', () => {
+    for (const cls of CLASSES) {
+      expect(hasFeaturesByLevel(cls.id), cls.id).toBe(true)
+      for (const sub of cls.subclasses) {
+        expect(hasFeaturesByLevel(sub.id, true), sub.id).toBe(true)
+        expect(getSubclassFeaturesUpToLevel(sub.id, cls.subclassLevel).length, sub.id).toBeGreaterThan(0)
+      }
+    }
   })
 
   it('bárbaro nv1 mostra só as features de nível 1', () => {
@@ -375,10 +378,15 @@ describe('getClassFeaturesUpToLevel', () => {
     expect(feats.find(f => f.name === 'Presença Intimidante')?.level).toBe(10)
   })
 
-  it('classe sem tabela cai no fallback: features de nível 1', () => {
-    const f = getClassFeaturesUpToLevel(noTableClass, null, 10)
-    expect(f.every(x => x.level === 1)).toBe(true)
-    expect(f.length).toBe(noTableClass.features.length)
+  it('classe sem tabela não inventa features', () => {
+    const noTableClass: GameClass = { ...baseClass, id: 'sem-tabela-de-progressao' }
+    expect(getClassFeaturesUpToLevel(noTableClass, null, 10)).toEqual([])
+  })
+
+  it('subclasse: o card da etapa Classe mostra só o que vem no nível de escolha', () => {
+    const lore = getSubclassFeaturesUpToLevel('college-of-lore', 3).map(f => f.name)
+    expect(lore).toEqual(['Proficiência Adicional', 'Palavras de Interrupção'])
+    expect(getBaseClassFeaturesUpToLevel('bard', 1).map(f => f.name)).toEqual(['Conjuração', 'Inspiração de Bardo'])
   })
 })
 

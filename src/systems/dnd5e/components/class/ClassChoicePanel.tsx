@@ -7,6 +7,7 @@ import {
   resolveSkillOptions,
   FIGHTING_STYLES,
   SUBCLASS_LABEL,
+  getSubclassFeaturesUpToLevel,
 } from '../../utils/classUtils'
 import { ClassSubclassCard } from './ClassSubclassCard'
 import { ProgressionOptionCard } from './ProgressionOptionCard'
@@ -233,6 +234,7 @@ export function ClassChoicePanel({ cls, choices, accent, level, onChange, profic
               <ClassSubclassCard
                 key={sub.id}
                 subclass={sub}
+                features={getSubclassFeaturesUpToLevel(sub.id, cls.subclassLevel)}
                 accent={accent}
                 selected={choices.subclass === sub.id}
                 onSelect={() => handleSubclassSelect(sub.id)}

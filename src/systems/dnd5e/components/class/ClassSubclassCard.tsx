@@ -1,7 +1,9 @@
-import type { ClassSubclass } from '../../types/class'
+import type { ClassSubclass, LevelFeature } from '../../types/class'
 
 type Props = {
   subclass: ClassSubclass
+  /** O que a subclasse dá ao ser escolhida, com o mesmo texto da ficha (tabela por nível). */
+  features: LevelFeature[]
   accent: string
   selected: boolean
   onSelect: () => void
@@ -12,7 +14,7 @@ type Props = {
  * Caminho é a decisão mais pesada da etapa, e escolher às cegas pra só então ler o que a
  * subclasse faz é o oposto de manter o controle com o jogador.
  */
-export function ClassSubclassCard({ subclass, accent, selected, onSelect }: Props) {
+export function ClassSubclassCard({ subclass, features, accent, selected, onSelect }: Props) {
   return (
     <button
       onClick={onSelect}
@@ -30,13 +32,13 @@ export function ClassSubclassCard({ subclass, accent, selected, onSelect }: Prop
         {selected && <span className="text-sm" style={{ color: accent }}>✦</span>}
       </div>
       <p className="text-parchment-500 text-xs leading-relaxed">{subclass.description}</p>
-      {subclass.features.length > 0 && (
+      {features.length > 0 && (
         <div
           className="mt-2 space-y-1 border-t pt-2"
           style={{ borderColor: selected ? `${accent}30` : 'rgba(90, 62, 36, 0.3)' }}
         >
-          {subclass.features.map(f => (
-            <div key={f.name}>
+          {features.map(f => (
+            <div key={`${f.level}-${f.name}`}>
               <span
                 className="text-xs font-semibold font-fantasy"
                 style={{ color: selected ? accent : '#9a7650' }}

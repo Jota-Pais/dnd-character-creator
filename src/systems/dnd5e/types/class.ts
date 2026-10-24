@@ -42,6 +42,8 @@ export type ClassFeature = { name: string; description: string }
 /**
  * Feature ganha em um nível específico (progressão 1–20). `effects` é o que a ficha aplica sozinha
  * (Versatilidade, Especialização) — o mesmo formato dos talentos, agregado em `sheetEffects`.
+ * O texto mora só em `class-progression-features.json`: a etapa Classe, a Revisão e a ficha leem
+ * todos dali, para o card nunca divergir do que vai impresso.
  */
 export type LevelFeature = ClassFeature & { level: number; effects?: FeatureEffects }
 
@@ -49,9 +51,6 @@ export type ClassSubclass = {
   id: string
   name: string
   description: string
-  features: ClassFeature[]
-  /** Features da subclasse por nível (2–20). Preenchido na fase 3 do roadmap. */
-  featuresByLevel?: LevelFeature[]
   /** Só Cavaleiro Arcano / Trapaceiro Arcano conjuram (third-caster); as demais subclasses omitem. */
   casterProgression?: CasterProgression
   extras: SubclassExtraChoices | null
@@ -118,9 +117,6 @@ export type GameClass = {
   multiclassProficiencies: MulticlassProficiencies
   isCaster: boolean
   spellcasting: ClassSpellcasting | null
-  features: ClassFeature[]
-  /** Features da classe por nível (1–20). Preenchido na fase 3 do roadmap. */
-  featuresByLevel?: LevelFeature[]
   subclassLevel: number
   subclasses: ClassSubclass[]
   hasFightingStyle: boolean

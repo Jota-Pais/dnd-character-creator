@@ -1034,3 +1034,325 @@ export function getClassFeatureSavingThrows(draft: CharacterDraft): AbilityScore
   })
   return [...new Set(out)]
 }
+
+// ── Condições (estado de jogo) ─────────────────────────────────────────────────
+//
+// O estado de jogo é mais uma fonte deste agregador, não um agregador paralelo: ele passa as
+// condições gravadas e o nível de exaustão, e daqui sai o que está valendo — o modo de cada
+// jogada, falhas automáticas, deslocamento, PV máximo, concentração e as linhas condicionais.
+// Regras em `docs/regras-condicoes.md` (Apêndice A, págs. 291-293). Mesma regra de ouro do resto
+// do arquivo: incondicional entra no número/modo; condicional vira linha com a origem.
+//
+// Os imports ficam aqui, e não no topo, pra seção poder ser acrescentada sem mexer no resto.
+
+import conditionsData from '../data/conditions.json'
+import type {
+  Condition, ConditionCatalog, ConditionEffect, ConditionId, ExhaustionLevel, RollMode,
+} from '../types/condition'
+
+const CONDITION_CATALOG = conditionsData as ConditionCatalog
+
+/** As 14 condições do Apêndice A, na ordem do livro em português. */
+export const CONDITIONS: Condition[] = CONDITION_CATALOG.conditions
+
+/** A exaustão, com a tabela de 6 níveis cumulativa (pág. 292). */
+export const EXHAUSTION = CONDITION_CATALOG.exhaustion
+
+const CONDITIONS_BY_ID = new Map(CONDITIONS.map(c => [c.id, c]))
+
+const ALL_ABILITIES: AbilityScore[] = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA']
+
+export function getCondition(id: ConditionId): Condition | undefined {
+  return CONDITIONS_BY_ID.get(id)
+}
+
+/** O que o estado de jogo guarda das condições: as gravadas e o nível de exaustão. */
+export type ConditionState = { conditions: readonly ConditionId[]; exhaustion: ExhaustionLevel }
+
+/**
+ * Origem estável de um efeito, no formato do motor de rolagem (`regras-rolagens-e-concentracao.md`,
+ * 11.2): `condition:poisoned` / "Envenenado", `exhaustion:3` / "Exaustão 3".
+ */
+export type ConditionSource = { source: string; label: string }
+
+/** Condição valendo agora: gravada (`direct`) e/ou derivada de outra (`impliedBy`). */
+export type EffectiveCondition = {
+  id: ConditionId
+  name: string
+  direct: boolean
+  impliedBy: ConditionId[]
+  /**
+   * Só em `getActiveConditionEffects`: condições ativas que suspendem esta (Petrificado →
+   * Envenenado). Suspensa continua na lista, para a UI marcar, mas não tem efeito.
+   */
+  suspendedBy?: ConditionId[]
+}
+
+/** Uma jogada sob as condições: as fontes de cada lado, o modo já resolvido e as falhas automáticas. */
+export type ConditionRoll = {
+  mode: RollMode
+  advantage: ConditionSource[]
+  disadvantage: ConditionSource[]
+  autoFail: ConditionSource[]
+}
+
+export type ConditionFlag = { active: boolean; sources: ConditionSource[] }
+
+/** Linha condicional para a UI: nunca altera número. */
+export type ConditionLine = {
+  kind: Extract<ConditionEffect, { scope: 'notice' }>['kind']
+  text: string
+  source: ConditionSource
+  page?: number
+}
+
+export type ActiveConditionEffects = {
+  conditions: EffectiveCondition[]
+  exhaustion: ExhaustionLevel
+  attack: ConditionRoll
+  abilityChecks: Record<AbilityScore, ConditionRoll>
+  savingThrows: Record<AbilityScore, ConditionRoll>
+  /** Iniciativa é teste de Destreza (pág. 179): o mesmo que `abilityChecks.DEX`. */
+  initiative: ConditionRoll
+  /**
+   * Teste contra a morte: só as fontes que valem para TODOS os testes de resistência (hoje, a
+   * Exaustão 3), nunca as de um atributo, e sem falha automática — a do Inconsciente é só de FOR
+   * e DES (`regras-dano-e-morte.md`, Notas, "Teste contra a morte"; `regras-condicoes.md`, item 16).
+   */
+  deathSave: ConditionRoll
+  /** Ajuste do valor passivo por atributo: +5 com vantagem, −5 com desvantagem (pág. 177). */
+  passiveModifier: Record<AbilityScore, -5 | 0 | 5>
+  /** `zero` prevalece sobre `half`. */
+  speed: {
+    result: 'normal' | 'half' | 'zero'
+    ignoreBonuses: boolean
+    zero: ConditionSource[]
+    half: ConditionSource[]
+  }
+  hpMax: { multiplier: 1 | 0.5; sources: ConditionSource[] }
+  noActions: ConditionFlag
+  noReactions: ConditionFlag
+  cannotSpeak: ConditionFlag
+  endsConcentration: ConditionFlag
+  resistAllDamage: ConditionFlag
+  dead: ConditionFlag
+  lines: ConditionLine[]
+}
+
+/**
+ * Vantagem e desvantagem (pág. 175): várias do mesmo lado valem uma; uma de cada lado anula,
+ * qualquer que seja a quantidade. Candidata a morar em `src/core/dice` (a regra não depende do
+ * que é cada fonte) — até lá, serve para juntar as fontes da ficha às das condições.
+ */
+export function resolveRollMode(advantage: readonly unknown[], disadvantage: readonly unknown[]): RollMode {
+  if (advantage.length > 0 && disadvantage.length > 0) return 'normal'
+  if (advantage.length > 0) return 'advantage'
+  if (disadvantage.length > 0) return 'disadvantage'
+  return 'normal'
+}
+
+/**
+ * Condições efetivas: as gravadas mais as que elas implicam (Paralisado ⇒ Incapacitado), sem
+ * repetir — "ou a criatura tem a condição ou não" (pág. 291). Ids desconhecidos são ignorados.
+ */
+export function getEffectiveConditions(ids: readonly ConditionId[]): EffectiveCondition[] {
+  const direct = new Set(ids.filter(id => CONDITIONS_BY_ID.has(id)))
+  const out = new Map<ConditionId, EffectiveCondition>()
+  const visit = (id: ConditionId, parent?: ConditionId) => {
+    const cond = CONDITIONS_BY_ID.get(id)
+    if (!cond) return
+    const existing = out.get(id)
+    const entry = existing ?? { id, name: cond.name, direct: direct.has(id), impliedBy: [] }
+    if (!existing) out.set(id, entry)
+    if (parent && !entry.impliedBy.includes(parent)) entry.impliedBy.push(parent)
+    if (!existing) for (const child of cond.implies) visit(child, id)
+  }
+  for (const id of direct) visit(id)
+  return [...out.values()]
+}
+
+/**
+ * Aplica uma condição à lista gravada, com o que ela dispara ao ser aplicada (`onApply`):
+ * Inconsciente grava também o Caído, que fica depois de acordar (sai ao levantar).
+ */
+export function withConditionApplied(conditions: readonly ConditionId[], id: ConditionId): ConditionId[] {
+  const added = [id, ...(getCondition(id)?.onApply?.addConditions ?? [])]
+  return [...new Set([...conditions, ...added])]
+}
+
+function clampExhaustion(level: number): ExhaustionLevel {
+  return Math.max(0, Math.min(6, Math.floor(level))) as ExhaustionLevel
+}
+
+function conditionSourceOf(cond: EffectiveCondition): ConditionSource {
+  if (cond.direct || cond.impliedBy.length === 0) return { source: `condition:${cond.id}`, label: cond.name }
+  const parents = cond.impliedBy.map(id => getCondition(id)?.name ?? id).join(', ')
+  return { source: `condition:${cond.id}`, label: `${cond.name} (por ${parents})` }
+}
+
+const emptyRoll = (): ConditionRoll => ({ mode: 'normal', advantage: [], disadvantage: [], autoFail: [] })
+
+const byAbility = <T>(make: (ability: AbilityScore) => T): Record<AbilityScore, T> =>
+  Object.fromEntries(ALL_ABILITIES.map(a => [a, make(a)])) as Record<AbilityScore, T>
+
+const flag = (sources: ConditionSource[]): ConditionFlag => ({ active: sources.length > 0, sources })
+
+/**
+ * Os efeitos ATIVOS das condições e da exaustão, resolvidos. Pura: o estado de jogo passa o que
+ * guardou, a ficha não muda. A exaustão é cumulativa (nível N aplica 1..N); o nível 6 sinaliza
+ * morte e encerra a concentração. As falhas automáticas não impedem rolar ("rolar mesmo assim"
+ * é da UI); a desvantagem em testes de habilidade vale também na iniciativa e no passivo.
+ * Condição suspensa por outra ativa (`suspends`: Petrificado → Envenenado) fica na lista com
+ * `suspendedBy`, sem efeito nenhum, e com uma linha dizendo que está suspensa.
+ */
+export function getActiveConditionEffects(state: ConditionState): ActiveConditionEffects {
+  const exhaustion = clampExhaustion(state.exhaustion)
+  const lines: ConditionLine[] = []
+
+  const effective = getEffectiveConditions(state.conditions)
+  const suspendedBy = new Map<ConditionId, ConditionId[]>()
+  for (const cond of effective) {
+    for (const effect of getCondition(cond.id)?.effects ?? []) {
+      if (effect.kind !== 'suspends') continue
+      for (const id of effect.conditions) {
+        if (id === cond.id || !effective.some(c => c.id === id)) continue
+        suspendedBy.set(id, [...(suspendedBy.get(id) ?? []), cond.id])
+        lines.push({
+          kind: 'notice',
+          text: `${getCondition(id)?.name ?? id} fica suspenso enquanto durar ${cond.name}: sem efeito, mas não removido.`,
+          source: conditionSourceOf(cond),
+          page: 293,
+        })
+      }
+    }
+  }
+  const conditions = effective.map(cond =>
+    suspendedBy.has(cond.id) ? { ...cond, suspendedBy: suspendedBy.get(cond.id) } : cond)
+
+  const tagged: { source: ConditionSource; effect: ConditionEffect }[] = [
+    ...conditions.filter(cond => !cond.suspendedBy).flatMap(cond => {
+      const source = conditionSourceOf(cond)
+      return (getCondition(cond.id)?.effects ?? []).map(effect => ({ source, effect }))
+    }),
+    ...EXHAUSTION.levels
+      .filter(row => row.level <= exhaustion)
+      .flatMap(row => {
+        const source = { source: `exhaustion:${row.level}`, label: `Exaustão ${row.level}` }
+        return row.effects.map(effect => ({ source, effect }))
+      }),
+  ]
+
+  const attack = emptyRoll()
+  const abilityChecks = byAbility(() => emptyRoll())
+  const savingThrows = byAbility(() => emptyRoll())
+  const deathSave = emptyRoll()
+  const speedZero: ConditionSource[] = []
+  const speedHalf: ConditionSource[] = []
+  let ignoreBonuses = false
+  const hpHalf: ConditionSource[] = []
+  const stateFlags = {
+    noActions: [] as ConditionSource[],
+    noReactions: [] as ConditionSource[],
+    cannotSpeak: [] as ConditionSource[],
+    endsConcentration: [] as ConditionSource[],
+    death: [] as ConditionSource[],
+  }
+  const resistAll: ConditionSource[] = []
+
+  for (const { source, effect } of tagged) {
+    if (effect.scope === 'notice') {
+      const page = effect.kind === 'notice' ? effect.page : undefined
+      lines.push(page ? { kind: effect.kind, text: effect.text, source, page } : { kind: effect.kind, text: effect.text, source })
+      continue
+    }
+    switch (effect.kind) {
+      case 'rollMode': {
+        const side = effect.mode === 'advantage' ? 'advantage' : 'disadvantage'
+        for (const roll of effect.rolls) {
+          if (roll === 'attack') {
+            attack[side].push(source)
+            continue
+          }
+          const table = roll === 'save' ? savingThrows : abilityChecks
+          for (const ability of effect.abilities ?? ALL_ABILITIES) table[ability][side].push(source)
+          if (roll === 'save' && !effect.abilities) deathSave[side].push(source)
+        }
+        break
+      }
+      case 'autoFail': {
+        const table = effect.roll === 'save' ? savingThrows : abilityChecks
+        for (const ability of effect.abilities ?? ALL_ABILITIES) table[ability].autoFail.push(source)
+        break
+      }
+      case 'speed':
+        if (effect.op === 'zero') {
+          speedZero.push(source)
+          if (effect.ignoreBonuses) ignoreBonuses = true
+        } else {
+          speedHalf.push(source)
+        }
+        break
+      case 'hpMax':
+        hpHalf.push(source)
+        break
+      case 'damageResistance':
+        resistAll.push(source)
+        break
+      case 'noActions':
+      case 'noReactions':
+      case 'cannotSpeak':
+      case 'endsConcentration':
+      case 'death':
+        stateFlags[effect.kind].push(source)
+        break
+      case 'suspends':
+        // Já tratado antes do laço: a condição suspensa nem entra em `tagged`.
+        break
+    }
+  }
+
+  for (const roll of [attack, deathSave, ...Object.values(abilityChecks), ...Object.values(savingThrows)]) {
+    roll.mode = resolveRollMode(roll.advantage, roll.disadvantage)
+  }
+  const passive = (mode: RollMode) => (mode === 'advantage' ? 5 : mode === 'disadvantage' ? -5 : 0)
+
+  return {
+    conditions,
+    exhaustion,
+    attack,
+    abilityChecks,
+    savingThrows,
+    initiative: { ...abilityChecks.DEX },
+    deathSave,
+    passiveModifier: byAbility(a => passive(abilityChecks[a].mode)),
+    speed: {
+      result: speedZero.length > 0 ? 'zero' : speedHalf.length > 0 ? 'half' : 'normal',
+      ignoreBonuses,
+      zero: speedZero,
+      half: speedHalf,
+    },
+    hpMax: { multiplier: hpHalf.length > 0 ? 0.5 : 1, sources: hpHalf },
+    noActions: flag(stateFlags.noActions),
+    noReactions: flag(stateFlags.noReactions),
+    cannotSpeak: flag(stateFlags.cannotSpeak),
+    endsConcentration: flag(stateFlags.endsConcentration),
+    resistAllDamage: flag(resistAll),
+    dead: flag(stateFlags.death),
+    lines,
+  }
+}
+
+/**
+ * Deslocamento efetivo em pés, a partir do da ficha JÁ com bônus: 0 se algo zera (o "sem bônus"
+ * do Agarrado/Impedido dá no mesmo); metade arredondada para baixo na Exaustão 2 (pág. 7).
+ */
+export function getEffectiveSpeed(speedFeet: number, effects: Pick<ActiveConditionEffects, 'speed'>): number {
+  if (effects.speed.result === 'zero') return 0
+  if (effects.speed.result === 'half') return Math.floor(speedFeet / 2)
+  return speedFeet
+}
+
+/** PV máximo efetivo: metade, arredondada para baixo, a partir da Exaustão 4 (págs. 7, 292). */
+export function getEffectiveHpMax(hpMax: number, effects: Pick<ActiveConditionEffects, 'hpMax'>): number {
+  return Math.floor(hpMax * effects.hpMax.multiplier)
+}

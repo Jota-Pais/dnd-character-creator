@@ -1,0 +1,310 @@
+{
+  "conditions": [
+    {
+      "id": "grappled",
+      "name": "Agarrado",
+      "page": 291,
+      "text": [
+        "O deslocamento de uma criatura agarrada se torna 0, e ela não pode se beneficiar de qualquer bônus em seu deslocamento.",
+        "A condição se encerra caso a criatura que a agarrou fique incapacitada (veja a condição).",
+        "A condição se encerra se um efeito, como o causado pela magia onda trovejante, remover a criatura agarrada do alcance da criatura que a agarrou ou do efeito que causa a condição."
+      ],
+      "implies": [],
+      "effects": [
+        { "kind": "speed", "op": "zero", "ignoreBonuses": true, "scope": "sheet" },
+        { "kind": "notice", "scope": "notice", "text": "Termina se quem agarrou ficar incapacitado ou se um efeito tirar você do alcance dele." }
+      ]
+    },
+    {
+      "id": "frightened",
+      "name": "Amedrontado",
+      "page": 291,
+      "text": [
+        "Uma criatura amedrontada sofre desvantagem em testes de habilidade e jogadas de ataque enquanto a fonte do seu medo estiver em sua linha de visão.",
+        "A criatura não pode se mover voluntariamente para uma posição que a faça terminar o turno mais próxima da sua fonte de medo do que sua posição inicial."
+      ],
+      "implies": [],
+      "effects": [
+        {
+          "kind": "rollMode",
+          "rolls": ["abilityCheck", "attack"],
+          "mode": "disadvantage",
+          "scope": "notice",
+          "when": "com a fonte do medo na linha de visão",
+          "text": "Desvantagem em testes de habilidade e jogadas de ataque enquanto a fonte do seu medo estiver em sua linha de visão."
+        },
+        { "kind": "notice", "scope": "notice", "text": "Não pode se mover voluntariamente para uma posição que a faça terminar o turno mais próxima da fonte do medo do que a posição inicial." }
+      ]
+    },
+    {
+      "id": "stunned",
+      "name": "Atordoado",
+      "page": 291,
+      "text": [
+        "Uma criatura atordoada está incapacitada (veja a condição). Ela não pode se mover e somente pode falar hesitantemente.",
+        "A criatura falha automaticamente em testes de resistência de Força ou Destreza.",
+        "Jogadas de ataque contra a criatura possuem vantagem."
+      ],
+      "implies": ["incapacitated"],
+      "effects": [
+        { "kind": "speed", "op": "zero", "scope": "sheet" },
+        { "kind": "autoFail", "roll": "save", "abilities": ["STR", "DEX"], "scope": "sheet" },
+        { "kind": "notice", "scope": "notice", "text": "Só pode falar hesitantemente." },
+        { "kind": "againstYou", "scope": "notice", "text": "Jogadas de ataque contra você têm vantagem." }
+      ]
+    },
+    {
+      "id": "prone",
+      "name": "Caído",
+      "page": 291,
+      "text": [
+        "A única opção de movimento que uma criatura caída tem é rastejar, a menos que ela se levante, encerrando assim a condição.",
+        "A criatura sofre desvantagem nas jogadas de ataque.",
+        "Uma jogada de ataque contra a criatura possui vantagem se o atacante estiver a 1,5 metro dela. De qualquer outra forma a jogada sofre desvantagem."
+      ],
+      "implies": [],
+      "effects": [
+        { "kind": "rollMode", "rolls": ["attack"], "mode": "disadvantage", "scope": "sheet" },
+        { "kind": "notice", "scope": "notice", "text": "Só pode rastejar: cada 1,5 m custa 1,5 m adicional. Levantar-se custa metade do deslocamento e é impossível com deslocamento 0.", "page": 192 },
+        { "kind": "againstYou", "scope": "notice", "text": "Ataques contra você têm vantagem se o atacante estiver a 1,5 m; de mais longe, desvantagem." }
+      ]
+    },
+    {
+      "id": "blinded",
+      "name": "Cego",
+      "page": 291,
+      "text": [
+        "Uma criatura cega não pode ver e falha automaticamente em qualquer teste de habilidade que requeira o uso da visão.",
+        "Jogadas de ataque contra a criatura possuem vantagem, e os ataques da criatura sofrem desvantagem."
+      ],
+      "implies": [],
+      "effects": [
+        {
+          "kind": "autoFail",
+          "roll": "abilityCheck",
+          "scope": "notice",
+          "when": "teste que requeira o uso da visão",
+          "text": "Falha automaticamente em qualquer teste de habilidade que requeira o uso da visão."
+        },
+        { "kind": "rollMode", "rolls": ["attack"], "mode": "disadvantage", "scope": "sheet" },
+        { "kind": "againstYou", "scope": "notice", "text": "Jogadas de ataque contra você têm vantagem." }
+      ]
+    },
+    {
+      "id": "charmed",
+      "name": "Enfeitiçado",
+      "page": 292,
+      "text": [
+        "Uma criatura enfeitiçada não pode atacar quem a enfeitiçou ou tê-lo como alvo de habilidades ou efeitos mágicos nocivos.",
+        "Quem a enfeitiçou possui vantagem em testes de habilidade feitos para interagir socialmente com a criatura."
+      ],
+      "implies": [],
+      "effects": [
+        { "kind": "notice", "scope": "notice", "text": "Não pode atacar quem a enfeitiçou nem tê-lo como alvo de habilidades ou efeitos mágicos nocivos." },
+        { "kind": "againstYou", "scope": "notice", "text": "Quem a enfeitiçou tem vantagem em testes de habilidade para interagir socialmente com você." }
+      ]
+    },
+    {
+      "id": "poisoned",
+      "name": "Envenenado",
+      "page": 292,
+      "text": [
+        "Uma criatura envenenada sofre desvantagem em jogadas de ataque e testes de habilidade."
+      ],
+      "implies": [],
+      "effects": [
+        { "kind": "rollMode", "rolls": ["attack", "abilityCheck"], "mode": "disadvantage", "scope": "sheet" }
+      ]
+    },
+    {
+      "id": "restrained",
+      "name": "Impedido",
+      "page": 292,
+      "text": [
+        "O deslocamento de uma criatura impedida se torna 0, e ela não pode se beneficiar de qualquer bônus em seu deslocamento.",
+        "Jogadas de ataque contra a criatura possuem vantagem, e os ataques da criatura sofrem desvantagem.",
+        "A criatura sofre desvantagem em testes de resistência de Destreza."
+      ],
+      "implies": [],
+      "effects": [
+        { "kind": "speed", "op": "zero", "ignoreBonuses": true, "scope": "sheet" },
+        { "kind": "rollMode", "rolls": ["attack"], "mode": "disadvantage", "scope": "sheet" },
+        { "kind": "rollMode", "rolls": ["save"], "abilities": ["DEX"], "mode": "disadvantage", "scope": "sheet" },
+        { "kind": "againstYou", "scope": "notice", "text": "Jogadas de ataque contra você têm vantagem." }
+      ]
+    },
+    {
+      "id": "incapacitated",
+      "name": "Incapacitado",
+      "page": 292,
+      "text": [
+        "Uma criatura incapacitada não pode realizar ações ou reações."
+      ],
+      "implies": [],
+      "effects": [
+        { "kind": "noActions", "scope": "gameState" },
+        { "kind": "noReactions", "scope": "gameState" },
+        { "kind": "endsConcentration", "scope": "gameState", "page": 205 }
+      ]
+    },
+    {
+      "id": "unconscious",
+      "name": "Inconsciente",
+      "page": 292,
+      "text": [
+        "Uma criatura inconsciente está incapacitada (veja a condição). Ela não pode se mover ou falar e não tem ciência de seus arredores.",
+        "A criatura larga tudo que estiver segurando e fica caída.",
+        "A criatura falha automaticamente em testes de resistência de Força ou Destreza.",
+        "Jogadas de ataque contra a criatura possuem vantagem.",
+        "Qualquer ataque que atinja a criatura é um acerto crítico, se o atacante estiver a 1,5 metro dela."
+      ],
+      "implies": ["incapacitated"],
+      "onApply": { "addConditions": ["prone"], "dropHeldItems": true },
+      "effects": [
+        { "kind": "speed", "op": "zero", "scope": "sheet" },
+        { "kind": "cannotSpeak", "scope": "gameState" },
+        { "kind": "autoFail", "roll": "save", "abilities": ["STR", "DEX"], "scope": "sheet" },
+        { "kind": "notice", "scope": "notice", "text": "Não tem ciência dos arredores." },
+        { "kind": "againstYou", "scope": "notice", "text": "Jogadas de ataque contra você têm vantagem." },
+        { "kind": "againstYou", "scope": "notice", "text": "Qualquer ataque que atinja você é acerto crítico se o atacante estiver a 1,5 m." }
+      ]
+    },
+    {
+      "id": "invisible",
+      "name": "Invisível",
+      "page": 293,
+      "text": [
+        "Uma criatura invisível é impossível de ser vista sem a ajuda de magia ou sentidos especiais. Para o propósito de se esconder, a criatura é considerada em área de escuridão densa. A localização da criatura pode ser detectada por qualquer barulho que ela faça ou rastros que ela deixe.",
+        "Jogadas de ataque contra a criatura sofrem desvantagem, e os ataques da criatura possuem vantagem."
+      ],
+      "implies": [],
+      "effects": [
+        { "kind": "rollMode", "rolls": ["attack"], "mode": "advantage", "scope": "sheet" },
+        { "kind": "notice", "scope": "notice", "text": "Para se esconder, conta como em escuridão densa; barulho ou rastros ainda revelam onde você está." },
+        { "kind": "againstYou", "scope": "notice", "text": "Jogadas de ataque contra você têm desvantagem." }
+      ]
+    },
+    {
+      "id": "paralyzed",
+      "name": "Paralisado",
+      "page": 293,
+      "text": [
+        "Uma criatura paralisada está incapacitada (veja a condição). Ela não pode se mover ou falar.",
+        "A criatura falha automaticamente em teste de resistência de Força e Destreza.",
+        "Jogadas de ataque contra a criatura possuem vantagem.",
+        "Qualquer ataque que atinja a criatura é um acerto crítico, se o atacante estiver a 1,5 metro dela."
+      ],
+      "implies": ["incapacitated"],
+      "effects": [
+        { "kind": "speed", "op": "zero", "scope": "sheet" },
+        { "kind": "cannotSpeak", "scope": "gameState" },
+        { "kind": "autoFail", "roll": "save", "abilities": ["STR", "DEX"], "scope": "sheet" },
+        { "kind": "againstYou", "scope": "notice", "text": "Jogadas de ataque contra você têm vantagem." },
+        { "kind": "againstYou", "scope": "notice", "text": "Qualquer ataque que atinja você é acerto crítico se o atacante estiver a 1,5 m." }
+      ]
+    },
+    {
+      "id": "petrified",
+      "name": "Petrificado",
+      "page": 293,
+      "text": [
+        "Uma criatura petrificada está transformada, juntamente com todos os objetos não-mágicos que estiver vestindo ou carregando, em uma substância sólida e inanimada (geralmente pedra). Seu peso é multiplicado por dez, e ela para de envelhecer.",
+        "A criatura está incapacitada (veja a condição), não pode se mover ou falar, e não tem ciência de seus arredores.",
+        "Jogadas de ataque contra a criatura possuem vantagem.",
+        "A criatura falha automaticamente em testes de resistência de Força e Destreza.",
+        "A criatura tem resistência a todos os tipos de dano.",
+        "A criatura é imune a veneno e doenças, embora um veneno ou doença previamente presente em seu sistema seja apenas suspenso, não neutralizado."
+      ],
+      "implies": ["incapacitated"],
+      "effects": [
+        { "kind": "speed", "op": "zero", "scope": "sheet" },
+        { "kind": "cannotSpeak", "scope": "gameState" },
+        { "kind": "autoFail", "roll": "save", "abilities": ["STR", "DEX"], "scope": "sheet" },
+        { "kind": "damageResistance", "types": "all", "scope": "sheet" },
+        { "kind": "suspends", "conditions": ["poisoned"], "scope": "gameState" },
+        { "kind": "notice", "scope": "notice", "text": "Transformado em pedra (com os objetos não-mágicos que veste ou carrega): peso ×10 e não envelhece." },
+        { "kind": "notice", "scope": "notice", "text": "Não tem ciência dos arredores." },
+        { "kind": "notice", "scope": "notice", "text": "Imune a veneno e doenças; veneno ou doença já presente fica suspenso, não neutralizado." },
+        { "kind": "againstYou", "scope": "notice", "text": "Jogadas de ataque contra você têm vantagem." }
+      ]
+    },
+    {
+      "id": "deafened",
+      "name": "Surdo",
+      "page": 293,
+      "text": [
+        "Uma criatura surda não pode ouvir e falha automaticamente em qualquer teste de habilidade que requeira o uso da audição."
+      ],
+      "implies": [],
+      "effects": [
+        {
+          "kind": "autoFail",
+          "roll": "abilityCheck",
+          "scope": "notice",
+          "when": "teste que requeira o uso da audição",
+          "text": "Falha automaticamente em qualquer teste de habilidade que requeira o uso da audição."
+        }
+      ]
+    }
+  ],
+  "exhaustion": {
+    "id": "exhaustion",
+    "name": "Exaustão",
+    "page": 292,
+    "text": [
+      "Algumas habilidades especiais e perigos ambientais, como fome e exposição prolongada a temperaturas congelantes ou escaldantes, podem impor uma condição especial chamada exaustão. A exaustão é medida em seis níveis.",
+      "Se uma criatura que já possui um nível de exaustão sofrer outro efeito que também causa exaustão, o nível atual de exaustão da criatura aumenta em uma quantidade especificada pela descrição do efeito que a causou.",
+      "A criatura não sofre apenas o efeito do seu nível atual de exaustão, mas de todos os níveis anteriores.",
+      "Um efeito que remova exaustão reduz seu nível, com todos os efeitos de exaustão desaparecendo se esse nível for reduzido abaixo de 1.",
+      "Terminar um descanso longo reduz a exaustão de uma criatura em 1 nível, contanto que ela também tenha ingerido um pouco de água e comida."
+    ],
+    "maxLevel": 6,
+    "cumulative": true,
+    "longRest": { "reduceBy": 1, "requires": "Ter ingerido um pouco de água e comida." },
+    "levels": [
+      {
+        "level": 1,
+        "text": "Desvantagem em testes de habilidade",
+        "effects": [
+          { "kind": "rollMode", "rolls": ["abilityCheck"], "mode": "disadvantage", "scope": "sheet" }
+        ]
+      },
+      {
+        "level": 2,
+        "text": "Deslocamento reduzido à metade",
+        "effects": [
+          { "kind": "speed", "op": "half", "scope": "sheet" }
+        ]
+      },
+      {
+        "level": 3,
+        "text": "Desvantagem nas jogadas de ataque e testes de resistência",
+        "effects": [
+          { "kind": "rollMode", "rolls": ["attack", "save"], "mode": "disadvantage", "scope": "sheet" }
+        ]
+      },
+      {
+        "level": 4,
+        "text": "Máximo de pontos de vida reduzido à metade",
+        "effects": [
+          { "kind": "hpMax", "op": "half", "scope": "sheet" }
+        ]
+      },
+      {
+        "level": 5,
+        "text": "Deslocamento reduzido a 0",
+        "effects": [
+          { "kind": "speed", "op": "zero", "scope": "sheet" }
+        ]
+      },
+      {
+        "level": 6,
+        "text": "Morte",
+        "effects": [
+          { "kind": "death", "scope": "gameState" },
+          { "kind": "endsConcentration", "scope": "gameState", "page": 205 }
+        ]
+      }
+    ]
+  }
+}

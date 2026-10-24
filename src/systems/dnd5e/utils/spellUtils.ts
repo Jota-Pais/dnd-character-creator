@@ -5,6 +5,7 @@ import type { CharacterDraft, ClassEntry } from '../types/character'
 import { calculateModifier, getProficiencyBonus } from './abilityScoreUtils'
 import { isActiveCaster, getClass, getSpellcastingSource } from './classUtils'
 import { allClassEntries, getCasterProgression, getCombinedCasterLevel } from './multiclassUtils'
+import { getProgressionSpellIds } from './progressionChoiceUtils'
 import spellsData from '../data/spells.json'
 import progressionData from '../data/progression.json'
 
@@ -200,6 +201,12 @@ export type CasterEntry = {
   /** Truques conhecidos, os dados pela característica inclusos (mãos mágicas do Trapaceiro). */
   cantrips: string[]
   spells: string[]
+  /**
+   * Magias aprendidas em Segredos Mágicos (bardo 10/14/18, p. 54; Colégio do Conhecimento 6,
+   * p. 55), guardadas nas escolhas de progressão e não em `spells`. Contam como magias da classe,
+   * então a Revisão e a ficha imprimível as mostram junto das dela. Podem incluir truques.
+   */
+  bonusSpells: string[]
 }
 
 /** Classes conjuradoras ativas da ficha (primária + adicionais), na ordem da multiclasse. */
@@ -215,6 +222,7 @@ export function getCasterEntries(draft: CharacterDraft): CasterEntry[] {
       casting,
       cantrips: getKnownCantrips(casting.spellcasting, entry.spellChoices),
       spells: entry.spellChoices.spells,
+      bonusSpells: getProgressionSpellIds(entry),
     }]
   })
 }

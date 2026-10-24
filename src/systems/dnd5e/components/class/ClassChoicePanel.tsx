@@ -16,7 +16,7 @@ import type { TermId } from '../../utils/glossary'
 import { SKILLS, getLanguageName } from '../../utils/raceUtils'
 import { LanguagePicker } from '../common/LanguagePicker'
 import toolsData from '../../data/tools.json'
-import { getProgressionSlotsUpToLevel, type ProgressionSlot } from '../../utils/progressionChoiceUtils'
+import { getProgressionSlotsUpToLevel, SPELL_OPTIONS_LIST_ID, type ProgressionSlot } from '../../utils/progressionChoiceUtils'
 import { getProgressionOptions, type ProgressionOption } from '../../utils/progressionOptions'
 import type { ClassSlotProficiencies } from '../../utils/proficiencyUtils'
 
@@ -645,7 +645,7 @@ function ProgressionChoicesPanel({
 
           // Segredos Mágicos escolhe entre TODAS as magias do jogo — card catalog não serve
           // pra 361 opções. Esse caso fica na lista compacta com busca.
-          if (optionsListId === 'any-known-spell') {
+          if (optionsListId === SPELL_OPTIONS_LIST_ID) {
             return (
               <ChoiceSection key={slot.id} title={title} accent={accent}>
                 <SpellPickerList

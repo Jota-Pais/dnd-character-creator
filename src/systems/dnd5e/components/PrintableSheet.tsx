@@ -33,8 +33,7 @@ import {
   formatResourceLine, formatTrackCircles, groupResourcesBySource, resourceGroupsNeedLabels,
   resourceSourceLabel,
 } from '../utils/classResourceUtils'
-import { getProgressionSlotsUpToLevel } from '../utils/progressionChoiceUtils'
-import { getProgressionOptions } from '../utils/progressionOptions'
+import { getProgressionChoiceBlocks } from '../utils/progressionOptions'
 import {
   getSpell, getSpellSaveDC, formatSpellAttackBonus, getCombinedSpellSlots, getPactSlots,
   getMaxPreparedSpells, describeCastingAids, getCasterEntries, getSpellChoiceOverflow,
@@ -180,58 +179,25 @@ export function PrintableSheet() {
   const casters = getCasterEntries(draft)
   const isCaster = casters.length > 0
 
+  const fightingStyles = getSheetFightingStyles(draft)
+
+  // Manobras, invocações, metamagia, totem, terreno, presa — o mesmo helper da Revisão. Os
+  // Segredos Mágicos saem com as magias do bardo (bonusSpells), não aqui.
+  const progressionBlocks = getProgressionChoiceBlocks(entries)
+
   /**
    * Toda magia que o personagem conhece, por QUALQUER via:
-   * - truques e magias das classes conjuradoras;
-   * - o truque racial e as magias inatas da raça;
-   * - as escolhidas em Segredos Mágicos, que o bardo guarda em `progressionChoices` (fora de
-   *   `spellChoices`) porque vêm de qualquer lista de classe — são até 8 magias que ficariam de
-   *   fora se a gente olhasse só as escolhas de conjuração.
+   * - truques e magias das classes conjuradoras, com as de Segredos Mágicos (bonusSpells);
+   * - o truque racial, o da subclasse e as magias inatas da raça.
    *
    * Sem repetir e na ordem da mesa: truques primeiro, depois por nível, alfabético dentro de cada.
    */
-  const fightingStyles = getSheetFightingStyles(draft)
-
-  /**
-   * Escolhas de progressão com o texto de cada uma: manobras do Mestre de Batalha, invocações do
-   * bruxo, metamagia do feiticeiro, totem, terreno, presa. Os slots de Segredos Mágicos ficam de
-   * fora porque as magias que eles escolhem já saem inteiras no grimório.
-   */
-  const progressionBlocks = entries
-    .map(e => ({
-      e,
-      slots: getProgressionSlotsUpToLevel(e.classId, e.classChoices.subclass, e.level)
-        .filter(slot => slot.optionsListId !== 'any-known-spell')
-        .map(slot => {
-          const options = getProgressionOptions(slot.optionsListId)
-          const picks = (e.classChoices.progressionChoices[slot.id] ?? []).flatMap(id => {
-            const opt = options.find(o => o.id === id)
-            if (!opt) return []
-            // As opções escalonadas (táticas do patrulheiro) trazem o texto do degrau alcançado.
-            const text = opt.description
-              ?? (e.level >= 14 ? opt.tier14 : e.level >= 6 ? opt.tier6 : opt.tier3)
-              ?? opt.prerequisite
-              ?? ''
-            return [{ id: opt.id, name: opt.name, text }]
-          })
-          return { slot, picks }
-        })
-        .filter(s => s.picks.length > 0),
-    }))
-    .filter(b => b.slots.length > 0)
-
   const knownSpells = (() => {
-    const fromProgression = entries.flatMap(e =>
-      getProgressionSlotsUpToLevel(e.classId, e.classChoices.subclass, e.level)
-        .filter(slot => slot.optionsListId === 'any-known-spell')
-        .flatMap(slot => e.classChoices.progressionChoices[slot.id] ?? []),
-    )
     const ids = [
-      ...casters.flatMap(c => [...c.cantrips, ...c.spells]),
+      ...casters.flatMap(c => [...c.cantrips, ...c.spells, ...c.bonusSpells]),
       ...(draft.raceChoices.cantrip ? [draft.raceChoices.cantrip] : []),
       ...entries.flatMap(e => e.classChoices.subclassExtras.cantrip ? [e.classChoices.subclassExtras.cantrip] : []),
       ...innateSpells.map(s => s.spellId),
-      ...fromProgression,
     ]
     return [...new Set(ids)]
       .map(getSpell)
@@ -426,9 +392,10 @@ export function PrintableSheet() {
               const overflow = getSpellChoiceOverflow(caster, finalScores)
               const cantrips = cantripIds.map(id => getSpell(id)?.name).filter(Boolean)
               const spells = spellIds.map(id => getSpell(id)).filter(Boolean)
+              const secrets = caster.bonusSpells.map(getSpell).filter(s => s !== undefined)
               const byLevel = new Map<number, string[]>()
               for (const s of spells) { const a = byLevel.get(s!.level) ?? []; a.push(s!.name); byLevel.set(s!.level, a) }
-              if (cantrips.length === 0 && spells.length === 0) return null
+              if (cantrips.length === 0 && spells.length === 0 && secrets.length === 0) return null
               return (
                 <div key={cls.id} className="mb-1">
                   {isMc && <p className="text-xs font-bold text-gray-700 mt-1">{casting.label}</p>}
@@ -444,6 +411,13 @@ export function PrintableSheet() {
                   {[...byLevel.keys()].sort((a, b) => a - b).map(lvl => (
                     <p key={lvl} className="text-xs mb-0.5"><span className="text-gray-600">{lvl}º nível: </span>{byLevel.get(lvl)!.join(', ')}</p>
                   ))}
+                  {/* Contam como magias desta classe (p. 54-55); vêm das escolhas de progressão. */}
+                  {secrets.length > 0 && (
+                    <p className="text-xs mb-0.5">
+                      <span className="text-gray-600">Segredos Mágicos: </span>
+                      {secrets.map(s => `${s.name} (${s.level === 0 ? 'truque' : `${s.level}º`})`).join(', ')}
+                    </p>
+                  )}
                 </div>
               )
             })}
@@ -559,7 +533,7 @@ export function PrintableSheet() {
       {/* Manobras, Invocações, Metamágica, Totem, Terreno, Presa — escolhas que se usam na mesa. */}
       {progressionBlocks.length > 0 && (
         <Box title="Escolhas de Progressão" className="mb-4">
-          {progressionBlocks.map(({ e, slots }) => (
+          {progressionBlocks.map(({ entry: e, slots }) => (
             <div key={e.classId} className="mb-2 last:mb-0">
               {isMc && <p className="text-xs font-bold text-gray-700">{getClass(e.classId)?.name}</p>}
               {slots.map(({ slot, picks }) => (

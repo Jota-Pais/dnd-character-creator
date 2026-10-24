@@ -11,7 +11,11 @@ import hunterSuperiorDefense from '../data/hunter-superior-defense.json'
 import spells from '../data/spells.json'
 import type { Spell } from '../types/spell'
 import type { FeatureEffects } from '../types/effects'
+import type { ClassEntry } from '../types/character'
 import { FIGHTING_STYLES } from './classUtils'
+import {
+  getProgressionSlotsUpToLevel, isSpellChoiceSlot, SPELL_OPTIONS_LIST_ID, type ProgressionSlot,
+} from './progressionChoiceUtils'
 
 export type ProgressionOption = {
   id: string
@@ -41,7 +45,7 @@ export function getProgressionOptions(optionsListId: string): ProgressionOption[
     case 'hunter-multiattack': return hunterMultiattack as ProgressionOption[]
     case 'hunter-superior-defense': return hunterSuperiorDefense as ProgressionOption[]
     case 'FIGHTING_STYLES': return FIGHTING_STYLES as ProgressionOption[]
-    case 'any-known-spell':
+    case SPELL_OPTIONS_LIST_ID:
       // Retorna todas as magias para seleção de Segredos Mágicos (qualquer classe/nível)
       return (spells as Spell[]).map(s => ({
         id: s.id,
@@ -50,4 +54,46 @@ export function getProgressionOptions(optionsListId: string): ProgressionOption[
       }))
     default: return []
   }
+}
+
+/** Uma opção escolhida num slot de progressão, com o texto que vai pra mesa. */
+export type ProgressionPick = { id: string; name: string; text: string }
+
+/** Escolhas de uma classe da ficha, slot a slot (só os slots com algo escolhido). */
+export type ProgressionChoiceBlock = {
+  entry: ClassEntry
+  slots: { slot: ProgressionSlot; picks: ProgressionPick[] }[]
+}
+
+/** Texto da opção no nível da classe: as escalonadas (táticas do patrulheiro) trazem o degrau alcançado. */
+function describeProgressionPick(opt: ProgressionOption, classLevel: number): string {
+  return opt.description
+    ?? (classLevel >= 14 ? opt.tier14 : classLevel >= 6 ? opt.tier6 : opt.tier3)
+    ?? opt.prerequisite
+    ?? ''
+}
+
+/**
+ * As "Escolhas de Progressão" da Revisão e da ficha imprimível: manobras, invocações, metamagia,
+ * disciplinas, totem, terreno, presa — cada classe da multiclasse no nível que tem nela. Os slots
+ * de Segredos Mágicos ficam de fora: são magias e saem junto das magias do bardo
+ * (`bonusSpells` de getCasterEntries).
+ */
+export function getProgressionChoiceBlocks(entries: ClassEntry[]): ProgressionChoiceBlock[] {
+  return entries
+    .map(entry => ({
+      entry,
+      slots: getProgressionSlotsUpToLevel(entry.classId, entry.classChoices.subclass, entry.level)
+        .filter(slot => !isSpellChoiceSlot(slot))
+        .map(slot => {
+          const options = getProgressionOptions(slot.optionsListId)
+          const picks = (entry.classChoices.progressionChoices[slot.id] ?? []).flatMap(id => {
+            const opt = options.find(o => o.id === id)
+            return opt ? [{ id: opt.id, name: opt.name, text: describeProgressionPick(opt, entry.level) }] : []
+          })
+          return { slot, picks }
+        })
+        .filter(s => s.picks.length > 0),
+    }))
+    .filter(b => b.slots.length > 0)
 }

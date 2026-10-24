@@ -34,7 +34,6 @@ import {
   getPassiveScore, getArmorProficiencyLabels, getWeaponProficiencyLabels, getUnproficientArmor,
   getUnproficientTools, formatUnproficientTool,
 } from '../../utils/proficiencyUtils'
-import { getProgressionSlotsUpToLevel } from '../../utils/progressionChoiceUtils'
 import {
   getTotalHp, getInitiativeBonusTotal, getSheetSpeed, describeSpeedBonuses,
   getConditionalAcBonuses, getCheckProficiencyBonus, getSheetResources, getSheetArmorClass,
@@ -42,7 +41,7 @@ import {
 } from '../../utils/sheetEffects'
 import { getSheetAttacks } from '../../utils/attackUtils'
 import { formatAttackDamage } from '../../utils/weaponFormat'
-import { getProgressionOptions } from '../../utils/progressionOptions'
+import { getProgressionChoiceBlocks } from '../../utils/progressionOptions'
 import {
   getSpell,
   getSpellSaveDC,
@@ -778,46 +777,33 @@ export function ReviewStep() {
       })()}
 
       {/* Escolhas de Progressão (por classe) */}
+      {/* Os Segredos Mágicos não entram aqui: saem com as magias do bardo, como no PDF. */}
       {cls && (() => {
-        const blocks = entries.map(e => ({
-          e,
-          slots: getProgressionSlotsUpToLevel(e.classId, e.classChoices.subclass, e.level)
-            .filter(slot => (e.classChoices.progressionChoices[slot.id] ?? []).length > 0),
-        })).filter(b => b.slots.length > 0)
+        const blocks = getProgressionChoiceBlocks(entries)
         if (blocks.length === 0) return null
 
         return (
           <Section title="Escolhas de Progressão">
             <div className="space-y-4">
-              {blocks.map(({ e, slots }) => (
+              {blocks.map(({ entry: e, slots }) => (
                 <div key={e.classId}>
                   {isMc && (
                     <p className="text-sm font-fantasy font-bold mb-2" style={{ color: accent }}>{getClass(e.classId)?.name}</p>
                   )}
                   <div className="space-y-3">
-                    {slots.map(slot => {
-                      const picked = e.classChoices.progressionChoices[slot.id] ?? []
-                      const options = getProgressionOptions(slot.optionsListId)
-                      return (
-                        <div key={slot.id}>
-                          <p className="text-xs text-parchment-700 font-fantasy uppercase tracking-widest mb-1.5">
-                            {slot.label} {slot.cumulative ? `(Nível ${slot.level})` : ''}
-                          </p>
-                          {picked.map(optId => {
-                            const opt = options.find(o => o.id === optId)
-                            if (!opt) return null
-                            return (
-                              <div key={opt.id} className="mb-2 last:mb-0">
-                                <span className="text-sm font-semibold font-fantasy text-parchment-200">{opt.name}. </span>
-                                <span className="text-sm text-parchment-500 leading-relaxed">
-                                  {opt.description ?? (e.level >= 14 ? opt.tier14 : e.level >= 6 ? opt.tier6 : opt.tier3) ?? opt.prerequisite ?? ''}
-                                </span>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      )
-                    })}
+                    {slots.map(({ slot, picks }) => (
+                      <div key={slot.id}>
+                        <p className="text-xs text-parchment-700 font-fantasy uppercase tracking-widest mb-1.5">
+                          {slot.label} {slot.cumulative ? `(Nível ${slot.level})` : ''}
+                        </p>
+                        {picks.map(opt => (
+                          <div key={opt.id} className="mb-2 last:mb-0">
+                            <span className="text-sm font-semibold font-fantasy text-parchment-200">{opt.name}. </span>
+                            <span className="text-sm text-parchment-500 leading-relaxed">{opt.text}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
                   </div>
                 </div>
               ))}
@@ -903,6 +889,7 @@ export function ReviewStep() {
                 const overflow = getSpellChoiceOverflow(caster, finalScores)
                 const cantrips = caster.cantrips.map(id => getSpell(id)).filter(Boolean)
                 const spells = caster.spells.map(id => getSpell(id)).filter(Boolean)
+                const secrets = caster.bonusSpells.map(getSpell).filter(s => s !== undefined)
                 // Conjuração de subclasse (Cavaleiro/Trapaceiro Arcano) se identifica mesmo sem multiclasse.
                 const showLabel = isMc || caster.casting.casterId !== caster.cls.id
                 return (
@@ -940,7 +927,24 @@ export function ReviewStep() {
                         <div className="flex flex-wrap gap-1.5">{spells.map(s => s && <SpellChip key={s.id} name={s.name} school={s.school} concentration={s.concentration} ritual={s.ritual} />)}</div>
                       </div>
                     )}
-                    {cantrips.length === 0 && spells.length === 0 && (
+                    {/* Contam como magias desta classe (p. 54-55); vêm das escolhas de progressão. */}
+                    {secrets.length > 0 && (
+                      <div className="mt-3">
+                        <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">Segredos Mágicos ({secrets.length})</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {secrets.map(s => (
+                            <SpellChip
+                              key={s.id}
+                              name={`${s.name} (${s.level === 0 ? 'truque' : `${s.level}°`})`}
+                              school={s.school}
+                              concentration={s.concentration}
+                              ritual={s.ritual}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {cantrips.length === 0 && spells.length === 0 && secrets.length === 0 && (
                       <p className="text-parchment-700 text-sm italic">Nenhuma magia selecionada</p>
                     )}
                   </div>

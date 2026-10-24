@@ -23,7 +23,7 @@ import { isAbilitiesStepComplete } from './abilityScoreUtils'
 import { getSpell, isSpellStepComplete } from './spellUtils'
 import { isEquipmentStepComplete } from './equipmentUtils'
 import { isImprovementsStepComplete, getFinalAbilityScores } from './asiUtils'
-import { areFeatChoicesComplete } from './sheetEffects'
+import { areFeatChoicesComplete, hasRepeatedFightingStyle } from './sheetEffects'
 import {
   getPrimaryLevel,
   allClassEntries,
@@ -360,7 +360,8 @@ export function isStepComplete(draft: CharacterDraft, step: WizardStep): boolean
         const ec = getClass(entry.classId) ?? null
         if (!isClassStepComplete(ec, entry.classChoices, entry.level, true)) return false
       }
-      return true
+      // O mesmo Estilo de Luta não vale duas vezes, nem vindo de classes diferentes (p. 85).
+      return !hasRepeatedFightingStyle(draft)
     }
     case 'abilities':
       return isAbilitiesStepComplete(draft.abilityMethod, draft.abilityScores, draft.rolledValues)

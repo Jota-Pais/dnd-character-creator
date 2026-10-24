@@ -19,6 +19,7 @@ import toolsData from '../../data/tools.json'
 import { getProgressionSlotsUpToLevel, SPELL_OPTIONS_LIST_ID, type ProgressionSlot } from '../../utils/progressionChoiceUtils'
 import { getProgressionOptions, type ProgressionOption } from '../../utils/progressionOptions'
 import type { ClassSlotProficiencies } from '../../utils/proficiencyUtils'
+import type { TakenFightingStyles } from '../../utils/sheetEffects'
 
 type Tool = { id: string; name: string; category: 'artisan' | 'musical-instrument' | 'gaming-set' | 'other' | 'vehicle' }
 const ALL_TOOLS: Tool[] = toolsData as Tool[]
@@ -47,11 +48,16 @@ type Props = {
    * antecedente e as OUTRAS classes da multiclasse já concederam.
    */
   proficiencies: ClassSlotProficiencies
+  /**
+   * Estilos de Luta que outra fonte já tomou (outra classe da multiclasse, o Adicional do campeão),
+   * de `getTakenFightingStyles`: o mesmo estilo não se escolhe duas vezes (p. 85).
+   */
+  takenFightingStyles: TakenFightingStyles
   /** Classe adicional (multiclasse): concede só o subconjunto de perícias e nenhuma escolha de ferramenta. */
   multiclass?: boolean
 }
 
-export function ClassChoicePanel({ cls, choices, accent, level, onChange, proficiencies, multiclass = false }: Props) {
+export function ClassChoicePanel({ cls, choices, accent, level, onChange, proficiencies, takenFightingStyles, multiclass = false }: Props) {
   const skillOptions = getSkillOptions(cls)
   const excludedSkillSet = new Set(proficiencies.excludedBaseSkills)
   const excludedToolSet = new Set(proficiencies.excludedBaseTools)
@@ -194,21 +200,30 @@ export function ClassChoicePanel({ cls, choices, accent, level, onChange, profic
           <div className="space-y-2">
             {fightingStyleOptions.map(style => {
               const selected = choices.fightingStyle === style.id
+              // Já tomado por outra fonte: não se escolhe de novo (p. 85). Se ficou selecionado
+              // assim mesmo (o nível da outra classe subiu depois), continua à vista para trocar.
+              const taken = takenFightingStyles.class.includes(style.id)
+              const disabled = taken && !selected
               return (
                 <button
                   key={style.id}
+                  disabled={disabled}
                   onClick={() => onChange({ fightingStyle: style.id })}
                   className="w-full text-left rounded-xl border-2 p-3 transition-all duration-200"
                   style={{
-                    borderColor: selected ? accent : 'rgba(90, 62, 36, 0.5)',
+                    borderColor: selected ? (taken ? '#c0392b' : accent) : 'rgba(90, 62, 36, 0.5)',
                     backgroundColor: selected ? `${accent}12` : 'rgba(15, 10, 4, 0.6)',
+                    opacity: disabled ? 0.5 : 1,
+                    cursor: disabled ? 'not-allowed' : 'pointer',
                   }}
                 >
                   <div className="flex items-center justify-between mb-0.5">
                     <span className="font-fantasy font-bold text-sm" style={{ color: selected ? accent : '#c4a97a' }}>
                       {style.name}
                     </span>
-                    {selected && <span style={{ color: accent }}>✦</span>}
+                    {taken
+                      ? <span className="text-xs" style={{ color: selected ? '#e74c3c' : '#8a7356' }}>já escolhido em outra fonte</span>
+                      : selected && <span style={{ color: accent }}>✦</span>}
                   </div>
                   <p className="text-parchment-500 text-xs leading-relaxed">{style.description}</p>
                 </button>
@@ -311,6 +326,7 @@ export function ClassChoicePanel({ cls, choices, accent, level, onChange, profic
         level={level}
         choices={choices}
         accent={accent}
+        takenFightingStyles={takenFightingStyles.slot}
         onChange={(patch) => onChange({ progressionChoices: { ...choices.progressionChoices, ...patch } })}
       />
     </div>
@@ -580,6 +596,7 @@ function ProgressionChoicesPanel({
   level,
   choices,
   accent,
+  takenFightingStyles,
   onChange,
 }: {
   classId: string
@@ -587,6 +604,8 @@ function ProgressionChoicesPanel({
   level: number
   choices: ClassChoiceSelections
   accent: string
+  /** Estilos que outra fonte já tomou (o da própria classe incluído) — fora do slot do campeão. */
+  takenFightingStyles: string[]
   onChange: (patch: Record<string, string[]>) => void
 }) {
   const slots = getProgressionSlotsUpToLevel(classId, subclassId, level)
@@ -623,9 +642,11 @@ function ProgressionChoicesPanel({
     <div className="space-y-4">
       {Array.from(groups.values()).map(group => {
         const optionsListId = group.slots[0].optionsListId
-        // Estilo de Luta Adicional (Campeão nv10): não pode repetir o estilo já escolhido no passo Classe.
+        // Estilo de Luta Adicional (Campeão nv10): não repete o estilo desta classe nem o de outra
+        // classe da multiclasse (p. 85). O que já está no slot fica à vista para desmarcar.
+        const pickedInGroup = group.slots.flatMap(s => choices.progressionChoices[s.id] ?? [])
         const options = getProgressionOptions(optionsListId).filter(
-          opt => !(optionsListId === 'FIGHTING_STYLES' && opt.id === choices.fightingStyle),
+          opt => !(optionsListId === 'FIGHTING_STYLES' && takenFightingStyles.includes(opt.id) && !pickedInGroup.includes(opt.id)),
         )
 
         // Cada slot é renderizado separadamente; num grupo cumulativo, as opções já

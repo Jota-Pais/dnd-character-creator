@@ -633,15 +633,60 @@ export function describeAttacksPerAction(draft: CharacterDraft): string[] {
  * progressão. Sem repetir — o mesmo estilo não vale duas vezes.
  */
 export function getOwnedFightingStyleIds(draft: CharacterDraft): string[] {
-  const ids = allClassEntries(draft).flatMap(entry => {
+  return [...new Set(getFightingStylePicks(draft).map(p => p.id))]
+}
+
+/** De onde vem um Estilo de Luta: o seletor da classe ou um slot de progressão dela (campeão 10). */
+export type FightingStyleSource = 'class' | 'slot'
+
+type FightingStylePick = { classId: string; source: FightingStyleSource; id: string }
+
+/**
+ * Cada Estilo de Luta escolhido que conta na ficha, com a fonte: o seletor de cada classe da
+ * multiclasse (no nível em que ela o dá) e os slots `FIGHTING_STYLES` liberados pelo nível nela.
+ */
+function getFightingStylePicks(draft: CharacterDraft): FightingStylePick[] {
+  return allClassEntries(draft).flatMap(entry => {
     const own = getEntryFightingStyle(entry)
-    const fromClass = own ? [own.id] : []
+    const fromClass: FightingStylePick[] = own ? [{ classId: entry.classId, source: 'class', id: own.id }] : []
     const fromSlots = getProgressionSlotsUpToLevel(entry.classId, entry.classChoices.subclass, entry.level)
       .filter(slot => slot.optionsListId === 'FIGHTING_STYLES')
       .flatMap(slot => entry.classChoices.progressionChoices[slot.id] ?? [])
+      .filter(id => FIGHTING_STYLES.some(s => s.id === id))
+      .map((id): FightingStylePick => ({ classId: entry.classId, source: 'slot', id }))
     return [...fromClass, ...fromSlots]
   })
-  return [...new Set(ids)].filter(id => FIGHTING_STYLES.some(s => s.id === id))
+}
+
+/**
+ * Os Estilos de Luta que OUTRAS fontes já tomaram — o que o seletor (`'class'`) ou o slot do
+ * campeão (`'slot'`) da classe `classId` não pode oferecer. "Você não pode escolher o mesmo Estilo
+ * de Combate mais de uma vez, mesmo se puder escolher de novo" (p. 85, 110 e 117): vale entre as
+ * classes da multiclasse (guerreiro + paladino) e entre o estilo da classe e o Adicional do campeão.
+ */
+export function getFightingStylesTakenElsewhere(
+  draft: CharacterDraft,
+  classId: string,
+  source: FightingStyleSource,
+): string[] {
+  const others = getFightingStylePicks(draft).filter(p => p.classId !== classId || p.source !== source)
+  return [...new Set(others.map(p => p.id))]
+}
+
+/** O que o painel de uma classe não pode oferecer no seletor de Estilo de Luta e no slot do campeão. */
+export type TakenFightingStyles = Record<FightingStyleSource, string[]>
+
+export function getTakenFightingStyles(draft: CharacterDraft, classId: string): TakenFightingStyles {
+  return {
+    class: getFightingStylesTakenElsewhere(draft, classId, 'class'),
+    slot: getFightingStylesTakenElsewhere(draft, classId, 'slot'),
+  }
+}
+
+/** Algum Estilo de Luta escolhido duas vezes (p. 85) — a etapa Classe não fica completa assim. */
+export function hasRepeatedFightingStyle(draft: CharacterDraft): boolean {
+  const ids = getFightingStylePicks(draft).map(p => p.id)
+  return new Set(ids).size !== ids.length
 }
 
 /**

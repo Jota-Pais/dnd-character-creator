@@ -2,8 +2,9 @@ import { describe, it, expect } from 'vitest'
 import { getEquippedWeapons, getSheetAttacks } from '../attackUtils'
 import {
   getMartialArts, getOwnedFightingStyleIds, getSheetArmorClass, getUnarmedDamageDie,
-  getWeaponAttackEffects, getSheetFightingStyles,
+  getWeaponAttackEffects, getSheetFightingStyles, getTakenFightingStyles, hasRepeatedFightingStyle,
 } from '../sheetEffects'
+import { isStepComplete } from '../draftValidation'
 import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
 import type { ClassChoiceSelections } from '../../types/class'
 
@@ -265,5 +266,51 @@ describe('Estilo de Luta Adicional do campeão (guerreiro 10)', () => {
     const withArmor = { ...champion('defense'), ...carrying('chain-mail') }
     const without = { ...champion('dueling'), ...carrying('chain-mail') }
     expect(getSheetArmorClass(withArmor, scores({})).value - getSheetArmorClass(without, scores({})).value).toBe(1)
+  })
+})
+
+describe('o mesmo Estilo de Luta não se escolhe duas vezes (p. 85, 110 e 117)', () => {
+  // Guerreiro 3 que multiclassou para paladino 2: os dois têm o seletor de Estilo de Luta.
+  const fighterPaladin = (fighterStyle: string, paladinStyle: string) => draft({
+    level: 5, class: 'fighter',
+    classChoices: choices({ skills: ['athletics', 'perception'], subclass: 'champion', fightingStyle: fighterStyle }),
+    additionalClasses: [extraClass('paladin', 2, { fightingStyle: paladinStyle })],
+  })
+
+  it('o estilo de uma classe sai do seletor da outra', () => {
+    const d = fighterPaladin('defense', 'dueling')
+    expect(getTakenFightingStyles(d, 'paladin').class).toEqual(['defense'])
+    expect(getTakenFightingStyles(d, 'fighter').class).toEqual(['dueling'])
+  })
+
+  it('a etapa Classe não fica completa com o estilo repetido', () => {
+    expect(isStepComplete(fighterPaladin('defense', 'dueling'), 'class')).toBe(true)
+    expect(hasRepeatedFightingStyle(fighterPaladin('defense', 'defense'))).toBe(true)
+    expect(isStepComplete(fighterPaladin('defense', 'defense'), 'class')).toBe(false)
+  })
+
+  it('o Estilo Adicional do campeão não repete o da própria classe nem o de outra', () => {
+    const d = draft({
+      level: 12, class: 'fighter',
+      classChoices: choices({
+        skills: ['athletics', 'perception'], subclass: 'champion', fightingStyle: 'archery',
+        progressionChoices: { 'champion-fighting-style-10': ['defense'] },
+      }),
+      additionalClasses: [extraClass('paladin', 2, { fightingStyle: 'defense' })],
+    })
+    expect(getTakenFightingStyles(d, 'fighter').slot.sort()).toEqual(['archery', 'defense'])
+    expect(getTakenFightingStyles(d, 'fighter').class.sort()).toEqual(['defense'])
+    expect(hasRepeatedFightingStyle(d)).toBe(true)
+  })
+
+  it('estilo guardado numa classe abaixo do nível que o dá não ocupa a escolha', () => {
+    // Paladino 1 ainda não tem Estilo de Luta (p. 110): o 'defense' guardado nele não conta.
+    const d = draft({
+      level: 4, class: 'fighter',
+      classChoices: choices({ skills: ['athletics', 'perception'], subclass: 'champion', fightingStyle: 'defense' }),
+      additionalClasses: [extraClass('paladin', 1, { fightingStyle: 'defense' })],
+    })
+    expect(getTakenFightingStyles(d, 'fighter').class).toEqual([])
+    expect(hasRepeatedFightingStyle(d)).toBe(false)
   })
 })

@@ -10,6 +10,7 @@ import {
 } from '../../utils/multiclassUtils'
 import { getFinalAbilityScores } from '../../utils/asiUtils'
 import { getClassSlotProficiencies } from '../../utils/proficiencyUtils'
+import { getTakenFightingStyles } from '../../utils/sheetEffects'
 import { ABILITY_LABELS } from '../../utils/abilityScoreUtils'
 import type { GameClass } from '../../types/class'
 import { ClassChoicePanel } from './ClassChoicePanel'
@@ -98,6 +99,7 @@ export function MulticlassPanel() {
                 level={entry.level}
                 multiclass
                 proficiencies={getClassSlotProficiencies(draft, entry.classId)}
+                takenFightingStyles={getTakenFightingStyles(draft, entry.classId)}
                 onChange={patch => updateAdditionalClassChoices(entry.classId, patch)}
               />
             </div>

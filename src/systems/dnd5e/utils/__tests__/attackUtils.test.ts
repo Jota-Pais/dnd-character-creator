@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { getEquippedWeapons, getSheetAttacks } from '../attackUtils'
 import {
   getMartialArts, getOwnedFightingStyleIds, getSheetArmorClass, getUnarmedDamageDie,
-  getWeaponAttackEffects,
+  getWeaponAttackEffects, getSheetFightingStyles,
 } from '../sheetEffects'
 import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
 import type { ClassChoiceSelections } from '../../types/class'
@@ -132,6 +132,39 @@ describe('getMartialArts', () => {
 
   it('quem não é monge não tem', () => {
     expect(getMartialArts(draft({ level: 5, class: 'fighter' }), scores({}))).toBeNull()
+  })
+})
+
+describe('getSheetFightingStyles — o bloco "Estilo de Luta" da Revisão e da ficha', () => {
+  it('guerreiro 1 de Proteção: o estilo aparece mesmo sem mexer em número', () => {
+    const d = draft({ level: 1, class: 'fighter', classChoices: choices({ fightingStyle: 'protection' }) })
+    expect(getSheetFightingStyles(d).map(s => [s.classId, s.style.name])).toEqual([['fighter', 'Proteção']])
+    expect(getSheetFightingStyles(d)[0].style.description).not.toBe('')
+  })
+
+  it('paladino 2 / guerreiro 1: um estilo por classe, na ordem da multiclasse', () => {
+    const d = draft({
+      level: 3, class: 'paladin', multiclass: true,
+      classChoices: choices({ fightingStyle: 'dueling' }),
+      additionalClasses: [extraClass('fighter', 1, { fightingStyle: 'defense' })],
+    })
+    expect(getSheetFightingStyles(d).map(s => [s.classId, s.style.id])).toEqual([['paladin', 'dueling'], ['fighter', 'defense']])
+  })
+
+  it('id desconhecido ou nenhum: fica de fora', () => {
+    expect(getSheetFightingStyles(draft({ level: 1, class: 'fighter', classChoices: choices({ fightingStyle: 'inexistente' }) }))).toEqual([])
+    expect(getSheetFightingStyles(draft({ level: 1, class: 'fighter' }))).toEqual([])
+  })
+
+  it('o Estilo Adicional do campeão (slot de progressão) não entra — sai em Escolhas de Progressão', () => {
+    const d = draft({
+      level: 10, class: 'fighter',
+      classChoices: choices({
+        subclass: 'champion', fightingStyle: 'archery',
+        progressionChoices: { 'champion-fighting-style-10': ['dueling'] },
+      }),
+    })
+    expect(getSheetFightingStyles(d).map(s => s.style.id)).toEqual(['archery'])
   })
 })
 

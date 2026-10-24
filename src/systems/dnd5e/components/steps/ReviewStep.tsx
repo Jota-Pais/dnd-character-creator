@@ -38,7 +38,7 @@ import { getProgressionSlotsUpToLevel } from '../../utils/progressionChoiceUtils
 import {
   getTotalHp, getInitiativeBonusTotal, getSheetSpeed, describeSpeedBonuses,
   getConditionalAcBonuses, getCheckProficiencyBonus, getSheetResources, getSheetArmorClass,
-  describeAttacksPerAction, getAttacksPerAction,
+  describeAttacksPerAction, getAttacksPerAction, getSheetFightingStyles,
 } from '../../utils/sheetEffects'
 import { getSheetAttacks } from '../../utils/attackUtils'
 import { formatAttackDamage } from '../../utils/weaponFormat'
@@ -756,6 +756,25 @@ export function ReviewStep() {
           </div>
         </Section>
       )}
+
+      {/* Estilo de Luta escolhido (o mesmo bloco da ficha imprimível) */}
+      {(() => {
+        const styles = getSheetFightingStyles(draft)
+        if (styles.length === 0) return null
+        return (
+          <Section title="Estilo de Luta">
+            <div className="space-y-2">
+              {styles.map(({ classId, style }) => (
+                <div key={classId}>
+                  {isMc && <span className="text-sm text-parchment-600">{getClass(classId)?.name}: </span>}
+                  <span className="text-sm font-semibold font-fantasy" style={{ color: accent }}>{style.name}. </span>
+                  <span className="text-sm text-parchment-500 leading-relaxed">{style.description}</span>
+                </div>
+              ))}
+            </div>
+          </Section>
+        )
+      })()}
 
       {/* Escolhas de Progressão (por classe) */}
       {cls && (() => {

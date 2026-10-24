@@ -6,7 +6,7 @@ import {
   getAvailableInnateSpells, getEffectiveTraitsWithChoices, TOOL_NAMES, describeInnateSpellUsage,
 } from '../utils/raceUtils'
 import {
-  getClass, FIGHTING_STYLES,
+  getClass,
 } from '../utils/classUtils'
 import {
   allClassEntries, getHitDicePool, formatClassLevelLabel,
@@ -45,7 +45,7 @@ import { getSheetAttacks } from '../utils/attackUtils'
 import {
   getTotalHp, getInitiativeBonusTotal, getSheetSpeed, describeSpeedBonuses,
   getConditionalAcBonuses, getCheckProficiencyBonus, getSheetResources, getSheetArmorClass,
-  getAttacksPerAction, describeAttacksPerAction,
+  getAttacksPerAction, describeAttacksPerAction, getSheetFightingStyles,
 } from '../utils/sheetEffects'
 import type { CharacterDraft } from '../types/character'
 import type { ClassSpellcasting } from '../types/class'
@@ -190,11 +190,7 @@ export function PrintableSheet() {
    *
    * Sem repetir e na ordem da mesa: truques primeiro, depois por nível, alfabético dentro de cada.
    */
-  /** Estilo de Luta escolhido por cada classe que tem um (guerreiro, paladino, patrulheiro). */
-  const fightingStyles = entries.flatMap(e => {
-    const style = FIGHTING_STYLES.find(s => s.id === e.classChoices.fightingStyle)
-    return style ? [{ classId: e.classId, style }] : []
-  })
+  const fightingStyles = getSheetFightingStyles(draft)
 
   /**
    * Escolhas de progressão com o texto de cada uma: manobras do Mestre de Batalha, invocações do

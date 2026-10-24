@@ -548,6 +548,22 @@ export function getOwnedFightingStyleIds(draft: CharacterDraft): string[] {
   return [...new Set(ids)].filter(id => FIGHTING_STYLES.some(s => s.id === id))
 }
 
+/** Um Estilo de Luta como a ficha o mostra: a classe que o deu e o estilo, com nome e texto. */
+export type SheetFightingStyle = { classId: string; style: (typeof FIGHTING_STYLES)[number] }
+
+/**
+ * O Estilo de Luta escolhido por cada classe da multiclasse que dá um (guerreiro, paladino,
+ * patrulheiro), com o texto — o bloco "Estilo de Luta" da Revisão e da ficha imprimível. Estilo
+ * de Proteção não mexe em número nenhum, então sem este bloco a escolha some da ficha. O Estilo
+ * de Luta Adicional do campeão fica de fora: é slot de progressão e sai em "Escolhas de Progressão".
+ */
+export function getSheetFightingStyles(draft: CharacterDraft): SheetFightingStyle[] {
+  return allClassEntries(draft).flatMap(entry => {
+    const style = FIGHTING_STYLES.find(s => s.id === entry.classChoices.fightingStyle)
+    return style ? [{ classId: entry.classId, style }] : []
+  })
+}
+
 /**
  * O que as características fazem nas linhas de ataque (`effects.weaponAttacks`): o Estilo de Luta
  * escolhido, features de classe (Golpes de Chi) e talentos. Cada fonte entra uma vez só. Quem

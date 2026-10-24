@@ -1,3 +1,5 @@
+import type { FeatureEffects } from './effects'
+
 export type AbilityScore = 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA'
 export type Size = 'Small' | 'Medium' | 'Large'
 
@@ -57,12 +59,24 @@ export type GrantedProficiency =
   | { type: 'skill'; value: string }
   | { type: 'tool'; value: string }
 
-/** Magia inata concedida pela raça (ex.: Magia Drow, Legado Infernal do tiefling). */
+/**
+ * Magia inata concedida pela raça (ex.: Magia Drow, Legado Infernal do tiefling). Truque é à
+ * vontade; as de 1º nível ou mais, uma vez cada por descanso longo (p. 24 e 43).
+ */
 export type InnateSpell = {
   spellId: string
   minLevel: number       // nível de personagem em que a magia passa a poder ser conjurada
   ability: AbilityScore  // atributo de conjuração
+  /** Nível em que o traço a conjura, quando o livro fixa um (repreensão infernal "como uma magia de 2° nível", p. 43). */
+  castLevel?: number
 }
+
+/**
+ * Efeitos que um traço racial declara. Por ora só os recursos (Arma de Sopro, Resistência
+ * Implacável): é o único efeito de traço que `sheetEffects` agrega — os outros entram aqui quando
+ * forem ligados, pra não declarar no dado algo que a ficha ignoraria.
+ */
+export type RacialTraitEffects = Pick<FeatureEffects, 'resources'>
 
 export type RacialTrait = {
   name: string
@@ -73,6 +87,8 @@ export type RacialTrait = {
    * "Escolha: Dracônico" ao lado do traço. Toda escolha da raça tem um traço com este campo.
    */
   choice?: RaceChoice['kind']
+  /** Efeitos que a ficha calcula sozinha (ver `sheetEffects`). Ausente = só descritivo. */
+  effects?: RacialTraitEffects
 }
 
 export type SubraceOverrides = {

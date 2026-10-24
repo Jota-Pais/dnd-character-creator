@@ -2,18 +2,21 @@ import type { CharacterDraft, ClassEntry, FeatSelections } from '../types/charac
 import type { Feat } from '../types/feat'
 import type { ArmorProficiency, LevelFeature } from '../types/class'
 import type { AbilityScore } from '../types/race'
-import type { ConditionalAcBonus } from '../types/effects'
+import type { ConditionalAcBonus, ResourceEffect } from '../types/effects'
 import { getFeat } from './featUtils'
 import { getClass, getSubclass, getClassFeaturesUpToLevel } from './classUtils'
+import { getRace, getSubrace, getEffectiveTraits } from './raceUtils'
 import { getProficiencyBonus } from './abilityScoreUtils'
-import { evaluateResource, type FinalScores, type SheetResource } from './classResourceUtils'
+import {
+  evaluateResource, type FinalScores, type ResourceSource, type SheetResource,
+} from './classResourceUtils'
 import {
   allClassEntries, getAllAsiChoices, getTotalHpAverage, getTotalHpRolled,
 } from './multiclassUtils'
 
 /**
  * Agregador dos efeitos que a ficha aplica sozinha, atravessando as fontes de característica
- * (talentos e features de classe; raça entra no mesmo formato quando for estruturada).
+ * (talentos, features de classe e, por ora só nos recursos, traços raciais).
  * Espelha `src/systems/ordem/utils/sheetEffects.ts`.
  *
  * Regra geral: efeito INCONDICIONAL entra no número da ficha; efeito CONDICIONAL vira linha
@@ -153,7 +156,7 @@ export function getTotalHp(draft: CharacterDraft, conModifier: number): number {
   return base + getFeatHpBonus(draft, draft.level ?? 1)
 }
 
-// ── Recursos de classe ─────────────────────────────────────────────────────────
+// ── Recursos (classe, raça, talento) ───────────────────────────────────────────
 
 /** Mais usos ganha; ilimitado ganha de qualquer número. */
 function usesRank(r: SheetResource): number {
@@ -161,33 +164,87 @@ function usesRank(r: SheetResource): number {
   return r.uses ?? -Infinity
 }
 
+const sameSource = (a: ResourceSource, b: ResourceSource) => a.kind === b.kind && a.id === b.id
+
+/** Uma declaração de recurso, com quem a dá e o nível que conta para ela. */
+type ResourceDeclaration = { effect: ResourceEffect; source: ResourceSource; level: number }
+
 /**
- * Recursos de classe e subclasse do personagem — usos, poços e dados declarados em
- * `effects.resources` de cada feature —, cada um calculado no nível que o personagem tem NA
- * classe dona da feature e com os atributos finais (a Inspiração de Bardo depende do Carisma).
+ * Todas as declarações de recurso do personagem, na ordem da ficha: classes (cada uma no nível
+ * NELA), traços raciais e talentos (no nível de personagem — raça e talento não são de classe
+ * nenhuma, e a Arma de Sopro cresce "no 6° nível", p. 34).
+ */
+function getResourceDeclarations(draft: CharacterDraft): ResourceDeclaration[] {
+  const out: ResourceDeclaration[] = []
+  for (const { entry, features } of getOwnedClassFeaturesByEntry(draft)) {
+    const source: ResourceSource = { kind: 'class', id: entry.classId, name: getClass(entry.classId)?.name ?? entry.classId }
+    for (const feature of features) {
+      for (const effect of feature.effects?.resources ?? []) out.push({ effect, source, level: entry.level })
+    }
+  }
+
+  const charLevel = draft.level ?? 1
+  const race = draft.race ? getRace(draft.race) : undefined
+  if (race) {
+    const subrace = draft.subrace ? getSubrace(race, draft.subrace) ?? null : null
+    const source: ResourceSource = { kind: 'race', id: subrace?.id ?? race.id, name: subrace?.name ?? race.name }
+    for (const trait of getEffectiveTraits(race, subrace)) {
+      for (const effect of trait.effects?.resources ?? []) out.push({ effect, source, level: charLevel })
+    }
+  }
+
+  for (const feat of getOwnedFeats(draft)) {
+    const source: ResourceSource = { kind: 'feat', id: feat.id, name: feat.name }
+    for (const effect of feat.effects?.resources ?? []) out.push({ effect, source, level: charLevel })
+  }
+  return out
+}
+
+/**
+ * Recursos do personagem — usos, poços e dados declarados em `effects.resources` das features de
+ * classe e subclasse, dos traços raciais e dos talentos —, cada um calculado no nível que conta
+ * para ele (o da classe dona; o de personagem para raça e talento) e com os atributos finais (a
+ * Inspiração de Bardo depende do Carisma; a CD da Arma de Sopro, da Constituição).
  *
  * Recebe os atributos prontos, como `getSkillChecks`: quem os calcula (`asiUtils`) já importa
  * este módulo.
  *
- * O mesmo `id` vindo de duas classes vira um recurso só, com os usos da que dá mais: clérigo 6 /
- * paladino 4 tem Canalizar Divindade 2 vezes, não 3 (p. 166).
+ * O mesmo `id` vindo de duas fontes vira um recurso só, com os usos da que dá mais: clérigo 6 /
+ * paladino 4 tem Canalizar Divindade 2 vezes, não 3 (p. 166). A exceção é a declaração com
+ * `addsToExisting`, que SOMA ao recurso que já existe (o dado a mais do Adepto Marcial, p. 167).
  */
-export function getClassResources(draft: CharacterDraft, finalScores: FinalScores): SheetResource[] {
+export function getSheetResources(draft: CharacterDraft, finalScores: FinalScores): SheetResource[] {
+  const prof = getProficiencyBonus(draft.level ?? 1)
   const out: SheetResource[] = []
-  for (const { entry, features } of getOwnedClassFeaturesByEntry(draft)) {
-    for (const feature of features) {
-      for (const effect of feature.effects?.resources ?? []) {
-        const resource = evaluateResource(effect, entry.classId, entry.level, finalScores)
-        const i = out.findIndex(r => r.id === resource.id)
-        if (i < 0) {
-          out.push(resource)
-          continue
-        }
-        if (out[i].classId === resource.classId) continue
-        const [keep, other] = usesRank(resource) > usesRank(out[i]) ? [resource, out[i]] : [out[i], resource]
-        out[i] = { ...keep, sharedWith: [...new Set([...keep.sharedWith, other.classId, ...other.sharedWith])] }
-      }
+  const additions: SheetResource[] = []
+  for (const { effect, source, level } of getResourceDeclarations(draft)) {
+    const resource = evaluateResource(effect, source, level, finalScores, prof)
+    if (effect.addsToExisting) {
+      additions.push(resource)
+      continue
     }
+    const i = out.findIndex(r => r.id === resource.id)
+    if (i < 0) {
+      out.push(resource)
+      continue
+    }
+    if (sameSource(out[i].source, resource.source)) continue
+    const [keep, other] = usesRank(resource) > usesRank(out[i]) ? [resource, out[i]] : [out[i], resource]
+    const shared = [...keep.sharedWith, other.source, ...other.sharedWith]
+    out[i] = { ...keep, sharedWith: shared.filter((s, j) => shared.findIndex(t => sameSource(s, t)) === j) }
+  }
+
+  // Somas por último, pra encontrar o recurso-base qualquer que seja a ordem das fontes.
+  for (const add of additions) {
+    const i = out.findIndex(r => r.id === add.id)
+    if (i < 0) {
+      out.push(add)
+      continue
+    }
+    const base = out[i]
+    // Ilimitado mais um continua ilimitado; recurso sem contagem não tem onde somar.
+    if (typeof base.uses !== 'number' || typeof add.uses !== 'number') continue
+    out[i] = { ...base, uses: base.uses + add.uses, addedFrom: [...base.addedFrom, { source: add.source, uses: add.uses }] }
   }
   return out
 }

@@ -2,6 +2,7 @@ import { useCharacterStore } from '../../stores/characterStore'
 import {
   getRace, getSubrace, getEffectiveSpeed,
   getEffectiveDarkvision, RACE_PRESENTATION, getAvailableInnateSpells, getEffectiveTraitsWithChoices,
+  describeInnateSpellUsage,
 } from '../../utils/raceUtils'
 import { getFinalAbilityScores, getCharacterFeats, getSheetClassFeatures } from '../../utils/asiUtils'
 import { RuleText } from '../common/RuleText'
@@ -11,7 +12,9 @@ import {
 import {
   allClassEntries, formatClassLevelLabel,
 } from '../../utils/multiclassUtils'
-import { describeResource, groupResourcesByClass } from '../../utils/classResourceUtils'
+import {
+  describeResource, groupResourcesBySource, resourceGroupsNeedLabels, resourceSourceLabel,
+} from '../../utils/classResourceUtils'
 import {
   getBackground, BACKGROUND_PRESENTATION, getToolName, SKILLS, resolveBackgroundItems,
 } from '../../utils/backgroundUtils'
@@ -32,7 +35,7 @@ import {
 import { getProgressionSlotsUpToLevel } from '../../utils/progressionChoiceUtils'
 import {
   getTotalHp, getInitiativeBonusTotal, getSpeedBonusTotal,
-  getConditionalAcBonuses, getCheckProficiencyBonus, getClassResources,
+  getConditionalAcBonuses, getCheckProficiencyBonus, getSheetResources,
 } from '../../utils/sheetEffects'
 import { getProgressionOptions } from '../../utils/progressionOptions'
 import {
@@ -631,16 +634,15 @@ export function ReviewStep() {
               {innate.map(entry => {
                 const spell = getSpell(entry.spellId)
                 if (!spell) return null
-                const usage = spell.level === 0
-                  ? 'truque, à vontade'
-                  : '1×/descanso longo'
+                // Mesmo texto da ficha imprimível (describeInnateSpellUsage).
+                const usage = describeInnateSpellUsage(entry, spell.level)
                 return (
                   <div key={entry.spellId}>
                     <span className="text-sm font-semibold font-fantasy text-parchment-200">
                       {spell.name}
                     </span>
                     <span className="text-sm text-parchment-500">
-                      {' '}— {usage} · atributo {ABILITY_LABELS[entry.ability].short}
+                      {' '}— {usage.text} · atributo {ABILITY_LABELS[entry.ability].short}
                     </span>
                   </div>
                 )
@@ -769,17 +771,18 @@ export function ReviewStep() {
         )
       })()}
 
-      {/* Recursos de Classe (por classe) */}
-      {cls && (() => {
-        const blocks = groupResourcesByClass(getClassResources(draft, finalScores))
+      {/* Recursos — de cada classe, da raça e dos talentos, com a origem (o mesmo da ficha imprimível) */}
+      {(() => {
+        const blocks = groupResourcesBySource(getSheetResources(draft, finalScores))
         if (blocks.length === 0) return null
+        const labeled = resourceGroupsNeedLabels(blocks)
         return (
-          <Section title="Recursos de Classe">
+          <Section title="Recursos">
             <div className="space-y-3">
-              {blocks.map(({ classId, resources }) => (
-                <div key={classId}>
-                  {isMc && (
-                    <p className="text-xs font-fantasy mb-1.5" style={{ color: accent }}>{getClass(classId)?.name}</p>
+              {blocks.map(({ source, resources }) => (
+                <div key={`${source.kind}-${source.id}`}>
+                  {labeled && (
+                    <p className="text-xs font-fantasy mb-1.5" style={{ color: accent }}>{resourceSourceLabel(source)}</p>
                   )}
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {resources.map(r => {

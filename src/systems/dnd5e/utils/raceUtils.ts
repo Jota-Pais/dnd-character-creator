@@ -234,6 +234,23 @@ export function getAvailableInnateSpells(
   return getEffectiveInnateSpells(race, subrace).filter(s => s.minLevel <= charLevel)
 }
 
+/**
+ * Como se usa uma magia inata, do jeito que a Revisão e a ficha imprimível mostram: truque à
+ * vontade; magia de 1º nível ou mais, uma vez por descanso longo cada (Magia Drow, p. 24; Legado
+ * Infernal, p. 43), no nível que o traço fixa quando fixa (repreensão infernal no 2º).
+ * `limited` diz se a ficha desenha o círculo pra marcar o uso.
+ */
+export function describeInnateSpellUsage(
+  entry: InnateSpell,
+  spellLevel: number,
+): { limited: boolean; text: string } {
+  if (spellLevel === 0) return { limited: false, text: 'truque, à vontade' }
+  const castAt = entry.castLevel && entry.castLevel !== spellLevel
+    ? `, como magia de ${entry.castLevel}º nível`
+    : ''
+  return { limited: true, text: `1 uso por descanso longo${castAt}` }
+}
+
 export function getEffectiveAbilityBonuses(
   race: Race,
   subrace: Subrace | null,

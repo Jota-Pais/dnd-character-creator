@@ -2,8 +2,8 @@ import type { ArmorProficiency } from './class'
 import type { AbilityScore } from './race'
 
 /**
- * Efeitos mecânicos estruturados de uma característica — hoje só talentos, amanhã também traços
- * raciais e features de classe. Espelha `src/systems/ordem/types/effects.ts`.
+ * Efeitos mecânicos estruturados de uma característica — talentos, features de classe e (por ora só
+ * os `resources`) traços raciais. Espelha `src/systems/ordem/types/effects.ts`.
  *
  * Só entra aqui o que é PERMANENTE e automático: o que o jogador ativa em jogo ("gaste um ponto
  * de sorte para...") fica só na descrição, porque a ficha não tem como aplicar sozinha. A exceção
@@ -72,11 +72,13 @@ export type FeatureEffects = {
   resources?: ResourceEffect[]
 }
 
-// ── Recursos de classe ─────────────────────────────────────────────────────────
+// ── Recursos (de classe, talento ou raça) ──────────────────────────────────────
 
 /**
- * Degrau de uma tabela por nível NA CLASSE dona da característica: vale `value` a partir do
- * nível `from`, até o próximo degrau. É o jeito do livro ("duas vezes a partir do 17º nível").
+ * Degrau de uma tabela por nível: vale `value` a partir do nível `from`, até o próximo degrau. É o
+ * jeito do livro ("duas vezes a partir do 17º nível"). O nível é o NA CLASSE dona da feature; para
+ * traço racial e talento, que não pertencem a classe nenhuma, é o nível de personagem (a Arma de
+ * Sopro cresce "no 6° nível", p. 34).
  */
 export type LevelStep<T = number> = { from: number; value: T }
 
@@ -87,7 +89,8 @@ export type LevelStep<T = number> = { from: number; value: T }
  * - múltiplo do nível (Chi = nível, Cura pelas Mãos = 5 × nível) → `perClassLevel`;
  * - metade do nível (Recuperação Arcana, arredondada pra cima) → `halfClassLevel`;
  * - modificador de atributo (Inspiração de Bardo, mínimo 1) → `ability` + `min`;
- * - constante (Sentido Divino = 1 + CAR) → `plus`.
+ * - constante (Sentido Divino = 1 + CAR) → `plus`;
+ * - bônus de proficiência (CD da Arma de Sopro = 8 + CON + proficiência) → `proficiency`.
  */
 export type ResourceFormula = {
   byLevel?: LevelStep[]
@@ -95,6 +98,8 @@ export type ResourceFormula = {
   halfClassLevel?: 'up' | 'down'
   ability?: AbilityScore
   plus?: number
+  /** Soma o bônus de proficiência do personagem (que segue o nível de personagem). */
+  proficiency?: boolean
   /** Piso do total. Só quando o livro diz ("no mínimo uma vez"). */
   min?: number
 }
@@ -114,9 +119,9 @@ export type ResourceUnit = 'uses' | 'points' | 'hp' | 'dice'
 /**
  * Grandeza que NÃO se gasta, mas a ficha precisa mostrar: bônus de dano (Fúria), deslocamento
  * extra em pés (Movimento sem Armadura), PV curados por uso (Integridade Corporal), níveis de
- * espaço recuperados (Recuperação Arcana).
+ * espaço recuperados (Recuperação Arcana), CD do teste de resistência (Arma de Sopro).
  */
-export type ResourceAmountUnit = 'bonus' | 'feet' | 'hp' | 'slotLevels'
+export type ResourceAmountUnit = 'bonus' | 'feet' | 'hp' | 'slotLevels' | 'saveDc'
 
 export type ResourceEffect = {
   /**
@@ -138,4 +143,10 @@ export type ResourceEffect = {
   unlimitedFrom?: number
   /** Ressalva curta do livro que muda o uso na mesa (ex.: "nenhum espaço de 6º nível ou superior"). */
   note?: string
+  /**
+   * Se o personagem já tem um recurso com este `id` vindo de outra fonte, os usos daqui SOMAM aos
+   * dele (e o dado continua o dele); senão, este vale sozinho. É o Adepto Marcial (p. 167): "Se você
+   * já tiver dados de superioridade, você ganha um adicional; do contrário, [...] um d6".
+   */
+  addsToExisting?: boolean
 }

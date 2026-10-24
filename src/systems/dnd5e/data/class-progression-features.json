@@ -421,7 +421,7 @@
       {
         "level": 1,
         "name": "Inspiração de Bardo",
-        "description": "Como ação bônus, dê a outra criatura a até 18 m que possa ouvi-lo um dado de Inspiração de Bardo, que ela pode somar a um teste de habilidade, ataque ou resistência nos próximos 10 minutos. Usos iguais ao mod. de Carisma (mínimo 1); o dado e os usos estão em Recursos de Classe.",
+        "description": "Como ação bônus, dê a outra criatura a até 18 m que possa ouvi-lo um dado de Inspiração de Bardo, que ela pode somar a um teste de habilidade, ataque ou resistência nos próximos 10 minutos. Usos iguais ao mod. de Carisma (mínimo 1); o dado e os usos estão em Recursos.",
         "effects": {
           "resources": [
             { "id": "bardic-inspiration", "name": "Inspiração de Bardo", "die": { "size": { "byLevel": [{ "from": 1, "value": 6 }, { "from": 5, "value": 8 }, { "from": 10, "value": 10 }, { "from": 15, "value": 12 }] } }, "uses": { "ability": "CHA", "min": 1 }, "recharge": [{ "from": 1, "value": "long" }, { "from": 5, "value": "short" }] }
@@ -437,7 +437,7 @@
       {
         "level": 2,
         "name": "Canção de Descanso",
-        "description": "Se você ou criaturas amigáveis que ouçam sua atuação recuperarem pontos de vida gastando Dados de Vida no fim de um descanso curto, cada uma recupera também o dado de Canção de Descanso (ver Recursos de Classe).",
+        "description": "Se você ou criaturas amigáveis que ouçam sua atuação recuperarem pontos de vida gastando Dados de Vida no fim de um descanso curto, cada uma recupera também o dado de Canção de Descanso (ver Recursos).",
         "effects": {
           "resources": [
             { "id": "song-of-rest", "name": "Canção de Descanso", "die": { "size": { "byLevel": [{ "from": 2, "value": 6 }, { "from": 9, "value": 8 }, { "from": 13, "value": 10 }, { "from": 17, "value": 12 }] } } }
@@ -991,7 +991,7 @@
       {
         "level": 3,
         "name": "Superioridade em Combate",
-        "description": "Você aprende 3 manobras (de uma lista) alimentadas por dados de superioridade (quantos e de qual tamanho, em Recursos de Classe), recuperados em descanso curto ou longo. A CD das manobras é 8 + bônus de proficiência + seu modificador de Força ou Destreza.",
+        "description": "Você aprende 3 manobras (de uma lista) alimentadas por dados de superioridade (quantos e de qual tamanho, em Recursos), recuperados em descanso curto ou longo. A CD das manobras é 8 + bônus de proficiência + seu modificador de Força ou Destreza.",
         "effects": {
           "resources": [
             { "id": "superiority-dice", "name": "Dados de Superioridade", "die": { "size": { "byLevel": [{ "from": 3, "value": 8 }, { "from": 10, "value": 10 }, { "from": 18, "value": 12 }] } }, "uses": { "byLevel": [{ "from": 3, "value": 4 }, { "from": 7, "value": 5 }, { "from": 15, "value": 6 }] }, "unit": "dice", "recharge": "short" }

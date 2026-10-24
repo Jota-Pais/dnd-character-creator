@@ -12,6 +12,7 @@ import {
   getAllChoices,
   describeRaceChoice,
   getEffectiveTraitsWithChoices,
+  describeInnateSpellUsage,
   RACES,
 } from '../raceUtils'
 import type { RaceChoiceSelections } from '../../types/character'
@@ -80,6 +81,23 @@ describe('magias inatas (Magia Drow / Legado Infernal)', () => {
   })
   it('raça sem magia inata retorna vazio', () => {
     expect(getAvailableInnateSpells(human, variantHuman, 20)).toEqual([])
+  })
+})
+
+describe('describeInnateSpellUsage', () => {
+  const tieflingSpell = (id: string) => getEffectiveInnateSpells(tiefling, null).find(s => s.spellId === id)!
+
+  it('truque é à vontade, sem círculo', () => {
+    expect(describeInnateSpellUsage(tieflingSpell('thaumaturgy'), 0)).toEqual({ limited: false, text: 'truque, à vontade' })
+  })
+  it('magia de nível: uma vez por descanso longo (Magia Drow, p. 24)', () => {
+    const faerieFire = getEffectiveInnateSpells(elf, drow).find(s => s.spellId === 'faerie-fire')!
+    expect(describeInnateSpellUsage(faerieFire, 1)).toEqual({ limited: true, text: '1 uso por descanso longo' })
+  })
+  it('repreensão infernal do tiefling é conjurada como magia de 2º nível (p. 43)', () => {
+    expect(describeInnateSpellUsage(tieflingSpell('hellish-rebuke'), 1).text)
+      .toBe('1 uso por descanso longo, como magia de 2º nível')
+    expect(describeInnateSpellUsage(tieflingSpell('darkness'), 2).text).toBe('1 uso por descanso longo')
   })
 })
 

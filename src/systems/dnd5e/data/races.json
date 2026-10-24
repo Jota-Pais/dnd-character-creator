@@ -321,7 +321,12 @@
     "traits": [
       {
         "name": "Arma de Sopro",
-        "description": "Como ação, você exala energia elemental determinada pelo seu ancestral. CD = 8 + mod. Constituição + bônus de proficiência. Dano: 2d6 (níveis 1–5). Recarrega após descanso curto ou longo."
+        "description": "Como ação, você exala energia elemental determinada pelo seu ancestral; cada criatura na área faz o teste de resistência do seu ancestral. CD = 8 + mod. Constituição + bônus de proficiência. Dano: 2d6 num fracasso e metade num sucesso; 3d6 no 6º nível, 4d6 no 11º e 5d6 no 16º. Depois de usar, só de novo após um descanso curto ou longo.",
+        "effects": {
+          "resources": [
+            { "id": "breath-weapon", "name": "Arma de Sopro", "die": { "count": { "byLevel": [{ "from": 1, "value": 2 }, { "from": 6, "value": 3 }, { "from": 11, "value": 4 }, { "from": 16, "value": 5 }] }, "size": 6 }, "amount": { "value": { "plus": 8, "ability": "CON", "proficiency": true }, "unit": "saveDc" }, "uses": 1, "recharge": "short" }
+          ]
+        }
       },
       {
         "name": "Resistência a Dano",
@@ -577,7 +582,12 @@
     "traits": [
       {
         "name": "Resistência Implacável",
-        "description": "Quando reduzido a 0 PV mas não morto, você pode voltar para 1 PV (uma vez por descanso longo)."
+        "description": "Quando reduzido a 0 PV mas não morto, você pode voltar para 1 PV (uma vez por descanso longo).",
+        "effects": {
+          "resources": [
+            { "id": "relentless-endurance", "name": "Resistência Implacável", "uses": 1, "recharge": "long" }
+          ]
+        }
       },
       {
         "name": "Ataques Selvagens",
@@ -603,7 +613,7 @@
     "grantedProficiencies": [],
     "innateSpells": [
       { "spellId": "thaumaturgy", "minLevel": 1, "ability": "CHA" },
-      { "spellId": "hellish-rebuke", "minLevel": 3, "ability": "CHA" },
+      { "spellId": "hellish-rebuke", "minLevel": 3, "ability": "CHA", "castLevel": 2 },
       { "spellId": "darkness", "minLevel": 5, "ability": "CHA" }
     ],
     "traits": [
@@ -613,7 +623,7 @@
       },
       {
         "name": "Legado Infernal",
-        "description": "Você conhece o truque taumaturgia. No nível 3, pode conjurar repreensão infernal uma vez por descanso longo. No nível 5, pode conjurar escuridão uma vez por descanso longo. Carisma é o atributo de conjuração."
+        "description": "Você conhece o truque taumaturgia. No nível 3, pode conjurar repreensão infernal, como magia de 2º nível, uma vez por descanso longo. No nível 5, pode conjurar escuridão uma vez por descanso longo. Carisma é o atributo de conjuração."
       }
     ],
     "subraces": []

@@ -3,14 +3,14 @@ import type {
   LevelStep, ResourceAmountUnit, ResourceEffect, ResourceQuantity, ResourceRecharge, ResourceUnit,
 } from '../types/effects'
 import { calculateModifier } from './abilityScoreUtils'
-import { getClass } from './classUtils'
 
 /**
- * Recursos de classe: a CONTA e o TEXTO de um recurso declarado nos dados (`effects.resources`
- * em `class-progression-features.json`). Quem junta os recursos do personagem é
- * `getClassResources`, em `sheetEffects` — aqui fica só o que é puro: avaliar uma declaração num
- * nível de classe com os atributos finais, e escrever o resultado do jeito que a Revisão e a ficha
- * imprimível mostram (as duas leem `describeResource`, pra não divergirem).
+ * Recursos da ficha: a CONTA e o TEXTO de um recurso declarado nos dados (`effects.resources` nas
+ * features de classe de `class-progression-features.json`, nos talentos de `feats.json` e nos
+ * traços de `races.json`). Quem junta os recursos do personagem é `getSheetResources`, em
+ * `sheetEffects` — aqui fica só o que é puro: avaliar uma declaração num nível com os atributos
+ * finais, e escrever o resultado do jeito que a Revisão e a ficha imprimível mostram (as duas leem
+ * `describeResource`, pra não divergirem).
  */
 
 export type FinalScores = Record<AbilityScore, number>
@@ -24,26 +24,45 @@ export function stepValue<T>(steps: LevelStep<T>[], level: number): T | undefine
   return value
 }
 
-/** Avalia uma quantidade declarada: soma das parcelas presentes, depois o mínimo. */
-export function evaluateQuantity(q: ResourceQuantity, classLevel: number, scores: FinalScores): number {
+/**
+ * Avalia uma quantidade declarada: soma das parcelas presentes, depois o mínimo. `level` é o nível
+ * na classe dona (feature de classe) ou o de personagem (traço racial, talento).
+ */
+export function evaluateQuantity(
+  q: ResourceQuantity,
+  level: number,
+  scores: FinalScores,
+  proficiencyBonus = 0,
+): number {
   if (typeof q === 'number') return q
   let total = 0
-  if (q.byLevel) total += stepValue(q.byLevel, classLevel) ?? 0
-  if (q.perClassLevel) total += q.perClassLevel * classLevel
+  if (q.byLevel) total += stepValue(q.byLevel, level) ?? 0
+  if (q.perClassLevel) total += q.perClassLevel * level
   if (q.halfClassLevel) {
-    total += q.halfClassLevel === 'up' ? Math.ceil(classLevel / 2) : Math.floor(classLevel / 2)
+    total += q.halfClassLevel === 'up' ? Math.ceil(level / 2) : Math.floor(level / 2)
   }
   if (q.ability) total += calculateModifier(scores[q.ability])
+  if (q.proficiency) total += proficiencyBonus
   if (q.plus) total += q.plus
   return q.min !== undefined ? Math.max(q.min, total) : total
+}
+
+/**
+ * De onde o recurso vem — é o cabeçalho do bloco na ficha. `name` já vem resolvido ("Bardo",
+ * "Sortudo", "Draconato Vermelho") pra o texto não precisar consultar catálogo.
+ */
+export type ResourceSource = {
+  kind: 'class' | 'feat' | 'race'
+  id: string
+  name: string
 }
 
 /** Um recurso já calculado para o personagem. */
 export type SheetResource = {
   id: string
   name: string
-  /** Classe cujo nível alimentou a conta. */
-  classId: string
+  /** Quem dá o recurso (e, se for classe, cujo nível alimentou a conta). */
+  source: ResourceSource
   /** "d6", "3d6", "1d10+5". */
   die?: string
   uses?: number | 'unlimited'
@@ -52,20 +71,29 @@ export type SheetResource = {
   recharge?: ResourceRecharge
   note?: string
   /**
-   * Outras classes que também dão este recurso. O livro não soma os usos (p. 166) — fica o maior,
+   * Outras fontes que também dão este recurso. O livro não soma os usos (p. 166) — fica o maior,
    * e a ficha avisa que é um poço só.
    */
-  sharedWith: string[]
+  sharedWith: ResourceSource[]
+  /**
+   * Fontes cujos usos FORAM somados a este (`addsToExisting`): o dado a mais do Adepto Marcial no
+   * poço do Mestre de Batalha. A ficha diz de onde veio a parcela.
+   */
+  addedFrom: { source: ResourceSource; uses: number }[]
 }
 
-/** Calcula uma declaração de recurso no nível que o personagem tem NA classe dona dela. */
+/**
+ * Calcula uma declaração de recurso no nível que conta para ela: o nível NA classe dona (feature
+ * de classe) ou o de personagem (traço racial, talento). `proficiencyBonus` é o do personagem.
+ */
 export function evaluateResource(
   effect: ResourceEffect,
-  classId: string,
-  classLevel: number,
+  source: ResourceSource,
+  level: number,
   scores: FinalScores,
+  proficiencyBonus = 0,
 ): SheetResource {
-  const q = (v: ResourceQuantity) => evaluateQuantity(v, classLevel, scores)
+  const q = (v: ResourceQuantity) => evaluateQuantity(v, level, scores, proficiencyBonus)
 
   let die: string | undefined
   if (effect.die) {
@@ -75,15 +103,15 @@ export function evaluateResource(
     die = `${count ?? ''}d${size}${bonus > 0 ? `+${bonus}` : bonus < 0 ? `${bonus}` : ''}`
   }
 
-  const unlimited = effect.unlimitedFrom !== undefined && classLevel >= effect.unlimitedFrom
+  const unlimited = effect.unlimitedFrom !== undefined && level >= effect.unlimitedFrom
   const recharge = typeof effect.recharge === 'string'
     ? effect.recharge
-    : effect.recharge ? stepValue(effect.recharge, classLevel) : undefined
+    : effect.recharge ? stepValue(effect.recharge, level) : undefined
 
   return {
     id: effect.id,
     name: effect.name,
-    classId,
+    source,
     ...(die ? { die } : {}),
     // Usos nunca ficam negativos: Sentido Divino (1 + CAR, sem mínimo no livro) com CAR 6 dá 0, não −1.
     ...(unlimited
@@ -94,6 +122,7 @@ export function evaluateResource(
     ...(recharge && !unlimited ? { recharge } : {}),
     ...(effect.note ? { note: effect.note } : {}),
     sharedWith: [],
+    addedFrom: [],
   }
 }
 
@@ -104,7 +133,7 @@ export type ResourceDisplay = {
   name: string
   /** "d6", "3d6". */
   die?: string
-  /** A grandeza que não se gasta: "+2", "+3 m", "cura 18 PV", "até 2 níveis de espaço". */
+  /** A grandeza que não se gasta: "+2", "+3 m", "cura 18 PV", "até 2 níveis de espaço", "CD 13". */
   amount?: string
   /** Os usos: "4 usos", "20 PV", "5 pontos", "usos ilimitados". */
   quantity?: string
@@ -145,6 +174,22 @@ function formatAmount(amount: NonNullable<SheetResource['amount']>): string {
     case 'hp': return `cura ${amount.value} PV`
     case 'slotLevels':
       return `até ${amount.value} ${amount.value === 1 ? 'nível' : 'níveis'} de espaço`
+    case 'saveDc': return `CD ${amount.value}`
+  }
+}
+
+function formatCount(n: number, unit: ResourceUnit): string {
+  if (unit === 'hp') return `${n} PV`
+  const [one, many] = UNIT_LABEL[unit]
+  return `${n} ${n === 1 ? one : many}`
+}
+
+/** Cabeçalho do bloco de recursos de uma fonte: "Bardo", "Sortudo (talento)", "Draconato Vermelho (raça)". */
+export function resourceSourceLabel(source: ResourceSource): string {
+  switch (source.kind) {
+    case 'class': return source.name
+    case 'feat': return `${source.name} (talento)`
+    case 'race': return `${source.name} (raça)`
   }
 }
 
@@ -154,22 +199,19 @@ export function describeResource(r: SheetResource): ResourceDisplay {
   if (r.uses === 'unlimited') {
     quantity = 'usos ilimitados'
   } else if (r.uses !== undefined) {
-    if (r.unit === 'hp') {
-      quantity = `${r.uses} PV`
-      // PV se gastam aos poucos (5 numa cura, 2 noutra): círculo não serve, só o que sobrou.
-      track = { kind: 'remaining' }
-    } else {
-      const [one, many] = UNIT_LABEL[r.unit]
-      quantity = `${r.uses} ${r.uses === 1 ? one : many}`
-      if (r.uses > MAX_CIRCLES) track = { kind: 'remaining' }
-      else if (r.uses > 0) track = { kind: 'circles', count: r.uses }
-    }
+    quantity = formatCount(r.uses, r.unit)
+    // PV se gastam aos poucos (5 numa cura, 2 noutra): círculo não serve, só o que sobrou.
+    if (r.unit === 'hp' || r.uses > MAX_CIRCLES) track = { kind: 'remaining' }
+    else if (r.uses > 0) track = { kind: 'circles', count: r.uses }
   }
 
   const notes: string[] = []
   if (r.note) notes.push(r.note)
+  for (const { source, uses } of r.addedFrom) {
+    notes.push(`inclui ${formatCount(uses, r.unit)} de ${resourceSourceLabel(source)}`)
+  }
   if (r.sharedWith.length > 0) {
-    const names = r.sharedWith.map(id => getClass(id)?.name ?? id).join(', ')
+    const names = r.sharedWith.map(s => s.name).join(', ')
     notes.push(`um só recurso com o de ${names} — os usos não se somam (p. 166)`)
   }
 
@@ -205,15 +247,26 @@ export function formatResourceLine(r: SheetResource): string {
 }
 
 /**
- * Agrupa os recursos pela classe que alimentou a conta, na ordem em que aparecem — na multiclasse a
- * ficha e a Revisão mostram um bloco por classe.
+ * Agrupa os recursos pela fonte (cada classe da multiclasse, a raça, cada talento), na ordem em
+ * que aparecem — a ficha e a Revisão mostram um bloco por fonte, com o cabeçalho de
+ * `resourceSourceLabel`.
  */
-export function groupResourcesByClass(resources: SheetResource[]): { classId: string; resources: SheetResource[] }[] {
-  const groups: { classId: string; resources: SheetResource[] }[] = []
+export function groupResourcesBySource(
+  resources: SheetResource[],
+): { source: ResourceSource; resources: SheetResource[] }[] {
+  const groups: { source: ResourceSource; resources: SheetResource[] }[] = []
   for (const r of resources) {
-    const g = groups.find(x => x.classId === r.classId)
+    const g = groups.find(x => x.source.kind === r.source.kind && x.source.id === r.source.id)
     if (g) g.resources.push(r)
-    else groups.push({ classId: r.classId, resources: [r] })
+    else groups.push({ source: r.source, resources: [r] })
   }
   return groups
+}
+
+/**
+ * Os blocos precisam de cabeçalho? Só quando há mais de uma fonte, ou a única não é a classe — um
+ * bardo puro não precisa ler "Bardo" em cima da Inspiração, mas o Sortudo precisa dizer de onde vem.
+ */
+export function resourceGroupsNeedLabels(groups: { source: ResourceSource }[]): boolean {
+  return groups.length > 1 || groups.some(g => g.source.kind !== 'class')
 }

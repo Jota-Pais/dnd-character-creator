@@ -2,7 +2,7 @@ import { useCharacterStore } from '../stores/characterStore'
 import type { AbilityScore } from '../types/race'
 import {
   getRace, getSubrace, getEffectiveSpeed, getEffectiveDarkvision, SKILLS,
-  getAvailableInnateSpells, getEffectiveTraitsWithChoices, TOOL_NAMES,
+  getAvailableInnateSpells, getEffectiveTraitsWithChoices, TOOL_NAMES, describeInnateSpellUsage,
 } from '../utils/raceUtils'
 import {
   getClass, isActiveCaster, FIGHTING_STYLES,
@@ -26,7 +26,10 @@ import {
   getEquippedArmor, getWeaponById, formatInventoryItem, describeResolvedOption,
   getStartingMoney, describeStartingMoneySource, formatCoins,
 } from '../utils/equipmentUtils'
-import { formatResourceLine, groupResourcesByClass } from '../utils/classResourceUtils'
+import {
+  formatResourceLine, formatTrackCircles, groupResourcesBySource, resourceGroupsNeedLabels,
+  resourceSourceLabel,
+} from '../utils/classResourceUtils'
 import { getProgressionSlotsUpToLevel } from '../utils/progressionChoiceUtils'
 import { getProgressionOptions } from '../utils/progressionOptions'
 import {
@@ -37,7 +40,7 @@ import { RuleText } from './common/RuleText'
 import { getWeaponAttack } from '../utils/weaponFormat'
 import {
   getTotalHp, getInitiativeBonusTotal, getSpeedBonusTotal,
-  getConditionalAcBonuses, getCheckProficiencyBonus, getClassResources,
+  getConditionalAcBonuses, getCheckProficiencyBonus, getSheetResources,
 } from '../utils/sheetEffects'
 import type { CharacterDraft } from '../types/character'
 import type { Weapon } from '../types/equipment'
@@ -218,7 +221,8 @@ export function PrintableSheet() {
   // Features por classe (multiclasse): cada classe no nível que tem nela, com os Incrementos.
   const featureBlocks = entries.map(e => ({ e, ec: getClass(e.classId), features: getSheetClassFeatures(e) }))
   const feats = getCharacterFeats(draft)
-  const resourceBlocks = groupResourcesByClass(getClassResources(draft, finalScores))
+  const resourceBlocks = groupResourcesBySource(getSheetResources(draft, finalScores))
+  const labelResourceBlocks = resourceGroupsNeedLabels(resourceBlocks)
   const inventory = gatherInventory(draft)
   const money = getStartingMoney(draft.equipment, bg?.equipment.goldPo ?? 0)
   const moneySource = describeStartingMoneySource(money)
@@ -495,13 +499,13 @@ export function PrintableSheet() {
         )
       })()}
 
-      {/* Recursos de classe (por classe) */}
+      {/* Recursos — de cada classe, da raça e dos talentos, com a origem */}
       {resourceBlocks.length > 0 && (
-        <Box title="Recursos de Classe" className="mb-4">
+        <Box title="Recursos" className="mb-4">
           {/* Um recurso por linha: dado, usos com círculos (ou "___ restantes") e quando voltam. */}
-          {resourceBlocks.map(({ classId, resources }) => (
-            <div key={classId} className="mb-0.5">
-              {isMc && <p className="text-xs font-bold text-gray-700">{getClass(classId)?.name}</p>}
+          {resourceBlocks.map(({ source, resources }) => (
+            <div key={`${source.kind}-${source.id}`} className="mb-0.5">
+              {labelResourceBlocks && <p className="text-xs font-bold text-gray-700">{resourceSourceLabel(source)}</p>}
               {resources.map(r => (
                 <p key={r.id} className="text-xs">{formatResourceLine(r)}</p>
               ))}
@@ -536,7 +540,13 @@ export function PrintableSheet() {
           {racialCantrip && <p className="text-xs">{racialCantrip.name} (truque)</p>}
           {innateSpells.map(s => {
             const spell = getSpell(s.spellId)
-            return spell ? <p key={s.spellId} className="text-xs">{spell.name} — {spell.level === 0 ? 'truque' : '1×/descanso longo'} ({ABILITY_LABELS[s.ability].short})</p> : null
+            if (!spell) return null
+            const usage = describeInnateSpellUsage(s, spell.level)
+            return (
+              <p key={s.spellId} className="text-xs">
+                {spell.name} — {usage.text}{usage.limited && ` ${formatTrackCircles(1)}`} ({ABILITY_LABELS[s.ability].short})
+              </p>
+            )
           })}
         </Box>
       )}

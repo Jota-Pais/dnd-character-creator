@@ -43,8 +43,16 @@ describe('AttacksTab', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Dano do crítico' }))
     expect(screen.getByRole('dialog')).toHaveAccessibleName('Machado Grande — dano')
     expect(screen.getByTestId('recipe-formula')).toHaveTextContent('2d12 + 3 cortante')
+    // Meio-orc: os Ataques Selvagens só como nota do crítico.
+    expect(screen.getByTestId('crit-note')).toHaveTextContent('Ataques Selvagens: no acerto crítico com esta arma corpo a corpo, role mais 1 dado')
     fireEvent.click(screen.getByRole('button', { name: 'Não foi crítico' }))
     expect(screen.getByTestId('recipe-formula')).toHaveTextContent('1d12 + 3 cortante')
+    expect(screen.queryByTestId('crit-note')).toBeNull()
+  })
+
+  it('o rodapé lê a margem de crítico: 20 natural sem o Campeão', () => {
+    openWithGreataxe()
+    expect(screen.getByText(/20 natural: crítico, os dados de dano dobram\./)).toBeInTheDocument()
   })
 
   it('com os dados do app, 20 natural no ataque abre o dano já dobrado', () => {

@@ -74,11 +74,13 @@ export type InnateSpell = {
 /**
  * Efeitos que um traço racial declara. Por ora os recursos (Arma de Sopro, Resistência
  * Implacável), os PV por nível (Tenacidade Anã), as linhas condicionais das jogadas (Resiliência
- * Anã, Sortudo, Bravura) e o deslocamento que a armadura pesada não reduz (anão): são os únicos
+ * Anã, Sortudo, Bravura), o dado a mais no crítico (Ataques Selvagens) e o deslocamento que a armadura pesada não reduz (anão): são os únicos
  * efeitos de traço que `sheetEffects` agrega — os outros entram aqui quando forem ligados, pra não
  * declarar no dado algo que a ficha ignoraria.
  */
-export type RacialTraitEffects = Pick<FeatureEffects, 'resources' | 'hpPerLevel' | 'conditionalRolls'> & {
+export type RacialTraitEffects = Pick<
+  FeatureEffects, 'resources' | 'hpPerLevel' | 'conditionalRolls' | 'meleeCritExtraWeaponDice'
+> & {
   /**
    * "Seu deslocamento não é reduzido quando estiver usando armadura pesada" (anão, p. 20): anula
    * os 3 m que a armadura pesada tira de quem não tem a Força da tabela (p. 146).

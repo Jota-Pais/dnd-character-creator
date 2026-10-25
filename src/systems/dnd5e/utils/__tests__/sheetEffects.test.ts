@@ -31,6 +31,7 @@ import {
   getWeaponCritThreshold,
   getInitiativeAdvantageSources,
   getConditionalRollNotes,
+  getMeleeCritExtraWeaponDice,
 } from '../sheetEffects'
 import {
   getArmorProficiencies, hasArmorProficiency, hasWeaponProficiency,
@@ -959,6 +960,18 @@ describe('getInitiativeAdvantageSources (Instinto Selvagem)', () => {
     expect(getInitiativeAdvantageSources(draft({ level: 7, class: 'fighter' }))).toEqual([])
     const mc = draft({ level: 10, multiclass: true, class: 'fighter', additionalClasses: [extraClass('barbarian', 6)] })
     expect(getInitiativeAdvantageSources(mc)).toEqual([])
+  })
+})
+
+describe('getMeleeCritExtraWeaponDice (Crítico Brutal, Ataques Selvagens)', () => {
+  it('bárbaro 9/13/17 pelo nível NA classe: 1/2/3; meio-orc: 1 em qualquer nível', () => {
+    const barbarian = (level: number) => draft({ level, class: 'barbarian' })
+    expect(getMeleeCritExtraWeaponDice(barbarian(8))).toEqual([])
+    expect([9, 12, 13, 17].map(l => getMeleeCritExtraWeaponDice(barbarian(l))[0].value)).toEqual([1, 1, 2, 3])
+    expect(getMeleeCritExtraWeaponDice(draft({ level: 1, class: 'fighter', race: 'half-orc' })))
+      .toEqual([{ source: 'Ataques Selvagens', value: 1 }])
+    const mc = draft({ level: 12, multiclass: true, class: 'fighter', additionalClasses: [extraClass('barbarian', 8)] })
+    expect(getMeleeCritExtraWeaponDice(mc)).toEqual([])
   })
 })
 

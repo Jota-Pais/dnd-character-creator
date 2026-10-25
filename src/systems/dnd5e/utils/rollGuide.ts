@@ -12,7 +12,7 @@ import { getRace } from './raceUtils'
 import { getSavingThrowChecks, getSkillChecks, getPassiveScore, getUnproficientArmor } from './proficiencyUtils'
 import {
   EXHAUSTION, getAttacksPerAction, getBestHalfProficiencySource, getCondition, getConditionalRollNotes,
-  getHalfProficiencySources,
+  getHalfProficiencySources, getMeleeCritExtraWeaponDice,
   getInitiativeAdvantageSources, getInitiativeBonuses, getOwnedFeats, getSheetArmorClass, getWeaponCritThreshold, resolveRollMode,
   type ActiveConditionEffects, type ConditionRoll, type SheetEffect,
 } from './sheetEffects'
@@ -72,8 +72,11 @@ export type RollGuideEntry = {
   notes: string[]
   /** Classe de dificuldade, quando a ficha a conhece (concentração). */
   dc?: number
-  /** Só dano: os dados dobrados do acerto crítico, o modificador igual (pág. 196). */
-  crit?: { dice: string; formula: string; notation: string }
+  /**
+   * Só dano: os dados dobrados do acerto crítico, o modificador igual (pág. 196). `notes`: o que
+   * vale só no crítico e fica fora da fórmula (Ataques Selvagens, Crítico Brutal).
+   */
+  crit?: { dice: string; formula: string; notation: string; notes?: string[] }
 }
 
 /** Uma linha da tabela de ataques: a jogada de ataque, o dano e o dano a duas mãos (versátil). */
@@ -340,7 +343,16 @@ function d20Entry(input: D20Input, inspiration: boolean): RollGuideEntry {
   }
 }
 
-type DamageInput = { id: string; label: string; parsed: ParsedDamage; damageType: string; breakdown: GuideBreakdownItem[]; notes?: string[] }
+type DamageInput = {
+  id: string
+  label: string
+  parsed: ParsedDamage
+  damageType: string
+  breakdown: GuideBreakdownItem[]
+  notes?: string[]
+  /** Notas só do crítico (dados a mais que a fórmula não soma). */
+  critNotes?: string[]
+}
 
 function damageEntry(input: DamageInput): RollGuideEntry {
   const { count, sides, modifier } = input.parsed
@@ -366,6 +378,7 @@ function damageEntry(input: DamageInput): RollGuideEntry {
       dice: critDice,
       formula: formatGuideFormula(critDice, modifier, input.damageType),
       notation: formatGuideNotation(critDice, modifier),
+      ...(count > 0 && input.critNotes?.length ? { notes: [...input.critNotes] } : {}),
     },
   }
 }
@@ -391,6 +404,14 @@ type AttackGuideContext = {
   weaponCrit: SheetEffect<number> | null
   /** A raça é de tamanho Pequeno (halfling, gnomo): desvantagem com arma pesada (pág. 149). */
   small: boolean
+  /** Dados de arma a mais no crítico corpo a corpo, por fonte (Crítico Brutal, Ataques Selvagens). */
+  meleeCritExtraDice: SheetEffect<number>[]
+}
+
+/** "Crítico Brutal: no acerto crítico com esta arma corpo a corpo, role mais 2 dados de dano da arma…" */
+function critExtraDiceNote({ source, value }: SheetEffect<number>): string {
+  const dice = value === 1 ? '1 dado' : `${value} dados`
+  return `${source}: no acerto crítico com esta arma corpo a corpo, role mais ${dice} de dano da arma e some ao dano.`
 }
 
 /**
@@ -426,6 +447,8 @@ function attackGuide(attack: SheetAttack, ctx: AttackGuideContext): AttackGuide 
   const heavySmall: GuideReason[] = attack.weapon?.heavy && ctx.small
     ? [{ source: 'weapon:heavy-small', label: `${attack.name} pesada para criatura Pequena` }]
     : []
+  // Só arma corpo a corpo: o golpe desarmado não é arma (pág. 196).
+  const critNotes = attack.weapon?.melee ? ctx.meleeCritExtraDice.map(critExtraDiceNote) : []
   const extraAttacks = attack.attacksPerAction > 1
     ? [`${ctx.attacksPerActionSource ?? 'Ataque Extra'}: você faz ${attack.attacksPerAction} ataques ao usar a ação de Atacar — role cada um.`]
     : []
@@ -462,6 +485,7 @@ function attackGuide(attack: SheetAttack, ctx: AttackGuideContext): AttackGuide 
       damageType: parsed.damageType,
       breakdown: damageBreakdown(parsed),
       notes,
+      critNotes,
     })
     : null
 
@@ -474,6 +498,7 @@ function attackGuide(attack: SheetAttack, ctx: AttackGuideContext): AttackGuide 
       damageType: versatileParsed.damageType || parsed.damageType,
       breakdown: damageBreakdown(versatileParsed),
       notes,
+      critNotes,
     })
     : null
 
@@ -658,6 +683,7 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
     attacksPerActionSource: getAttacksPerAction(draft).source,
     weaponCrit: getWeaponCritThreshold(draft),
     small: (draft.race ? getRace(draft.race)?.size : undefined) === 'Small',
+    meleeCritExtraDice: getMeleeCritExtraWeaponDice(draft),
   }
   const attacks = getSheetAttacks(draft, scores).map(a => attackGuide(a, attackContext))
 

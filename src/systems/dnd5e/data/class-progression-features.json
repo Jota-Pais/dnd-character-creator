@@ -58,7 +58,8 @@
       {
         "level": 9,
         "name": "Crítico Brutal",
-        "description": "Você rola um dado de dano de arma adicional ao determinar o dano extra de um acerto crítico corpo-a-corpo (dois dados no 13° nível, três no 17°)."
+        "description": "Você rola um dado de dano de arma adicional ao determinar o dano extra de um acerto crítico corpo-a-corpo (dois dados no 13° nível, três no 17°).",
+        "effects": { "meleeCritExtraWeaponDice": [{ "from": 9, "value": 1 }, { "from": 13, "value": 2 }, { "from": 17, "value": 3 }] }
       },
       {
         "level": 11,

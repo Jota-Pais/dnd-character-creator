@@ -254,6 +254,27 @@ describe('getRollGuide — ataques', () => {
     expect(human.attacks.find(a => a.key === 'greatsword')!.attack.mode).toBe('normal')
   })
 
+  it('Ataques Selvagens e Crítico Brutal: nota só no crítico das armas corpo a corpo, sem mexer na fórmula', () => {
+    const halfOrc = draft({
+      class: 'barbarian', level: 13, race: 'half-orc', abilityScores: SCORES, ...carrying('greataxe', 'longbow'),
+    })
+    const guide = getRollGuide(halfOrc, play())
+    const axe = guide.attacks.find(a => a.key === 'greataxe')!
+    // FOR 16 + 2 do meio-orc = +4.
+    expect(axe.damage!.crit).toMatchObject({ formula: '2d12 + 4 cortante', notation: '2d12+4' })
+    expect(axe.damage!.crit!.notes).toEqual([
+      'Crítico Brutal: no acerto crítico com esta arma corpo a corpo, role mais 2 dados de dano da arma e some ao dano.',
+      'Ataques Selvagens: no acerto crítico com esta arma corpo a corpo, role mais 1 dado de dano da arma e some ao dano.',
+    ])
+    expect(axe.damage!.notes.some(n => n.includes('Crítico Brutal'))).toBe(false)
+    // Arco (à distância) e golpe desarmado (não é arma): nada.
+    expect(guide.attacks.find(a => a.key === 'longbow')!.damage!.crit!.notes).toBeUndefined()
+    expect(guide.attacks.find(a => a.key === 'unarmed')!.damage!.crit!.notes).toBeUndefined()
+    // Bárbaro 8 humano: sem nenhuma das duas.
+    const human = getRollGuide({ ...halfOrc, level: 8, race: 'human' }, play())
+    expect(human.attacks.find(a => a.key === 'greataxe')!.damage!.crit!.notes).toBeUndefined()
+  })
+
   it('notas da arma (Duelismo) também no ataque, no dano e no dano a duas mãos', () => {
     const d = draft({ class: 'fighter', level: 1, abilityScores: SCORES, classChoices: choices({ fightingStyle: 'dueling' }), ...carrying('longsword') })
     const sword = getRollGuide(d, play()).attacks.find(a => a.key === 'longsword')!

@@ -3,7 +3,8 @@ import type { Feat } from '../types/feat'
 import type { ArmorProficiency, LevelFeature } from '../types/class'
 import type { AbilityScore, RacialTrait } from '../types/race'
 import type {
-  ConditionalAcBonus, ConditionalRollNote, EquipmentRequirement, LoadingOverride, ResourceEffect, WeaponAttackEffect,
+  ConditionalAcBonus, ConditionalRollNote, EquipmentRequirement, LevelStep, LoadingOverride, ResourceEffect,
+  WeaponAttackEffect,
 } from '../types/effects'
 import { getFeat } from './featUtils'
 import { getOwnedFeats } from './ownedFeats'
@@ -657,6 +658,27 @@ export function getWeaponCritThreshold(draft: CharacterDraft): SheetEffect<numbe
     }
   }
   return best
+}
+
+/**
+ * Dados de dano da arma a mais no crítico corpo a corpo (`meleeCritExtraWeaponDice`), um por fonte:
+ * Crítico Brutal pelo nível NA classe de bárbaro (p. 49), Ataques Selvagens do meio-orc e talentos
+ * pelo nível de personagem (p. 41). Cada fonte fica na sua linha — o guia mostra como nota no dano
+ * crítico, sem mexer na fórmula.
+ */
+export function getMeleeCritExtraWeaponDice(draft: CharacterDraft): SheetEffect<number>[] {
+  const out: SheetEffect<number>[] = []
+  const add = (source: string, steps: LevelStep[] | undefined, level: number) => {
+    const value = steps ? stepValue(steps, level) : undefined
+    if (value && value > 0 && !out.some(o => o.source === source)) out.push({ source, value })
+  }
+  for (const { entry, features } of getOwnedClassFeaturesByEntry(draft)) {
+    for (const feature of features) add(feature.name, feature.effects?.meleeCritExtraWeaponDice, entry.level)
+  }
+  const charLevel = draft.level ?? 1
+  for (const trait of getOwnedRacialTraits(draft)?.traits ?? []) add(trait.name, trait.effects?.meleeCritExtraWeaponDice, charLevel)
+  for (const feat of getOwnedFeats(draft)) add(feat.name, feat.effects?.meleeCritExtraWeaponDice, charLevel)
+  return out
 }
 
 /**

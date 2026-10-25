@@ -299,6 +299,12 @@ export type FeatureEffects = {
    * desarmado não é arma (p. 196) e não entra. Incondicional: entra no `critThreshold` do guia.
    */
   weaponCritThreshold?: LevelStep[]
+  /**
+   * Dados de dano da arma a mais no acerto crítico com arma corpo a corpo: Crítico Brutal do
+   * bárbaro, 1/2/3 no 9º/13º/17º pelo nível NA classe (p. 49); Ataques Selvagens do meio-orc, 1
+   * (p. 41, nível de personagem). Por ora só NOTA na receita do dano crítico — a fórmula não muda.
+   */
+  meleeCritExtraWeaponDice?: LevelStep[]
   /** Artes Marciais do monge — só lido em features de classe, no nível NA classe dona. */
   martialArts?: MartialArtsEffect
   /**

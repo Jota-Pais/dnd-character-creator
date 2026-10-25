@@ -6,6 +6,7 @@ import { getFinalAbilityScores } from '../asiUtils'
 import { getCombinedSpellSlots, getPactSlots } from '../spellUtils'
 import { getHitDicePool } from '../multiclassUtils'
 import { calculateModifier } from '../abilityScoreUtils'
+import { getSavingThrowChecks } from '../proficiencyUtils'
 
 function draft(overrides: Partial<CharacterDraft>): CharacterDraft {
   return { ...structuredClone(EMPTY_DRAFT), ...overrides }
@@ -38,6 +39,21 @@ describe('buildPlaySheet', () => {
     expect(sheet.pactSlots).toBeNull()
     expect(sheet.resources).toEqual(getSheetResources(fighter, scores))
     expect(sheet.proficiencyBonus).toBe(2)
+    expect(sheet.savingThrows).toEqual(getSavingThrowChecks(fighter, scores))
+  })
+
+  it('TR pela fonte única: o Resiliente e a Alma de Diamante entram no PlaySheet', () => {
+    const resilient = draft({
+      class: 'fighter', level: 4, abilityScores: SCORES,
+      asiChoices: [{ kind: 'feat', featId: 'resiliente', abilities: ['WIS'] }],
+    })
+    const sheet = buildPlaySheet(resilient)
+    expect(sheet.savingThrows.WIS.proficient).toBe(true)
+    expect(sheet.savingThrows).toEqual(getSavingThrowChecks(resilient, getFinalAbilityScores(resilient)))
+    const monk = draft({ class: 'monk', level: 14, abilityScores: SCORES })
+    const monkSheet = buildPlaySheet(monk)
+    expect(monkSheet.savingThrows.CHA.proficient).toBe(true)
+    expect(monkSheet.savingThrows.CHA.bonus).toBe(monkSheet.abilityModifiers.CHA + monkSheet.proficiencyBonus)
   })
 
   it('guerreiro 1: d10, Retomar o Fôlego curto, TR de FOR e CON com proficiência, deslocamento do humano', () => {

@@ -4,7 +4,7 @@ import type { AbilityScore } from '../types/race'
 import { ALL_ABILITY_SCORES, calculateModifier, getProficiencyBonus } from './abilityScoreUtils'
 import { getFinalAbilityScores } from './asiUtils'
 import { getHitDicePool } from './multiclassUtils'
-import { getSavingThrowProficiencies } from './proficiencyUtils'
+import { getSavingThrowChecks } from './proficiencyUtils'
 import {
   getInitiativeBonusTotal, getOwnedFeats, getSheetResources, getSheetSpeed, getTotalHp,
 } from './sheetEffects'
@@ -22,7 +22,7 @@ export function buildPlaySheet(draft: CharacterDraft): PlaySheet {
   const abilityScores = getFinalAbilityScores(draft)
   const abilityModifiers = byAbility(a => calculateModifier(abilityScores[a]))
   const proficiencyBonus = getProficiencyBonus(draft.level ?? 1)
-  const saveProficiencies = getSavingThrowProficiencies(draft)
+  const saveChecks = getSavingThrowChecks(draft, abilityScores)
   const pact = getPactSlots(draft)
 
   return {
@@ -31,10 +31,8 @@ export function buildPlaySheet(draft: CharacterDraft): PlaySheet {
     abilityModifiers,
     conModifier: abilityModifiers.CON,
     proficiencyBonus,
-    savingThrows: byAbility(a => {
-      const proficient = saveProficiencies.includes(a)
-      return { bonus: abilityModifiers[a] + (proficient ? proficiencyBonus : 0), proficient }
-    }),
+    // A fonte única do número de cada resistência (a mesma da Revisão, do PDF e do guia de rolagens).
+    savingThrows: byAbility(a => ({ bonus: saveChecks[a].bonus, proficient: saveChecks[a].proficient })),
     initiativeBonus: abilityModifiers.DEX + getInitiativeBonusTotal(draft),
     speed: getSheetSpeed(draft, abilityScores) ?? 0,
     hitDice: getHitDicePool(draft).map(p => ({ ...p })),

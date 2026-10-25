@@ -116,10 +116,12 @@ function withMartialArtsDie(damage: DamageRoll, die: number | undefined): Damage
 /**
  * O dano com o modificador. Sem dado (golpe desarmado, zarabatana), a conta sai resolvida — "1+4"
  * vira 5 e "1-1" vira 0; com dado, o fixo da arma e o modificador viram um número só ("1d8+3").
- * Resultado negativo (Força 6-7) sai como está, -1: piso para o dano ainda não decidido.
+ * O dano fixo tem piso 0: Força 6-7 no golpe desarmado ou Destreza baixa na zarabatana dão 0, não
+ * -1 (decisão do usuário, 2026-10-25). Com dado, o modificador negativo fica na expressão
+ * ("1d4-2"): a ficha não rola o dado.
  */
 function formatRoll(damage: DamageRoll, mod: number): string {
-  if (!('dice' in damage && damage.dice)) return String((damage.flat ?? 0) + mod)
+  if (!('dice' in damage && damage.dice)) return String(Math.max(0, (damage.flat ?? 0) + mod))
   const bonus = (damage.flat ?? 0) + mod
   return `${damage.dice}d${damage.sides}${bonus !== 0 ? signed(bonus) : ''}`
 }

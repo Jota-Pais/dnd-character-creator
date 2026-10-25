@@ -132,6 +132,8 @@ describe('weaponFormat', () => {
     it('zarabatana (dano fixo 1) sai com a conta resolvida', () => {
       expect(getWeaponAttack(getWeaponById('blowgun')!, ctx(0, 3, 2, true)).damage).toBe('4 perfurante')
       expect(getWeaponAttack(getWeaponById('blowgun')!, ctx(0, -1, 2, true)).damage).toBe('0 perfurante')
+      // Destreza 6: 1-2 daria -1; o dano fixo tem piso 0
+      expect(getWeaponAttack(getWeaponById('blowgun')!, ctx(0, -2, 2, true)).damage).toBe('0 perfurante')
     })
 
     it('modificador 0 não aparece no dano', () => {
@@ -320,9 +322,10 @@ describe('weaponFormat', () => {
       })
     })
 
-    it('dano fixo sai resolvido: Força 8 dá 0, Força 6 dá -1 (sem piso inventado)', () => {
+    it('dano fixo sai resolvido, com piso 0: Força 8 dá 0, Força 6 e Força 3 também', () => {
       expect(getUnarmedStrike({ strMod: -1, dexMod: 0, proficiencyBonus: 2 }).damage).toBe('0 concussão')
-      expect(getUnarmedStrike({ strMod: -2, dexMod: 0, proficiencyBonus: 2 }).damage).toBe('-1 concussão')
+      expect(getUnarmedStrike({ strMod: -2, dexMod: 0, proficiencyBonus: 2 }).damage).toBe('0 concussão')
+      expect(getUnarmedStrike({ strMod: -4, dexMod: 0, proficiencyBonus: 2 }).damage).toBe('0 concussão')
     })
 
     it('Força 10: só o 1', () => {

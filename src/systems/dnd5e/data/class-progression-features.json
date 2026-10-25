@@ -505,7 +505,7 @@
       {
         "level": 3,
         "name": "Dádiva do Pacto",
-        "description": "Escolha um dom. Corrente: você aprende convocar familiar (não conta nas magias conhecidas) e pode conjurá-la como ritual. O familiar pode ter forma de diabrete, pseudodragão, quasit ou sprite. Ao usar a ação de Ataque, você pode abrir mão de um dos seus ataques para o familiar atacar com a reação dele. Lâmina: com uma ação, crie na mão vazia uma arma corpo-a-corpo de pacto, na forma que quiser. Você é proficiente com ela, e ela conta como mágica para superar resistência e imunidade a dano não-mágico. Ela some se ficar a mais de 1,5 m de você por 1 minuto, se você usar a característica de novo, se você dissipá-la (sem ação) ou se morrer. Um ritual de 1 hora (pode ser feito num descanso curto) torna uma arma mágica a sua arma de pacto. Tomo: o Livro das Sombras dá três truques de qualquer lista, que você conjura à vontade enquanto estiver com o livro. Eles contam como magias de bruxo e não entram nos truques conhecidos. Se perder o livro, uma cerimônia de 1 hora num descanso curto ou longo dá um substituto."
+        "description": "Seu patrono lhe confere um dom: você adquire, à sua escolha, o Pacto da Corrente, o Pacto da Lâmina ou o Pacto do Tomo (escolhido em Dádiva do Pacto; o texto do pacto sai nas Escolhas de Progressão). Algumas invocações exigem um pacto específico."
       },
       {
         "level": 11,

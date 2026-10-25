@@ -41,7 +41,7 @@ import {
 } from '../../utils/sheetEffects'
 import { getSheetAttacks } from '../../utils/attackUtils'
 import { formatAttackDamage } from '../../utils/weaponFormat'
-import { getProgressionChoiceBlocks } from '../../utils/progressionOptions'
+import { formatUnmetPick, getProgressionChoiceBlocks } from '../../utils/progressionOptions'
 import {
   getSpell,
   getSpellSaveDC,
@@ -813,6 +813,7 @@ export function ReviewStep() {
                           <div key={opt.id} className="mb-2 last:mb-0">
                             <span className="text-sm font-semibold font-fantasy text-parchment-200">{opt.name}. </span>
                             <span className="text-sm text-parchment-500 leading-relaxed">{opt.text}</span>
+                            {opt.unmet && <p className="text-xs font-semibold text-red-400 mt-0.5">{formatUnmetPick(opt.unmet)}</p>}
                           </div>
                         ))}
                       </div>
@@ -954,7 +955,7 @@ export function ReviewStep() {
                     {/* Contam como magias desta classe (p. 54-55); vêm das escolhas de progressão. Os que
                         ocupam vaga das conhecidas e os Adicionais (por cima) ficam em grupos separados. */}
                     {secretGroups.map(group => (
-                      <div key={group.kind} className="mt-3">
+                      <div key={group.title} className="mt-3">
                         <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">{group.title}</p>
                         <div className="flex flex-wrap gap-1.5">
                           {group.spells.map(s => (

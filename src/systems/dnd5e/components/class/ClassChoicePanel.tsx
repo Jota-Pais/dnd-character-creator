@@ -16,8 +16,10 @@ import type { TermId } from '../../utils/glossary'
 import { SKILLS, getLanguageName } from '../../utils/raceUtils'
 import { LanguagePicker } from '../common/LanguagePicker'
 import toolsData from '../../data/tools.json'
-import { getProgressionSlotsUpToLevel, SPELL_OPTIONS_LIST_ID, type ProgressionSlot } from '../../utils/progressionChoiceUtils'
-import { getProgressionOptions, getSecretSpellOptions, type ProgressionOption } from '../../utils/progressionOptions'
+import { getActivePicks, getProgressionSlotsUpToLevel, SPELL_OPTIONS_LIST_ID, type ProgressionSlot } from '../../utils/progressionChoiceUtils'
+import {
+  describeRequiredPick, getProgressionOptions, getSecretSpellOptions, getUnmetRequirement, type ProgressionOption,
+} from '../../utils/progressionOptions'
 import { getMaxSpellLevel, getSecretCantripRoom, getSpell } from '../../utils/spellUtils'
 import type { ClassSlotProficiencies } from '../../utils/proficiencyUtils'
 import type { TakenFightingStyles } from '../../utils/sheetEffects'
@@ -609,8 +611,11 @@ function ProgressionChoicesPanel({
   takenFightingStyles: string[]
   onChange: (patch: Record<string, string[]>) => void
 }) {
-  const slots = getProgressionSlotsUpToLevel(classId, subclassId, level)
+  const slots = getProgressionSlotsUpToLevel(classId, subclassId, level, choices.progressionChoices)
   if (slots.length === 0) return null
+  // Pré-requisito de opção (Lâmina Sedenta exige o Pacto da Lâmina, p. 61): conferido contra o que
+  // a classe tem escolhido nos slots liberados.
+  const activePicks = getActivePicks(classId, subclassId, level, choices.progressionChoices)
 
   // Agrupa os slots por optionsListId para somar a contagem quando cumulative=true
   const groups = new Map<string, { slots: ProgressionSlot[]; totalCount: number }>()
@@ -647,7 +652,9 @@ function ProgressionChoicesPanel({
         // classe da multiclasse (p. 85). O que já está no slot fica à vista para desmarcar.
         const pickedInGroup = group.slots.flatMap(s => choices.progressionChoices[s.id] ?? [])
         // Segredos Mágicos: só magia de nível que o bardo conjura pela tabela dele, ou truque (pp. 54-55).
-        const maxSecretLevel = optionsListId === SPELL_OPTIONS_LIST_ID ? getMaxSpellLevel(classId, level, subclassId) : 0
+        // Slot com teto próprio (truques do Livro das Sombras, p. 59) fica no teto dele.
+        const classMaxLevel = optionsListId === SPELL_OPTIONS_LIST_ID ? getMaxSpellLevel(classId, level, subclassId) : 0
+        const maxSecretLevel = Math.min(classMaxLevel, group.slots[0].maxSpellLevel ?? classMaxLevel)
         const options = (optionsListId === SPELL_OPTIONS_LIST_ID
           ? getSecretSpellOptions(maxSecretLevel, pickedInGroup)
           : getProgressionOptions(optionsListId)
@@ -685,10 +692,14 @@ function ProgressionChoicesPanel({
             return (
               <ChoiceSection key={slot.id} title={title} accent={accent}>
                 <p className="text-xs text-parchment-500 mb-2">
-                  Magia de qualquer classe, de até {maxSecretLevel}º nível (o que você conjura pela tabela do Bardo), ou um truque.{' '}
-                  {slot.countsAsKnownSpell
-                    ? 'Já faz parte das suas magias conhecidas (p. 54): ocupa uma vaga de Magias Conhecidas — ou de Truques Conhecidos, se for truque — e a etapa Magias pede uma a menos.'
-                    : 'Não conta no número de magias conhecidas (p. 55): vem por cima das escolhidas na etapa Magias.'}
+                  {slot.hint ?? (
+                    <>
+                      Magia de qualquer classe, de até {maxSecretLevel}º nível (o que você conjura pela tabela do Bardo), ou um truque.{' '}
+                      {slot.countsAsKnownSpell
+                        ? 'Já faz parte das suas magias conhecidas (p. 54): ocupa uma vaga de Magias Conhecidas — ou de Truques Conhecidos, se for truque — e a etapa Magias pede uma a menos.'
+                        : 'Não conta no número de magias conhecidas (p. 55): vem por cima das escolhidas na etapa Magias.'}
+                    </>
+                  )}
                 </p>
                 {cantripsFull && cantripRoom && currentPicked.length < slot.count && (
                   <p className="text-xs mb-2 rounded-lg border border-parchment-800 px-3 py-2 text-parchment-300">
@@ -714,17 +725,21 @@ function ProgressionChoicesPanel({
           return (
             <ChoiceSection key={slot.id} title={title} accent={accent}>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2 items-stretch">
-                {options.map(opt => (
-                  <ProgressionOptionCard
-                    key={opt.id}
-                    option={opt}
-                    accent={accent}
-                    picked={currentPicked.includes(opt.id)}
-                    pickedEarlier={previousPicks.has(opt.id)}
-                    slotFull={currentPicked.length >= slot.count}
-                    onToggle={() => handleOptionToggle(slot.id, opt.id, slot.count)}
-                  />
-                ))}
+                {options.map(opt => {
+                  const unmet = getUnmetRequirement(classId, subclassId, activePicks, opt)
+                  return (
+                    <ProgressionOptionCard
+                      key={opt.id}
+                      option={opt}
+                      accent={accent}
+                      picked={currentPicked.includes(opt.id)}
+                      pickedEarlier={previousPicks.has(opt.id)}
+                      slotFull={currentPicked.length >= slot.count}
+                      unmetRequirement={unmet ? describeRequiredPick(unmet) : null}
+                      onToggle={() => handleOptionToggle(slot.id, opt.id, slot.count)}
+                    />
+                  )
+                })}
               </div>
             </ChoiceSection>
           )

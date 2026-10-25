@@ -1,0 +1,17 @@
+[
+  {
+    "id": "pact-of-the-chain",
+    "name": "Pacto da Corrente",
+    "description": "Você aprende a magia convocar familiar e pode conjurá-la como ritual; ela não conta no número de magias que você conhece. Ao conjurá-la, o familiar pode ter uma das formas comuns ou uma das formas especiais: diabrete, pseudodragão, quasit ou sprite. Quando você usa a ação de Ataque, pode abrir mão de um dos seus ataques para que o familiar faça um ataque, usando a reação dele."
+  },
+  {
+    "id": "pact-of-the-blade",
+    "name": "Pacto da Lâmina",
+    "description": "Com uma ação, você cria uma arma de pacto na mão vazia, uma arma corpo-a-corpo na forma que escolher a cada vez que a cria (opções de arma no capítulo 5). Você é proficiente com ela enquanto a empunhar, e ela conta como mágica para superar resistência e imunidade a ataques e danos não-mágicos. Ela desaparece se ficar a mais de 1,5 m de você por 1 minuto ou mais, se você usar esta característica de novo, se você dissipá-la (não requer ação) ou se você morrer. Com um ritual de 1 hora empunhando uma arma mágica (pode ser feito num descanso curto), ela vira sua arma de pacto: você pode dissipá-la num espaço extradimensional, e ela reaparece sempre que você cria a arma de pacto. Ela deixa de ser sua arma de pacto se você morrer, se fizer o ritual de 1 hora com outra arma ou um ritual de 1 hora para romper o elo; se estiver no espaço extradimensional quando o elo se rompe, aparece aos seus pés."
+  },
+  {
+    "id": "pact-of-the-tome",
+    "name": "Pacto do Tomo",
+    "description": "Seu patrono lhe dá um grimório, o Livro das Sombras, com três truques à sua escolha da lista de magias de qualquer classe (não precisam ser da mesma lista). Enquanto o livro estiver com você, você conjura esses truques à vontade. Eles contam como magias de bruxo para você e não entram no número de truques que você conhece. Se perder o livro, uma cerimônia de 1 hora, num descanso curto ou longo, dá um substituto do patrono e destrói o anterior. O livro vira cinzas quando você morre."
+  }
+]

@@ -9,6 +9,11 @@ type Props = {
   pickedEarlier: boolean
   /** Slot cheio: dá pra ler, não dá pra marcar. */
   slotFull: boolean
+  /**
+   * Pré-requisito de opção que falta ("requer Pacto da Lâmina (Dádiva do Pacto, 3º nível)"): a
+   * opção não se marca; já marcada (ficha antiga, pacto trocado), fica com o aviso pra desmarcar.
+   */
+  unmetRequirement?: string | null
   onToggle: () => void
 }
 
@@ -17,8 +22,9 @@ type Props = {
  * A descrição fica SEMPRE visível — antes vivia só no `title` do chip, e o jogador tinha que
  * passar o mouse opção por opção pra descobrir o que cada uma fazia.
  *
- * O `prerequisite` é o texto que vem do JSON, exibido como selo. Não é avaliado contra a ficha:
- * o D&D não tem camada de pré-requisito calculado e isso seria regra nova.
+ * O `prerequisite` é o texto que vem do JSON, exibido como selo. Só o pré-requisito de opção
+ * (`requiresPick`: o pacto das invocações) é conferido contra a ficha — vem em `unmetRequirement`;
+ * o de nível e o de truque continuam só no selo.
  */
 export function ProgressionOptionCard({
   option,
@@ -26,17 +32,18 @@ export function ProgressionOptionCard({
   picked,
   pickedEarlier,
   slotFull,
+  unmetRequirement = null,
   onToggle,
 }: Props) {
   const selected = picked || pickedEarlier
-  const disabled = pickedEarlier || (!picked && slotFull)
+  const disabled = pickedEarlier || (!picked && (slotFull || unmetRequirement !== null))
   const tiers = [option.tier3, option.tier6, option.tier14].filter(Boolean)
 
   return (
     <button
       onClick={() => { if (!pickedEarlier) onToggle() }}
       disabled={disabled}
-      title={pickedEarlier ? 'Já escolhida num nível anterior' : slotFull && !picked ? 'Slot completo' : undefined}
+      title={pickedEarlier ? 'Já escolhida num nível anterior' : unmetRequirement && !picked ? `Indisponível: ${unmetRequirement}` : slotFull && !picked ? 'Slot completo' : undefined}
       className="text-left p-3 rounded-xl border-2 transition-all duration-200 h-full"
       style={{
         borderColor: selected ? accent : 'rgba(90, 62, 36, 0.5)',
@@ -83,6 +90,14 @@ export function ProgressionOptionCard({
 
       {pickedEarlier && (
         <p className="mt-1.5 text-[11px] text-parchment-600">Escolhida num nível anterior</p>
+      )}
+
+      {unmetRequirement && (
+        <p className={`mt-1.5 text-[11px] ${selected ? 'text-red-400 font-semibold' : 'text-parchment-600'}`}>
+          {selected
+            ? `⚠ Sem o pré-requisito: ${unmetRequirement}. Não vale na ficha — desmarque ou escolha o que falta.`
+            : `Indisponível: ${unmetRequirement}.`}
+        </p>
       )}
     </button>
   )

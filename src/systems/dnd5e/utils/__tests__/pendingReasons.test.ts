@@ -247,9 +247,51 @@ function corpus(): CharacterDraft[] {
       spellChoices: { cantrips: ['fire-bolt', 'light'], spells: ['magic-missile', 'sleep', 'charm-person', 'fog-cloud', 'shield', 'burning-hands'] },
     }),
   )
-  out.push(...bardSecretsDrafts())
+  out.push(...bardSecretsDrafts(), ...pactBoonDrafts())
   return out
 }
+
+/**
+ * Bruxos com e sem Dádiva do Pacto (p. 58-59): sem pacto, cada pacto, Tomo com os truques
+ * faltando/completos/com magia de 1º nível, invocação com e sem o pacto que ela exige — na classe
+ * primária e como classe da multiclasse.
+ */
+function pactBoonDrafts(): CharacterDraft[] {
+  const base = { 'warlock-invocations-2': ['armadura-de-sombras', 'visao-diabolica'] }
+  const variants: Record<string, string[]>[] = [
+    base,
+    { ...base, 'warlock-pact-boon-3': ['pact-of-the-blade'] },
+    { ...base, 'warlock-pact-boon-3': ['pact-of-the-chain'], 'warlock-pact-tome-cantrips-3': ['guidance'] },
+    { ...base, 'warlock-pact-boon-3': ['pact-of-the-tome'] },
+    { ...base, 'warlock-pact-boon-3': ['pact-of-the-tome'], 'warlock-pact-tome-cantrips-3': ['guidance', 'fire-bolt', 'sacred-flame'] },
+    { ...base, 'warlock-pact-boon-3': ['pact-of-the-tome'], 'warlock-pact-tome-cantrips-3': ['guidance', 'fire-bolt', 'shield'] },
+    { ...base, 'warlock-pact-boon-3': ['pact-of-the-blade'], 'warlock-invocations-5': ['lamina-sedenta'] },
+    { ...base, 'warlock-pact-boon-3': ['pact-of-the-chain'], 'warlock-invocations-5': ['lamina-sedenta'] },
+    { 'warlock-invocations-2': ['voz-do-mestre-das-correntes', 'livro-de-segredos-antigos'] },
+  ]
+  const out: CharacterDraft[] = []
+  for (const level of [2, 3, 5]) {
+    for (const progressionChoices of variants) {
+      const classChoices = { ...structuredClone(EMPTY_DRAFT.classChoices), skills: ['arcana', 'deception'], subclass: 'fiend', progressionChoices }
+      out.push(draft({ class: 'warlock', level, classChoices }))
+      out.push(draft({
+        level: level + 1,
+        additionalClasses: [entry({ classId: 'warlock', level, classChoices })],
+        multiclass: true,
+      }))
+    }
+  }
+  return out
+}
+
+describe('motivos × isStepComplete — Dádiva do Pacto', () => {
+  const warlocks = pactBoonDrafts()
+
+  it('o leque de bruxos tem etapa Classe aprovada e reprovada', () => {
+    expect(warlocks.some(d => isStepComplete(d, 'class'))).toBe(true)
+    expect(warlocks.some(d => !isStepComplete(d, 'class'))).toBe(true)
+  })
+})
 
 /**
  * Bardos 10/14/18 com Segredos Mágicos (magia e truque, ocupando vaga das colunas) e as escolhas

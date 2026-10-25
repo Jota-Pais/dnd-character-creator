@@ -172,8 +172,10 @@ function ClassSpellSection({
   const cantripBudget = describeSecretsInColumn(cantripCol)
   const secretCantrips = secrets.cantrips.filter(id => !caster.cantrips.includes(id))
   const secretSpells = secrets.spells.filter(id => !choices.spells.includes(id))
-  // Adicionais do Colégio do Conhecimento (p. 55): também do bardo, mas por cima das colunas.
-  const additionalSecrets = getSecretSpellGroups(caster).find(g => g.kind === 'additional')?.spells.map(s => s.id) ?? []
+  // Adicionais do Colégio do Conhecimento (p. 55) e truques do Livro das Sombras (p. 59): da
+  // classe, mas por cima das colunas.
+  const additionalGroups = getSecretSpellGroups(caster).filter(g => g.kind === 'additional')
+  const additionalSecrets = additionalGroups.flatMap(g => g.spells.map(s => s.id))
   const school = getSchoolRestrictionStatus(sc, level, choices.spells)
   const overflows = getSpellChoiceOverflows(caster, abilityScores)
   // As repetidas que passam por esta classe (escolhas dela ou os Segredos dela): aviso na seção e
@@ -258,13 +260,13 @@ function ClassSpellSection({
               {' '}
             </>
           )}
-          {additionalSecrets.length > 0 && (
-            <>
-              ✦ {formatSpellNames(additionalSecrets)} (Segredos Mágicos Adicionais, p. 55){' '}
-              {additionalSecrets.length === 1 ? 'vem por cima e não ocupa vaga.' : 'vêm por cima e não ocupam vaga.'}{' '}
-            </>
-          )}
-          Para trocar um Segredo, volte à etapa Classe.
+          {additionalGroups.map(group => (
+            <span key={group.label}>
+              ✦ {formatSpellNames(group.spells.map(s => s.id))} ({group.label}){' '}
+              {group.spells.length === 1 ? 'vem por cima e não ocupa vaga.' : 'vêm por cima e não ocupam vaga.'}{' '}
+            </span>
+          ))}
+          Para trocar alguma delas, volte à etapa Classe.
         </p>
       )}
 

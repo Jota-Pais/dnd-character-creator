@@ -12,7 +12,9 @@
     { "id": "warlock-invocations-9", "level": 9, "count": 1, "cumulative": true, "optionsListId": "eldritch-invocations", "label": "Invocações Místicas" },
     { "id": "warlock-invocations-12", "level": 12, "count": 1, "cumulative": true, "optionsListId": "eldritch-invocations", "label": "Invocações Místicas" },
     { "id": "warlock-invocations-15", "level": 15, "count": 1, "cumulative": true, "optionsListId": "eldritch-invocations", "label": "Invocações Místicas" },
-    { "id": "warlock-invocations-18", "level": 18, "count": 1, "cumulative": true, "optionsListId": "eldritch-invocations", "label": "Invocações Místicas" }
+    { "id": "warlock-invocations-18", "level": 18, "count": 1, "cumulative": true, "optionsListId": "eldritch-invocations", "label": "Invocações Místicas" },
+    { "id": "warlock-pact-boon-3", "level": 3, "count": 1, "cumulative": false, "optionsListId": "pact-boons", "label": "Dádiva do Pacto" },
+    { "id": "warlock-pact-tome-cantrips-3", "level": 3, "count": 3, "cumulative": false, "optionsListId": "any-known-spell", "requiresPick": "pact-of-the-tome", "maxSpellLevel": 0, "label": "Truques do Livro das Sombras", "hint": "Pacto do Tomo (p. 59): três truques da lista de qualquer classe, que você conjura à vontade enquanto estiver com o Livro das Sombras. Contam como magias de bruxo e não entram nos Truques Conhecidos: vêm por cima dos escolhidos na etapa Magias." }
   ],
   "sorcerer": [
     { "id": "sorcerer-metamagic-3", "level": 3, "count": 2, "cumulative": true, "optionsListId": "metamagic-options", "label": "Opções de Metamágica" },

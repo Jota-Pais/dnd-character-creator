@@ -31,6 +31,7 @@ import { getAsiSlotCount, getReachedAsiLevels, isAsiChoiceComplete, getRacialBon
 import { getFeat } from './featUtils'
 import { getFeatChoiceSlots, getRepeatedFightingStyles, type FeatChoiceSlot } from './sheetEffects'
 import { getProgressionSlotsUpToLevel } from './progressionChoiceUtils'
+import { describeRequiredPick, getUnmetPickRequirements } from './progressionOptions'
 import {
   getEntrySpellcasting,
   getKnownColumnSecrets,
@@ -220,7 +221,7 @@ function classEntryReasons(cls: GameClass, choices: ClassChoiceSelections, level
     out.push(`${cls.name}: escolha mais ${plural(expertiseMissing, 'perícia', 'perícias')} para a ${feature} (bônus dobrado)`)
   }
 
-  for (const slot of getProgressionSlotsUpToLevel(cls.id, choices.subclass, level)) {
+  for (const slot of getProgressionSlotsUpToLevel(cls.id, choices.subclass, level, choices.progressionChoices)) {
     const picked = (choices.progressionChoices[slot.id] ?? []).length
     if (picked < slot.count) {
       out.push(`${cls.name}: escolha mais ${slot.count - picked} em ${slot.label} (ganho no ${ordinal(slot.level)} nível)`)
@@ -233,6 +234,10 @@ function classEntryReasons(cls: GameClass, choices: ClassChoiceSelections, level
     out.push(describeSecretSpellIssue(cls.name, issue))
   }
 
+  for (const { slot, option, required } of getUnmetPickRequirements(cls.id, choices.subclass, level, choices.progressionChoices)) {
+    out.push(`${cls.name}: ${option.name} ${describeRequiredPick(required)} — troque em ${slot.label}${required.slotLabel ? ` ou escolha ${required.name} em ${required.slotLabel}` : ''}`)
+  }
+
   return out
 }
 
@@ -240,6 +245,7 @@ function classEntryReasons(cls: GameClass, choices: ClassChoiceSelections, level
 function describeSecretSpellIssue(className: string, issue: SecretSpellIssue): string {
   if (issue.kind === 'above-level') {
     const name = getSpell(issue.spellId)?.name ?? issue.spellId
+    if (issue.maxLevel === 0) return `${className}: ${name} (${ordinal(issue.spellLevel)}) não é truque — em ${issue.slotLabel} só entram truques; troque`
     return `${className}: ${name} (${ordinal(issue.spellLevel)}) passa do ${ordinal(issue.maxLevel)} nível que você conjura — troque em ${issue.slotLabel}`
   }
   const names = issue.cantrips.map(id => getSpell(id)?.name ?? id).join(', ')

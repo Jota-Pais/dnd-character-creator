@@ -255,7 +255,10 @@ export type SecretSpellIssue =
       slotLabel: string
       spellId: string
       spellLevel: number
-      /** Maior nível que a classe conjura pela tabela dela (getMaxSpellLevel). */
+      /**
+       * Maior nível que o slot aceita: o que a classe conjura pela tabela dela (getMaxSpellLevel) ou
+       * o teto do slot (`maxSpellLevel`), o que for menor — 0 nos truques do Livro das Sombras.
+       */
       maxLevel: number
     }
 
@@ -272,8 +275,9 @@ export function getSecretSpellIssues(
   progressionChoices: Record<string, string[]> | undefined,
 ): SecretSpellIssue[] {
   const issues: SecretSpellIssue[] = []
-  const maxLevel = getMaxSpellLevel(classId, classLevel, subclassId)
-  for (const slot of getProgressionSlotsUpToLevel(classId, subclassId ?? null, classLevel).filter(isSpellChoiceSlot)) {
+  const classMax = getMaxSpellLevel(classId, classLevel, subclassId)
+  for (const slot of getProgressionSlotsUpToLevel(classId, subclassId ?? null, classLevel, progressionChoices).filter(isSpellChoiceSlot)) {
+    const maxLevel = Math.min(classMax, slot.maxSpellLevel ?? classMax)
     for (const spellId of progressionChoices?.[slot.id] ?? []) {
       const spell = getSpell(spellId)
       if (spell && spell.level > maxLevel) {
@@ -325,34 +329,49 @@ export function getCasterEntries(draft: CharacterDraft): CasterEntry[] {
   })
 }
 
-/** Um grupo de Segredos Mágicos da Revisão e da ficha imprimível (getSecretSpellGroups). */
+/** Um grupo de magias de slot de progressão da Revisão e da ficha imprimível (getSecretSpellGroups). */
 export type SecretSpellGroup = {
   kind: 'in-columns' | 'additional'
-  /** "Segredos Mágicos (contam nas conhecidas)" ou "Segredos Mágicos Adicionais (por cima das conhecidas)". */
+  /**
+   * "Segredos Mágicos (contam nas conhecidas)"; os que vêm por cima levam o rótulo do slot:
+   * "Segredos Mágicos Adicionais (por cima das conhecidas)", "Truques do Livro das Sombras (...)".
+   */
   title: string
+  /** O rótulo do slot de onde vêm ("Segredos Mágicos", "Truques do Livro das Sombras"). */
+  label: string
   spells: Spell[]
 }
 
 /**
- * Os Segredos da classe em dois grupos, para quem lê a ficha saber quais estão dentro do número de
- * conhecidas: os Segredos Mágicos do bardo, que ocupam vaga das colunas (p. 54, knownSecrets), e os
- * Adicionais do Colégio do Conhecimento, que vêm por cima (p. 55). Grupo vazio fica de fora.
+ * As magias de slot da classe em grupos, para quem lê a ficha saber quais estão dentro do número de
+ * conhecidas: os Segredos Mágicos do bardo, que ocupam vaga das colunas (p. 54, knownSecrets), e,
+ * um grupo por rótulo de slot, as que vêm por cima — os Adicionais do Colégio do Conhecimento
+ * (p. 55) e os truques do Livro das Sombras (p. 59). Grupo vazio fica de fora.
  */
 export function getSecretSpellGroups(caster: CasterEntry): SecretSpellGroup[] {
+  const { entry } = caster
+  const { progressionChoices } = entry.classChoices
   const inColumns = new Set([...caster.knownSecrets.cantrips, ...caster.knownSecrets.spells])
   const toSpells = (ids: string[]) => ids.map(getSpell).filter((s): s is Spell => s !== undefined)
-  const groups: SecretSpellGroup[] = [
-    {
-      kind: 'in-columns',
-      title: 'Segredos Mágicos (contam nas conhecidas)',
-      spells: toSpells(caster.bonusSpells.filter(id => inColumns.has(id))),
-    },
-    {
-      kind: 'additional',
-      title: 'Segredos Mágicos Adicionais (por cima das conhecidas)',
-      spells: toSpells(caster.bonusSpells.filter(id => !inColumns.has(id))),
-    },
-  ]
+  const groups: SecretSpellGroup[] = [{
+    kind: 'in-columns',
+    title: 'Segredos Mágicos (contam nas conhecidas)',
+    label: 'Segredos Mágicos',
+    spells: toSpells(caster.bonusSpells.filter(id => inColumns.has(id))),
+  }]
+  const additionalByLabel = new Map<string, string[]>()
+  const placed = new Set(inColumns)
+  const slots = getProgressionSlotsUpToLevel(entry.classId, entry.classChoices.subclass, entry.level, progressionChoices)
+  for (const slot of slots.filter(isSpellChoiceSlot)) {
+    for (const id of progressionChoices[slot.id] ?? []) {
+      if (placed.has(id)) continue
+      placed.add(id)
+      additionalByLabel.set(slot.label, [...(additionalByLabel.get(slot.label) ?? []), id])
+    }
+  }
+  for (const [label, ids] of additionalByLabel) {
+    groups.push({ kind: 'additional', title: `${label} (por cima das conhecidas)`, label, spells: toSpells(ids) })
+  }
   return groups.filter(g => g.spells.length > 0)
 }
 
@@ -392,7 +411,7 @@ export function getSpellSources(draft: CharacterDraft): SpellSource[] {
       spellIds: [...caster.cantrips, ...caster.spells],
     })
     const bySlotLabel = new Map<string, string[]>()
-    for (const slot of getProgressionSlotsUpToLevel(entry.classId, entry.classChoices.subclass, entry.level).filter(isSpellChoiceSlot)) {
+    for (const slot of getProgressionSlotsUpToLevel(entry.classId, entry.classChoices.subclass, entry.level, entry.classChoices.progressionChoices).filter(isSpellChoiceSlot)) {
       const picked = entry.classChoices.progressionChoices[slot.id] ?? []
       bySlotLabel.set(slot.label, [...(bySlotLabel.get(slot.label) ?? []), ...picked])
     }

@@ -14,6 +14,18 @@ export type ProgressionSlot = {
    * Adicionais do Colégio do Conhecimento (p. 55) não têm o campo — contam por fora.
    */
   countsAsKnownSpell?: boolean
+  /**
+   * Slot que só existe com uma opção escolhida em outro slot da mesma classe: os truques do Livro
+   * das Sombras só com o Pacto do Tomo (p. 59). É o id da opção exigida.
+   */
+  requiresPick?: string
+  /**
+   * Teto de nível das magias de um slot de magia, abaixo do que a classe conjura: 0 = só truques
+   * (Livro das Sombras, p. 59). Omitido = o que a tabela da classe deixa (Segredos Mágicos).
+   */
+  maxSpellLevel?: number
+  /** Explicação do slot na etapa Classe, quando não é um slot de Segredos Mágicos do bardo. */
+  hint?: string
 }
 
 const PROGRESSION_CHOICES_BY_ID = progressionChoicesData as Record<string, ProgressionSlot[]>
@@ -30,9 +42,37 @@ export function getProgressionSlots(classId: string | null, subclassId: string |
   return slots.sort((a, b) => a.level - b.level)
 }
 
-/** Slots ganhos até o nível atual do personagem. */
-export function getProgressionSlotsUpToLevel(classId: string | null, subclassId: string | null, level: number): ProgressionSlot[] {
-  return getProgressionSlots(classId, subclassId).filter(slot => slot.level <= level)
+/**
+ * Slots ganhos até o nível na classe. Os que dependem de uma opção (`requiresPick`: truques do
+ * Livro das Sombras) só entram com ela marcada num slot já liberado — por isso as escolhas vêm
+ * junto. Sem as escolhas, ficam de fora.
+ */
+export function getProgressionSlotsUpToLevel(
+  classId: string | null,
+  subclassId: string | null,
+  level: number,
+  progressionChoices: Record<string, string[]> = {},
+): ProgressionSlot[] {
+  const reached = getProgressionSlots(classId, subclassId).filter(slot => slot.level <= level)
+  const picks = collectPicks(reached.filter(slot => !slot.requiresPick), progressionChoices)
+  return reached.filter(slot => !slot.requiresPick || picks.has(slot.requiresPick))
+}
+
+function collectPicks(slots: ProgressionSlot[], progressionChoices: Record<string, string[]>): Set<string> {
+  return new Set(slots.flatMap(slot => progressionChoices[slot.id] ?? []))
+}
+
+/**
+ * As opções que a classe tem escolhidas nos slots que o nível nela já liberou (o pacto, as
+ * invocações...): contra elas se confere o pré-requisito de opção (`requiresPick` da opção).
+ */
+export function getActivePicks(
+  classId: string | null,
+  subclassId: string | null,
+  level: number,
+  progressionChoices: Record<string, string[]>,
+): Set<string> {
+  return collectPicks(getProgressionSlotsUpToLevel(classId, subclassId, level, progressionChoices), progressionChoices)
 }
 
 /**
@@ -46,9 +86,12 @@ export function isSpellChoiceSlot(slot: ProgressionSlot): boolean {
   return slot.optionsListId === SPELL_OPTIONS_LIST_ID
 }
 
-/** Magias escolhidas em slots de progressão (Segredos Mágicos) da classe, até o nível que tem nela. */
+/**
+ * Magias escolhidas em slots de progressão da classe (Segredos Mágicos, truques do Livro das
+ * Sombras), até o nível que tem nela.
+ */
 export function getProgressionSpellIds(entry: ClassEntry): string[] {
-  const ids = getProgressionSlotsUpToLevel(entry.classId, entry.classChoices.subclass, entry.level)
+  const ids = getProgressionSlotsUpToLevel(entry.classId, entry.classChoices.subclass, entry.level, entry.classChoices.progressionChoices)
     .filter(isSpellChoiceSlot)
     .flatMap(slot => entry.classChoices.progressionChoices[slot.id] ?? [])
   return [...new Set(ids)]
@@ -65,7 +108,7 @@ export function getKnownColumnSecretIds(
   classLevel: number,
   progressionChoices: Record<string, string[]>,
 ): string[] {
-  const ids = getProgressionSlotsUpToLevel(classId, subclassId, classLevel)
+  const ids = getProgressionSlotsUpToLevel(classId, subclassId, classLevel, progressionChoices)
     .filter(slot => isSpellChoiceSlot(slot) && slot.countsAsKnownSpell)
     .flatMap(slot => progressionChoices[slot.id] ?? [])
   return [...new Set(ids)]
@@ -79,7 +122,7 @@ export function isProgressionChoicesComplete(
   level: number
 ): boolean {
   if (!classId) return false
-  const slots = getProgressionSlotsUpToLevel(classId, subclassId, level)
+  const slots = getProgressionSlotsUpToLevel(classId, subclassId, level, choices.progressionChoices)
   for (const slot of slots) {
     const picked = choices.progressionChoices[slot.id] ?? []
     if (picked.length !== slot.count) return false

@@ -33,7 +33,7 @@ import {
   formatResourceLine, formatTrackCircles, groupResourcesBySource, resourceGroupsNeedLabels,
   resourceSourceLabel,
 } from '../utils/classResourceUtils'
-import { getProgressionChoiceBlocks } from '../utils/progressionOptions'
+import { formatUnmetPick, getProgressionChoiceBlocks } from '../utils/progressionOptions'
 import {
   getSpell, getSpellSaveDC, formatSpellAttackBonus, getCombinedSpellSlots, getPactSlots,
   getMaxPreparedSpells, describeCastingAids, getCasterEntries, getSpellChoiceOverflows,
@@ -427,7 +427,7 @@ export function PrintableSheet() {
                   ))}
                   {/* Contam como magias desta classe (p. 54-55); os que ocupam vaga e os Adicionais, separados. */}
                   {secretGroups.map(group => (
-                    <p key={group.kind} className="text-xs mb-0.5">
+                    <p key={group.title} className="text-xs mb-0.5">
                       <span className="text-gray-600">{group.title}: </span>
                       {group.spells.map(formatSecretSpellName).join(', ')}
                     </p>
@@ -557,7 +557,7 @@ export function PrintableSheet() {
                   </p>
                   {picks.map(opt => (
                     <p key={opt.id} className="text-xs mb-0.5">
-                      <strong>{opt.name}.</strong> {opt.text}
+                      <strong>{opt.name}.</strong> {opt.text}{opt.unmet && <> <strong>{formatUnmetPick(opt.unmet)}</strong></>}
                     </p>
                   ))}
                 </div>

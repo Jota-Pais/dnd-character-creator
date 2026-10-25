@@ -8,7 +8,8 @@
     "id": "correntes-de-carceri",
     "name": "Correntes de Cárceri",
     "description": "Você pode conjurar imobilizar monstro, à vontade – tendo como alvo um celestial, corruptor ou elemental – sem precisar gastar um espaço de magia ou componentes materiais. Você deve terminar um descanso longo antes de poder usar essa invocação na mesma criatura novamente.",
-    "prerequisite": "15° nível, característica Corrente de Cárceri"
+    "prerequisite": "15° nível, característica Pacto da Corrente",
+    "requiresPick": "pact-of-the-chain"
   },
   {
     "id": "encharcar-a-mente",
@@ -55,6 +56,7 @@
     "name": "Lâmina Sedenta",
     "description": "Você pode atacar com sua arma do pacto duas vezes, ao invés de apenas uma, quando você usa a ação de Ataque no seu turno.",
     "prerequisite": "5° nível, característica Pacto da Lâmina",
+    "requiresPick": "pact-of-the-blade",
     "effects": { "conditionalAttacksPerAction": { "byLevel": [{ "from": 5, "value": 2 }], "condition": "com a arma do pacto" } }
   },
   {
@@ -72,7 +74,8 @@
     "id": "livro-de-segredos-antigos",
     "name": "Livro de Segredos Antigos",
     "description": "Você pode agora, registrar rituais mágicos no seu Livro das Sombras. Escolha duas magias de 1° nível que possuam o descritor ritual da lista de magias de qualquer classe. A magia aparece no livro e não conta no número de magias que você conhece. Com o seu Livro das Sombras em mãos, você pode conjurar as magias escolhidas como rituais. Você não pode conjurar essas magias, exceto na forma de rituais, a não ser que você tenha aprendido elas através de outros meios. Você também pode conjurar uma magia de bruxo que você conheça como ritual se ela possuir o descritor ritual. Os rituais não precisam ser da mesma lista de magias. Durante suas aventuras, você pode adicionar outras magias de ritual ao seu Livro das Sombras. Quando você encontrar tais magias, você pode adicioná-la ao livro se o nível da magia for igual ou inferior à metade do seu nível de bruxo (arredondado para baixo) e se você tiver tempo para gastar transcrevendo a magia. Para cada nível da magia, o processo de transcrição levará 2 horas e custará 50 po, devido às tintas raras necessárias para inscrevê-la.",
-    "prerequisite": "Característica Pacto do Tomo"
+    "prerequisite": "Característica Pacto do Tomo",
+    "requiresPick": "pact-of-the-tome"
   },
   {
     "id": "mascara-das-muitas-faces",
@@ -123,7 +126,8 @@
     "id": "sorvedor-de-vida",
     "name": "Sorvedor de Vida",
     "description": "Quando você atingir uma criatura com sua arma do pacto, a criatura sofre uma quantidade de dano necrótico adicional igual ao seu modificador de Carisma (mínimo 1).",
-    "prerequisite": "12° nível, característica Pacto da Lâmina"
+    "prerequisite": "12° nível, característica Pacto da Lâmina",
+    "requiresPick": "pact-of-the-blade"
   },
   {
     "id": "sussurros-da-sepultura",
@@ -179,6 +183,7 @@
     "id": "voz-do-mestre-das-correntes",
     "name": "Voz do Mestre das Correntes",
     "description": "Você pode se comunicar telepaticamente com seu familiar e perceber através dos sentidos do seu familiar enquanto ambos estiverem no mesmo plano de existência. Além disso, enquanto estiver percebendo através dos sentidos do seu familiar, você também poderá falar através dele com a sua voz, mesmo que seu familiar, normalmente, seja incapaz de falar.",
-    "prerequisite": "Característica Pacto da Corrente"
+    "prerequisite": "Característica Pacto da Corrente",
+    "requiresPick": "pact-of-the-chain"
   }
 ]

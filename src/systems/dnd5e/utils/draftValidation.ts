@@ -24,6 +24,7 @@ import { getCasterEntries, getSpell, getSecretSpellIssues, getSpellStepOverflows
 import { isEquipmentStepComplete } from './equipmentUtils'
 import { isImprovementsStepComplete, getFinalAbilityScores } from './asiUtils'
 import { areFeatChoicesComplete, hasRepeatedFightingStyle } from './sheetEffects'
+import { getUnmetPickRequirements } from './progressionOptions'
 import {
   getPrimaryLevel,
   allClassEntries,
@@ -335,9 +336,13 @@ export function sanitizeImportedDraft(raw: unknown): CharacterDraft | null {
   }
 }
 
-/** Segredos Mágicos que só se resolvem trocando na etapa Classe (ficha antiga ou importada). */
+/**
+ * Escolhas de progressão que só se resolvem trocando na etapa Classe (ficha antiga ou importada):
+ * Segredos Mágicos fora da regra e opção sem o pré-requisito de opção (invocação sem o pacto).
+ */
 function hasSecretSpellIssues(classId: string, choices: ClassChoiceSelections, classLevel: number): boolean {
   return getSecretSpellIssues(classId, choices.subclass, classLevel, choices.progressionChoices).length > 0
+    || getUnmetPickRequirements(classId, choices.subclass, classLevel, choices.progressionChoices).length > 0
 }
 
 /** Completude de um passo específico do wizard, a partir do estado atual do draft. */

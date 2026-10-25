@@ -591,11 +591,19 @@ describe('getAttacksPerAction (Ataque Extra)', () => {
 })
 
 describe('Lâmina Sedenta (ataques condicionais)', () => {
-  const warlock = (level: number, slotId: string, overrides: Partial<CharacterDraft> = {}) => draft({
+  const warlock = (
+    level: number,
+    slotId: string,
+    overrides: Partial<CharacterDraft> = {},
+    pact: string | null = 'pact-of-the-blade',
+  ) => draft({
     level, class: 'warlock',
     classChoices: {
       ...structuredClone(EMPTY_DRAFT.classChoices),
-      progressionChoices: { [slotId]: ['lamina-sedenta'] },
+      progressionChoices: {
+        [slotId]: ['lamina-sedenta'],
+        ...(pact ? { 'warlock-pact-boon-3': [pact] } : {}),
+      },
     },
     ...overrides,
   })
@@ -609,6 +617,17 @@ describe('Lâmina Sedenta (ataques condicionais)', () => {
     expect(describeAttacksPerAction(d)).toEqual([
       'Lâmina Sedenta: você faz 2 ataques ao usar a ação de Atacar, com a arma do pacto.',
     ])
+  })
+
+  // p. 61: "Pré-requisito: 5° nível, característica Pacto da Lâmina".
+  it('sem o Pacto da Lâmina (outro pacto, ou pacto nenhum) a linha some', () => {
+    expect(getConditionalAttacks(warlock(5, 'warlock-invocations-5', {}, 'pact-of-the-tome'))).toEqual([])
+    expect(getConditionalAttacks(warlock(5, 'warlock-invocations-5', {}, null))).toEqual([])
+    expect(describeAttacksPerAction(warlock(5, 'warlock-invocations-5', {}, 'pact-of-the-chain'))).toEqual([])
+  })
+
+  it('o pacto de uma ficha de bruxo abaixo do 3º nível não conta', () => {
+    expect(getConditionalAttacks(warlock(2, 'warlock-invocations-2'))).toEqual([])
   })
 
   it('antes do 5º nível de bruxo (pré-requisito) não dá nada', () => {

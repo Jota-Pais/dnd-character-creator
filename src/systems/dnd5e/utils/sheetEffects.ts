@@ -20,8 +20,8 @@ import {
 import {
   evaluateQuantity, evaluateResource, stepValue, type FinalScores, type ResourceSource, type SheetResource,
 } from './classResourceUtils'
-import { getProgressionSlotsUpToLevel } from './progressionChoiceUtils'
-import { getProgressionOptions, type ProgressionOption } from './progressionOptions'
+import { getActivePicks, getProgressionSlotsUpToLevel } from './progressionChoiceUtils'
+import { getProgressionOptions, getUnmetRequirement, type ProgressionOption } from './progressionOptions'
 import {
   allClassEntries, getAllAsiChoices, getTotalHpAverage, getTotalHpRolled,
 } from './multiclassUtils'
@@ -609,20 +609,25 @@ export function getAttacksPerAction(draft: CharacterDraft): SheetAttacksPerActio
 
 /**
  * Opções escolhidas nos slots de progressão de cada classe (invocações, manobras, metamágicas...),
- * só as dos slots que o nível NA classe já liberou, com a entrada de quem as escolheu.
+ * só as dos slots que o nível NA classe já liberou, com a entrada de quem as escolheu. A que perdeu
+ * o pré-requisito de opção (Lâmina Sedenta sem o Pacto da Lâmina) não vale: fica pendente na etapa
+ * Classe e de fora daqui.
  */
 function getOwnedProgressionOptions(
   draft: CharacterDraft,
 ): { entry: ClassEntry; option: ProgressionOption }[] {
   return allClassEntries(draft).flatMap(entry => {
-    const slots = getProgressionSlotsUpToLevel(entry.classId, entry.classChoices.subclass, entry.level)
+    const { classId, level, classChoices: { subclass, progressionChoices } } = entry
+    const slots = getProgressionSlotsUpToLevel(classId, subclass, level, progressionChoices)
+    const activePicks = getActivePicks(classId, subclass, level, progressionChoices)
     return slots.flatMap(slot => {
-      const picked = entry.classChoices.progressionChoices[slot.id] ?? []
+      const picked = progressionChoices[slot.id] ?? []
       if (picked.length === 0) return []
       const options = getProgressionOptions(slot.optionsListId)
       return picked
         .map(id => options.find(o => o.id === id))
         .filter((o): o is ProgressionOption => o !== undefined)
+        .filter(option => !getUnmetRequirement(classId, subclass, activePicks, option))
         .map(option => ({ entry, option }))
     })
   })
@@ -691,7 +696,7 @@ function getFightingStylePicks(draft: CharacterDraft): FightingStylePick[] {
   return allClassEntries(draft).flatMap(entry => {
     const own = getEntryFightingStyle(entry)
     const fromClass: FightingStylePick[] = own ? [{ classId: entry.classId, source: 'class', id: own.id }] : []
-    const fromSlots = getProgressionSlotsUpToLevel(entry.classId, entry.classChoices.subclass, entry.level)
+    const fromSlots = getProgressionSlotsUpToLevel(entry.classId, entry.classChoices.subclass, entry.level, entry.classChoices.progressionChoices)
       .filter(slot => slot.optionsListId === 'FIGHTING_STYLES')
       .flatMap(slot => entry.classChoices.progressionChoices[slot.id] ?? [])
       .filter(id => FIGHTING_STYLES.some(s => s.id === id))

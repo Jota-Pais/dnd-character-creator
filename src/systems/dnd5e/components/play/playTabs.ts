@@ -3,6 +3,7 @@ import type { PlayTabProps } from './usePlayView'
 import { AttacksTab } from './AttacksTab'
 import { ChecksTab } from './ChecksTab'
 import { MagicTab } from './MagicTab'
+import { NotesTab } from './NotesTab'
 import { StatusTab } from './StatusTab'
 
 export type PlayTabId = 'checks' | 'attacks' | 'magic' | 'status' | 'notes'
@@ -25,5 +26,5 @@ export const PLAY_TABS: readonly PlayTab[] = [
   { id: 'attacks', label: 'Ataques', hint: 'Suas armas: o ataque, o dano e o crítico.', component: AttacksTab },
   { id: 'magic', label: 'Magia e recursos', hint: 'Espaços de magia, CD, ataque de magia e os usos das suas características.', component: MagicTab },
   { id: 'status', label: 'Estado', hint: 'Condições, exaustão, concentração e descansos.', component: StatusTab },
-  { id: 'notes', label: 'Notas', hint: 'Suas anotações da sessão e o histórico de rolagens.' },
+  { id: 'notes', label: 'Notas', hint: 'Suas anotações da sessão e o histórico de rolagens.', component: NotesTab },
 ]

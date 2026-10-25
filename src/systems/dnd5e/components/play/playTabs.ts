@@ -2,6 +2,7 @@ import type { ComponentType } from 'react'
 import type { PlayTabProps } from './usePlayView'
 import { AttacksTab } from './AttacksTab'
 import { ChecksTab } from './ChecksTab'
+import { MagicTab } from './MagicTab'
 
 export type PlayTabId = 'checks' | 'attacks' | 'magic' | 'status' | 'notes'
 
@@ -21,7 +22,7 @@ export type PlayTab = {
 export const PLAY_TABS: readonly PlayTab[] = [
   { id: 'checks', label: 'Testes', hint: 'Atributos, testes de resistência e perícias, com o que rolar em cada um.', component: ChecksTab },
   { id: 'attacks', label: 'Ataques', hint: 'Suas armas: o ataque, o dano e o crítico.', component: AttacksTab },
-  { id: 'magic', label: 'Magia e recursos', hint: 'Espaços de magia, CD, ataque de magia e os usos das suas características.' },
+  { id: 'magic', label: 'Magia e recursos', hint: 'Espaços de magia, CD, ataque de magia e os usos das suas características.', component: MagicTab },
   { id: 'status', label: 'Estado', hint: 'Condições, exaustão, concentração e descansos.' },
   { id: 'notes', label: 'Notas', hint: 'Suas anotações da sessão e o histórico de rolagens.' },
 ]

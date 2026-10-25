@@ -1346,7 +1346,7 @@ export function getActiveConditionEffects(state: ConditionState): ActiveConditio
  * Deslocamento efetivo em pés, a partir do da ficha JÁ com bônus: 0 se algo zera (o "sem bônus"
  * do Agarrado/Impedido dá no mesmo); metade arredondada para baixo na Exaustão 2 (pág. 7).
  */
-export function getEffectiveSpeed(speedFeet: number, effects: Pick<ActiveConditionEffects, 'speed'>): number {
+export function applyConditionSpeed(speedFeet: number, effects: Pick<ActiveConditionEffects, 'speed'>): number {
   if (effects.speed.result === 'zero') return 0
   if (effects.speed.result === 'half') return Math.floor(speedFeet / 2)
   return speedFeet

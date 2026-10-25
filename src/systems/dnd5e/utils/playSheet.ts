@@ -5,9 +5,8 @@ import { ALL_ABILITY_SCORES, calculateModifier, getProficiencyBonus } from './ab
 import { getFinalAbilityScores } from './asiUtils'
 import { getHitDicePool } from './multiclassUtils'
 import { getSavingThrowProficiencies } from './proficiencyUtils'
-import { getEffectiveSpeed, getRace, getSubrace } from './raceUtils'
 import {
-  getInitiativeBonusTotal, getOwnedFeats, getSheetResources, getSpeedBonusTotal, getTotalHp,
+  getInitiativeBonusTotal, getOwnedFeats, getSheetResources, getSheetSpeed, getTotalHp,
 } from './sheetEffects'
 import { getCombinedSpellSlots, getPactSlots } from './spellUtils'
 
@@ -24,8 +23,6 @@ export function buildPlaySheet(draft: CharacterDraft): PlaySheet {
   const abilityModifiers = byAbility(a => calculateModifier(abilityScores[a]))
   const proficiencyBonus = getProficiencyBonus(draft.level ?? 1)
   const saveProficiencies = getSavingThrowProficiencies(draft)
-  const race = draft.race ? getRace(draft.race) : undefined
-  const subrace = race && draft.subrace ? getSubrace(race, draft.subrace) ?? null : null
   const pact = getPactSlots(draft)
 
   return {
@@ -39,7 +36,7 @@ export function buildPlaySheet(draft: CharacterDraft): PlaySheet {
       return { bonus: abilityModifiers[a] + (proficient ? proficiencyBonus : 0), proficient }
     }),
     initiativeBonus: abilityModifiers.DEX + getInitiativeBonusTotal(draft),
-    speed: race ? getEffectiveSpeed(race, subrace) + getSpeedBonusTotal(draft) : 0,
+    speed: getSheetSpeed(draft, abilityScores) ?? 0,
     hitDice: getHitDicePool(draft).map(p => ({ ...p })),
     spellSlots: [...getCombinedSpellSlots(draft)],
     pactSlots: pact ? { slots: pact.slots, slotLevel: pact.slotLevel } : null,

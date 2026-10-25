@@ -5,7 +5,7 @@ import {
   getActiveConditionEffects,
   getEffectiveConditions,
   getEffectiveHpMax,
-  getEffectiveSpeed,
+  applyConditionSpeed,
   resolveRollMode,
   withConditionApplied,
   type ConditionState,
@@ -104,8 +104,8 @@ describe('exaustão cumulativa', () => {
     const fx = active([], 2)
     expect(fx.abilityChecks.WIS.mode).toBe('disadvantage')
     expect(fx.speed.result).toBe('half')
-    expect(getEffectiveSpeed(30, fx)).toBe(15)
-    expect(getEffectiveSpeed(25, fx)).toBe(12)
+    expect(applyConditionSpeed(30, fx)).toBe(15)
+    expect(applyConditionSpeed(25, fx)).toBe(12)
   })
 
   it('nível 3: + desvantagem em ataques e em todos os testes de resistência', () => {
@@ -130,7 +130,7 @@ describe('exaustão cumulativa', () => {
     expect(fx.speed.result).toBe('zero')
     expect(sources(fx.speed.half)).toEqual(['exhaustion:2'])
     expect(sources(fx.speed.zero)).toEqual(['exhaustion:5'])
-    expect(getEffectiveSpeed(30, fx)).toBe(0)
+    expect(applyConditionSpeed(30, fx)).toBe(0)
     expect(fx.hpMax.multiplier).toBe(0.5)
     expect(fx.dead.active).toBe(false)
   })
@@ -220,7 +220,7 @@ describe('deslocamento', () => {
       const fx = active([id])
       expect(fx.speed.result).toBe('zero')
       expect(fx.speed.ignoreBonuses).toBe(true)
-      expect(getEffectiveSpeed(40, fx)).toBe(0)
+      expect(applyConditionSpeed(40, fx)).toBe(0)
     }
   })
 
@@ -233,13 +233,13 @@ describe('deslocamento', () => {
   it('zero vence metade em qualquer ordem: Agarrado + Exaustão 2', () => {
     const fx = active(['grappled'], 2)
     expect(fx.speed.result).toBe('zero')
-    expect(getEffectiveSpeed(30, fx)).toBe(0)
+    expect(applyConditionSpeed(30, fx)).toBe(0)
   })
 
   it('Caído não mexe no número: rastejar vira linha', () => {
     const fx = active(['prone'])
     expect(fx.speed.result).toBe('normal')
-    expect(getEffectiveSpeed(30, fx)).toBe(30)
+    expect(applyConditionSpeed(30, fx)).toBe(30)
     expect(fx.lines.some(l => l.kind === 'notice' && l.page === 192)).toBe(true)
   })
 })

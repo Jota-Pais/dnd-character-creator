@@ -7,7 +7,7 @@ import {
 } from '../types/playState'
 import {
   getActiveConditionEffects, getCondition, getEffectiveConditions, getEffectiveHpMax,
-  getEffectiveSpeed, withConditionApplied,
+  applyConditionSpeed, withConditionApplied,
   type ActiveConditionEffects, type ConditionState,
 } from './sheetEffects'
 
@@ -108,7 +108,7 @@ export function getCurrentHp(state: PlayState, sheet: PlaySheet): number {
 
 /** Deslocamento efetivo em pés, com as condições e a exaustão. */
 export function getPlaySpeed(state: PlayState, sheet: PlaySheet): number {
-  return getEffectiveSpeed(sheet.speed, getPlayConditionEffects(state))
+  return applyConditionSpeed(sheet.speed, getPlayConditionEffects(state))
 }
 
 export type HitDiceAvailability = { die: number; total: number; spent: number; available: number }

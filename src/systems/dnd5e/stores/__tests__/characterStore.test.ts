@@ -4,6 +4,9 @@ import { EMPTY_DRAFT } from '../../types/character'
 import { loadLibrary } from '../../utils/storage'
 import { COMPLETE_DRAFT } from '../../../../test/fixtures'
 import { useAppStore } from '../../../../core/stores/appStore'
+import { usePlayStore } from '../playStore'
+import { createPlayState, setInspiration } from '../../utils/playState'
+import { loadPlayState, savePlayState } from '../../utils/playStorage'
 
 beforeEach(() => {
   localStorage.clear()
@@ -159,5 +162,57 @@ describe('troca de subclasse x magias escolhidas', () => {
     useCharacterStore.getState().updateAdditionalSpellChoices('rogue', { spells: ['sleep'] })
     useCharacterStore.getState().updateAdditionalClassChoices('rogue', { subclass: 'thief' })
     expect(useCharacterStore.getState().draft.additionalClasses[0].spellChoices.spells).toEqual([])
+  })
+})
+
+describe('modo de jogo', () => {
+  function savedKrusk(): string {
+    useCharacterStore.getState().importDraft(structuredClone(COMPLETE_DRAFT))
+    const id = useCharacterStore.getState().currentId!
+    useCharacterStore.getState().goToGallery()
+    return id
+  }
+
+  it('playCharacter abre a ficha salva no modo de jogo', () => {
+    const id = savedKrusk()
+    useCharacterStore.getState().playCharacter(id)
+    const s = useCharacterStore.getState()
+    expect(s.view).toBe('play')
+    expect(s.currentId).toBe(id)
+    expect(s.draft.name).toBe('Krusk')
+    expect(usePlayStore.getState()).toMatchObject({ characterId: id, characterName: 'Krusk' })
+    expect(usePlayStore.getState().state?.characterId).toBe(id)
+  })
+
+  it('playCharacter com id desconhecido não faz nada', () => {
+    useCharacterStore.getState().playCharacter('nao-existe')
+    expect(useCharacterStore.getState().view).toBe('wizard')
+    expect(usePlayStore.getState().characterId).not.toBe('nao-existe')
+  })
+
+  it('exitPlay fecha o jogo e volta para a galeria global sem regravar a ficha', () => {
+    const id = savedKrusk()
+    const before = localStorage.getItem('dnd-character-library')
+    useCharacterStore.getState().playCharacter(id)
+    usePlayStore.getState().run(st => setInspiration(st, true))
+    useAppStore.getState().setActiveSystem('dnd5e')
+    useCharacterStore.getState().exitPlay()
+    expect(useCharacterStore.getState().view).toBe('gallery')
+    expect(useAppStore.getState().activeSystemId).toBeNull()
+    expect(usePlayStore.getState().state).toBeNull()
+    expect(localStorage.getItem('dnd-character-library')).toBe(before)
+    expect(loadPlayState(id)?.inspiration).toBe(true)
+  })
+
+  it('excluir a ficha apaga também o estado de jogo dela', () => {
+    const id = savedKrusk()
+    useCharacterStore.getState().playCharacter(id)
+    usePlayStore.getState().run(st => setInspiration(st, true))
+    savePlayState(createPlayState('outra'))
+    expect(loadPlayState(id)).not.toBeNull()
+    useCharacterStore.getState().deleteCharacter(id)
+    expect(loadPlayState(id)).toBeNull()
+    expect(loadPlayState('outra')).not.toBeNull()
+    expect(usePlayStore.getState().characterId).toBeNull()
   })
 })

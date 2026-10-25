@@ -10,6 +10,8 @@ import { EMPTY_SPELL_CHOICES } from '../types/spell'
 import { loadLibrary, saveCharacterEntry, deleteCharacterEntry, newId, type SavedCharacter } from '../utils/storage'
 import { getFirstIncompleteStep } from '../utils/draftValidation'
 import { useAppStore } from '../../../core/stores/appStore'
+import { deletePlayState } from '../utils/playStorage'
+import { usePlayStore } from './playStore'
 
 const initialLibrary = loadLibrary()
 
@@ -31,7 +33,8 @@ function spellChoicesAfter(
     : spellChoices
 }
 
-export type AppView = 'gallery' | 'wizard' | 'print'
+/** `play`: o modo de jogo (ficha viva), com o estado em `playStore`. */
+export type AppView = 'gallery' | 'wizard' | 'print' | 'play'
 
 type CharacterStore = {
   view: AppView
@@ -48,6 +51,10 @@ type CharacterStore = {
   goToGallery: () => void
   goToPrint: () => void
   exitPrint: () => void
+  /** Abre a ficha salva no modo de jogo. A ficha não muda: o jogo grava só o estado de jogo. */
+  playCharacter: (id: string) => void
+  /** Sai do modo de jogo para a galeria global, sem regravar a ficha. */
+  exitPlay: () => void
 
   setName: (name: string) => void
   setLevel: (level: number) => void
@@ -121,11 +128,15 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
       return { library }
     }),
 
-  deleteCharacter: (id) =>
+  deleteCharacter: (id) => {
+    // O estado de jogo mora em outra chave: some junto com a ficha (playStorage).
+    deletePlayState(id)
+    if (usePlayStore.getState().characterId === id) usePlayStore.getState().close()
     set(state => {
       const library = deleteCharacterEntry(id)
       return { library, currentId: state.currentId === id ? null : state.currentId }
-    }),
+    })
+  },
 
   goToGallery: () => {
     set(state => {
@@ -143,6 +154,20 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
 
   goToPrint: () => set({ view: 'print' }),
   exitPrint: () => set({ view: 'wizard' }),
+
+  playCharacter: (id) => {
+    const char = get().library.find(c => c.id === id)
+    if (!char) return
+    set({ view: 'play', currentId: id, currentStep: char.step, draft: char.draft })
+    usePlayStore.getState().open(id, char.draft)
+  },
+
+  exitPlay: () => {
+    usePlayStore.getState().close()
+    // Como o `reset`: a ficha já está salva e o jogo não a altera — nada a regravar.
+    set({ view: 'gallery', currentId: null })
+    useAppStore.getState().setActiveSystem(null)
+  },
 
   setName: (name) => set(state => ({ draft: { ...state.draft, name } })),
 

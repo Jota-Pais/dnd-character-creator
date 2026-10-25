@@ -6,6 +6,7 @@ import { calculateModifier, getProficiencyBonus } from './abilityScoreUtils'
 import { isActiveCaster, getClass, getSpellcastingSource } from './classUtils'
 import { allClassEntries, getCasterProgression, getCombinedCasterLevel } from './multiclassUtils'
 import { getKnownColumnSecretIds, getProgressionSlotsUpToLevel, getProgressionSpellIds, isSpellChoiceSlot } from './progressionChoiceUtils'
+import { getRace, getSubrace, getAllChoices, getAvailableInnateSpells } from './raceUtils'
 import spellsData from '../data/spells.json'
 import progressionData from '../data/progression.json'
 
@@ -358,6 +359,117 @@ export function getSecretSpellGroups(caster: CasterEntry): SecretSpellGroup[] {
 /** "Bola de Fogo (3º)", "Raio de Fogo (truque)" — como um Segredo aparece na Revisão e no PDF. */
 export function formatSecretSpellName(spell: Spell): string {
   return `${spell.name} (${spell.level === 0 ? 'truque' : `${spell.level}º`})`
+}
+
+// ── Magia repetida entre fontes (decisão do usuário, 2026-10-25) ──────────────
+
+/** De onde vêm magias da ficha, para achar a mesma magia em duas (getRepeatedSpells). */
+export type SpellSource = {
+  /** Estável: 'class:wizard', 'secrets:bard:Segredos Mágicos', 'race-cantrip', 'race-innate'. */
+  key: string
+  /** "Mago", "Guerreiro (Cavaleiro Arcano)", "Bardo — Segredos Mágicos", "Alto Elfo (raça)". */
+  label: string
+  /** Classe conjuradora dona da fonte (a seção da etapa Magias); null para a raça. */
+  classId: string | null
+  spellIds: string[]
+}
+
+/**
+ * As fontes de magia da ficha: cada classe conjuradora ativa (truques, os dados pela
+ * característica inclusos, e magias — getCasterEntries), os Segredos Mágicos dela por slot, o
+ * truque escolhido na raça (Alto Elfo) e os truques inatos da raça. Das magias inatas de 1º nível
+ * ou mais a raça dá um uso sem espaço por descanso longo (p. 24, 43), o que a magia da classe não
+ * repete — por isso só os truques inatos entram.
+ */
+export function getSpellSources(draft: CharacterDraft): SpellSource[] {
+  const sources: SpellSource[] = []
+  for (const caster of getCasterEntries(draft)) {
+    const { entry, casting } = caster
+    sources.push({
+      key: `class:${entry.classId}`,
+      label: casting.label,
+      classId: entry.classId,
+      spellIds: [...caster.cantrips, ...caster.spells],
+    })
+    const bySlotLabel = new Map<string, string[]>()
+    for (const slot of getProgressionSlotsUpToLevel(entry.classId, entry.classChoices.subclass, entry.level).filter(isSpellChoiceSlot)) {
+      const picked = entry.classChoices.progressionChoices[slot.id] ?? []
+      bySlotLabel.set(slot.label, [...(bySlotLabel.get(slot.label) ?? []), ...picked])
+    }
+    for (const [slotLabel, ids] of bySlotLabel) {
+      if (ids.length === 0) continue
+      sources.push({
+        key: `secrets:${entry.classId}:${slotLabel}`,
+        label: `${casting.label} — ${slotLabel}`,
+        classId: entry.classId,
+        spellIds: ids,
+      })
+    }
+  }
+  const race = draft.race ? getRace(draft.race) : undefined
+  if (race) {
+    const subrace = draft.subrace ? getSubrace(race, draft.subrace) ?? null : null
+    const label = `${subrace?.name ?? race.name} (raça)`
+    const cantrip = draft.raceChoices.cantrip
+    if (cantrip && getAllChoices(race, subrace).some(c => c.kind === 'cantrip')) {
+      sources.push({ key: 'race-cantrip', label, classId: null, spellIds: [cantrip] })
+    }
+    const innateCantrips = getAvailableInnateSpells(race, subrace, draft.level ?? 1)
+      .map(s => s.spellId)
+      .filter(id => getSpell(id)?.level === 0)
+    if (innateCantrips.length > 0) {
+      sources.push({ key: 'race-innate', label, classId: null, spellIds: innateCantrips })
+    }
+  }
+  return sources.map(s => ({ ...s, spellIds: [...new Set(s.spellIds)] }))
+}
+
+/** Uma magia que aparece em mais de uma fonte da ficha. */
+export type RepeatedSpell = {
+  spellId: string
+  name: string
+  /** As fontes onde ela está, na ordem da ficha (sem `spellIds`). */
+  sources: Omit<SpellSource, 'spellIds'>[]
+}
+
+/**
+ * A mesma magia escolhida em duas fontes — duas classes da multiclasse (mago e Cavaleiro Arcano),
+ * um Segredo Mágico igual a magia de outra classe, o truque da raça igual ao da classe. A regra não
+ * proíbe (cada magia fica associada a uma classe, p. 166), mas não faz sentido e quase sempre é
+ * engano: a ficha AVISA na etapa Magias e na Revisão, sem bloquear nem apagar (decisão do
+ * usuário, 2026-10-25) — por isso não entra em isStepComplete nem em pendingReasons.
+ */
+export function getRepeatedSpells(draft: CharacterDraft): RepeatedSpell[] {
+  const where = new Map<string, Omit<SpellSource, 'spellIds'>[]>()
+  for (const { spellIds, ...source } of getSpellSources(draft)) {
+    for (const id of spellIds) where.set(id, [...(where.get(id) ?? []), source])
+  }
+  return [...where]
+    .filter(([, sources]) => sources.length > 1)
+    .map(([spellId, sources]) => ({ spellId, name: getSpell(spellId)?.name ?? spellId, sources }))
+}
+
+function joinPt(items: string[]): string {
+  return items.length > 1 ? `${items.slice(0, -1).join(', ')} e ${items[items.length - 1]}` : items.join('')
+}
+
+/** Linha da Revisão, da ficha e da etapa Magias: onde a magia aparece e o que fazer. */
+export function formatRepeatedSpell(repeated: RepeatedSpell): string {
+  return `${repeated.name} aparece em ${joinPt(repeated.sources.map(s => s.label))}. `
+    + 'Repetir não é proibido, mas gasta uma escolha à toa — provavelmente foi engano: troque uma delas.'
+}
+
+/**
+ * Nota curta do card da etapa Magias, para a seção `sourceKey` (a classe dona do card): "também
+ * em Feiticeiro". Por magia repetida que está nessa fonte.
+ */
+export function getRepeatedSpellNotes(repeated: RepeatedSpell[], sourceKey: string): Record<string, string> {
+  const notes: Record<string, string> = {}
+  for (const r of repeated) {
+    if (!r.sources.some(s => s.key === sourceKey)) continue
+    notes[r.spellId] = `também em ${joinPt(r.sources.filter(s => s.key !== sourceKey).map(s => s.label))}`
+  }
+  return notes
 }
 
 // ── Restrição de escola (Cavaleiro Arcano p. 86, Trapaceiro Arcano p. 93) ──────

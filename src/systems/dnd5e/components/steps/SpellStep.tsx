@@ -22,6 +22,10 @@ import {
   getPactSlots,
   getSpellChoiceOverflows,
   getSecretSpellGroups,
+  getRepeatedSpells,
+  getRepeatedSpellNotes,
+  formatRepeatedSpell,
+  type RepeatedSpell,
   SCHOOL_COLORS,
   SCHOOL_EMOJI,
   type CasterEntry,
@@ -54,6 +58,8 @@ export function SpellStep() {
   // Magias vem depois de Atributos e Aprimoramentos justamente para usar os valores finais
   // (raça + aumentos + talentos) — os mesmos da Revisão e da ficha imprimível.
   const finalScores = getFinalAbilityScores(draft)
+  // Mesma magia em duas fontes (duas classes, Segredo, raça): aviso, nunca bloqueio.
+  const repeated = getRepeatedSpells(draft)
 
 
   if (casters.length === 0) {
@@ -94,6 +100,7 @@ export function SpellStep() {
             key={caster.cls.id}
             caster={caster}
             abilityScores={finalScores}
+            repeated={repeated}
             multi={multi}
             onDetail={setDetail}
             detailId={detail?.id}
@@ -134,11 +141,13 @@ export function SpellStep() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function ClassSpellSection({
-  caster, abilityScores, multi, onDetail, detailId, onChange,
+  caster, abilityScores, repeated, multi, onDetail, detailId, onChange,
 }: {
   caster: CasterEntry
   /** Atributos finais (getFinalAbilityScores), nunca os base. */
   abilityScores: Record<AbilityScore, number>
+  /** Magias repetidas da ficha inteira (getRepeatedSpells); a seção mostra as que são dela. */
+  repeated: RepeatedSpell[]
   multi: boolean
   onDetail: (s: Spell) => void
   detailId?: string
@@ -167,6 +176,16 @@ function ClassSpellSection({
   const additionalSecrets = getSecretSpellGroups(caster).find(g => g.kind === 'additional')?.spells.map(s => s.id) ?? []
   const school = getSchoolRestrictionStatus(sc, level, choices.spells)
   const overflows = getSpellChoiceOverflows(caster, abilityScores)
+  // As repetidas que passam por esta classe (escolhas dela ou os Segredos dela): aviso na seção e
+  // nota no card, dizendo onde mais a magia está.
+  const ownRepeats = repeated.filter(r => r.sources.some(s => s.classId === cls.id))
+  const ownKeys = [...new Set(ownRepeats.flatMap(r => r.sources).filter(s => s.classId === cls.id).map(s => s.key))]
+  const repeatNotes: Record<string, string> = Object.assign({}, ...ownKeys.map(key => getRepeatedSpellNotes(repeated, key)))
+  // A aba que tem magia repetida ganha ⚠, para achar o card sem abrir aba por aba.
+  const repeatedLevels = new Set(Object.keys(repeatNotes).map(id => getSpell(id)?.level))
+  const repeatMark = (lvl: number) => repeatedLevels.has(lvl)
+    ? <span className="text-red-400" title="Tem magia repetida em outra fonte">⚠</span>
+    : null
 
   const abilityMod = calculateModifier(abilityScores[sc.ability])
 
@@ -213,13 +232,14 @@ function ClassSpellSection({
         <div className="flex flex-wrap gap-2 mb-3 mt-3">
           {cantripsNeeded > 0 && (
             <TabButton active={activeTab === 'cantrips'} onClick={() => setTab('cantrips')} accent={ACCENT}>
-              ✦ Truques <Counter current={caster.cantrips.length} max={cantripsToChoose} />
+              ✦ Truques <Counter current={caster.cantrips.length} max={cantripsToChoose} />{repeatMark(0)}
             </TabButton>
           )}
           {spellLevelTabs.map(lvl => (
             <TabButton key={lvl} active={activeTab === lvl} onClick={() => setTab(lvl)} accent={ACCENT}>
               {ORDINALS[lvl]} nível
               {lvl === 1 && sc.type !== 'prepared' && <Counter current={choices.spells.length} max={maxSpells} />}
+              {repeatMark(lvl)}
             </TabButton>
           ))}
         </div>
@@ -255,6 +275,13 @@ function ClassSpellSection({
         </p>
       ))}
 
+      {/* Mesma magia em outra fonte: a regra deixa, então só avisa — não trava nem apaga. */}
+      {ownRepeats.map(r => (
+        <p key={r.spellId} className="text-xs mb-3 rounded-lg border border-red-900/60 bg-red-950/20 px-3 py-2 text-red-400">
+          ⚠ {formatRepeatedSpell(r)}
+        </p>
+      ))}
+
       {activeTab === 'cantrips' && (
         <>
           <SectionHint>
@@ -264,7 +291,7 @@ function ClassSpellSection({
                 ? <>Você conhece {cantripsNeeded} truques <InfoTooltip term="truque" />: {formatSpellNames(secretCantrips)} já {secretCantrips.length > 1 ? 'ocupam' : 'ocupa'} vaga como Segredo Mágico; escolha os outros {cantripsToChoose}.</>
                 : <>Escolha {cantripsNeeded} truque{cantripsNeeded !== 1 ? 's' : ''} <InfoTooltip term="truque" />.</>}
           </SectionHint>
-          <SpellGrid spells={cantrips} selected={caster.cantrips} locked={[...required, ...secrets.cantrips]} secretIds={secrets.cantrips} max={cantripsToChoose} onToggle={toggleCantrip} onDetail={onDetail} detailId={detailId} />
+          <SpellGrid spells={cantrips} selected={caster.cantrips} locked={[...required, ...secrets.cantrips]} secretIds={secrets.cantrips} notes={repeatNotes} max={cantripsToChoose} onToggle={toggleCantrip} onDetail={onDetail} detailId={detailId} />
         </>
       )}
       {typeof activeTab === 'number' && (
@@ -290,6 +317,7 @@ function ClassSpellSection({
             selected={choices.spells}
             locked={secrets.spells}
             secretIds={secrets.spells}
+            notes={repeatNotes}
             max={maxSpells}
             isAllowed={spell => isAllowedBySchoolRestriction(sc, level, choices.spells, spell)}
             onToggle={toggleSpell}
@@ -413,7 +441,7 @@ function SectionHint({ children }: { children: React.ReactNode }) {
 }
 
 function SpellGrid({
-  spells, selected, locked = [], secretIds = [], max, isAllowed, onToggle, onDetail, detailId,
+  spells, selected, locked = [], secretIds = [], notes = {}, max, isAllowed, onToggle, onDetail, detailId,
 }: {
   spells: Spell[]
   selected: string[]
@@ -421,6 +449,8 @@ function SpellGrid({
   locked?: string[]
   /** Das travadas, as que vêm dos Segredos Mágicos (trocam-se na etapa Classe). */
   secretIds?: string[]
+  /** Aviso curto por magia: "também em Feiticeiro" (getRepeatedSpellNotes). */
+  notes?: Record<string, string>
   max: number
   /** Regra extra pra acrescentar (restrição de escola); sem ela, só o teto conta. */
   isAllowed?: (spell: Spell) => boolean
@@ -440,6 +470,7 @@ function SpellGrid({
             selected={isSelected || isLocked}
             locked={isLocked}
             lockedTitle={secretIds.includes(spell.id) ? 'Segredo Mágico — troque na etapa Classe' : undefined}
+            note={notes[spell.id]}
             disabled={!isSelected && !isLocked && (
               (max !== Infinity && selected.length >= max) || (isAllowed ? !isAllowed(spell) : false)
             )}
@@ -464,9 +495,11 @@ function formatSchools(schools: string[]): string {
 }
 
 function SpellCard({
-  spell, selected, locked = false, lockedTitle = 'Vem com a característica — não sai da lista', disabled, active, onToggle, onDetail,
+  spell, selected, locked = false, lockedTitle = 'Vem com a característica — não sai da lista', note, disabled, active, onToggle, onDetail,
 }: {
   spell: Spell
+  /** Magia repetida em outra fonte: "também em Feiticeiro". */
+  note?: string
   selected: boolean
   locked?: boolean
   lockedTitle?: string
@@ -507,6 +540,7 @@ function SpellCard({
         </button>
       </div>
       <p className="text-xs text-parchment-700 mt-1.5">{spell.castingTime} · {spell.range}</p>
+      {note && <p className="text-xs text-red-400 mt-1">⚠ {note}</p>}
     </div>
   )
 }

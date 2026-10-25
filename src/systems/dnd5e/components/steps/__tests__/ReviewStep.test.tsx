@@ -103,3 +103,23 @@ describe('Aura de Proteção junto das resistências', () => {
     )
   })
 })
+
+describe('Magia repetida entre fontes na Revisão e no PDF', () => {
+  const highElfWizard: CharacterDraft = {
+    ...structuredClone(EMPTY_DRAFT),
+    name: 'Elandor',
+    race: 'elf', subrace: 'high-elf', class: 'wizard', level: 1,
+    raceChoices: { cantrip: 'fire-bolt' },
+    abilityScores: { STR: 8, DEX: 14, CON: 12, INT: 16, WIS: 10, CHA: 10 },
+    spellChoices: { cantrips: ['fire-bolt', 'light', 'mage-hand'], spells: ['magic-missile'] },
+  }
+
+  it.each([
+    ['Revisão', () => render(<ReviewStep />)],
+    ['ficha imprimível', () => render(<PrintableSheet />)],
+  ])('%s: avisa onde a magia aparece', (_, renderIt) => {
+    useCharacterStore.setState({ draft: structuredClone(highElfWizard) })
+    const { container } = renderIt()
+    expect(container.textContent).toMatch(/Raio de Fogo aparece em Mago e .+ \(raça\)\. Repetir não é proibido/)
+  })
+})

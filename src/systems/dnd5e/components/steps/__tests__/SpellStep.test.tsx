@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { render, cleanup } from '@testing-library/react'
+import { render, cleanup, fireEvent } from '@testing-library/react'
 import { SpellStep } from '../SpellStep'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { EMPTY_DRAFT, type CharacterDraft } from '../../../types/character'
@@ -49,5 +49,30 @@ describe('SpellStep: atributos finais', () => {
     expect(container.textContent).toContain('6 preparadas (máx. 5)')
     expect(container.textContent).toContain('6 magias preparadas, mas o máximo é 5 — 1 a mais')
     expect(useCharacterStore.getState().draft.spellChoices.spells).toEqual(spells)
+  })
+})
+
+describe('SpellStep: magia repetida entre classes (aviso, não bloqueio)', () => {
+  it('Mago + Cavaleiro Arcano com Mísseis Mágicos: aviso em cada seção e nota no card', () => {
+    const draft: CharacterDraft = {
+      ...structuredClone(EMPTY_DRAFT),
+      class: 'wizard', level: 8, multiclass: true,
+      abilityScores: { STR: 13, DEX: 14, CON: 12, INT: 16, WIS: 10, CHA: 8 },
+      spellChoices: { cantrips: [], spells: ['magic-missile'] },
+      additionalClasses: [{
+        classId: 'fighter', level: 3,
+        classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), subclass: 'eldritch-knight' },
+        spellChoices: { cantrips: [], spells: ['magic-missile'] }, asiChoices: [], hpRolls: [],
+      }],
+    }
+    const { container, getAllByText } = renderWith(draft)
+    expect((container.textContent ?? '').split('Mísseis Mágicos aparece em Mago e Guerreiro (Cavaleiro Arcano)').length - 1).toBe(2)
+    // A aba do 1º nível de cada seção ganha ⚠; aberta, o card diz onde mais a magia está.
+    for (const tab of getAllByText(/1° nível/)) fireEvent.click(tab)
+    const text = container.textContent ?? ''
+    expect(text).toContain('também em Guerreiro (Cavaleiro Arcano)')
+    expect(text).toContain('também em Mago')
+    // Nada apagado.
+    expect(useCharacterStore.getState().draft.spellChoices.spells).toEqual(['magic-missile'])
   })
 })

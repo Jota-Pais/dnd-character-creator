@@ -38,6 +38,7 @@ import {
   getSpell, getSpellSaveDC, formatSpellAttackBonus, getCombinedSpellSlots, getPactSlots,
   getMaxPreparedSpells, describeCastingAids, getCasterEntries, getSpellChoiceOverflows,
   getSecretSpellGroups, formatSecretSpellName, getCasterColumnHeadings,
+  getRepeatedSpells, formatRepeatedSpell,
 } from '../utils/spellUtils'
 import { RuleText } from './common/RuleText'
 import { formatAttackDamage } from '../utils/weaponFormat'
@@ -391,6 +392,10 @@ export function PrintableSheet() {
                 {pact.slotLevel}º: {trackCircles(pact.slots) || pact.slots} (recupera em descanso curto)
               </p>
             )}
+            {/* Mesma magia em duas fontes: a regra deixa, a ficha só avisa (como na Revisão). */}
+            {getRepeatedSpells(draft).map(r => (
+              <p key={r.spellId} className="text-xs mb-0.5 border border-gray-400 px-1.5 py-1"><strong>⚠ {formatRepeatedSpell(r)}</strong></p>
+            ))}
             {casters.map(caster => {
               const { entry, cls, casting, cantrips: cantripIds, spells: spellIds } = caster
               const overflows = getSpellChoiceOverflows(caster, finalScores)

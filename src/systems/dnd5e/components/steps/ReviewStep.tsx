@@ -55,6 +55,8 @@ import {
   getSecretSpellGroups,
   formatSecretSpellName,
   getCasterColumnHeadings,
+  getRepeatedSpells,
+  formatRepeatedSpell,
 } from '../../utils/spellUtils'
 import { exportCharacter } from '../../utils/storage'
 import { getPendingSteps, getStepPendingReasons } from '../../utils/pendingReasons'
@@ -866,6 +868,7 @@ export function ReviewStep() {
         if (casters.length === 0) return null
         const combined = getCombinedSpellSlots(draft).map((count, i) => ({ spellLevel: i + 1, count })).filter(s => s.count > 0)
         const pact = getPactSlots(draft)
+        const repeatedSpells = getRepeatedSpells(draft)
         return (
           <Section title="Magias">
             {(combined.length > 0 || pact) && (
@@ -888,6 +891,14 @@ export function ReviewStep() {
                     </span>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Mesma magia em duas fontes (decisão do usuário, 2026-10-25): a regra deixa, então
+                é aviso — não trava a ficha nem apaga a escolha. */}
+            {repeatedSpells.length > 0 && (
+              <div className="mb-4 rounded-lg border border-red-900/60 bg-red-950/20 px-3 py-2 space-y-1">
+                {repeatedSpells.map(r => <p key={r.spellId} className="text-xs font-semibold text-red-400">⚠ {formatRepeatedSpell(r)}</p>)}
               </div>
             )}
 

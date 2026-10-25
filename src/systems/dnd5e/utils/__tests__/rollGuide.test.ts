@@ -230,6 +230,16 @@ describe('getRollGuide — ataques', () => {
     expect(guide.spellcasting[0].attack.notes.some(n => n.startsWith('20 natural: acerta e é crítico'))).toBe(true)
   })
 
+  it('só as jogadas de ataque (arma, golpe desarmado, magia) levam attackRoll: o 1 natural erra', () => {
+    const d = draft({
+      class: 'fighter', level: 2, abilityScores: SCORES, classChoices: choices({}),
+      additionalClasses: [extraClass('wizard', 1)], ...carrying('longsword'),
+    })
+    const guide = getRollGuide(d, play())
+    const attackIds = allEntries(guide).filter(e => e.attackRoll).map(e => e.id).sort()
+    expect(attackIds).toEqual(['attack:longsword', 'attack:unarmed', 'spell-attack:wizard'])
+  })
+
   it('Campeão 15: Crítico Superior, 18 a 20', () => {
     const d = draft({ class: 'fighter', level: 15, abilityScores: SCORES, classChoices: choices({ subclass: 'champion' }), ...carrying('longsword') })
     const sword = getRollGuide(d, play()).attacks.find(a => a.key === 'longsword')!

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { render, screen, fireEvent, cleanup } from '@testing-library/react'
+import { render, screen, fireEvent, cleanup, within } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { usePlayStore } from '../../../stores/playStore'
 import { COMPLETE_DRAFT } from '../../../../../test/fixtures'
@@ -69,5 +69,21 @@ describe('AttacksTab', () => {
     expect(screen.getByTestId('roll-total')).toHaveTextContent('13')
     const rolls = usePlayStore.getState().state!.rolls
     expect(rolls.map(r => r.label)).toEqual(['Machado Grande — ataque', 'Machado Grande — dano (crítico)'])
+  })
+
+  it('com os dados do app, 1 natural no ataque erra automaticamente e não oferece o dano', () => {
+    usePlayStore.getState().setAppDice(true)
+    openWithGreataxe()
+    fireEvent.click(screen.getByRole('button', { name: /^Machado Grande — ataque/ }))
+    expect(screen.getByText('Acertou? Role o dano')).toBeInTheDocument()
+    dice.face = 1
+    fireEvent.click(screen.getByRole('button', { name: 'Rolar' }))
+    expect(screen.getByText('1 natural: erra automaticamente (pág. 196).')).toBeInTheDocument()
+    expect(screen.queryByText('Acertou? Role o dano')).toBeNull()
+    expect(within(screen.getByRole('dialog')).queryByRole('button', { name: /^Dano/ })).toBeNull()
+    // Rolar de novo (outra jogada) traz o dano de volta.
+    dice.face = 12
+    fireEvent.click(screen.getByRole('button', { name: 'Rolar' }))
+    expect(screen.getByText('Acertou? Role o dano')).toBeInTheDocument()
   })
 })

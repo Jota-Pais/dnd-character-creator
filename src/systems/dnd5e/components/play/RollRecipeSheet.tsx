@@ -98,6 +98,8 @@ export function RollRecipeSheet({ entry, appDice, onClose, crit = false, links =
   const shown = critMode && entry.crit ? entry.crit : { formula: entry.formula, dice: entry.dice }
   // O ataque rolado pelo app deu crítico: o dano abre com os dados dobrados.
   const critHit = isD20 && result !== null && result.natural !== null && result.natural >= critThreshold
+  // 1 natural num ataque: erra, qualquer que seja o total (pág. 196). Sem oferta de dano.
+  const autoMiss = isD20 && entry.attackRoll === true && result !== null && result.natural === 1
   // O TR de concentração rolado pelo app não passou: o "encerrar" fica na própria folha.
   const failedConcentration = entry.id === 'concentration' && concentrating && result !== null
     && entry.dc !== undefined && (entry.autoFail.length > 0 || result.record.total < entry.dc)
@@ -214,7 +216,7 @@ export function RollRecipeSheet({ entry, appDice, onClose, crit = false, links =
                 </button>
               )}
             </div>
-            {result && <RollResult result={result} entry={entry} isD20={isD20} />}
+            {result && <RollResult result={result} entry={entry} isD20={isD20} autoMiss={autoMiss} />}
             {failedConcentration && (
               <button
                 onClick={endFailedConcentration}
@@ -226,7 +228,7 @@ export function RollRecipeSheet({ entry, appDice, onClose, crit = false, links =
           </div>
         )}
 
-        {links.length > 0 && onOpenLink && (
+        {links.length > 0 && onOpenLink && !autoMiss && (
           <div className="mt-5 border-t border-parchment-900 pt-4">
             <p className="text-[11px] uppercase tracking-wider text-parchment-600">Acertou? Role o dano</p>
             <ul className="mt-2 space-y-2">
@@ -271,10 +273,12 @@ export function RollRecipeSheet({ entry, appDice, onClose, crit = false, links =
   )
 }
 
-function RollResult({ result, entry, isD20 }: {
+function RollResult({ result, entry, isD20, autoMiss }: {
   result: GuideRoll & { crit: boolean }
   entry: RollGuideEntry
   isD20: boolean
+  /** Ataque com 1 natural: erra automaticamente. */
+  autoMiss: boolean
 }) {
   const { record, natural } = result
   const faces = record.terms.flatMap(t => t.dice)
@@ -292,7 +296,11 @@ function RollResult({ result, entry, isD20 }: {
         {record.modifierTotal !== 0 && <> ({formatModifier(record.modifierTotal)})</>}
       </p>
       {isD20 && natural === 20 && <p className="mt-1 text-sm font-bold text-gold-300">20 natural!</p>}
-      {isD20 && natural === 1 && <p className="mt-1 text-sm font-bold text-red-400">1 natural.</p>}
+      {isD20 && natural === 1 && (
+        <p className="mt-1 text-sm font-bold text-red-400">
+          {autoMiss ? '1 natural: erra automaticamente (pág. 196).' : '1 natural.'}
+        </p>
+      )}
       {entry.dc !== undefined && entry.autoFail.length === 0 && (
         <p className={`mt-1 text-sm ${record.total >= entry.dc ? 'text-emerald-300' : 'text-red-300'}`}>
           {record.total >= entry.dc ? `Passou (CD ${entry.dc}).` : `Não passou (CD ${entry.dc}).`}

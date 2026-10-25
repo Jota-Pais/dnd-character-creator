@@ -72,6 +72,8 @@ export type RollGuideEntry = {
   notes: string[]
   /** Classe de dificuldade, quando a ficha a conhece (concentração). */
   dc?: number
+  /** Jogada de ataque (arma, golpe desarmado, magia): o 1 natural erra sempre (pág. 196). */
+  attackRoll?: true
   /**
    * Só dano: os dados dobrados do acerto crítico, o modificador igual (pág. 196). `notes`: o que
    * vale só no crítico e fica fora da fórmula (Ataques Selvagens, Crítico Brutal).
@@ -305,6 +307,7 @@ type D20Input = {
   extraDisadvantage?: GuideReason[]
   notes?: string[]
   dc?: number
+  attackRoll?: boolean
 }
 
 /** Parcelas que somam o total: o que sobrar de uma conta que não fecha vira "Outros". */
@@ -340,6 +343,7 @@ function d20Entry(input: D20Input, inspiration: boolean): RollGuideEntry {
     breakdown: closeBreakdown(input.breakdown, input.modifier),
     notes,
     ...(input.dc !== undefined ? { dc: input.dc } : {}),
+    ...(input.attackRoll ? { attackRoll: true as const } : {}),
   }
 }
 
@@ -456,6 +460,7 @@ function attackGuide(attack: SheetAttack, ctx: AttackGuideContext): AttackGuide 
   const attackEntry = d20Entry({
     id: `attack:${attack.key}`,
     label: `${attack.name} — ataque`,
+    attackRoll: true,
     ability,
     modifier: Number(attack.attackBonus),
     breakdown,
@@ -701,6 +706,7 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
       attack: d20Entry({
         id: `spell-attack:${caster.cls.id}`,
         label: `Ataque de magia — ${caster.casting.label}`,
+        attackRoll: true,
         ability: ab,
         modifier: getSpellAttackBonus(sc, scores, level),
         breakdown: [abilityPart, { label: 'Proficiência', value: prof }],

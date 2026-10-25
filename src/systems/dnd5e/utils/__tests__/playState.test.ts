@@ -175,6 +175,13 @@ describe('applyDamage', () => {
     expect(r.state.conditions).toContain('prone')
   })
 
+  it('nocaute com dano massivo: a morte instantânea vence o nocaute', () => {
+    const r = applyDamage(state({ damageTaken: 10 }), S, { amount: 31, knockout: true })
+    expect(r.state.lifeState).toBe('dead')
+    expect(kinds(r)).toContain('died')
+    expect(kinds(r)).not.toContain('fellUnconscious')
+  })
+
   it('morte instantânea (exemplo do livro: máximo 12, com 6 PV, sofre 18)', () => {
     const sh = sheet({ maxHp: 12 })
     const r = applyDamage(state({ damageTaken: 6 }), sh, { amount: 18 })
@@ -293,6 +300,15 @@ describe('applyHealing', () => {
     expect(kinds(applyHealing(state({ lifeState: 'dying', damageTaken: 20 }), S, 2))).toContain('regainedConsciousness')
   })
 
+  it('estável que recebe cura acorda, com os contadores zerados', () => {
+    const stable = state({ lifeState: 'stable', damageTaken: 20, deathSaves: { successes: 0, failures: 1 } })
+    const r = applyHealing(stable, S, 4)
+    expect(r.state.lifeState).toBe('conscious')
+    expect(r.state.deathSaves).toEqual({ successes: 0, failures: 0 })
+    expect(getCurrentHp(r.state, S)).toBe(4)
+    expect(kinds(r)).toContain('regainedConsciousness')
+  })
+
   it('morto não recupera PV', () => {
     const dead = state({ lifeState: 'dead', damageTaken: 20 })
     expect(applyHealing(dead, S, 10).state).toBe(dead)
@@ -326,6 +342,13 @@ describe('grantTempHp', () => {
     expect(r.state.tempHp).toBe(5)
   })
 
+  it('morto recusa, como a cura', () => {
+    const dead = state({ lifeState: 'dead', damageTaken: 20 })
+    const r = grantTempHp(dead, 5)
+    expect(r.state).toBe(dead)
+    expect(kinds(r)).toEqual(['refused'])
+  })
+
   it('clearTempHp zera', () => {
     expect(clearTempHp(state({ tempHp: 4 })).state.tempHp).toBe(0)
   })
@@ -341,6 +364,14 @@ describe('recordDeathSave', () => {
     expect(r.state.lifeState).toBe('conscious')
     expect(getCurrentHp(r.state, S)).toBe(1)
     expect(r.state.deathSaves).toEqual({ successes: 0, failures: 0 })
+  })
+
+  it('20 natural com Inconsciente GRAVADO: recupera 1 PV, mas continua Inconsciente', () => {
+    const r = recordDeathSave({ ...dying, conditions: ['unconscious', 'prone'] }, S, { natural: 20, total: 20 })
+    expect(r.state.lifeState).toBe('conscious')
+    expect(getCurrentHp(r.state, S)).toBe(1)
+    expect(kinds(r)).not.toContain('regainedConsciousness')
+    expect(r.notices.find(n => n.kind === 'warning')?.text).toContain('continua Inconsciente')
   })
 
   it('1 natural conta 2 fracassos, mesmo com bônus que levaria o total a 10', () => {
@@ -493,6 +524,12 @@ describe('condições', () => {
     const grappled = state({ conditions: ['prone', 'grappled'] })
     expect(standUp(grappled, S).state).toBe(grappled)
     expect(kinds(standUp(state(), S))).toEqual(['refused'])
+  })
+
+  it('o aviso de levantar fala em metros, como a barra de vitais (30 pés → 4,5 m)', () => {
+    const r = standUp(state({ conditions: ['prone'] }), S)
+    expect(r.notices[0].text).toContain('(4,5 m)')
+    expect(r.notices[0].text).not.toContain('pés')
   })
 })
 
@@ -716,6 +753,16 @@ describe('completeShortRest', () => {
 
   it('morto recusa', () => {
     expect(kinds(completeShortRest(state({ lifeState: 'dead' }), S))).toEqual(['refused'])
+  })
+
+  it('recurso de recarga curta e Pacto voltam no mesmo descanso', () => {
+    const sh = sheet({ pactSlots: { slots: 2, slotLevel: 3 } })
+    const s = state({ pactSlotsSpent: 2, resourcesSpent: { 'second-wind': 1, rage: 1 } })
+    const rested = completeShortRest(s, sh).state
+    expect(rested.pactSlotsSpent).toBe(0)
+    expect(rested.resourcesSpent).toEqual({ rage: 1 })
+    expect(getPactSlotsAvailable(rested, sh)).toBe(2)
+    expect(getResourceAvailable(rested, sh, 'second-wind')).toBe(1)
   })
 
   it('Canção de Descanso: um aviso só com Dados de Vida gastos neste descanso, nenhum sem', () => {

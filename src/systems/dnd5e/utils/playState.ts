@@ -10,6 +10,7 @@ import {
   applyConditionSpeed, withConditionApplied,
   type ActiveConditionEffects, type ConditionState,
 } from './sheetEffects'
+import { formatMeters } from './abilityScoreUtils'
 
 /**
  * Operações do estado de jogo: funções puras que recebem (estado, PlaySheet, …) e devolvem
@@ -386,10 +387,14 @@ export function suggestTempHpChoice(state: PlayState, amount: number): 'keep' | 
 /**
  * Ganha PV temporários (pág. 200): não se somam. Com temporários já presentes, o jogador decide
  * manter (`keep`) ou ficar com os novos (`replace`); sem a escolha, a função recusa e pergunta.
- * Não acordam nem estabilizam quem está a 0 PV.
+ * Não acordam nem estabilizam quem está a 0 PV. Morto recusa, como a cura: os PV temporários não
+ * têm o que proteger.
  */
 export function grantTempHp(state: PlayState, amount: number, choice?: 'keep' | 'replace'): PlayResult {
   if (!Number.isFinite(amount)) return refuse(state, 'Valor de PV temporários inválido.')
+  if (state.lifeState === 'dead') {
+    return refuse(state, 'O personagem está morto: PV temporários não têm efeito. Use "fui revivido".')
+  }
   const value = Math.max(0, Math.floor(amount))
   if (value === 0) return done(state)
   if (state.tempHp > 0 && !choice) {
@@ -618,7 +623,7 @@ export function standUp(state: PlayState, sheet: PlaySheet): PlayResult {
   if (speed <= 0) return refuse(state, 'Com deslocamento 0 não é possível se levantar (pág. 193).')
   return done(
     withoutCondition(state, 'prone'),
-    [note('info', `Levantar-se custa metade do deslocamento (${Math.floor(speed / 2)} pés) (pág. 192).`)],
+    [note('info', `Levantar-se custa metade do deslocamento (${formatMeters(Math.floor(speed / 2))}) (pág. 192).`)],
   )
 }
 

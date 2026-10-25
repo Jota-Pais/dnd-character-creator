@@ -3,6 +3,7 @@ import type { GameClass, CasterProgression } from '../types/class'
 import type { CharacterDraft, ClassEntry, AsiChoice } from '../types/character'
 import { getClass, getSubclass, getAverageHpPerLevel, getHpAtLevel1 } from './classUtils'
 import { ABILITY_LABELS } from './abilityScoreUtils'
+import { getSubclassDetails } from './progressionOptions'
 
 /** Mínimo de atributo para qualquer pré-requisito de multiclasse (PHB pág. 166 — sempre 13). */
 export const MULTICLASS_MIN_SCORE = 13
@@ -143,6 +144,8 @@ export function getHitDicePool(draft: CharacterDraft): { die: number; count: num
  * Rótulo de classe e nível do cabeçalho de identidade, o mesmo na Revisão e na ficha imprimível.
  * Classe única: "Bardo 4° (Colégio do Conhecimento)" — o nível já está no rótulo, sem repetir.
  * Multiclasse: "Mago 3° / Guerreiro 2° (Mestre de Batalha) — nível 5" (o total vem no fim).
+ * A escolha que qualifica a subclasse vem junto: "Feiticeiro 6° (Linhagem Dracônica, ancestral
+ * Vermelho)" (getSubclassDetails).
  * null quando nenhuma classe foi escolhida (cada tela decide o que mostrar no lugar).
  */
 export function formatClassLevelLabel(draft: CharacterDraft): string | null {
@@ -151,7 +154,8 @@ export function formatClassLevelLabel(draft: CharacterDraft): string | null {
   const label = entries.map(e => {
     const cls = getClass(e.classId)
     const sub = cls && e.classChoices.subclass ? getSubclass(cls, e.classChoices.subclass) : undefined
-    return `${cls?.name ?? e.classId} ${e.level}°${sub ? ` (${sub.name})` : ''}`
+    const subLabel = sub ? [sub.name, ...getSubclassDetails(e)].join(', ') : ''
+    return `${cls?.name ?? e.classId} ${e.level}°${subLabel ? ` (${subLabel})` : ''}`
   }).join(' / ')
   return entries.length > 1 ? `${label} — nível ${draft.level}` : label
 }

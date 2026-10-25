@@ -69,7 +69,16 @@ export type ClassFeature = { name: string; description: string }
  * O texto mora só em `class-progression-features.json`: a etapa Classe, a Revisão e a ficha leem
  * todos dali, para o card nunca divergir do que vai impresso.
  */
-export type LevelFeature = ClassFeature & { level: number; effects?: FeatureEffects }
+export type LevelFeature = ClassFeature & {
+  level: number
+  effects?: FeatureEffects
+  /**
+   * A ficha mostra, ao lado do texto, a opção escolhida num slot de progressão da mesma classe
+   * (`slot`, em progression-choices.json): o Ancestral Dracônico mostra o dragão; a Afinidade
+   * Elemental (`as: 'damageType'`) mostra o tipo de dano dele (p. 80).
+   */
+  showsPick?: { slot: string; as?: 'damageType' }
+}
 
 export type ClassSubclass = {
   id: string

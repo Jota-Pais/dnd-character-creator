@@ -247,9 +247,46 @@ function corpus(): CharacterDraft[] {
       spellChoices: { cantrips: ['fire-bolt', 'light'], spells: ['magic-missile', 'sleep', 'charm-person', 'fog-cloud', 'shield', 'burning-hands'] },
     }),
   )
-  out.push(...bardSecretsDrafts(), ...pactBoonDrafts())
+  out.push(...bardSecretsDrafts(), ...pactBoonDrafts(), ...draconicAncestorDrafts())
   return out
 }
+
+/**
+ * Feiticeiros da Linhagem Dracônica sem e com o Ancestral Dracônico (p. 80), e com a escolha
+ * guardada de quando eram dracônicos mas hoje na Magia Selvagem — na classe primária e como
+ * classe da multiclasse.
+ */
+function draconicAncestorDrafts(): CharacterDraft[] {
+  const out: CharacterDraft[] = []
+  const variants: [string, Record<string, string[]>][] = [
+    ['draconic-bloodline', {}],
+    ['draconic-bloodline', { 'draconic-ancestor-1': ['red'] }],
+    ['wild-magic', { 'draconic-ancestor-1': ['red'] }],
+  ]
+  for (const level of [1, 6]) {
+    for (const [subclass, progressionChoices] of variants) {
+      const classChoices = { ...structuredClone(EMPTY_DRAFT.classChoices), skills: ['arcana', 'persuasion'], subclass, progressionChoices }
+      out.push(draft({ class: 'sorcerer', level, classChoices }))
+      out.push(draft({
+        level: level + 1,
+        abilityMethod: 'custom',
+        abilityScores: { STR: 15, DEX: 14, CON: 13, INT: 12, WIS: 10, CHA: 13 },
+        additionalClasses: [entry({ classId: 'sorcerer', level, classChoices: { ...classChoices, skills: [] } })],
+        multiclass: true,
+      }))
+    }
+  }
+  return out
+}
+
+describe('motivos × isStepComplete — Ancestral Dracônico', () => {
+  const sorcerers = draconicAncestorDrafts()
+
+  it('o leque de feiticeiros tem etapa Classe aprovada e reprovada', () => {
+    expect(sorcerers.some(d => isStepComplete(d, 'class'))).toBe(true)
+    expect(sorcerers.some(d => !isStepComplete(d, 'class'))).toBe(true)
+  })
+})
 
 /**
  * Bruxos com e sem Dádiva do Pacto (p. 58-59): sem pacto, cada pacto, Tomo com os truques

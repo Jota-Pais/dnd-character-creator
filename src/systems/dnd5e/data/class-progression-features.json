@@ -1488,6 +1488,7 @@
       {
         "level": 1,
         "name": "Ancestral Dracônico",
+        "showsPick": { "slot": "draconic-ancestor-1" },
         "description": "Escolha um tipo de dragão como ancestral. O tipo de dano dele é usado por características futuras: Azul/Bronze = elétrico; Branco/Prata = frio; Cobre/Negro = ácido; Latão/Ouro/Vermelho = fogo; Verde = veneno. Você fala, lê e escreve Dracônico. Em testes de Carisma ao interagir com dragões, seu bônus de proficiência é dobrado, se ele se aplicar ao teste."
       },
       {
@@ -1502,6 +1503,7 @@
       {
         "level": 6,
         "name": "Afinidade Elemental",
+        "showsPick": { "slot": "draconic-ancestor-1", "as": "damageType" },
         "description": "Quando conjurar uma magia que cause dano do tipo do seu ancestral dracônico, some seu modificador de Carisma a uma única rolagem de dano dessa magia. Ao mesmo tempo, pode gastar 1 ponto de feitiçaria para ganhar resistência a esse tipo de dano por 1 hora."
       },
       {

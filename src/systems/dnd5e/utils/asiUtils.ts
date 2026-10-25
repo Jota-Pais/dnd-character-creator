@@ -8,6 +8,7 @@ import { getFeat } from './featUtils'
 import { areFeatChoicesComplete } from './sheetEffects'
 import { getClass, getSubclass, getClassFeaturesUpToLevel } from './classUtils'
 import { allClassEntries, getAllAsiChoices } from './multiclassUtils'
+import { describeFeaturePick } from './progressionOptions'
 
 /**
  * Níveis em que cada classe ganha um Incremento no Valor de Habilidade (ASI),
@@ -88,8 +89,11 @@ const ASI_FEATURE_DESCRIPTION =
   'Aumente um valor de habilidade em 2, ou dois valores de habilidade em 1, sem passar de 20; ' +
   'ou, pela regra opcional de talentos, troque o incremento por um talento.'
 
-/** Característica de classe como a ficha mostra: com a escolha feita, quando ela abre uma. */
-export type SheetClassFeature = LevelFeature & { chosen: string | null }
+/**
+ * Característica de classe como a ficha mostra: com a escolha feita, quando ela abre uma.
+ * `chosenLabel` troca o "Escolha" da linha (Afinidade Elemental: "Tipo de dano").
+ */
+export type SheetClassFeature = LevelFeature & { chosen: string | null; chosenLabel?: string }
 
 /**
  * Uma linha "Incremento no Valor de Habilidade" por espaço de ASI que a classe já alcançou (níveis
@@ -117,7 +121,10 @@ export function getSheetClassFeatures(entry: ClassEntry): SheetClassFeature[] {
   const cls = getClass(entry.classId)
   if (!cls) return []
   const sub = entry.classChoices.subclass ? (getSubclass(cls, entry.classChoices.subclass) ?? null) : null
-  const features: SheetClassFeature[] = getClassFeaturesUpToLevel(cls, sub, entry.level).map(f => ({ ...f, chosen: null }))
+  const features: SheetClassFeature[] = getClassFeaturesUpToLevel(cls, sub, entry.level).map(f => {
+    const pick = describeFeaturePick(entry, f)
+    return pick ? { ...f, chosen: pick.text, chosenLabel: pick.label } : { ...f, chosen: null }
+  })
   return [...features, ...getAsiFeatures(entry)].sort((a, b) => a.level - b.level)
 }
 

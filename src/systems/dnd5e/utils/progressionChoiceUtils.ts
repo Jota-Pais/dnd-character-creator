@@ -26,6 +26,13 @@ export type ProgressionSlot = {
   maxSpellLevel?: number
   /** Explicação do slot na etapa Classe, quando não é um slot de Segredos Mágicos do bardo. */
   hint?: string
+  /**
+   * A escolha qualifica a subclasse (Ancestral Dracônico da Linhagem Dracônica, p. 80): sai junto
+   * do nome dela no cabeçalho da ficha ("Linhagem Dracônica, ancestral Vermelho") — o valor é a
+   * palavra que a antecede — e nas características que a usam (`showsPick`), não nas Escolhas de
+   * Progressão.
+   */
+  subclassDetail?: string
 }
 
 const PROGRESSION_CHOICES_BY_ID = progressionChoicesData as Record<string, ProgressionSlot[]>

@@ -724,6 +724,7 @@ function ProgressionChoicesPanel({
 
           return (
             <ChoiceSection key={slot.id} title={title} accent={accent}>
+              {slot.hint && <p className="text-xs text-parchment-500 mb-2">{slot.hint}</p>}
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2 items-stretch">
                 {options.map(opt => {
                   const unmet = getUnmetRequirement(classId, subclassId, activePicks, opt)

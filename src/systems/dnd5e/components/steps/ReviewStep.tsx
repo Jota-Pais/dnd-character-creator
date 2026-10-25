@@ -754,7 +754,7 @@ export function ReviewStep() {
                             <span className="text-sm text-parchment-500 leading-relaxed">{feat.description}</span>
                             {feat.chosen && (
                               <span className="text-sm leading-relaxed">
-                                {' '}<span className="text-parchment-600">Escolha:</span>{' '}
+                                {' '}<span className="text-parchment-600">{feat.chosenLabel ?? 'Escolha'}:</span>{' '}
                                 <span className="font-semibold" style={{ color: accent }}>{feat.chosen}</span>
                               </span>
                             )}

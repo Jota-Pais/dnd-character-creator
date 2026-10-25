@@ -575,7 +575,7 @@ export function PrintableSheet() {
               {features.map((f, i) => (
                 <p key={`${f.name}-${i}`} className="text-xs mb-1">
                   <strong>{f.name}</strong> (nv {f.level}). {f.description}
-                  {f.chosen && <> <span className="text-gray-600">Escolha:</span> <strong>{f.chosen}</strong></>}
+                  {f.chosen && <> <span className="text-gray-600">{f.chosenLabel ?? 'Escolha'}:</span> <strong>{f.chosen}</strong></>}
                 </p>
               ))}
             </div>

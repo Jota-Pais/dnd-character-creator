@@ -13,7 +13,9 @@ import spells from '../data/spells.json'
 import type { Spell } from '../types/spell'
 import type { FeatureEffects } from '../types/effects'
 import type { ClassEntry } from '../types/character'
+import type { LevelFeature } from '../types/class'
 import { FIGHTING_STYLES } from './classUtils'
+import { DRAGON_ANCESTORS } from './dragonAncestors'
 import {
   getActivePicks, getProgressionSlots, getProgressionSlotsUpToLevel, isSpellChoiceSlot, SPELL_OPTIONS_LIST_ID,
   type ProgressionSlot,
@@ -43,6 +45,8 @@ export type ProgressionOption = {
    * convocar familiar, p. 58). Derivadas, nunca gravadas no draft (getGrantedSpellGroups).
    */
   grantsSpells?: string[]
+  /** Tipo de dano da opção (Ancestral Dracônico: "Fogo"), que a Afinidade Elemental mostra (p. 80). */
+  damageType?: string
 }
 
 export function getProgressionOptions(optionsListId: string): ProgressionOption[] {
@@ -59,6 +63,14 @@ export function getProgressionOptions(optionsListId: string): ProgressionOption[
     case 'hunter-superior-defense': return hunterSuperiorDefense as ProgressionOption[]
     case 'pact-boons': return pactBoons as ProgressionOption[]
     case 'FIGHTING_STYLES': return FIGHTING_STYLES as ProgressionOption[]
+    case 'dragon-ancestors':
+      // A tabela Ancestral Dracônico (p. 80) é a mesma das sub-raças do draconato (p. 34).
+      return DRAGON_ANCESTORS.map(a => ({
+        id: a.id,
+        name: a.name,
+        description: `Tipo de dano: ${a.damageType.toLowerCase()}.`,
+        damageType: a.damageType,
+      }))
     case SPELL_OPTIONS_LIST_ID:
       // Todas as magias do jogo; o seletor corta pelo nível com getSecretSpellOptions.
       return (spells as Spell[]).map(spellOption)
@@ -199,7 +211,9 @@ function describeProgressionPick(opt: ProgressionOption, classLevel: number): st
  * As "Escolhas de Progressão" da Revisão e da ficha imprimível: manobras, invocações, metamagia,
  * disciplinas, totem, terreno, presa — cada classe da multiclasse no nível que tem nela. Os slots
  * de Segredos Mágicos ficam de fora: são magias e saem junto das magias do bardo
- * (`bonusSpells` de getCasterEntries).
+ * (`bonusSpells` de getCasterEntries). Os que qualificam a subclasse (`subclassDetail`: o
+ * Ancestral Dracônico) também: saem com a subclasse e nas características (getSubclassDetails,
+ * describeFeaturePick).
  */
 export function getProgressionChoiceBlocks(entries: ClassEntry[]): ProgressionChoiceBlock[] {
   return entries
@@ -209,7 +223,7 @@ export function getProgressionChoiceBlocks(entries: ClassEntry[]): ProgressionCh
       return {
         entry,
         slots: getProgressionSlotsUpToLevel(classId, subclass, level, progressionChoices)
-          .filter(slot => !isSpellChoiceSlot(slot))
+          .filter(slot => !isSpellChoiceSlot(slot) && !slot.subclassDetail)
           .map(slot => {
             const options = getProgressionOptions(slot.optionsListId)
             const picks = (progressionChoices[slot.id] ?? []).flatMap((id): ProgressionPick[] => {
@@ -224,4 +238,50 @@ export function getProgressionChoiceBlocks(entries: ClassEntry[]): ProgressionCh
       }
     })
     .filter(b => b.slots.length > 0)
+}
+
+// ── Escolha que a ficha mostra fora das Escolhas de Progressão ──────────────
+
+/** A opção escolhida num slot que o nível na classe já liberou; null sem escolha (ou id desconhecido). */
+function getPickedOption(entry: ClassEntry, slotId: string): ProgressionOption | null {
+  const { classId, level, classChoices: { subclass, progressionChoices } } = entry
+  const slot = getProgressionSlotsUpToLevel(classId, subclass, level, progressionChoices).find(s => s.id === slotId)
+  const picked = slot ? progressionChoices[slot.id]?.[0] : undefined
+  if (!slot || !picked) return null
+  return getProgressionOptions(slot.optionsListId).find(o => o.id === picked) ?? null
+}
+
+/** "Vermelho (dano de fogo)" — a opção com o tipo de dano, quando tem. */
+function describeShortPick(option: ProgressionOption): string {
+  return option.damageType ? `${option.name} (dano de ${option.damageType.toLowerCase()})` : option.name
+}
+
+/**
+ * O que a característica mostra da escolha que ela usa (`showsPick`), com o rótulo da linha:
+ * Ancestral Dracônico → "Escolha: Vermelho (dano de fogo)"; Afinidade Elemental → "Tipo de dano:
+ * fogo (ancestral Vermelho)". null sem `showsPick` ou com o slot vazio (a etapa Classe fica
+ * pendente). A Revisão e o PDF leem daqui, via getSheetClassFeatures.
+ */
+export function describeFeaturePick(entry: ClassEntry, feature: LevelFeature): { label: string; text: string } | null {
+  if (!feature.showsPick) return null
+  const option = getPickedOption(entry, feature.showsPick.slot)
+  if (!option) return null
+  if (feature.showsPick.as === 'damageType' && option.damageType) {
+    return { label: 'Tipo de dano', text: `${option.damageType.toLowerCase()} (ancestral ${option.name})` }
+  }
+  return { label: 'Escolha', text: describeShortPick(option) }
+}
+
+/**
+ * O que acompanha o nome da subclasse no cabeçalho da ficha (slots com `subclassDetail`):
+ * ["ancestral Vermelho"] na Linhagem Dracônica. Vazio sem escolha.
+ */
+export function getSubclassDetails(entry: ClassEntry): string[] {
+  const { classId, level, classChoices: { subclass, progressionChoices } } = entry
+  return getProgressionSlotsUpToLevel(classId, subclass, level, progressionChoices)
+    .filter(slot => slot.subclassDetail)
+    .flatMap(slot => {
+      const option = getPickedOption(entry, slot.id)
+      return option ? [`${slot.subclassDetail} ${option.name}`] : []
+    })
 }

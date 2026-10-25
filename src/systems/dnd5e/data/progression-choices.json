@@ -21,6 +21,9 @@
     { "id": "sorcerer-metamagic-10", "level": 10, "count": 1, "cumulative": true, "optionsListId": "metamagic-options", "label": "Opções de Metamágica" },
     { "id": "sorcerer-metamagic-17", "level": 17, "count": 1, "cumulative": true, "optionsListId": "metamagic-options", "label": "Opções de Metamágica" }
   ],
+  "draconic-bloodline": [
+    { "id": "draconic-ancestor-1", "level": 1, "count": 1, "cumulative": false, "optionsListId": "dragon-ancestors", "label": "Ancestral Dracônico", "subclassDetail": "ancestral", "hint": "Ancestral Dracônico (p. 80): o tipo de dragão do seu sangue. O tipo de dano dele vale para a Afinidade Elemental (6º nível). É escolha do feiticeiro, separada da raça: o draconato escolhe de novo aqui, o mesmo dragão da sub-raça ou outro." }
+  ],
   "four-elements": [
     { "id": "four-elements-disciplines-3", "level": 3, "count": 2, "cumulative": true, "optionsListId": "four-elements-disciplines", "label": "Disciplinas Elementais" },
     { "id": "four-elements-disciplines-6", "level": 6, "count": 1, "cumulative": true, "optionsListId": "four-elements-disciplines", "label": "Disciplinas Elementais" },

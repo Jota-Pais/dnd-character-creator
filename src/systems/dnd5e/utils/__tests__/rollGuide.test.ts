@@ -237,6 +237,23 @@ describe('getRollGuide — ataques', () => {
     expect(sword.attack.notes.some(n => n.startsWith('18 a 20 natural: crítico se acertar (Crítico Superior)'))).toBe(true)
   })
 
+  it('arma pesada nas mãos de criatura Pequena: desvantagem no ataque, com o motivo (pág. 149)', () => {
+    const halfling = draft({
+      class: 'fighter', level: 1, race: 'halfling', subrace: 'lightfoot-halfling', abilityScores: SCORES,
+      ...carrying('greatsword', 'heavy-crossbow', 'longsword'),
+    })
+    const guide = getRollGuide(halfling, play())
+    const greatsword = guide.attacks.find(a => a.key === 'greatsword')!.attack
+    expect(greatsword.mode).toBe('disadvantage')
+    expect(labelsOf(greatsword.disadvantage)).toEqual(['Espada Grande pesada para criatura Pequena'])
+    expect(greatsword.notes.some(n => n.includes('pág. 149'))).toBe(true)
+    expect(guide.attacks.find(a => a.key === 'heavy-crossbow')!.attack.mode).toBe('disadvantage')
+    expect(guide.attacks.find(a => a.key === 'longsword')!.attack.mode).toBe('normal')
+    // Humano (Médio) com a mesma arma: normal.
+    const human = getRollGuide({ ...halfling, race: 'human', subrace: null }, play())
+    expect(human.attacks.find(a => a.key === 'greatsword')!.attack.mode).toBe('normal')
+  })
+
   it('notas da arma (Duelismo) também no ataque, no dano e no dano a duas mãos', () => {
     const d = draft({ class: 'fighter', level: 1, abilityScores: SCORES, classChoices: choices({ fightingStyle: 'dueling' }), ...carrying('longsword') })
     const sword = getRollGuide(d, play()).attacks.find(a => a.key === 'longsword')!

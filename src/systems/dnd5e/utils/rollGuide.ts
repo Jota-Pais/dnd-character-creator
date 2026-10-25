@@ -8,6 +8,7 @@ import { getSheetAttacks, type SheetAttack } from './attackUtils'
 import { SKILLS } from './backgroundUtils'
 import { getHitDicePool } from './multiclassUtils'
 import { getPlayConditionEffects } from './playState'
+import { getRace } from './raceUtils'
 import { getSavingThrowChecks, getSkillChecks, getPassiveScore, getUnproficientArmor } from './proficiencyUtils'
 import {
   EXHAUSTION, getAttacksPerAction, getBestHalfProficiencySource, getCondition, getHalfProficiencySources,
@@ -28,7 +29,8 @@ import { getCasterEntries, getSpellAttackBonus, getSpellSaveDC } from './spellUt
  * número ou no modo; o condicional vira linha em `notes`, nunca no número.
  *
  * Fontes do modo: as condições e a exaustão do estado de jogo (`getPlayConditionEffects`) somadas
- * às da ficha — desvantagem de Furtividade da armadura e armadura sem proficiência (pág. 144) —,
+ * às da ficha — desvantagem de Furtividade da armadura, armadura sem proficiência (pág. 144) e arma
+ * pesada nas mãos de criatura Pequena (pág. 149) —,
  * resolvidas por `resolveRollMode` (uma de cada lado anula, pág. 175).
  */
 
@@ -369,6 +371,8 @@ type AttackGuideContext = {
   attacksPerActionSource: string | null
   /** Margem de crítico das armas (Crítico Aprimorado/Superior); null = só o 20. */
   weaponCrit: SheetEffect<number> | null
+  /** A raça é de tamanho Pequeno (halfling, gnomo): desvantagem com arma pesada (pág. 149). */
+  small: boolean
 }
 
 /**
@@ -400,6 +404,10 @@ function attackGuide(attack: SheetAttack, ctx: AttackGuideContext): AttackGuide 
   // A margem do Campeão vale nos ataques COM ARMA; o golpe desarmado fica no 20.
   const weaponCrit = attack.weapon ? ctx.weaponCrit : null
   const critThreshold = weaponCrit?.value ?? 20
+  // Pesada: "criaturas pequenas têm desvantagem nas jogadas de ataque com estas armas" (pág. 149).
+  const heavySmall: GuideReason[] = attack.weapon?.heavy && ctx.small
+    ? [{ source: 'weapon:heavy-small', label: `${attack.name} pesada para criatura Pequena` }]
+    : []
   const extraAttacks = attack.attacksPerAction > 1
     ? [`${ctx.attacksPerActionSource ?? 'Ataque Extra'}: você faz ${attack.attacksPerAction} ataques ao usar a ação de Atacar — role cada um.`]
     : []
@@ -411,10 +419,11 @@ function attackGuide(attack: SheetAttack, ctx: AttackGuideContext): AttackGuide 
     modifier: Number(attack.attackBonus),
     breakdown,
     condition,
-    extraDisadvantage: STR_DEX.includes(ability) ? sheet.unproficientArmor : [],
+    extraDisadvantage: [...(STR_DEX.includes(ability) ? sheet.unproficientArmor : []), ...heavySmall],
     notes: [
       ...cannotAct,
       ...(attack.proficient ? [] : [`Sem proficiência com ${attack.name}: o bônus de proficiência não entra (pág. 148).`]),
+      ...(heavySmall.length > 0 ? ['Arma pesada: criaturas Pequenas têm desvantagem nas jogadas de ataque com ela (pág. 149).'] : []),
       ...extraAttacks,
       ...notes,
       critNote(critThreshold, weaponCrit?.source),
@@ -626,6 +635,7 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
     mods, proficiencyBonus: prof, condition: effects.attack, sheet, lines, inspiration, cannotAct,
     attacksPerActionSource: getAttacksPerAction(draft).source,
     weaponCrit: getWeaponCritThreshold(draft),
+    small: (draft.race ? getRace(draft.race)?.size : undefined) === 'Small',
   }
   const attacks = getSheetAttacks(draft, scores).map(a => attackGuide(a, attackContext))
 

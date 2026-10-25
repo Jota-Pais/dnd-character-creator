@@ -76,6 +76,18 @@ describe('usePlayStore', () => {
     expect(s.undoStack[0].note).toBe('nota 5')
   })
 
+  it('lastActionChanged diz se a última ação mudou o estado (o que o undo desfaria)', () => {
+    usePlayStore.getState().open('c1', draft())
+    expect(usePlayStore.getState().lastActionChanged).toBe(false)
+    usePlayStore.getState().run((st, sh) => applyDamage(st, sh, { amount: 4 }))
+    expect(usePlayStore.getState().lastActionChanged).toBe(true)
+    usePlayStore.getState().run((st, sh) => applyHealing(st, sh, Number.NaN))
+    expect(usePlayStore.getState().lastActionChanged).toBe(false)
+    usePlayStore.getState().run(st => setInspiration(st, true))
+    usePlayStore.getState().undo()
+    expect(usePlayStore.getState().lastActionChanged).toBe(false)
+  })
+
   it('dismissNotices limpa os avisos', () => {
     usePlayStore.getState().open('c1', draft())
     usePlayStore.getState().run((st, sh) => applyHealing(st, sh, Number.NaN))

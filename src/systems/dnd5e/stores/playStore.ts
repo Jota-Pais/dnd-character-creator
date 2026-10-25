@@ -22,6 +22,11 @@ type PlayStoreState = {
   undoStack: PlayState[]
   /** Avisos da última ação (ou da abertura, quando a ficha mudou desde a última sessão). */
   notices: PlayNotice[]
+  /**
+   * A última ação mudou o estado? Só aí o `undo` desfaz ELA; depois de uma recusa (ou de algo sem
+   * efeito) o desfazer voltaria uma ação anterior, então a UI não o oferece junto dos avisos.
+   */
+  lastActionChanged: boolean
   prefs: PlayPreferences
 
   /** Abre a ficha salva `id` no modo de jogo: monta o `PlaySheet` e carrega (ou cria) o estado. */
@@ -47,6 +52,7 @@ const CLOSED = {
   state: null,
   undoStack: [],
   notices: [],
+  lastActionChanged: false,
 } satisfies Partial<PlayStoreState>
 
 /** Mudou de verdade? Operações sem efeito devolvem o mesmo objeto; as demais, um novo. */
@@ -73,6 +79,7 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
       state,
       undoStack: [],
       notices,
+      lastActionChanged: false,
       prefs: loadPlayPreferences(),
     })
   },
@@ -82,7 +89,7 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
     if (!state || !sheet) return null
     const result = op(state, sheet)
     if (!changed(state, result.state)) {
-      set({ notices: result.notices })
+      set({ notices: result.notices, lastActionChanged: false })
       return result
     }
     const saved = savePlayState(result.state)
@@ -90,6 +97,7 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
       state: saved,
       undoStack: [...undoStack, state].slice(-UNDO_LIMIT),
       notices: result.notices,
+      lastActionChanged: true,
     })
     return { state: saved, notices: result.notices }
   },
@@ -98,7 +106,7 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
     const { undoStack } = get()
     const previous = undoStack.at(-1)
     if (!previous) return
-    set({ state: savePlayState(previous), undoStack: undoStack.slice(0, -1), notices: [] })
+    set({ state: savePlayState(previous), undoStack: undoStack.slice(0, -1), notices: [], lastActionChanged: false })
   },
 
   dismissNotices: () => set({ notices: [] }),

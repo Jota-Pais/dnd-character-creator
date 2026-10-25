@@ -10,7 +10,8 @@ import { getHitDicePool } from './multiclassUtils'
 import { getPlayConditionEffects } from './playState'
 import { getSavingThrowChecks, getSkillChecks, getPassiveScore, getUnproficientArmor } from './proficiencyUtils'
 import {
-  EXHAUSTION, getBestHalfProficiencySource, getCondition, getHalfProficiencySources, getInitiativeBonuses,
+  EXHAUSTION, getAttacksPerAction, getBestHalfProficiencySource, getCondition, getHalfProficiencySources,
+  getInitiativeBonuses,
   getOwnedFeats, getSheetArmorClass, resolveRollMode, type ActiveConditionEffects, type ConditionRoll,
 } from './sheetEffects'
 import { getCasterEntries, getSpellAttackBonus, getSpellSaveDC } from './spellUtils'
@@ -354,22 +355,29 @@ const ABILITY_BY_LONG_NAME = new Map(ALL_ABILITY_SCORES.map(ab => [ABILITY_LABEL
 /** "inclui +2 no ataque (Arquearia)": o bônus que `getWeaponAttack` já somou, com a origem. */
 const INCLUDED_ATTACK_BONUS = /^inclui ([+-]\d+) no ataque \((.+)\)$/
 
-function attackGuide(
-  attack: SheetAttack,
-  mods: Record<AbilityScore, number>,
-  proficiencyBonus: number,
-  condition: ConditionRoll,
-  sheet: SheetModeSources,
-  lines: ConditionalLine[],
-  inspiration: boolean,
+/** O que todo ataque da ficha compartilha: o personagem, o estado de jogo e as fontes do modo. */
+type AttackGuideContext = {
+  mods: Record<AbilityScore, number>
+  proficiencyBonus: number
+  condition: ConditionRoll
+  sheet: SheetModeSources
+  lines: ConditionalLine[]
+  inspiration: boolean
   /** O que impede de agir (Incapacitado): vale para todo ataque. */
-  cannotAct: string[],
-): AttackGuide {
+  cannotAct: string[]
+  /** Quem dá os ataques a mais da ação de Atacar (Ataque Extra), para a nota da linha. */
+  attacksPerActionSource: string | null
+}
+
+function attackGuide(attack: SheetAttack, ctx: AttackGuideContext): AttackGuide {
+  const { mods, proficiencyBonus, condition, sheet, lines, inspiration, cannotAct } = ctx
   const ability = ABILITY_BY_LONG_NAME.get(attack.ability) ?? 'STR'
   const breakdown: GuideBreakdownItem[] = [
     { label: attack.ability, value: mods[ability] },
     ...(attack.proficient ? [{ label: 'Proficiência', value: proficiencyBonus }] : []),
   ]
+  // As notas da arma (Duelismo, outra mão, recarga, Artes Marciais) valem no ataque e no dano:
+  // a folha de cada jogada diz o que muda nela.
   const notes: string[] = []
   for (const n of attack.notes) {
     const m = INCLUDED_ATTACK_BONUS.exec(n)
@@ -377,6 +385,9 @@ function attackGuide(
     else notes.push(n)
   }
   const critThreshold = 20
+  const extraAttacks = attack.attacksPerAction > 1
+    ? [`${ctx.attacksPerActionSource ?? 'Ataque Extra'}: você faz ${attack.attacksPerAction} ataques ao usar a ação de Atacar — role cada um.`]
+    : []
 
   const attackEntry = d20Entry({
     id: `attack:${attack.key}`,
@@ -389,6 +400,8 @@ function attackGuide(
     notes: [
       ...cannotAct,
       ...(attack.proficient ? [] : [`Sem proficiência com ${attack.name}: o bônus de proficiência não entra (pág. 148).`]),
+      ...extraAttacks,
+      ...notes,
       `20 natural: acerta e é crítico — role os dados de dano duas vezes. 1 natural: erra (pág. 196).`,
       ...linesFor(lines, 'attack'),
     ],
@@ -406,6 +419,7 @@ function attackGuide(
       parsed,
       damageType: parsed.damageType,
       breakdown: damageBreakdown(parsed),
+      notes,
     })
     : null
 
@@ -417,6 +431,7 @@ function attackGuide(
       parsed: versatileParsed,
       damageType: versatileParsed.damageType || parsed.damageType,
       breakdown: damageBreakdown(versatileParsed),
+      notes,
     })
     : null
 
@@ -592,8 +607,11 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
     notes: linesFor(lines, 'abilityCheck', 'WIS'),
   }
 
-  const attacks = getSheetAttacks(draft, scores).map(a =>
-    attackGuide(a, mods, prof, effects.attack, sheet, lines, inspiration, cannotAct))
+  const attackContext: AttackGuideContext = {
+    mods, proficiencyBonus: prof, condition: effects.attack, sheet, lines, inspiration, cannotAct,
+    attacksPerActionSource: getAttacksPerAction(draft).source,
+  }
+  const attacks = getSheetAttacks(draft, scores).map(a => attackGuide(a, attackContext))
 
   const spellcasting = getCasterEntries(draft).map((caster): SpellcastingGuide => {
     const sc = caster.casting.spellcasting

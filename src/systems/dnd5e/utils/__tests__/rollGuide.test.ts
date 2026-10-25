@@ -211,6 +211,61 @@ describe('getRollGuide — ataques', () => {
     ])
     expect(bow.notes.some(n => n.includes('Arquearia'))).toBe(false)
   })
+
+  it('notas da arma (Duelismo) também no ataque, no dano e no dano a duas mãos', () => {
+    const d = draft({ class: 'fighter', level: 1, abilityScores: SCORES, classChoices: choices({ fightingStyle: 'dueling' }), ...carrying('longsword') })
+    const sword = getRollGuide(d, play()).attacks.find(a => a.key === 'longsword')!
+    const dueling = sword.notes.find(n => n.includes('Duelismo'))!
+    expect(dueling).toBeDefined()
+    expect(sword.attack.notes).toContain(dueling)
+    expect(sword.damage!.notes).toContain(dueling)
+    expect(sword.versatile!.notes).toContain(dueling)
+  })
+
+  it('outra mão (duas adagas): a regra-base no dano', () => {
+    const d = draft({
+      class: 'rogue', level: 1, abilityScores: SCORES,
+      equipment: {
+        ...structuredClone(EMPTY_DRAFT.equipment), method: 'wealth',
+        purchasedItems: [{ itemId: 'dagger', quantity: 2, source: 'purchased' }],
+      },
+    })
+    const dagger = getRollGuide(d, play()).attacks.find(a => a.key === 'dagger')!
+    expect(dagger.damage!.notes.some(n => n.includes('sem somar o modificador no dano'))).toBe(true)
+  })
+
+  it('Ataque Extra (guerreiro 5): nota no ataque; besta pesada fica em 1, com a recarga no ataque e no dano', () => {
+    const d = draft({ class: 'fighter', level: 5, abilityScores: SCORES, ...carrying('longsword', 'heavy-crossbow') })
+    const guide = getRollGuide(d, play())
+    const sword = guide.attacks.find(a => a.key === 'longsword')!
+    expect(sword.attacksPerAction).toBe(2)
+    expect(sword.attack.notes).toContain('Ataque Extra: você faz 2 ataques ao usar a ação de Atacar — role cada um.')
+    const crossbow = guide.attacks.find(a => a.key === 'heavy-crossbow')!
+    expect(crossbow.attacksPerAction).toBe(1)
+    expect(crossbow.attack.notes.some(n => n.startsWith('Ataque Extra'))).toBe(false)
+    expect(crossbow.attack.notes.some(n => n.startsWith('recarga'))).toBe(true)
+    expect(crossbow.damage!.notes.some(n => n.startsWith('recarga'))).toBe(true)
+    // Guerreiro 1 não tem a nota.
+    expect(getRollGuide(fighter('longsword'), play()).attacks[0].attack.notes.some(n => n.startsWith('Ataque Extra'))).toBe(false)
+  })
+
+  it('modificador de dano negativo (FOR 8): "1d4 - 1", e o crítico só dobra o dado', () => {
+    const d = draft({ class: 'wizard', level: 1, abilityScores: { ...SCORES, STR: 8 }, ...carrying('club') })
+    const club = getRollGuide(d, play()).attacks.find(a => a.key === 'club')!
+    expect(club.damage).toMatchObject({
+      formula: '1d4 - 1 concussão', notation: '1d4-1',
+      crit: { formula: '2d4 - 1 concussão', notation: '2d4-1' },
+      breakdown: [{ label: 'Força', value: -1 }],
+    })
+  })
+
+  it('monge 1, golpe desarmado com Artes Marciais: 1d4 + DES, com a Destreza no breakdown', () => {
+    const monk = draft({ class: 'monk', level: 1, abilityScores: { ...SCORES, STR: 10, DEX: 16 } })
+    const unarmed = getRollGuide(monk, play()).attacks.find(a => a.key === 'unarmed')!
+    expect(unarmed.attack).toMatchObject({ formula: '1d20 + 5', breakdown: [{ label: 'Destreza', value: 3 }, { label: 'Proficiência', value: 2 }] })
+    expect(unarmed.damage).toMatchObject({ formula: '1d4 + 3 concussão', breakdown: [{ label: 'Destreza', value: 3 }] })
+    expect(unarmed.damage!.notes.some(n => n.includes('Artes Marciais'))).toBe(true)
+  })
 })
 
 describe('getRollGuide — condições e modo', () => {
@@ -258,6 +313,18 @@ describe('getRollGuide — condições e modo', () => {
     expect(labelsOf(attack.advantage)).toEqual(['Invisível'])
     expect(labelsOf(attack.disadvantage)).toEqual(['Envenenado'])
     expect(describeRollGuide(attack)).toBe('1d20 + 5, normal: vantagem (Invisível) e desvantagem (Envenenado) se anulam')
+  })
+
+  it('describeRollGuide com vantagem', () => {
+    const attack = getRollGuide(fighter('longsword'), withConditions('invisible')).attacks[0].attack
+    expect(attack.notation).toBe('2d20kh1+5')
+    expect(describeRollGuide(attack)).toBe('1d20 + 5, com vantagem (Invisível)')
+  })
+
+  it('Exaustão 1: −5 na Percepção passiva, no valor e no breakdown', () => {
+    const passive = getRollGuide(fighter(), exhausted(1)).passivePerception
+    expect(passive).toMatchObject({ value: 8, sheetValue: 13, adjustment: -5 })
+    expect(passive.breakdown.at(-1)).toEqual({ label: 'Desvantagem (Exaustão 1)', value: -5 })
   })
 
   it('condicional vira nota, nunca modo (Amedrontado, Cego)', () => {
@@ -336,6 +403,14 @@ describe('getRollGuide — meia proficiência, Especialização, Alerta', () => 
     expect(guide.saves.STR.breakdown).toEqual([{ label: 'Força', value: 3 }])
   })
 
+  it('Atletismo Extraordinário (campeão 7): no teste de Força, não no TR', () => {
+    const champion = draft({ class: 'fighter', level: 7, abilityScores: SCORES, classChoices: choices({ subclass: 'champion' }) })
+    const guide = getRollGuide(champion, play())
+    expect(guide.checks.STR.breakdown).toEqual([{ label: 'Força', value: 3 }, { label: 'Atletismo Extraordinário', value: 2 }])
+    expect(guide.checks.INT.breakdown).toEqual([{ label: 'Inteligência', value: 0 }])
+    expect(guide.saves.DEX.breakdown).toEqual([{ label: 'Destreza', value: 2 }])
+  })
+
   it('Especialização do ladino: o bônus dobrado com o nome', () => {
     const rogue = draft({
       class: 'rogue', level: 1, abilityScores: SCORES,
@@ -394,6 +469,7 @@ describe('getConcentrationGuide', () => {
     expect(getConcentrationGuide(caster, play(), 7)).toMatchObject({ id: 'concentration', dc: 10, formula: '1d20 + 2', ability: 'CON' })
     expect(getConcentrationGuide(caster, play(), 25).dc).toBe(12)
     expect(getConcentrationGuide(caster, play(), Number.NaN).dc).toBe(10)
+    expect(getConcentrationGuide(caster, play(), -8).dc).toBe(10)
   })
 
   it('o nome da magia no rótulo e as fontes de TR de CON (Exaustão 3)', () => {

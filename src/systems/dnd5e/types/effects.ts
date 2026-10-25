@@ -43,6 +43,22 @@ export type ConditionalAttacks = {
 }
 
 /**
+ * Bônus em todos os testes de resistência que só vale numa situação — a Aura de Proteção do
+ * paladino 6 (p. 111): mod. de Carisma, mínimo +1, para você e criaturas amigáveis a até 3 m,
+ * enquanto você estiver consciente. Fica FORA do número das resistências (a ficha não sabe se você
+ * está consciente nem quem está perto) e vira linha própria com a condição.
+ */
+export type ConditionalSaveBonus = {
+  /** O bônus, com os atributos finais e o nível NA classe dona (`{ ability: 'CHA', min: 1 }`). */
+  value: ResourceQuantity
+  /**
+   * Condição do livro, em português, em degraus pelo nível NA classe dona — o alcance da aura
+   * passa de 3 m a 9 m no 18º nível de paladino.
+   */
+  condition: LevelStep<string>[]
+}
+
+/**
  * Condição de equipamento que a ficha confere sozinha, pelo que está equipado — o mesmo critério
  * da CA (`getEquippedArmor`):
  * - `noHeavyArmor`: sem armadura pesada (Movimento Rápido, p. 49);
@@ -203,6 +219,11 @@ export type FeatureEffects = {
    * Atletismo Extraordinário (campeão 7, p. 85): só Força, Destreza e Constituição, para cima.
    */
   halfProficiencyOnChecks?: HalfProficiencyOnChecks
+  /**
+   * Bônus condicional em todos os testes de resistência (Aura de Proteção). Só lido em features
+   * de classe e subclasse, no nível NA classe dona; nunca entra no número das resistências.
+   */
+  conditionalSaveBonus?: ConditionalSaveBonus
   /**
    * Proficiência em testes de resistência dada por característica de classe — Mente Escorregadia
    * (ladino 15, Sabedoria, p. 91) e Alma de Diamante (monge 14, `'all'`, p. 105). Incondicional:

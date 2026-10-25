@@ -82,3 +82,24 @@ describe('títulos das colunas com o total dos Segredos', () => {
     expect(text).toContain('Conhecidas (2 + 1 de Segredos Mágicos = 3)')
   })
 })
+
+// Aura de Proteção (p. 111): fora do número das resistências, numa linha com a condição, na
+// Revisão e no PDF. Paladino 6 com CAR 16 (+3): Sabedoria 12 segue +1 + proficiência 3 = +4.
+describe('Aura de Proteção junto das resistências', () => {
+  const paladin6: CharacterDraft = {
+    ...structuredClone(EMPTY_DRAFT),
+    name: 'Tor',
+    race: 'human', class: 'paladin', level: 6,
+    abilityScores: { STR: 15, DEX: 10, CON: 13, INT: 8, WIS: 11, CHA: 15 },
+  }
+  it.each([
+    ['Revisão', () => render(<ReviewStep />)],
+    ['ficha imprimível', () => render(<PrintableSheet />)],
+  ])('%s: linha com a condição', (_, renderIt) => {
+    useCharacterStore.setState({ draft: structuredClone(paladin6) })
+    const text = renderIt().container.textContent ?? ''
+    expect(text).toContain(
+      '+3 em todos os testes de resistência (Aura de Proteção: você e criaturas amigáveis a até 3 m, enquanto você estiver consciente; mínimo +1)',
+    )
+  })
+})

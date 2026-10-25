@@ -45,7 +45,7 @@ import { getSheetAttacks } from '../utils/attackUtils'
 import {
   getTotalHp, getInitiativeBonusTotal, getSheetSpeed, describeSpeedBonuses,
   getConditionalAcBonuses, getSheetResources, getSheetArmorClass,
-  describeAttacksPerAction, getSheetFightingStyles,
+  describeAttacksPerAction, getSheetFightingStyles, describeConditionalSaveBonuses,
 } from '../utils/sheetEffects'
 import type { CharacterDraft } from '../types/character'
 import type { ClassSpellcasting } from '../types/class'
@@ -143,6 +143,8 @@ export function PrintableSheet() {
   // Versatilidade / Atletismo Extraordinário: onde a meia proficiência já entrou e onde mais vale.
   const halfProficiencyLines = describeHalfProficiencyOnChecks(draft)
   const saveChecks = getSavingThrowChecks(draft, finalScores)
+  // Aura de Proteção: fora do número das resistências, numa linha com a condição.
+  const conditionalSaveLines = describeConditionalSaveBonuses(draft, finalScores)
   const allTools = getAllGrantedTools(draft)
   const expertiseTools = getExpertiseTools(draft)
 
@@ -280,6 +282,9 @@ export function PrintableSheet() {
               <Row key={ab} mark={proficient} label={ABILITY_LABELS[ab].long} value={formatModifier(bonus)} />
             )
           })}
+          {conditionalSaveLines.map(line => (
+            <p key={line} className="text-[10px] text-gray-600 mt-1">{line}</p>
+          ))}
         </Box>
 
         {/* Perícias */}

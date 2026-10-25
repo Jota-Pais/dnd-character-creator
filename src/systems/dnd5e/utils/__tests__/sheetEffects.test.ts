@@ -26,12 +26,14 @@ import {
   getConditionalAttacks,
   describeAttacksPerAction,
   getOwnedClassFeatures,
+  getConditionalSaveBonuses,
+  describeConditionalSaveBonuses,
 } from '../sheetEffects'
 import {
   getArmorProficiencies, hasArmorProficiency, hasWeaponProficiency,
   getSavingThrowProficiencies, getAllGrantedSkills, getAllGrantedLanguages,
   getExcludedSkillsForFeat, getExcludedWeaponsForFeat,
-  getSkillChecks, describeHalfProficiencyOnChecks,
+  getSkillChecks, describeHalfProficiencyOnChecks, getSavingThrowChecks,
 } from '../proficiencyUtils'
 import { getArmor, getWeaponById } from '../equipmentUtils'
 import { getFinalAbilityScores } from '../asiUtils'
@@ -841,5 +843,67 @@ describe('armadura pesada sem a Força mínima', () => {
       'Não somado: +3 m sem armadura pesada (Movimento Rápido) — você está de Placas.',
       'Deslocamento reduzido em 3 m: Placas pede Força 15 e você tem 9.',
     ])
+  })
+})
+
+// ── Aura de Proteção: bônus condicional nas resistências (p. 111) ─────────────
+
+describe('Aura de Proteção (resistências condicionais)', () => {
+  const paladin = (level: number, overrides: Partial<CharacterDraft> = {}) =>
+    draft({ level, class: 'paladin', ...overrides })
+  const aura = (cha: number, condition: string) =>
+    ({ value: Math.max(1, Math.floor((cha - 10) / 2)), condition, source: 'Aura de Proteção' })
+  const near3 = 'você e criaturas amigáveis a até 3 m, enquanto você estiver consciente; mínimo +1'
+  const near9 = 'você e criaturas amigáveis a até 9 m, enquanto você estiver consciente; mínimo +1'
+
+  it('antes do 6º nível de paladino não há linha', () => {
+    expect(getConditionalSaveBonuses(paladin(5), scores({ CHA: 16 }))).toEqual([])
+    expect(describeConditionalSaveBonuses(paladin(5), scores({ CHA: 16 }))).toEqual([])
+  })
+
+  it('paladino 6 com CAR 16: +3, numa linha com a condição', () => {
+    expect(getConditionalSaveBonuses(paladin(6), scores({ CHA: 16 }))).toEqual([aura(16, near3)])
+    expect(describeConditionalSaveBonuses(paladin(6), scores({ CHA: 16 }))).toEqual([
+      '+3 em todos os testes de resistência (Aura de Proteção: você e criaturas amigáveis a até 3 m, enquanto você estiver consciente; mínimo +1)',
+    ])
+  })
+
+  it('mínimo +1 com Carisma baixo', () => {
+    expect(getConditionalSaveBonuses(paladin(6), scores({ CHA: 8 }))[0].value).toBe(1)
+    expect(getConditionalSaveBonuses(paladin(6), scores({ CHA: 10 }))[0].value).toBe(1)
+  })
+
+  it('o alcance passa a 9 m no 18º nível de paladino', () => {
+    expect(getConditionalSaveBonuses(paladin(17), scores({ CHA: 20 }))).toEqual([aura(20, near3)])
+    expect(getConditionalSaveBonuses(paladin(18), scores({ CHA: 20 }))).toEqual([aura(20, near9)])
+  })
+
+  it('não entra no número das resistências', () => {
+    const d = paladin(6, { abilityScores: scores({ CHA: 16, WIS: 12 }) })
+    const fs = getFinalAbilityScores(d)
+    const saves = getSavingThrowChecks(d, fs)
+    expect(saves.WIS.bonus).toBe(1 + 3) // mod. 1 + proficiência 3, sem a aura
+    expect(saves.STR.bonus).toBe(0)
+  })
+
+  it('multiclasse conta o nível NA classe: paladino 6 / guerreiro 12 tem a aura de 3 m', () => {
+    const d = draft({
+      level: 18, multiclass: true, class: 'fighter', additionalClasses: [extraClass('paladin', 6)],
+    })
+    expect(getConditionalSaveBonuses(d, scores({ CHA: 14 }))).toEqual([aura(14, near3)])
+    const low = draft({
+      level: 18, multiclass: true, class: 'fighter', additionalClasses: [extraClass('paladin', 5)],
+    })
+    expect(getConditionalSaveBonuses(low, scores({ CHA: 14 }))).toEqual([])
+  })
+
+  it('integridade dos dados: toda "Aura de Proteção" declara o efeito', () => {
+    const all = [
+      ...Object.values(progressionFeatures.classes),
+      ...Object.values(progressionFeatures.subclasses),
+    ].flat() as { name: string; effects?: { conditionalSaveBonus?: unknown } }[]
+    const auras = all.filter(f => f.name === 'Aura de Proteção')
+    expect(auras.length).toBeGreaterThanOrEqual(1)
+    for (const f of auras) expect(f.effects?.conditionalSaveBonus).toBeDefined()
   })
 })

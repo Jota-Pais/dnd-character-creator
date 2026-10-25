@@ -11,7 +11,7 @@ import {
 } from './classUtils'
 import { getRace, getSubrace, getEffectiveTraits, getEffectiveSpeed } from './raceUtils'
 import {
-  getProficiencyBonus, calculateModifier, formatMeters, ALL_ABILITY_SCORES,
+  getProficiencyBonus, calculateModifier, formatMeters, formatModifier, ALL_ABILITY_SCORES,
 } from './abilityScoreUtils'
 import { getEquippedArmor } from './equipmentUtils'
 import {
@@ -537,6 +537,46 @@ export type SheetConditionalAc = ConditionalAcBonus & { source: string }
 export function getConditionalAcBonuses(draft: CharacterDraft): SheetConditionalAc[] {
   return getOwnedFeats(draft).flatMap(feat =>
     (feat.effects?.conditionalAcBonus ?? []).map(bonus => ({ ...bonus, source: feat.name })),
+  )
+}
+
+// ── Testes de resistência condicionais ─────────────────────────────────────────
+
+/** Um bônus condicional nos testes de resistência, já calculado, com a condição e quem o dá. */
+export type SheetConditionalSave = { value: number; condition: string; source: string }
+
+/**
+ * Bônus em todos os testes de resistência que dependem de uma situação (Aura de Proteção, p. 111).
+ * Ficam FORA do número de cada resistência — a ficha não sabe se você está consciente nem quem
+ * está a até 3 m — e viram linha com a condição. Feature de classe e subclasse, no nível NA classe
+ * dona (paladino 6 / guerreiro 12 tem a aura de 3 m), com os atributos finais.
+ */
+export function getConditionalSaveBonuses(
+  draft: CharacterDraft,
+  finalScores: FinalScores,
+): SheetConditionalSave[] {
+  const prof = getProficiencyBonus(draft.level ?? 1)
+  const out: SheetConditionalSave[] = []
+  for (const { entry, features } of getOwnedClassFeaturesByEntry(draft)) {
+    for (const feature of features) {
+      const bonus = feature.effects?.conditionalSaveBonus
+      if (!bonus) continue
+      const condition = stepValue(bonus.condition, entry.level)
+      if (condition === undefined || out.some(o => o.source === feature.name)) continue
+      const value = evaluateQuantity(bonus.value, entry.level, finalScores, prof)
+      out.push({ value, condition, source: feature.name })
+    }
+  }
+  return out
+}
+
+/**
+ * As linhas que a Revisão e a ficha imprimível mostram junto das resistências — o mesmo texto nas
+ * duas. Vazio para quem não tem bônus condicional.
+ */
+export function describeConditionalSaveBonuses(draft: CharacterDraft, finalScores: FinalScores): string[] {
+  return getConditionalSaveBonuses(draft, finalScores).map(b =>
+    `${formatModifier(b.value)} em todos os testes de resistência (${b.source}: ${b.condition})`,
   )
 }
 

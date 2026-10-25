@@ -37,7 +37,7 @@ import {
 import {
   getTotalHp, getInitiativeBonusTotal, getSheetSpeed, describeSpeedBonuses,
   getConditionalAcBonuses, getSheetResources, getSheetArmorClass,
-  describeAttacksPerAction, getSheetFightingStyles,
+  describeAttacksPerAction, getSheetFightingStyles, describeConditionalSaveBonuses,
 } from '../../utils/sheetEffects'
 import { getSheetAttacks } from '../../utils/attackUtils'
 import { formatAttackDamage } from '../../utils/weaponFormat'
@@ -127,6 +127,8 @@ export function ReviewStep() {
   // Proficiencies
   const skillChecks = getSkillChecks(draft, finalScores)
   const saveChecks = getSavingThrowChecks(draft, finalScores)
+  // Aura de Proteção: fora do número das resistências, numa linha com a condição.
+  const conditionalSaveLines = describeConditionalSaveBonuses(draft, finalScores)
   const passivePerception = getPassiveScore(draft, 'perception', skillChecks)
   // Versatilidade / Atletismo Extraordinário: onde a meia proficiência já entrou e onde mais vale.
   const halfProficiencyLines = describeHalfProficiencyOnChecks(draft)
@@ -363,6 +365,9 @@ export function ReviewStep() {
               )
             })}
           </div>
+          {conditionalSaveLines.map(line => (
+            <p key={line} className="text-xs text-parchment-700 mt-2">{line}</p>
+          ))}
         </Section>
 
         <Section title="Perícias">

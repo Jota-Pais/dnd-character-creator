@@ -578,7 +578,16 @@
       {
         "level": 6,
         "name": "Aura de Proteção",
-        "description": "Enquanto você estiver consciente, você e as criaturas amigáveis a até 3 metros (9 metros a partir do 18° nível) somam seu mod. de Carisma (mínimo +1) aos testes de resistência."
+        "description": "Enquanto você estiver consciente, você e as criaturas amigáveis a até 3 metros (9 metros a partir do 18° nível) somam seu mod. de Carisma (mínimo +1) aos testes de resistência.",
+        "effects": {
+          "conditionalSaveBonus": {
+            "value": { "ability": "CHA", "min": 1 },
+            "condition": [
+              { "from": 6, "value": "você e criaturas amigáveis a até 3 m, enquanto você estiver consciente; mínimo +1" },
+              { "from": 18, "value": "você e criaturas amigáveis a até 9 m, enquanto você estiver consciente; mínimo +1" }
+            ]
+          }
+        }
       },
       {
         "level": 10,

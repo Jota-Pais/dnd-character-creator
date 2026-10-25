@@ -129,9 +129,10 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     }),
 
   deleteCharacter: (id) => {
+    // Fecha antes de apagar: o close grava as edições pendentes, que não podem ressuscitar o estado.
+    if (usePlayStore.getState().characterId === id) usePlayStore.getState().close()
     // O estado de jogo mora em outra chave: some junto com a ficha (playStorage).
     deletePlayState(id)
-    if (usePlayStore.getState().characterId === id) usePlayStore.getState().close()
     set(state => {
       const library = deleteCharacterEntry(id)
       return { library, currentId: state.currentId === id ? null : state.currentId }
@@ -163,6 +164,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
   },
 
   exitPlay: () => {
+    // O close grava antes as edições em curso (nota digitada sem sair do campo).
     usePlayStore.getState().close()
     // Como o `reset`: a ficha já está salva e o jogo não a altera — nada a regravar.
     set({ view: 'gallery', currentId: null })

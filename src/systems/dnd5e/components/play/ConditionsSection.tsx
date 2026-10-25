@@ -1,4 +1,5 @@
-import { useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
+import { registerPendingEdit } from '../../stores/playStore'
 import type { ConditionId } from '../../types/condition'
 import { CONDITION_NOTE_MAX_LENGTH } from '../../types/playState'
 import {
@@ -32,7 +33,8 @@ function SwitchTrack({ on, muted }: { on: boolean; muted?: boolean }) {
 /**
  * A nota de duração de uma condição gravada ("até o fim do próximo turno do mago"). O app não
  * conta tempo: é só um lembrete. Grava ao sair do campo ou no Enter, para cada letra não virar
- * um passo do desfazer.
+ * um passo do desfazer — e também ao trocar de aba, sair do jogo ou a página sumir (no celular,
+ * tocar num botão nem sempre tira o foco do campo).
  */
 function ConditionNote({ id, name, stored, run }: {
   id: ConditionId
@@ -42,10 +44,33 @@ function ConditionNote({ id, name, stored, run }: {
 }) {
   // null = sem edição em curso: mostra o que está gravado (e acompanha o desfazer).
   const [text, setText] = useState<string | null>(null)
+  const pending = useRef<string | null>(null)
   const value = text ?? stored
 
+  const flush = useCallback(() => {
+    const typed = pending.current
+    if (typed === null) return
+    pending.current = null
+    // Em segundo plano (não apaga o aviso da última ação). Se a condição saiu enquanto o texto
+    // estava pendente, a nota vai junto com ela: nada a gravar.
+    run(st => (st.conditions.includes(id) ? setConditionNote(st, id, typed) : { state: st, notices: [] }), { background: true })
+  }, [id, run])
+
+  useEffect(() => {
+    const unregister = registerPendingEdit(flush)
+    return () => {
+      unregister()
+      flush()
+    }
+  }, [flush])
+
+  function handleChange(typed: string) {
+    pending.current = typed
+    setText(typed)
+  }
+
   function commit() {
-    if (text !== null && text.trim() !== stored) run(st => setConditionNote(st, id, text))
+    flush()
     setText(null)
   }
 
@@ -60,7 +85,7 @@ function ConditionNote({ id, name, stored, run }: {
         type="text"
         value={value}
         maxLength={CONDITION_NOTE_MAX_LENGTH}
-        onChange={e => setText(e.target.value)}
+        onChange={e => handleChange(e.target.value)}
         onBlur={commit}
         aria-label={`Duração de ${name} (opcional)`}
         placeholder="Duração (opcional): até o fim do próximo turno…"

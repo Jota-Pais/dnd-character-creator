@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { usePlayStore, UNDO_LIMIT } from '../playStore'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { registerPendingEdit, usePlayStore, UNDO_LIMIT } from '../playStore'
 import {
   applyDamage, applyHealing, createPlayState, getCurrentHp, setInspiration, setNote,
 } from '../../utils/playState'
@@ -142,6 +142,19 @@ describe('usePlayStore', () => {
     usePlayStore.getState().setAppDice(true)
     expect(usePlayStore.getState().prefs.appDice).toBe(true)
     expect(loadPlayPreferences().appDice).toBe(true)
+  })
+
+  it('close grava antes as edições pendentes registradas; o desregistro tira da lista', () => {
+    usePlayStore.getState().open('c1', draft())
+    const flushNote = () => { usePlayStore.getState().run(st => setNote(st, 'pendente'), { background: true }) }
+    const flushOther = vi.fn()
+    const unregisterNote = registerPendingEdit(flushNote)
+    const unregister = registerPendingEdit(flushOther)
+    unregister()
+    usePlayStore.getState().close()
+    unregisterNote()
+    expect(loadPlayState('c1')?.note).toBe('pendente')
+    expect(flushOther).not.toHaveBeenCalled()
   })
 
   it('close esvazia a tela e run vira no-op', () => {

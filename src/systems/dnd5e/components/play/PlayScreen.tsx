@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useCharacterStore } from '../../stores/characterStore'
 import { PLAY_TABS, type PlayTabId } from './playTabs'
 import { PlaySettings } from './PlaySettings'
@@ -30,6 +30,21 @@ export function PlayScreen() {
   const [recipe, setRecipe] = useState<{ entry: RollGuideEntry; crit: boolean } | null>(null)
   const openRecipe = (entry: RollGuideEntry, options?: { crit?: boolean }) =>
     setRecipe({ entry, crit: options?.crit ?? false })
+
+  // No celular, trocar de app pode descartar a aba sem aviso: o que está sendo digitado (nota da
+  // sessão, nota de duração) grava assim que a página some.
+  useEffect(() => {
+    const flush = () => usePlayStore.getState().flushPendingEdits()
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') flush()
+    }
+    window.addEventListener('pagehide', flush)
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => {
+      window.removeEventListener('pagehide', flush)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
+  }, [])
 
   if (!view) {
     return (

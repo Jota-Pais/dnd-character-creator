@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { usePlayStore } from '../../../stores/playStore'
+import { loadPlayState } from '../../../utils/playStorage'
 import { openKrusk, resetPlay } from './openPlay'
 
 beforeEach(resetPlay)
@@ -34,6 +35,30 @@ describe('StatusTab — condições', () => {
     fireEvent.click(screen.getByRole('switch', { name: 'Envenenado' }))
     expect(playState().conditions).toEqual([])
     expect(playState().conditionNotes).toBeUndefined()
+  })
+
+  it('a nota de duração sem Enter nem blur grava ao trocar de aba e ao sair do jogo', () => {
+    openStatus()
+    fireEvent.click(screen.getByRole('switch', { name: 'Envenenado' }))
+    fireEvent.change(screen.getByLabelText('Duração de Envenenado (opcional)'), { target: { value: '1 hora' } })
+    fireEvent.click(screen.getByRole('tab', { name: 'Notas' }))
+    expect(playState().conditionNotes).toEqual({ poisoned: '1 hora' })
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Estado' }))
+    fireEvent.change(screen.getByLabelText('Duração de Envenenado (opcional)'), { target: { value: '2 horas' } })
+    const id = usePlayStore.getState().characterId!
+    fireEvent.click(screen.getByText('← Personagens'))
+    expect(loadPlayState(id)?.conditionNotes).toEqual({ poisoned: '2 horas' })
+  })
+
+  it('desligar a condição com a nota pendente não grava nem recusa nada', () => {
+    openStatus()
+    fireEvent.click(screen.getByRole('switch', { name: 'Envenenado' }))
+    fireEvent.change(screen.getByLabelText('Duração de Envenenado (opcional)'), { target: { value: '1 hora' } })
+    fireEvent.click(screen.getByRole('switch', { name: 'Envenenado' }))
+    expect(playState().conditions).toEqual([])
+    expect(playState().conditionNotes).toBeUndefined()
+    expect(usePlayStore.getState().notices.some(n => n.kind === 'refused')).toBe(false)
   })
 
   it('o desfazer volta a nota anterior no campo', () => {

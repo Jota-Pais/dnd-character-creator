@@ -3,7 +3,8 @@ import { render, screen, fireEvent, cleanup, act, within } from '@testing-librar
 import { PlayScreen } from '../PlayScreen'
 import { usePlayStore } from '../../../stores/playStore'
 import { roll, sequenceRoller } from '../../../../../core/dice'
-import { recordRoll } from '../../../utils/playState'
+import { applyDamage, recordRoll, startConcentration } from '../../../utils/playState'
+import { loadPlayState } from '../../../utils/playStorage'
 import { openKrusk, resetPlay } from './openPlay'
 
 beforeEach(resetPlay)
@@ -41,6 +42,42 @@ describe('NotesTab', () => {
     fireEvent.change(field, { target: { value: 'Dever 10 PO ao taverneiro' } })
     fireEvent.blur(field)
     expect(playState().note).toBe('Dever 10 PO ao taverneiro')
+  })
+
+  it('sair do jogo sem tirar o foco do campo grava a nota', () => {
+    const id = openKrusk()
+    openNotes()
+    fireEvent.change(screen.getByLabelText('Anotações da sessão'), { target: { value: 'O ferreiro mentiu' } })
+    fireEvent.click(screen.getByText('← Personagens'))
+    expect(usePlayStore.getState().state).toBeNull()
+    expect(loadPlayState(id)?.note).toBe('O ferreiro mentiu')
+  })
+
+  it('a página sumir (trocar de app, fechar a aba) grava a nota na hora', () => {
+    openKrusk()
+    openNotes()
+    const field = screen.getByLabelText('Anotações da sessão')
+    fireEvent.change(field, { target: { value: 'Pista: o selo do duque' } })
+    const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+    fireEvent(document, new Event('visibilitychange'))
+    visibility.mockRestore()
+    expect(playState().note).toBe('Pista: o selo do duque')
+
+    fireEvent.change(field, { target: { value: 'Pista: o selo do conde' } })
+    fireEvent(window, new Event('pagehide'))
+    expect(playState().note).toBe('Pista: o selo do conde')
+  })
+
+  it('o autosave da nota não apaga o aviso da última ação', () => {
+    openKrusk()
+    usePlayStore.getState().run(st => startConcentration(st, { label: 'Bênção' }, 0))
+    usePlayStore.getState().run((st, sh) => applyDamage(st, sh, { amount: 10 }))
+    openNotes()
+    const field = screen.getByLabelText('Anotações da sessão')
+    fireEvent.change(field, { target: { value: 'Ogro na ponte' } })
+    fireEvent.blur(field)
+    expect(playState().note).toBe('Ogro na ponte')
+    expect(screen.getByRole('status')).toHaveTextContent('CD 10')
   })
 
   it('histórico só com os dados do app, mais recente primeiro, 20 natural em destaque', () => {

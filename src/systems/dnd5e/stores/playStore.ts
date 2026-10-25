@@ -58,8 +58,28 @@ type PlayStoreState = {
   dismissNotices: () => void
   /** Liga/desliga os dados do app (preferência do aparelho, não da ficha). */
   setAppDice: (on: boolean) => void
-  /** Fecha o modo de jogo. O estado já está gravado; nada é regravado aqui. */
+  /**
+   * Grava as edições em curso na tela (`registerPendingEdit`): a nota digitada há pouco, a nota
+   * de duração sem Enter. A tela chama ao ser escondida (pagehide/visibilitychange).
+   */
+  flushPendingEdits: () => void
+  /**
+   * Fecha o modo de jogo. Antes, grava as edições em curso: quem fecha (sair, apagar a ficha) roda
+   * antes de a tela desmontar, e depois disso não haveria estado aberto onde gravar.
+   */
   close: () => void
+}
+
+/** As edições em curso na tela que ainda não viraram estado de jogo (ver `flushPendingEdits`). */
+const pendingEdits = new Set<() => void>()
+
+/**
+ * Registra o "gravar agora" de um campo com edição pendente; devolve o desregistro (para o
+ * cleanup do `useEffect` que registrou).
+ */
+export function registerPendingEdit(flush: () => void): () => void {
+  pendingEdits.add(flush)
+  return () => { pendingEdits.delete(flush) }
 }
 
 const CLOSED = {
@@ -138,5 +158,12 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
 
   setAppDice: (on) => set(s => ({ prefs: savePlayPreferences({ ...s.prefs, appDice: on }) })),
 
-  close: () => set({ ...CLOSED }),
+  flushPendingEdits: () => {
+    for (const flush of [...pendingEdits]) flush()
+  },
+
+  close: () => {
+    get().flushPendingEdits()
+    set({ ...CLOSED })
+  },
 }))

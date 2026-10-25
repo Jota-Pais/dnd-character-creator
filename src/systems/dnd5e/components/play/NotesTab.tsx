@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { keptFaces, type RollRecord } from '../../../../core/dice'
+import { registerPendingEdit } from '../../stores/playStore'
 import { formatModifier } from '../../utils/abilityScoreUtils'
 import { setNote } from '../../utils/playState'
 import type { PlayTabProps } from './usePlayView'
@@ -74,8 +75,15 @@ export function NotesTab({ state, appDice, run }: PlayTabProps) {
     setPending(p => (p === text ? null : p))
   }, [run])
 
-  // Trocar de aba ou sair do jogo não perde o que foi digitado.
-  useEffect(() => flush, [flush])
+  // Trocar de aba, sair do jogo ou esconder a página não perde o que foi digitado: o playStore
+  // chama o flush ao fechar e ao a tela sumir; o desmontar grava o que restar.
+  useEffect(() => {
+    const unregister = registerPendingEdit(flush)
+    return () => {
+      unregister()
+      flush()
+    }
+  }, [flush])
 
   function handleChange(text: string) {
     setPending(text)

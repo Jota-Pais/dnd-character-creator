@@ -3,6 +3,7 @@ import { CLASSES } from '../../utils/classUtils'
 import { stripInlineBold } from '../../utils/ruleText'
 import weaponsData from '../weapons.json'
 import spellsData from '../spells.json'
+import progressionFeatures from '../class-progression-features.json'
 
 /**
  * A digitalização do PHB vem de um PDF que usa Wingdings para os marcadores de lista: o extrator
@@ -115,5 +116,21 @@ describe('divergências pt-BR × inglês que seguem o inglês', () => {
   it('Ilusão Menor é S, M — o pt-BR diz V, M, mas a magia não tem componente verbal', () => {
     const spell = (spellsData as { id: string; components: string }[]).find(s => s.id === 'minor-illusion')
     expect(spell?.components).toBe('S, M (um pouco de lã)')
+  })
+})
+
+describe('características de classe que seguem o inglês', () => {
+  type Feature = { name: string; description: string }
+  const groups = progressionFeatures as Record<'classes' | 'subclasses', Record<string, Feature[]>>
+  const featureText = (name: string) =>
+    [...Object.values(groups.classes), ...Object.values(groups.subclasses)]
+      .flat()
+      .filter(f => f.name === name)
+      .map(f => f.description)
+
+  it('Presença Intimidante estende o medo até o FIM do próximo turno (pt-BR: "início")', () => {
+    const [text] = featureText('Presença Intimidante')
+    expect(text).toContain('estender o efeito até o fim do seu próximo turno')
+    expect(text).not.toContain('início')
   })
 })

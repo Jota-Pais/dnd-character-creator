@@ -674,7 +674,7 @@
       {
         "level": 10,
         "name": "Presença Intimidante",
-        "description": "Com uma ação, escolha uma criatura que você possa ver a até 9 m. Se ela puder ver ou ouvir você, faz um teste de resistência de Sabedoria (CD 8 + bônus de proficiência + mod. de Carisma) ou fica amedrontada por você até o fim do seu próximo turno. Nos turnos seguintes, você pode usar sua ação para estender o efeito até o início do seu próximo turno. O efeito termina se a criatura terminar o turno fora da sua linha de visão ou a mais de 18 m de você. Se ela passar na resistência, você não pode usar esta característica nela de novo por 24 horas."
+        "description": "Com uma ação, escolha uma criatura que você possa ver a até 9 m. Se ela puder ver ou ouvir você, faz um teste de resistência de Sabedoria (CD 8 + bônus de proficiência + mod. de Carisma) ou fica amedrontada por você até o fim do seu próximo turno. Nos turnos seguintes, você pode usar sua ação para estender o efeito até o fim do seu próximo turno. O efeito termina se a criatura terminar o turno fora da sua linha de visão ou a mais de 18 m de você. Se ela passar na resistência, você não pode usar esta característica nela de novo por 24 horas."
       },
       {
         "level": 14,

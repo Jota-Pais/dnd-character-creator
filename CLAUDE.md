@@ -107,6 +107,21 @@ Ao adicionar uma característica nova, prefira declará-la como efeito nos dados
 
 Em caso de divergência, voltar à fonte conceitual (o livro).
 
+### pt-BR × inglês (decisão de 2026-10-25)
+
+O livro do projeto é o PHB 2014 em português (`docs/_book-extracts/dnd-phb.txt`). Quando o pt-BR diverge do original em inglês por **erro claro de tradução que muda a regra**, os dados seguem o inglês; diferença só de redação, sem efeito de regra, fica com o pt-BR. Cada caso adotado entra na lista abaixo e num teste em `data/__tests__/bookText.test.ts` (o extract carrega o erro: copiar o trecho de novo, ou rodar `scripts/parse-spells.mjs` sobre `docs/magias`, o traria de volta — por isso a digitalização em `docs/` acompanha a correção quando os dados saem dela).
+
+Casos que seguem o inglês:
+
+- **Colheita Sinistra** (mago necromante, p. 100): o triplo é do nível **da magia**, não "do seu nível".
+- **Pedra de Transmutador** (mago transmutador, p. 101): trocar o benefício vem com magia de **transmutação**, não "de conjuração".
+- **Conjuração de Ritual do clérigo e do druida** (p. 65 e 73): magias **preparadas** com o descritor ritual, não "que você conheça" (texto copiado do bardo).
+- **Ilusão Menor**: componentes **S, M**, não "V, M" — a magia não tem componente verbal.
+- **Presença Intimidante** (bárbaro Furioso, p. 49): a ação seguinte estende o medo até o **fim** do próximo turno, não o "início".
+- **Golpe de Sorte** (ladino 20, p. 92): vale para **teste de habilidade** (não "um teste qualquer", que abriria para resistência), e o d20 vira 20 (sem "natural").
+
+Avaliado e mantido no pt-BR: **Presença Dracônica** (feiticeiro dracônico 18) — nenhuma das duas edições dá a CD da resistência, então não há divergência a corrigir.
+
 ## Testes
 
 - Cobertura **obrigatória** para:

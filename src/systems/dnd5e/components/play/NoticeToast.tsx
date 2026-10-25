@@ -1,6 +1,7 @@
+import { useLayoutEffect, useRef } from 'react'
 import { usePlayStore } from '../../stores/playStore'
 import type { DamageInput, PlayNotice, PlayNoticeKind } from '../../types/playState'
-import { applyDamageDroppingToOneHp, endConcentration } from '../../utils/playState'
+import { applyDamageDroppingToOneHp, endConcentration, standUp } from '../../utils/playState'
 import { describeRollGuide, getConcentrationGuide, type RollGuideEntry } from '../../utils/rollGuide'
 import type { PlayView } from './usePlayView'
 
@@ -20,26 +21,51 @@ const DEFAULT_STYLE = { prefix: '', className: 'border-parchment-800 bg-surface-
  * tela, com o "Desfazer" quando a ação mudou algo. O aviso de concentração traz a CD e a receita
  * do TR de Constituição (`getConcentrationGuide`), com atalho para a folha e para encerrar.
  */
-export function NoticeToast({ view, onOpenRecipe }: {
+export function NoticeToast({ view, onOpenRecipe, onHeightChange }: {
   view: PlayView
   onOpenRecipe: (entry: RollGuideEntry) => void
+  /**
+   * A altura ocupada no pé da tela (0 sem aviso): a tela usa como folga de fundo, para o aviso
+   * nunca cobrir o último controle (o "Registrar" do teste contra a morte).
+   */
+  onHeightChange?: (height: number) => void
 }) {
   const notices = usePlayStore(s => s.notices)
   const canUndo = usePlayStore(s => s.lastActionChanged && s.undoStack.length > 0)
   const undo = usePlayStore(s => s.undo)
   const dismiss = usePlayStore(s => s.dismissNotices)
+  const boxRef = useRef<HTMLDivElement>(null)
+  const open = notices.length > 0
 
-  if (notices.length === 0) return null
+  useLayoutEffect(() => {
+    const el = boxRef.current
+    if (!onHeightChange) return
+    if (!el) {
+      onHeightChange(0)
+      return
+    }
+    const report = () => onHeightChange(el.getBoundingClientRect().height)
+    report()
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(report)
+    observer?.observe(el)
+    return () => {
+      observer?.disconnect()
+      onHeightChange(0)
+    }
+  }, [open, onHeightChange])
+
+  if (!open) return null
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-30 pointer-events-none">
+    <div ref={boxRef} className="fixed inset-x-0 bottom-0 z-30 pointer-events-none">
       <div className="max-w-2xl mx-auto px-4 pb-4">
         <div
           role="status"
           aria-live="polite"
           className="pointer-events-auto rounded-xl border border-parchment-800 bg-surface-raised p-3 shadow-xl shadow-black/50"
         >
-          <ul className="space-y-1.5">
+          {/* Muitos avisos (um descanso com vários recursos) rolam dentro do cartão: ele nunca passa da metade da tela. */}
+          <ul className="space-y-1.5 max-h-[50vh] overflow-y-auto">
             {notices.map((n, i) => (
               <NoticeLine key={i} notice={n} view={view} onOpenRecipe={onOpenRecipe} canUndo={canUndo} />
             ))}
@@ -85,11 +111,24 @@ function NoticeLine({ notice, view, onOpenRecipe, canUndo }: {
   const concentration = notice.kind === 'concentrationCheck' && notice.dc !== undefined && view.state.concentration
     ? { ...getConcentrationGuide(view.draft, view.state, 0), dc: notice.dc }
     : null
+  // Acordou e continua Caído: o "Levantar" fica no próprio aviso (o da aba Estado está longe).
+  const canStandUp = notice.kind === 'regainedConsciousness' && view.state.lifeState === 'conscious'
+    && view.state.conditions.includes('prone')
 
   return (
     <li className={`rounded-lg border px-3 py-2 text-sm leading-snug ${style.className}`}>
       {style.prefix && <span className="font-bold">{style.prefix}</span>}
       {notice.text}
+      {canStandUp && (
+        <div className="mt-1.5">
+          <button
+            onClick={() => view.run((st, sh) => standUp(st, sh))}
+            className="min-h-10 rounded-lg border border-parchment-700 px-3 text-xs text-parchment-200 hover:border-gold-600"
+          >
+            Levantar
+          </button>
+        </div>
+      )}
       {dropDamage && (
         <div className="mt-1.5">
           <button

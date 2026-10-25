@@ -11,6 +11,9 @@ import { usePlayStore } from '../../stores/playStore'
 import { RollRecipeSheet, type RecipeLink } from './RollRecipeSheet'
 import { VitalsBar } from './VitalsBar'
 
+/** Folga de fundo sem aviso aberto (px): o fim da página não encosta na borda. */
+const MIN_BOTTOM_GAP = 128
+
 /**
  * Modo de jogo do D&D 5e: a ficha de UM personagem durante a sessão. Pensada para o celular
  * (360–430 px), numa coluna central no desktop. A ficha nunca muda aqui; tudo que a tela altera
@@ -25,6 +28,8 @@ export function PlayScreen() {
   const undoCount = usePlayStore(s => s.undoStack.length)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [tab, setTab] = useState<PlayTabId>(PLAY_TABS[0].id)
+  // Altura do aviso preso ao pé da tela: vira folga de fundo, para ele não cobrir o fim da página.
+  const [toastHeight, setToastHeight] = useState(0)
   // A receita aberta. Guarda a entrada, mas mostra a versão atual do guia: se uma condição muda
   // com a folha aberta, o modo e as notas acompanham. `crit`: dano aberto como acerto crítico.
   const [recipe, setRecipe] = useState<{ entry: RollGuideEntry; crit: boolean } | null>(null)
@@ -72,7 +77,7 @@ export function PlayScreen() {
 
   return (
     <div className="min-h-screen bg-surface-base text-parchment-200">
-      <div className="max-w-2xl mx-auto px-4 pb-32">
+      <div className="max-w-2xl mx-auto px-4" style={{ paddingBottom: Math.max(MIN_BOTTOM_GAP, Math.ceil(toastHeight) + 16) }}>
         <header className="pt-3 pb-2">
           <div className="flex items-center justify-between gap-2">
             <button
@@ -157,7 +162,7 @@ export function PlayScreen() {
         </section>
       </div>
 
-      <NoticeToast view={view} onOpenRecipe={openRecipe} />
+      <NoticeToast view={view} onOpenRecipe={openRecipe} onHeightChange={setToastHeight} />
 
       {liveRecipe && recipe && (
         <RollRecipeSheet

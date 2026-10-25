@@ -132,6 +132,29 @@ describe('desfazer e avisos', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(screen.getByRole('status')).toHaveTextContent('A concentração em Bênção terminou')
   })
+
+  it('curado a 0 PV e ainda Caído: o aviso traz o "Levantar"', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    damage('14')
+    // Sem usar a Resistência Implacável: fica a 0 PV e Caído.
+    expect(usePlayStore.getState().state?.conditions).toContain('prone')
+    fireEvent.click(screen.getByRole('button', { name: 'Cura' }))
+    fireEvent.change(screen.getByLabelText('Quanto de cura'), { target: { value: '3' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
+    const toast = screen.getByRole('status')
+    expect(toast).toHaveTextContent('Continua Caído até se levantar.')
+    fireEvent.click(within(toast).getByRole('button', { name: 'Levantar' }))
+    expect(usePlayStore.getState().state?.conditions).not.toContain('prone')
+    expect(screen.getByRole('status')).toHaveTextContent('Levantar-se custa metade do deslocamento')
+  })
+
+  it('muitos avisos rolam dentro do cartão, sem passar da metade da tela', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    damage('20')
+    expect(screen.getByRole('status').querySelector('ul')).toHaveClass('max-h-[50vh]', 'overflow-y-auto')
+  })
 })
 
 /** Faz o próximo d20 dos dados do app (Web Crypto) sair com a face dada. */

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import type { DeathSaveCount } from '../../types/playState'
 import { recordDeathSave, recordRoll, revive, stabilize } from '../../utils/playState'
 import { describeRollGuide } from '../../utils/rollGuide'
@@ -26,7 +26,13 @@ function Marks({ label, count, filled }: { label: string; count: DeathSaveCount;
  */
 export function DeathSaves({ view }: { view: PlayView }) {
   const { state, guide, appDice, run } = view
+  const rootRef = useRef<HTMLDivElement>(null)
   const [text, setText] = useState('')
+
+  // Caiu a 0 PV: o teste contra a morte vem para o meio da tela (o aviso da queda fica no pé).
+  useEffect(() => {
+    if (state.lifeState === 'dying') rootRef.current?.scrollIntoView?.({ block: 'center', behavior: 'smooth' })
+  }, [state.lifeState])
   // A rolagem do app que preencheu o campo: vai para o histórico junto com o teste.
   const [rolled, setRolled] = useState<GuideRoll | null>(null)
   const entry = guide.deathSave
@@ -81,7 +87,7 @@ export function DeathSaves({ view }: { view: PlayView }) {
   }
 
   return (
-    <div className="rounded-xl border border-red-900 bg-red-950/20 p-4">
+    <div ref={rootRef} className="rounded-xl border border-red-900 bg-red-950/20 p-4">
       <p className="font-fantasy font-bold text-red-300">Morrendo: testes contra a morte</p>
       <p className="mt-1 text-xs text-parchment-400 leading-snug">
         No início de cada turno, role {describeRollGuide(entry)}. 10 ou mais é sucesso; 1 conta dois fracassos; 20 recupera 1 PV e acorda.

@@ -45,6 +45,10 @@ describe('Descanso curto', () => {
     // A Fúria é de descanso longo: continua gasta.
     expect(playState().resourcesSpent).toEqual({ rage: 1 })
     expect(store().undoStack.length).toBe(undoBefore + 1)
+    // O aviso traz o resumo, não a conta de cada dado (que o rascunho já mostrou).
+    const toast = screen.getByRole('status')
+    expect(toast).toHaveTextContent('1 Dado de Vida: +5 PV (6 → 11).')
+    expect(toast).not.toHaveTextContent('d12: 3 + 2 = 5.')
 
     fireEvent.click(screen.getByRole('button', { name: 'Desfazer a última mudança' }))
     expect(playState().hitDiceSpent).toEqual({})

@@ -156,7 +156,20 @@ export function ShortRestPanel({ view, onClose }: { view: PlayTabProps; onClose:
         const r = spendHitDie(current, sh, { die: s.die, value: s.value })
         if (isRefused(r.notices)) return { state: st, notices: r.notices }
         current = s.record ? recordRoll(r.state, s.record).state : r.state
-        notices.push(...r.notices)
+        // A conta de cada dado o jogador já viu no rascunho: o aviso leva só o resumo (abaixo) e
+        // os alertas, uma vez cada.
+        for (const n of r.notices) {
+          if (n.kind === 'hitDie' || n.kind === 'healed') continue
+          if (!notices.some(m => m.kind === n.kind && m.text === n.text)) notices.push(n)
+        }
+      }
+      if (spends.length > 0) {
+        const before = getCurrentHp(st, sh)
+        const after = getCurrentHp(current, sh)
+        notices.unshift({
+          kind: 'healed',
+          text: `${countLabel(spends.length, 'Dado de Vida', 'Dados de Vida')}: +${after - before} PV (${before} → ${after}).`,
+        })
       }
       const rest = completeShortRest(current, sh, { hitDiceSpent: spends.length })
       if (isRefused(rest.notices)) return { state: st, notices: rest.notices }

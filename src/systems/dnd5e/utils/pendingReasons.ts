@@ -35,6 +35,9 @@ import {
   getEntrySpellcasting,
   getKnownColumnSecrets,
   getCantripColumn,
+  getSecretSpellIssues,
+  getSpell,
+  type SecretSpellIssue,
   getSpellsKnownCount,
   getSchoolRestrictionStatus,
   getWizardSpellbookSize,
@@ -224,7 +227,22 @@ function classEntryReasons(cls: GameClass, choices: ClassChoiceSelections, level
     }
   }
 
+  for (const issue of getSecretSpellIssues(cls.id, choices.subclass, level, choices.progressionChoices)) {
+    out.push(describeSecretSpellIssue(cls.name, issue))
+  }
+
   return out
+}
+
+/** O motivo de um problema nos Segredos Mágicos (getSecretSpellIssues), com o que trocar. */
+function describeSecretSpellIssue(className: string, issue: SecretSpellIssue): string {
+  const names = issue.cantrips.map(id => getSpell(id)?.name ?? id).join(', ')
+  return `${className}: ${issue.cantrips.length} Segredos Mágicos são truques (${names}), mas a coluna Truques Conhecidos `
+    + `tem ${issue.max} — troque ${countWordMasc(issue.excess)} por magia de 1º nível ou mais em Segredos Mágicos`
+}
+
+function countWordMasc(n: number): string {
+  return n === 1 ? 'um' : String(n)
 }
 
 function classReasons(draft: CharacterDraft): string[] {

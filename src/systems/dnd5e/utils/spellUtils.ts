@@ -221,6 +221,51 @@ export function getKnownColumnSecrets(
   return { cantrips, spells }
 }
 
+/**
+ * Quantos Segredos Mágicos (slots `countsAsKnownSpell`) podem ser truque: a coluna Truques
+ * Conhecidos inteira da classe no nível que tem nela (decisão do usuário, ver
+ * getKnownColumnSecrets). `used` são os que já são truque. O seletor da etapa Classe não deixa
+ * passar de `max`, e getSecretSpellIssues reprova a ficha antiga ou importada que passou.
+ */
+export function getSecretCantripRoom(
+  classId: string,
+  subclassId: string | null | undefined,
+  classLevel: number,
+  progressionChoices: Record<string, string[]> | undefined,
+): { max: number; used: string[] } {
+  const casting = getEntrySpellcasting(getClass(classId), subclassId)
+  const max = casting ? getCantripsNeeded(casting, classLevel) : 0
+  return { max, used: getKnownColumnSecrets(classId, subclassId, classLevel, progressionChoices).cantrips }
+}
+
+/** Um problema nos Segredos Mágicos de uma classe que só se resolve na etapa Classe. */
+export type SecretSpellIssue = {
+  kind: 'too-many-cantrips'
+  /** Os Segredos que são truque. */
+  cantrips: string[]
+  /** Vagas da coluna Truques Conhecidos. */
+  max: number
+  excess: number
+}
+
+/**
+ * Segredos Mágicos que a etapa Classe precisa trocar: mais truques do que a coluna Truques
+ * Conhecidos comporta. A etapa Classe reprova (draftValidation) e diz o motivo (pendingReasons).
+ */
+export function getSecretSpellIssues(
+  classId: string,
+  subclassId: string | null | undefined,
+  classLevel: number,
+  progressionChoices: Record<string, string[]> | undefined,
+): SecretSpellIssue[] {
+  const issues: SecretSpellIssue[] = []
+  const room = getSecretCantripRoom(classId, subclassId, classLevel, progressionChoices)
+  if (room.used.length > room.max) {
+    issues.push({ kind: 'too-many-cantrips', cantrips: room.used, max: room.max, excess: room.used.length - room.max })
+  }
+  return issues
+}
+
 /** Uma classe da ficha que conjura no nível que tem nela, com as magias que conhece. */
 export type CasterEntry = {
   entry: ClassEntry
@@ -492,12 +537,34 @@ export function getSpellChoiceOverflow(
     : type === 'hybrid' ? 'magias no grimório'
     : 'magias conhecidas'
   const label = caster.casting.label
-  const text = col.fromSecrets === 0
+  const text = col.fromSecrets > max
+    ? secretsOverflowText(label, col, 'magias de 1º nível ou mais', 'Magias Conhecidas', 'por um truque', 'as', 'escolhidas')
+    : col.fromSecrets === 0
     ? `${label}: ${chosen} ${what}, mas o máximo é ${max} — ${excess} a mais. Desmarque ${countWord(excess, 'uma')} na etapa Magias.`
     : `${label}: ${col.chosen} ${what} escolhidas + ${col.fromSecrets} de Segredos Mágicos = ${chosen}, mas o máximo é ${max} — ${excess} a mais. `
       + `Os Segredos Mágicos já ocupam vaga de Magias Conhecidas (p. 54): desmarque ${countWord(excess, 'uma')} das ${col.chosen} escolhidas na etapa Magias `
       + `(fica ${col.chosen - excess} + ${col.fromSecrets} = ${max}).`
   return { label, chosen, max, excess, fromSecrets: col.fromSecrets, text }
+}
+
+/**
+ * Os Segredos Mágicos sozinhos passam da coluna: desmarcar na etapa Magias não resolve, a troca é
+ * de Segredo, na etapa Classe (que fica pendente — getSecretSpellIssues). As escolhidas na etapa
+ * Magias, se houver, também sobram.
+ */
+function secretsOverflowText(
+  label: string,
+  col: KnownColumn,
+  what: string,
+  column: string,
+  swapFor: string,
+  article: 'os' | 'as',
+  chosenWord: string,
+): string {
+  const secretsExcess = col.fromSecrets - col.total
+  const also = col.chosen > 0 ? ` Depois, desmarque ${article} ${col.chosen} ${chosenWord} na etapa Magias: a coluna fica toda com os Segredos.` : ''
+  return `${label}: ${col.fromSecrets} Segredos Mágicos são ${what}, mas a coluna ${column} tem ${col.total}. `
+    + `Na etapa Classe, troque ${secretsExcess} desses Segredos ${swapFor}.${also}`
 }
 
 /**
@@ -512,7 +579,9 @@ export function getCantripChoiceOverflow(caster: CasterEntry): SpellChoiceOverfl
   if (chosen <= max) return null
   const excess = chosen - max
   const label = caster.casting.label
-  const text = col.fromSecrets === 0
+  const text = col.fromSecrets > max
+    ? secretsOverflowText(label, col, 'truques', 'Truques Conhecidos', 'por magia de 1º nível ou mais', 'os', 'escolhidos')
+    : col.fromSecrets === 0
     ? `${label}: ${chosen} truques, mas o máximo é ${max} — ${excess} a mais. Desmarque ${countWord(excess, 'um')} na etapa Magias.`
     : `${label}: ${col.chosen} truques escolhidos + ${col.fromSecrets} de Segredos Mágicos = ${chosen}, mas o máximo é ${max} — ${excess} a mais. `
       + `O Segredo Mágico escolhido como truque ocupa vaga de Truques Conhecidos: desmarque ${countWord(excess, 'um')} dos ${col.chosen} escolhidos na etapa Magias `

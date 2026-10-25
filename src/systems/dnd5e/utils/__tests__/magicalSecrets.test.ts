@@ -9,7 +9,10 @@ import {
   getCantripChoiceOverflow,
   getMaxSpellLevel,
   getSpell,
+  getSecretCantripRoom,
+  getSecretSpellIssues,
 } from '../spellUtils'
+import { collectStepReasons } from '../pendingReasons'
 import { isStepComplete } from '../draftValidation'
 import { getSecretSpellOptions } from '../progressionOptions'
 import { getFinalAbilityScores } from '../asiUtils'
@@ -26,24 +29,39 @@ const BARD_SPELLS = [
   'teleportation-circle', 'clairvoyance', 'comprehend-languages', 'compulsion',
 ]
 
-function bard10(opts: {
+type BardOpts = {
   subclass: string
   cantrips: string[]
   spells: string[]
   progressionChoices: Record<string, string[]>
-}): CharacterDraft {
+}
+
+/** Escolhas da etapa Classe do bardo completas (perícias, instrumentos, Aptidão), exceto os Segredos. */
+function bardClassChoices(subclass: string, progressionChoices: Record<string, string[]>) {
+  return {
+    ...structuredClone(EMPTY_DRAFT.classChoices),
+    skills: ['acrobatics', 'deception', 'performance'],
+    tools: ['lute', 'flute', 'pan-flute'],
+    expertiseItems: ['acrobatics', 'deception', 'performance', 'persuasion'],
+    subclass,
+    subclassExtras: subclass === 'college-of-lore' ? { skills: ['arcana', 'history', 'nature'] } : {},
+    progressionChoices,
+  }
+}
+
+function bardAt(level: number, opts: BardOpts): CharacterDraft {
   return {
     ...structuredClone(EMPTY_DRAFT),
     class: 'bard',
-    level: 10,
+    level,
     abilityScores: { STR: 10, DEX: 14, CON: 12, INT: 10, WIS: 10, CHA: 16 },
-    classChoices: {
-      ...structuredClone(EMPTY_DRAFT.classChoices),
-      subclass: opts.subclass,
-      progressionChoices: opts.progressionChoices,
-    },
+    classChoices: bardClassChoices(opts.subclass, opts.progressionChoices),
     spellChoices: { cantrips: opts.cantrips, spells: opts.spells },
   }
+}
+
+function bard10(opts: BardOpts): CharacterDraft {
+  return bardAt(10, opts)
 }
 
 function columns(draft: CharacterDraft) {
@@ -179,5 +197,82 @@ describe('seletor de Segredos Mágicos: nível que o bardo conjura, ou truque (p
     const wish = options.find(o => o.id === 'wish')
     expect(wish?.description).toContain('acima do 3º nível')
     expect(options.some(o => o.id === 'meteor-swarm')).toBe(false)
+  })
+})
+
+describe('Segredos truque não passam da coluna Truques Conhecidos', () => {
+  const SIX_CANTRIPS = ['shillelagh', 'sacred-flame', 'fire-bolt', 'ray-of-frost', 'eldritch-blast', 'guidance']
+  const sixCantripSecrets = {
+    'bard-magical-secrets-10': SIX_CANTRIPS.slice(0, 2),
+    'bard-magical-secrets-14': SIX_CANTRIPS.slice(2, 4),
+    'bard-magical-secrets-18': SIX_CANTRIPS.slice(4, 6),
+  }
+
+  it('bardo 18 com os 6 Segredos truque: a etapa Classe reprova e diz o que trocar', () => {
+    const draft = bardAt(18, { subclass: 'college-of-valor', cantrips: [], spells: [], progressionChoices: sixCantripSecrets })
+    expect(getSecretCantripRoom('bard', 'college-of-valor', 18, sixCantripSecrets)).toEqual({ max: 4, used: SIX_CANTRIPS })
+    expect(getSecretSpellIssues('bard', 'college-of-valor', 18, sixCantripSecrets))
+      .toEqual([{ kind: 'too-many-cantrips', cantrips: SIX_CANTRIPS, max: 4, excess: 2 }])
+    expect(isStepComplete(draft, 'class')).toBe(false)
+    const reasons = collectStepReasons(draft, 'class')
+    expect(reasons).toHaveLength(1)
+    expect(reasons[0]).toContain('Bardo: 6 Segredos Mágicos são truques (Bordão Místico, Chama Sagrada, ')
+    expect(reasons[0]).toContain('a coluna Truques Conhecidos tem 4 — troque 2 por magia de 1º nível ou mais em Segredos Mágicos')
+  })
+
+  it('o aviso de excesso manda trocar o Segredo na etapa Classe, nunca "desmarque N dos 0"', () => {
+    const draft = bardAt(18, { subclass: 'college-of-valor', cantrips: [], spells: [], progressionChoices: sixCantripSecrets })
+    const overflow = getCantripChoiceOverflow(columns(draft).caster)
+    expect(overflow?.text).toBe(
+      'Bardo: 6 Segredos Mágicos são truques, mas a coluna Truques Conhecidos tem 4. '
+      + 'Na etapa Classe, troque 2 desses Segredos por magia de 1º nível ou mais.',
+    )
+    expect(overflow?.text).not.toContain('desmarque')
+
+    // Com truques escolhidos na etapa Magias, eles também sobram.
+    const withChosen = { ...draft, spellChoices: { cantrips: BARD_CANTRIPS.slice(0, 2), spells: [] } }
+    expect(getCantripChoiceOverflow(columns(withChosen).caster)?.text)
+      .toContain('Depois, desmarque os 2 escolhidos na etapa Magias')
+  })
+
+  it('com 4 Segredos truque (a coluna cheia) a etapa Classe fecha; o 5º reprova', () => {
+    const four = {
+      'bard-magical-secrets-10': SIX_CANTRIPS.slice(0, 2),
+      'bard-magical-secrets-14': SIX_CANTRIPS.slice(2, 4),
+      'bard-magical-secrets-18': ['fireball', 'counterspell'],
+    }
+    const ok = bardAt(18, { subclass: 'college-of-valor', cantrips: [], spells: [], progressionChoices: four })
+    expect(getSecretCantripRoom('bard', 'college-of-valor', 18, four).used).toHaveLength(4)
+    expect(isStepComplete(ok, 'class')).toBe(true)
+    expect(collectStepReasons(ok, 'class')).toEqual([])
+
+    const five = { ...four, 'bard-magical-secrets-18': ['eldritch-blast', 'counterspell'] }
+    expect(isStepComplete({ ...ok, classChoices: bardClassChoices('college-of-valor', five) }, 'class')).toBe(false)
+  })
+
+  it('bardo 18 como classe adicional (guerreiro 2 / bardo 18) também é conferido, no nível de bardo', () => {
+    const draft: CharacterDraft = {
+      ...structuredClone(EMPTY_DRAFT),
+      class: 'fighter',
+      level: 20,
+      abilityScores: { STR: 14, DEX: 14, CON: 12, INT: 10, WIS: 10, CHA: 16 },
+      classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), skills: ['athletics', 'perception'], fightingStyle: 'defense' },
+      additionalClasses: [{
+        classId: 'bard',
+        level: 18,
+        classChoices: { ...bardClassChoices('college-of-valor', sixCantripSecrets), skills: ['performance'], tools: [] },
+        spellChoices: { cantrips: [], spells: [] },
+        asiChoices: [],
+        hpRolls: [],
+      }],
+      multiclass: true,
+    }
+    expect(isStepComplete(draft, 'class')).toBe(false)
+    expect(collectStepReasons(draft, 'class')[0]).toContain('Bardo: 6 Segredos Mágicos são truques')
+
+    const fixed = structuredClone(draft)
+    fixed.additionalClasses[0].classChoices.progressionChoices['bard-magical-secrets-18'] = ['fireball', 'counterspell']
+    expect(isStepComplete(fixed, 'class')).toBe(true)
+    expect(collectStepReasons(fixed, 'class')).toEqual([])
   })
 })

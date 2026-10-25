@@ -20,7 +20,7 @@ import { getRace, getSubrace, isRaceStepComplete } from './raceUtils'
 import { getClass, getSubclass, getSpellcastingSource, isClassStepComplete } from './classUtils'
 import { getBackground, isBackgroundStepComplete, sanitizeBackgroundItemSelections } from './backgroundUtils'
 import { isAbilitiesStepComplete } from './abilityScoreUtils'
-import { getSpell, isSpellStepComplete } from './spellUtils'
+import { getSpell, getSecretSpellIssues, isSpellStepComplete } from './spellUtils'
 import { isEquipmentStepComplete } from './equipmentUtils'
 import { isImprovementsStepComplete, getFinalAbilityScores } from './asiUtils'
 import { areFeatChoicesComplete, hasRepeatedFightingStyle } from './sheetEffects'
@@ -335,6 +335,11 @@ export function sanitizeImportedDraft(raw: unknown): CharacterDraft | null {
   }
 }
 
+/** Segredos Mágicos que só se resolvem trocando na etapa Classe (ficha antiga ou importada). */
+function hasSecretSpellIssues(classId: string, choices: ClassChoiceSelections, classLevel: number): boolean {
+  return getSecretSpellIssues(classId, choices.subclass, classLevel, choices.progressionChoices).length > 0
+}
+
 /** Completude de um passo específico do wizard, a partir do estado atual do draft. */
 export function isStepComplete(draft: CharacterDraft, step: WizardStep): boolean {
   const race = draft.race ? (getRace(draft.race) ?? null) : null
@@ -354,11 +359,13 @@ export function isStepComplete(draft: CharacterDraft, step: WizardStep): boolean
     case 'class': {
       // Classe primária no nível dela (total − adicionais); cada adicional no nível dela
       // (com o subconjunto de proficiências de multiclasse); orçamento não pode estourar.
-      if (!isClassStepComplete(cls, draft.classChoices, getPrimaryLevel(draft))) return false
+      if (!cls || !isClassStepComplete(cls, draft.classChoices, getPrimaryLevel(draft))) return false
+      if (hasSecretSpellIssues(cls.id, draft.classChoices, getPrimaryLevel(draft))) return false
       if (getAdditionalLevelsUsed(draft) > draft.level - 1) return false
       for (const entry of draft.additionalClasses) {
         const ec = getClass(entry.classId) ?? null
         if (!isClassStepComplete(ec, entry.classChoices, entry.level, true)) return false
+        if (hasSecretSpellIssues(entry.classId, entry.classChoices, entry.level)) return false
       }
       // O mesmo Estilo de Luta não vale duas vezes, nem vindo de classes diferentes (p. 85).
       return !hasRepeatedFightingStyle(draft)

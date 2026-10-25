@@ -18,7 +18,7 @@ import { LanguagePicker } from '../common/LanguagePicker'
 import toolsData from '../../data/tools.json'
 import { getProgressionSlotsUpToLevel, SPELL_OPTIONS_LIST_ID, type ProgressionSlot } from '../../utils/progressionChoiceUtils'
 import { getProgressionOptions, getSecretSpellOptions, type ProgressionOption } from '../../utils/progressionOptions'
-import { getMaxSpellLevel } from '../../utils/spellUtils'
+import { getMaxSpellLevel, getSecretCantripRoom, getSpell } from '../../utils/spellUtils'
 import type { ClassSlotProficiencies } from '../../utils/proficiencyUtils'
 import type { TakenFightingStyles } from '../../utils/sheetEffects'
 
@@ -675,6 +675,13 @@ function ProgressionChoicesPanel({
           // Segredos Mágicos escolhe entre TODAS as magias do jogo — card catalog não serve
           // pra 361 opções. Esse caso fica na lista compacta com busca.
           if (optionsListId === SPELL_OPTIONS_LIST_ID) {
+            // Segredo truque ocupa vaga de Truques Conhecidos: com a coluna cheia de Segredos, o
+            // próximo tem de ser magia de 1º nível ou mais.
+            const cantripRoom = slot.countsAsKnownSpell
+              ? getSecretCantripRoom(classId, subclassId, level, choices.progressionChoices)
+              : null
+            const cantripsFull = cantripRoom !== null && cantripRoom.used.length >= cantripRoom.max
+            const isLocked = (optId: string) => cantripsFull && getSpell(optId)?.level === 0
             return (
               <ChoiceSection key={slot.id} title={title} accent={accent}>
                 <p className="text-xs text-parchment-500 mb-2">
@@ -683,13 +690,22 @@ function ProgressionChoicesPanel({
                     ? 'Já faz parte das suas magias conhecidas (p. 54): ocupa uma vaga de Magias Conhecidas — ou de Truques Conhecidos, se for truque — e a etapa Magias pede uma a menos.'
                     : 'Não conta no número de magias conhecidas (p. 55): vem por cima das escolhidas na etapa Magias.'}
                 </p>
+                {cantripsFull && cantripRoom && currentPicked.length < slot.count && (
+                  <p className="text-xs mb-2 rounded-lg border border-parchment-800 px-3 py-2 text-parchment-300">
+                    Seus {cantripRoom.max} Truques Conhecidos já são todos Segredos Mágicos: os próximos Segredos têm de ser magia de 1º nível ou mais.
+                  </p>
+                )}
                 <SpellPickerList
                   options={options}
                   picked={currentPicked}
                   previousPicks={previousPicks}
                   max={slot.count}
+                  isLocked={isLocked}
                   accent={accent}
-                  onToggle={optId => handleOptionToggle(slot.id, optId, slot.count)}
+                  onToggle={optId => {
+                    if (isLocked(optId) && !currentPicked.includes(optId)) return
+                    handleOptionToggle(slot.id, optId, slot.count)
+                  }}
                 />
               </ChoiceSection>
             )
@@ -728,6 +744,7 @@ function SpellPickerList({
   picked,
   previousPicks,
   max,
+  isLocked,
   accent,
   onToggle,
 }: {
@@ -735,6 +752,8 @@ function SpellPickerList({
   picked: string[]
   previousPicks: Set<string>
   max: number
+  /** Opção que não pode entrar agora (truque com Truques Conhecidos cheios de Segredos). */
+  isLocked?: (optionId: string) => boolean
   accent: string
   onToggle: (optionId: string) => void
 }) {
@@ -765,7 +784,7 @@ function SpellPickerList({
           const pickedEarlier = previousPicks.has(opt.id)
           const isPicked = picked.includes(opt.id)
           const selected = isPicked || pickedEarlier
-          const disabled = pickedEarlier || (!isPicked && picked.length >= max)
+          const disabled = pickedEarlier || (!isPicked && (picked.length >= max || (isLocked?.(opt.id) ?? false)))
 
           return (
             <button

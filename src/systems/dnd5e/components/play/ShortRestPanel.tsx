@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import type { RollRecord } from '../../../../core/dice'
+import { usePlayStore, type ShortRestSpend } from '../../stores/playStore'
 import type { PlayNotice, PlaySheet, PlayState } from '../../types/playState'
 import {
   completeShortRest, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable, isAtZeroHp, previewShortRest,
@@ -9,9 +10,6 @@ import type { RollGuideEntry } from '../../utils/rollGuide'
 import { rollGuideEntry } from './playDice'
 import type { PlayTabProps } from './usePlayView'
 
-/** Um Dado de Vida do rascunho: o tipo, a face tirada e a rolagem do app que a deu (se houve). */
-type DraftSpend = { die: number; value: number; record: RollRecord | null }
-
 type Simulation = { state: PlayState; lines: string[]; warnings: string[]; refused: string | null }
 
 const isRefused = (notices: PlayNotice[]) => notices.some(n => n.kind === 'refused')
@@ -20,7 +18,7 @@ const isRefused = (notices: PlayNotice[]) => notices.some(n => n.kind === 'refus
  * Aplica o rascunho ao estado atual, só para mostrar (nada é gravado): a conta de cada dado, o PV
  * parcial e o que ainda resta. Para no primeiro dado recusado.
  */
-function simulate(state: PlayState, sheet: PlaySheet, spends: DraftSpend[]): Simulation {
+function simulate(state: PlayState, sheet: PlaySheet, spends: ShortRestSpend[]): Simulation {
   let current = state
   const lines: string[] = []
   const warnings: string[] = []
@@ -114,11 +112,13 @@ function HitDieInput({ die, available, entry, appDice, onAdd }: {
  * Descanso curto (pág. 188) num rascunho, como pede `regras-descanso.md` (6.2): o jogador gasta os
  * Dados de Vida um a um, vê a conta e o PV parcial, pode desfazer o último dado, e nada é gravado
  * até o "Concluir" — que aplica tudo (dados, Pacto, recursos de recarga curta) numa operação só,
- * com um passo só no desfazer geral. Cancelar descarta o rascunho.
+ * com um passo só no desfazer geral. Cancelar descarta o rascunho. O rascunho mora no playStore
+ * (`shortRestDraft`): trocar de aba no meio do descanso não perde os dados já gastos.
  */
 export function ShortRestPanel({ view, onClose }: { view: PlayTabProps; onClose: () => void }) {
   const { state, sheet, guide, appDice, run } = view
-  const [spends, setSpends] = useState<DraftSpend[]>([])
+  const spends = usePlayStore(s => s.shortRestDraft)
+  const setSpends = usePlayStore(s => s.setShortRestDraft)
   const [error, setError] = useState<string | null>(null)
 
   const sim = simulate(state, sheet, spends)

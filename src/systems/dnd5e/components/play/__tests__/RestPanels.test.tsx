@@ -61,6 +61,26 @@ describe('Descanso curto', () => {
     expect(screen.getByTestId('hp-current')).toHaveTextContent('6')
   })
 
+  it('o rascunho sobrevive à troca de aba; cancelar e sair do jogo o descartam', () => {
+    openHurtKrusk()
+    fireEvent.click(screen.getByRole('button', { name: 'Descanso curto' }))
+    spendDie('9')
+    fireEvent.click(screen.getByRole('tab', { name: 'Testes' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Estado' }))
+    expect(screen.getByRole('button', { name: 'Descanso curto' })).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByTestId('short-rest-draft')).toHaveTextContent('d12: 9 + 2 = 11.')
+    expect(playState().hitDiceSpent).toEqual({})
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(store().shortRestDraft).toEqual([])
+    fireEvent.click(screen.getByRole('button', { name: 'Descanso curto' }))
+    expect(screen.queryByTestId('short-rest-draft')).toBeNull()
+
+    spendDie('5')
+    store().close()
+    expect(store()).toMatchObject({ restPanel: null, shortRestDraft: [] })
+  })
+
   it('sem Dados de Vida disponíveis, o campo some', () => {
     openHurtKrusk()
     fireEvent.click(screen.getByRole('button', { name: 'Descanso curto' }))

@@ -21,6 +21,12 @@ export type PlayOperation = (state: PlayState, sheet: PlaySheet) => PlayResult
  */
 export type RunOptions = { background?: boolean }
 
+/** Um Dado de Vida do rascunho do descanso curto: o tipo, a face tirada e a rolagem do app (se houve). */
+export type ShortRestSpend = { die: number; value: number; record: RollRecord | null }
+
+/** O painel de descanso aberto na aba Estado. */
+export type RestPanel = 'short' | 'long'
+
 type PlayStoreState = {
   characterId: string | null
   characterName: string
@@ -37,6 +43,12 @@ type PlayStoreState = {
    */
   lastActionChanged: boolean
   prefs: PlayPreferences
+  /**
+   * Rascunho do descanso: o painel aberto e os Dados de Vida já gastos no curto. Efêmero (não é
+   * gravado nem entra no desfazer), mas mora aqui para sobreviver à troca de aba.
+   */
+  restPanel: RestPanel | null
+  shortRestDraft: ShortRestSpend[]
 
   /** Abre a ficha salva `id` no modo de jogo: monta o `PlaySheet` e carrega (ou cria) o estado. */
   open: (id: string, draft: CharacterDraft) => void
@@ -58,6 +70,9 @@ type PlayStoreState = {
   dismissNotices: () => void
   /** Liga/desliga os dados do app (preferência do aparelho, não da ficha). */
   setAppDice: (on: boolean) => void
+  /** Abre um painel de descanso (null fecha). Abrir, fechar ou trocar descarta o rascunho do curto. */
+  setRestPanel: (panel: RestPanel | null) => void
+  setShortRestDraft: (spends: ShortRestSpend[]) => void
   /**
    * Grava as edições em curso na tela (`registerPendingEdit`): a nota digitada há pouco, a nota
    * de duração sem Enter. A tela chama ao ser escondida (pagehide/visibilitychange).
@@ -90,6 +105,8 @@ const CLOSED = {
   undoStack: [],
   notices: [],
   lastActionChanged: false,
+  restPanel: null,
+  shortRestDraft: [],
 } satisfies Partial<PlayStoreState>
 
 /** Mudou de verdade? Operações sem efeito devolvem o mesmo objeto; as demais, um novo. */
@@ -117,6 +134,7 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
       ? savePlayState(loaded.state)
       : loaded.state
     set({
+      ...CLOSED,
       characterId: id,
       characterName: draft.name.trim(),
       sheet,
@@ -164,6 +182,10 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
   dismissNotices: () => set({ notices: [] }),
 
   setAppDice: (on) => set(s => ({ prefs: savePlayPreferences({ ...s.prefs, appDice: on }) })),
+
+  setRestPanel: (panel) => set({ restPanel: panel, shortRestDraft: [] }),
+
+  setShortRestDraft: (spends) => set({ shortRestDraft: spends }),
 
   flushPendingEdits: () => {
     for (const flush of [...pendingEdits]) flush()

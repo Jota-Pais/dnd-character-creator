@@ -1,4 +1,5 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
+import { usePlayStore } from '../../stores/playStore'
 import { describeHpMaxImmunity, endConcentration, setExhaustion, startConcentration } from '../../utils/playState'
 import { EXHAUSTION } from '../../utils/sheetEffects'
 import { ConditionsSection } from './ConditionsSection'
@@ -114,7 +115,9 @@ function ConcentrationSection({ state, run }: PlayTabProps) {
 
 /** Os dois descansos; um painel aberto por vez, cada um com o seu "Concluir"/"Cancelar". */
 function RestSection(view: PlayTabProps) {
-  const [open, setOpen] = useState<'short' | 'long' | null>(null)
+  // No playStore, não aqui: a aba desmonta ao trocar, e o descanso em curso não pode sumir.
+  const open = usePlayStore(s => s.restPanel)
+  const setOpen = usePlayStore(s => s.setRestPanel)
   const close = () => setOpen(null)
   const tabs = [
     { id: 'short' as const, label: 'Descanso curto' },

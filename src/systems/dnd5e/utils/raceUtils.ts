@@ -2,6 +2,7 @@ import type { Race, Subrace, AbilityBonus, RaceChoice, AbilityChoice, GrantedPro
 import type { RaceChoiceSelections } from '../types/character'
 import type { Spell } from '../types/spell'
 import racesData from '../data/races.json'
+import toolsData from '../data/tools.json'
 // Dado bruto, não spellUtils: spellUtils → classUtils → raceUtils fecharia um ciclo de import.
 import spellsData from '../data/spells.json'
 import { getFeat } from './featUtils'
@@ -80,12 +81,15 @@ export const RACE_PRESENTATION: Record<string, RacePresentation> = {
   tiefling:   { emoji: '🔮',  accent: '#c084fc' },
 }
 
-export const TOOL_NAMES: Record<string, string> = {
-  'smiths-tools': 'Ferramentas de Ferreiro',
-  'brewers-tools': 'Suprimentos de Cervejeiro', // p. 20 e tools.json: "suprimentos de cervejeiro"
-  'masons-tools': 'Ferramentas de Pedreiro',
-  'tinkers-tools': 'Ferramentas de Engenhoqueiro',
-}
+/**
+ * Nome de cada ferramenta, lido de tools.json: o mesmo da etapa Raça, da Revisão e da ficha. Era
+ * uma cópia à mão, e o gnomo das rochas saía com "Ferramentas de Engenhoqueiro" na ficha e
+ * "Ferramentas de Funileiro" na Revisão. O item leva o nome da tabela de equipamento (p. 156); o
+ * texto do traço Engenhoqueiro (races.json) segue a redação do livro (p. 37).
+ */
+export const TOOL_NAMES: Record<string, string> = Object.fromEntries(
+  (toolsData as { id: string; name: string }[]).map(t => [t.id, t.name]),
+)
 
 export function getRace(raceId: string): Race | undefined {
   return RACES.find(r => r.id === raceId)

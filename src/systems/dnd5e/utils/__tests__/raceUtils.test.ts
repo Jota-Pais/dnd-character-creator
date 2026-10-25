@@ -14,9 +14,23 @@ import {
   getEffectiveTraitsWithChoices,
   describeInnateSpellUsage,
   RACES,
+  TOOL_NAMES,
 } from '../raceUtils'
+import { getToolName } from '../backgroundUtils'
+import toolsData from '../../data/tools.json'
 import type { RaceChoiceSelections } from '../../types/character'
 import type { RaceChoice } from '../../types/race'
+
+describe('TOOL_NAMES', () => {
+  it('ferramentas do gnomo das rochas têm o nome da tabela de equipamento (p. 156) em todo lugar', () => {
+    expect(TOOL_NAMES['tinkers-tools']).toBe('Ferramentas de Funileiro')
+    expect(getToolName('tinkers-tools')).toBe('Ferramentas de Funileiro')
+  })
+
+  it('é o nome de tools.json para toda ferramenta (não uma cópia à mão)', () => {
+    for (const t of toolsData) expect(TOOL_NAMES[t.id]).toBe(getToolName(t.id))
+  })
+})
 
 const dwarf = getRace('dwarf')!
 const hillDwarf = getSubrace(dwarf, 'hill-dwarf')!

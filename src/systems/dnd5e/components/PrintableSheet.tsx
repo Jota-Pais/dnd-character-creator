@@ -3,7 +3,7 @@ import { useCharacterStore } from '../stores/characterStore'
 import type { AbilityScore } from '../types/race'
 import {
   getRace, getSubrace, getEffectiveDarkvision, SKILLS,
-  getAvailableInnateSpells, getEffectiveTraitsWithChoices, TOOL_NAMES, describeInnateSpellUsage,
+  getAvailableInnateSpells, getEffectiveTraitsWithChoices, describeInnateSpellUsage,
 } from '../utils/raceUtils'
 import {
   getClass,
@@ -453,7 +453,7 @@ export function PrintableSheet() {
       <Box title="Proficiências & Idiomas" className="mb-4">
         {armorProficiencies.length > 0 && <p className="text-xs mb-0.5"><span className="text-gray-600">Armaduras: </span>{armorProficiencies.join(', ')}</p>}
         {weaponProficiencies.length > 0 && <p className="text-xs mb-0.5"><span className="text-gray-600">Armas: </span>{weaponProficiencies.join(', ')}</p>}
-        {allTools.length > 0 && <p className="text-xs mb-0.5"><span className="text-gray-600">Ferramentas: </span>{allTools.map(t => `${TOOL_NAMES[t] ?? getToolName(t)}${expertiseTools.includes(t) ? ' (bônus dobrado)' : ''}`).join(', ')}</p>}
+        {allTools.length > 0 && <p className="text-xs mb-0.5"><span className="text-gray-600">Ferramentas: </span>{allTools.map(t => `${getToolName(t)}${expertiseTools.includes(t) ? ' (bônus dobrado)' : ''}`).join(', ')}</p>}
         <p className="text-xs"><span className="text-gray-600">Idiomas: </span>{languages.join(', ') || '—'}</p>
         {hasExoticNote && <p className="text-[10px] text-gray-600">{EXOTIC_LANGUAGE_NOTE}</p>}
         {/* p. 144 — a ficha vai pra mesa, então o custo de usar armadura sem proficiência vai junto. */}

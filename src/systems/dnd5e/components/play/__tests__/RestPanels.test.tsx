@@ -55,6 +55,14 @@ describe('Descanso curto', () => {
     expect(screen.getByTestId('hp-current')).toHaveTextContent('6')
   })
 
+  it('face fora do dado apaga o botão e explica o que digitar', () => {
+    openHurtKrusk()
+    fireEvent.click(screen.getByRole('button', { name: 'Descanso curto' }))
+    fireEvent.change(screen.getByLabelText('Quanto tirou no d12'), { target: { value: '14' } })
+    expect(screen.getByRole('button', { name: 'Gastar d12' })).toBeDisabled()
+    expect(screen.getByText(/Digite só o que saiu no d12 \(1 a 12\)/)).toBeInTheDocument()
+  })
+
   it('"desfazer o último dado" e cancelar descartam o rascunho', () => {
     openHurtKrusk()
     fireEvent.click(screen.getByRole('button', { name: 'Descanso curto' }))

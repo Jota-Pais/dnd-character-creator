@@ -105,6 +105,11 @@ function HitDieInput({ die, available, entry, appDice, onAdd }: {
           </button>
         </form>
       )}
+      {available > 0 && text.trim() !== '' && !valid && (
+        <p className="mt-1 text-[11px] text-red-300 leading-snug" aria-live="polite">
+          Digite só o que saiu no d{die} (1 a {die}); o app soma o modificador de Constituição.
+        </p>
+      )}
     </li>
   )
 }

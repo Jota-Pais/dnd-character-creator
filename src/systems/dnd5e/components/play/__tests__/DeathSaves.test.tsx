@@ -40,8 +40,11 @@ describe('DeathSaves', () => {
     openKrusk()
     dropToZero()
     render(<PlayScreen />)
+    expect(screen.queryByText(/Digite o d20 que saiu/)).toBeNull()
     fireEvent.change(screen.getByLabelText(/d20 que você tirou/), { target: { value: '21' } })
     expect(screen.getByRole('button', { name: 'Registrar' })).toBeDisabled()
+    // O botão apagado diz por quê.
+    expect(screen.getByText('Digite o d20 que saiu (1 a 20); o app soma o resto.')).toBeInTheDocument()
   })
 
   it('"Estabilizar" para os testes contra a morte', () => {

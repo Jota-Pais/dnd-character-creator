@@ -132,6 +132,11 @@ export function DeathSaves({ view }: { view: PlayView }) {
           Registrar
         </button>
       </form>
+      {text.trim() !== '' && !valid && (
+        <p className="mt-1 text-[11px] text-red-300 leading-snug" aria-live="polite">
+          Digite o d20 que saiu (1 a 20); o app soma o resto.
+        </p>
+      )}
 
       <button
         onClick={() => run(st => stabilize(st))}

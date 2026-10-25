@@ -5,7 +5,7 @@ import type { CharacterDraft, ClassEntry } from '../types/character'
 import { calculateModifier, getProficiencyBonus } from './abilityScoreUtils'
 import { isActiveCaster, getClass, getSpellcastingSource } from './classUtils'
 import { allClassEntries, getCasterProgression, getCombinedCasterLevel } from './multiclassUtils'
-import { getKnownColumnSecretIds, getProgressionSpellIds } from './progressionChoiceUtils'
+import { getKnownColumnSecretIds, getProgressionSlotsUpToLevel, getProgressionSpellIds, isSpellChoiceSlot } from './progressionChoiceUtils'
 import spellsData from '../data/spells.json'
 import progressionData from '../data/progression.json'
 
@@ -239,18 +239,30 @@ export function getSecretCantripRoom(
 }
 
 /** Um problema nos Segredos Mágicos de uma classe que só se resolve na etapa Classe. */
-export type SecretSpellIssue = {
-  kind: 'too-many-cantrips'
-  /** Os Segredos que são truque. */
-  cantrips: string[]
-  /** Vagas da coluna Truques Conhecidos. */
-  max: number
-  excess: number
-}
+export type SecretSpellIssue =
+  | {
+      kind: 'too-many-cantrips'
+      /** Os Segredos que são truque. */
+      cantrips: string[]
+      /** Vagas da coluna Truques Conhecidos. */
+      max: number
+      excess: number
+    }
+  | {
+      kind: 'above-level'
+      /** "Segredos Mágicos" — o rótulo do slot onde a magia está. */
+      slotLabel: string
+      spellId: string
+      spellLevel: number
+      /** Maior nível que a classe conjura pela tabela dela (getMaxSpellLevel). */
+      maxLevel: number
+    }
 
 /**
- * Segredos Mágicos que a etapa Classe precisa trocar: mais truques do que a coluna Truques
- * Conhecidos comporta. A etapa Classe reprova (draftValidation) e diz o motivo (pendingReasons).
+ * Segredos Mágicos que a etapa Classe precisa trocar: magia acima do nível que a classe conjura
+ * ("de um nível que você possa conjurar, como mostrado na tabela O Bardo", pp. 54-55 — vale
+ * também para os Adicionais do Conhecimento) e mais truques do que a coluna Truques Conhecidos
+ * comporta. A etapa Classe reprova (draftValidation) e diz o motivo (pendingReasons).
  */
 export function getSecretSpellIssues(
   classId: string,
@@ -259,6 +271,15 @@ export function getSecretSpellIssues(
   progressionChoices: Record<string, string[]> | undefined,
 ): SecretSpellIssue[] {
   const issues: SecretSpellIssue[] = []
+  const maxLevel = getMaxSpellLevel(classId, classLevel, subclassId)
+  for (const slot of getProgressionSlotsUpToLevel(classId, subclassId ?? null, classLevel).filter(isSpellChoiceSlot)) {
+    for (const spellId of progressionChoices?.[slot.id] ?? []) {
+      const spell = getSpell(spellId)
+      if (spell && spell.level > maxLevel) {
+        issues.push({ kind: 'above-level', slotLabel: slot.label, spellId, spellLevel: spell.level, maxLevel })
+      }
+    }
+  }
   const room = getSecretCantripRoom(classId, subclassId, classLevel, progressionChoices)
   if (room.used.length > room.max) {
     issues.push({ kind: 'too-many-cantrips', cantrips: room.used, max: room.max, excess: room.used.length - room.max })

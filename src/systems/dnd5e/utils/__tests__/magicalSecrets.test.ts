@@ -276,3 +276,61 @@ describe('Segredos truque não passam da coluna Truques Conhecidos', () => {
     expect(collectStepReasons(fixed, 'class')).toEqual([])
   })
 })
+
+describe('Segredo acima do nível que o bardo conjura reprova a etapa Classe (pp. 54-55)', () => {
+  it('bardo 10 com Desejo e Chuva de Meteoros (9º) num limite de 5º: pendência com o que trocar', () => {
+    const progressionChoices = { 'bard-magical-secrets-10': ['wish', 'meteor-swarm'] }
+    const draft = bard10({ subclass: 'college-of-valor', cantrips: BARD_CANTRIPS, spells: BARD_SPELLS.slice(0, 12), progressionChoices })
+    expect(getSecretSpellIssues('bard', 'college-of-valor', 10, progressionChoices)).toEqual([
+      { kind: 'above-level', slotLabel: 'Segredos Mágicos', spellId: 'wish', spellLevel: 9, maxLevel: 5 },
+      { kind: 'above-level', slotLabel: 'Segredos Mágicos', spellId: 'meteor-swarm', spellLevel: 9, maxLevel: 5 },
+    ])
+    expect(isStepComplete(draft, 'class')).toBe(false)
+    expect(collectStepReasons(draft, 'class')).toEqual([
+      'Bardo: Desejo (9º) passa do 5º nível que você conjura — troque em Segredos Mágicos',
+      'Bardo: Chuva de Meteoros (9º) passa do 5º nível que você conjura — troque em Segredos Mágicos',
+    ])
+
+    const ok = bard10({ subclass: 'college-of-valor', cantrips: BARD_CANTRIPS, spells: BARD_SPELLS.slice(0, 12), progressionChoices: { 'bard-magical-secrets-10': ['fireball', 'cone-of-cold'] } })
+    expect(isStepComplete(ok, 'class')).toBe(true)
+    expect(collectStepReasons(ok, 'class')).toEqual([])
+  })
+
+  it('vale para os Adicionais do Conhecimento 6 (limite 3º)', () => {
+    const progressionChoices = { 'lore-magical-secrets-6': ['revivify', 'cone-of-cold'] }
+    const draft = bardAt(6, { subclass: 'college-of-lore', cantrips: [], spells: [], progressionChoices })
+    expect(isStepComplete(draft, 'class')).toBe(false)
+    expect(collectStepReasons(draft, 'class')).toEqual([
+      'Bardo: Cone de Frio (5º) passa do 3º nível que você conjura — troque em Segredos Mágicos Adicionais',
+    ])
+    expect(isStepComplete(bardAt(6, { subclass: 'college-of-lore', cantrips: [], spells: [], progressionChoices: { 'lore-magical-secrets-6': ['revivify', 'haste'] } }), 'class')).toBe(true)
+  })
+
+  it('bardo como classe adicional: o limite é o do nível de bardo, não o do personagem', () => {
+    // Guerreiro 10 / bardo 10 (Conhecimento): o bardo conjura até o 5º pela tabela dele.
+    const draft: CharacterDraft = {
+      ...structuredClone(EMPTY_DRAFT),
+      class: 'fighter',
+      level: 20,
+      abilityScores: { STR: 14, DEX: 14, CON: 12, INT: 10, WIS: 10, CHA: 16 },
+      classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), skills: ['athletics', 'perception'], fightingStyle: 'defense', subclass: 'champion', progressionChoices: { 'champion-fighting-style-10': ['archery'] } },
+      additionalClasses: [{
+        classId: 'bard',
+        level: 10,
+        classChoices: {
+          ...bardClassChoices('college-of-lore', { 'lore-magical-secrets-6': ['revivify', 'haste'], 'bard-magical-secrets-10': ['fireball', 'wish'] }),
+          skills: ['performance'],
+          tools: [],
+        },
+        spellChoices: { cantrips: [], spells: [] },
+        asiChoices: [],
+        hpRolls: [],
+      }],
+      multiclass: true,
+    }
+    expect(collectStepReasons(draft, 'class')).toEqual([
+      'Bardo: Desejo (9º) passa do 5º nível que você conjura — troque em Segredos Mágicos',
+    ])
+    expect(isStepComplete(draft, 'class')).toBe(false)
+  })
+})

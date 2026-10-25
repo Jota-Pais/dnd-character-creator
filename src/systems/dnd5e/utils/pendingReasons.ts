@@ -236,6 +236,10 @@ function classEntryReasons(cls: GameClass, choices: ClassChoiceSelections, level
 
 /** O motivo de um problema nos Segredos Mágicos (getSecretSpellIssues), com o que trocar. */
 function describeSecretSpellIssue(className: string, issue: SecretSpellIssue): string {
+  if (issue.kind === 'above-level') {
+    const name = getSpell(issue.spellId)?.name ?? issue.spellId
+    return `${className}: ${name} (${ordinal(issue.spellLevel)}) passa do ${ordinal(issue.maxLevel)} nível que você conjura — troque em ${issue.slotLabel}`
+  }
   const names = issue.cantrips.map(id => getSpell(id)?.name ?? id).join(', ')
   return `${className}: ${issue.cantrips.length} Segredos Mágicos são truques (${names}), mas a coluna Truques Conhecidos `
     + `tem ${issue.max} — troque ${countWordMasc(issue.excess)} por magia de 1º nível ou mais em Segredos Mágicos`

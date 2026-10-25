@@ -91,7 +91,7 @@ export function HpPanel({ view }: { view: PlayView }) {
             onClick={() => choose(a.id)}
             aria-pressed={action === a.id}
             className={[
-              'min-h-10 rounded-lg border px-2 text-sm font-fantasy transition-colors',
+              'min-h-10 rounded-lg border px-1.5 py-1 text-sm leading-tight transition-colors',
               action === a.id
                 ? 'border-gold-500 bg-gold-900 text-gold-300'
                 : 'border-parchment-800 text-parchment-300 hover:border-parchment-600',

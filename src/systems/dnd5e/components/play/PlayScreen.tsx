@@ -6,6 +6,8 @@ import { formatPlaySubtitle, usePlayView, type PlayTabProps } from './usePlayVie
 import { findRollGuideEntry, type RollGuideEntry } from '../../utils/rollGuide'
 import { DeathSaves } from './DeathSaves'
 import { HpPanel } from './HpPanel'
+import { NoticeToast } from './NoticeToast'
+import { usePlayStore } from '../../stores/playStore'
 import { RollRecipeSheet } from './RollRecipeSheet'
 import { VitalsBar } from './VitalsBar'
 
@@ -19,6 +21,8 @@ import { VitalsBar } from './VitalsBar'
 export function PlayScreen() {
   const view = usePlayView()
   const exitPlay = useCharacterStore(s => s.exitPlay)
+  const undo = usePlayStore(s => s.undo)
+  const undoCount = usePlayStore(s => s.undoStack.length)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [tab, setTab] = useState<PlayTabId>(PLAY_TABS[0].id)
   // A receita aberta. Guarda a entrada, mas mostra a versão atual do guia: se uma condição muda
@@ -52,14 +56,25 @@ export function PlayScreen() {
             >
               ← Personagens
             </button>
-            <button
-              onClick={() => setSettingsOpen(o => !o)}
-              aria-label="Configurações do modo de jogo"
-              aria-expanded={settingsOpen}
-              className="w-10 h-10 flex items-center justify-center rounded-lg text-parchment-500 hover:text-parchment-200 transition-colors"
-            >
-              ⚙
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={undo}
+                disabled={undoCount === 0}
+                aria-label="Desfazer a última mudança"
+                title="Desfazer a última mudança"
+                className="w-10 h-10 flex items-center justify-center rounded-lg text-parchment-500 hover:text-parchment-200 disabled:opacity-30 disabled:hover:text-parchment-500 transition-colors"
+              >
+                ↶
+              </button>
+              <button
+                onClick={() => setSettingsOpen(o => !o)}
+                aria-label="Configurações do modo de jogo"
+                aria-expanded={settingsOpen}
+                className="w-10 h-10 flex items-center justify-center rounded-lg text-parchment-500 hover:text-parchment-200 transition-colors"
+              >
+                ⚙
+              </button>
+            </div>
           </div>
           <h1 className="font-fantasy font-bold text-xl text-parchment-100 leading-tight truncate">
             {view.characterName || 'Personagem sem nome'}
@@ -110,6 +125,8 @@ export function PlayScreen() {
           )}
         </section>
       </div>
+
+      <NoticeToast view={view} onOpenRecipe={setRecipe} />
 
       {liveRecipe && (
         <RollRecipeSheet key={liveRecipe.id} entry={liveRecipe} appDice={view.appDice} onClose={() => setRecipe(null)} />

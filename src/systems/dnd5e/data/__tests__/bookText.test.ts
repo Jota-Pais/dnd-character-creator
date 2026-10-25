@@ -133,4 +133,9 @@ describe('características de classe que seguem o inglês', () => {
     expect(text).toContain('estender o efeito até o fim do seu próximo turno')
     expect(text).not.toContain('início')
   })
+
+  it('Golpe de Sorte vale para teste de habilidade, não "um teste qualquer" (resistência fica de fora)', () => {
+    const [text] = featureText('Golpe de Sorte')
+    expect(text).toContain('se falhar num teste de habilidade, trate a jogada do d20 como 20.')
+  })
 })

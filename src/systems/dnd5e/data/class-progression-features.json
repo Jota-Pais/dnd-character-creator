@@ -178,7 +178,7 @@
       {
         "level": 20,
         "name": "Golpe de Sorte",
-        "description": "Se errar um ataque contra um alvo ao seu alcance, transforme a falha em acerto; ou, se falhar num teste, trate a jogada do d20 como 20 natural. Uma vez por descanso curto ou longo.",
+        "description": "Se errar um ataque contra um alvo ao seu alcance, transforme a falha em acerto; ou, se falhar num teste de habilidade, trate a jogada do d20 como 20. Uma vez por descanso curto ou longo.",
         "effects": {
           "resources": [
             { "id": "stroke-of-luck", "name": "Golpe de Sorte", "uses": 1, "recharge": "short" }

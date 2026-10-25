@@ -93,7 +93,7 @@ describe('etapa Classe', () => {
   it('trocar o Tomo por outro pacto esquece os truques (o slot some), sem apagar a escolha', () => {
     const d = warlock(3, { ...INVOCATIONS_2, [PACT]: ['pact-of-the-chain'], [TOME]: ['guidance'] })
     expect(isStepComplete(d, 'class')).toBe(true)
-    expect(getCasterEntries(d)[0].bonusSpells).toEqual([])
+    expect(getCasterEntries(d)[0].bonusSpells).not.toContain('guidance')
     expect(d.classChoices.progressionChoices[TOME]).toEqual(['guidance'])
   })
 })
@@ -184,6 +184,39 @@ describe('ficha: Revisão e PDF', () => {
     const repeated = getRepeatedSpells(d)
     expect(repeated.map(r => [r.spellId, r.sources.map(s => s.label)])).toEqual([
       ['eldritch-blast', ['Bruxo', 'Bruxo — Truques do Livro das Sombras']],
+    ])
+  })
+})
+
+describe('Pacto da Corrente: convocar familiar (p. 58)', () => {
+  it('entra como magia do bruxo, por cima das conhecidas, sem ser gravada no draft', () => {
+    const d = warlock(3, { ...INVOCATIONS_2, [PACT]: ['pact-of-the-chain'] })
+    const [caster] = getCasterEntries(d)
+    expect(caster.bonusSpells).toEqual(['find-familiar'])
+    expect(caster.spells).toEqual([])
+    expect(getSecretSpellGroups(caster).map(g => [g.title, g.spells.map(s => s.id)])).toEqual([
+      ['Pacto da Corrente (por cima das conhecidas)', ['find-familiar']],
+    ])
+  })
+
+  it('outro pacto, ou bruxo abaixo do 3º nível, não tem', () => {
+    expect(getCasterEntries(warlock(3, { ...INVOCATIONS_2, [PACT]: ['pact-of-the-blade'] }))[0].bonusSpells).toEqual([])
+    expect(getCasterEntries(warlock(2, { ...INVOCATIONS_2, [PACT]: ['pact-of-the-chain'] }))[0].bonusSpells).toEqual([])
+  })
+
+  it('convocar familiar também escolhida como magia de mago vira aviso de repetida', () => {
+    const d: CharacterDraft = {
+      ...warlock(5, { ...INVOCATIONS_2, [PACT]: ['pact-of-the-chain'] }),
+      multiclass: true,
+      additionalClasses: [{
+        classId: 'wizard', level: 1,
+        classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices) },
+        spellChoices: { cantrips: [], spells: ['find-familiar'] },
+        asiChoices: [], hpRolls: [],
+      }],
+    }
+    expect(getRepeatedSpells(d).map(r => [r.spellId, r.sources.map(s => s.label)])).toEqual([
+      ['find-familiar', ['Bruxo — Pacto da Corrente', 'Mago']],
     ])
   })
 })

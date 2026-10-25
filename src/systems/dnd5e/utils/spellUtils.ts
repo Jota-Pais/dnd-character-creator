@@ -7,6 +7,7 @@ import { isActiveCaster, getClass, getSpellcastingSource } from './classUtils'
 import { allClassEntries, getCasterProgression, getCombinedCasterLevel } from './multiclassUtils'
 import { getKnownColumnSecretIds, getProgressionSlotsUpToLevel, getProgressionSpellIds, isSpellChoiceSlot } from './progressionChoiceUtils'
 import { getRace, getSubrace, getAllChoices, getAvailableInnateSpells } from './raceUtils'
+import { getGrantedSpellGroups } from './progressionOptions'
 import spellsData from '../data/spells.json'
 import progressionData from '../data/progression.json'
 
@@ -303,7 +304,8 @@ export type CasterEntry = {
   /**
    * Magias aprendidas em Segredos Mágicos (bardo 10/14/18, p. 54; Colégio do Conhecimento 6,
    * p. 55), guardadas nas escolhas de progressão e não em `spells`. Contam como magias da classe,
-   * então a Revisão e a ficha imprimível as mostram junto das dela. Podem incluir truques.
+   * então a Revisão e a ficha imprimível as mostram junto das dela. Podem incluir truques. Também
+   * os truques do Livro das Sombras (p. 59) e a magia que uma opção ensina (Pacto da Corrente).
    */
   bonusSpells: string[]
   /** Os de `bonusSpells` que ocupam vaga de Truques/Magias Conhecidas (getKnownColumnSecrets). */
@@ -323,7 +325,7 @@ export function getCasterEntries(draft: CharacterDraft): CasterEntry[] {
       casting,
       cantrips: getKnownCantrips(casting.spellcasting, entry.spellChoices),
       spells: entry.spellChoices.spells,
-      bonusSpells: getProgressionSpellIds(entry),
+      bonusSpells: [...new Set([...getProgressionSpellIds(entry), ...getGrantedSpellGroups(entry).flatMap(g => g.spellIds)])],
       knownSecrets: getKnownColumnSecrets(entry.classId, subclass, entry.level, entry.classChoices.progressionChoices),
     }]
   })
@@ -346,7 +348,8 @@ export type SecretSpellGroup = {
  * As magias de slot da classe em grupos, para quem lê a ficha saber quais estão dentro do número de
  * conhecidas: os Segredos Mágicos do bardo, que ocupam vaga das colunas (p. 54, knownSecrets), e,
  * um grupo por rótulo de slot, as que vêm por cima — os Adicionais do Colégio do Conhecimento
- * (p. 55) e os truques do Livro das Sombras (p. 59). Grupo vazio fica de fora.
+ * (p. 55), os truques do Livro das Sombras (p. 59) e, um grupo por opção, a magia que uma opção
+ * ensina (convocar familiar do Pacto da Corrente, p. 58). Grupo vazio fica de fora.
  */
 export function getSecretSpellGroups(caster: CasterEntry): SecretSpellGroup[] {
   const { entry } = caster
@@ -368,6 +371,11 @@ export function getSecretSpellGroups(caster: CasterEntry): SecretSpellGroup[] {
       placed.add(id)
       additionalByLabel.set(slot.label, [...(additionalByLabel.get(slot.label) ?? []), id])
     }
+  }
+  for (const granted of getGrantedSpellGroups(entry)) {
+    const ids = granted.spellIds.filter(id => !placed.has(id))
+    ids.forEach(id => placed.add(id))
+    if (ids.length > 0) additionalByLabel.set(granted.label, [...(additionalByLabel.get(granted.label) ?? []), ...ids])
   }
   for (const [label, ids] of additionalByLabel) {
     groups.push({ kind: 'additional', title: `${label} (por cima das conhecidas)`, label, spells: toSpells(ids) })
@@ -422,6 +430,15 @@ export function getSpellSources(draft: CharacterDraft): SpellSource[] {
         label: `${casting.label} — ${slotLabel}`,
         classId: entry.classId,
         spellIds: ids,
+      })
+    }
+    // Magia que uma opção ensina (convocar familiar do Pacto da Corrente): também é uma fonte.
+    for (const granted of getGrantedSpellGroups(entry)) {
+      sources.push({
+        key: `granted:${entry.classId}:${granted.label}`,
+        label: `${casting.label} — ${granted.label}`,
+        classId: entry.classId,
+        spellIds: granted.spellIds,
       })
     }
   }

@@ -38,6 +38,11 @@ export type ProgressionOption = {
    * na ficha (getUnmetPickRequirements).
    */
   requiresPick?: string
+  /**
+   * Magias que a opção ensina sem escolha e fora do número de conhecidas (Pacto da Corrente:
+   * convocar familiar, p. 58). Derivadas, nunca gravadas no draft (getGrantedSpellGroups).
+   */
+  grantsSpells?: string[]
 }
 
 export function getProgressionOptions(optionsListId: string): ProgressionOption[] {
@@ -133,6 +138,27 @@ export function getUnmetPickRequirements(
       const option = options.find(o => o.id === id)
       const required = option ? getUnmetRequirement(classId, subclassId, activePicks, option) : null
       return option && required ? [{ slot, option, required }] : []
+    })
+  })
+}
+
+/** Magias que opções escolhidas ensinam, agrupadas pela opção ("Pacto da Corrente"). */
+export type GrantedSpellGroup = { label: string; spellIds: string[] }
+
+/**
+ * As magias que as opções escolhidas pela classe ensinam (`grantsSpells`), nos slots que o nível
+ * nela liberou e só com o pré-requisito cumprido. Entram como magias da classe, por cima das
+ * conhecidas (bonusSpells de getCasterEntries).
+ */
+export function getGrantedSpellGroups(entry: ClassEntry): GrantedSpellGroup[] {
+  const { classId, level, classChoices: { subclass, progressionChoices } } = entry
+  const activePicks = getActivePicks(classId, subclass, level, progressionChoices)
+  return getProgressionSlotsUpToLevel(classId, subclass, level, progressionChoices).flatMap(slot => {
+    const options = getProgressionOptions(slot.optionsListId)
+    return (progressionChoices[slot.id] ?? []).flatMap(id => {
+      const option = options.find(o => o.id === id)
+      if (!option?.grantsSpells?.length || getUnmetRequirement(classId, subclass, activePicks, option)) return []
+      return [{ label: option.name, spellIds: option.grantsSpells }]
     })
   })
 }

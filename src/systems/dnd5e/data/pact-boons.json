@@ -2,6 +2,7 @@
   {
     "id": "pact-of-the-chain",
     "name": "Pacto da Corrente",
+    "grantsSpells": ["find-familiar"],
     "description": "Você aprende a magia convocar familiar e pode conjurá-la como ritual; ela não conta no número de magias que você conhece. Ao conjurá-la, o familiar pode ter uma das formas comuns ou uma das formas especiais: diabrete, pseudodragão, quasit ou sprite. Quando você usa a ação de Ataque, pode abrir mão de um dos seus ataques para que o familiar faça um ataque, usando a reação dele."
   },
   {

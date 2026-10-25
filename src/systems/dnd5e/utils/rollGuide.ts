@@ -130,7 +130,10 @@ export type RollGuide = {
   deathSave: RollGuideEntry
   /** Um por tipo de Dado de Vida do poço, do maior para o menor. */
   hitDice: RollGuideEntry[]
-  /** Linhas que valem para a ficha toda (não conjurar com armadura sem proficiência). */
+  /**
+   * Linhas que valem para a ficha toda: Incapacitado (sem ações nem reações), sem fala (sem
+   * componente verbal) e não conjurar com armadura sem proficiência.
+   */
   notes: string[]
 }
 
@@ -291,7 +294,12 @@ function d20Entry(input: D20Input, inspiration: boolean): RollGuideEntry {
   const disadvantage = [...input.condition.disadvantage, ...(input.extraDisadvantage ?? [])]
   const mode = resolveRollMode(advantage, disadvantage)
   const notes = [...(input.notes ?? [])]
-  if (inspiration) notes.push(inspirationNote(mode, advantage, disadvantage))
+  if (inspiration) {
+    // Com falha automática, a vantagem não muda o resultado: gastar a Inspiração seria desperdício.
+    notes.push(input.condition.autoFail.length > 0
+      ? 'Inspiração: não adianta aqui — a jogada falha automaticamente.'
+      : inspirationNote(mode, advantage, disadvantage))
+  }
   return {
     id: input.id,
     kind: 'd20',
@@ -354,6 +362,8 @@ function attackGuide(
   sheet: SheetModeSources,
   lines: ConditionalLine[],
   inspiration: boolean,
+  /** O que impede de agir (Incapacitado): vale para todo ataque. */
+  cannotAct: string[],
 ): AttackGuide {
   const ability = ABILITY_BY_LONG_NAME.get(attack.ability) ?? 'STR'
   const breakdown: GuideBreakdownItem[] = [
@@ -377,6 +387,7 @@ function attackGuide(
     condition,
     extraDisadvantage: STR_DEX.includes(ability) ? sheet.unproficientArmor : [],
     notes: [
+      ...cannotAct,
       ...(attack.proficient ? [] : [`Sem proficiência com ${attack.name}: o bônus de proficiência não entra (pág. 148).`]),
       `20 natural: acerta e é crítico — role os dados de dano duas vezes. 1 natural: erra (pág. 196).`,
       ...linesFor(lines, 'attack'),
@@ -478,6 +489,14 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
     ? [`Usando ${unproficient.map(a => a.name).join(' e ')} sem proficiência, você não pode conjurar magias (pág. 144).`]
     : []
   const warCaster = hasWarCaster(draft)
+  // Incapacitado (gravado ou implicado: Paralisado, Atordoado, Inconsciente…) e sem fala. A ficha
+  // não bloqueia a jogada — só diz, no ataque, no ataque de magia e nas notas gerais.
+  const cannotAct = effects.noActions.active
+    ? [`${labels(effects.noActions.sources)}: não pode realizar ações nem reações (pág. 292).`]
+    : []
+  const cannotSpeak = effects.cannotSpeak.active
+    ? [`Não pode falar (${labels(effects.cannotSpeak.sources)}): sem o componente verbal, a magia que o exige não pode ser conjurada (pág. 205).`]
+    : []
 
   // Testes de atributo puros: modificador + meia proficiência quando a ficha a tem (Versatilidade).
   const halfSources = getHalfProficiencySources(draft)
@@ -574,7 +593,7 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
   }
 
   const attacks = getSheetAttacks(draft, scores).map(a =>
-    attackGuide(a, mods, prof, effects.attack, sheet, lines, inspiration))
+    attackGuide(a, mods, prof, effects.attack, sheet, lines, inspiration, cannotAct))
 
   const spellcasting = getCasterEntries(draft).map((caster): SpellcastingGuide => {
     const sc = caster.casting.spellcasting
@@ -595,6 +614,8 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
         breakdown: [abilityPart, { label: 'Proficiência', value: prof }],
         condition: effects.attack,
         notes: [
+          ...cannotAct,
+          ...cannotSpeak,
           ...cannotCast,
           '20 natural: acerta e é crítico — role os dados de dano duas vezes. 1 natural: erra (pág. 196).',
           ...linesFor(lines, 'attack'),
@@ -641,7 +662,7 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
 
   return {
     checks, saves, skills, initiative, passivePerception, attacks, spellcasting, deathSave, hitDice,
-    notes: cannotCast,
+    notes: [...cannotAct, ...cannotSpeak, ...cannotCast],
   }
 }
 

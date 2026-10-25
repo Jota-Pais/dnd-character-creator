@@ -278,6 +278,29 @@ describe('getRollGuide — condições e modo', () => {
     const without = getRollGuide(fighter(), play())
     expect(without.saves.STR.notes.some(n => n.includes('Inspiração'))).toBe(false)
   })
+
+  it('Inspiração com falha automática: não adianta gastá-la', () => {
+    const guide = getRollGuide(fighter(), play({ inspiration: true, conditions: ['paralyzed'] }))
+    const dex = guide.saves.DEX.notes.filter(n => n.startsWith('Inspiração'))
+    expect(dex).toEqual(['Inspiração: não adianta aqui — a jogada falha automaticamente.'])
+    // Sem falha automática, a nota de sempre.
+    expect(guide.saves.WIS.notes.some(n => n.includes('rolar esta jogada com vantagem'))).toBe(true)
+  })
+
+  it('Incapacitado (por Paralisado) e sem fala: notas no ataque, no ataque de magia e nas notas gerais', () => {
+    const caster = draft({ class: 'wizard', level: 1, abilityScores: SCORES, ...carrying('dagger') })
+    const guide = getRollGuide(caster, withConditions('paralyzed'))
+    const cannotAct = 'Incapacitado (por Paralisado): não pode realizar ações nem reações (pág. 292).'
+    expect(guide.attacks.find(a => a.key === 'dagger')!.attack.notes).toContain(cannotAct)
+    expect(guide.spellcasting[0].attack.notes).toContain(cannotAct)
+    expect(guide.spellcasting[0].attack.notes.some(n => n.startsWith('Não pode falar (Paralisado)'))).toBe(true)
+    expect(guide.notes[0]).toBe(cannotAct)
+    expect(guide.notes.some(n => n.includes('componente verbal'))).toBe(true)
+    // Atordoado incapacita, mas fala (hesitante): sem a nota de fala.
+    const stunned = getRollGuide(caster, withConditions('stunned'))
+    expect(stunned.notes).toEqual(['Incapacitado (por Atordoado): não pode realizar ações nem reações (pág. 292).'])
+    expect(getRollGuide(caster, play()).notes).toEqual([])
+  })
 })
 
 describe('getRollGuide — armadura sem proficiência (pág. 144)', () => {

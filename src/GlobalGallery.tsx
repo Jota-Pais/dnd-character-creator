@@ -62,6 +62,7 @@ export function GlobalGallery() {
   const dndLibrary = useDndStore(s => s.library)
   const dndNew = useDndStore(s => s.newCharacter)
   const dndOpen = useDndStore(s => s.openCharacter)
+  const dndPlay = useDndStore(s => s.playCharacter)
   const dndDuplicate = useDndStore(s => s.duplicateCharacter)
   const dndDelete = useDndStore(s => s.deleteCharacter)
   const dndImport = useDndStore(s => s.importDraft)
@@ -130,6 +131,11 @@ export function GlobalGallery() {
     if (char.system === 'dnd5e') dndOpen(char.id)
     else ordemOpen(char.id)
     setActiveSystem(char.system)
+  }
+
+  function handlePlay(id: string) {
+    dndPlay(id)
+    setActiveSystem('dnd5e')
   }
 
   function handleDuplicate(char: UnifiedCharacter) {
@@ -290,6 +296,7 @@ export function GlobalGallery() {
                     char={char}
                     entry={entry}
                     onOpen={() => handleOpen(char)}
+                    onPlay={() => handlePlay(char.id)}
                     onDuplicate={() => handleDuplicate(char)}
                     onExport={() => handleExport(char)}
                     onDelete={() => handleDelete(char)}
@@ -373,10 +380,12 @@ function Section({ marker, title, count, ui, children }: {
   )
 }
 
-function CharacterRow({ char, entry, onOpen, onDuplicate, onExport, onDelete }: {
+function CharacterRow({ char, entry, onOpen, onPlay, onDuplicate, onExport, onDelete }: {
   char: UnifiedCharacter
   entry: GalleryEntry
   onOpen: () => void
+  /** Modo de jogo (só D&D). O botão só aparece com a ficha sem etapa pendente. */
+  onPlay?: () => void
   onDuplicate: () => void
   onExport: () => void
   onDelete: () => void
@@ -428,6 +437,18 @@ function CharacterRow({ char, entry, onOpen, onDuplicate, onExport, onDelete }: 
         >
           Abrir
         </button>
+        {onPlay && facets.missingCount === 0 && (
+          <button
+            onClick={onPlay}
+            className="px-4 py-2 rounded-lg font-fantasy font-bold text-[13px] transition-colors"
+            style={{ border: `1px solid ${ui.openBorder}`, color: ui.openColor }}
+            onMouseEnter={e => { e.currentTarget.style.backgroundColor = ui.openBg }}
+            onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent' }}
+            title="Usar a ficha durante a sessão: PV, condições, o que rolar"
+          >
+            Jogar
+          </button>
+        )}
         <IconBtn title="Duplicar" onClick={onDuplicate}>⧉</IconBtn>
         <IconBtn title="Exportar JSON" onClick={onExport}>↓</IconBtn>
         {confirmDelete ? (

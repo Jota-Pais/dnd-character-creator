@@ -37,6 +37,26 @@ describe('App (smoke) — galeria global', () => {
     expect(useCharacterStore.getState().view).toBe('wizard')
   })
 
+  it('"Jogar" abre a ficha D&D completa no modo de jogo', () => {
+    useCharacterStore.getState().importDraft(structuredClone(COMPLETE_DRAFT))
+    useCharacterStore.getState().goToGallery()
+
+    render(<App />)
+    fireEvent.click(screen.getByText('Jogar'))
+    expect(useAppStore.getState().activeSystemId).toBe('dnd5e')
+    expect(useCharacterStore.getState().view).toBe('play')
+    expect(screen.getByRole('tab', { name: 'Testes' })).toBeInTheDocument()
+  })
+
+  it('ficha D&D com etapa pendente não tem "Jogar"', () => {
+    useCharacterStore.getState().importDraft({ ...structuredClone(COMPLETE_DRAFT), background: null })
+    useCharacterStore.getState().goToGallery()
+
+    render(<App />)
+    expect(screen.getByText('Abrir')).toBeInTheDocument()
+    expect(screen.queryByText('Jogar')).toBeNull()
+  })
+
   it('cria um novo personagem D&D pelo seletor de sistema', () => {
     render(<App />)
     fireEvent.click(screen.getByText('＋ Novo personagem')) // abre o seletor

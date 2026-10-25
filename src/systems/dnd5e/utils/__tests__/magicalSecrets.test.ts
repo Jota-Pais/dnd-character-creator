@@ -12,6 +12,8 @@ import {
   getSecretCantripRoom,
   getSecretSpellIssues,
   getSpellsByClass,
+  getSecretSpellGroups,
+  formatSecretSpellName,
 } from '../spellUtils'
 import { collectStepReasons } from '../pendingReasons'
 import { isStepComplete } from '../draftValidation'
@@ -434,5 +436,31 @@ describe('Segredos nos níveis 14 e 18 e na multiclasse', () => {
     expect(isStepComplete(draft, 'spells')).toBe(true)
     const short = { ...draft, spellChoices: { cantrips: BARD_CANTRIPS.slice(0, 3), spells: POOL.slice(0, 14) } }
     expect(isStepComplete(short, 'spells')).toBe(false)
+  })
+})
+
+describe('getSecretSpellGroups: Segredos que ocupam vaga × Adicionais por cima', () => {
+  it('Conhecimento 10: Segredos do 10º contam nas conhecidas; Adicionais do 6º vêm por cima', () => {
+    const draft = bard10({
+      subclass: 'college-of-lore',
+      cantrips: BARD_CANTRIPS,
+      spells: BARD_SPELLS.slice(0, 12),
+      progressionChoices: {
+        'lore-magical-secrets-6': ['revivify', 'haste'],
+        'bard-magical-secrets-10': ['fire-bolt', 'fireball'],
+      },
+    })
+    const groups = getSecretSpellGroups(columns(draft).caster)
+    expect(groups.map(g => [g.kind, g.title, g.spells.map(formatSecretSpellName)])).toEqual([
+      ['in-columns', 'Segredos Mágicos (contam nas conhecidas)', ['Raio de Fogo (truque)', 'Bola de Fogo (3º)']],
+      ['additional', 'Segredos Mágicos Adicionais (por cima das conhecidas)', ['Revivificar (3º)', 'Velocidade (3º)']],
+    ])
+  })
+
+  it('bardo Bravura sem Adicionais: um grupo só; sem Segredo, nenhum', () => {
+    const valor = bard10({ subclass: 'college-of-valor', cantrips: BARD_CANTRIPS, spells: [], progressionChoices: { 'bard-magical-secrets-10': ['fireball', 'counterspell'] } })
+    expect(getSecretSpellGroups(columns(valor).caster).map(g => g.kind)).toEqual(['in-columns'])
+    const none = bardAt(5, { subclass: 'college-of-valor', cantrips: [], spells: [], progressionChoices: {} })
+    expect(getSecretSpellGroups(columns(none).caster)).toEqual([])
   })
 })

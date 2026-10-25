@@ -37,3 +37,26 @@ describe('Segredos Mágicos na Revisão e no PDF', () => {
     expect(text).not.toContain('sorcerer, wizard')
   })
 })
+
+describe('Segredos que ocupam vaga e Adicionais (por cima) separados', () => {
+  it.each([
+    ['Revisão', () => render(<ReviewStep />)],
+    ['ficha imprimível', () => render(<PrintableSheet />)],
+  ])('%s: cada grupo com as suas magias', (_, renderIt) => {
+    useCharacterStore.setState({ draft: structuredClone(loreBard10) })
+    const { container } = renderIt()
+    const text = container.textContent ?? ''
+    // Adicionais do 6º: Bola de Fogo e Contramágica; Segredos do 10º: Revivificar e Velocidade.
+    const additional = text.indexOf('Segredos Mágicos Adicionais (por cima das conhecidas)')
+    const inColumns = text.indexOf('Segredos Mágicos (contam nas conhecidas)')
+    expect(additional).toBeGreaterThan(-1)
+    expect(inColumns).toBeGreaterThan(-1)
+    const inColumnsText = text.slice(inColumns, additional)
+    const additionalText = text.slice(additional, additional + 160)
+    expect(inColumnsText).toContain('Revivificar (3º)')
+    expect(inColumnsText).toContain('Velocidade (3º)')
+    expect(inColumnsText).not.toContain('Bola de Fogo')
+    expect(additionalText).toContain('Bola de Fogo (3º)')
+    expect(additionalText).toContain('Contramágica (3º)')
+  })
+})

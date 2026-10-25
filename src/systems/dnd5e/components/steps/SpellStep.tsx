@@ -21,6 +21,7 @@ import {
   getCombinedSpellSlots,
   getPactSlots,
   getSpellChoiceOverflows,
+  getSecretSpellGroups,
   SCHOOL_COLORS,
   SCHOOL_EMOJI,
   type CasterEntry,
@@ -162,6 +163,8 @@ function ClassSpellSection({
   const cantripBudget = describeSecretsInColumn(cantripCol)
   const secretCantrips = secrets.cantrips.filter(id => !caster.cantrips.includes(id))
   const secretSpells = secrets.spells.filter(id => !choices.spells.includes(id))
+  // Adicionais do Colégio do Conhecimento (p. 55): também do bardo, mas por cima das colunas.
+  const additionalSecrets = getSecretSpellGroups(caster).find(g => g.kind === 'additional')?.spells.map(s => s.id) ?? []
   const school = getSchoolRestrictionStatus(sc, level, choices.spells)
   const overflows = getSpellChoiceOverflows(caster, abilityScores)
 
@@ -224,13 +227,24 @@ function ClassSpellSection({
 
       <p className="text-parchment-600 text-xs mb-3 font-fantasy">{spellsLabel}</p>
 
-      {(secretSpells.length > 0 || secretCantrips.length > 0) && (
+      {(secretSpells.length > 0 || secretCantrips.length > 0 || additionalSecrets.length > 0) && (
         <p className="text-xs mb-3 rounded-lg border border-parchment-900 bg-parchment-950/60 px-3 py-2 text-parchment-400">
-          ✦ Seus Segredos Mágicos já estão contados aqui — o livro diz que eles fazem parte do número de
-          magias conhecidas do bardo (p. 54), então ocupam vaga em vez de somar por cima.
-          {secretSpells.length > 0 && <> Magias: {formatSpellNames(secretSpells)} — {spellBudget}.</>}
-          {secretCantrips.length > 0 && <> Truques: {formatSpellNames(secretCantrips)} — {cantripBudget}.</>}
-          {' '}Para trocar um Segredo, volte à etapa Classe.
+          {(secretSpells.length > 0 || secretCantrips.length > 0) && (
+            <>
+              ✦ Seus Segredos Mágicos já estão contados aqui — o livro diz que eles fazem parte do número de
+              magias conhecidas do bardo (p. 54), então ocupam vaga em vez de somar por cima.
+              {secretSpells.length > 0 && <> Magias: {formatSpellNames(secretSpells)} — {spellBudget}.</>}
+              {secretCantrips.length > 0 && <> Truques: {formatSpellNames(secretCantrips)} — {cantripBudget}.</>}
+              {' '}
+            </>
+          )}
+          {additionalSecrets.length > 0 && (
+            <>
+              ✦ {formatSpellNames(additionalSecrets)} (Segredos Mágicos Adicionais, p. 55){' '}
+              {additionalSecrets.length === 1 ? 'vem por cima e não ocupa vaga.' : 'vêm por cima e não ocupam vaga.'}{' '}
+            </>
+          )}
+          Para trocar um Segredo, volte à etapa Classe.
         </p>
       )}
 

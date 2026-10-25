@@ -37,6 +37,7 @@ import { getProgressionChoiceBlocks } from '../utils/progressionOptions'
 import {
   getSpell, getSpellSaveDC, formatSpellAttackBonus, getCombinedSpellSlots, getPactSlots,
   getMaxPreparedSpells, describeCastingAids, getCasterEntries, getSpellChoiceOverflows,
+  getSecretSpellGroups, formatSecretSpellName,
 } from '../utils/spellUtils'
 import { RuleText } from './common/RuleText'
 import { formatAttackDamage } from '../utils/weaponFormat'
@@ -390,10 +391,10 @@ export function PrintableSheet() {
               const overflows = getSpellChoiceOverflows(caster, finalScores)
               const cantrips = cantripIds.map(id => getSpell(id)?.name).filter(Boolean)
               const spells = spellIds.map(id => getSpell(id)).filter(Boolean)
-              const secrets = caster.bonusSpells.map(getSpell).filter(s => s !== undefined)
+              const secretGroups = getSecretSpellGroups(caster)
               const byLevel = new Map<number, string[]>()
               for (const s of spells) { const a = byLevel.get(s!.level) ?? []; a.push(s!.name); byLevel.set(s!.level, a) }
-              if (cantrips.length === 0 && spells.length === 0 && secrets.length === 0) return null
+              if (cantrips.length === 0 && spells.length === 0 && secretGroups.length === 0) return null
               return (
                 <div key={cls.id} className="mb-1">
                   {isMc && <p className="text-xs font-bold text-gray-700 mt-1">{casting.label}</p>}
@@ -409,13 +410,13 @@ export function PrintableSheet() {
                   {[...byLevel.keys()].sort((a, b) => a - b).map(lvl => (
                     <p key={lvl} className="text-xs mb-0.5"><span className="text-gray-600">{lvl}º nível: </span>{byLevel.get(lvl)!.join(', ')}</p>
                   ))}
-                  {/* Contam como magias desta classe (p. 54-55); vêm das escolhas de progressão. */}
-                  {secrets.length > 0 && (
-                    <p className="text-xs mb-0.5">
-                      <span className="text-gray-600">Segredos Mágicos: </span>
-                      {secrets.map(s => `${s.name} (${s.level === 0 ? 'truque' : `${s.level}º`})`).join(', ')}
+                  {/* Contam como magias desta classe (p. 54-55); os que ocupam vaga e os Adicionais, separados. */}
+                  {secretGroups.map(group => (
+                    <p key={group.kind} className="text-xs mb-0.5">
+                      <span className="text-gray-600">{group.title}: </span>
+                      {group.spells.map(formatSecretSpellName).join(', ')}
                     </p>
-                  )}
+                  ))}
                 </div>
               )
             })}

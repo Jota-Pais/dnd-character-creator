@@ -52,6 +52,8 @@ import {
   SCHOOL_EMOJI,
   describeCastingAids,
   getSpellChoiceOverflows,
+  getSecretSpellGroups,
+  formatSecretSpellName,
 } from '../../utils/spellUtils'
 import { exportCharacter } from '../../utils/storage'
 import { getPendingSteps, getStepPendingReasons } from '../../utils/pendingReasons'
@@ -892,7 +894,7 @@ export function ReviewStep() {
                 const overflows = getSpellChoiceOverflows(caster, finalScores)
                 const cantrips = caster.cantrips.map(id => getSpell(id)).filter(Boolean)
                 const spells = caster.spells.map(id => getSpell(id)).filter(Boolean)
-                const secrets = caster.bonusSpells.map(getSpell).filter(s => s !== undefined)
+                const secretGroups = getSecretSpellGroups(caster)
                 // Conjuração de subclasse (Cavaleiro/Trapaceiro Arcano) se identifica mesmo sem multiclasse.
                 const showLabel = isMc || caster.casting.casterId !== caster.cls.id
                 return (
@@ -930,15 +932,16 @@ export function ReviewStep() {
                         <div className="flex flex-wrap gap-1.5">{spells.map(s => s && <SpellChip key={s.id} name={s.name} school={s.school} concentration={s.concentration} ritual={s.ritual} />)}</div>
                       </div>
                     )}
-                    {/* Contam como magias desta classe (p. 54-55); vêm das escolhas de progressão. */}
-                    {secrets.length > 0 && (
-                      <div className="mt-3">
-                        <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">Segredos Mágicos ({secrets.length})</p>
+                    {/* Contam como magias desta classe (p. 54-55); vêm das escolhas de progressão. Os que
+                        ocupam vaga das conhecidas e os Adicionais (por cima) ficam em grupos separados. */}
+                    {secretGroups.map(group => (
+                      <div key={group.kind} className="mt-3">
+                        <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">{group.title}</p>
                         <div className="flex flex-wrap gap-1.5">
-                          {secrets.map(s => (
+                          {group.spells.map(s => (
                             <SpellChip
                               key={s.id}
-                              name={`${s.name} (${s.level === 0 ? 'truque' : `${s.level}º`})`}
+                              name={formatSecretSpellName(s)}
                               school={s.school}
                               concentration={s.concentration}
                               ritual={s.ritual}
@@ -946,8 +949,8 @@ export function ReviewStep() {
                           ))}
                         </div>
                       </div>
-                    )}
-                    {cantrips.length === 0 && spells.length === 0 && secrets.length === 0 && (
+                    ))}
+                    {cantrips.length === 0 && spells.length === 0 && secretGroups.length === 0 && (
                       <p className="text-parchment-700 text-sm italic">Nenhuma magia selecionada</p>
                     )}
                   </div>

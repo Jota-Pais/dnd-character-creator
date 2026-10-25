@@ -324,6 +324,42 @@ export function getCasterEntries(draft: CharacterDraft): CasterEntry[] {
   })
 }
 
+/** Um grupo de Segredos Mágicos da Revisão e da ficha imprimível (getSecretSpellGroups). */
+export type SecretSpellGroup = {
+  kind: 'in-columns' | 'additional'
+  /** "Segredos Mágicos (contam nas conhecidas)" ou "Segredos Mágicos Adicionais (por cima das conhecidas)". */
+  title: string
+  spells: Spell[]
+}
+
+/**
+ * Os Segredos da classe em dois grupos, para quem lê a ficha saber quais estão dentro do número de
+ * conhecidas: os Segredos Mágicos do bardo, que ocupam vaga das colunas (p. 54, knownSecrets), e os
+ * Adicionais do Colégio do Conhecimento, que vêm por cima (p. 55). Grupo vazio fica de fora.
+ */
+export function getSecretSpellGroups(caster: CasterEntry): SecretSpellGroup[] {
+  const inColumns = new Set([...caster.knownSecrets.cantrips, ...caster.knownSecrets.spells])
+  const toSpells = (ids: string[]) => ids.map(getSpell).filter((s): s is Spell => s !== undefined)
+  const groups: SecretSpellGroup[] = [
+    {
+      kind: 'in-columns',
+      title: 'Segredos Mágicos (contam nas conhecidas)',
+      spells: toSpells(caster.bonusSpells.filter(id => inColumns.has(id))),
+    },
+    {
+      kind: 'additional',
+      title: 'Segredos Mágicos Adicionais (por cima das conhecidas)',
+      spells: toSpells(caster.bonusSpells.filter(id => !inColumns.has(id))),
+    },
+  ]
+  return groups.filter(g => g.spells.length > 0)
+}
+
+/** "Bola de Fogo (3º)", "Raio de Fogo (truque)" — como um Segredo aparece na Revisão e no PDF. */
+export function formatSecretSpellName(spell: Spell): string {
+  return `${spell.name} (${spell.level === 0 ? 'truque' : `${spell.level}º`})`
+}
+
 // ── Restrição de escola (Cavaleiro Arcano p. 86, Trapaceiro Arcano p. 93) ──────
 
 export type SchoolRestrictionStatus = {

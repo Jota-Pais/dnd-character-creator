@@ -1,0 +1,70 @@
+import { useMemo } from 'react'
+import { useCharacterStore } from '../../stores/characterStore'
+import { usePlayStore, type PlayOperation } from '../../stores/playStore'
+import type { CharacterDraft } from '../../types/character'
+import type { PlayResult, PlaySheet, PlayState } from '../../types/playState'
+import type { ArmorClassResult } from '../../utils/armorClassUtils'
+import { getFinalAbilityScores } from '../../utils/asiUtils'
+import { getClass, getSubclass } from '../../utils/classUtils'
+import { formatClassLevelLabel } from '../../utils/multiclassUtils'
+import { getRace, getSubrace } from '../../utils/raceUtils'
+import { getRollGuide, type RollGuide, type RollGuideEntry } from '../../utils/rollGuide'
+import { getSheetArmorClass } from '../../utils/sheetEffects'
+
+/**
+ * Tudo que a tela de jogo lê, num lugar só: a ficha (draft, só leitura), o `PlaySheet` e o
+ * `PlayState` do playStore, o guia de rolagens e a CA. Cada bloco (vitais, PV, abas) recebe
+ * daqui e muda o estado só por `run(op)` com as funções puras de `utils/playState.ts`.
+ */
+export type PlayView = {
+  draft: CharacterDraft
+  characterName: string
+  sheet: PlaySheet
+  state: PlayState
+  guide: RollGuide
+  armorClass: ArmorClassResult
+  /** Preferência "Usar os dados do app" (desligada por padrão). */
+  appDice: boolean
+  run: (op: PlayOperation) => PlayResult | null
+}
+
+/**
+ * Props de toda aba da tela de jogo: a visão inteira, mais o "abrir a receita" de uma jogada
+ * (a folha `RollRecipeSheet`, com o "Rolar" quando os dados do app estão ligados).
+ */
+export type PlayTabProps = PlayView & {
+  openRecipe: (entry: RollGuideEntry) => void
+}
+
+/** A visão da tela de jogo, ou null sem ficha aberta no playStore. */
+export function usePlayView(): PlayView | null {
+  const draft = useCharacterStore(s => s.draft)
+  const characterName = usePlayStore(s => s.characterName)
+  const sheet = usePlayStore(s => s.sheet)
+  const state = usePlayStore(s => s.state)
+  const appDice = usePlayStore(s => s.prefs.appDice)
+  const run = usePlayStore(s => s.run)
+
+  const guide = useMemo(() => (state ? getRollGuide(draft, state) : null), [draft, state])
+  const armorClass = useMemo(() => getSheetArmorClass(draft, getFinalAbilityScores(draft)), [draft])
+
+  if (!sheet || !state || !guide) return null
+  return { draft, characterName, sheet, state, guide, armorClass, appDice, run }
+}
+
+/** "Meio-Orc · Bárbaro · nível 3"; na multiclasse, "Humano · Guerreiro 3° / Mago 2° — nível 5". */
+export function formatPlaySubtitle(draft: CharacterDraft): string {
+  const race = draft.race ? getRace(draft.race) : undefined
+  const subrace = race && draft.subrace ? getSubrace(race, draft.subrace) : undefined
+  const raceName = subrace?.name ?? race?.name
+  const level = draft.level ?? 1
+  let classLabel: string | null
+  if ((draft.additionalClasses?.length ?? 0) > 0) {
+    classLabel = formatClassLevelLabel(draft)
+  } else {
+    const cls = draft.class ? getClass(draft.class) : undefined
+    const sub = cls && draft.classChoices.subclass ? getSubclass(cls, draft.classChoices.subclass) : undefined
+    classLabel = cls ? `${cls.name}${sub ? ` (${sub.name})` : ''} · nível ${level}` : `Nível ${level}`
+  }
+  return [raceName, classLabel].filter(Boolean).join(' · ')
+}

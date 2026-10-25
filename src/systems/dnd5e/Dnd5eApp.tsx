@@ -6,6 +6,7 @@ import { getMissingSteps } from './utils/draftValidation'
 import { getClass } from './utils/classUtils'
 import { dnd5eSystem } from './index'
 import { D20Logo } from './assets/D20Logo'
+import { PlayScreen } from './components/play/PlayScreen'
 
 export function Dnd5eApp() {
   const setActiveSystem = useAppStore(state => state.setActiveSystem)
@@ -59,6 +60,9 @@ export function Dnd5eApp() {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [prevStep, view])
+
+  // Modo de jogo: tela própria, fora do WizardShell (a ficha não é editada aqui).
+  if (view === 'play') return <PlayScreen />
 
   if (view === 'print') {
     return (

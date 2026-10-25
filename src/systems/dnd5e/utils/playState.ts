@@ -300,13 +300,10 @@ export function applyDamage(state0: PlayState, sheet: PlaySheet, input: DamageIn
   const total = resistedBy.length > 0 ? Math.floor(raw / 2) : raw
   if (resistedBy.length > 0) notices.push(note('resisted', `Resistência (${resistedBy.join(', ')}): ${raw} → ${total}.`))
 
+  // Dano 0 não é dano (decisão de 2026-10-25, Ponto em aberto 19): sem fracasso a 0 PV e sem TR de
+  // concentração.
   if (total === 0) {
-    const open: string[] = []
-    if (isAtZeroHp(state)) open.push('se conta fracasso no teste contra a morte (regras-dano-e-morte.md, Ponto em aberto 19)')
-    if (state.concentration) open.push('se pede TR de concentração')
-    if (open.length > 0) {
-      notices.push(note('unresolvedRule', `Dano total 0: o livro não decide ${open.join(' nem ')}. Nada foi alterado.`))
-    }
+    notices.push(note('info', 'Dano total 0: não conta como dano. Nada foi alterado.'))
     return done(state0, notices)
   }
 
@@ -733,13 +730,13 @@ export type HitDieSpend = {
  * (decisão 3), pela mesma operação de cura (teto no máximo efetivo). Só tipos disponíveis. A UI
  * guarda o resultado como rascunho até o "Confirmar" do descanso.
  *
- * Recusa a 0 PV: se quem está a 0 PV pode gastar Dados de Vida no descanso curto não está decidido
- * (`regras-descanso.md`, Ponto em aberto 6).
+ * Recusa a 0 PV: quem está a 0 PV não gasta Dados de Vida no descanso curto (decisão de 2026-10-25,
+ * `regras-descanso.md`, Ponto em aberto 6).
  */
 export function spendHitDie(state0: PlayState, sheet: PlaySheet, spend: HitDieSpend): PlayResult {
   if (state0.lifeState === 'dead') return refuse(state0, 'Uma criatura morta não recupera pontos de vida (pág. 199).')
   if (isAtZeroHp(state0)) {
-    return refuse(state0, 'A 0 PV: o livro não diz se dá para gastar Dados de Vida no descanso curto. Nada foi gasto.', 'unresolvedRule')
+    return refuse(state0, 'A 0 PV não dá para gastar Dados de Vida: primeiro é preciso recuperar ao menos 1 PV. Nada foi gasto.')
   }
   const state = reconcilePlayState(state0, sheet)
   const pool = getHitDiceAvailable(state, sheet).find(p => p.die === spend.die)

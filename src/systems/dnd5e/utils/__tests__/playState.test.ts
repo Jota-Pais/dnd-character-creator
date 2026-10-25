@@ -231,11 +231,13 @@ describe('applyDamage', () => {
     expect(r2.state.concentration).toEqual(c)
   })
 
-  it('dano total 0 a 0 PV não muda nada e avisa que o livro não decide (Ponto em aberto 19)', () => {
+  it('dano total 0 não é dano: sem fracasso a 0 PV nem TR de concentração (Ponto em aberto 19)', () => {
     const dying = state({ lifeState: 'dying', damageTaken: 20 })
     const r = applyDamage(dying, S, { amount: 1, resisted: true })
     expect(r.state).toBe(dying)
-    expect(kinds(r)).toContain('unresolvedRule')
+    expect(kinds(r)).toEqual(['resisted', 'info'])
+    const concentrating = state({ concentration: { label: 'Bênção', startedAt: 0 } })
+    expect(kinds(applyDamage(concentrating, S, { amount: 0 }))).toEqual(['info'])
   })
 
   it('morto: recusa e devolve o mesmo estado', () => {
@@ -630,10 +632,10 @@ describe('spendHitDie', () => {
     expect(kinds(spendHitDie(state(), S, { die: 8, value: 9 }))).toEqual(['refused'])
   })
 
-  it('a 0 PV recusa (Ponto em aberto 6); morto recusa', () => {
+  it('a 0 PV recusa (decidido, Ponto em aberto 6); morto recusa', () => {
     const dying = state({ lifeState: 'dying', damageTaken: 20 })
     expect(spendHitDie(dying, S, { die: 8, value: 3 }).state).toBe(dying)
-    expect(kinds(spendHitDie(dying, S, { die: 8, value: 3 }))).toEqual(['unresolvedRule'])
+    expect(kinds(spendHitDie(dying, S, { die: 8, value: 3 }))).toEqual(['refused'])
     expect(kinds(spendHitDie(state({ lifeState: 'dead' }), S, { die: 8, value: 3 }))).toEqual(['refused'])
   })
 

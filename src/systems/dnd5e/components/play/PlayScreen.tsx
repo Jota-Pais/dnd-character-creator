@@ -3,7 +3,9 @@ import { useCharacterStore } from '../../stores/characterStore'
 import { PLAY_TABS, type PlayTabId } from './playTabs'
 import { PlaySettings } from './PlaySettings'
 import { formatPlaySubtitle, usePlayView, type PlayTabProps } from './usePlayView'
-import type { RollGuideEntry } from '../../utils/rollGuide'
+import { findRollGuideEntry, type RollGuideEntry } from '../../utils/rollGuide'
+import { RollRecipeSheet } from './RollRecipeSheet'
+import { VitalsBar } from './VitalsBar'
 
 /**
  * Modo de jogo do D&D 5e: a ficha de UM personagem durante a sessão. Pensada para o celular
@@ -17,8 +19,9 @@ export function PlayScreen() {
   const exitPlay = useCharacterStore(s => s.exitPlay)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [tab, setTab] = useState<PlayTabId>(PLAY_TABS[0].id)
-  // A receita aberta; até a folha existir, a jogada só fica guardada para a próxima etapa.
-  const [, setRecipe] = useState<RollGuideEntry | null>(null)
+  // A receita aberta. Guarda a entrada, mas mostra a versão atual do guia: se uma condição muda
+  // com a folha aberta, o modo e as notas acompanham.
+  const [recipe, setRecipe] = useState<RollGuideEntry | null>(null)
 
   if (!view) {
     return (
@@ -34,6 +37,7 @@ export function PlayScreen() {
   const tabProps: PlayTabProps = { ...view, openRecipe: setRecipe }
   const current = PLAY_TABS.find(t => t.id === tab) ?? PLAY_TABS[0]
   const TabComponent = current.component
+  const liveRecipe = recipe ? findRollGuideEntry(view.guide, recipe.id) ?? recipe : null
 
   return (
     <div className="min-h-screen bg-surface-base text-parchment-200">
@@ -61,6 +65,10 @@ export function PlayScreen() {
           <p className="text-xs text-parchment-500 truncate">{formatPlaySubtitle(view.draft)}</p>
           {settingsOpen && <div className="mt-3"><PlaySettings /></div>}
         </header>
+
+        <div className="sticky top-0 z-20 -mx-4 px-4 py-2 bg-surface-base/95 backdrop-blur-sm border-b border-parchment-900">
+          <VitalsBar view={view} onOpenRecipe={setRecipe} />
+        </div>
 
         <nav role="tablist" aria-label="Seções da ficha" className="mt-4 flex gap-1 overflow-x-auto border-b border-parchment-900">
           {PLAY_TABS.map(t => (
@@ -93,6 +101,10 @@ export function PlayScreen() {
           )}
         </section>
       </div>
+
+      {liveRecipe && (
+        <RollRecipeSheet key={liveRecipe.id} entry={liveRecipe} appDice={view.appDice} onClose={() => setRecipe(null)} />
+      )}
     </div>
   )
 }

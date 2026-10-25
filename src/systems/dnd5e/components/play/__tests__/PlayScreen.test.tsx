@@ -54,3 +54,47 @@ describe('PlayScreen — casca', () => {
     expect(usePlayStore.getState().prefs.appDice).toBe(true)
   })
 })
+
+describe('PlayScreen — vitais e receita', () => {
+  it('mostra PV, CA, deslocamento e Percepção passiva da ficha', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    // Bárbaro 1 (d12) com CON 14: 12 + 2 = 14 PV.
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('14')
+    expect(screen.getByTestId('vitals-hp')).toHaveTextContent('/ 14')
+    expect(screen.getByText('CA')).toBeInTheDocument()
+    expect(screen.getByText('9 m')).toBeInTheDocument()
+  })
+
+  it('inspiração liga e desliga pelo estado de jogo', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('button', { name: /Sem inspiração/ }))
+    expect(usePlayStore.getState().state?.inspiration).toBe(true)
+    expect(screen.getByRole('button', { name: /Inspirado/ })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('a iniciativa abre a receita; sem os dados do app, não há "Rolar"', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('button', { name: /Iniciativa \+2/ }))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByTestId('recipe-formula')).toHaveTextContent('1d20 + 2')
+    expect(screen.getByText('De onde vem')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Rolar' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('com os dados do app, "Rolar" mostra o total e grava no histórico', () => {
+    openKrusk()
+    usePlayStore.getState().setAppDice(true)
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('button', { name: /Iniciativa/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Rolar' }))
+    const rolls = usePlayStore.getState().state!.rolls
+    expect(rolls).toHaveLength(1)
+    expect(rolls[0].label).toBe('Iniciativa')
+    expect(screen.getByTestId('roll-total')).toHaveTextContent(String(rolls[0].total))
+  })
+})

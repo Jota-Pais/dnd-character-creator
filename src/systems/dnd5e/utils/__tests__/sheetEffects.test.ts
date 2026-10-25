@@ -28,6 +28,7 @@ import {
   getOwnedClassFeatures,
   getConditionalSaveBonuses,
   describeConditionalSaveBonuses,
+  getWeaponCritThreshold,
 } from '../sheetEffects'
 import {
   getArmorProficiencies, hasArmorProficiency, hasWeaponProficiency,
@@ -924,5 +925,27 @@ describe('Aura de Proteção (resistências condicionais)', () => {
     const auras = all.filter(f => f.name === 'Aura de Proteção')
     expect(auras.length).toBeGreaterThanOrEqual(1)
     for (const f of auras) expect(f.effects?.conditionalSaveBonus).toBeDefined()
+  })
+})
+
+// ── Efeitos do modo de jogo ──────────────────────────────────────────────────
+
+describe('getWeaponCritThreshold (Crítico Aprimorado / Superior)', () => {
+  const champion = (level: number) =>
+    draft({ level, class: 'fighter', classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), subclass: 'champion' } })
+
+  // p. 85-86: 19 a 20 a partir do 3º; 18 a 20 a partir do 15º.
+  it('campeão 3 e 14: 19; campeão 15: 18; sem subclasse, nada', () => {
+    expect(getWeaponCritThreshold(champion(3))).toEqual({ source: 'Crítico Aprimorado', value: 19 })
+    expect(getWeaponCritThreshold(champion(14))).toEqual({ source: 'Crítico Aprimorado', value: 19 })
+    expect(getWeaponCritThreshold(champion(15))).toEqual({ source: 'Crítico Superior', value: 18 })
+    expect(getWeaponCritThreshold(draft({ level: 15, class: 'fighter' }))).toBeNull()
+  })
+
+  it('conta o nível NA classe: mago 12 / guerreiro campeão 3 fica no 19', () => {
+    const d = draft({
+      level: 15, multiclass: true, class: 'wizard', additionalClasses: [extraClass('fighter', 3, 'champion')],
+    })
+    expect(getWeaponCritThreshold(d)?.value).toBe(19)
   })
 })

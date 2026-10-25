@@ -11,8 +11,8 @@ import { getPlayConditionEffects } from './playState'
 import { getSavingThrowChecks, getSkillChecks, getPassiveScore, getUnproficientArmor } from './proficiencyUtils'
 import {
   EXHAUSTION, getAttacksPerAction, getBestHalfProficiencySource, getCondition, getHalfProficiencySources,
-  getInitiativeBonuses,
-  getOwnedFeats, getSheetArmorClass, resolveRollMode, type ActiveConditionEffects, type ConditionRoll,
+  getInitiativeBonuses, getOwnedFeats, getSheetArmorClass, getWeaponCritThreshold, resolveRollMode,
+  type ActiveConditionEffects, type ConditionRoll, type SheetEffect,
 } from './sheetEffects'
 import { getCasterEntries, getSpellAttackBonus, getSpellSaveDC } from './spellUtils'
 
@@ -82,8 +82,8 @@ export type AttackGuide = {
   properties: string
   attacksPerAction: number
   /**
-   * A partir de que d20 natural o ataque é crítico. Hoje sempre 20: o Crítico Aprimorado/Superior
-   * do Campeão ainda não está declarado como efeito nos dados.
+   * A partir de que d20 natural o ataque é crítico (se acertar): 20, ou a margem das armas do
+   * Campeão (`getWeaponCritThreshold`: 19 no 3º, 18 no 15º). O golpe desarmado fica no 20.
    */
   critThreshold: number
   /** As notas da linha de ataque da ficha (Duelismo, Artes Marciais, recarga…), menos as já no `breakdown`. */
@@ -367,6 +367,19 @@ type AttackGuideContext = {
   cannotAct: string[]
   /** Quem dá os ataques a mais da ação de Atacar (Ataque Extra), para a nota da linha. */
   attacksPerActionSource: string | null
+  /** Margem de crítico das armas (Crítico Aprimorado/Superior); null = só o 20. */
+  weaponCrit: SheetEffect<number> | null
+}
+
+/**
+ * A nota do d20 natural num ataque (pág. 196): o 20 sempre acerta e é crítico; com margem maior
+ * (Crítico Aprimorado), o 19 (ou o 18) só é crítico se acertar — acertar automático é só o 20.
+ */
+function critNote(threshold: number, source?: string): string {
+  if (threshold >= 20) return '20 natural: acerta e é crítico — role os dados de dano duas vezes. 1 natural: erra (pág. 196).'
+  const range = threshold === 19 ? '19 ou 20' : `${threshold} a 20`
+  const from = source ? ` (${source})` : ''
+  return `${range} natural: crítico se acertar${from} — role os dados de dano duas vezes; só o 20 acerta automaticamente. 1 natural: erra (pág. 196).`
 }
 
 function attackGuide(attack: SheetAttack, ctx: AttackGuideContext): AttackGuide {
@@ -384,7 +397,9 @@ function attackGuide(attack: SheetAttack, ctx: AttackGuideContext): AttackGuide 
     if (m) breakdown.push({ label: m[2], value: Number(m[1]) })
     else notes.push(n)
   }
-  const critThreshold = 20
+  // A margem do Campeão vale nos ataques COM ARMA; o golpe desarmado fica no 20.
+  const weaponCrit = attack.weapon ? ctx.weaponCrit : null
+  const critThreshold = weaponCrit?.value ?? 20
   const extraAttacks = attack.attacksPerAction > 1
     ? [`${ctx.attacksPerActionSource ?? 'Ataque Extra'}: você faz ${attack.attacksPerAction} ataques ao usar a ação de Atacar — role cada um.`]
     : []
@@ -402,7 +417,7 @@ function attackGuide(attack: SheetAttack, ctx: AttackGuideContext): AttackGuide 
       ...(attack.proficient ? [] : [`Sem proficiência com ${attack.name}: o bônus de proficiência não entra (pág. 148).`]),
       ...extraAttacks,
       ...notes,
-      `20 natural: acerta e é crítico — role os dados de dano duas vezes. 1 natural: erra (pág. 196).`,
+      critNote(critThreshold, weaponCrit?.source),
       ...linesFor(lines, 'attack'),
     ],
   }, inspiration)
@@ -610,6 +625,7 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
   const attackContext: AttackGuideContext = {
     mods, proficiencyBonus: prof, condition: effects.attack, sheet, lines, inspiration, cannotAct,
     attacksPerActionSource: getAttacksPerAction(draft).source,
+    weaponCrit: getWeaponCritThreshold(draft),
   }
   const attacks = getSheetAttacks(draft, scores).map(a => attackGuide(a, attackContext))
 
@@ -635,7 +651,7 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
           ...cannotAct,
           ...cannotSpeak,
           ...cannotCast,
-          '20 natural: acerta e é crítico — role os dados de dano duas vezes. 1 natural: erra (pág. 196).',
+          critNote(20),
           ...linesFor(lines, 'attack'),
         ],
       }, inspiration),

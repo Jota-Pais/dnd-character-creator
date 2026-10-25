@@ -1030,7 +1030,8 @@
       {
         "level": 3,
         "name": "Crítico Aprimorado",
-        "description": "Seus ataques com arma causam acerto crítico com uma rolagem de 19 ou 20 na jogada de ataque."
+        "description": "Seus ataques com arma causam acerto crítico com uma rolagem de 19 ou 20 na jogada de ataque.",
+        "effects": { "weaponCritThreshold": [{ "from": 3, "value": 19 }] }
       },
       {
         "level": 7,
@@ -1046,7 +1047,8 @@
       {
         "level": 15,
         "name": "Crítico Superior",
-        "description": "Seus ataques com arma causam acerto crítico com uma rolagem de 18 a 20 na jogada de ataque."
+        "description": "Seus ataques com arma causam acerto crítico com uma rolagem de 18 a 20 na jogada de ataque.",
+        "effects": { "weaponCritThreshold": [{ "from": 15, "value": 18 }] }
       },
       {
         "level": 18,

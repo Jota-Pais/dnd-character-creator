@@ -602,6 +602,26 @@ export function getAttacksPerAction(draft: CharacterDraft): SheetAttacksPerActio
   return best
 }
 
+// ── Acerto crítico ─────────────────────────────────────────────────────────────
+
+/**
+ * A margem de crítico dos ataques com arma (`weaponCritThreshold`: Crítico Aprimorado 19, Crítico
+ * Superior 18 do campeão), de cada feature no nível NA classe dona. Não soma: vale a menor margem.
+ * `null` sem nenhuma — o crítico fica no 20 natural (p. 196). O golpe desarmado não é arma e
+ * quem aplica só nas armas é o guia de rolagens.
+ */
+export function getWeaponCritThreshold(draft: CharacterDraft): SheetEffect<number> | null {
+  let best: SheetEffect<number> | null = null
+  for (const { entry, features } of getOwnedClassFeaturesByEntry(draft)) {
+    for (const feature of features) {
+      const steps = feature.effects?.weaponCritThreshold
+      const value = steps ? stepValue(steps, entry.level) : undefined
+      if (value !== undefined && value < (best?.value ?? 20)) best = { source: feature.name, value }
+    }
+  }
+  return best
+}
+
 /**
  * Opções escolhidas nos slots de progressão de cada classe (invocações, manobras, metamágicas...),
  * só as dos slots que o nível NA classe já liberou, com a entrada de quem as escolheu. A que perdeu

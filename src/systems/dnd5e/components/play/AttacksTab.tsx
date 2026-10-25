@@ -73,8 +73,8 @@ function AttackCard({ attack, openRecipe }: { attack: AttackGuide; openRecipe: P
 
 /**
  * Aba "Ataques": uma linha por ataque da ficha (`getSheetAttacks`, pelo guia de rolagens), com o
- * bônus já com o modo das condições. No 20 natural, os dados de dano dobram (pág. 196): a folha
- * do ataque leva ao dano normal ou ao do crítico.
+ * bônus já com o modo das condições. No crítico (20 natural, ou a margem do `critThreshold`), os
+ * dados de dano dobram (pág. 196): a folha do ataque leva ao dano normal ou ao do crítico.
  */
 export function AttacksTab({ guide, openRecipe }: PlayTabProps) {
   if (guide.attacks.length === 0) {
@@ -86,8 +86,16 @@ export function AttacksTab({ guide, openRecipe }: PlayTabProps) {
         {guide.attacks.map(a => <AttackCard key={a.key} attack={a} openRecipe={openRecipe} />)}
       </ul>
       <p className="mt-3 text-[11px] text-parchment-600 leading-snug">
-        Toque no ataque para ver o que rolar; se acertar, a folha leva ao dano. 20 natural: crítico, os dados de dano dobram.
+        Toque no ataque para ver o que rolar; se acertar, a folha leva ao dano. {critFooter(guide.attacks)}
       </p>
     </div>
   )
+}
+
+/** O rodapé do crítico, pela margem do guia: "20 natural" ou a do Campeão nas armas. */
+function critFooter(attacks: AttackGuide[]): string {
+  const threshold = Math.min(...attacks.map(a => a.critThreshold))
+  if (threshold >= 20) return '20 natural: crítico, os dados de dano dobram.'
+  const range = threshold === 19 ? '19 ou 20' : `${threshold} a 20`
+  return `Nas armas, ${range} natural é crítico se acertar (só o 20 acerta sempre): os dados de dano dobram.`
 }

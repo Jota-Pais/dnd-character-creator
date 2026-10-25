@@ -9,7 +9,7 @@ import {
   getWeaponAttackEffects, getMartialArts, getUnarmedDamageDie, getAttacksPerAction, getLoadingOverrides,
 } from './sheetEffects'
 import type { FinalScores } from './classResourceUtils'
-import { getUnarmedStrike, getWeaponAttack, isWeaponInScope, type WeaponAttack } from './weaponFormat'
+import { getUnarmedStrike, getWeaponAttack, hasProperty, isWeaponInScope, type WeaponAttack } from './weaponFormat'
 
 /**
  * Itens que o personagem carrega, com a quantidade — do equipamento inicial da classe (itens fixos
@@ -70,8 +70,14 @@ export function carriesTwoLightMeleeWeapons(draft: CharacterDraft): boolean {
   return count >= 2
 }
 
-/** Uma linha da tabela de ataques, com a chave estável pra lista. */
-export type SheetAttack = WeaponAttack & { key: string }
+/** A arma de uma linha de ataque, para as regras que dependem dela (crítico, Pesada). */
+export type SheetAttackWeapon = { id: string; melee: boolean; heavy: boolean }
+
+/**
+ * Uma linha da tabela de ataques, com a chave estável pra lista e a arma — `null` no golpe
+ * desarmado, que não é arma (p. 196).
+ */
+export type SheetAttack = WeaponAttack & { key: string; weapon: SheetAttackWeapon | null }
 
 /**
  * A tabela de ataques da ficha — a Revisão e o PDF chamam só isto: uma linha por arma carregada e,
@@ -96,9 +102,10 @@ export function getSheetAttacks(draft: CharacterDraft, finalScores: FinalScores)
   const ma = getMartialArts(draft, finalScores)
   const martialArts = ma?.active ? { source: ma.source, die: ma.die, condition: ma.condition } : undefined
 
-  const weapons = getEquippedWeapons(draft).map(weapon => ({
+  const weapons = getEquippedWeapons(draft).map((weapon): SheetAttack => ({
     key: weapon.id,
     ...getWeaponAttack(weapon, { ...base, martialArts, proficient: hasWeaponProficiency(draft, weapon) }),
+    weapon: { id: weapon.id, melee: weapon.weaponType === 'melee', heavy: hasProperty(weapon, 'heavy') },
   }))
 
   const unarmed = getUnarmedStrike({ ...base, martialArts, unarmedDie: getUnarmedDamageDie(draft) ?? undefined })
@@ -107,5 +114,5 @@ export function getSheetAttacks(draft: CharacterDraft, finalScores: FinalScores)
       `${ma.source} (d${ma.die}, Destreza) fora deste número e das armas de monge: você está de ${ma.blockedBy}`,
     )
   }
-  return [...weapons, { key: 'unarmed', ...unarmed }]
+  return [...weapons, { key: 'unarmed', ...unarmed, weapon: null }]
 }

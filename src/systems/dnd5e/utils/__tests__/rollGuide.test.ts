@@ -212,6 +212,31 @@ describe('getRollGuide — ataques', () => {
     expect(bow.notes.some(n => n.includes('Arquearia'))).toBe(false)
   })
 
+  it('Campeão 3: crítico com 19 ou 20 nas armas; golpe desarmado e ataque de magia ficam no 20', () => {
+    const d = draft({
+      class: 'fighter', level: 4, abilityScores: SCORES, classChoices: choices({ subclass: 'champion' }),
+      additionalClasses: [extraClass('wizard', 1)], ...carrying('longsword'),
+    })
+    // Guerreiro 3 / Mago 1 (nível 4).
+    const guide = getRollGuide(d, play())
+    const sword = guide.attacks.find(a => a.key === 'longsword')!
+    const unarmed = guide.attacks.find(a => a.key === 'unarmed')!
+    expect(sword.critThreshold).toBe(19)
+    expect(sword.attack.notes).toContain(
+      '19 ou 20 natural: crítico se acertar (Crítico Aprimorado) — role os dados de dano duas vezes; só o 20 acerta automaticamente. 1 natural: erra (pág. 196).',
+    )
+    expect(unarmed.critThreshold).toBe(20)
+    expect(unarmed.attack.notes.some(n => n.startsWith('20 natural: acerta e é crítico'))).toBe(true)
+    expect(guide.spellcasting[0].attack.notes.some(n => n.startsWith('20 natural: acerta e é crítico'))).toBe(true)
+  })
+
+  it('Campeão 15: Crítico Superior, 18 a 20', () => {
+    const d = draft({ class: 'fighter', level: 15, abilityScores: SCORES, classChoices: choices({ subclass: 'champion' }), ...carrying('longsword') })
+    const sword = getRollGuide(d, play()).attacks.find(a => a.key === 'longsword')!
+    expect(sword.critThreshold).toBe(18)
+    expect(sword.attack.notes.some(n => n.startsWith('18 a 20 natural: crítico se acertar (Crítico Superior)'))).toBe(true)
+  })
+
   it('notas da arma (Duelismo) também no ataque, no dano e no dano a duas mãos', () => {
     const d = draft({ class: 'fighter', level: 1, abilityScores: SCORES, classChoices: choices({ fightingStyle: 'dueling' }), ...carrying('longsword') })
     const sword = getRollGuide(d, play()).attacks.find(a => a.key === 'longsword')!

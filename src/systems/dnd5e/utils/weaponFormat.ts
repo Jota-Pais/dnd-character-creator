@@ -71,7 +71,7 @@ function signed(n: number): string {
   return n >= 0 ? `+${n}` : `${n}`
 }
 
-function hasProperty(weapon: Weapon, kind: WeaponProperty['kind']): boolean {
+export function hasProperty(weapon: Weapon, kind: WeaponProperty['kind']): boolean {
   return weapon.properties.some(p => p.kind === kind)
 }
 

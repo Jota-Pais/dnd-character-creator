@@ -262,6 +262,13 @@ export type FeatureEffects = {
    * talentos e do Estilo de Luta escolhido (inclusive o Adicional do campeão).
    */
   weaponAttacks?: WeaponAttackEffect[]
+  /**
+   * Margem de acerto crítico dos ataques COM ARMA, em degraus pelo nível NA classe dona: Crítico
+   * Aprimorado do campeão, 19 a partir do 3º (p. 85); Crítico Superior, 18 a partir do 15º (p. 86).
+   * Só lido em features de classe e subclasse. Fontes não somam: vale a menor margem. O golpe
+   * desarmado não é arma (p. 196) e não entra. Incondicional: entra no `critThreshold` do guia.
+   */
+  weaponCritThreshold?: LevelStep[]
   /** Artes Marciais do monge — só lido em features de classe, no nível NA classe dona. */
   martialArts?: MartialArtsEffect
   /**

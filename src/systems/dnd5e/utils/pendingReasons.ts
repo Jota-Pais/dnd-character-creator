@@ -41,6 +41,8 @@ import {
   getSpellsKnownCount,
   getSchoolRestrictionStatus,
   getWizardSpellbookSize,
+  getCasterEntries,
+  getSpellStepOverflows,
 } from './spellUtils'
 import { describeEquipmentOption, isChoiceResolved } from './equipmentUtils'
 import {
@@ -399,7 +401,8 @@ function spellEntryReasons(entry: ClassEntry): string[] {
 }
 
 function spellReasons(draft: CharacterDraft): string[] {
-  return allClassEntries(draft).flatMap(spellEntryReasons)
+  const overflows = getSpellStepOverflows(getCasterEntries(draft), getFinalAbilityScores(draft))
+  return [...allClassEntries(draft).flatMap(spellEntryReasons), ...overflows.map(o => o.text)]
 }
 
 // ── Antecedente ─────────────────────────────────────────────────────────────────

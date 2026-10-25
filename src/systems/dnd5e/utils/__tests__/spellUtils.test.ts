@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest'
+import { isStepComplete } from '../draftValidation'
+import { collectStepReasons } from '../pendingReasons'
 import {
   getCasterType,
   getSpellSlots,
@@ -521,5 +523,18 @@ describe('magias preparadas pelos atributos finais', () => {
     expect(caster.spells).toHaveLength(6)
     expect(overflow).toMatchObject({ label: 'Clérigo', chosen: 6, max: 5, excess: 1 })
     expect(overflow?.text).toContain('6 magias preparadas, mas o máximo é 5')
+  })
+
+  it('excesso de preparadas não deixa concluir: a etapa Magias fica pendente com o motivo', () => {
+    const withCantrips = (d: CharacterDraft): CharacterDraft => ({
+      ...d, spellChoices: { cantrips: ['guidance', 'light', 'sacred-flame'], spells: PREPARED },
+    })
+    const lowered = withCantrips(clerigaAna(13))
+    const [caster] = getCasterEntries(lowered)
+    const overflow = getSpellChoiceOverflow(caster, getFinalAbilityScores(lowered))
+    expect(isStepComplete(lowered, 'spells')).toBe(false)
+    expect(collectStepReasons(lowered, 'spells')).toEqual([overflow?.text])
+    expect(isStepComplete(withCantrips(clerigaAna(15)), 'spells')).toBe(true)
+    expect(collectStepReasons(withCantrips(clerigaAna(15)), 'spells')).toEqual([])
   })
 })

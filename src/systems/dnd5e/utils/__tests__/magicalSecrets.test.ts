@@ -159,6 +159,9 @@ describe('Segredos Mágicos ocupam vaga das conhecidas (p. 54)', () => {
     expect(overflow?.text).toContain('14 magias conhecidas escolhidas + 2 de Segredos Mágicos = 16')
     expect(overflow?.text).toContain('desmarque 2 das 14 escolhidas na etapa Magias')
     expect(overflow?.text).toContain('(fica 12 + 2 = 14)')
+    // Decisão do usuário: o excesso não deixa concluir — a etapa Magias fica pendente com o motivo.
+    expect(isStepComplete(draft, 'spells')).toBe(false)
+    expect(collectStepReasons(draft, 'spells')).toEqual([overflow?.text])
   })
 
   it('Segredo truque em ficha antiga com os 4 truques: aviso na coluna de truques', () => {
@@ -172,6 +175,8 @@ describe('Segredos Mágicos ocupam vaga das conhecidas (p. 54)', () => {
     const overflow = getCantripChoiceOverflow(caster)
     expect(overflow).toMatchObject({ chosen: 5, max: 4, excess: 1, fromSecrets: 1 })
     expect(overflow?.text).toContain('desmarque um dos 4 escolhidos na etapa Magias')
+    expect(isStepComplete(draft, 'spells')).toBe(false)
+    expect(collectStepReasons(draft, 'spells')).toEqual([overflow?.text])
   })
 
   it('Segredo que repete uma magia já escolhida não ocupa duas vagas', () => {

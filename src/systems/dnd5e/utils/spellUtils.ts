@@ -618,7 +618,8 @@ function countWord(n: number, one: string): string {
  * Mais magias do que o teto da classe permite com os atributos FINAIS (raça + aprimoramentos) —
  * o jogador voltou e baixou o atributo de um conjurador preparado — ou, no bardo, escolhidas
  * contando os Segredos Mágicos por cima (fichas salvas antes de eles ocuparem vaga, p. 54). A
- * ficha não decide qual magia sai: nada é apagado, vira aviso. null quando está dentro do teto.
+ * ficha não decide qual magia sai: nada é apagado, mas a etapa Magias fica pendente até o jogador
+ * desmarcar (getSpellStepOverflows). null quando está dentro do teto.
  */
 export function getSpellChoiceOverflow(
   caster: CasterEntry,
@@ -684,6 +685,20 @@ export function getCantripChoiceOverflow(caster: CasterEntry): SpellChoiceOverfl
       + `O Segredo Mágico escolhido como truque ocupa vaga de Truques Conhecidos: desmarque ${countWord(excess, 'um')} dos ${col.chosen} escolhidos na etapa Magias `
       + `(fica ${col.chosen - excess} + ${col.fromSecrets} = ${max}).`
   return { label, chosen, max, excess, fromSecrets: col.fromSecrets, text }
+}
+
+/**
+ * Excessos que travam a etapa Magias (decisão do usuário, 2026-10-25: ficha com escolhas além do
+ * teto não conclui). Fica de fora o que só se resolve trocando Segredo Mágico — esse trava a etapa
+ * Classe (getSecretSpellIssues).
+ */
+export function getSpellStepOverflows(
+  casters: CasterEntry[],
+  finalScores: Partial<Record<AbilityScore, number | null>>,
+): SpellChoiceOverflow[] {
+  return casters
+    .flatMap(caster => getSpellChoiceOverflows(caster, finalScores))
+    .filter(o => o.fromSecrets <= o.max)
 }
 
 /** Os avisos de excesso da classe — truques e magias — na ordem em que a ficha mostra. */

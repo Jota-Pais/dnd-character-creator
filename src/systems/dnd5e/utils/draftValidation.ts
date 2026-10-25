@@ -20,7 +20,7 @@ import { getRace, getSubrace, isRaceStepComplete } from './raceUtils'
 import { getClass, getSubclass, getSpellcastingSource, isClassStepComplete } from './classUtils'
 import { getBackground, isBackgroundStepComplete, sanitizeBackgroundItemSelections } from './backgroundUtils'
 import { isAbilitiesStepComplete } from './abilityScoreUtils'
-import { getSpell, getSecretSpellIssues, isSpellStepComplete } from './spellUtils'
+import { getCasterEntries, getSpell, getSecretSpellIssues, getSpellStepOverflows, isSpellStepComplete } from './spellUtils'
 import { isEquipmentStepComplete } from './equipmentUtils'
 import { isImprovementsStepComplete, getFinalAbilityScores } from './asiUtils'
 import { areFeatChoicesComplete, hasRepeatedFightingStyle } from './sheetEffects'
@@ -380,7 +380,8 @@ export function isStepComplete(draft: CharacterDraft, step: WizardStep): boolean
         const ec = getClass(entry.classId) ?? null
         if (!isSpellStepComplete(ec, entry.spellChoices, entry.level, entry.classChoices.subclass, entry.classChoices.progressionChoices)) return false
       }
-      return true
+      // Escolhas além do teto (atributo baixado, ficha antiga do bardo) não concluem.
+      return getSpellStepOverflows(getCasterEntries(draft), getFinalAbilityScores(draft)).length === 0
     }
     case 'background':
       return isBackgroundStepComplete(background, draft.backgroundChoices)

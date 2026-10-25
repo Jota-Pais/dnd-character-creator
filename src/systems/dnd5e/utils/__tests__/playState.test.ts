@@ -9,7 +9,7 @@ import {
   addCondition, applyDamage, applyHealing, clearTempHp, completeLongRest, completeShortRest,
   createPlayState, endConcentration, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable,
   getLongRestHitDiceRecoverable, getPactSlotsAvailable, getPlayConditionEffects, getPlayConditionState,
-  getResourceAvailable, getSpellSlotsAvailable, grantTempHp, previewLongRest, reconcileLoadedPlayState,
+  getResourceAvailable, getSpellSlotsAvailable, grantTempHp, previewLongRest, previewShortRest, reconcileLoadedPlayState,
   reconcilePlayState,
   recordDeathSave, recordRoll, recoverPactSlot, recoverResource, recoverSpellSlot, removeCondition,
   revive, sanitizePlayState, setConditionNote, setExhaustion, setInspiration, setNote, spendHitDie, spendPactSlot,
@@ -727,6 +727,23 @@ describe('completeShortRest', () => {
     expect(kinds(completeShortRest(state({ hitDiceSpent: { 8: 2 } }), bard, { hitDiceSpent: 0 }))).not.toContain('warning')
     expect(kinds(completeShortRest(state(), bard))).not.toContain('warning')
     expect(kinds(completeShortRest(state(), S, { hitDiceSpent: 3 }))).not.toContain('warning')
+  })
+})
+
+describe('previewShortRest', () => {
+  it('lista o Pacto e os recursos de recarga curta gastos, o mesmo que o completeShortRest devolve', () => {
+    const sh = sheet({ pactSlots: { slots: 2, slotLevel: 2 } })
+    const s = state({ pactSlotsSpent: 1, resourcesSpent: { 'second-wind': 1, rage: 2 } })
+    const preview = previewShortRest(s, sh)
+    expect(preview).toEqual({ pactSlots: 1, resources: [{ id: 'second-wind', name: 'second-wind', amount: 1 }] })
+    const done = completeShortRest(s, sh).state
+    expect(done.pactSlotsSpent).toBe(0)
+    expect(done.resourcesSpent).toEqual({ rage: 2 })
+  })
+
+  it('nada gasto: nada a voltar; gasto acima do máximo é lido já reconciliado', () => {
+    expect(previewShortRest(state(), S)).toEqual({ pactSlots: 0, resources: [] })
+    expect(previewShortRest(state({ resourcesSpent: { 'second-wind': 9 } }), S).resources[0].amount).toBe(1)
   })
 })
 

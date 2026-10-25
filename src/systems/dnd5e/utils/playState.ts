@@ -796,6 +796,27 @@ export type ShortRestOptions = {
   hitDiceSpent?: number
 }
 
+export type ShortRestPreview = {
+  /** Espaços de Magia de Pacto gastos, que voltam. */
+  pactSlots: number
+  /** Recursos de recarga `'short'` com usos gastos, que voltam inteiros. */
+  resources: { id: string; name: string; amount: number }[]
+}
+
+/**
+ * Prévia pura do que o descanso curto devolve além dos Dados de Vida (`regras-descanso.md`, 6.2):
+ * os espaços de Pacto e os recursos `'short'`. É a mesma conta do `completeShortRest`.
+ */
+export function previewShortRest(state0: PlayState, sheet: PlaySheet): ShortRestPreview {
+  const state = reconcilePlayState(state0, sheet)
+  return {
+    pactSlots: state.pactSlotsSpent,
+    resources: sheet.resources
+      .filter(r => r.recharge === 'short' && (state.resourcesSpent[r.id] ?? 0) > 0)
+      .map(r => ({ id: r.id, name: r.name, amount: state.resourcesSpent[r.id] })),
+  }
+}
+
 /** Id do recurso da Canção de Descanso do bardo em `class-progression-features.json`. */
 const SONG_OF_REST_ID = 'song-of-rest'
 
@@ -810,14 +831,13 @@ const SONG_OF_REST_ID = 'song-of-rest'
 export function completeShortRest(state0: PlayState, sheet: PlaySheet, options: ShortRestOptions = {}): PlayResult {
   if (state0.lifeState === 'dead') return refuse(state0, 'O personagem está morto.')
   const state = reconcilePlayState(state0, sheet)
+  const preview = previewShortRest(state, sheet)
   const recovered: string[] = []
-  if (state.pactSlotsSpent > 0) recovered.push(`${state.pactSlotsSpent} espaço(s) de Pacto`)
+  if (preview.pactSlots > 0) recovered.push(`${preview.pactSlots} espaço(s) de Pacto`)
   const resourcesSpent = { ...state.resourcesSpent }
-  for (const r of sheet.resources) {
-    if (r.recharge === 'short' && resourcesSpent[r.id]) {
-      recovered.push(r.name)
-      delete resourcesSpent[r.id]
-    }
+  for (const r of preview.resources) {
+    recovered.push(r.name)
+    delete resourcesSpent[r.id]
   }
   const notices = recovered.length > 0 ? [note('recovered', `Descanso curto: voltaram ${recovered.join(', ')}.`)] : []
   const song = sheet.resources.find(r => r.id === SONG_OF_REST_ID)

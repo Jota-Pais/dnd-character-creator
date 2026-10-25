@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { roll, sequenceRoller } from '../../../../core/dice'
 import type { PlaySheet, PlayState } from '../../types/playState'
-import { PLAY_STATE_VERSION, ROLL_HISTORY_LIMIT } from '../../types/playState'
+import { CONDITION_NOTE_MAX_LENGTH, PLAY_STATE_VERSION, ROLL_HISTORY_LIMIT } from '../../types/playState'
 import type { SheetResource } from '../classResourceUtils'
 import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
 import { buildPlaySheet } from '../playSheet'
@@ -12,7 +12,7 @@ import {
   getResourceAvailable, getSpellSlotsAvailable, grantTempHp, previewLongRest, reconcileLoadedPlayState,
   reconcilePlayState,
   recordDeathSave, recordRoll, recoverPactSlot, recoverResource, recoverSpellSlot, removeCondition,
-  revive, sanitizePlayState, setExhaustion, setInspiration, setNote, spendHitDie, spendPactSlot,
+  revive, sanitizePlayState, setConditionNote, setExhaustion, setInspiration, setNote, spendHitDie, spendPactSlot,
   spendResource, spendSpellSlot, stabilize, standUp, startConcentration, suggestLongRestHitDice,
   suggestTempHpChoice,
 } from '../playState'
@@ -493,6 +493,44 @@ describe('condições', () => {
     const grappled = state({ conditions: ['prone', 'grappled'] })
     expect(standUp(grappled, S).state).toBe(grappled)
     expect(kinds(standUp(state(), S))).toEqual(['refused'])
+  })
+})
+
+describe('nota de duração das condições', () => {
+  it('grava aparada, cortada no teto, e apaga com texto vazio', () => {
+    const s = state({ conditions: ['poisoned'] })
+    const r = setConditionNote(s, 'poisoned', '  até o fim do próximo turno do mago  ')
+    expect(r.state.conditionNotes).toEqual({ poisoned: 'até o fim do próximo turno do mago' })
+    expect(setConditionNote(r.state, 'poisoned', 'x'.repeat(500)).state.conditionNotes?.poisoned)
+      .toHaveLength(CONDITION_NOTE_MAX_LENGTH)
+    const cleared = setConditionNote(r.state, 'poisoned', '   ').state
+    expect(cleared.conditionNotes).toBeUndefined()
+    expect('conditionNotes' in cleared).toBe(false)
+  })
+
+  it('a mesma nota devolve o mesmo estado; só condição gravada leva nota', () => {
+    const s = state({ conditions: ['paralyzed'], conditionNotes: { paralyzed: '1 minuto' } })
+    expect(setConditionNote(s, 'paralyzed', '1 minuto').state).toBe(s)
+    expect(kinds(setConditionNote(s, 'incapacitated', 'derivada'))).toEqual(['refused'])
+    expect(kinds(setConditionNote(state(), 'poisoned', 'x'))).toEqual(['refused'])
+  })
+
+  it('a nota sai junto com a condição (removeCondition e standUp)', () => {
+    const s = state({ conditions: ['poisoned', 'prone'], conditionNotes: { poisoned: '1 hora', prone: 'empurrado' } })
+    const removed = removeCondition(s, 'poisoned').state
+    expect(removed.conditionNotes).toEqual({ prone: 'empurrado' })
+    const stood = standUp(removed, S).state
+    expect(stood.conditions).toEqual([])
+    expect(stood.conditionNotes).toBeUndefined()
+  })
+
+  it('o sanitizador aceita o campo, só das condições gravadas e com texto', () => {
+    const s = sanitizePlayState({
+      conditions: ['poisoned', 'blinded'],
+      conditionNotes: { poisoned: '  1 hora ', blinded: '', prone: 'sem condição', charmed: 3, bogus: 'x' },
+    }, 'c')
+    expect(s.conditionNotes).toEqual({ poisoned: '1 hora' })
+    expect('conditionNotes' in sanitizePlayState({ conditions: ['poisoned'], conditionNotes: 'x' }, 'c')).toBe(false)
   })
 })
 

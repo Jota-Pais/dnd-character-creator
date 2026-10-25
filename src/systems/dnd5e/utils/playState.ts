@@ -1,7 +1,7 @@
 import type { RollRecord } from '../../../core/dice'
 import type { ConditionId, ExhaustionLevel } from '../types/condition'
 import {
-  HIT_DIE_SIZES, PLAY_STATE_VERSION, ROLL_HISTORY_LIMIT,
+  CONDITION_NOTE_MAX_LENGTH, HIT_DIE_SIZES, PLAY_STATE_VERSION, ROLL_HISTORY_LIMIT,
   type Concentration, type DeathSaveCount, type LifeState, type PlayNotice, type PlayNoticeKind,
   type PlayResult, type PlaySheet, type PlayState,
 } from '../types/playState'
@@ -595,7 +595,7 @@ export function addCondition(state: PlayState, id: ConditionId): PlayResult {
  */
 export function removeCondition(state: PlayState, id: ConditionId): PlayResult {
   if (state.conditions.includes(id)) {
-    return done({ ...state, conditions: state.conditions.filter(c => c !== id) })
+    return done(withoutCondition(state, id))
   }
   if (id === 'unconscious' && isAtZeroHp(state)) {
     return refuse(state, 'O Inconsciente vem dos 0 PV: acaba quando o personagem recupera PV (pág. 199).')
@@ -617,9 +617,40 @@ export function standUp(state: PlayState, sheet: PlaySheet): PlayResult {
   const speed = getPlaySpeed(state, sheet)
   if (speed <= 0) return refuse(state, 'Com deslocamento 0 não é possível se levantar (pág. 193).')
   return done(
-    { ...state, conditions: state.conditions.filter(c => c !== 'prone') },
+    withoutCondition(state, 'prone'),
     [note('info', `Levantar-se custa metade do deslocamento (${Math.floor(speed / 2)} pés) (pág. 192).`)],
   )
+}
+
+/** Tira a nota de uma condição; o campo some quando não sobra nenhuma. */
+function withoutConditionNote(state: PlayState, id: ConditionId): PlayState {
+  if (state.conditionNotes?.[id] === undefined) return state
+  const rest = { ...state.conditionNotes }
+  delete rest[id]
+  const next: PlayState = { ...state }
+  if (Object.keys(rest).length > 0) next.conditionNotes = rest
+  else delete next.conditionNotes
+  return next
+}
+
+/** Tira uma condição gravada, junto com a nota de duração dela. */
+function withoutCondition(state: PlayState, id: ConditionId): PlayState {
+  return withoutConditionNote({ ...state, conditions: state.conditions.filter(c => c !== id) }, id)
+}
+
+/**
+ * Nota de duração de uma condição gravada ("até o fim do próximo turno do mago"): o app não conta
+ * tempo, só guarda o lembrete. Texto aparado e cortado em `CONDITION_NOTE_MAX_LENGTH`; vazio
+ * apaga a nota. Condição só derivada (Incapacitado por Paralisado) ou ausente não leva nota.
+ */
+export function setConditionNote(state: PlayState, id: ConditionId, text: string): PlayResult {
+  if (!state.conditions.includes(id)) {
+    return refuse(state, `${getCondition(id)?.name ?? id} não está gravada: só condição aplicada leva nota de duração.`)
+  }
+  const value = text.trim().slice(0, CONDITION_NOTE_MAX_LENGTH).trim()
+  if (!value) return done(withoutConditionNote(state, id))
+  if (state.conditionNotes?.[id] === value) return done(state)
+  return done({ ...state, conditionNotes: { ...state.conditionNotes, [id]: value } })
 }
 
 /**
@@ -1039,6 +1070,15 @@ export function sanitizePlayState(raw: unknown, characterId: string): PlayState 
   const conditions = Array.isArray(raw.conditions)
     ? [...new Set(raw.conditions.filter((c): c is ConditionId => typeof c === 'string' && getCondition(c as ConditionId) !== undefined))]
     : []
+  // Notas de duração: só das condições que ficaram, texto aparado e dentro do teto.
+  const conditionNotes: Partial<Record<ConditionId, string>> = {}
+  if (isRecord(raw.conditionNotes)) {
+    for (const id of conditions) {
+      const text = raw.conditionNotes[id]
+      const value = typeof text === 'string' ? text.trim().slice(0, CONDITION_NOTE_MAX_LENGTH).trim() : ''
+      if (value) conditionNotes[id] = value
+    }
+  }
 
   return {
     ...base,
@@ -1052,6 +1092,7 @@ export function sanitizePlayState(raw: unknown, characterId: string): PlayState 
     pactSlotsSpent: nonNegInt(raw.pactSlotsSpent),
     resourcesSpent,
     conditions,
+    ...(Object.keys(conditionNotes).length > 0 ? { conditionNotes } : {}),
     exhaustionLevel,
     concentration: lifeState === 'conscious' ? sanitizeConcentration(raw.concentration) : null,
     inspiration: raw.inspiration === true,

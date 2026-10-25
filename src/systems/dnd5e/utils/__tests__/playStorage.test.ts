@@ -43,6 +43,13 @@ describe('playStorage', () => {
     expect(listPlayStateIds().sort()).toEqual(['a', 'b'])
   })
 
+  it('a nota de duração das condições vai e volta do armazenamento (sem subir a versão)', () => {
+    const saved = savePlayState({ ...createPlayState('a'), conditions: ['poisoned'], conditionNotes: { poisoned: '1 hora' } }, 5)
+    expect(loadPlayState('a')?.conditionNotes).toEqual({ poisoned: '1 hora' })
+    expect(loadPlayState('a')).toEqual(saved)
+    expect(JSON.parse(localStorage.getItem(PLAY_STATES_KEY)!).version).toBe(PLAY_STORAGE_VERSION)
+  })
+
   it('sem estado salvo: null, ou um novo com loadOrCreate (sem gravar)', () => {
     expect(loadPlayState('x')).toBeNull()
     expect(loadOrCreatePlayState('x', 9)).toEqual(createPlayState('x', 9))

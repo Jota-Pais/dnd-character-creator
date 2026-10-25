@@ -23,6 +23,9 @@ export const PLAY_STATE_VERSION = 1
  */
 export const ROLL_HISTORY_LIMIT = 100
 
+/** Teto da nota de duração de uma condição: uma linha curta, não um diário. */
+export const CONDITION_NOTE_MAX_LENGTH = 120
+
 /** Tipos de Dado de Vida das classes do PHB 2014 (d6 feiticeiro/mago … d12 bárbaro). */
 export const HIT_DIE_SIZES = [6, 8, 10, 12] as const
 
@@ -69,6 +72,11 @@ export type PlayState = {
    * NÃO entra aqui: é derivado do `lifeState` (`regras-condicoes.md`, 6.4).
    */
   conditions: ConditionId[]
+  /**
+   * Nota de duração de cada condição gravada, em texto livre ("até o fim do próximo turno do
+   * mago"): o app não conta tempo. Só de condição em `conditions`; sai junto com ela.
+   */
+  conditionNotes?: Partial<Record<ConditionId, string>>
   exhaustionLevel: ExhaustionLevel
 
   concentration: Concentration | null

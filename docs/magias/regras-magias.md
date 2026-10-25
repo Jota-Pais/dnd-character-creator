@@ -5062,7 +5062,7 @@ school: ilusão
 classes: [bardo, bruxo, feiticeiro, mago]
 castingTime: 1 ação
 range: 9 metros
-components: V, M (um pouco de lã)
+components: S, M (um pouco de lã)
 duration: 1 minuto
 ritual: false
 concentration: false

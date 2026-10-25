@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { CLASSES } from '../../utils/classUtils'
 import { stripInlineBold } from '../../utils/ruleText'
 import weaponsData from '../weapons.json'
+import spellsData from '../spells.json'
 
 /**
  * A digitalização do PHB vem de um PDF que usa Wingdings para os marcadores de lista: o extrator
@@ -103,4 +104,16 @@ describe('ids de arma das classes', () => {
       expect(unknown, `ids sem correspondência no catálogo: ${unknown.join(', ')}`).toEqual([])
     },
   )
+})
+
+/**
+ * Erros claros de tradução do PHB pt-BR seguem o inglês (política em CLAUDE.md, "Fontes da
+ * Verdade"). A digitalização carrega o texto pt-BR: rodar de novo um parser sobre ela, ou copiar o
+ * trecho do extract, traria o erro de volta. Cada caso adotado fica preso aqui.
+ */
+describe('divergências pt-BR × inglês que seguem o inglês', () => {
+  it('Ilusão Menor é S, M — o pt-BR diz V, M, mas a magia não tem componente verbal', () => {
+    const spell = (spellsData as { id: string; components: string }[]).find(s => s.id === 'minor-illusion')
+    expect(spell?.components).toBe('S, M (um pouco de lã)')
+  })
 })

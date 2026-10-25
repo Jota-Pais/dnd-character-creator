@@ -4,21 +4,9 @@ import { PlayScreen } from '../PlayScreen'
 import { useAppStore } from '../../../../../core/stores/appStore'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { usePlayStore } from '../../../stores/playStore'
-import { COMPLETE_DRAFT } from '../../../../../test/fixtures'
+import { openKrusk, resetPlay } from './openPlay'
 
-/** Salva a ficha completa (Krusk, meio-orc bárbaro 1) e abre no modo de jogo. */
-function openKrusk(): string {
-  useCharacterStore.getState().importDraft(structuredClone(COMPLETE_DRAFT))
-  const id = useCharacterStore.getState().currentId!
-  useCharacterStore.getState().playCharacter(id)
-  useAppStore.getState().setActiveSystem('dnd5e')
-  return id
-}
-
-beforeEach(() => {
-  localStorage.clear()
-  usePlayStore.getState().close()
-})
+beforeEach(resetPlay)
 afterEach(() => cleanup())
 
 describe('PlayScreen — casca', () => {

@@ -4,6 +4,8 @@ import { PLAY_TABS, type PlayTabId } from './playTabs'
 import { PlaySettings } from './PlaySettings'
 import { formatPlaySubtitle, usePlayView, type PlayTabProps } from './usePlayView'
 import { findRollGuideEntry, type RollGuideEntry } from '../../utils/rollGuide'
+import { DeathSaves } from './DeathSaves'
+import { HpPanel } from './HpPanel'
 import { RollRecipeSheet } from './RollRecipeSheet'
 import { VitalsBar } from './VitalsBar'
 
@@ -68,6 +70,13 @@ export function PlayScreen() {
 
         <div className="sticky top-0 z-20 -mx-4 px-4 py-2 bg-surface-base/95 backdrop-blur-sm border-b border-parchment-900">
           <VitalsBar view={view} onOpenRecipe={setRecipe} />
+        </div>
+
+        {/* A 0 PV os testes contra a morte tomam a frente; dano e cura continuam valendo
+            (dano a 0 PV conta fracasso, cura acorda). Morto, só o "Fui revivido". */}
+        <div className="mt-3 space-y-2">
+          {view.state.lifeState !== 'conscious' && <DeathSaves view={view} />}
+          {view.state.lifeState !== 'dead' && <HpPanel view={view} />}
         </div>
 
         <nav role="tablist" aria-label="Seções da ficha" className="mt-4 flex gap-1 overflow-x-auto border-b border-parchment-900">

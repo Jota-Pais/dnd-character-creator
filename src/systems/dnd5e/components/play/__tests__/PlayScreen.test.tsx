@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { render, screen, fireEvent, cleanup } from '@testing-library/react'
+import { render, screen, fireEvent, cleanup, within } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { useAppStore } from '../../../../../core/stores/appStore'
 import { useCharacterStore } from '../../../stores/characterStore'
@@ -72,6 +72,29 @@ describe('PlayScreen — vitais e receita', () => {
     expect(screen.queryByRole('button', { name: 'Rolar' })).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Fechar' }))
     expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('a folha recebe o foco, prende o Tab e devolve o foco a quem a abriu', () => {
+    openKrusk()
+    usePlayStore.getState().setAppDice(true)
+    render(<PlayScreen />)
+    const opener = screen.getByRole('button', { name: /Iniciativa/ })
+    opener.focus()
+    fireEvent.click(opener)
+    const dialog = screen.getByRole('dialog')
+    const close = within(dialog).getByRole('button', { name: 'Fechar' })
+    const rollButton = within(dialog).getByRole('button', { name: 'Rolar' })
+    expect(close).toHaveFocus()
+
+    // Shift+Tab no primeiro vai ao último; Tab no último volta ao primeiro.
+    fireEvent.keyDown(close, { key: 'Tab', shiftKey: true })
+    expect(rollButton).toHaveFocus()
+    fireEvent.keyDown(rollButton, { key: 'Tab' })
+    expect(close).toHaveFocus()
+
+    fireEvent.click(close)
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(opener).toHaveFocus()
   })
 
   it('com os dados do app, "Rolar" mostra o total e grava no histórico', () => {

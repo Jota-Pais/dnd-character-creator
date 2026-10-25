@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { usePlayStore } from '../../stores/playStore'
 import { formatModifier } from '../../utils/abilityScoreUtils'
 import { endConcentration } from '../../utils/playState'
@@ -6,6 +6,9 @@ import type { RollGuideEntry } from '../../utils/rollGuide'
 import { canRollEntry, rollGuideEntry, type GuideRoll } from './playDice'
 
 const reasonLabels = (reasons: { label: string }[]) => reasons.map(r => r.label).join(', ')
+
+/** O que recebe o foco dentro da folha (para prender o Tab). */
+const FOCUSABLE = 'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
 /** Uma jogada ligada a esta, aberta de dentro da folha: o dano de um ataque. */
 export type RecipeLink = { label: string; entry: RollGuideEntry }
@@ -37,6 +40,9 @@ export function RollRecipeSheet({ entry, appDice, onClose, crit = false, links =
   const [result, setResult] = useState<(GuideRoll & { crit: boolean }) | null>(null)
   const [critMode, setCritMode] = useState(crit && entry.crit !== undefined)
 
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const closeRef = useRef<HTMLButtonElement>(null)
+
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose()
@@ -44,6 +50,30 @@ export function RollRecipeSheet({ entry, appDice, onClose, crit = false, links =
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
   }, [onClose])
+
+  // Diálogo modal: o foco entra na folha ao abrir e volta para quem a abriu ao fechar.
+  useEffect(() => {
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    closeRef.current?.focus()
+    return () => {
+      if (opener?.isConnected) opener.focus()
+    }
+  }, [])
+
+  // O Tab circula dentro da folha: a ficha atrás do fundo escuro não recebe o foco.
+  function trapTab(e: ReactKeyboardEvent<HTMLDivElement>) {
+    if (e.key !== 'Tab' || !dialogRef.current) return
+    const focusable = [...dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)]
+    if (focusable.length === 0) return
+    const first = focusable[0]
+    const last = focusable[focusable.length - 1]
+    const active = document.activeElement
+    const inside = active instanceof Node && dialogRef.current.contains(active)
+    if (e.shiftKey ? (!inside || active === first) : (!inside || active === last)) {
+      e.preventDefault()
+      ;(e.shiftKey ? last : first).focus()
+    }
+  }
 
   function rollIt(asCrit: boolean) {
     const rolled = rollGuideEntry(entry, { crit: asCrit })
@@ -75,15 +105,18 @@ export function RollRecipeSheet({ entry, appDice, onClose, crit = false, links =
   return (
     <div className="fixed inset-0 z-40 flex items-end sm:items-center justify-center bg-black/60" onClick={onClose}>
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         onClick={e => e.stopPropagation()}
+        onKeyDown={trapTab}
         className="w-full sm:max-w-md max-h-[85vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl border border-parchment-800 bg-surface-raised px-5 pt-4 pb-6"
       >
         <div className="flex items-start justify-between gap-3">
           <h2 id={titleId} className="font-fantasy font-bold text-base text-parchment-200 leading-snug pt-2">{entry.label}</h2>
           <button
+            ref={closeRef}
             onClick={onClose}
             aria-label="Fechar"
             className="w-10 h-10 shrink-0 flex items-center justify-center rounded-lg text-parchment-500 hover:text-parchment-200"

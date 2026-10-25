@@ -263,7 +263,7 @@ export type LevelStep<T = number> = { from: number; value: T }
  * - múltiplo do nível (Chi = nível, Cura pelas Mãos = 5 × nível) → `perClassLevel`;
  * - metade do nível (Recuperação Arcana, arredondada pra cima) → `halfClassLevel`;
  * - modificador de atributo (Inspiração de Bardo, mínimo 1) → `ability` + `min`;
- * - constante (Sentido Divino = 1 + CAR) → `plus`;
+ * - constante (Sentido Divino = 1 + CAR, mínimo 1) → `plus` + `min`;
  * - bônus de proficiência (CD da Arma de Sopro = 8 + CON + proficiência) → `proficiency`.
  */
 export type ResourceFormula = {
@@ -274,7 +274,11 @@ export type ResourceFormula = {
   plus?: number
   /** Soma o bônus de proficiência do personagem (que segue o nível de personagem). */
   proficiency?: boolean
-  /** Piso do total. Só quando o livro diz ("no mínimo uma vez"). */
+  /**
+   * Piso do total. Quando o livro diz ("no mínimo uma vez") ou por decisão registrada: o Sentido
+   * Divino (p. 110) não traz mínimo, mas 0 usos numa característica de 1º nível não faz sentido na
+   * mesa — fica 1 (decisão do usuário, 2026-10-25).
+   */
   min?: number
 }
 

@@ -113,7 +113,7 @@ export function evaluateResource(
     name: effect.name,
     source,
     ...(die ? { die } : {}),
-    // Usos nunca ficam negativos: Sentido Divino (1 + CAR, sem mínimo no livro) com CAR 6 dá 0, não −1.
+    // Usos nunca ficam negativos, mesmo numa fórmula sem `min` declarado.
     ...(unlimited
       ? { uses: 'unlimited' as const }
       : effect.uses !== undefined ? { uses: Math.max(0, q(effect.uses)) } : {}),

@@ -206,11 +206,12 @@ describe('getSheetResources — paladino', () => {
       .toMatchObject({ uses: 5, unit: 'hp', recharge: 'long' })
     expect(find(getSheetResources(draft('paladin', 7), scores()), 'lay-on-hands')?.uses).toBe(35)
   })
-  it('Sentido Divino = 1 + mod. de CAR, sem mínimo (p. 110), nunca negativo', () => {
+  it('Sentido Divino = 1 + mod. de CAR (p. 110), mínimo 1 (decisão de 2026-10-25)', () => {
     const ds = (cha: number) => find(getSheetResources(draft('paladin', 1), scores({ CHA: cha })), 'divine-sense')?.uses
     expect(ds(16)).toBe(4)
-    expect(ds(8)).toBe(0)
-    expect(ds(4)).toBe(0)
+    expect(ds(10)).toBe(1)
+    expect(ds(8)).toBe(1)
+    expect(ds(4)).toBe(1)
   })
   it('Toque Purificador no 14º: mod. de CAR, mínimo 1', () => {
     expect(find(getSheetResources(draft('paladin', 13), scores()), 'cleansing-touch')).toBeUndefined()

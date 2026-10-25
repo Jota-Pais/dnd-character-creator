@@ -532,10 +532,10 @@
       {
         "level": 1,
         "name": "Sentido Divino",
-        "description": "Com uma ação, até o fim do seu próximo turno você sabe a localização e o tipo (mas não a identidade) de qualquer celestial, corruptor ou morto-vivo a até 18 m que não esteja sob cobertura total, e detecta lugares ou objetos consagrados ou conspurcados no mesmo raio. Usos: 1 + mod. de Carisma; recupera todos em descanso longo.",
+        "description": "Com uma ação, até o fim do seu próximo turno você sabe a localização e o tipo (mas não a identidade) de qualquer celestial, corruptor ou morto-vivo a até 18 m que não esteja sob cobertura total, e detecta lugares ou objetos consagrados ou conspurcados no mesmo raio. Usos: 1 + mod. de Carisma (mínimo 1); recupera todos em descanso longo.",
         "effects": {
           "resources": [
-            { "id": "divine-sense", "name": "Sentido Divino", "uses": { "ability": "CHA", "plus": 1 }, "recharge": "long" }
+            { "id": "divine-sense", "name": "Sentido Divino", "uses": { "ability": "CHA", "plus": 1, "min": 1 }, "recharge": "long" }
           ]
         }
       },

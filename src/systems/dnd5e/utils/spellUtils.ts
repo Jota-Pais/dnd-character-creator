@@ -556,6 +556,46 @@ export function describeSecretsInColumn(column: KnownColumn): string | null {
   return `${column.toChoose} + ${column.fromSecrets} de Segredos Mágicos = ${column.total}`
 }
 
+/**
+ * Quantas a classe tem numa coluna, contando os Segredos que a ocupam: "13 + 1 de Segredos Mágicos
+ * = 14", ou só "13" sem Segredo. Conta o que está na ficha (escolhidas + Segredos), não o teto.
+ */
+export function formatColumnCount(column: KnownColumn): string {
+  if (column.fromSecrets === 0) return String(column.chosen)
+  return `${column.chosen} + ${column.fromSecrets} de Segredos Mágicos = ${column.chosen + column.fromSecrets}`
+}
+
+/** Os títulos das colunas de uma classe na Revisão e na ficha imprimível. */
+export type CasterColumnHeadings = {
+  /** "Truques (3 + 1 de Segredos Mágicos = 4)". */
+  cantrips: string
+  /** "Conhecidas (13 + 1 de Segredos Mágicos = 14)", ou "Preparadas (5)". */
+  spells: string
+  /** Há truque na coluna (escolhido ou Segredo)? Sem nenhum, a seção não aparece. */
+  hasCantrips: boolean
+  hasSpells: boolean
+}
+
+/**
+ * Títulos com o total de cada coluna — o mesmo número que a etapa Magias mostra — para quem lê a
+ * ficha não somar os títulos e chegar a mais magias do que tem (os Segredos já estão dentro).
+ */
+export function getCasterColumnHeadings(
+  caster: CasterEntry,
+  finalScores: Partial<Record<AbilityScore, number | null>>,
+): CasterColumnHeadings {
+  const choices = caster.entry.spellChoices
+  const cantrips = getCantripColumn(caster.casting, caster.entry.level, choices, caster.knownSecrets)
+  const spells = getSpellColumn(caster.casting, caster.entry.level, finalScores, choices, caster.knownSecrets)
+  const word = caster.casting.spellcasting.type === 'prepared' ? 'Preparadas' : 'Conhecidas'
+  return {
+    cantrips: `Truques (${formatColumnCount(cantrips)})`,
+    spells: `${word} (${formatColumnCount(spells)})`,
+    hasCantrips: cantrips.chosen + cantrips.fromSecrets > 0,
+    hasSpells: spells.chosen + spells.fromSecrets > 0,
+  }
+}
+
 /** Escolhas além do teto de uma coluna (ver getSpellChoiceOverflows). */
 export type SpellChoiceOverflow = {
   /** "Clérigo", ou "Guerreiro (Cavaleiro Arcano)". */

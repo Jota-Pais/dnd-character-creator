@@ -54,6 +54,7 @@ import {
   getSpellChoiceOverflows,
   getSecretSpellGroups,
   formatSecretSpellName,
+  getCasterColumnHeadings,
 } from '../../utils/spellUtils'
 import { exportCharacter } from '../../utils/storage'
 import { getPendingSteps, getStepPendingReasons } from '../../utils/pendingReasons'
@@ -895,6 +896,7 @@ export function ReviewStep() {
                 const cantrips = caster.cantrips.map(id => getSpell(id)).filter(Boolean)
                 const spells = caster.spells.map(id => getSpell(id)).filter(Boolean)
                 const secretGroups = getSecretSpellGroups(caster)
+                const headings = getCasterColumnHeadings(caster, finalScores)
                 // Conjuração de subclasse (Cavaleiro/Trapaceiro Arcano) se identifica mesmo sem multiclasse.
                 const showLabel = isMc || caster.casting.casterId !== caster.cls.id
                 return (
@@ -920,15 +922,16 @@ export function ReviewStep() {
                         {overflows.map(o => <p key={o.text} className="text-xs font-semibold text-red-400">⚠ {o.text}</p>)}
                       </div>
                     )}
-                    {cantrips.length > 0 && (
+                    {/* Títulos com o total da coluna: os Segredos que ocupam vaga já estão dentro. */}
+                    {headings.hasCantrips && (
                       <div className="mb-3">
-                        <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">Truques ({cantrips.length})</p>
+                        <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">{headings.cantrips}</p>
                         <div className="flex flex-wrap gap-1.5">{cantrips.map(s => s && <SpellChip key={s.id} name={s.name} school={s.school} />)}</div>
                       </div>
                     )}
-                    {spells.length > 0 && (
+                    {headings.hasSpells && (
                       <div>
-                        <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">{sc_.type === 'prepared' ? 'Preparadas' : 'Conhecidas'} ({spells.length})</p>
+                        <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">{headings.spells}</p>
                         <div className="flex flex-wrap gap-1.5">{spells.map(s => s && <SpellChip key={s.id} name={s.name} school={s.school} concentration={s.concentration} ritual={s.ritual} />)}</div>
                       </div>
                     )}

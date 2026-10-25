@@ -60,3 +60,25 @@ describe('Segredos que ocupam vaga e Adicionais (por cima) separados', () => {
     expect(additionalText).toContain('Contramágica (3º)')
   })
 })
+
+describe('títulos das colunas com o total dos Segredos', () => {
+  it.each([
+    ['Revisão', () => render(<ReviewStep />)],
+    ['ficha imprimível', () => render(<PrintableSheet />)],
+  ])('%s: truques e conhecidas somam os Segredos que ocupam vaga', (_, renderIt) => {
+    useCharacterStore.setState({
+      draft: {
+        ...structuredClone(loreBard10),
+        classChoices: {
+          ...structuredClone(loreBard10.classChoices),
+          subclass: 'college-of-valor',
+          progressionChoices: { 'bard-magical-secrets-10': ['fire-bolt', 'fireball'] },
+        },
+        spellChoices: { cantrips: ['friends', 'mending', 'true-strike'], spells: ['charm-person', 'sleep'] },
+      },
+    })
+    const text = renderIt().container.textContent ?? ''
+    expect(text).toContain('Truques (3 + 1 de Segredos Mágicos = 4)')
+    expect(text).toContain('Conhecidas (2 + 1 de Segredos Mágicos = 3)')
+  })
+})

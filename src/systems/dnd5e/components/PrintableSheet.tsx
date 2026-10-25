@@ -37,7 +37,7 @@ import { getProgressionChoiceBlocks } from '../utils/progressionOptions'
 import {
   getSpell, getSpellSaveDC, formatSpellAttackBonus, getCombinedSpellSlots, getPactSlots,
   getMaxPreparedSpells, describeCastingAids, getCasterEntries, getSpellChoiceOverflows,
-  getSecretSpellGroups, formatSecretSpellName,
+  getSecretSpellGroups, formatSecretSpellName, getCasterColumnHeadings,
 } from '../utils/spellUtils'
 import { RuleText } from './common/RuleText'
 import { formatAttackDamage } from '../utils/weaponFormat'
@@ -392,6 +392,7 @@ export function PrintableSheet() {
               const cantrips = cantripIds.map(id => getSpell(id)?.name).filter(Boolean)
               const spells = spellIds.map(id => getSpell(id)).filter(Boolean)
               const secretGroups = getSecretSpellGroups(caster)
+              const headings = getCasterColumnHeadings(caster, finalScores)
               const byLevel = new Map<number, string[]>()
               for (const s of spells) { const a = byLevel.get(s!.level) ?? []; a.push(s!.name); byLevel.set(s!.level, a) }
               if (cantrips.length === 0 && spells.length === 0 && secretGroups.length === 0) return null
@@ -406,7 +407,11 @@ export function PrintableSheet() {
                   {overflows.map(o => (
                     <p key={o.text} className="text-xs mb-0.5 border border-gray-400 px-1.5 py-1"><strong>⚠ {o.text}</strong></p>
                   ))}
-                  {cantrips.length > 0 && <p className="text-xs mb-0.5"><span className="text-gray-600">Truques (sempre disponíveis): </span>{cantrips.join(', ')}</p>}
+                  {/* Títulos com o total da coluna, como na Revisão: os Segredos que ocupam vaga já estão dentro. */}
+                  {headings.hasCantrips && (
+                    <p className="text-xs mb-0.5"><span className="text-gray-600">{headings.cantrips}, sempre disponíveis: </span>{cantrips.join(', ') || '—'}</p>
+                  )}
+                  {headings.hasSpells && <p className="text-xs mb-0.5 text-gray-600">{headings.spells}:</p>}
                   {[...byLevel.keys()].sort((a, b) => a - b).map(lvl => (
                     <p key={lvl} className="text-xs mb-0.5"><span className="text-gray-600">{lvl}º nível: </span>{byLevel.get(lvl)!.join(', ')}</p>
                   ))}

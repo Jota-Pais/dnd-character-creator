@@ -14,8 +14,10 @@ import {
   getSpellsByClass,
   getSecretSpellGroups,
   formatSecretSpellName,
+  getCasterColumnHeadings,
 } from '../spellUtils'
 import { collectStepReasons } from '../pendingReasons'
+import { getBaseClassFeaturesUpToLevel } from '../classUtils'
 import { isStepComplete } from '../draftValidation'
 import { getSecretSpellOptions } from '../progressionOptions'
 import { getFinalAbilityScores } from '../asiUtils'
@@ -462,5 +464,53 @@ describe('getSecretSpellGroups: Segredos que ocupam vaga × Adicionais por cima'
     expect(getSecretSpellGroups(columns(valor).caster).map(g => g.kind)).toEqual(['in-columns'])
     const none = bardAt(5, { subclass: 'college-of-valor', cantrips: [], spells: [], progressionChoices: {} })
     expect(getSecretSpellGroups(columns(none).caster)).toEqual([])
+  })
+})
+
+describe('títulos das colunas com o total (Revisão e PDF)', () => {
+  it('bardo Bravura 10 com Segredo truque e magia: 3 + 1 = 4 truques, 13 + 1 = 14 conhecidas', () => {
+    const draft = bard10({
+      subclass: 'college-of-valor',
+      cantrips: BARD_CANTRIPS.slice(0, 3),
+      spells: BARD_SPELLS.slice(0, 13),
+      progressionChoices: { 'bard-magical-secrets-10': ['fire-bolt', 'fireball'] },
+    })
+    const { caster, scores } = columns(draft)
+    expect(getCasterColumnHeadings(caster, scores)).toEqual({
+      cantrips: 'Truques (3 + 1 de Segredos Mágicos = 4)',
+      spells: 'Conhecidas (13 + 1 de Segredos Mágicos = 14)',
+      hasCantrips: true,
+      hasSpells: true,
+    })
+  })
+
+  it('sem Segredo, só a contagem; preparado diz Preparadas', () => {
+    const draft = bardAt(5, { subclass: 'college-of-valor', cantrips: BARD_CANTRIPS.slice(0, 3), spells: BARD_SPELLS.slice(0, 8), progressionChoices: {} })
+    const { caster, scores } = columns(draft)
+    expect(getCasterColumnHeadings(caster, scores)).toMatchObject({ cantrips: 'Truques (3)', spells: 'Conhecidas (8)' })
+
+    const cleric: CharacterDraft = {
+      ...structuredClone(EMPTY_DRAFT),
+      class: 'cleric', level: 1,
+      abilityScores: { STR: 10, DEX: 10, CON: 12, INT: 10, WIS: 16, CHA: 10 },
+      classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), subclass: 'life' },
+      spellChoices: { cantrips: ['guidance'], spells: ['bless', 'cure-wounds'] },
+    }
+    const c = columns(cleric)
+    expect(getCasterColumnHeadings(c.caster, c.scores)).toMatchObject({ cantrips: 'Truques (1)', spells: 'Preparadas (2)' })
+  })
+
+  it('todos os truques vindo de Segredos: a seção de truques aparece mesmo sem escolhido', () => {
+    const four = {
+      'bard-magical-secrets-10': ['fire-bolt', 'shillelagh'],
+      'bard-magical-secrets-14': ['sacred-flame', 'ray-of-frost'],
+    }
+    const { caster, scores } = columns(bardAt(14, { subclass: 'college-of-valor', cantrips: [], spells: [], progressionChoices: four }))
+    expect(getCasterColumnHeadings(caster, scores)).toMatchObject({ cantrips: 'Truques (0 + 4 de Segredos Mágicos = 4)', hasCantrips: true, hasSpells: false })
+  })
+
+  it('o texto de Segredos Mágicos diz que o truque ocupa vaga de Truques Conhecidos', () => {
+    const feature = getBaseClassFeaturesUpToLevel('bard', 10).find(f => f.name === 'Segredos Mágicos')
+    expect(feature?.description).toContain('um truque escolhido ocupa vaga de Truques Conhecidos')
   })
 })

@@ -483,7 +483,7 @@
       {
         "level": 10,
         "name": "Segredos Mágicos",
-        "description": "Escolha duas magias de qualquer classe (mais duas no 14° e no 18° nível), cada uma um truque ou de um nível que você possa conjurar. Elas passam a contar como magias de bardo para você e entram no seu total de Magias Conhecidas."
+        "description": "Escolha duas magias de qualquer classe (mais duas no 14° e no 18° nível), cada uma um truque ou de um nível que você possa conjurar. Elas passam a contar como magias de bardo para você e entram no seu total de Magias Conhecidas (um truque escolhido ocupa vaga de Truques Conhecidos)."
       },
       {
         "level": 20,

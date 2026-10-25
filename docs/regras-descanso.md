@@ -108,7 +108,7 @@ A ficha (`CharacterDraft`) **nunca é reescrita** pelo descanso. O estado de jog
 | Campo (sugestão) | Conteúdo | Descanso curto | Descanso longo | Bloqueado pela falta de benefício (0 PV / 24 h / interrupção)? |
 | --- | --- | --- | --- | --- |
 | `damageTaken` | PV perdidos (o PV atual é derivado do máximo) | cura dos Dados de Vida pela operação de cura de `regras-dano-e-morte.md` (ver abaixo) | volta a 0, ou a `sheetMaxHp − effectiveMaxHp` se a exaustão continuar ≥ 4 depois do −1 (ver abaixo) | sim (seção 4.3) |
-| `lifeState` | `conscious` / `dying` / `stable` / `dead` (definido em `regras-dano-e-morte.md`) | vai a `conscious` se a cura dos Dados de Vida tirar o personagem de 0 PV (ver Pontos em aberto, item 6) | — (o descanso longo exige 1 PV no início) | — |
+| `lifeState` | `conscious` / `dying` / `stable` / `dead` (definido em `regras-dano-e-morte.md`) | — (a 0 PV não se gastam Dados de Vida; Pontos em aberto, item 6, decidido) | — (o descanso longo exige 1 PV no início) | — |
 | `deathSaves` | Sucessos e fracassos contra a morte (idem) | zerados junto com a saída de 0 PV | — | — |
 | `tempHp` | PV temporários | não muda | volta a 0 (seção 5.2) | sim (assumido (A), item 10) |
 | `hitDiceSpent` | Gastos **por tipo**, ex.: `{ 10: 2, 8: 1 }` | + dados gastos | − recuperados (seção 4.3; quantidade e tipos: itens 1-3) | sim (seção 4.3) |
@@ -140,7 +140,7 @@ Tudo acontece num **rascunho de descanso** que fica em memória. Nada é gravado
    - com `lifeState === 'dead'`, a prévia **bloqueia** a cura (o morto não recupera PV, linhas 17846-17848) e avisa por quê.
 2. **Gastar Dados de Vida, um a um** (só no descanso curto):
    - o jogador escolhe o **tipo** quando o poço tem mais de um (multiclasse);
-   - **rolagem digital** pelo motor puro de `src/core/dice`, ligada por padrão, ou **valor manual** do dado físico (validar de 1 ao número de lados);
+   - **valor manual** do dado físico (validar de 1 ao número de lados), que é o padrão, ou **rolagem digital** pelo motor puro de `src/core/dice` quando o jogador liga os dados do app (decisão de 2026-10-25);
    - soma o mod. de CON (de `getFinalAbilityScores`) e mostra a conta aberta, ex.: "d8: 5 + 2 = 7"; com CON negativa, a cura tem **piso 0** e nunca vira dano (decisão 3), ex.: "d6: 1 − 2 = 0";
    - mostra o PV parcial, já com o teto do máximo efetivo (seção 3.1 e seção 6.1), e decide-se **após cada rolagem** se gasta o próximo;
    - um "desfazer último dado" dentro do rascunho ajuda quem digitou o valor manual errado.
@@ -178,7 +178,7 @@ Funções puras com cobertura, conforme a seção "Testes" do CLAUDE.md:
 5. **Limite de 24 horas sem relógio de jogo** (linhas 16828-16830). Aviso na prévia ou bloqueio por data real? Sem decisão. Segue a proposta (aviso na prévia, sem bloquear; seção 6.1) até decisão em contrário.
 6. **0 PV e descanso longo / curto** (linhas 16830-16831).
    - Descanso longo com 0 PV no início: bloquear ou oferecer o atalho do estável (1 PV após 1d4 horas, pág. 200)? **Assumido (2026-10-24), a confirmar (A):** o descanso longo não dá nenhum benefício (ver item 10). O atalho do estável continua sendo só o 1d4 do rastreador de PV (`regras-dano-e-morte.md`), fora do descanso.
-   - **Continua aberto:** no descanso curto, que não exige 1 PV no texto, um personagem a 0 PV pode gastar Dados de Vida? Se puder, a cura o leva a `conscious` e zera os testes contra a morte (seção 6.1).
+   - No descanso curto, que não exige 1 PV no texto, um personagem a 0 PV pode gastar Dados de Vida? **Decidido (2026-10-25):** não. O app recusa e pede que ele recupere ao menos 1 PV antes (cura, estabilização com o 1d4 horas ou "fui revivido").
 7. **Interrupção do descanso longo no app** (linhas 16815-16820). Sem decisão. Segue a proposta (o jogador só confirma o descanso que de fato terminou, com um texto de ajuda na prévia) até decisão em contrário.
 8. **Exaustão "comeu e bebeu"** (linhas 28561-28563). Caixa marcada ou desmarcada? **Decidido (2026-10-24):** marcada por padrão, com o jogador podendo desmarcar (`regras-condicoes.md`, item 14).
 9. **Leitura de "vigiar por não mais de 2 horas"** (linhas 16814-16815). Só para vigiar ou para todas as atividades leves? Não afeta o app, que não mede tempo. Fica só registrado.

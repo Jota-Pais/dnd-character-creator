@@ -680,7 +680,7 @@ Mais específicas da ficha: concentração ausente, buffs fora das rolagens, pre
 15. **Condições e exaustão com efeito incondicional** (PV máximo na exaustão 4, deslocamento 0 ou pela metade) mudam o número, como manda a regra de ouro (recomendado), ou ficam só como aviso?
 16. **Efeitos ativos** (Fúria, Bênção, Armadura Arcana, Escudo Arcano) entram no MVP como liga/desliga ou na Fase 2? E um efeito ativo incondicional (Armadura Arcana: CA 13 + DES) muda a CA durante a sessão?
 17. **O Ordem Paranormal precisa ser atendido já no MVP?** O pedido fala das fichas produzidas pelo app, o que inclui as do Ordem. A pergunta 10.2.12 só trata do contrato.
-18. **A rolagem digital vem ligada por padrão**, ou o padrão é "só contabilidade" com dados físicos? Dá para desligar por ficha?
+18. **A rolagem digital vem ligada por padrão**, ou o padrão é "só contabilidade" com dados físicos? Dá para desligar por ficha? **Decidido (2026-10-25):** desligada por padrão. O jogador rola na mesa e a tela mostra o que rolar e quanto somar. Os dados do app são uma configuração, sem destaque no MVP.
 19. **Mínimo 1 no descanso longo e mínimo 0 no dado de vida + CON** (seção 10.1, itens 3 e 4): o que vale?
 20. **Quanto histórico de rolagens guardar?** Existe um "Nova sessão" (padrão Shard) que limpa o log e reseta marcadores? A cota do localStorage (~5 MB) é compartilhada entre as fichas dos dois sistemas.
 21. **Personagens de exemplo e tutorial jogável** (padrão 5e Character Sheet e PrismScroll): entram, e em qual fase?

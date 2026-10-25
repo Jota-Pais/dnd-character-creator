@@ -182,7 +182,7 @@ Pela regra acima ("se ficar incapacitado ou se morrer", linhas 18370-18372), tod
 
 ## 11. Notas de implementação (mapeamento pro app)
 
-Não faz parte da regra do livro. Orienta a execução das próximas fases. Já decidido: o estado de jogo fica separado da ficha (a ficha nunca é reescrita em jogo, só se registra o "gasto"); o motor de rolagem é puro e separado da animação; rolagem digital por padrão, com entrada manual de dado físico; MVP só de D&D.
+Não faz parte da regra do livro. Orienta a execução das próximas fases. Já decidido: o estado de jogo fica separado da ficha (a ficha nunca é reescrita em jogo, só se registra o "gasto"); o motor de rolagem é puro e separado da animação; MVP só de D&D. **Dados (revisto em 2026-10-25):** o jogador rola os próprios dados por padrão. A tela diz o que rolar e quanto somar ou tirar ("1d20 + 5, com vantagem"), e o jogador digita o resultado só onde o app precisa dele (dano, cura, Dado de Vida, teste contra a morte). A rolagem digital é uma configuração, desligada por padrão e sem destaque no MVP. Quando está ligada, o motor de `src/core/dice` faz a conta.
 
 ### 11.1 Onde cada coisa mora
 
@@ -252,7 +252,7 @@ Não faz parte da regra do livro. Orienta a execução das próximas fases. Já 
 5. **Arredondamento da metade do dano.** **Assumido (2026-10-24), a confirmar (E):** CD = `max(10, floor(dano / 2))`, pela regra geral da pág. 7.
 6. **Desvantagem incondicional no passivo e na iniciativa** (Exaustão 1 e Envenenado, pág. 292; passivo, pág. 177; iniciativa, págs. 179/191). **Decidido (2026-10-24):** valem também na Percepção passiva (−5) e na iniciativa (desvantagem). Vale para este documento e para `regras-condicoes.md` (item 8 e tabela 6.3), já sincronizados.
 7. **Versatilidade e Atletismo Extraordinário na iniciativa.** A Versatilidade (pág. 54) soma metade da proficiência, arredondada para baixo, em "qualquer teste de habilidade" sem proficiência. O Atletismo Extraordinário (Campeão 7, pág. 85) soma metade, "arredondado para cima", em "qualquer teste de Força, Destreza ou Constituição" sem proficiência. Com a iniciativa sendo teste de Destreza (págs. 179/191), os dois entrariam nela. Mesma natureza de inferência do item 6 (que o dono decidiu aplicar à desvantagem, mas não a estes bônus). Leio "teste de Força, Destreza ou Constituição" como teste de habilidade, não de resistência, porque o livro chama este de "teste de resistência de Força". Confirmar as duas coisas.
-8. **20 e 1 naturais em testes de habilidade e TR comuns.** O extrato só dá regra para ataque (pág. 196) e TR contra a morte (pág. 199). Decidir se a UI destaca o natural nesses casos só como visual (sem sucesso automático) ou não destaca.
+8. **20 e 1 naturais em testes de habilidade e TR comuns.** O extrato só dá regra para ataque (pág. 196) e TR contra a morte (pág. 199). **Decidido (2026-10-25):** a UI destaca o 20 e o 1 naturais só como visual, sem sucesso nem falha automáticos.
 9. **Desempate de iniciativa.** Oferecer ou não o d20 de desempate opcional da pág. 191.
 10. **Concentração durante tempo de conjuração maior** (pág. 204), incluindo rituais com +10 minutos. Sem decisão. Segue a proposta da seção 11.4 (fora do MVP) até decisão em contrário.
 11. **d2 e d3 com dado físico.** Na entrada manual, aceitar o resultado final (1-2 ou 1-3) ou o d6 tirado, com a conversão da pág. 6 feita pelo app. Sem decisão. Segue a proposta (aceitar o resultado final) até decisão em contrário.

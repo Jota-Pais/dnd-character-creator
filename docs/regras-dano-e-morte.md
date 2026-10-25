@@ -293,7 +293,7 @@ O modelo de entrada fica **flexível** porque o livro não decide os ataques com
 6. Se `lifeState` é `dying` ou `stable` (já a 0 PV):
    - `rest ≥ effectiveMaxHp` → `dead` (mesmo máximo do passo 5);
    - senão, `failures += isCritical ? 2 : 1` (limitado a 3; 3 → `dead`), e `stable` vira `dying` (assumido (D)).
-   - **Inclusive com `rest === 0`** (tudo absorvido pelos temporários): conta o fracasso, porque a regra fala em "qualquer dano" (decisão 5). Se um evento com `total === 0` depois do piso conta é o Ponto em aberto 19.
+   - **Inclusive com `rest === 0`** (tudo absorvido pelos temporários): conta o fracasso, porque a regra fala em "qualquer dano" (decisão 5). Já um evento com `total === 0` depois do piso e da resistência **não** é dano: não conta fracasso nem pede TR de concentração (decidido, Ponto em aberto 19).
 7. Toda transição para `dead` (passos 5 e 6, terceiro fracasso, exaustão 6) encerra a concentração no mesmo evento (assumido (F)).
 8. Tudo vira um **evento de log desfazível** (o estado anterior é guardado), coerente com o "desfazer" do crítico.
 
@@ -359,4 +359,4 @@ O motor é puro e agnóstico de sistema; o D&D monta a expressão.
 16. **Margem de crítico ampliada e acerto automático** (linhas 17528-17532, 7312-7314 e 7329-7331). **Decidido (2026-10-24):** só o 20 natural acerta automaticamente; 19/18 é crítico se o total acertar.
 17. **Máximo efetivo 0.** Com PV máximo da ficha 1, a exaustão 4 dá `floor(1 / 2) = 0` (pág. 7), e o corte gravado levaria o personagem a 0 PV sem passar pelo pipeline de dano, contra a restrição "reduzir o máximo nunca leva a 0 PV sozinho". O livro não trata do caso. Caso de borda, sem proposta.
 18. **"Fui revivido" depois de morte por exaustão 6.** A decisão 13 diz o que o botão faz com PV e contadores, mas não com o nível de exaustão. Se ele fica em 6, a morte derivada continua. Sem decisão.
-19. **Evento de dano com total 0 a 0 PV.** Com o piso 0 (decisão 3), um dano pode dar 0 (ex.: ataque desarmado com Força negativa). Isso é "qualquer dano" e conta fracasso, como o dano absorvido pelos temporários (decisão 5)? Sem decisão.
+19. **Evento de dano com total 0 a 0 PV.** Com o piso 0 (decisão 3), um dano pode dar 0 (ex.: ataque desarmado com Força negativa). Isso é "qualquer dano" e conta fracasso, como o dano absorvido pelos temporários (decisão 5)? **Decidido (2026-10-25):** não. Dano 0 não é dano: nada muda no estado, nem fracasso a 0 PV nem TR de concentração. A diferença para a decisão 5 é que lá o dano existiu e só foi absorvido.

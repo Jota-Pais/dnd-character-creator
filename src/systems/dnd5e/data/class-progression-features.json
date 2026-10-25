@@ -1764,7 +1764,8 @@
       {
         "level": 10,
         "name": "Acostumado à Morte-Vida",
-        "description": "Você recebe resistência a dano necrótico e seu máximo de pontos de vida não pode mais ser reduzido."
+        "description": "Você recebe resistência a dano necrótico e seu máximo de pontos de vida não pode mais ser reduzido.",
+        "effects": { "hpMaxCannotBeReduced": true }
       },
       {
         "level": 14,

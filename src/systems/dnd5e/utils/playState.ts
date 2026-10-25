@@ -93,9 +93,24 @@ export function getPlayConditionEffects(state: PlayState): ActiveConditionEffect
   return getActiveConditionEffects(getPlayConditionState(state))
 }
 
-/** PV máximo efetivo: o da ficha × multiplicador da exaustão (metade a partir da 4, pág. 292). */
+/**
+ * PV máximo efetivo: o da ficha × multiplicador da exaustão (metade a partir da 4, pág. 292). Com
+ * a característica que impede reduzir o máximo (Acostumado à Morte-Vida, pág. 101), o da ficha.
+ */
 export function getEffectiveMaxHp(state: PlayState, sheet: PlaySheet): number {
-  return getEffectiveHpMax(Math.max(0, sheet.maxHp), getPlayConditionEffects(state))
+  const sheetMax = Math.max(0, sheet.maxHp)
+  if (sheet.hpMaxReductionImmunity) return sheetMax
+  return getEffectiveHpMax(sheetMax, getPlayConditionEffects(state))
+}
+
+/**
+ * A linha que explica por que a Exaustão 4 (ou mais) não cortou o PV máximo: só com a
+ * característica que o impede (Acostumado à Morte-Vida) e a exaustão que corta. `null` fora disso.
+ */
+export function describeHpMaxImmunity(state: PlayState, sheet: PlaySheet): string | null {
+  if (!sheet.hpMaxReductionImmunity) return null
+  if (getPlayConditionEffects(state).hpMax.multiplier === 1) return null
+  return `Exaustão ${state.exhaustionLevel} sem efeito no PV máximo (${sheet.hpMaxReductionImmunity}): seu máximo de pontos de vida não pode ser reduzido (pág. 101).`
 }
 
 /**
@@ -690,7 +705,9 @@ export function setExhaustion(state0: PlayState, sheet: PlaySheet, level: number
     next.damageTaken = sheetMax - effMax
     notices.push(note('hpCut', `Exaustão ${target}: PV máximo ${effMax}. O PV atual cai de ${current} para ${effMax} e não volta quando a exaustão baixar.`))
   }
-  if (before >= 4 && target < 4) {
+  const immunity = describeHpMaxImmunity(next, sheet)
+  if (immunity && before < 4) notices.push(note('info', immunity))
+  if (before >= 4 && target < 4 && !sheet.hpMaxReductionImmunity) {
     notices.push(note('info', `O PV máximo volta a ${sheetMax}; o PV atual fica em ${getCurrentHp(next, sheet)} (o corte da exaustão não volta).`))
   }
   if (before === 6 && next.lifeState === 'dead') {

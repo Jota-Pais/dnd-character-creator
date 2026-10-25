@@ -7,7 +7,7 @@ import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
 import { buildPlaySheet } from '../playSheet'
 import {
   addCondition, applyDamage, applyHealing, clearTempHp, completeLongRest, completeShortRest,
-  createPlayState, endConcentration, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable,
+  createPlayState, describeHpMaxImmunity, endConcentration, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable,
   getLongRestHitDiceRecoverable, getPactSlotsAvailable, getPlayConditionEffects, getPlayConditionState,
   getResourceAvailable, getSpellSlotsAvailable, grantTempHp, previewLongRest, previewShortRest, reconcileLoadedPlayState,
   reconcilePlayState,
@@ -621,6 +621,25 @@ describe('setExhaustion', () => {
     const r = setExhaustion(s, sh, 4)
     expect(r.state).toBe(s)
     expect(kinds(r)).toEqual(['unresolvedRule'])
+  })
+
+  it('Acostumado à Morte-Vida: a exaustão 4 não corta o PV máximo, com a linha que explica', () => {
+    const sh = sheet({ hpMaxReductionImmunity: 'Acostumado à Morte-Vida' })
+    expect(describeHpMaxImmunity(state({ exhaustionLevel: 3 }), sh)).toBeNull()
+    const r = setExhaustion(state({ exhaustionLevel: 3 }), sh, 4)
+    expect(getEffectiveMaxHp(r.state, sh)).toBe(20)
+    expect(getCurrentHp(r.state, sh)).toBe(20)
+    expect(r.state.damageTaken).toBe(0)
+    expect(kinds(r)).not.toContain('hpCut')
+    const line = 'Exaustão 4 sem efeito no PV máximo (Acostumado à Morte-Vida): seu máximo de pontos de vida não pode ser reduzido (pág. 101).'
+    expect(r.notices.map(n => n.text)).toContain(line)
+    expect(describeHpMaxImmunity(r.state, sh)).toBe(line)
+    // A cura chega ao máximo da ficha, e baixar a exaustão não fala em PV que volta.
+    expect(getCurrentHp(applyHealing(state({ exhaustionLevel: 5, damageTaken: 8 }), sh, 50).state, sh)).toBe(20)
+    const back = setExhaustion(r.state, sh, 3)
+    expect(back.notices).toEqual([])
+    // Sem a característica, nada muda: o corte de sempre e nenhuma linha.
+    expect(describeHpMaxImmunity(state({ exhaustionLevel: 4 }), S)).toBeNull()
   })
 
   it('limita a 0..6 e recusa não inteiro', () => {

@@ -403,6 +403,15 @@ export function getHpPerLevelBonus(draft: CharacterDraft, level: number): number
  * em `multiclassUtils`, porque só este módulo enxerga talentos e traços — e `multiclassUtils`
  * não pode importá-lo (é ele quem fornece `getAllAsiChoices`).
  */
+/**
+ * A característica que impede reduzir o PV máximo (`hpMaxCannotBeReduced`: Acostumado à
+ * Morte-Vida, p. 101), no nível NA classe dona, pelo nome; `null` sem nenhuma. O modo de jogo a
+ * lê pelo `PlaySheet`: a Exaustão 4 não corta o máximo de quem a tem.
+ */
+export function getHpMaxReductionImmunity(draft: CharacterDraft): string | null {
+  return getOwnedClassFeatures(draft).find(f => f.effects?.hpMaxCannotBeReduced)?.name ?? null
+}
+
 export function getTotalHp(draft: CharacterDraft, conModifier: number): number {
   const base = draft.hpMethod === 'roll'
     ? getTotalHpRolled(draft, conModifier)

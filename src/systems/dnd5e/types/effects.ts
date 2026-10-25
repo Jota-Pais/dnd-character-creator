@@ -246,6 +246,12 @@ export type FeatureEffects = {
    * classe", ou seja, 1 × nível de feiticeiro (um guerreiro 3 / feiticeiro 2 ganha só +2).
    */
   hpPerClassLevel?: number
+  /**
+   * "Seu máximo de pontos de vida não pode ser reduzido" (Acostumado à Morte-Vida, mago da
+   * Necromancia 10, p. 101): a metade da Exaustão 4 não corta o máximo. Só lido em features de
+   * classe e subclasse, no nível NA classe dona.
+   */
+  hpMaxCannotBeReduced?: boolean
   /** Outra forma de calcular a CA sem armadura (Defesa sem Armadura, Resiliência Dracônica). */
   unarmoredAc?: UnarmoredAcFormula
   /** Bônus nos valores PASSIVOS destas perícias (Observador: +5 em Percepção e Investigação). */

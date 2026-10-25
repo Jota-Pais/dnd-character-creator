@@ -79,6 +79,16 @@ describe('buildPlaySheet', () => {
     expect(sheet.resources.find(r => r.id === 'arcane-recovery')?.recharge).toBe('day')
   })
 
+  it('Acostumado à Morte-Vida (mago da Necromancia 10): o PV máximo não pode ser reduzido', () => {
+    const necro = (level: number) => draft({
+      class: 'wizard', level, abilityScores: SCORES,
+      classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), subclass: 'necromancy' },
+    })
+    expect(buildPlaySheet(necro(10)).hpMaxReductionImmunity).toBe('Acostumado à Morte-Vida')
+    expect(buildPlaySheet(necro(9)).hpMaxReductionImmunity).toBeUndefined()
+    expect(buildPlaySheet(fighter).hpMaxReductionImmunity).toBeUndefined()
+  })
+
   it('sem classe: PV 0 e poço vazio', () => {
     const sheet = buildPlaySheet(draft({}))
     expect(sheet.maxHp).toBe(0)

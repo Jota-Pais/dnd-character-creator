@@ -1,5 +1,5 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
-import { endConcentration, setExhaustion, startConcentration } from '../../utils/playState'
+import { describeHpMaxImmunity, endConcentration, setExhaustion, startConcentration } from '../../utils/playState'
 import { EXHAUSTION } from '../../utils/sheetEffects'
 import { ConditionsSection } from './ConditionsSection'
 import { LongRestPanel } from './LongRestPanel'
@@ -18,9 +18,10 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 }
 
 /** Exaustão de 0 a 6 (pág. 292): cada nível inclui os anteriores; o texto acompanha o nível. */
-function ExhaustionSection({ state, run }: PlayTabProps) {
+function ExhaustionSection({ state, sheet, run }: PlayTabProps) {
   const level = state.exhaustionLevel
   const rows = EXHAUSTION.levels.filter(l => l.level <= level)
+  const hpMaxImmunity = describeHpMaxImmunity(state, sheet)
   return (
     <div>
       <div role="radiogroup" aria-label="Nível de exaustão" className="grid grid-cols-7 gap-1">
@@ -53,6 +54,7 @@ function ExhaustionSection({ state, run }: PlayTabProps) {
           ))}
         </ul>
       )}
+      {hpMaxImmunity && <p className="mt-1 text-xs text-emerald-300 leading-snug">{hpMaxImmunity}</p>}
       <p className="mt-1 text-[11px] text-parchment-600 leading-snug">
         Cada nível inclui os efeitos dos anteriores. O descanso longo tira 1 nível, se você comeu e bebeu.
       </p>

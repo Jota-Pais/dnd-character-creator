@@ -117,6 +117,11 @@ export type PlaySheet = {
   resources: SheetResource[]
   /** Talentos possuídos, para os avisos do que ainda não está automatizado. */
   featIds: string[]
+  /**
+   * A característica que impede reduzir o PV máximo (Acostumado à Morte-Vida), pelo nome
+   * (`getHpMaxReductionImmunity`). Presente, a Exaustão 4 não corta o máximo.
+   */
+  hpMaxReductionImmunity?: string
 }
 
 export type PlayNoticeKind =

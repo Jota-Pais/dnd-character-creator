@@ -79,6 +79,26 @@ export function listPlayStateIds(): string[] {
   return Object.keys(readStore())
 }
 
+// ── Ficha aberta no modo de jogo ────────────────────────────────────────────
+
+export const PLAY_OPEN_KEY = 'dnd-play-open'
+
+/**
+ * A ficha aberta no modo de jogo, para recarregar a página (ou o celular descartar a aba) voltar
+ * a ela. Gravada ao entrar no jogo; null ao sair ou apagar a ficha. O desfazer não vai junto: ele
+ * é só da sessão de tela.
+ */
+export function saveOpenPlayId(id: string | null): void {
+  if (id === null) localStorage.removeItem(PLAY_OPEN_KEY)
+  else localStorage.setItem(PLAY_OPEN_KEY, id)
+}
+
+/** O id gravado por `saveOpenPlayId`, ou null. Quem lê confere se a ficha ainda existe. */
+export function loadOpenPlayId(): string | null {
+  const id = localStorage.getItem(PLAY_OPEN_KEY)
+  return id && id.trim() ? id : null
+}
+
 // ── Preferências do modo de jogo ────────────────────────────────────────────
 
 export const PLAY_PREFERENCES_KEY = 'dnd-play-preferences'

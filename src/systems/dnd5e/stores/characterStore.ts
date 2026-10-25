@@ -10,10 +10,24 @@ import { EMPTY_SPELL_CHOICES } from '../types/spell'
 import { loadLibrary, saveCharacterEntry, deleteCharacterEntry, newId, type SavedCharacter } from '../utils/storage'
 import { getFirstIncompleteStep } from '../utils/draftValidation'
 import { useAppStore } from '../../../core/stores/appStore'
-import { deletePlayState } from '../utils/playStorage'
+import { deletePlayState, loadOpenPlayId, saveOpenPlayId } from '../utils/playStorage'
 import { usePlayStore } from './playStore'
 
 const initialLibrary = loadLibrary()
+
+/**
+ * A ficha que estava aberta no modo de jogo quando a página recarregou (ou o celular descartou a
+ * aba). Se ela não existe mais, a marca é limpa e o app abre normalmente.
+ */
+function findResumablePlay(): SavedCharacter | undefined {
+  const id = loadOpenPlayId()
+  if (!id) return undefined
+  const char = initialLibrary.find(c => c.id === id)
+  if (!char) saveOpenPlayId(null)
+  return char
+}
+
+const resumedPlay = findResumablePlay()
 
 /**
  * Magias que sobrevivem a uma mudança nas escolhas de classe: trocar para (ou de) uma subclasse que
@@ -102,11 +116,11 @@ function persistCurrent(currentId: string | null, draft: CharacterDraft, step: W
 }
 
 export const useCharacterStore = create<CharacterStore>((set, get) => ({
-  view: initialLibrary.length > 0 ? 'gallery' : 'wizard',
+  view: resumedPlay ? 'play' : initialLibrary.length > 0 ? 'gallery' : 'wizard',
   library: initialLibrary,
-  currentId: initialLibrary.length > 0 ? null : newId(),
-  currentStep: 'name',
-  draft: { ...EMPTY_DRAFT },
+  currentId: resumedPlay ? resumedPlay.id : initialLibrary.length > 0 ? null : newId(),
+  currentStep: resumedPlay?.step ?? 'name',
+  draft: resumedPlay?.draft ?? { ...EMPTY_DRAFT },
 
   newCharacter: () =>
     set({ view: 'wizard', currentId: newId(), currentStep: 'name', draft: { ...EMPTY_DRAFT } }),
@@ -133,6 +147,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     if (usePlayStore.getState().characterId === id) usePlayStore.getState().close()
     // O estado de jogo mora em outra chave: some junto com a ficha (playStorage).
     deletePlayState(id)
+    if (loadOpenPlayId() === id) saveOpenPlayId(null)
     set(state => {
       const library = deleteCharacterEntry(id)
       return { library, currentId: state.currentId === id ? null : state.currentId }
@@ -161,11 +176,13 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     if (!char) return
     set({ view: 'play', currentId: id, currentStep: char.step, draft: char.draft })
     usePlayStore.getState().open(id, char.draft)
+    saveOpenPlayId(id)
   },
 
   exitPlay: () => {
     // O close grava antes as edições em curso (nota digitada sem sair do campo).
     usePlayStore.getState().close()
+    saveOpenPlayId(null)
     // Como o `reset`: a ficha já está salva e o jogo não a altera — nada a regravar.
     set({ view: 'gallery', currentId: null })
     useAppStore.getState().setActiveSystem(null)
@@ -514,3 +531,10 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     set({ view: 'wizard', draft, currentStep: step, currentId: id, library })
   },
 }))
+
+// Recarregou no meio do jogo: reabre o modo de jogo da mesma ficha (o estado está salvo; o
+// desfazer da sessão anterior não volta) e ativa o sistema, para não cair na galeria global.
+if (resumedPlay) {
+  usePlayStore.getState().open(resumedPlay.id, resumedPlay.draft)
+  useAppStore.getState().setActiveSystem('dnd5e')
+}

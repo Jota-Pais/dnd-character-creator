@@ -7,8 +7,9 @@ import {
   spendHitDie, spendPactSlot, spendResource, spendSpellSlot, startConcentration,
 } from '../playState'
 import {
-  PLAY_PREFERENCES_KEY, PLAY_STATES_KEY, PLAY_STORAGE_VERSION, deletePlayState, listPlayStateIds,
-  loadOrCreatePlayState, loadPlayPreferences, loadPlayState, loadPlayStateFor, savePlayPreferences, savePlayState,
+  PLAY_OPEN_KEY, PLAY_PREFERENCES_KEY, PLAY_STATES_KEY, PLAY_STORAGE_VERSION, deletePlayState, listPlayStateIds,
+  loadOpenPlayId, loadOrCreatePlayState, loadPlayPreferences, loadPlayState, loadPlayStateFor, saveOpenPlayId,
+  savePlayPreferences, savePlayState,
 } from '../playStorage'
 
 const LIBRARY_KEY = 'dnd-character-library'
@@ -161,5 +162,22 @@ describe('preferências do modo de jogo', () => {
       localStorage.setItem(PLAY_PREFERENCES_KEY, raw)
       expect(loadPlayPreferences(), raw).toEqual({ appDice: false })
     }
+  })
+})
+
+describe('ficha aberta no modo de jogo', () => {
+  it('grava, lê e limpa o id numa chave própria', () => {
+    expect(loadOpenPlayId()).toBeNull()
+    saveOpenPlayId('c1')
+    expect(localStorage.getItem(PLAY_OPEN_KEY)).toBe('c1')
+    expect(loadOpenPlayId()).toBe('c1')
+    saveOpenPlayId(null)
+    expect(localStorage.getItem(PLAY_OPEN_KEY)).toBeNull()
+    expect(loadOpenPlayId()).toBeNull()
+  })
+
+  it('valor vazio vale como nenhum', () => {
+    localStorage.setItem(PLAY_OPEN_KEY, '  ')
+    expect(loadOpenPlayId()).toBeNull()
   })
 })

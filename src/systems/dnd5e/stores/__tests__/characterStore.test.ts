@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { useCharacterStore } from '../characterStore'
 import { EMPTY_DRAFT } from '../../types/character'
 import { loadLibrary } from '../../utils/storage'
@@ -6,7 +6,7 @@ import { COMPLETE_DRAFT } from '../../../../test/fixtures'
 import { useAppStore } from '../../../../core/stores/appStore'
 import { usePlayStore } from '../playStore'
 import { createPlayState, setInspiration } from '../../utils/playState'
-import { loadPlayState, savePlayState } from '../../utils/playStorage'
+import { loadOpenPlayId, loadPlayState, saveOpenPlayId, savePlayState } from '../../utils/playStorage'
 
 beforeEach(() => {
   localStorage.clear()
@@ -214,5 +214,59 @@ describe('modo de jogo', () => {
     expect(loadPlayState(id)).toBeNull()
     expect(loadPlayState('outra')).not.toBeNull()
     expect(usePlayStore.getState().characterId).toBeNull()
+    expect(loadOpenPlayId()).toBeNull()
+  })
+
+  it('a ficha aberta no jogo fica marcada até sair do jogo', () => {
+    const id = savedKrusk()
+    useCharacterStore.getState().playCharacter(id)
+    expect(loadOpenPlayId()).toBe(id)
+    useCharacterStore.getState().exitPlay()
+    expect(loadOpenPlayId()).toBeNull()
+  })
+
+  it('excluir outra ficha não tira a marca da que está aberta no jogo', () => {
+    const id = savedKrusk()
+    const other = savedKrusk()
+    useCharacterStore.getState().playCharacter(id)
+    useCharacterStore.getState().deleteCharacter(other)
+    expect(loadOpenPlayId()).toBe(id)
+  })
+})
+
+describe('recarregar a página no modo de jogo', () => {
+  afterEach(() => { vi.resetModules() })
+
+  /** Carrega os stores do zero, como um recarregar da página, com o localStorage atual. */
+  async function reload() {
+    vi.resetModules()
+    const chars = await import('../characterStore')
+    const play = await import('../playStore')
+    const app = await import('../../../../core/stores/appStore')
+    return { chars: chars.useCharacterStore, play: play.usePlayStore, app: app.useAppStore }
+  }
+
+  it('volta ao modo de jogo da mesma ficha, com o estado salvo', async () => {
+    useCharacterStore.getState().importDraft(structuredClone(COMPLETE_DRAFT))
+    const id = useCharacterStore.getState().currentId!
+    useCharacterStore.getState().playCharacter(id)
+    usePlayStore.getState().run(st => setInspiration(st, true))
+
+    const { chars, play, app } = await reload()
+    expect(chars.getState()).toMatchObject({ view: 'play', currentId: id })
+    expect(chars.getState().draft.name).toBe('Krusk')
+    expect(play.getState().characterId).toBe(id)
+    expect(play.getState().state?.inspiration).toBe(true)
+    expect(play.getState().undoStack).toEqual([])
+    expect(app.getState().activeSystemId).toBe('dnd5e')
+  })
+
+  it('ignora (e limpa) a marca de uma ficha que não existe mais', async () => {
+    saveOpenPlayId('sumiu')
+    const { chars, play, app } = await reload()
+    expect(chars.getState().view).not.toBe('play')
+    expect(play.getState().characterId).toBeNull()
+    expect(app.getState().activeSystemId).toBeNull()
+    expect(loadOpenPlayId()).toBeNull()
   })
 })

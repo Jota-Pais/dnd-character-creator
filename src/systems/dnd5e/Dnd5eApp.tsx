@@ -38,7 +38,10 @@ export function Dnd5eApp() {
   const extraClasses = draft.additionalClasses?.length ?? 0
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    // No modo de jogo, direto ao topo: o cabeçalho e os vitais não podem abrir cortados pela
+    // rolagem que sobrou da galeria (o suave pode ser interrompido pela troca de tela).
+    if (view === 'play') window.scrollTo(0, 0)
+    else window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [currentStep, view])
 
   // Na tela de impressão, o título do documento vira o nome-padrão do PDF salvo.

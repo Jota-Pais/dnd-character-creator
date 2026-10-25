@@ -427,7 +427,8 @@ function CharacterRow({ char, entry, onOpen, onPlay, onDuplicate, onExport, onDe
       <div className="text-[13px] shrink-0" style={{ color: '#cbb8a8' }}>
         {facets.levelLabel} <span className="font-fantasy font-black text-base" style={{ color: ui.accent }}>{facets.levelValue}</span>
       </div>
-      <div className="flex items-center gap-1.5 shrink-0">
+      {/* Com o "Jogar", os botões passam da largura de um celular de 360 px: aí quebram linha. */}
+      <div className="flex flex-wrap items-center gap-1.5 max-w-full">
         <button
           onClick={onOpen}
           className="px-5 py-2 rounded-lg font-fantasy font-bold text-[13px] transition-colors"

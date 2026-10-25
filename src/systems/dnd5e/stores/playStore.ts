@@ -5,7 +5,7 @@ import type { PlayNotice, PlayResult, PlaySheet, PlayState } from '../types/play
 import { buildPlaySheet } from '../utils/playSheet'
 import { recordRoll } from '../utils/playState'
 import {
-  loadPlayPreferences, loadPlayStateFor, savePlayPreferences, savePlayState, type PlayPreferences,
+  loadPlayPreferences, loadPlayState, loadPlayStateFor, savePlayPreferences, savePlayState, type PlayPreferences,
 } from '../utils/playStorage'
 
 /** Quantos estados anteriores o "desfazer" guarda: o bastante para uma rodada de combate. */
@@ -108,7 +108,14 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
 
   open: (id, draft) => {
     const sheet = buildPlaySheet(draft)
-    const { state, notices } = loadPlayStateFor(id, sheet)
+    const loaded = loadPlayStateFor(id, sheet)
+    const { notices } = loaded
+    // A ficha mudou desde a última sessão: grava o estado já reconciliado, para o aviso da
+    // reconciliação aparecer uma vez só (e não em toda abertura até a primeira ação).
+    const saved = loadPlayState(id)
+    const state = saved && JSON.stringify(saved) !== JSON.stringify(loaded.state)
+      ? savePlayState(loaded.state)
+      : loaded.state
     set({
       characterId: id,
       characterName: draft.name.trim(),

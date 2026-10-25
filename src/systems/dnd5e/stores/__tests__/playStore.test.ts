@@ -32,6 +32,27 @@ describe('usePlayStore', () => {
     expect(usePlayStore.getState().state).toMatchObject({ damageTaken: 3, inspiration: true })
   })
 
+  it('open grava o estado reconciliado com a ficha mudada: o aviso aparece uma vez só', () => {
+    // O máximo da ficha (14) ficou abaixo do dano salvo: a reconciliação deixa com 1 PV.
+    savePlayState({ ...createPlayState('c1'), damageTaken: 20 })
+    usePlayStore.getState().open('c1', draft())
+    expect(usePlayStore.getState().notices.map(n => n.kind)).toEqual(['info'])
+    expect(getCurrentHp(usePlayStore.getState().state!, usePlayStore.getState().sheet!)).toBe(1)
+    expect(loadPlayState('c1')?.damageTaken).toBe(13)
+    expect(usePlayStore.getState().undoStack).toEqual([])
+
+    usePlayStore.getState().close()
+    usePlayStore.getState().open('c1', draft())
+    expect(usePlayStore.getState().notices).toEqual([])
+    expect(getCurrentHp(usePlayStore.getState().state!, usePlayStore.getState().sheet!)).toBe(1)
+  })
+
+  it('open sem mudança na ficha não regrava o estado salvo', () => {
+    const saved = savePlayState({ ...createPlayState('c1'), damageTaken: 3 }, 123)
+    usePlayStore.getState().open('c1', draft())
+    expect(loadPlayState('c1')?.updatedAt).toBe(saved.updatedAt)
+  })
+
   it('run aplica, grava pelo playStorage, empilha o anterior e guarda os avisos', () => {
     usePlayStore.getState().open('c1', draft())
     const before = usePlayStore.getState().state!

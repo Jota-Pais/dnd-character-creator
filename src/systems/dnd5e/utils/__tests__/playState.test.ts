@@ -1030,7 +1030,8 @@ describe('leitura de estado salvo contra uma ficha mudada', () => {
     const cut = reconcileLoadedPlayState(state({ exhaustionLevel: 4, damageTaken: 10 }), sheet({ maxHp: 30 }))
     expect(cut.state.damageTaken).toBe(15)
     expect(kinds(cut)).toEqual(['hpCut'])
-    expect(cut.notices[0].text).toContain('de 20 para 15')
+    expect(cut.notices[0].text).toContain('o PV máximo é 15. O PV atual fica em 15')
+    expect(cut.notices[0].text).not.toContain('cai de')
 
     const shrunk = reconcileLoadedPlayState(state({ damageTaken: 25 }), sheet({ maxHp: 20 }))
     expect(getCurrentHp(shrunk.state, sheet({ maxHp: 20 }))).toBe(1)

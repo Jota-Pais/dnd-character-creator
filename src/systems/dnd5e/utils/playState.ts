@@ -223,7 +223,9 @@ export function reconcileLoadedPlayState(state: PlayState, sheet: PlaySheet): Pl
   const effMax = getEffectiveMaxHp(next, sheet)
   const notices: PlayNotice[] = []
   if (after < before && effMax < sheetMax && after === effMax) {
-    notices.push(note('hpCut', `A ficha mudou: com a exaustão ${next.exhaustionLevel}, o PV máximo é ${effMax}. O PV atual cai de ${before} para ${after} e não volta quando a exaustão baixar.`))
+    // Sem "antes": o PV de antes com o máximo novo nunca existiu na mesa (o jogador viu o do
+    // máximo antigo, que não é guardado).
+    notices.push(note('hpCut', `A ficha mudou: com a exaustão ${next.exhaustionLevel}, o PV máximo é ${effMax}. O PV atual fica em ${after}; o que foi cortado não volta quando a exaustão baixar.`))
   } else if (before === 0 && after > 0) {
     notices.push(note('info', `A ficha mudou: o PV máximo (${sheetMax}) ficou abaixo do dano sofrido. O personagem fica com ${after} PV — reduzir o máximo não leva a 0 PV sozinho.`))
   }

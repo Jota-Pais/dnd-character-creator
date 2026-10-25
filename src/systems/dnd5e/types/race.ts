@@ -112,6 +112,12 @@ export type Subrace = {
   choices: RaceChoice[]
   grantedProficiencies: GrantedProficiency[]
   innateSpells?: InnateSpell[]
+  /**
+   * Linha da tabela Ancestral Dracônico (dragon-ancestors.json) da sub-raça do draconato. Os
+   * traços "Tipo de Dano" e "Área do Sopro" saem dela ao carregar as raças (raceUtils), para a
+   * tabela não ter cópia aqui.
+   */
+  dragonAncestor?: string
   traits: RacialTrait[]
   overrides: SubraceOverrides
 }

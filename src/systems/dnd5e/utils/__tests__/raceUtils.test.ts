@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { DRAGON_ANCESTORS } from '../dragonAncestors'
 import {
   getRace,
   getSubrace,
@@ -273,6 +274,29 @@ describe('draconato: área da Arma de Sopro por ancestral (tabela Ancestral Drac
     for (const id of ['blue-dragonborn', 'black-dragonborn', 'bronze-dragonborn', 'copper-dragonborn', 'brass-dragonborn']) {
       expect(area(id), id).toBe('Linha de 1,5 m por 9 m. Teste de resistência de Destreza.')
     }
+  })
+
+  it('tipo de dano de cada sub-raça vem da tabela (uma sub-raça por dragão, traços na ordem de antes)', () => {
+    const damage = (id: string) =>
+      getEffectiveTraits(dragonborn, getSubrace(dragonborn, id)!).find(t => t.name === 'Tipo de Dano')?.description
+    expect(Object.fromEntries(dragonborn.subraces.map(s => [s.id, damage(s.id)]))).toEqual({
+      'red-dragonborn': 'Fogo.', 'gold-dragonborn': 'Fogo.', 'brass-dragonborn': 'Fogo.',
+      'blue-dragonborn': 'Elétrico.', 'bronze-dragonborn': 'Elétrico.',
+      'green-dragonborn': 'Veneno.',
+      'white-dragonborn': 'Frio.', 'silver-dragonborn': 'Frio.',
+      'black-dragonborn': 'Ácido.', 'copper-dragonborn': 'Ácido.',
+    })
+    expect(new Set(dragonborn.subraces.map(s => s.dragonAncestor)).size).toBe(DRAGON_ANCESTORS.length)
+    expect(getSubrace(dragonborn, 'red-dragonborn')!.traits.map(t => t.name)).toEqual(['Tipo de Dano', 'Área do Sopro'])
+  })
+})
+
+describe('tabela Ancestral Dracônico (pp. 34 e 80)', () => {
+  it('dez dragões, com o tipo de dano do livro', () => {
+    expect(DRAGON_ANCESTORS.map(a => `${a.name}: ${a.damageType}`)).toEqual([
+      'Azul: Elétrico', 'Branco: Frio', 'Bronze: Elétrico', 'Cobre: Ácido', 'Latão: Fogo',
+      'Negro: Ácido', 'Ouro: Fogo', 'Prata: Frio', 'Verde: Veneno', 'Vermelho: Fogo',
+    ])
   })
 })
 

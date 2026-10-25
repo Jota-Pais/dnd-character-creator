@@ -7,8 +7,30 @@ import toolsData from '../data/tools.json'
 import spellsData from '../data/spells.json'
 import { getFeat } from './featUtils'
 import { ABILITY_LABELS } from './abilityScoreUtils'
+import { getDragonAncestor } from './dragonAncestors'
 
-export const RACES: Race[] = racesData as Race[]
+/**
+ * Sub-raça com ancestral dracônico (draconato, p. 34) ganha os traços da linha da tabela: o tipo
+ * de dano e a área do sopro. Feito na carga, todo leitor de traços (etapa Raça, Revisão, PDF, os
+ * efeitos) vê o mesmo.
+ */
+function withDragonAncestorTraits(subrace: Subrace): Subrace {
+  const ancestor = subrace.dragonAncestor ? getDragonAncestor(subrace.dragonAncestor) : undefined
+  if (!ancestor) return subrace
+  return {
+    ...subrace,
+    traits: [
+      { name: 'Tipo de Dano', description: `${ancestor.damageType}.` },
+      { name: 'Área do Sopro', description: ancestor.breath },
+      ...subrace.traits,
+    ],
+  }
+}
+
+export const RACES: Race[] = (racesData as Race[]).map(race => ({
+  ...race,
+  subraces: race.subraces.map(withDragonAncestorTraits),
+}))
 
 export const SKILLS = [
   { id: 'acrobatics', name: 'Acrobacia' },

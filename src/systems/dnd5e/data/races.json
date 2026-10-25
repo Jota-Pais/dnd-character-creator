@@ -347,10 +347,8 @@
         "abilityBonuses": [],
         "choices": [],
         "grantedProficiencies": [],
-        "traits": [
-          { "name": "Tipo de Dano", "description": "Fogo." },
-          { "name": "Área do Sopro", "description": "Cone de 4,5 m. Teste de resistência de Destreza." }
-        ],
+        "dragonAncestor": "red",
+        "traits": [],
         "overrides": {}
       },
       {
@@ -360,10 +358,8 @@
         "abilityBonuses": [],
         "choices": [],
         "grantedProficiencies": [],
-        "traits": [
-          { "name": "Tipo de Dano", "description": "Elétrico." },
-          { "name": "Área do Sopro", "description": "Linha de 1,5 m por 9 m. Teste de resistência de Destreza." }
-        ],
+        "dragonAncestor": "blue",
+        "traits": [],
         "overrides": {}
       },
       {
@@ -373,10 +369,8 @@
         "abilityBonuses": [],
         "choices": [],
         "grantedProficiencies": [],
-        "traits": [
-          { "name": "Tipo de Dano", "description": "Veneno." },
-          { "name": "Área do Sopro", "description": "Cone de 4,5 m. Teste de resistência de Constituição." }
-        ],
+        "dragonAncestor": "green",
+        "traits": [],
         "overrides": {}
       },
       {
@@ -386,10 +380,8 @@
         "abilityBonuses": [],
         "choices": [],
         "grantedProficiencies": [],
-        "traits": [
-          { "name": "Tipo de Dano", "description": "Frio." },
-          { "name": "Área do Sopro", "description": "Cone de 4,5 m. Teste de resistência de Constituição." }
-        ],
+        "dragonAncestor": "white",
+        "traits": [],
         "overrides": {}
       },
       {
@@ -399,10 +391,8 @@
         "abilityBonuses": [],
         "choices": [],
         "grantedProficiencies": [],
-        "traits": [
-          { "name": "Tipo de Dano", "description": "Ácido." },
-          { "name": "Área do Sopro", "description": "Linha de 1,5 m por 9 m. Teste de resistência de Destreza." }
-        ],
+        "dragonAncestor": "black",
+        "traits": [],
         "overrides": {}
       },
       {
@@ -412,10 +402,8 @@
         "abilityBonuses": [],
         "choices": [],
         "grantedProficiencies": [],
-        "traits": [
-          { "name": "Tipo de Dano", "description": "Fogo." },
-          { "name": "Área do Sopro", "description": "Cone de 4,5 m. Teste de resistência de Destreza." }
-        ],
+        "dragonAncestor": "gold",
+        "traits": [],
         "overrides": {}
       },
       {
@@ -425,10 +413,8 @@
         "abilityBonuses": [],
         "choices": [],
         "grantedProficiencies": [],
-        "traits": [
-          { "name": "Tipo de Dano", "description": "Frio." },
-          { "name": "Área do Sopro", "description": "Cone de 4,5 m. Teste de resistência de Constituição." }
-        ],
+        "dragonAncestor": "silver",
+        "traits": [],
         "overrides": {}
       },
       {
@@ -438,10 +424,8 @@
         "abilityBonuses": [],
         "choices": [],
         "grantedProficiencies": [],
-        "traits": [
-          { "name": "Tipo de Dano", "description": "Elétrico." },
-          { "name": "Área do Sopro", "description": "Linha de 1,5 m por 9 m. Teste de resistência de Destreza." }
-        ],
+        "dragonAncestor": "bronze",
+        "traits": [],
         "overrides": {}
       },
       {
@@ -451,10 +435,8 @@
         "abilityBonuses": [],
         "choices": [],
         "grantedProficiencies": [],
-        "traits": [
-          { "name": "Tipo de Dano", "description": "Ácido." },
-          { "name": "Área do Sopro", "description": "Linha de 1,5 m por 9 m. Teste de resistência de Destreza." }
-        ],
+        "dragonAncestor": "copper",
+        "traits": [],
         "overrides": {}
       },
       {
@@ -464,10 +446,8 @@
         "abilityBonuses": [],
         "choices": [],
         "grantedProficiencies": [],
-        "traits": [
-          { "name": "Tipo de Dano", "description": "Fogo." },
-          { "name": "Área do Sopro", "description": "Linha de 1,5 m por 9 m. Teste de resistência de Destreza." }
-        ],
+        "dragonAncestor": "brass",
+        "traits": [],
         "overrides": {}
       }
     ]

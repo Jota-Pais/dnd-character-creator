@@ -3,7 +3,9 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { usePlayStore } from '../../../stores/playStore'
 import { applyDamage, spendResource } from '../../../utils/playState'
-import { openKrusk, resetPlay } from './openPlay'
+import { EMPTY_DRAFT } from '../../../types/character'
+import { COMPLETE_DRAFT } from '../../../../../test/fixtures'
+import { openDraft, openKrusk, resetPlay } from './openPlay'
 
 beforeEach(resetPlay)
 afterEach(() => cleanup())
@@ -118,6 +120,37 @@ describe('Descanso longo', () => {
     expect(screen.getByTestId('hp-current')).toHaveTextContent('14')
     expect(playState().hitDiceSpent).toEqual({})
     expect(playState().resourcesSpent).toEqual({})
+  })
+
+  it('na multiclasse, a escolha dos tipos se ajusta depois de um desfazer', () => {
+    // Bruxo 3 / mago 2 (d8 e d6): o descanso longo devolve até 2 Dados de Vida.
+    openDraft({
+      ...structuredClone(COMPLETE_DRAFT),
+      race: 'human',
+      class: 'warlock',
+      level: 5,
+      additionalClasses: [{
+        classId: 'wizard', level: 2, classChoices: structuredClone(EMPTY_DRAFT.classChoices),
+        spellChoices: { cantrips: [], spells: [] }, asiChoices: [], hpRolls: [],
+      }],
+      multiclass: true,
+    })
+    store().run(st => ({ state: { ...st, hitDiceSpent: { 8: 2 } }, notices: [] }))
+    store().run(st => ({ state: { ...st, hitDiceSpent: { 8: 2, 6: 1 } }, notices: [] }))
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Estado' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Descanso longo' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Um d8 a menos' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Um d6 a mais' }))
+    expect(screen.getByText(/Dados de Vida que voltam: 2 de até 2/)).toBeInTheDocument()
+
+    // O desfazer devolve o d6 gasto: a escolha do d6 cai, sem recusa no confirmar.
+    fireEvent.click(screen.getByRole('button', { name: 'Desfazer a última mudança' }))
+    expect(screen.getByText(/Dados de Vida que voltam: 1 de até 2/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Um d6 a mais' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar descanso longo' }))
+    expect(store().notices.some(n => n.kind === 'refused')).toBe(false)
+    expect(playState().hitDiceSpent).toEqual({ 8: 1 })
   })
 
   it('com exaustão, a caixa "comeu e bebeu" vem marcada e tira 1 nível', () => {

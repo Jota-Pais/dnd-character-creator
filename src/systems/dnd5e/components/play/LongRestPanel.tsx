@@ -4,6 +4,25 @@ import { ordinal } from './playFormat'
 import type { PlayTabProps } from './usePlayView'
 
 /**
+ * Corta a escolha de Dados de Vida ao que o estado atual permite: cada tipo até o que foi gasto
+ * dele, o total até o que volta (os maiores primeiro). Tipo que não está mais no poço sai.
+ */
+function fitHitDiceChoice(
+  choice: Record<number, number>,
+  pool: { die: number; spent: number }[],
+  recoverable: number,
+): Record<number, number> {
+  let left = Math.max(0, recoverable)
+  const fitted: Record<number, number> = {}
+  for (const p of [...pool].sort((a, b) => b.die - a.die)) {
+    const count = Math.max(0, Math.min(choice[p.die] ?? 0, p.spent, left))
+    if (count > 0) fitted[p.die] = count
+    left -= count
+  }
+  return fitted
+}
+
+/**
  * Descanso longo (pág. 188): a prévia do que volta (`previewLongRest`) e o "Confirmar"
  * (`completeLongRest`). A caixa "comeu e bebeu" vem marcada (decisão 14); na multiclasse o
  * jogador escolhe quais tipos de Dado de Vida voltam, com os maiores sugeridos (decisão 2).
@@ -16,7 +35,9 @@ export function LongRestPanel({ view, onClose }: { view: PlayTabProps; onClose: 
 
   const preview = previewLongRest(state, sheet, { ateAndDrank })
   const pool = getHitDiceAvailable(state, sheet)
-  const hitDice = choice ?? preview.hitDice.suggestion
+  // A escolha é refeita contra o estado a cada render: um desfazer com o painel aberto pode baixar
+  // os gastos (ou o que volta), e a escolha antiga seria recusada no confirmar.
+  const hitDice = choice === null ? preview.hitDice.suggestion : fitHitDiceChoice(choice, pool, preview.hitDice.recoverable)
   const chosen = Object.values(hitDice).reduce((s, n) => s + n, 0)
   const pickTypes = pool.length > 1 && preview.hitDice.recoverable > 0
   const slots = preview.spellSlots.map((n, i) => ({ level: i + 1, n })).filter(s => s.n > 0)

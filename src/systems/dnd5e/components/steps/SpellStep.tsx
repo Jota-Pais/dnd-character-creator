@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useCharacterStore } from '../../stores/characterStore'
 import { getClass } from '../../utils/classUtils'
 import { getPrimaryLevel } from '../../utils/multiclassUtils'
-import { isStepComplete } from '../../utils/draftValidation'
 import { InfoTooltip } from '../common/InfoTooltip'
 import { StepNav } from '../../../../components/wizard/StepNav'
 import { RuleText } from '../common/RuleText'
@@ -31,6 +30,7 @@ import { getFinalAbilityScores } from '../../utils/asiUtils'
 import type { Spell } from '../../types/spell'
 import type { SpellChoices } from '../../types/character'
 import type { AbilityScore } from '../../types/race'
+import { formatPendingHint, getStepPendingReasons } from '../../utils/pendingReasons'
 
 type Tab = 'cantrips' | number // number = spell level
 
@@ -54,7 +54,6 @@ export function SpellStep() {
   // (raça + aumentos + talentos) — os mesmos da Revisão e da ficha imprimível.
   const finalScores = getFinalAbilityScores(draft)
 
-  const canAdvance = isStepComplete(draft, 'spells')
 
   if (casters.length === 0) {
     return (
@@ -123,7 +122,7 @@ export function SpellStep() {
         onPrev={prevStep}
         onNext={nextStep}
         accent={ACCENT}
-        pendingReason={canAdvance ? undefined : 'Magias pendentes'}
+        pendingReason={formatPendingHint(getStepPendingReasons(draft, 'spells'))}
       />
     </div>
   )

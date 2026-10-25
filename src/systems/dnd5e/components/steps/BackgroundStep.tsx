@@ -6,13 +6,13 @@ import {
   getBackground,
   getSkillName,
   getToolName,
-  isBackgroundStepComplete,
   getBackgroundItemChoices,
 } from '../../utils/backgroundUtils'
 import { getExcludedTools, getExcludedLanguages } from '../../utils/proficiencyUtils'
 import { BackgroundCard } from '../background/BackgroundCard'
 import { BackgroundChoicePanel } from '../background/BackgroundChoicePanel'
 import { StepNav } from '../../../../components/wizard/StepNav'
+import { formatPendingHint, getStepPendingReasons } from '../../utils/pendingReasons'
 
 export function BackgroundStep() {
   const draft = useCharacterStore(state => state.draft)
@@ -28,7 +28,6 @@ export function BackgroundStep() {
     ? (BACKGROUND_PRESENTATION[selectedBg.id]?.accent ?? '#d4900a')
     : '#d4900a'
 
-  const canAdvance = isBackgroundStepComplete(selectedBg ?? null, draft.backgroundChoices)
   const itemChoices = selectedBg ? getBackgroundItemChoices(selectedBg) : []
 
   // Idiomas/ferramentas já obtidos de raça ou classe (inclusive da subclasse) não se repetem
@@ -204,7 +203,7 @@ export function BackgroundStep() {
         onPrev={prevStep}
         onNext={nextStep}
         accent={accent}
-        pendingReason={canAdvance ? undefined : !selectedBg ? 'Escolha um antecedente' : 'Escolhas do antecedente pendentes'}
+        pendingReason={formatPendingHint(getStepPendingReasons(draft, 'background'))}
       />
     </div>
   )

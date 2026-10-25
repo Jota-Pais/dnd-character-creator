@@ -1,5 +1,5 @@
 import { useCharacterStore } from '../../stores/characterStore'
-import { ALL_ABILITY_SCORES, isAbilitiesStepComplete } from '../../utils/abilityScoreUtils'
+import { ALL_ABILITY_SCORES } from '../../utils/abilityScoreUtils'
 import { getRacialBonuses } from '../../utils/asiUtils'
 import { MethodSelector } from '../abilities/MethodSelector'
 import { StandardArrayPanel } from '../abilities/StandardArrayPanel'
@@ -7,6 +7,7 @@ import { PointBuyPanel } from '../abilities/PointBuyPanel'
 import { RollPanel } from '../abilities/RollPanel'
 import { CustomPanel } from '../abilities/CustomPanel'
 import { StepNav } from '../../../../components/wizard/StepNav'
+import { formatPendingHint, getStepPendingReasons } from '../../utils/pendingReasons'
 
 const ACCENT = '#d4900a'
 
@@ -23,12 +24,6 @@ export function AbilitiesStep() {
   const racialBonuses = getRacialBonuses(draft)
 
   const hasAnyBonus = ALL_ABILITY_SCORES.some(a => racialBonuses[a] !== 0)
-
-  const canAdvance = isAbilitiesStepComplete(
-    draft.abilityMethod,
-    draft.abilityScores,
-    draft.rolledValues,
-  )
 
   return (
     <div className="flex flex-col gap-6">
@@ -85,7 +80,7 @@ export function AbilitiesStep() {
         onPrev={prevStep}
         onNext={nextStep}
         accent={ACCENT}
-        pendingReason={canAdvance ? undefined : !draft.abilityMethod ? 'Escolha um método' : 'Distribua os atributos'}
+        pendingReason={formatPendingHint(getStepPendingReasons(draft, 'abilities'))}
       />
     </div>
   )

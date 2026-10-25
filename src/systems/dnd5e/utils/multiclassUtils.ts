@@ -2,9 +2,17 @@ import type { AbilityScore } from '../types/race'
 import type { GameClass, CasterProgression } from '../types/class'
 import type { CharacterDraft, ClassEntry, AsiChoice } from '../types/character'
 import { getClass, getSubclass, getAverageHpPerLevel, getHpAtLevel1 } from './classUtils'
+import { ABILITY_LABELS } from './abilityScoreUtils'
 
 /** Mínimo de atributo para qualquer pré-requisito de multiclasse (PHB pág. 166 — sempre 13). */
 export const MULTICLASS_MIN_SCORE = 13
+
+/** "FOR 13 ou DES 13", "DES 13 e SAB 13", "INT 13" — o pré-requisito de multiclasse, legível. */
+export function describeMulticlassPrereq(cls: GameClass): string {
+  const { mode, abilities } = cls.multiclassPrereq
+  const sep = mode === 'any' ? ' ou ' : ' e '
+  return abilities.map(a => `${ABILITY_LABELS[a].short} ${MULTICLASS_MIN_SCORE}`).join(sep)
+}
 
 /** Atende ao pré-requisito de atributo para ter níveis nesta classe? (usa atributos FINAIS) */
 export function meetsMulticlassPrereq(

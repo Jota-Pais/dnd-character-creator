@@ -8,7 +8,6 @@ import {
   getRacialBonuses,
   getAsiBonuses,
   getFinalAbilityScores,
-  isImprovementsStepComplete,
   isAsiChoiceComplete,
 } from '../../utils/asiUtils'
 import { getClass } from '../../utils/classUtils'
@@ -16,6 +15,7 @@ import { getPrimaryLevel } from '../../utils/multiclassUtils'
 import { StepNav } from '../../../../components/wizard/StepNav'
 import { FeatCatalog } from '../common/FeatCatalog'
 import { FeatChoiceSlots } from '../common/FeatChoiceSlots'
+import { formatPendingHint, getStepPendingReasons } from '../../utils/pendingReasons'
 
 const ACCENT = '#c0961a'
 type Mode = 'plus2' | 'split' | 'feat'
@@ -28,7 +28,6 @@ export function ImprovementsStep() {
   const prevStep = useCharacterStore(state => state.prevStep)
 
   const finalScores = getFinalAbilityScores(draft)
-  const canAdvance = isImprovementsStepComplete(draft)
   const racial = getRacialBonuses(draft)
 
   // Uma trilha de ASI por classe: a primária (nível derivado) + cada classe adicional no nível dela.
@@ -117,7 +116,7 @@ export function ImprovementsStep() {
         onPrev={prevStep}
         onNext={nextStep}
         accent={ACCENT}
-        pendingReason={canAdvance ? undefined : 'Aprimoramentos pendentes'}
+        pendingReason={formatPendingHint(getStepPendingReasons(draft, 'improvements'))}
       />
     </div>
   )

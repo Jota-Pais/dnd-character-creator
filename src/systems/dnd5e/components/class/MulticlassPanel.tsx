@@ -7,20 +7,13 @@ import {
   getAdditionalLevelsUsed,
   canAddAnotherClass,
   meetsMulticlassPrereq,
+  describeMulticlassPrereq as describePrereq,
 } from '../../utils/multiclassUtils'
 import { getFinalAbilityScores } from '../../utils/asiUtils'
 import { getClassSlotProficiencies } from '../../utils/proficiencyUtils'
 import { getTakenFightingStyles } from '../../utils/sheetEffects'
-import { ABILITY_LABELS } from '../../utils/abilityScoreUtils'
 import type { GameClass } from '../../types/class'
 import { ClassChoicePanel } from './ClassChoicePanel'
-
-/** "FOR 13 ou DES 13", "DES 13 e SAB 13", "INT 13" — o pré-requisito de multiclasse, legível. */
-function describePrereq(cls: GameClass): string {
-  const { mode, abilities } = cls.multiclassPrereq
-  const sep = mode === 'any' ? ' ou ' : ' e '
-  return abilities.map(a => `${ABILITY_LABELS[a].short} 13`).join(sep)
-}
 
 export function MulticlassPanel() {
   const draft = useCharacterStore(s => s.draft)

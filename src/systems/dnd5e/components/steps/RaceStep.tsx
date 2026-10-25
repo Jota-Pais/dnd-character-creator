@@ -14,12 +14,12 @@ import {
   LANGUAGES,
 } from '../../utils/raceUtils'
 import { getExcludedSkills, getExcludedTools, getExcludedLanguages } from '../../utils/proficiencyUtils'
-import { isStepComplete } from '../../utils/draftValidation'
 import { ABILITY_LABELS, formatBonus, formatMeters, formatSpeed } from '../../utils/abilityScoreUtils'
 import { RaceCard } from '../race/RaceCard'
 import { SubraceCard } from '../race/SubraceCard'
 import { ChoicePanel } from '../race/ChoicePanel'
 import { StepNav } from '../../../../components/wizard/StepNav'
+import { formatPendingHint, getStepPendingReasons } from '../../utils/pendingReasons'
 
 export function RaceStep() {
   const draft = useCharacterStore(state => state.draft)
@@ -42,7 +42,6 @@ export function RaceStep() {
     ? getEffectiveAbilityBonuses(selectedRace, selectedSubrace ?? null, draft.raceChoices)
     : []
 
-  const canAdvance = isStepComplete(draft, 'race')
 
   // Perícias/ferramentas já obtidas de classe ou antecedente não podem ser re-escolhidas
   const excludedSkills = getExcludedSkills(draft, 'race')
@@ -242,7 +241,7 @@ export function RaceStep() {
         onPrev={prevStep}
         onNext={nextStep}
         accent={accent}
-        pendingReason={canAdvance ? undefined : !selectedRace ? 'Escolha uma raça' : 'Escolhas da raça pendentes'}
+        pendingReason={formatPendingHint(getStepPendingReasons(draft, 'race'))}
       />
     </div>
   )

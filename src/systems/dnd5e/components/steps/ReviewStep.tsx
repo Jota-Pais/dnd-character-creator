@@ -54,7 +54,7 @@ import {
   getSpellChoiceOverflows,
 } from '../../utils/spellUtils'
 import { exportCharacter } from '../../utils/storage'
-import { getMissingSteps, isStepComplete } from '../../utils/draftValidation'
+import { getPendingSteps, getStepPendingReasons } from '../../utils/pendingReasons'
 import { InfoTooltip } from '../common/InfoTooltip'
 import { PendingStepsPanel } from '../common/PendingStepsPanel'
 import { formatMissingCount } from '../../../../components/wizard/pendingSteps'
@@ -160,9 +160,10 @@ export function ReviewStep() {
 
   // Navegação livre: dá pra chegar aqui com etapas em branco. As pendências (e o pré-requisito
   // de multiclasse) são cobradas aqui — é o único bloqueio do fluxo.
-  const missing = getMissingSteps(draft)
-  const multiclassPrereqsOk = isStepComplete(draft, 'review')
-  const blocked = missing.length > 0 || !multiclassPrereqsOk
+  const pending = getPendingSteps(draft)
+  const prereqReasons = getStepPendingReasons(draft, 'review')
+  const multiclassPrereqsOk = prereqReasons.length === 0
+  const blocked = pending.length > 0 || !multiclassPrereqsOk
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -177,7 +178,7 @@ export function ReviewStep() {
         </p>
       </div>
 
-      <PendingStepsPanel missing={missing} />
+      <PendingStepsPanel pending={pending} />
 
       {/* Pré-requisito de multiclasse (PHB p. 163): só aqui todos os insumos dos atributos
           finais existem, então é aqui que a violação aparece — e trava o Concluir. */}
@@ -190,6 +191,11 @@ export function ReviewStep() {
             Para entrar (ou continuar) em cada uma das suas classes, o PHB exige um valor mínimo de
             atributo. Ajuste os atributos ou as classes antes de concluir.
           </p>
+          <ul className="mt-2 space-y-0.5">
+            {prereqReasons.map(reason => (
+              <li key={reason} className="text-xs text-parchment-400 leading-snug">• {reason}</li>
+            ))}
+          </ul>
           <button
             onClick={() => goToStep('class')}
             className="mt-3 px-3 py-1.5 rounded-lg font-fantasy font-bold text-xs bg-red-900 text-parchment-100 hover:bg-red-700 transition-colors"
@@ -973,8 +979,8 @@ export function ReviewStep() {
         onPrev={prevStep}
         onNext={handleReset}
         blocked={blocked}
-        pendingReason={missing.length > 0
-          ? formatMissingCount(missing.length)
+        pendingReason={pending.length > 0
+          ? formatMissingCount(pending.length)
           : !multiclassPrereqsOk ? 'Pré-requisito de multiclasse' : undefined}
         nextLabel="Concluir ✓"
         nextTitle={blocked ? 'Resolva as pendências acima para concluir' : 'Salva a ficha e volta para a galeria'}

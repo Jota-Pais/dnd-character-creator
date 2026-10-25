@@ -687,8 +687,13 @@ export function getTakenFightingStyles(draft: CharacterDraft, classId: string): 
 
 /** Algum Estilo de Luta escolhido duas vezes (p. 85) — a etapa Classe não fica completa assim. */
 export function hasRepeatedFightingStyle(draft: CharacterDraft): boolean {
+  return getRepeatedFightingStyles(draft).length > 0
+}
+
+/** Os Estilos de Luta escolhidos mais de uma vez (ids, sem repetir) — o que o aviso da Revisão nomeia. */
+export function getRepeatedFightingStyles(draft: CharacterDraft): string[] {
   const ids = getFightingStylePicks(draft).map(p => p.id)
-  return new Set(ids).size !== ids.length
+  return [...new Set(ids.filter((id, i) => ids.indexOf(id) !== i))]
 }
 
 /**

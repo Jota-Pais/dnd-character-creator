@@ -3,7 +3,7 @@ import { useCharacterStore } from '../../stores/characterStore'
 import { getClass, CLASS_PRESENTATION } from '../../utils/classUtils'
 import { getBackground, resolveBackgroundItems } from '../../utils/backgroundUtils'
 import {
-  getItemName, isEquipmentStepComplete, getShopCatalog, getPurchasesTotalCopper,
+  getItemName, getShopCatalog, getPurchasesTotalCopper,
   formatCurrency, type ShopCategory,
 } from '../../utils/equipmentUtils'
 import { getAllGrantedTools, hasInstrumentSpellcastingFocus } from '../../utils/proficiencyUtils'
@@ -12,6 +12,7 @@ import type { Background, BackgroundChoiceSelections } from '../../types/backgro
 import { EquipmentMethodSelector } from '../equipment/EquipmentMethodSelector'
 import { EquipmentChoiceCard } from '../equipment/EquipmentChoiceCard'
 import { StepNav } from '../../../../components/wizard/StepNav'
+import { formatPendingHint, getStepPendingReasons } from '../../utils/pendingReasons'
 
 export function EquipmentStep() {
   const draft = useCharacterStore(state => state.draft)
@@ -30,7 +31,6 @@ export function EquipmentStep() {
   const equipment = draft.equipment
 
   const accent = cls ? (CLASS_PRESENTATION[cls.id]?.accent ?? '#c0961a') : '#c0961a'
-  const canAdvance = isEquipmentStepComplete(equipment, classEquipment)
   // A etapa vem depois de Classe e Antecedente: já dá pra mostrar quais instrumentos/ferramentas
   // o personagem domina (p. 156) e que o instrumento do bardo é foco mesmo sem proficiência (p. 53).
   const proficientToolIds = getAllGrantedTools(draft)
@@ -169,7 +169,7 @@ export function EquipmentStep() {
         onPrev={prevStep}
         onNext={nextStep}
         accent={accent}
-        pendingReason={canAdvance ? undefined : !cls ? 'Depende da etapa Classe' : !equipment.method ? 'Escolha como se equipar' : 'Escolhas de equipamento pendentes'}
+        pendingReason={formatPendingHint(getStepPendingReasons(draft, 'equipment'))}
       />
     </div>
   )

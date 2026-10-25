@@ -13,7 +13,6 @@ import {
 } from '../../utils/classUtils'
 import { getPrimaryLevel } from '../../utils/multiclassUtils'
 import { getEntrySpellcasting, getCantripsNeeded } from '../../utils/spellUtils'
-import { isStepComplete } from '../../utils/draftValidation'
 import { ABILITY_LABELS } from '../../utils/abilityScoreUtils'
 import { getClassSlotProficiencies } from '../../utils/proficiencyUtils'
 import { getTakenFightingStyles } from '../../utils/sheetEffects'
@@ -21,6 +20,7 @@ import { ClassCard } from '../class/ClassCard'
 import { ClassChoicePanel } from '../class/ClassChoicePanel'
 import { MulticlassPanel } from '../class/MulticlassPanel'
 import { StepNav } from '../../../../components/wizard/StepNav'
+import { formatPendingHint, getStepPendingReasons } from '../../utils/pendingReasons'
 
 export function ClassStep() {
   const draft = useCharacterStore(state => state.draft)
@@ -48,7 +48,6 @@ export function ClassStep() {
   const casting = getEntrySpellcasting(selectedClass, subclassId)
 
   // Valida o passo inteiro (primária + adicionais + orçamento), não só a primária.
-  const canAdvance = isStepComplete(draft, 'class')
 
   // Perícias/ferramentas já obtidas de outra fonte não podem ser re-escolhidas. A exclusão é por
   // slot: a lista da classe e os extras da subclasse são concessões distintas (ver proficiencyUtils).
@@ -276,7 +275,7 @@ export function ClassStep() {
         onPrev={prevStep}
         onNext={nextStep}
         accent={accent}
-        pendingReason={canAdvance ? undefined : !draft.class ? 'Escolha uma classe' : 'Escolhas da classe pendentes'}
+        pendingReason={formatPendingHint(getStepPendingReasons(draft, 'class'))}
       />
     </div>
   )

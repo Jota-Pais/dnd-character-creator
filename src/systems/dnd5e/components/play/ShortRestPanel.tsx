@@ -7,6 +7,7 @@ import {
   recordRoll, spendHitDie,
 } from '../../utils/playState'
 import type { RollGuideEntry } from '../../utils/rollGuide'
+import { countLabel, pluralize } from '../../utils/textUtils'
 import { rollGuideEntry } from './playDice'
 import type { PlayTabProps } from './usePlayView'
 
@@ -68,7 +69,7 @@ function HitDieInput({ die, available, entry, appDice, onAdd }: {
   return (
     <li className="py-2">
       <p className="text-sm text-parchment-200">
-        d{die}: <span className="font-fantasy font-bold">{available}</span> disponíveis
+        d{die}: <span className="font-fantasy font-bold">{available}</span> {pluralize(available, 'disponível', 'disponíveis')}
         {entry && <span className="ml-1.5 text-xs text-parchment-500">cada um cura {entry.formula}</span>}
       </p>
       {entry?.notes.map((n, i) => <p key={i} className="text-[11px] text-parchment-500 leading-snug">{n}</p>)}
@@ -131,7 +132,7 @@ export function ShortRestPanel({ view, onClose }: { view: PlayTabProps; onClose:
     ? spendHitDie(state, sheet, { die: sheet.hitDice[0].die, value: 1 }).notices.find(n => n.kind === 'refused')?.text ?? null
     : null
   const comesBack = [
-    ...(preview.pactSlots > 0 ? [`${preview.pactSlots} espaço(s) de Pacto`] : []),
+    ...(preview.pactSlots > 0 ? [countLabel(preview.pactSlots, 'espaço de Pacto', 'espaços de Pacto')] : []),
     ...preview.resources.map(r => r.name),
   ]
 

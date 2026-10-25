@@ -112,7 +112,7 @@ describe('Descanso longo', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Descanso longo' }))
     const preview = screen.getByTestId('long-rest-preview')
     expect(preview).toHaveTextContent('PV 10 → 14 (o máximo)')
-    expect(preview).toHaveTextContent('1 Dado(s) de Vida')
+    expect(preview).toHaveTextContent('1 Dado de Vida')
     expect(preview).toHaveTextContent('Fúria')
     expect(screen.getByText(/Confirme só o descanso que terminou/)).toBeInTheDocument()
 

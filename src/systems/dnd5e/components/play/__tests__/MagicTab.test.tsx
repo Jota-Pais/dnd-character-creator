@@ -68,6 +68,6 @@ describe('MagicTab', () => {
     expect(screen.getAllByText('Recupera em descanso longo.').length).toBeGreaterThan(0)
     fireEvent.click(screen.getAllByRole('button', { name: 'Gastar: Fúria' })[0])
     expect(screen.getByRole('group', { name: 'Fúria: 1 de 2' })).toBeInTheDocument()
-    expect(screen.getByTestId('hit-dice-d12')).toHaveTextContent('d12: 1 de 1 disponíveis')
+    expect(screen.getByTestId('hit-dice-d12')).toHaveTextContent('d12: 1 de 1 disponível')
   })
 })

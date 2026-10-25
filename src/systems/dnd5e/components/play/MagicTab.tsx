@@ -8,6 +8,7 @@ import {
   getHitDiceAvailable, getPactSlotsAvailable, getResourceAvailable, getSpellSlotsAvailable,
   recoverPactSlot, recoverResource, recoverSpellSlot, spendPactSlot, spendResource, spendSpellSlot,
 } from '../../utils/playState'
+import { pluralize } from '../../utils/textUtils'
 import { ordinal, rollButtonLabel } from './playFormat'
 import { RollMarks } from './RollMarks'
 import { RemainingTrack, UsesTrack } from './UsesTrack'
@@ -185,7 +186,7 @@ export function MagicTab(view: PlayTabProps) {
           <ul className="space-y-1">
             {hitDice.map(h => (
               <li key={h.die} className="text-sm text-parchment-200" data-testid={`hit-dice-d${h.die}`}>
-                d{h.die}: <span className="font-fantasy font-bold">{h.available}</span> de {h.total} disponíveis
+                d{h.die}: <span className="font-fantasy font-bold">{h.available}</span> de {h.total} {pluralize(h.available, 'disponível', 'disponíveis')}
               </li>
             ))}
           </ul>

@@ -11,6 +11,7 @@ import {
   type ActiveConditionEffects, type ConditionState,
 } from './sheetEffects'
 import { formatMeters } from './abilityScoreUtils'
+import { countLabel } from './textUtils'
 
 /**
  * Operações do estado de jogo: funções puras que recebem (estado, PlaySheet, …) e devolvem
@@ -609,7 +610,7 @@ function resourceChange(state0: PlayState, sheet: PlaySheet, id: string, delta: 
   const spent = state.resourcesSpent[id] ?? 0
   const after = spent + delta
   if (after > r.uses) return refuse(state0, `${r.name}: só restam ${r.uses - spent}.`)
-  if (after < 0) return refuse(state0, `${r.name}: só ${spent} gasto(s) para recuperar.`)
+  if (after < 0) return refuse(state0, `${r.name}: só ${countLabel(spent, 'gasto', 'gastos')} para recuperar.`)
   const resourcesSpent = { ...state.resourcesSpent }
   if (after === 0) delete resourcesSpent[id]
   else resourcesSpent[id] = after
@@ -899,13 +900,13 @@ export function completeShortRest(state0: PlayState, sheet: PlaySheet, options: 
   const state = reconcilePlayState(state0, sheet)
   const preview = previewShortRest(state, sheet)
   const recovered: string[] = []
-  if (preview.pactSlots > 0) recovered.push(`${preview.pactSlots} espaço(s) de Pacto`)
+  if (preview.pactSlots > 0) recovered.push(countLabel(preview.pactSlots, 'espaço de Pacto', 'espaços de Pacto'))
   const resourcesSpent = { ...state.resourcesSpent }
   for (const r of preview.resources) {
     recovered.push(r.name)
     delete resourcesSpent[r.id]
   }
-  const notices = recovered.length > 0 ? [note('recovered', `Descanso curto: voltaram ${recovered.join(', ')}.`)] : []
+  const notices = recovered.length > 0 ? [note('recovered', `Descanso curto concluído. De volta: ${recovered.join(', ')}.`)] : []
   const song = sheet.resources.find(r => r.id === SONG_OF_REST_ID)
   if (song && (options.hitDiceSpent ?? 0) > 0) {
     const die = song.die ? ` (${song.die})` : ''
@@ -1044,7 +1045,7 @@ export function completeLongRest(state0: PlayState, sheet: PlaySheet, options: L
     chosen += count
   }
   if (chosen > preview.hitDice.recoverable) {
-    return refuse(state0, `O descanso longo devolve no máximo ${preview.hitDice.recoverable} Dado(s) de Vida.`)
+    return refuse(state0, `O descanso longo devolve no máximo ${countLabel(preview.hitDice.recoverable, 'Dado de Vida', 'Dados de Vida')}.`)
   }
 
   const hitDiceSpent: Record<number, number> = {}
@@ -1072,7 +1073,7 @@ export function completeLongRest(state0: PlayState, sheet: PlaySheet, options: L
 
   const parts = [
     `PV ${preview.hp.before} → ${preview.hp.after}`,
-    ...(chosen > 0 ? [`${chosen} Dado(s) de Vida`] : []),
+    ...(chosen > 0 ? [countLabel(chosen, 'Dado de Vida', 'Dados de Vida')] : []),
     ...(preview.exhaustion.after < preview.exhaustion.before ? [`exaustão ${preview.exhaustion.before} → ${preview.exhaustion.after}`] : []),
   ]
   return done(next, [note('recovered', `Descanso longo: ${parts.join('; ')}.`)])

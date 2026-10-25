@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { completeLongRest, getHitDiceAvailable, previewLongRest } from '../../utils/playState'
+import { countLabel } from '../../utils/textUtils'
 import { ordinal } from './playFormat'
 import type { PlayTabProps } from './usePlayView'
 
@@ -56,10 +57,10 @@ export function LongRestPanel({ view, onClose }: { view: PlayTabProps; onClose: 
       ? `PV ${preview.hp.before} → ${preview.hp.after} (o máximo)`
       : `PV ${preview.hp.before}: já no máximo`,
     ...(preview.hitDice.recoverable > 0 && !pickTypes
-      ? [`${preview.hitDice.recoverable} Dado(s) de Vida`]
+      ? [countLabel(preview.hitDice.recoverable, 'Dado de Vida', 'Dados de Vida')]
       : []),
     ...(slots.length > 0 ? [`Espaços de magia: ${slots.map(s => `${s.n} de ${ordinal(s.level)}`).join(', ')}`] : []),
-    ...(preview.pactSlots > 0 ? [`${preview.pactSlots} espaço(s) de Pacto`] : []),
+    ...(preview.pactSlots > 0 ? [countLabel(preview.pactSlots, 'espaço de Pacto', 'espaços de Pacto')] : []),
     ...preview.resources.map(r => r.name),
   ]
 
@@ -109,7 +110,7 @@ export function LongRestPanel({ view, onClose }: { view: PlayTabProps; onClose: 
                       >
                         +
                       </button>
-                      <span className="text-[11px] text-parchment-500">{p.spent} gasto(s)</span>
+                      <span className="text-[11px] text-parchment-500">{countLabel(p.spent, 'gasto', 'gastos')}</span>
                     </li>
                   )
                 })}

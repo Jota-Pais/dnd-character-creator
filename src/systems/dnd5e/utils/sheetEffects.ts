@@ -3,7 +3,7 @@ import type { Feat } from '../types/feat'
 import type { ArmorProficiency, LevelFeature } from '../types/class'
 import type { AbilityScore, RacialTrait } from '../types/race'
 import type {
-  ConditionalAcBonus, EquipmentRequirement, LoadingOverride, ResourceEffect, WeaponAttackEffect,
+  ConditionalAcBonus, ConditionalRollNote, EquipmentRequirement, LoadingOverride, ResourceEffect, WeaponAttackEffect,
 } from '../types/effects'
 import { getFeat } from './featUtils'
 import { getOwnedFeats } from './ownedFeats'
@@ -194,6 +194,30 @@ export function getInitiativeAdvantageSources(draft: CharacterDraft): string[] {
     ...getOwnedFeats(draft).filter(f => f.effects?.initiativeAdvantage).map(f => f.name),
   ]
   return [...new Set(sources)]
+}
+
+// ── Linhas condicionais das jogadas ────────────────────────────────────────────
+
+/** Uma linha condicional de jogada d20, com quem a dá (o nome da feature, do talento ou do traço). */
+export type SheetConditionalRoll = ConditionalRollNote & { source: string }
+
+/**
+ * As linhas condicionais das jogadas d20 (`conditionalRolls`): features de classe no nível que se
+ * tem NELA (Sentido de Perigo), talentos e traços raciais (Resiliência Anã, Bravura, Sortudo). A
+ * mesma característica vinda de duas classes entra uma vez. Nunca mudam número nem modo — quem as
+ * põe nas receitas é o guia de rolagens.
+ */
+export function getConditionalRollNotes(draft: CharacterDraft): SheetConditionalRoll[] {
+  const out: SheetConditionalRoll[] = []
+  const add = (source: string, notes: ConditionalRollNote[] | undefined) => {
+    for (const n of notes ?? []) {
+      if (!out.some(o => o.source === source && o.text === n.text)) out.push({ ...n, source })
+    }
+  }
+  for (const feature of getOwnedClassFeatures(draft)) add(feature.name, feature.effects?.conditionalRolls)
+  for (const feat of getOwnedFeats(draft)) add(feat.name, feat.effects?.conditionalRolls)
+  for (const trait of getOwnedRacialTraits(draft)?.traits ?? []) add(trait.name, trait.effects?.conditionalRolls)
+  return out
 }
 
 // ── Deslocamento ───────────────────────────────────────────────────────────────

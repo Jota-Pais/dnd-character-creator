@@ -412,6 +412,55 @@ describe('getRollGuide — condições e modo', () => {
   })
 })
 
+describe('getRollGuide — linhas condicionais da ficha (traços e características)', () => {
+  const has = (entry: RollGuideEntry, prefix: string) => entry.notes.some(n => n.startsWith(prefix))
+
+  it('Sortudo (halfling): no ataque, nos testes, nos TR, na iniciativa e no teste contra a morte; nunca no passivo', () => {
+    const halfling = draft({ class: 'fighter', level: 1, race: 'halfling', subrace: 'lightfoot-halfling', abilityScores: SCORES, ...carrying('longsword') })
+    const guide = getRollGuide(halfling, play())
+    const lucky = 'Sortudo: tirou 1 natural no d20?'
+    expect(has(guide.attacks[0].attack, lucky)).toBe(true)
+    expect(has(guide.checks.INT, lucky)).toBe(true)
+    expect(has(guide.skills.stealth, lucky)).toBe(true)
+    expect(has(guide.saves.WIS, lucky)).toBe(true)
+    expect(has(guide.initiative, lucky)).toBe(true)
+    expect(has(guide.deathSave, lucky)).toBe(true)
+    expect(guide.passivePerception.notes.some(n => n.startsWith(lucky))).toBe(false)
+    // O dano não é d20.
+    expect(has(guide.attacks[0].damage!, lucky)).toBe(false)
+    // Nunca muda o modo.
+    expect(guide.saves.WIS.mode).toBe('normal')
+    expect(has(getConcentrationGuide(halfling, play(), 10), lucky)).toBe(true)
+  })
+
+  it('Bravura (halfling): em todo TR, não nos testes nem no teste contra a morte', () => {
+    const guide = getRollGuide(draft({ class: 'fighter', level: 1, race: 'halfling', subrace: 'stout-halfling', abilityScores: SCORES }), play())
+    expect(has(guide.saves.WIS, 'Bravura: vantagem se o teste de resistência for contra ficar amedrontado')).toBe(true)
+    expect(has(guide.saves.STR, 'Bravura')).toBe(true)
+    expect(has(guide.checks.WIS, 'Bravura')).toBe(false)
+    expect(has(guide.deathSave, 'Bravura')).toBe(false)
+  })
+
+  it('Resiliência Anã: nos TR (contra veneno), sem mudar o modo', () => {
+    const guide = getRollGuide(draft({ class: 'fighter', level: 1, race: 'dwarf', subrace: 'hill-dwarf', abilityScores: SCORES }), play())
+    expect(has(guide.saves.CON, 'Resiliência Anã: vantagem se o teste de resistência for contra veneno')).toBe(true)
+    expect(guide.saves.CON.mode).toBe('normal')
+    expect(has(guide.checks.CON, 'Resiliência Anã')).toBe(false)
+    expect(has(guide.attacks[0].attack, 'Resiliência Anã')).toBe(false)
+  })
+
+  it('Sentido de Perigo (bárbaro 2): só no TR de Destreza, com a ressalva, mesmo Cego', () => {
+    const barbarian = (level: number) => draft({ class: 'barbarian', level, abilityScores: SCORES })
+    const guide = getRollGuide(barbarian(2), play())
+    expect(guide.saves.DEX.notes.find(n => n.startsWith('Sentido de Perigo'))).toContain('não vale se estiver cego, surdo ou incapacitado')
+    expect(guide.saves.DEX.mode).toBe('normal')
+    expect(has(guide.saves.WIS, 'Sentido de Perigo')).toBe(false)
+    expect(has(guide.checks.DEX, 'Sentido de Perigo')).toBe(false)
+    expect(has(getRollGuide(barbarian(2), withConditions('blinded')).saves.DEX, 'Sentido de Perigo')).toBe(true)
+    expect(has(getRollGuide(barbarian(1), play()).saves.DEX, 'Sentido de Perigo')).toBe(false)
+  })
+})
+
 describe('getRollGuide — armadura sem proficiência (pág. 144)', () => {
   const wizard = draft({ class: 'wizard', level: 1, abilityScores: SCORES, ...carrying('chain-mail', 'dagger') })
   const guide = getRollGuide(wizard, play())

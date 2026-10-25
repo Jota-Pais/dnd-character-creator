@@ -1,4 +1,5 @@
 import type { ArmorProficiency } from './class'
+import type { RollCategory } from './condition'
 import type { AbilityScore } from './race'
 
 /**
@@ -23,6 +24,25 @@ export type HalfProficiencyOnChecks = {
   rounding: 'down' | 'up'
   /** Só testes destes atributos; ausente, todo teste de habilidade. */
   abilities?: AbilityScore[]
+}
+
+/**
+ * Linha condicional numa jogada d20 — a vantagem que depende da situação (Resiliência Anã "contra
+ * veneno", Sentido de Perigo "contra efeitos que possa ver") ou o que não cabe num número
+ * (Sortudo: rolar de novo o 1 natural). Nunca entra no número nem no modo: vira nota na receita
+ * das jogadas que alcança, com o nome de quem a dá.
+ */
+export type ConditionalRollNote = {
+  rolls: RollCategory[]
+  /** Só jogadas destes atributos; ausente, de todos. */
+  abilities?: AbilityScore[]
+  /**
+   * Vale também no teste contra a morte, que é um "teste de resistência especial" sem atributo
+   * (p. 199). Só quando a característica alcança todo teste de resistência (Sortudo).
+   */
+  deathSave?: boolean
+  /** A regra, em português, com a página — exibida depois do nome de quem a dá. */
+  text: string
 }
 
 /** Bônus de CA que só vale numa situação (ex.: Ambidestro, "empunhando duas armas"). */
@@ -200,6 +220,11 @@ export type FeatureEffects = {
    * Incondicional: entra no modo da iniciativa. Lido em features de classe e talentos.
    */
   initiativeAdvantage?: boolean
+  /**
+   * Linhas condicionais nas jogadas d20 (Sentido de Perigo, e nos traços raciais Resiliência Anã,
+   * Bravura e Sortudo). Lidas de features de classe (no nível NA classe dona), talentos e traços.
+   */
+  conditionalRolls?: ConditionalRollNote[]
   /** Bônus de deslocamento, em PÉS, a unidade em que a raça guarda (Mobilidade: +10 pés = +3 m). */
   speedBonus?: number
   /**

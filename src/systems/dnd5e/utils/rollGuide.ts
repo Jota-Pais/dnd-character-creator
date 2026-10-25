@@ -11,7 +11,8 @@ import { getPlayConditionEffects } from './playState'
 import { getRace } from './raceUtils'
 import { getSavingThrowChecks, getSkillChecks, getPassiveScore, getUnproficientArmor } from './proficiencyUtils'
 import {
-  EXHAUSTION, getAttacksPerAction, getBestHalfProficiencySource, getCondition, getHalfProficiencySources,
+  EXHAUSTION, getAttacksPerAction, getBestHalfProficiencySource, getCondition, getConditionalRollNotes,
+  getHalfProficiencySources,
   getInitiativeAdvantageSources, getInitiativeBonuses, getOwnedFeats, getSheetArmorClass, getWeaponCritThreshold, resolveRollMode,
   type ActiveConditionEffects, type ConditionRoll, type SheetEffect,
 } from './sheetEffects'
@@ -229,8 +230,11 @@ type SheetModeSources = {
 
 const STR_DEX: readonly AbilityScore[] = ['STR', 'DEX']
 
-/** Linha condicional de uma condição, já com a categoria de jogada que ela alcança. */
-type ConditionalLine = { rolls: RollCategory[]; abilities?: AbilityScore[]; text: string }
+/**
+ * Linha condicional de uma condição ou característica, já com a categoria de jogada que ela
+ * alcança. `deathSave`: vale também no teste contra a morte (Sortudo).
+ */
+type ConditionalLine = { rolls: RollCategory[]; abilities?: AbilityScore[]; deathSave?: boolean; text: string }
 
 /**
  * As linhas condicionais de jogada das condições em vigor (Amedrontado "com a fonte do medo na
@@ -250,6 +254,20 @@ function getConditionalLines(effects: ActiveConditionEffects): ConditionalLine[]
     if (effect.kind === 'autoFail') return [{ rolls: [effect.roll], abilities: effect.abilities, text: `${effect.text} (${label})` }]
     return []
   })
+}
+
+/**
+ * As linhas condicionais que a ficha declara (`getConditionalRollNotes`): Resiliência Anã, Bravura,
+ * Sortudo, Sentido de Perigo — "Sortudo: tirou 1 natural no d20?…". A ressalva do livro vai no
+ * texto; a ficha não a esconde pela condição (o Sentido de Perigo continua visível com Cego).
+ */
+function getSheetConditionalLines(draft: CharacterDraft): ConditionalLine[] {
+  return getConditionalRollNotes(draft).map(n => ({
+    rolls: n.rolls,
+    ...(n.abilities ? { abilities: n.abilities } : {}),
+    ...(n.deathSave ? { deathSave: true } : {}),
+    text: `${n.source}: ${n.text}`,
+  }))
 }
 
 function linesFor(lines: ConditionalLine[], roll: RollCategory, ability?: AbilityScore): string[] {
@@ -512,7 +530,10 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
   const level = draft.level ?? 1
   const prof = getProficiencyBonus(level)
   const effects = getPlayConditionEffects(state)
-  const lines = getConditionalLines(effects)
+  // As linhas das condições e as da ficha. O valor passivo leva só as das condições: rerrolar ou
+  // "vantagem contra veneno" não alcançam um número que não se rola.
+  const conditionLines = getConditionalLines(effects)
+  const lines = [...conditionLines, ...getSheetConditionalLines(draft)]
   const inspiration = state.inspiration
 
   // Fontes da ficha.
@@ -629,7 +650,7 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
       ...(adjustment > 0 ? [{ label: `Vantagem (${labels(perception.advantage)})`, value: 5 }] : []),
       ...(adjustment < 0 ? [{ label: `Desvantagem (${labels(perception.disadvantage)})`, value: -5 }] : []),
     ], sheetPassive + adjustment),
-    notes: linesFor(lines, 'abilityCheck', 'WIS'),
+    notes: linesFor(conditionLines, 'abilityCheck', 'WIS'),
   }
 
   const attackContext: AttackGuideContext = {
@@ -676,7 +697,10 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
     modifier: 0,
     breakdown: [],
     condition: effects.deathSave,
-    notes: ['10 ou mais: sucesso; 1: dois fracassos; 20: recupera 1 PV (pág. 199).'],
+    notes: [
+      '10 ou mais: sucesso; 1: dois fracassos; 20: recupera 1 PV (pág. 199).',
+      ...lines.filter(l => l.deathSave).map(l => l.text),
+    ],
   }, inspiration)
 
   const resilient = getOwnedFeats(draft).find(f => f.id === 'resistente')
@@ -722,7 +746,7 @@ export function getConcentrationGuide(draft: CharacterDraft, state: PlayState, d
   const mods = Object.fromEntries(ALL_ABILITY_SCORES.map(ab => [ab, calculateModifier(scores[ab])])) as Record<AbilityScore, number>
   const prof = getProficiencyBonus(draft.level ?? 1)
   const effects = getPlayConditionEffects(state)
-  const lines = getConditionalLines(effects)
+  const lines = [...getConditionalLines(effects), ...getSheetConditionalLines(draft)]
   const sheet: SheetModeSources = { unproficientArmor: [], stealth: [] }
   const input = saveInput('CON', getSavingThrowChecks(draft, scores).CON, mods, prof, effects, sheet, lines)
   const amount = Number.isFinite(damage) ? Math.max(0, Math.floor(damage)) : 0

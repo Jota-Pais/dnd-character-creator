@@ -26,7 +26,12 @@
       },
       {
         "name": "Resiliência Anã",
-        "description": "Vantagem em testes de resistência contra veneno e resistência a dano de veneno."
+        "description": "Vantagem em testes de resistência contra veneno e resistência a dano de veneno.",
+        "effects": {
+          "conditionalRolls": [
+            { "rolls": ["save"], "text": "vantagem se o teste de resistência for contra veneno (pág. 20)." }
+          ]
+        }
       },
       {
         "name": "Proficiência com Ferramentas",
@@ -196,11 +201,25 @@
     "traits": [
       {
         "name": "Sortudo",
-        "description": "Ao tirar um 1 natural em um ataque, teste de habilidade ou resistência, você pode jogar o dado novamente e usar o novo resultado."
+        "description": "Ao tirar um 1 natural em um ataque, teste de habilidade ou resistência, você pode jogar o dado novamente e usar o novo resultado.",
+        "effects": {
+          "conditionalRolls": [
+            {
+              "rolls": ["attack", "abilityCheck", "save"],
+              "deathSave": true,
+              "text": "tirou 1 natural no d20? Pode jogar de novo e usar o novo resultado; com vantagem ou desvantagem, só um dos dois dados (págs. 28 e 175)."
+            }
+          ]
+        }
       },
       {
         "name": "Bravura",
-        "description": "Você tem vantagem em testes de resistência contra ficar amedrontado."
+        "description": "Você tem vantagem em testes de resistência contra ficar amedrontado.",
+        "effects": {
+          "conditionalRolls": [
+            { "rolls": ["save"], "text": "vantagem se o teste de resistência for contra ficar amedrontado (pág. 28)." }
+          ]
+        }
       },
       {
         "name": "Agilidade Halfling",

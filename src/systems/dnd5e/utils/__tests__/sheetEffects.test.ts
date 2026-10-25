@@ -30,6 +30,7 @@ import {
   describeConditionalSaveBonuses,
   getWeaponCritThreshold,
   getInitiativeAdvantageSources,
+  getConditionalRollNotes,
 } from '../sheetEffects'
 import {
   getArmorProficiencies, hasArmorProficiency, hasWeaponProficiency,
@@ -958,5 +959,26 @@ describe('getInitiativeAdvantageSources (Instinto Selvagem)', () => {
     expect(getInitiativeAdvantageSources(draft({ level: 7, class: 'fighter' }))).toEqual([])
     const mc = draft({ level: 10, multiclass: true, class: 'fighter', additionalClasses: [extraClass('barbarian', 6)] })
     expect(getInitiativeAdvantageSources(mc)).toEqual([])
+  })
+})
+
+describe('getConditionalRollNotes', () => {
+  it('traços raciais com a origem: Sortudo (com o teste contra a morte) e Bravura do halfling', () => {
+    const notes = getConditionalRollNotes(draft({ race: 'halfling', subrace: 'lightfoot-halfling' }))
+    expect(notes.map(n => n.source)).toEqual(['Sortudo', 'Bravura'])
+    expect(notes[0]).toMatchObject({ rolls: ['attack', 'abilityCheck', 'save'], deathSave: true })
+    expect(notes[1]).toMatchObject({ rolls: ['save'] })
+    expect(notes[1].deathSave).toBeUndefined()
+  })
+
+  it('feature de classe pelo nível NA classe: Sentido de Perigo a partir do bárbaro 2', () => {
+    expect(getConditionalRollNotes(draft({ level: 1, class: 'barbarian' }))).toEqual([])
+    expect(getConditionalRollNotes(draft({ level: 2, class: 'barbarian' }))).toEqual([
+      expect.objectContaining({ source: 'Sentido de Perigo', rolls: ['save'], abilities: ['DEX'] }),
+    ])
+  })
+
+  it('sem raça nem classe, nada', () => {
+    expect(getConditionalRollNotes(draft({}))).toEqual([])
   })
 })

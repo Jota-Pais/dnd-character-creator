@@ -12,7 +12,7 @@ import { getRace } from './raceUtils'
 import { getSavingThrowChecks, getSkillChecks, getPassiveScore, getUnproficientArmor } from './proficiencyUtils'
 import {
   EXHAUSTION, getAttacksPerAction, getBestHalfProficiencySource, getCondition, getHalfProficiencySources,
-  getInitiativeBonuses, getOwnedFeats, getSheetArmorClass, getWeaponCritThreshold, resolveRollMode,
+  getInitiativeAdvantageSources, getInitiativeBonuses, getOwnedFeats, getSheetArmorClass, getWeaponCritThreshold, resolveRollMode,
   type ActiveConditionEffects, type ConditionRoll, type SheetEffect,
 } from './sheetEffects'
 import { getCasterEntries, getSpellAttackBonus, getSpellSaveDC } from './spellUtils'
@@ -601,6 +601,7 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
       ...initiativeBonuses.map(b => ({ label: b.source, value: b.value })),
     ],
     condition: effects.initiative,
+    extraAdvantage: getInitiativeAdvantageSources(draft).map(name => ({ source: `feature:${name}`, label: name })),
     extraDisadvantage: sheet.unproficientArmor,
     notes: linesFor(lines, 'abilityCheck', 'DEX'),
   }, inspiration)

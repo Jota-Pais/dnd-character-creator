@@ -463,6 +463,20 @@ describe('getRollGuide — meia proficiência, Especialização, Alerta', () => 
     expect(stealth.formula).toBe('1d20 + 6')
   })
 
+  it('Instinto Selvagem (bárbaro 7): vantagem na iniciativa; com Exaustão 1, se anulam', () => {
+    const barbarian = (level: number) => draft({ class: 'barbarian', level, abilityScores: SCORES })
+    const initiative = getRollGuide(barbarian(7), play()).initiative
+    expect(initiative.mode).toBe('advantage')
+    expect(initiative.notation).toBe('2d20kh1+2')
+    expect(describeRollGuide(initiative)).toBe('1d20 + 2, com vantagem (Instinto Selvagem)')
+    const tired = getRollGuide(barbarian(7), exhausted(1)).initiative
+    expect(tired.mode).toBe('normal')
+    expect(describeRollGuide(tired)).toBe('1d20 + 2, normal: vantagem (Instinto Selvagem) e desvantagem (Exaustão 1) se anulam')
+    expect(getRollGuide(barbarian(6), play()).initiative.mode).toBe('normal')
+    // Só a iniciativa: o teste de Destreza comum não ganha a vantagem.
+    expect(getRollGuide(barbarian(7), play()).checks.DEX.mode).toBe('normal')
+  })
+
   it('Alerta: +5 na iniciativa com o nome do talento', () => {
     const d = draft({
       class: 'fighter', level: 4, abilityScores: SCORES,

@@ -47,7 +47,8 @@
       {
         "level": 7,
         "name": "Instinto Selvagem",
-        "description": "Você tem vantagem nas jogadas de iniciativa. Se estiver surpreso no início do combate e não estiver incapacitado, pode agir normalmente no seu primeiro turno, mas apenas se entrar em fúria antes de fazer qualquer outra coisa nesse turno."
+        "description": "Você tem vantagem nas jogadas de iniciativa. Se estiver surpreso no início do combate e não estiver incapacitado, pode agir normalmente no seu primeiro turno, mas apenas se entrar em fúria antes de fazer qualquer outra coisa nesse turno.",
+        "effects": { "initiativeAdvantage": true }
       },
       {
         "level": 9,

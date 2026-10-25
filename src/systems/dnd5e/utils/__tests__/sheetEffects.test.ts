@@ -29,6 +29,7 @@ import {
   getConditionalSaveBonuses,
   describeConditionalSaveBonuses,
   getWeaponCritThreshold,
+  getInitiativeAdvantageSources,
 } from '../sheetEffects'
 import {
   getArmorProficiencies, hasArmorProficiency, hasWeaponProficiency,
@@ -947,5 +948,15 @@ describe('getWeaponCritThreshold (Crítico Aprimorado / Superior)', () => {
       level: 15, multiclass: true, class: 'wizard', additionalClasses: [extraClass('fighter', 3, 'champion')],
     })
     expect(getWeaponCritThreshold(d)?.value).toBe(19)
+  })
+})
+
+describe('getInitiativeAdvantageSources (Instinto Selvagem)', () => {
+  it('bárbaro 7 tem; bárbaro 6 e guerreiro 7, não; conta o nível NA classe', () => {
+    expect(getInitiativeAdvantageSources(draft({ level: 7, class: 'barbarian' }))).toEqual(['Instinto Selvagem'])
+    expect(getInitiativeAdvantageSources(draft({ level: 6, class: 'barbarian' }))).toEqual([])
+    expect(getInitiativeAdvantageSources(draft({ level: 7, class: 'fighter' }))).toEqual([])
+    const mc = draft({ level: 10, multiclass: true, class: 'fighter', additionalClasses: [extraClass('barbarian', 6)] })
+    expect(getInitiativeAdvantageSources(mc)).toEqual([])
   })
 })

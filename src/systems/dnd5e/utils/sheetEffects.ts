@@ -183,6 +183,19 @@ export function getInitiativeBonusTotal(draft: CharacterDraft): number {
   return getInitiativeBonuses(draft).reduce((sum, e) => sum + e.value, 0)
 }
 
+/**
+ * Quem dá vantagem nas jogadas de iniciativa (`initiativeAdvantage`: Instinto Selvagem, p. 49) —
+ * features de classe no nível que se tem NELA e talentos —, pelo nome, sem repetir. Vazio sem
+ * nenhuma. Incondicional: o guia de rolagens a põe no modo da iniciativa.
+ */
+export function getInitiativeAdvantageSources(draft: CharacterDraft): string[] {
+  const sources = [
+    ...getOwnedClassFeatures(draft).filter(f => f.effects?.initiativeAdvantage).map(f => f.name),
+    ...getOwnedFeats(draft).filter(f => f.effects?.initiativeAdvantage).map(f => f.name),
+  ]
+  return [...new Set(sources)]
+}
+
 // ── Deslocamento ───────────────────────────────────────────────────────────────
 
 /** A armadura e o escudo equipados — o mesmo critério para a CA e para o deslocamento. */

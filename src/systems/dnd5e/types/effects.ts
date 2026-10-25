@@ -195,6 +195,11 @@ export type FeatureEffects = {
   choices?: FeatureChoices
   /** Bônus fixo em iniciativa (Alerta: +5). */
   initiativeBonus?: number
+  /**
+   * Vantagem nas jogadas de iniciativa, sem condição (Instinto Selvagem, bárbaro 7, p. 49).
+   * Incondicional: entra no modo da iniciativa. Lido em features de classe e talentos.
+   */
+  initiativeAdvantage?: boolean
   /** Bônus de deslocamento, em PÉS, a unidade em que a raça guarda (Mobilidade: +10 pés = +3 m). */
   speedBonus?: number
   /**

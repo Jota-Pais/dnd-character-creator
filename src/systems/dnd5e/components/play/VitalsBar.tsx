@@ -4,16 +4,10 @@ import {
   endConcentration, getCurrentHp, getEffectiveMaxHp, getPlayConditionEffects, getPlaySpeed, setInspiration,
 } from '../../utils/playState'
 import type { RollGuideEntry } from '../../utils/rollGuide'
+import { ModeMark } from './RollMarks'
 import type { PlayView } from './usePlayView'
 
 const LIFE_LABEL = { dying: 'Morrendo', stable: 'Estável', dead: 'Morto' } as const
-
-/** ▲ vantagem / ▼ desvantagem ao lado de um número que é rolagem, com o texto para leitor de tela. */
-function ModeMark({ entry }: { entry: RollGuideEntry }) {
-  if (entry.mode === 'advantage') return <span className="text-emerald-300 text-xs" title="Com vantagem">▲<span className="sr-only"> com vantagem</span></span>
-  if (entry.mode === 'disadvantage') return <span className="text-red-300 text-xs" title="Com desvantagem">▼<span className="sr-only"> com desvantagem</span></span>
-  return null
-}
 
 function Stat({ label, children, sub }: { label: string; children: ReactNode; sub?: ReactNode }) {
   return (

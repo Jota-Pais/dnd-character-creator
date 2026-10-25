@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react'
 import type { PlayTabProps } from './usePlayView'
+import { ChecksTab } from './ChecksTab'
 
 export type PlayTabId = 'checks' | 'attacks' | 'magic' | 'status' | 'notes'
 
@@ -17,7 +18,7 @@ export type PlayTab = {
  * recebe `PlayTabProps`) e ponha em `component` — a `PlayScreen` não muda.
  */
 export const PLAY_TABS: readonly PlayTab[] = [
-  { id: 'checks', label: 'Testes', hint: 'Atributos, testes de resistência e perícias, com o que rolar em cada um.' },
+  { id: 'checks', label: 'Testes', hint: 'Atributos, testes de resistência e perícias, com o que rolar em cada um.', component: ChecksTab },
   { id: 'attacks', label: 'Ataques', hint: 'Suas armas: o ataque, o dano e o crítico.' },
   { id: 'magic', label: 'Magia e recursos', hint: 'Espaços de magia, CD, ataque de magia e os usos das suas características.' },
   { id: 'status', label: 'Estado', hint: 'Condições, exaustão, concentração e descansos.' },

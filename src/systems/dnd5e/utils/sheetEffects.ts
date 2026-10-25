@@ -412,6 +412,18 @@ export function getHpMaxReductionImmunity(draft: CharacterDraft): string | null 
   return getOwnedClassFeatures(draft).find(f => f.effects?.hpMaxCannotBeReduced)?.name ?? null
 }
 
+/**
+ * O traço racial que deixa ficar com 1 PV em vez de cair a 0 (`dropToOneHpInstead`: Resistência
+ * Implacável, p. 41), com o recurso que ele gasta e o nome; `null` sem nenhum.
+ */
+export function getDropToOneHp(draft: CharacterDraft): { resourceId: string; source: string } | null {
+  for (const trait of getOwnedRacialTraits(draft)?.traits ?? []) {
+    const drop = trait.effects?.dropToOneHpInstead
+    if (drop) return { resourceId: drop.resourceId, source: trait.name }
+  }
+  return null
+}
+
 export function getTotalHp(draft: CharacterDraft, conModifier: number): number {
   const base = draft.hpMethod === 'roll'
     ? getTotalHpRolled(draft, conModifier)

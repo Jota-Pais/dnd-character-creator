@@ -6,7 +6,7 @@ import type { SheetResource } from '../classResourceUtils'
 import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
 import { buildPlaySheet } from '../playSheet'
 import {
-  addCondition, applyDamage, applyHealing, clearTempHp, completeLongRest, completeShortRest,
+  addCondition, applyDamage, applyDamageDroppingToOneHp, applyHealing, clearTempHp, completeLongRest, completeShortRest,
   createPlayState, describeHpMaxImmunity, endConcentration, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable,
   getLongRestHitDiceRecoverable, getPactSlotsAvailable, getPlayConditionEffects, getPlayConditionState,
   getResourceAvailable, getSpellSlotsAvailable, grantTempHp, previewLongRest, previewShortRest, reconcileLoadedPlayState,
@@ -257,6 +257,53 @@ describe('applyDamage', () => {
   it('valor não numérico é recusado', () => {
     const s = state()
     expect(applyDamage(s, S, { amount: Number.NaN }).state).toBe(s)
+  })
+})
+
+describe('Resistência Implacável (ficar com 1 PV em vez de cair, pág. 41)', () => {
+  const HO = sheet({ dropToOneHp: { resourceId: 'relentless', source: 'Resistência Implacável' } })
+  const concentrating = { concentration: { label: 'Bênção', startedAt: 0 } }
+
+  it('cair a 0 PV sem morrer, com uso: cai normalmente e avisa, levando o dano', () => {
+    const r = applyDamage(state(), HO, { amount: 25, critical: true })
+    expect(r.state.lifeState).toBe('dying')
+    const offer = r.notices.find(n => n.kind === 'dropToOneHp')
+    expect(offer?.text).toContain('Resistência Implacável')
+    expect(offer?.damage).toEqual({ amount: 25, critical: true })
+  })
+
+  it('applyDamageDroppingToOneHp: o mesmo dano termina em 1 PV, gasta o uso, sem Caído e com o TR de concentração', () => {
+    const r = applyDamageDroppingToOneHp(state({ tempHp: 3, ...concentrating }), HO, { amount: 25 })
+    expect(r.state.lifeState).toBe('conscious')
+    expect(getCurrentHp(r.state, HO)).toBe(1)
+    expect(r.state.tempHp).toBe(0)
+    expect(r.state.resourcesSpent).toEqual({ relentless: 1 })
+    expect(getResourceAvailable(r.state, HO, 'relentless')).toBe(0)
+    expect(r.state.conditions).toEqual([])
+    expect(r.state.concentration?.label).toBe('Bênção')
+    expect(kinds(r)).toEqual(['tempHpAbsorbed', 'info', 'concentrationCheck'])
+    expect(r.notices.find(n => n.kind === 'concentrationCheck')?.dc).toBe(12)
+  })
+
+  it('sem uso, sem o traço ou com morte instantânea: nem aviso, nem 1 PV', () => {
+    const spent = state({ resourcesSpent: { relentless: 1 } })
+    expect(kinds(applyDamage(spent, HO, { amount: 25 }))).not.toContain('dropToOneHp')
+    expect(kinds(applyDamage(state(), S, { amount: 25 }))).not.toContain('dropToOneHp')
+    const massive = applyDamage(state(), HO, { amount: 40 })
+    expect(massive.state.lifeState).toBe('dead')
+    expect(kinds(massive)).not.toContain('dropToOneHp')
+    // Dano que não derruba: nada a oferecer.
+    expect(kinds(applyDamage(state(), HO, { amount: 5 }))).not.toContain('dropToOneHp')
+  })
+
+  it('pedido sem caber (sem uso, ou o dano não derruba): aplica o dano normal e avisa — o dano nunca se perde', () => {
+    const spent = applyDamageDroppingToOneHp(state({ resourcesSpent: { relentless: 1 } }), HO, { amount: 25 })
+    expect(spent.state.lifeState).toBe('dying')
+    expect(kinds(spent)).toContain('warning')
+    const light = applyDamageDroppingToOneHp(state(), HO, { amount: 5 })
+    expect(getCurrentHp(light.state, HO)).toBe(15)
+    expect(light.state.resourcesSpent).toEqual({})
+    expect(kinds(light)).toContain('warning')
   })
 })
 

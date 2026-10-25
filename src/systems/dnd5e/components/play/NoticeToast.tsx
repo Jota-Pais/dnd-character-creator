@@ -1,6 +1,6 @@
 import { usePlayStore } from '../../stores/playStore'
-import type { PlayNotice, PlayNoticeKind } from '../../types/playState'
-import { endConcentration } from '../../utils/playState'
+import type { DamageInput, PlayNotice, PlayNoticeKind } from '../../types/playState'
+import { applyDamageDroppingToOneHp, endConcentration } from '../../utils/playState'
 import { describeRollGuide, getConcentrationGuide, type RollGuideEntry } from '../../utils/rollGuide'
 import type { PlayView } from './usePlayView'
 
@@ -11,6 +11,7 @@ const KIND_STYLE: Partial<Record<PlayNoticeKind, { prefix: string; className: st
   died: { prefix: '', className: 'border-red-800 bg-red-950/40 text-red-200' },
   fellUnconscious: { prefix: '', className: 'border-red-900 bg-red-950/20 text-red-200' },
   concentrationCheck: { prefix: '', className: 'border-violet-800 bg-violet-950/40 text-violet-100' },
+  dropToOneHp: { prefix: '', className: 'border-emerald-800 bg-emerald-950/30 text-emerald-100' },
 }
 const DEFAULT_STYLE = { prefix: '', className: 'border-parchment-800 bg-surface-base text-parchment-200' }
 
@@ -40,7 +41,7 @@ export function NoticeToast({ view, onOpenRecipe }: {
         >
           <ul className="space-y-1.5">
             {notices.map((n, i) => (
-              <NoticeLine key={i} notice={n} view={view} onOpenRecipe={onOpenRecipe} />
+              <NoticeLine key={i} notice={n} view={view} onOpenRecipe={onOpenRecipe} canUndo={canUndo} />
             ))}
           </ul>
           <div className="mt-2 flex justify-end gap-2">
@@ -65,12 +66,21 @@ export function NoticeToast({ view, onOpenRecipe }: {
   )
 }
 
-function NoticeLine({ notice, view, onOpenRecipe }: {
+function NoticeLine({ notice, view, onOpenRecipe, canUndo }: {
   notice: PlayNotice
   view: PlayView
   onOpenRecipe: (entry: RollGuideEntry) => void
+  /** A última ação (o dano que derrubou) ainda pode ser desfeita. */
+  canUndo: boolean
 }) {
+  const undo = usePlayStore(s => s.undo)
   const style = KIND_STYLE[notice.kind] ?? DEFAULT_STYLE
+  // Resistência Implacável: desfaz o dano que derrubou e o reaplica terminando em 1 PV.
+  const dropDamage = notice.kind === 'dropToOneHp' && canUndo ? notice.damage : undefined
+  function dropToOneHp(damage: DamageInput) {
+    undo()
+    view.run((st, sh) => applyDamageDroppingToOneHp(st, sh, damage))
+  }
   // A CD vem do aviso (o dano já com resistência, contando o absorvido); o guia dá o resto da receita.
   const concentration = notice.kind === 'concentrationCheck' && notice.dc !== undefined && view.state.concentration
     ? { ...getConcentrationGuide(view.draft, view.state, 0), dc: notice.dc }
@@ -80,6 +90,16 @@ function NoticeLine({ notice, view, onOpenRecipe }: {
     <li className={`rounded-lg border px-3 py-2 text-sm leading-snug ${style.className}`}>
       {style.prefix && <span className="font-bold">{style.prefix}</span>}
       {notice.text}
+      {dropDamage && (
+        <div className="mt-1.5">
+          <button
+            onClick={() => dropToOneHp(dropDamage)}
+            className="min-h-10 rounded-lg border border-emerald-700 px-3 text-xs text-emerald-200 hover:border-emerald-400"
+          >
+            Usar {view.sheet.dropToOneHp?.source ?? 'Resistência Implacável'} (fica com 1 PV)
+          </button>
+        </div>
+      )}
       {concentration && (
         <>
           <p className="mt-1 text-xs">

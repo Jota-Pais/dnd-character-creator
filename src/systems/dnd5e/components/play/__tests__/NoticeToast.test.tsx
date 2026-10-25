@@ -52,6 +52,25 @@ describe('desfazer e avisos', () => {
     expect(screen.queryByRole('status')).toBeNull()
   })
 
+  it('meio-orc cai a 0 PV: "Usar Resistência Implacável" desfaz e reaplica o dano terminando em 1 PV', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    damage('20')
+    const toast = screen.getByRole('status')
+    expect(toast).toHaveTextContent('Resistência Implacável: em vez de cair a 0 PV, você pode ficar com 1 PV')
+    expect(usePlayStore.getState().state?.lifeState).toBe('dying')
+    fireEvent.click(within(toast).getByRole('button', { name: 'Usar Resistência Implacável (fica com 1 PV)' }))
+    const st = usePlayStore.getState().state!
+    expect(st.lifeState).toBe('conscious')
+    expect(st.conditions).not.toContain('prone')
+    expect(st.resourcesSpent['relentless-endurance']).toBe(1)
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('1')
+    // Gasto o uso, a próxima queda não oferece de novo.
+    damage('5')
+    expect(usePlayStore.getState().state?.lifeState).toBe('dying')
+    expect(screen.queryByRole('button', { name: /Usar Resistência Implacável/ })).toBeNull()
+  })
+
   it('dano com concentração mostra a CD e o que rolar, e "Falhei: encerrar" encerra', () => {
     openKrusk()
     usePlayStore.getState().run(st => startConcentration(st, { label: 'Bênção' }, 0))

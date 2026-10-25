@@ -122,6 +122,23 @@ export type PlaySheet = {
    * (`getHpMaxReductionImmunity`). Presente, a Exaustão 4 não corta o máximo.
    */
   hpMaxReductionImmunity?: string
+  /**
+   * O traço que deixa ficar com 1 PV em vez de cair a 0 (Resistência Implacável do meio-orc,
+   * pág. 41): o recurso que ele gasta e o nome (`getDropToOneHp`).
+   */
+  dropToOneHp?: { resourceId: string; source: string }
+}
+
+/** Um evento de dano, como a tela o informa (`applyDamage`). */
+export type DamageInput = {
+  /** Dano total do evento, já com os modificadores (o app não soma parcelas aqui). */
+  amount: number
+  /** O personagem tem resistência a este dano (metade, arredondada para baixo). */
+  resisted?: boolean
+  /** Dano de acerto crítico: a 0 PV conta 2 fracassos. */
+  critical?: boolean
+  /** O atacante escolheu nocautear (só ataque corpo-a-corpo, pág. 200). */
+  knockout?: boolean
 }
 
 export type PlayNoticeKind =
@@ -140,6 +157,11 @@ export type PlayNoticeKind =
   | 'concentrationEnded'
   | 'concentrationReplaced'
   | 'fellUnconscious'
+  /**
+   * Caiu a 0 PV, mas um traço deixa ficar com 1 PV (Resistência Implacável): o aviso traz o dano
+   * (`damage`) para a tela desfazer e reaplicá-lo com `applyDamageDroppingToOneHp`.
+   */
+  | 'dropToOneHp'
   | 'droppedItems'
   | 'deathSaveSuccess'
   | 'deathSaveFailure'
@@ -149,8 +171,11 @@ export type PlayNoticeKind =
   | 'died'
   | 'recovered'
 
-/** Aviso para a UI. `dc` acompanha o `concentrationCheck`. */
-export type PlayNotice = { kind: PlayNoticeKind; text: string; dc?: number }
+/**
+ * Aviso para a UI. `dc` acompanha o `concentrationCheck`; `damage`, o `dropToOneHp` (o mesmo dano,
+ * para reaplicar terminando em 1 PV).
+ */
+export type PlayNotice = { kind: PlayNoticeKind; text: string; dc?: number; damage?: DamageInput }
 
 /** O que toda operação de jogo devolve: o estado novo e os avisos. */
 export type PlayResult = { state: PlayState; notices: PlayNotice[] }

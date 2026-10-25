@@ -591,7 +591,8 @@
         "effects": {
           "resources": [
             { "id": "relentless-endurance", "name": "Resistência Implacável", "uses": 1, "recharge": "long" }
-          ]
+          ],
+          "dropToOneHpInstead": { "resourceId": "relentless-endurance" }
         }
       },
       {

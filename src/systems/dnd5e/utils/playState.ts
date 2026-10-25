@@ -2,7 +2,7 @@ import type { RollRecord } from '../../../core/dice'
 import type { ConditionId, ExhaustionLevel } from '../types/condition'
 import {
   CONDITION_NOTE_MAX_LENGTH, HIT_DIE_SIZES, PLAY_STATE_VERSION, ROLL_HISTORY_LIMIT,
-  type Concentration, type DeathSaveCount, type LifeState, type PlayNotice, type PlayNoticeKind,
+  type Concentration, type DamageInput, type DeathSaveCount, type LifeState, type PlayNotice, type PlayNoticeKind,
   type PlayResult, type PlaySheet, type PlayState,
 } from '../types/playState'
 import {
@@ -281,15 +281,17 @@ function toConscious(next: PlayState, notices: PlayNotice[], text: { awake: stri
 
 // ── Dano ────────────────────────────────────────────────────────────────────
 
-export type DamageInput = {
-  /** Dano total do evento, já com os modificadores (o app não soma parcelas aqui). */
-  amount: number
-  /** O personagem tem resistência a este dano (metade, arredondada para baixo). */
-  resisted?: boolean
-  /** Dano de acerto crítico: a 0 PV conta 2 fracassos. */
-  critical?: boolean
-  /** O atacante escolheu nocautear (só ataque corpo-a-corpo, pág. 200). */
-  knockout?: boolean
+export type { DamageInput }
+
+/**
+ * O traço de ficar com 1 PV em vez de cair (Resistência Implacável), quando ainda tem uso. `null`
+ * sem o traço, sem uso ou com máximo efetivo abaixo de 1.
+ */
+function availableDropToOneHp(state: PlayState, sheet: PlaySheet): PlaySheet['dropToOneHp'] | null {
+  const drop = sheet.dropToOneHp
+  if (!drop || getEffectiveMaxHp(state, sheet) < 1) return null
+  const available = getResourceAvailable(state, sheet, drop.resourceId)
+  return available === 'unlimited' || (typeof available === 'number' && available > 0) ? drop : null
 }
 
 /**
@@ -299,8 +301,26 @@ export type DamageInput = {
  * nocaute → estável; já a 0 PV → +1 fracasso (2 se crítico), mesmo se os temporários absorvem
  * tudo (decisão 5), e o estável volta a morrer (assumido D). Concentração: aviso de TR de CON com
  * CD max(10, ⌊total/2⌋), contando o absorvido (assumido E); 0 PV e morte a encerram (assumido F).
+ *
+ * Quem cai a 0 PV sem morrer e tem a Resistência Implacável com uso recebe também o aviso
+ * `dropToOneHp`, com o dano: a tela desfaz e reaplica por `applyDamageDroppingToOneHp`.
  */
 export function applyDamage(state0: PlayState, sheet: PlaySheet, input: DamageInput): PlayResult {
+  return damagePipeline(state0, sheet, input, false)
+}
+
+/**
+ * O mesmo evento de dano de `applyDamage`, usando a Resistência Implacável (pág. 41): quando ele
+ * deixaria o personagem a 0 PV sem matar, ele fica com 1 PV e gasta um uso do recurso — sem cair
+ * inconsciente, sem o Caído e sem perder a concentração (o TR de Constituição continua). Parte do
+ * estado ANTERIOR ao dano (a tela desfaz antes). Se o traço não se aplica (sem uso, o dano não
+ * leva a 0 PV ou mata na hora), aplica o dano normal e avisa — o dano nunca se perde.
+ */
+export function applyDamageDroppingToOneHp(state0: PlayState, sheet: PlaySheet, input: DamageInput): PlayResult {
+  return damagePipeline(state0, sheet, input, true)
+}
+
+function damagePipeline(state0: PlayState, sheet: PlaySheet, input: DamageInput, dropToOneHp: boolean): PlayResult {
   if (!Number.isFinite(input.amount)) return refuse(state0, 'Valor de dano inválido.')
   if (state0.lifeState === 'dead') return refuse(state0, 'O personagem está morto: o dano não tem efeito.')
   const state = reconcilePlayState(state0, sheet)
@@ -330,6 +350,8 @@ export function applyDamage(state0: PlayState, sheet: PlaySheet, input: DamageIn
   const next: PlayState = { ...state, tempHp: state.tempHp - absorbed }
   if (absorbed > 0) notices.push(note('tempHpAbsorbed', `Os PV temporários absorveram ${absorbed}.`))
 
+  const drop = availableDropToOneHp(state, sheet)
+  let dropped = false
   if (state.lifeState === 'conscious') {
     const current = getCurrentHp(state, sheet)
     if (rest < current) {
@@ -339,8 +361,24 @@ export function applyDamage(state0: PlayState, sheet: PlaySheet, input: DamageIn
       next.damageTaken = sheetMax
       if (overflow >= effMax) {
         toDead(next, notices, `Morte instantânea: o dano que sobrou (${overflow}) é igual ou maior que o PV máximo (${effMax}) (pág. 199).`)
+      } else if (dropToOneHp && drop) {
+        // "Reduzido a 0 pontos de vida mas não é completamente morto": volta para 1 PV (pág. 41).
+        dropped = true
+        next.damageTaken = sheetMax - 1
+        const spent = next.resourcesSpent[drop.resourceId] ?? 0
+        if (getResourceAvailable(state, sheet, drop.resourceId) !== 'unlimited') {
+          next.resourcesSpent = { ...next.resourcesSpent, [drop.resourceId]: spent + 1 }
+        }
+        notices.push(note('info', `${drop.source}: em vez de cair a 0 PV, ficou com 1 PV (gastou 1 uso).`))
       } else {
         toZeroHp(next, notices, input.knockout ? 'stable' : 'dying')
+        if (drop) {
+          notices.push({
+            kind: 'dropToOneHp',
+            text: `${drop.source}: em vez de cair a 0 PV, você pode ficar com 1 PV (gasta 1 uso).`,
+            damage: { ...input },
+          })
+        }
       }
     }
   } else if (rest >= effMax) {
@@ -355,6 +393,10 @@ export function applyDamage(state0: PlayState, sheet: PlaySheet, input: DamageIn
     }
     notices.push(note('deathSaveFailure', `${added === 2 ? '2 fracassos (crítico)' : '1 fracasso'} no teste contra a morte por sofrer dano a 0 PV: ${failures}/3.`))
     if (failures >= 3) toDead(next, notices, 'Três fracassos no teste contra a morte (pág. 199).')
+  }
+  if (dropToOneHp && !dropped) {
+    const source = sheet.dropToOneHp?.source ?? 'Ficar com 1 PV'
+    notices.push(note('warning', `${source} não se aplica a este dano: só quando ele deixaria você a 0 PV sem matar na hora, e com um uso disponível. O dano foi aplicado normalmente.`))
   }
 
   checkConcentration(next, notices)

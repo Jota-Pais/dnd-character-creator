@@ -6,7 +6,7 @@ import { getFinalAbilityScores } from './asiUtils'
 import { getHitDicePool } from './multiclassUtils'
 import { getSavingThrowChecks } from './proficiencyUtils'
 import {
-  getHpMaxReductionImmunity, getInitiativeBonusTotal, getOwnedFeats, getSheetResources, getSheetSpeed, getTotalHp,
+  getDropToOneHp, getHpMaxReductionImmunity, getInitiativeBonusTotal, getOwnedFeats, getSheetResources, getSheetSpeed, getTotalHp,
 } from './sheetEffects'
 import { getCombinedSpellSlots, getPactSlots } from './spellUtils'
 
@@ -25,6 +25,7 @@ export function buildPlaySheet(draft: CharacterDraft): PlaySheet {
   const saveChecks = getSavingThrowChecks(draft, abilityScores)
   const pact = getPactSlots(draft)
   const hpMaxImmunity = getHpMaxReductionImmunity(draft)
+  const dropToOneHp = getDropToOneHp(draft)
 
   return {
     maxHp: draft.class ? Math.max(0, getTotalHp(draft, abilityModifiers.CON)) : 0,
@@ -42,5 +43,6 @@ export function buildPlaySheet(draft: CharacterDraft): PlaySheet {
     resources: structuredClone(getSheetResources(draft, abilityScores)),
     featIds: getOwnedFeats(draft).map(f => f.id),
     ...(hpMaxImmunity ? { hpMaxReductionImmunity: hpMaxImmunity } : {}),
+    ...(dropToOneHp ? { dropToOneHp } : {}),
   }
 }

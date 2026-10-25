@@ -86,6 +86,12 @@ export type RacialTraitEffects = Pick<
    * os 3 m que a armadura pesada tira de quem não tem a Força da tabela (p. 146).
    */
   heavyArmorSpeedUnreduced?: boolean
+  /**
+   * "Quando você é reduzido a 0 pontos de vida mas não é completamente morto, você pode voltar
+   * para 1 ponto de vida" (Resistência Implacável, p. 41): gasta um uso do recurso `resourceId`,
+   * declarado no mesmo traço. O modo de jogo oferece a troca ao cair.
+   */
+  dropToOneHpInstead?: { resourceId: string }
 }
 
 export type RacialTrait = {

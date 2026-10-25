@@ -89,6 +89,14 @@ describe('buildPlaySheet', () => {
     expect(buildPlaySheet(fighter).hpMaxReductionImmunity).toBeUndefined()
   })
 
+  it('Resistência Implacável (meio-orc): o traço e o recurso que ele gasta', () => {
+    const halfOrc = draft({ class: 'barbarian', race: 'half-orc', level: 1, abilityScores: SCORES })
+    const sheet = buildPlaySheet(halfOrc)
+    expect(sheet.dropToOneHp).toEqual({ resourceId: 'relentless-endurance', source: 'Resistência Implacável' })
+    expect(sheet.resources.some(r => r.id === 'relentless-endurance')).toBe(true)
+    expect(buildPlaySheet(fighter).dropToOneHp).toBeUndefined()
+  })
+
   it('sem classe: PV 0 e poço vazio', () => {
     const sheet = buildPlaySheet(draft({}))
     expect(sheet.maxHp).toBe(0)

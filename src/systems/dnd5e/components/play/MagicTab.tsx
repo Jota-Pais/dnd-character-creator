@@ -70,7 +70,7 @@ function ResourceRow({ resource, view }: { resource: SheetResource; view: PlayTa
 }
 
 /**
- * Aba "Magia e recursos": por classe conjuradora a CD e o ataque de magia (tocável); os espaços
+ * Aba "Magia": por classe conjuradora a CD e o ataque de magia (tocável); os espaços
  * do pool e os de Magia de Pacto, à parte, como bolinhas que gastam e recuperam com um toque;
  * os recursos da ficha (`sheet.resources`) com os usos e a recarga; e os Dados de Vida que restam.
  */

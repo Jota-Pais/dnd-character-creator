@@ -27,7 +27,7 @@ const WARLOCK_WIZARD: CharacterDraft = {
 function openMagic(draft: CharacterDraft) {
   openDraft(draft)
   render(<PlayScreen />)
-  fireEvent.click(screen.getByRole('tab', { name: 'Magia e recursos' }))
+  fireEvent.click(screen.getByRole('tab', { name: 'Magia' }))
 }
 
 describe('MagicTab', () => {
@@ -63,7 +63,7 @@ describe('MagicTab', () => {
   it('bárbaro: Fúria com usos e a recarga escrita; Dados de Vida disponíveis', () => {
     openKrusk()
     render(<PlayScreen />)
-    fireEvent.click(screen.getByRole('tab', { name: 'Magia e recursos' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Magia' }))
     expect(screen.getByRole('group', { name: 'Fúria: 2 de 2' })).toBeInTheDocument()
     expect(screen.getAllByText('Recupera em descanso longo.').length).toBeGreaterThan(0)
     fireEvent.click(screen.getAllByRole('button', { name: 'Gastar: Fúria' })[0])

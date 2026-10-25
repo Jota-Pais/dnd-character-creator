@@ -20,11 +20,14 @@ export type PlayTab = {
 /**
  * Abas da tela de jogo, na ordem em que aparecem. Para plugar uma aba, crie o componente (que
  * recebe `PlayTabProps`) e ponha em `component` — a `PlayScreen` não muda.
+ *
+ * Rótulos de uma palavra: no celular as cinco abas dividem a largura (360 px), sem rolagem
+ * escondida. A aba Magia também traz os recursos (Fúria, Chi…), o que o `hint` diz.
  */
 export const PLAY_TABS: readonly PlayTab[] = [
   { id: 'checks', label: 'Testes', hint: 'Atributos, testes de resistência e perícias, com o que rolar em cada um.', component: ChecksTab },
   { id: 'attacks', label: 'Ataques', hint: 'Suas armas: o ataque, o dano e o crítico.', component: AttacksTab },
-  { id: 'magic', label: 'Magia e recursos', hint: 'Espaços de magia, CD, ataque de magia e os usos das suas características.', component: MagicTab },
+  { id: 'magic', label: 'Magia', hint: 'Espaços de magia, CD, ataque de magia e os usos das suas características.', component: MagicTab },
   { id: 'status', label: 'Estado', hint: 'Condições, exaustão, concentração e descansos.', component: StatusTab },
   { id: 'notes', label: 'Notas', hint: 'Suas anotações da sessão e o histórico de rolagens.', component: NotesTab },
 ]

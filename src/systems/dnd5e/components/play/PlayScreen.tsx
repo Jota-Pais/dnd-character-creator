@@ -119,7 +119,12 @@ export function PlayScreen() {
           {view.state.lifeState !== 'dead' && <HpPanel view={view} />}
         </div>
 
-        <nav role="tablist" aria-label="Seções da ficha" className="mt-4 flex gap-1 overflow-x-auto border-b border-parchment-900">
+        {/* No celular as abas dividem a largura em partes iguais: todas à vista, sem rolagem escondida. */}
+        <nav
+          role="tablist"
+          aria-label="Seções da ficha"
+          className="mt-4 grid grid-cols-5 sm:flex sm:gap-1 border-b border-parchment-900"
+        >
           {PLAY_TABS.map(t => (
             <button
               key={t.id}
@@ -127,9 +132,10 @@ export function PlayScreen() {
               id={`play-tab-${t.id}`}
               aria-selected={t.id === current.id}
               aria-controls="play-tab-panel"
+              title={t.hint}
               onClick={() => setTab(t.id)}
               className={[
-                'min-h-10 px-3 shrink-0 whitespace-nowrap text-sm font-fantasy border-b-2 -mb-px transition-colors',
+                'min-h-10 min-w-0 px-1 sm:px-3 text-xs sm:text-sm font-fantasy border-b-2 -mb-px transition-colors',
                 t.id === current.id
                   ? 'border-gold-500 text-gold-300'
                   : 'border-transparent text-parchment-500 hover:text-parchment-200',

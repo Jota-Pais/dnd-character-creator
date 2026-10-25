@@ -130,6 +130,18 @@ export function getToolById(id: string): Tool | undefined {
 }
 
 /**
+ * A ferramenta que um item carregado é para a regra: ele mesmo, se for ferramenta; ou a que o
+ * item declara em `countsAsTool` (dados de osso → conjunto de dados, p. 142). Undefined se não
+ * for ferramenta nenhuma.
+ */
+export function getToolEquivalent(id: string): Tool | undefined {
+  const tool = getToolById(id)
+  if (tool) return tool
+  const alias = ALL_GENERAL.find(g => g.id === id)?.countsAsTool
+  return alias ? getToolById(alias) : undefined
+}
+
+/**
  * Converte um custo canônico em peças de cobre (pc) para string legível.
  * null → '—' (item sem preço publicado no PHB)
  */

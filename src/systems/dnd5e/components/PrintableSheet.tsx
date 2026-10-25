@@ -465,7 +465,7 @@ export function PrintableSheet() {
         )}
         {/* p. 156 (e p. 53 pro foco do bardo): carregar ferramenta sem proficiência é permitido. */}
         {unproficientTools.map(u => (
-          <p key={u.tool.id} className="text-xs mt-0.5 text-gray-700">{formatUnproficientTool(u)}</p>
+          <p key={u.itemId} className="text-xs mt-0.5 text-gray-700">{formatUnproficientTool(u)}</p>
         ))}
       </Box>
 

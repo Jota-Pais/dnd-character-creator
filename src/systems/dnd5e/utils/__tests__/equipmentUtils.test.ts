@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { formatCurrency, resolvePackContents, validatePackRefs, FOCUS_GROUP_IDS, getEquippedArmor, getShopCatalog, getPurchasesTotalCopper, getItemCostCopper, formatInventoryItem, describeResolvedOption, formatCoins, getStartingMoney, describeStartingMoneySource, getCarriedToolIds, getToolById, getActivePurchases } from '../equipmentUtils'
+import { formatCurrency, resolvePackContents, validatePackRefs, FOCUS_GROUP_IDS, getEquippedArmor, getShopCatalog, getPurchasesTotalCopper, getItemCostCopper, formatInventoryItem, describeResolvedOption, formatCoins, getStartingMoney, describeStartingMoneySource, getCarriedToolIds, getToolById, getToolEquivalent, getActivePurchases } from '../equipmentUtils'
+import generalItemsData from '../../data/general-items.json'
 import type { InventoryItem } from '../../types/equipment'
 import { getClass } from '../classUtils'
 import type { EquipmentDraft } from '../../types/equipment'
@@ -350,5 +351,20 @@ describe('getToolById', () => {
   it('acha instrumento e devolve undefined pra item que não é ferramenta', () => {
     expect(getToolById('lute')?.category).toBe('musical-instrument')
     expect(getToolById('dagger')).toBeUndefined()
+  })
+})
+
+describe('getToolEquivalent', () => {
+  it('ferramenta é ela mesma; dados de osso valem como conjunto de dados (p. 142); o resto, nada', () => {
+    expect(getToolEquivalent('lute')?.id).toBe('lute')
+    expect(getToolEquivalent('bone-dice')?.id).toBe('dice-set')
+    expect(getToolEquivalent('hempen-rope')).toBeUndefined()
+    expect(getToolEquivalent('dagger')).toBeUndefined()
+  })
+
+  it('todo countsAsTool aponta para uma ferramenta de tools.json', () => {
+    for (const item of generalItemsData as { id: string; countsAsTool?: string }[]) {
+      if (item.countsAsTool) expect(getToolById(item.countsAsTool), item.id).toBeDefined()
+    }
   })
 })

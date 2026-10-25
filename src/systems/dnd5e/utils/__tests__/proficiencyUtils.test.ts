@@ -721,6 +721,20 @@ describe('getUnproficientTools — ferramenta carregada sem proficiência (p. 15
     expect(getUnproficientTools(soldier('playing-card-set'))).toEqual([])
   })
 
+  it('dados de osso do Soldado valem como conjunto de dados (p. 142): com Baralho avisa; com dados, não', () => {
+    const soldier = (gamingSet: string) => draft({
+      class: 'fighter',
+      background: 'soldier',
+      backgroundChoices: { tools: [gamingSet], items: { 'gaming-set': 'bone-dice' } },
+    })
+    const result = getUnproficientTools(soldier('playing-card-set'))
+    expect(result.map(u => [u.itemId, u.tool.id])).toEqual([['bone-dice', 'dice-set']])
+    expect(formatUnproficientTool(result[0])).toBe(
+      'Sem proficiência: Dados de Osso (Conjunto de Dados) — pode usar, mas não soma o bônus de proficiência nos testes com ele',
+    )
+    expect(getUnproficientTools(soldier('dice-set'))).toEqual([])
+  })
+
   it('ferramenta do antecedente que é a própria proficiência (Artista) não avisa', () => {
     const d = draft({ background: 'entertainer', backgroundChoices: { tools: ['lute'] } })
     expect(getUnproficientTools(d)).toEqual([])

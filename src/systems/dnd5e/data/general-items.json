@@ -129,5 +129,5 @@
   { "id": "letter-from-colleague","name": "Carta de um Colega",      "category": "background-item","cost": 0,   "weight": null  },
   { "id": "rank-insignia",     "name": "Insígnia de Patente",        "category": "background-item","cost": 0,   "weight": null  },
   { "id": "trophy-from-fallen-enemy","name": "Troféu de Inimigo Caído","category": "background-item","cost": 0, "weight": null  },
-  { "id": "bone-dice",         "name": "Dados de Osso",              "category": "background-item","cost": 0,   "weight": null  }
+  { "id": "bone-dice",         "name": "Dados de Osso",              "category": "background-item","cost": 0,   "weight": null, "countsAsTool": "dice-set" }
 ]

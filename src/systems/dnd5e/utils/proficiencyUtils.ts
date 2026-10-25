@@ -10,7 +10,7 @@ import { getClass, getSubclass, getExpertiseCount, getSpellcastingSource } from 
 import { allClassEntries } from './multiclassUtils'
 import { getBackground, resolveBackgroundItems } from './backgroundUtils'
 import {
-  getEquippedArmor, getArmor, getWeaponById, ALL_WEAPONS, getCarriedToolIds, getToolById,
+  getEquippedArmor, getArmor, getWeaponById, ALL_WEAPONS, getCarriedToolIds, getToolEquivalent, getItemName,
 } from './equipmentUtils'
 import {
   getFeatArmorProficiencies, getFeatWeaponProficiencies, getFeatSavingThrows,
@@ -544,7 +544,11 @@ export function hasInstrumentSpellcastingFocus(draft: CharacterDraft): boolean {
 }
 
 export type UnproficientTool = {
+  /** A ferramenta para a regra (dados de osso → Conjunto de Dados). */
   tool: Tool
+  /** O item como está no inventário: pode ser outro, quando declara `countsAsTool`. */
+  itemId: string
+  itemName: string
   /** Instrumento de quem conjura com foco instrumento musical: serve de foco mesmo sem proficiência. */
   spellcastingFocus: boolean
 }
@@ -568,11 +572,17 @@ export function getUnproficientTools(draft: CharacterDraft): UnproficientTool[] 
   const carried = uniq([...getCarriedToolIds(draft.equipment, classEquipment), ...backgroundIds])
   const granted = new Set(getAllGrantedTools(draft))
   const instrumentFocus = hasInstrumentSpellcastingFocus(draft)
-  return carried
-    .filter(id => !granted.has(id))
-    .map(getToolById)
-    .filter((tool): tool is Tool => tool !== undefined)
-    .map(tool => ({ tool, spellcastingFocus: instrumentFocus && tool.category === 'musical-instrument' }))
+  return carried.flatMap(itemId => {
+    // Os dados de osso do Soldado valem como conjunto de dados (p. 142): é a proficiência nele que conta.
+    const tool = getToolEquivalent(itemId)
+    if (!tool || granted.has(tool.id)) return []
+    return [{
+      tool,
+      itemId,
+      itemName: getItemName(itemId),
+      spellcastingFocus: instrumentFocus && tool.category === 'musical-instrument',
+    }]
+  })
 }
 
 /**
@@ -585,9 +595,13 @@ export function describeToolWithoutProficiency(spellcastingFocus: boolean): stri
   return spellcastingFocus ? `${base}; continua servindo de foco de conjuração` : base
 }
 
-/** Linha da Revisão e da ficha: "Sem proficiência: Alaúde — pode usar, mas não soma...". */
-export function formatUnproficientTool({ tool, spellcastingFocus }: UnproficientTool): string {
-  return `Sem proficiência: ${tool.name} — ${describeToolWithoutProficiency(spellcastingFocus)}`
+/**
+ * Linha da Revisão e da ficha: "Sem proficiência: Alaúde — pode usar, mas não soma...". Item que
+ * vale como outra ferramenta leva o nome dela junto: "Dados de Osso (Conjunto de Dados)".
+ */
+export function formatUnproficientTool({ tool, itemName, spellcastingFocus }: UnproficientTool): string {
+  const name = itemName === tool.name ? tool.name : `${itemName} (${tool.name})`
+  return `Sem proficiência: ${name} — ${describeToolWithoutProficiency(spellcastingFocus)}`
 }
 
 // ── Rótulos ────────────────────────────────────────────────────────────────────

@@ -90,6 +90,12 @@ export type GeneralItem = {
   category: GeneralItemCategory
   cost: number | null
   weight: number | null
+  /**
+   * Ferramenta (id em tools.json) que o item é para a regra, sem trocar o nome que ele tem no
+   * inventário: os dados de osso do Soldado (p. 142) são um conjunto de dados (kit de jogo).
+   * Vale para a proficiência e o aviso de ferramenta sem proficiência (`getToolEquivalent`).
+   */
+  countsAsTool?: string
 }
 
 // --- Pacotes de Equipamento ---

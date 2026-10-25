@@ -447,7 +447,7 @@ export function ReviewStep() {
             {unproficientTools.length > 0 && (
               <div className="rounded-lg border border-parchment-800 bg-parchment-950/40 px-3 py-2 space-y-0.5">
                 {unproficientTools.map(u => (
-                  <p key={u.tool.id} className="text-xs text-parchment-500 leading-relaxed">
+                  <p key={u.itemId} className="text-xs text-parchment-500 leading-relaxed">
                     {formatUnproficientTool(u)}
                   </p>
                 ))}

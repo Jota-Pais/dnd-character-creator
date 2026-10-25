@@ -138,4 +138,22 @@ describe('características de classe que seguem o inglês', () => {
     const [text] = featureText('Golpe de Sorte')
     expect(text).toContain('se falhar num teste de habilidade, trate a jogada do d20 como 20.')
   })
+
+  it('Colheita Sinistra triplica o nível da MAGIA na necromancia (pt-BR: "o triplo do seu nível")', () => {
+    const [text] = featureText('Colheita Sinistra')
+    expect(text).toContain('ou ao triplo se a magia for de necromancia')
+  })
+
+  it('Pedra de Transmutador troca de benefício com magia de TRANSMUTAÇÃO (pt-BR: "de conjuração")', () => {
+    const [text] = featureText('Pedra de Transmutador')
+    expect(text).toContain('Ao conjurar uma magia de transmutação de 1° nível ou superior')
+  })
+
+  it.each([
+    ['cleric', 'as magias de clérigo com o descritor ritual que tiver preparadas'],
+    ['druid', 'as magias de druida preparadas que tenham o descritor ritual'],
+  ])('ritual do %s vale para as magias preparadas (pt-BR: "que você conheça")', (classId, expected) => {
+    const casting = groups.classes[classId].find(f => f.name === 'Conjuração')
+    expect(casting?.description).toContain(expected)
+  })
 })

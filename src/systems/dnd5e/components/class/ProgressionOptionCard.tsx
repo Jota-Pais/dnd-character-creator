@@ -37,7 +37,6 @@ export function ProgressionOptionCard({
 }: Props) {
   const selected = picked || pickedEarlier
   const disabled = pickedEarlier || (!picked && (slotFull || unmetRequirement !== null))
-  const tiers = [option.tier3, option.tier6, option.tier14].filter(Boolean)
 
   return (
     <button
@@ -76,16 +75,6 @@ export function ProgressionOptionCard({
         <p className="text-parchment-500 text-xs leading-relaxed whitespace-pre-line">
           {option.description}
         </p>
-      )}
-
-      {tiers.length > 0 && (
-        <ul className="mt-1.5 space-y-0.5">
-          {tiers.map(tier => (
-            <li key={tier} className="text-[11px] text-parchment-600 leading-snug">
-              · {tier}
-            </li>
-          ))}
-        </ul>
       )}
 
       {pickedEarlier && (

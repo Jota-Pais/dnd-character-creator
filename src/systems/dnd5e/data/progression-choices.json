@@ -31,7 +31,9 @@
     { "id": "four-elements-disciplines-17", "level": 17, "count": 1, "cumulative": true, "optionsListId": "four-elements-disciplines", "label": "Disciplinas Elementais" }
   ],
   "totem-warrior": [
-    { "id": "totem-warrior-totem-3", "level": 3, "count": 1, "cumulative": false, "optionsListId": "totem-warrior-totems", "label": "Espírito Totêmico" }
+    { "id": "totem-warrior-totem-3", "level": 3, "count": 1, "cumulative": false, "optionsListId": "totem-spirits", "label": "Totem Espiritual", "hint": "Totem Espiritual (p. 50): o animal do seu totem e o benefício dele. O Aspecto da Besta (6º nível) e a Sintonia Totêmica (14º) são escolhas à parte: o mesmo animal ou um diferente, cada uma com o benefício daquele animal." },
+    { "id": "totem-warrior-aspect-6", "level": 6, "count": 1, "cumulative": false, "optionsListId": "totem-aspects", "label": "Aspecto da Besta", "hint": "Aspecto da Besta (p. 50): um benefício místico de totem — o mesmo animal do Totem Espiritual ou um diferente." },
+    { "id": "totem-warrior-attunement-14", "level": 14, "count": 1, "cumulative": false, "optionsListId": "totem-attunements", "label": "Sintonia Totêmica", "hint": "Sintonia Totêmica (p. 50): um benefício mágico de totem — o mesmo animal de antes ou um diferente." }
   ],
   "circle-of-the-land": [
     { "id": "land-circle-terrain-2", "level": 2, "count": 1, "cumulative": false, "optionsListId": "land-circle-terrains", "label": "Terreno de Círculo" }

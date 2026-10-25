@@ -26,9 +26,6 @@ export type ProgressionOption = {
   name: string
   description?: string
   prerequisite?: string
-  tier3?: string
-  tier6?: string
-  tier14?: string
   /**
    * Efeitos declarados da opção escolhida (ex.: Lâmina Sedenta). Os níveis dos degraus são os da
    * classe em que a escolha foi feita. Agregados em `sheetEffects`.
@@ -55,7 +52,9 @@ export function getProgressionOptions(optionsListId: string): ProgressionOption[
     case 'eldritch-invocations': return eldritchInvocations as ProgressionOption[]
     case 'metamagic-options': return metamagicOptions as ProgressionOption[]
     case 'four-elements-disciplines': return fourElementsDisciplines as ProgressionOption[]
-    case 'totem-warrior-totems': return totemWarriorTotems as ProgressionOption[]
+    case 'totem-spirits': return totemOptions('tier3')
+    case 'totem-aspects': return totemOptions('tier6')
+    case 'totem-attunements': return totemOptions('tier14')
     case 'land-circle-terrains': return landCircleTerrains as ProgressionOption[]
     case 'hunters-prey': return huntersPrey as ProgressionOption[]
     case 'hunter-defensive-tactics': return hunterDefensiveTactics as ProgressionOption[]
@@ -76,6 +75,18 @@ export function getProgressionOptions(optionsListId: string): ProgressionOption[
       return (spells as Spell[]).map(spellOption)
     default: return []
   }
+}
+
+/** Um animal do Guerreiro Totêmico com o benefício de cada característica (p. 50). */
+type TotemAnimal = { id: string; name: string; tier3: string; tier6: string; tier14: string }
+
+/**
+ * Os animais do Guerreiro Totêmico numa das três escolhas: Totem Espiritual (3º, `tier3`),
+ * Aspecto da Besta (6º, `tier6`) e Sintonia Totêmica (14º, `tier14`). São escolhas independentes
+ * — "o mesmo animal ou um diferente" (p. 50) —, cada uma com o benefício do animal nela.
+ */
+function totemOptions(tier: 'tier3' | 'tier6' | 'tier14'): ProgressionOption[] {
+  return (totemWarriorTotems as TotemAnimal[]).map(a => ({ id: a.id, name: a.name, description: a[tier] }))
 }
 
 function spellOption(s: Spell): ProgressionOption {
@@ -199,12 +210,9 @@ export type ProgressionChoiceBlock = {
   slots: { slot: ProgressionSlot; picks: ProgressionPick[] }[]
 }
 
-/** Texto da opção no nível da classe: as escalonadas (táticas do patrulheiro) trazem o degrau alcançado. */
-function describeProgressionPick(opt: ProgressionOption, classLevel: number): string {
-  return opt.description
-    ?? (classLevel >= 14 ? opt.tier14 : classLevel >= 6 ? opt.tier6 : opt.tier3)
-    ?? opt.prerequisite
-    ?? ''
+/** Texto da opção que vai pra mesa. */
+function describeProgressionPick(opt: ProgressionOption): string {
+  return opt.description ?? opt.prerequisite ?? ''
 }
 
 /**
@@ -230,7 +238,7 @@ export function getProgressionChoiceBlocks(entries: ClassEntry[]): ProgressionCh
               const opt = options.find(o => o.id === id)
               if (!opt) return []
               const unmet = getUnmetRequirement(classId, subclass, activePicks, opt)
-              return [{ id: opt.id, name: opt.name, text: describeProgressionPick(opt, level), ...(unmet ? { unmet } : {}) }]
+              return [{ id: opt.id, name: opt.name, text: describeProgressionPick(opt), ...(unmet ? { unmet } : {}) }]
             })
             return { slot, picks }
           })

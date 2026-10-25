@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { EMPTY_DRAFT, WIZARD_STEPS, type CharacterDraft, type ClassEntry } from '../../types/character'
 import { COMPLETE_DRAFT } from '../../../../test/fixtures'
-import { isStepComplete } from '../draftValidation'
+import { isStepComplete, sanitizeImportedDraft } from '../draftValidation'
 import { collectStepReasons, getStepPendingReasons, getPendingSteps, formatPendingHint } from '../pendingReasons'
 import { CLASSES } from '../classUtils'
 import { RACES } from '../raceUtils'
@@ -247,7 +247,7 @@ function corpus(): CharacterDraft[] {
       spellChoices: { cantrips: ['fire-bolt', 'light'], spells: ['magic-missile', 'sleep', 'charm-person', 'fog-cloud', 'shield', 'burning-hands'] },
     }),
   )
-  out.push(...bardSecretsDrafts(), ...pactBoonDrafts(), ...draconicAncestorDrafts())
+  out.push(...bardSecretsDrafts(), ...pactBoonDrafts(), ...draconicAncestorDrafts(), ...totemWarriorDrafts())
   return out
 }
 
@@ -285,6 +285,61 @@ describe('motivos × isStepComplete — Ancestral Dracônico', () => {
   it('o leque de feiticeiros tem etapa Classe aprovada e reprovada', () => {
     expect(sorcerers.some(d => isStepComplete(d, 'class'))).toBe(true)
     expect(sorcerers.some(d => !isStepComplete(d, 'class'))).toBe(true)
+  })
+})
+
+/**
+ * Guerreiros Totêmicos (p. 50) com nenhuma, uma, duas e as três escolhas de animal — Totem
+ * Espiritual (3º), Aspecto da Besta (6º), Sintonia Totêmica (14º) — nos níveis em que cada uma é
+ * liberada, na classe primária e como classe da multiclasse.
+ */
+function totemWarriorDrafts(): CharacterDraft[] {
+  const variants: Record<string, string[]>[] = [
+    {},
+    { 'totem-warrior-totem-3': ['bear'] },
+    { 'totem-warrior-totem-3': ['bear'], 'totem-warrior-aspect-6': ['eagle'] },
+    { 'totem-warrior-totem-3': ['bear'], 'totem-warrior-aspect-6': ['eagle'], 'totem-warrior-attunement-14': ['wolf'] },
+    { 'totem-warrior-totem-3': ['bear', 'wolf'] },
+  ]
+  const out: CharacterDraft[] = []
+  for (const level of [3, 6, 14]) {
+    for (const progressionChoices of variants) {
+      const classChoices = { ...structuredClone(COMPLETE_DRAFT.classChoices), subclass: 'totem-warrior', progressionChoices }
+      out.push(draft({ class: 'barbarian', level, classChoices }))
+      out.push(draft({
+        class: 'fighter', level: level + 1,
+        classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['athletics', 'perception'], fightingStyle: 'defense', subclass: 'champion' },
+        abilityMethod: 'custom',
+        abilityScores: { STR: 15, DEX: 14, CON: 13, INT: 12, WIS: 10, CHA: 8 },
+        additionalClasses: [entry({ classId: 'barbarian', level, classChoices: { ...classChoices, skills: [] } })],
+        multiclass: true,
+      }))
+    }
+  }
+  return out
+}
+
+describe('motivos × isStepComplete — Guerreiro Totêmico', () => {
+  const barbarians = totemWarriorDrafts()
+
+  it('o leque de bárbaros tem etapa Classe aprovada e reprovada', () => {
+    expect(barbarians.some(d => isStepComplete(d, 'class'))).toBe(true)
+    expect(barbarians.some(d => !isStepComplete(d, 'class'))).toBe(true)
+  })
+
+  it('ficha antiga com o totem único: vira o Totem Espiritual e as outras escolhas ficam pendentes', () => {
+    // Antes havia um slot só ("Espírito Totêmico", mesmo id) e o texto subia de degrau com o nível.
+    const old = sanitizeImportedDraft(JSON.parse(JSON.stringify(draft({
+      class: 'barbarian', level: 14,
+      classChoices: { ...COMPLETE_DRAFT.classChoices, subclass: 'totem-warrior', progressionChoices: { 'totem-warrior-totem-3': ['bear'] } },
+    }))))!
+    expect(old.classChoices.progressionChoices).toEqual({ 'totem-warrior-totem-3': ['bear'] })
+    expect(isStepComplete(old, 'class')).toBe(false)
+    expect(getStepPendingReasons(old, 'class')).toEqual([
+      'Bárbaro: escolha mais 1 em Aspecto da Besta (ganho no 6º nível)',
+      'Bárbaro: escolha mais 1 em Sintonia Totêmica (ganho no 14º nível)',
+    ])
+    expect(isStepComplete({ ...old, level: 3 }, 'class')).toBe(true)
   })
 })
 

@@ -11,6 +11,7 @@ import {
   getSpell,
   getSecretCantripRoom,
   getSecretSpellIssues,
+  getSpellsByClass,
 } from '../spellUtils'
 import { collectStepReasons } from '../pendingReasons'
 import { isStepComplete } from '../draftValidation'
@@ -332,5 +333,106 @@ describe('Segredo acima do nível que o bardo conjura reprova a etapa Classe (pp
       'Bardo: Desejo (9º) passa do 5º nível que você conjura — troque em Segredos Mágicos',
     ])
     expect(isStepComplete(draft, 'class')).toBe(false)
+  })
+})
+
+describe('Segredos nos níveis 14 e 18 e na multiclasse', () => {
+  // Magias de bardo de 1º a 5º, fora as usadas como Segredo abaixo.
+  const POOL = getSpellsByClass('bard')
+    .filter(s => s.level >= 1 && s.level <= 5 && !['fireball', 'counterspell', 'cone-of-cold', 'haste', 'revivify'].includes(s.id))
+    .map(s => s.id)
+
+  it('bardo 14: 4 Segredos (truque + 3 magias) — 3 + 1 truques, 15 + 3 = 18 magias', () => {
+    const progressionChoices = {
+      'bard-magical-secrets-10': ['fire-bolt', 'fireball'],
+      'bard-magical-secrets-14': ['counterspell', 'cone-of-cold'],
+    }
+    const draft = bardAt(14, { subclass: 'college-of-valor', cantrips: BARD_CANTRIPS.slice(0, 3), spells: POOL.slice(0, 15), progressionChoices })
+    const { caster, scores, cantrips, spells } = columns(draft)
+    expect(caster.knownSecrets).toEqual({ cantrips: ['fire-bolt'], spells: ['fireball', 'counterspell', 'cone-of-cold'] })
+    expect(cantrips).toEqual({ total: 4, chosen: 3, fromSecrets: 1, toChoose: 3 })
+    expect(spells).toEqual({ total: 18, chosen: 15, fromSecrets: 3, toChoose: 15 })
+    expect(isStepComplete(draft, 'spells')).toBe(true)
+    expect(isStepComplete(draft, 'class')).toBe(true)
+    expect(getSpellChoiceOverflows(caster, scores)).toEqual([])
+    expect(isStepComplete({ ...draft, spellChoices: { cantrips: BARD_CANTRIPS.slice(0, 3), spells: POOL.slice(0, 14) } }, 'spells')).toBe(false)
+  })
+
+  it('bardo 18: 6 Segredos de magia — 16 + 6 = 22', () => {
+    const progressionChoices = {
+      'bard-magical-secrets-10': ['fireball', 'counterspell'],
+      'bard-magical-secrets-14': ['cone-of-cold', 'haste'],
+      'bard-magical-secrets-18': ['revivify', 'wish'],
+    }
+    const draft = bardAt(18, { subclass: 'college-of-valor', cantrips: BARD_CANTRIPS, spells: POOL.slice(0, 16), progressionChoices })
+    const { caster, spells } = columns(draft)
+    expect(caster.knownSecrets.spells).toHaveLength(6)
+    expect(spells).toEqual({ total: 22, chosen: 16, fromSecrets: 6, toChoose: 16 })
+    expect(describeSecretsInColumn(spells)).toBe('16 + 6 de Segredos Mágicos = 22')
+    expect(isStepComplete(draft, 'spells')).toBe(true)
+    expect(isStepComplete(draft, 'class')).toBe(true)
+    expect(isStepComplete({ ...draft, spellChoices: { cantrips: BARD_CANTRIPS, spells: POOL.slice(0, 15) } }, 'spells')).toBe(false)
+  })
+
+  it('guerreiro 5 / bardo do Conhecimento 10 (adicional): colunas no nível de bardo, Adicionais por cima', () => {
+    const draft: CharacterDraft = {
+      ...structuredClone(EMPTY_DRAFT),
+      class: 'fighter',
+      level: 15,
+      abilityScores: { STR: 14, DEX: 14, CON: 12, INT: 10, WIS: 10, CHA: 16 },
+      classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), skills: ['athletics', 'perception'], fightingStyle: 'defense', subclass: 'champion' },
+      additionalClasses: [{
+        classId: 'bard',
+        level: 10,
+        classChoices: {
+          ...bardClassChoices('college-of-lore', { 'lore-magical-secrets-6': ['revivify', 'haste'], 'bard-magical-secrets-10': ['fire-bolt', 'fireball'] }),
+          skills: ['performance'],
+          tools: [],
+        },
+        spellChoices: { cantrips: BARD_CANTRIPS.slice(0, 3), spells: POOL.slice(0, 13) },
+        asiChoices: [],
+        hpRolls: [],
+      }],
+      multiclass: true,
+    }
+    const bard = getCasterEntries(draft).find(c => c.entry.classId === 'bard')!
+    expect(bard.knownSecrets).toEqual({ cantrips: ['fire-bolt'], spells: ['fireball'] })
+    expect(bard.bonusSpells).toEqual(['revivify', 'haste', 'fire-bolt', 'fireball'])
+    expect(getCantripColumn(bard.casting, bard.entry.level, bard.entry.spellChoices, bard.knownSecrets))
+      .toEqual({ total: 4, chosen: 3, fromSecrets: 1, toChoose: 3 })
+    expect(getSpellColumn(bard.casting, bard.entry.level, getFinalAbilityScores(draft), bard.entry.spellChoices, bard.knownSecrets))
+      .toEqual({ total: 14, chosen: 13, fromSecrets: 1, toChoose: 13 })
+    expect(isStepComplete(draft, 'spells')).toBe(true)
+    const short = structuredClone(draft)
+    short.additionalClasses[0].spellChoices.spells = POOL.slice(0, 12)
+    expect(isStepComplete(short, 'spells')).toBe(false)
+  })
+
+  it('bardo 14 primário / mago 2: o bardo usa o nível dele (getPrimaryLevel), 15 + 3 = 18', () => {
+    const progressionChoices = {
+      'bard-magical-secrets-10': ['fireball', 'counterspell'],
+      'bard-magical-secrets-14': ['cone-of-cold', 'fire-bolt'],
+    }
+    const draft: CharacterDraft = {
+      ...bardAt(16, { subclass: 'college-of-valor', cantrips: BARD_CANTRIPS.slice(0, 3), spells: POOL.slice(0, 15), progressionChoices }),
+      abilityScores: { STR: 10, DEX: 14, CON: 12, INT: 14, WIS: 10, CHA: 16 },
+      additionalClasses: [{
+        classId: 'wizard',
+        level: 2,
+        classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), subclass: 'evocation' },
+        spellChoices: { cantrips: ['light', 'mage-hand', 'prestidigitation'], spells: ['magic-missile', 'shield', 'sleep', 'mage-armor', 'burning-hands', 'detect-magic', 'find-familiar', 'identify'] },
+        asiChoices: [],
+        hpRolls: [],
+      }],
+      multiclass: true,
+    }
+    const bard = getCasterEntries(draft).find(c => c.entry.classId === 'bard')!
+    expect(bard.entry.level).toBe(14)
+    expect(bard.knownSecrets).toEqual({ cantrips: ['fire-bolt'], spells: ['fireball', 'counterspell', 'cone-of-cold'] })
+    expect(getSpellColumn(bard.casting, 14, getFinalAbilityScores(draft), bard.entry.spellChoices, bard.knownSecrets))
+      .toEqual({ total: 18, chosen: 15, fromSecrets: 3, toChoose: 15 })
+    expect(isStepComplete(draft, 'spells')).toBe(true)
+    const short = { ...draft, spellChoices: { cantrips: BARD_CANTRIPS.slice(0, 3), spells: POOL.slice(0, 14) } }
+    expect(isStepComplete(short, 'spells')).toBe(false)
   })
 })

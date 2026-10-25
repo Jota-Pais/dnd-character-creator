@@ -6,6 +6,7 @@ import { collectStepReasons, getStepPendingReasons, getPendingSteps, formatPendi
 import { CLASSES } from '../classUtils'
 import { RACES } from '../raceUtils'
 import { BACKGROUNDS } from '../backgroundUtils'
+import { getSpellsByClass } from '../spellUtils'
 
 function draft(over: Partial<CharacterDraft>): CharacterDraft {
   return { ...structuredClone(COMPLETE_DRAFT), ...over }
@@ -245,6 +246,61 @@ function corpus(): CharacterDraft[] {
       spellChoices: { cantrips: ['fire-bolt', 'light'], spells: ['magic-missile', 'sleep', 'charm-person', 'fog-cloud', 'shield', 'burning-hands'] },
     }),
   )
+  out.push(...bardSecretsDrafts())
+  return out
+}
+
+/**
+ * Bardos 10/14/18 com Segredos Mágicos (magia e truque, ocupando vaga das colunas) e as escolhas
+ * da etapa Magias faltando, exatas e sobrando — exercita os ramos de Segredos dos motivos. Mais
+ * Segredos truque além da coluna e acima do nível conjurável, que reprovam a etapa Classe.
+ */
+function bardSecretsDrafts(): CharacterDraft[] {
+  const SECRETS = ['fire-bolt', 'fireball', 'counterspell', 'cone-of-cold', 'haste', 'revivify']
+  const cantripPool = getSpellsByClass('bard').filter(s => s.level === 0).map(s => s.id)
+  const spellPool = getSpellsByClass('bard').filter(s => s.level >= 1 && s.level <= 5 && !SECRETS.includes(s.id)).map(s => s.id)
+  const known: Record<number, number> = { 10: 14, 14: 18, 18: 22 }
+  const slotsByLevel: Record<number, Record<string, string[]>> = {
+    10: { 'bard-magical-secrets-10': ['fire-bolt', 'fireball'] },
+    14: { 'bard-magical-secrets-10': ['fire-bolt', 'fireball'], 'bard-magical-secrets-14': ['counterspell', 'cone-of-cold'] },
+    18: {
+      'bard-magical-secrets-10': ['fire-bolt', 'fireball'],
+      'bard-magical-secrets-14': ['counterspell', 'cone-of-cold'],
+      'bard-magical-secrets-18': ['haste', 'revivify'],
+    },
+  }
+  const classChoices = (progressionChoices: Record<string, string[]>) => ({
+    ...structuredClone(EMPTY_DRAFT.classChoices),
+    skills: ['acrobatics', 'deception', 'performance'],
+    tools: ['lute', 'flute', 'pan-flute'],
+    expertiseItems: ['acrobatics', 'deception', 'performance', 'persuasion'],
+    subclass: 'college-of-valor',
+    progressionChoices,
+  })
+  const out: CharacterDraft[] = []
+  for (const level of [10, 14, 18]) {
+    const progressionChoices = slotsByLevel[level]
+    const spellSecrets = Object.values(progressionChoices).flat().filter(id => id !== 'fire-bolt').length
+    const spellsExact = known[level] - spellSecrets
+    for (const cantrips of [2, 3, 4]) {
+      for (const spells of [spellsExact - 1, spellsExact, spellsExact + 2]) {
+        out.push(draft({
+          class: 'bard', level,
+          classChoices: classChoices(progressionChoices),
+          spellChoices: { cantrips: cantripPool.slice(0, cantrips), spells: spellPool.slice(0, spells) },
+        }))
+      }
+    }
+  }
+  const tooManyCantrips = {
+    'bard-magical-secrets-10': ['fire-bolt', 'shillelagh'],
+    'bard-magical-secrets-14': ['sacred-flame', 'ray-of-frost'],
+    'bard-magical-secrets-18': ['eldritch-blast', 'guidance'],
+  }
+  out.push(
+    draft({ class: 'bard', level: 18, classChoices: classChoices(tooManyCantrips), spellChoices: { cantrips: [], spells: spellPool.slice(0, 22) } }),
+    draft({ class: 'bard', level: 10, classChoices: classChoices({ 'bard-magical-secrets-10': ['wish', 'fireball'] }), spellChoices: { cantrips: cantripPool.slice(0, 4), spells: spellPool.slice(0, 13) } }),
+  )
   return out
 }
 
@@ -266,5 +322,21 @@ describe('motivos × isStepComplete (cobertura)', () => {
         expect(reasons.length === 0, `draft #${i} (${d.class ?? '-'} ${d.level}) etapa ${step}: ${reasons.join(' | ')}`).toBe(complete)
       }
     }
+  })
+})
+
+describe('motivos × isStepComplete — bardos com Segredos Mágicos', () => {
+  const bards = bardSecretsDrafts()
+
+  it('o leque de bardos tem etapa Magias aprovada e reprovada, e etapa Classe reprovada pelos Segredos', () => {
+    expect(bards.some(d => isStepComplete(d, 'spells'))).toBe(true)
+    expect(bards.some(d => !isStepComplete(d, 'spells'))).toBe(true)
+    expect(bards.some(d => isStepComplete(d, 'class'))).toBe(true)
+    expect(bards.filter(d => !isStepComplete(d, 'class'))).toHaveLength(2)
+  })
+
+  it('bardo 14 com Segredo truque e magias: falta dita já descontando os Segredos', () => {
+    const short = bards.find(d => d.level === 14 && d.spellChoices.cantrips.length === 2 && d.spellChoices.spells.length === 14)!
+    expect(getStepPendingReasons(short, 'spells')).toEqual(['Bardo: escolha 1 truque e 1 magia'])
   })
 })

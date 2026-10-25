@@ -628,12 +628,6 @@
         "description": "Com uma ação, você comunica ideias simples a uma besta por sons e gestos e entende o ânimo e a intenção dela: o estado emocional, as necessidades imediatas e o que você poderia fazer para convencê-la a não atacar. Não funciona com criaturas que você atacou nos últimos 10 minutos. Além disso, com 1 minuto ininterrupto de concentração (como numa magia), você sente se algum inimigo favorito seu está a até 8 km: descobre quais tipos estão presentes, quantos são e a direção e distância aproximadas de cada grupo."
       },
       {
-        "level": 5,
-        "name": "Ataque Extra",
-        "description": "Você pode atacar duas vezes ao usar a ação de Ataque no seu turno.",
-        "effects": { "attacksPerAction": [{ "from": 5, "value": 2 }] }
-      },
-      {
         "level": 6,
         "name": "Inimigo Favorito Maior",
         "description": "Escolha um inimigo favorito maior (aberrações, celestiais, constructos, corruptores, dragões, elementais ou gigantes): você ganha contra ele todos os benefícios de Inimigo Favorito, incluindo um idioma adicional. O bônus de dano contra todos os seus inimigos favoritos passa a ser +4. Você tem vantagem em testes de resistência contra magias e habilidades usadas por um inimigo favorito maior."
@@ -1314,6 +1308,11 @@
         "description": "Com 8 horas de trabalho e 50 po em ervas raras e boa comida, você chama um animal selvagem como companheiro leal: arminho gigante, javali, gorila, lobo, mula, pantera, texugo gigante ou urso negro (o Mestre pode limitar a escolha pelo terreno ou ampliar a lista). Você só pode ter um companheiro por vez. Se ele morrer, com 8 horas e 25 po você o traz de volta com um corpo novo, mesmo sem nenhuma parte do corpo antigo. Se já tiver outro companheiro, o atual vai embora e o ressuscitado assume o lugar."
       },
       {
+        "level": 5,
+        "name": "Ataque Coordenado",
+        "description": "Quando você usa a ação de Ataque no seu turno, se o seu companheiro animal puder ver você, ele pode usar a reação dele para fazer um ataque corpo a corpo."
+      },
+      {
         "level": 7,
         "name": "Defesa da Besta",
         "description": "Enquanto seu companheiro animal puder ver você, ele tem vantagem em todos os testes de resistência."
@@ -1334,6 +1333,12 @@
         "level": 3,
         "name": "Presa do Caçador",
         "description": "Escolha uma opção. Assassino de Colossos: quando você atinge com um ataque com arma uma criatura abaixo do máximo de pontos de vida dela, ela sofre 1d8 de dano extra (uma vez por turno). Matador de Gigantes: quando uma criatura Grande ou maior a até 1,5 metro de você atingir ou errar um ataque contra você, você pode usar sua reação para atacá-la logo depois do ataque dela, se puder vê-la. Destruidor de Hordas: uma vez em cada um dos seus turnos, quando fizer um ataque com arma, você pode fazer outro ataque com a mesma arma contra uma criatura diferente que esteja a até 1,5 metro do alvo original e no alcance da sua arma."
+      },
+      {
+        "level": 5,
+        "name": "Ataque Extra",
+        "description": "Você pode atacar duas vezes, em vez de uma, ao usar a ação de Ataque no seu turno.",
+        "effects": { "attacksPerAction": [{ "from": 5, "value": 2 }] }
       },
       {
         "level": 7,
@@ -1361,6 +1366,12 @@
         "level": 3,
         "name": "Magia do Rastreador Subterrâneo",
         "description": "Você ganha visão no escuro de 27 metros. Também aprende magias adicionais, que contam como magias de patrulheiro mas não entram no limite de magias conhecidas: disfarçar-se (3º), truque de corda (5º), glifo de vigilância (9º), invisibilidade maior (13º) e similaridade (17º)."
+      },
+      {
+        "level": 5,
+        "name": "Ataque Extra",
+        "description": "Você pode atacar duas vezes, em vez de uma, ao usar a ação de Ataque no seu turno.",
+        "effects": { "attacksPerAction": [{ "from": 5, "value": 2 }] }
       },
       {
         "level": 7,

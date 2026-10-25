@@ -25,6 +25,7 @@ import {
   getAttacksPerAction,
   getConditionalAttacks,
   describeAttacksPerAction,
+  getOwnedClassFeatures,
 } from '../sheetEffects'
 import {
   getArmorProficiencies, hasArmorProficiency, hasWeaponProficiency,
@@ -507,12 +508,52 @@ describe('getAttacksPerAction (Ataque Extra)', () => {
     expect([4, 5, 11, 19, 20].map(l => attacks(single('fighter', l)))).toEqual([1, 2, 3, 3, 4])
   })
 
-  it('bárbaro, monge, paladino e patrulheiro fazem 2 a partir do 5º', () => {
+  it('bárbaro, monge e paladino fazem 2 a partir do 5º', () => {
     expect(attacks(single('barbarian', 4))).toBe(1)
-    for (const c of ['barbarian', 'monk', 'paladin', 'ranger']) {
+    for (const c of ['barbarian', 'monk', 'paladin']) {
       expect(attacks(single(c, 5))).toBe(2)
       expect(attacks(single(c, 20))).toBe(2)
     }
+  })
+
+  // Patrulheiro Revisado (p. 119-121 do livro do projeto): o 5º nível é "Característica de
+  // Conclave". Caçador e Rastreador Subterrâneo têm Ataque Extra; a Besta tem Ataque Coordenado,
+  // que é o ataque do companheiro (reação dele), não um ataque a mais do patrulheiro.
+  it('patrulheiro 5: Caçador e Rastreador Subterrâneo fazem 2; Besta e sem conclave, 1', () => {
+    expect(attacks(single('ranger', 4, 'hunter'))).toBe(1)
+    expect(getAttacksPerAction(single('ranger', 5, 'hunter'))).toEqual({ value: 2, source: 'Ataque Extra' })
+    expect(getAttacksPerAction(single('ranger', 5, 'gloom-stalker'))).toEqual({ value: 2, source: 'Ataque Extra' })
+    expect(attacks(single('ranger', 20, 'hunter'))).toBe(2)
+    expect(attacks(single('ranger', 5, 'beast-master'))).toBe(1)
+    expect(attacks(single('ranger', 20, 'beast-master'))).toBe(1)
+    expect(attacks(single('ranger', 5))).toBe(1)
+    expect(describeAttacksPerAction(single('ranger', 5, 'beast-master'))).toEqual([])
+    expect(describeAttacksPerAction(single('ranger', 5, 'gloom-stalker'))).toEqual([
+      'Ataque Extra: você faz 2 ataques ao usar a ação de Atacar.',
+    ])
+  })
+
+  it('patrulheiro 5 da Besta tem Ataque Coordenado no lugar do Ataque Extra', () => {
+    const names = (sub: string | null) => getOwnedClassFeatures(single('ranger', 5, sub)).map(f => f.name)
+    expect(names('beast-master')).toContain('Ataque Coordenado')
+    expect(names('beast-master')).not.toContain('Ataque Extra')
+    expect(names('hunter')).not.toContain('Ataque Coordenado')
+    expect(names(null)).not.toContain('Ataque Extra')
+  })
+
+  it('multiclasse: patrulheiro da Besta 5 / guerreiro 5 faz 2 (o do guerreiro)', () => {
+    const d = draft({
+      level: 10, multiclass: true, class: 'ranger',
+      classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), subclass: 'beast-master' },
+      additionalClasses: [extraClass('fighter', 5)],
+    })
+    expect(attacks(d)).toBe(2)
+    const hunterPlusPaladin = draft({
+      level: 10, multiclass: true, class: 'ranger',
+      classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), subclass: 'hunter' },
+      additionalClasses: [extraClass('paladin', 5)],
+    })
+    expect(attacks(hunterPlusPaladin)).toBe(2)
   })
 
   it('nomeia a característica que dá o número', () => {

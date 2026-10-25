@@ -504,5 +504,7 @@ export function getPendingSteps(draft: CharacterDraft): PendingStep[] {
 /** O aviso curto do rodapé de uma etapa: o primeiro motivo, e quantos mais há. */
 export function formatPendingHint(reasons: string[]): string | undefined {
   if (reasons.length === 0) return undefined
-  return reasons.length === 1 ? reasons[0] : `${reasons[0]} (+${reasons.length - 1})`
+  if (reasons.length === 1) return reasons[0]
+  const more = reasons.length - 1
+  return `${reasons[0]} (e mais ${more} ${more === 1 ? 'pendência' : 'pendências'})`
 }

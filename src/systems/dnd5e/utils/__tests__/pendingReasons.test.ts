@@ -183,7 +183,8 @@ describe('getStepPendingReasons — demais regras', () => {
   it('formatPendingHint: primeiro motivo e quantos mais', () => {
     expect(formatPendingHint([])).toBeUndefined()
     expect(formatPendingHint(['a'])).toBe('a')
-    expect(formatPendingHint(['a', 'b', 'c'])).toBe('a (+2)')
+    expect(formatPendingHint(['a', 'b'])).toBe('a (e mais 1 pendência)')
+    expect(formatPendingHint(['a', 'b', 'c'])).toBe('a (e mais 2 pendências)')
   })
 })
 

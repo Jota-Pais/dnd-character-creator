@@ -46,14 +46,35 @@ export function getProgressionOptions(optionsListId: string): ProgressionOption[
     case 'hunter-superior-defense': return hunterSuperiorDefense as ProgressionOption[]
     case 'FIGHTING_STYLES': return FIGHTING_STYLES as ProgressionOption[]
     case SPELL_OPTIONS_LIST_ID:
-      // Retorna todas as magias para seleção de Segredos Mágicos (qualquer classe/nível)
-      return (spells as Spell[]).map(s => ({
-        id: s.id,
-        name: s.name,
-        description: `Nível ${s.level} (${s.school}) - ${s.classes.join(', ')}`,
-      }))
+      // Todas as magias do jogo; o seletor corta pelo nível com getSecretSpellOptions.
+      return (spells as Spell[]).map(spellOption)
     default: return []
   }
+}
+
+function spellOption(s: Spell): ProgressionOption {
+  return {
+    id: s.id,
+    name: s.name,
+    description: `${s.level === 0 ? 'Truque' : `${s.level}º nível`} (${s.school}) - ${s.classes.join(', ')}`,
+  }
+}
+
+/**
+ * Opções de um slot de Segredos Mágicos: magia de qualquer classe "de um nível que você possa
+ * conjurar, como mostrado na tabela O Bardo, ou um truque" (pp. 54-55) — `maxSpellLevel` é o da
+ * tabela do bardo no nível que tem na classe. As já escolhidas (`keep`) ficam mesmo acima do
+ * limite (ficha antiga), para que dê para desmarcar.
+ */
+export function getSecretSpellOptions(maxSpellLevel: number, keep: string[] = []): ProgressionOption[] {
+  return (spells as Spell[])
+    .filter(s => s.level <= maxSpellLevel || keep.includes(s.id))
+    .map(s => {
+      const opt = spellOption(s)
+      return s.level > maxSpellLevel
+        ? { ...opt, description: `acima do ${maxSpellLevel}º nível, que é o seu limite — desmarque · ${opt.description}` }
+        : opt
+    })
 }
 
 /** Uma opção escolhida num slot de progressão, com o texto que vai pra mesa. */

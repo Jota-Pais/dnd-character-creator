@@ -8,6 +8,12 @@ export type ProgressionSlot = {
   cumulative: boolean
   optionsListId: string
   label: string
+  /**
+   * Slot de magia cujas escolhas "já estão incluídas no número da coluna Magias Conhecidas"
+   * (Segredos Mágicos do bardo, p. 54): ocupam vaga da tabela em vez de somar por cima. Os
+   * Adicionais do Colégio do Conhecimento (p. 55) não têm o campo — contam por fora.
+   */
+  countsAsKnownSpell?: boolean
 }
 
 const PROGRESSION_CHOICES_BY_ID = progressionChoicesData as Record<string, ProgressionSlot[]>
@@ -45,6 +51,23 @@ export function getProgressionSpellIds(entry: ClassEntry): string[] {
   const ids = getProgressionSlotsUpToLevel(entry.classId, entry.classChoices.subclass, entry.level)
     .filter(isSpellChoiceSlot)
     .flatMap(slot => entry.classChoices.progressionChoices[slot.id] ?? [])
+  return [...new Set(ids)]
+}
+
+/**
+ * Magias escolhidas nos slots com `countsAsKnownSpell` (Segredos Mágicos do bardo), até o nível na
+ * classe: as que ocupam vaga das colunas de conhecidas. Truque e magia ainda misturados — quem
+ * separa é getKnownColumnSecrets (spellUtils), que conhece o nível de cada magia.
+ */
+export function getKnownColumnSecretIds(
+  classId: string,
+  subclassId: string | null,
+  classLevel: number,
+  progressionChoices: Record<string, string[]>,
+): string[] {
+  const ids = getProgressionSlotsUpToLevel(classId, subclassId, classLevel)
+    .filter(slot => isSpellChoiceSlot(slot) && slot.countsAsKnownSpell)
+    .flatMap(slot => progressionChoices[slot.id] ?? [])
   return [...new Set(ids)]
 }
 

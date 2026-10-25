@@ -371,7 +371,7 @@ export function isStepComplete(draft: CharacterDraft, step: WizardStep): boolean
       // Cada classe conjuradora valida suas magias no nível que tem NELA.
       for (const entry of allClassEntries(draft)) {
         const ec = getClass(entry.classId) ?? null
-        if (!isSpellStepComplete(ec, entry.spellChoices, entry.level, entry.classChoices.subclass)) return false
+        if (!isSpellStepComplete(ec, entry.spellChoices, entry.level, entry.classChoices.subclass, entry.classChoices.progressionChoices)) return false
       }
       return true
     }

@@ -5,7 +5,7 @@ import type { CharacterDraft, ClassEntry } from '../types/character'
 import { calculateModifier, getProficiencyBonus } from './abilityScoreUtils'
 import { isActiveCaster, getClass, getSpellcastingSource } from './classUtils'
 import { allClassEntries, getCasterProgression, getCombinedCasterLevel } from './multiclassUtils'
-import { getProgressionSpellIds } from './progressionChoiceUtils'
+import { getKnownColumnSecretIds, getProgressionSpellIds } from './progressionChoiceUtils'
 import spellsData from '../data/spells.json'
 import progressionData from '../data/progression.json'
 
@@ -193,6 +193,34 @@ export function getKnownCantrips(spellcasting: ClassSpellcasting, choices: Spell
   return [...new Set([...getRequiredCantrips(spellcasting), ...choices.cantrips])]
 }
 
+/** Segredos Mágicos que ocupam vaga das colunas de conhecidas, já separados por coluna. */
+export type KnownColumnSecrets = { cantrips: string[]; spells: string[] }
+
+/**
+ * Os Segredos Mágicos do bardo "já estão incluídos no número da coluna Magias Conhecidas" (p. 54):
+ * escolhidos nos slots com `countsAsKnownSpell`, ocupam vaga da tabela em vez de somar por cima.
+ * Decisão do usuário (2026-10-25) para o que o livro não diz: Segredo escolhido como magia ocupa
+ * vaga de Magias Conhecidas; escolhido como TRUQUE, ocupa vaga de Truques Conhecidos. Os Adicionais
+ * do Colégio do Conhecimento (p. 55) "não contam no número" e ficam de fora.
+ */
+export function getKnownColumnSecrets(
+  classId: string,
+  subclassId: string | null | undefined,
+  classLevel: number,
+  progressionChoices: Record<string, string[]> | undefined,
+): KnownColumnSecrets {
+  const ids = getKnownColumnSecretIds(classId, subclassId ?? null, classLevel, progressionChoices ?? {})
+  const cantrips: string[] = []
+  const spells: string[] = []
+  for (const id of ids) {
+    const spell = getSpell(id)
+    if (!spell) continue
+    if (spell.level === 0) cantrips.push(id)
+    else spells.push(id)
+  }
+  return { cantrips, spells }
+}
+
 /** Uma classe da ficha que conjura no nível que tem nela, com as magias que conhece. */
 export type CasterEntry = {
   entry: ClassEntry
@@ -207,6 +235,8 @@ export type CasterEntry = {
    * então a Revisão e a ficha imprimível as mostram junto das dela. Podem incluir truques.
    */
   bonusSpells: string[]
+  /** Os de `bonusSpells` que ocupam vaga de Truques/Magias Conhecidas (getKnownColumnSecrets). */
+  knownSecrets: KnownColumnSecrets
 }
 
 /** Classes conjuradoras ativas da ficha (primária + adicionais), na ordem da multiclasse. */
@@ -223,6 +253,7 @@ export function getCasterEntries(draft: CharacterDraft): CasterEntry[] {
       cantrips: getKnownCantrips(casting.spellcasting, entry.spellChoices),
       spells: entry.spellChoices.spells,
       bonusSpells: getProgressionSpellIds(entry),
+      knownSecrets: getKnownColumnSecrets(entry.classId, subclass, entry.level, entry.classChoices.progressionChoices),
     }]
   })
 }
@@ -366,29 +397,94 @@ export function getSpellsToChoose(
   return getSpellsKnownCount(casting.casterId, classLevel) || sc.spellsAtLevel1
 }
 
-/** Magias escolhidas além do teto da classe (ver getSpellChoiceOverflow). */
+/**
+ * Uma coluna de conhecidas (truques ou magias) da etapa Magias: o total da tabela, quanto os
+ * Segredos Mágicos já ocupam e quanto sobra para escolher. Um Segredo que repete uma escolhida
+ * não ocupa duas vagas (conta uma vez só).
+ */
+export type KnownColumn = {
+  /** Vagas da coluna: tabela, fórmula de preparadas ou grimório. */
+  total: number
+  /** Escolhidas na etapa (nos truques, com os dados pela característica). */
+  chosen: number
+  /** Vagas que os Segredos Mágicos já ocupam. */
+  fromSecrets: number
+  /** O que a etapa deixa escolher: total − fromSecrets. */
+  toChoose: number
+}
+
+function buildColumn(total: number, chosenIds: string[], secretIds: string[]): KnownColumn {
+  const fromSecrets = secretIds.filter(id => !chosenIds.includes(id)).length
+  return {
+    total,
+    chosen: chosenIds.length,
+    fromSecrets,
+    toChoose: total === Infinity ? Infinity : Math.max(0, total - fromSecrets),
+  }
+}
+
+/** A coluna Truques Conhecidos da classe, com os Segredos Mágicos que a ocupam. */
+export function getCantripColumn(
+  casting: EntrySpellcasting,
+  classLevel: number,
+  choices: SpellChoices,
+  secrets: KnownColumnSecrets,
+): KnownColumn {
+  return buildColumn(
+    getCantripsNeeded(casting, classLevel),
+    getKnownCantrips(casting.spellcasting, choices),
+    secrets.cantrips,
+  )
+}
+
+/** A coluna de magias (conhecidas, preparadas ou grimório), com os Segredos Mágicos que a ocupam. */
+export function getSpellColumn(
+  casting: EntrySpellcasting,
+  classLevel: number,
+  abilityScores: Partial<Record<AbilityScore, number | null>>,
+  choices: SpellChoices,
+  secrets: KnownColumnSecrets,
+): KnownColumn {
+  return buildColumn(getSpellsToChoose(casting, classLevel, abilityScores), choices.spells, secrets.spells)
+}
+
+/** "12 + 2 de Segredos Mágicos = 14" — de onde vem o total da coluna; null sem Segredo ocupando vaga. */
+export function describeSecretsInColumn(column: KnownColumn): string | null {
+  if (column.fromSecrets === 0 || column.total === Infinity) return null
+  return `${column.toChoose} + ${column.fromSecrets} de Segredos Mágicos = ${column.total}`
+}
+
+/** Escolhas além do teto de uma coluna (ver getSpellChoiceOverflows). */
 export type SpellChoiceOverflow = {
   /** "Clérigo", ou "Guerreiro (Cavaleiro Arcano)". */
   label: string
+  /** Total na coluna: as escolhidas mais as vagas dos Segredos Mágicos. */
   chosen: number
   max: number
   excess: number
+  /** Quantas vagas os Segredos Mágicos ocupam nesse total. */
+  fromSecrets: number
   /** Texto pronto para a etapa Magias, a Revisão e a ficha imprimível. */
   text: string
 }
 
+function countWord(n: number, one: string): string {
+  return n === 1 ? one : String(n)
+}
+
 /**
- * Mais magias escolhidas do que o teto da classe permite com os atributos FINAIS (raça +
- * aprimoramentos) — tipicamente o jogador voltou e baixou o atributo de conjuração de um
- * conjurador preparado. A ficha não decide qual magia sai: nada é apagado, vira aviso.
- * null quando está dentro do teto.
+ * Mais magias do que o teto da classe permite com os atributos FINAIS (raça + aprimoramentos) —
+ * o jogador voltou e baixou o atributo de um conjurador preparado — ou, no bardo, escolhidas
+ * contando os Segredos Mágicos por cima (fichas salvas antes de eles ocuparem vaga, p. 54). A
+ * ficha não decide qual magia sai: nada é apagado, vira aviso. null quando está dentro do teto.
  */
 export function getSpellChoiceOverflow(
   caster: CasterEntry,
   finalScores: Partial<Record<AbilityScore, number | null>>,
 ): SpellChoiceOverflow | null {
-  const max = getSpellsToChoose(caster.casting, caster.entry.level, finalScores)
-  const chosen = caster.spells.length
+  const col = getSpellColumn(caster.casting, caster.entry.level, finalScores, caster.entry.spellChoices, caster.knownSecrets)
+  const chosen = col.chosen + col.fromSecrets
+  const max = col.total
   if (max === Infinity || chosen <= max) return null
   const excess = chosen - max
   const type = caster.casting.spellcasting.type
@@ -396,13 +492,41 @@ export function getSpellChoiceOverflow(
     : type === 'hybrid' ? 'magias no grimório'
     : 'magias conhecidas'
   const label = caster.casting.label
-  return {
-    label,
-    chosen,
-    max,
-    excess,
-    text: `${label}: ${chosen} ${what}, mas o máximo é ${max} — ${excess} a mais. Desmarque ${excess === 1 ? 'uma' : excess} na etapa Magias.`,
-  }
+  const text = col.fromSecrets === 0
+    ? `${label}: ${chosen} ${what}, mas o máximo é ${max} — ${excess} a mais. Desmarque ${countWord(excess, 'uma')} na etapa Magias.`
+    : `${label}: ${col.chosen} ${what} escolhidas + ${col.fromSecrets} de Segredos Mágicos = ${chosen}, mas o máximo é ${max} — ${excess} a mais. `
+      + `Os Segredos Mágicos já ocupam vaga de Magias Conhecidas (p. 54): desmarque ${countWord(excess, 'uma')} das ${col.chosen} escolhidas na etapa Magias `
+      + `(fica ${col.chosen - excess} + ${col.fromSecrets} = ${max}).`
+  return { label, chosen, max, excess, fromSecrets: col.fromSecrets, text }
+}
+
+/**
+ * Mais truques do que a coluna Truques Conhecidos — no bardo, um Segredo Mágico escolhido como
+ * truque, que ocupa vaga dessa coluna (decisão do usuário, ver getKnownColumnSecrets). Aviso,
+ * nada apagado. null quando está dentro do teto.
+ */
+export function getCantripChoiceOverflow(caster: CasterEntry): SpellChoiceOverflow | null {
+  const col = getCantripColumn(caster.casting, caster.entry.level, caster.entry.spellChoices, caster.knownSecrets)
+  const chosen = col.chosen + col.fromSecrets
+  const max = col.total
+  if (chosen <= max) return null
+  const excess = chosen - max
+  const label = caster.casting.label
+  const text = col.fromSecrets === 0
+    ? `${label}: ${chosen} truques, mas o máximo é ${max} — ${excess} a mais. Desmarque ${countWord(excess, 'um')} na etapa Magias.`
+    : `${label}: ${col.chosen} truques escolhidos + ${col.fromSecrets} de Segredos Mágicos = ${chosen}, mas o máximo é ${max} — ${excess} a mais. `
+      + `O Segredo Mágico escolhido como truque ocupa vaga de Truques Conhecidos: desmarque ${countWord(excess, 'um')} dos ${col.chosen} escolhidos na etapa Magias `
+      + `(fica ${col.chosen - excess} + ${col.fromSecrets} = ${max}).`
+  return { label, chosen, max, excess, fromSecrets: col.fromSecrets, text }
+}
+
+/** Os avisos de excesso da classe — truques e magias — na ordem em que a ficha mostra. */
+export function getSpellChoiceOverflows(
+  caster: CasterEntry,
+  finalScores: Partial<Record<AbilityScore, number | null>>,
+): SpellChoiceOverflow[] {
+  return [getCantripChoiceOverflow(caster), getSpellChoiceOverflow(caster, finalScores)]
+    .filter((o): o is SpellChoiceOverflow => o !== null)
 }
 
 export function isSpellStepComplete(
@@ -410,19 +534,23 @@ export function isSpellStepComplete(
   choices: SpellChoices,
   level = 1,
   subclassId?: string | null,
+  /** Escolhas de progressão da classe: os Segredos Mágicos ocupam vaga das colunas (p. 54). */
+  progressionChoices: Record<string, string[]> = {},
 ): boolean {
   const casting = getEntrySpellcasting(cls, subclassId)
   if (!cls || !casting) return true
   if (!isActiveCaster(cls, level, subclassId)) return true
 
   const sc = casting.spellcasting
-  const cantripsNeeded = getCantripsNeeded(casting, level)
+  const secrets = getKnownColumnSecrets(cls.id, subclassId, level, progressionChoices)
 
-  if (cantripsNeeded > 0 && getKnownCantrips(sc, choices).length < cantripsNeeded) return false
+  const cantrips = getCantripColumn(casting, level, choices, secrets)
+  if (cantrips.total > 0 && cantrips.chosen + cantrips.fromSecrets < cantrips.total) return false
 
   if (sc.type === 'known') {
     const needed = getSpellsKnownCount(casting.casterId, level) || sc.spellsAtLevel1
-    if (needed > 0 && choices.spells.length < needed) return false
+    const fromSecrets = secrets.spells.filter(id => !choices.spells.includes(id)).length
+    if (needed > 0 && choices.spells.length + fromSecrets < needed) return false
   }
 
   // Cavaleiro/Trapaceiro Arcano: mais magias fora da escola do que as escolhas livres permitem.

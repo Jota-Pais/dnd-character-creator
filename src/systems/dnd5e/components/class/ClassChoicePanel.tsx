@@ -17,7 +17,8 @@ import { SKILLS, getLanguageName } from '../../utils/raceUtils'
 import { LanguagePicker } from '../common/LanguagePicker'
 import toolsData from '../../data/tools.json'
 import { getProgressionSlotsUpToLevel, SPELL_OPTIONS_LIST_ID, type ProgressionSlot } from '../../utils/progressionChoiceUtils'
-import { getProgressionOptions, type ProgressionOption } from '../../utils/progressionOptions'
+import { getProgressionOptions, getSecretSpellOptions, type ProgressionOption } from '../../utils/progressionOptions'
+import { getMaxSpellLevel } from '../../utils/spellUtils'
 import type { ClassSlotProficiencies } from '../../utils/proficiencyUtils'
 import type { TakenFightingStyles } from '../../utils/sheetEffects'
 
@@ -645,7 +646,12 @@ function ProgressionChoicesPanel({
         // Estilo de Luta Adicional (Campeão nv10): não repete o estilo desta classe nem o de outra
         // classe da multiclasse (p. 85). O que já está no slot fica à vista para desmarcar.
         const pickedInGroup = group.slots.flatMap(s => choices.progressionChoices[s.id] ?? [])
-        const options = getProgressionOptions(optionsListId).filter(
+        // Segredos Mágicos: só magia de nível que o bardo conjura pela tabela dele, ou truque (pp. 54-55).
+        const maxSecretLevel = optionsListId === SPELL_OPTIONS_LIST_ID ? getMaxSpellLevel(classId, level, subclassId) : 0
+        const options = (optionsListId === SPELL_OPTIONS_LIST_ID
+          ? getSecretSpellOptions(maxSecretLevel, pickedInGroup)
+          : getProgressionOptions(optionsListId)
+        ).filter(
           opt => !(optionsListId === 'FIGHTING_STYLES' && takenFightingStyles.includes(opt.id) && !pickedInGroup.includes(opt.id)),
         )
 
@@ -671,6 +677,12 @@ function ProgressionChoicesPanel({
           if (optionsListId === SPELL_OPTIONS_LIST_ID) {
             return (
               <ChoiceSection key={slot.id} title={title} accent={accent}>
+                <p className="text-xs text-parchment-500 mb-2">
+                  Magia de qualquer classe, de até {maxSecretLevel}º nível (o que você conjura pela tabela do Bardo), ou um truque.{' '}
+                  {slot.countsAsKnownSpell
+                    ? 'Já faz parte das suas magias conhecidas (p. 54): ocupa uma vaga de Magias Conhecidas — ou de Truques Conhecidos, se for truque — e a etapa Magias pede uma a menos.'
+                    : 'Não conta no número de magias conhecidas (p. 55): vem por cima das escolhidas na etapa Magias.'}
+                </p>
                 <SpellPickerList
                   options={options}
                   picked={currentPicked}

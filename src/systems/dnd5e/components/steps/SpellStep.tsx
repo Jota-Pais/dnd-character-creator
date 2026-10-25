@@ -13,13 +13,15 @@ import {
   getMaxSpellLevel,
   getCantripsNeeded,
   getRequiredCantrips,
-  getSpellsToChoose,
+  getCantripColumn,
+  getSpellColumn,
+  describeSecretsInColumn,
   getSchoolRestrictionStatus,
   isAllowedBySchoolRestriction,
   getCasterEntries,
   getCombinedSpellSlots,
   getPactSlots,
-  getSpellChoiceOverflow,
+  getSpellChoiceOverflows,
   SCHOOL_COLORS,
   SCHOOL_EMOJI,
   type CasterEntry,
@@ -151,9 +153,18 @@ function ClassSpellSection({
   const cantripsNeeded = getCantripsNeeded(casting, level)
   const required = getRequiredCantrips(sc)
   const maxSpellLevel = getMaxSpellLevel(cls.id, level, subclassId)
-  const maxSpells = getSpellsToChoose(casting, level, abilityScores)
+  // Segredos Mágicos do bardo ocupam vaga das colunas (p. 54): a etapa escolhe só o que sobra.
+  const secrets = caster.knownSecrets
+  const cantripCol = getCantripColumn(casting, level, choices, secrets)
+  const spellCol = getSpellColumn(casting, level, abilityScores, choices, secrets)
+  const maxSpells = spellCol.toChoose
+  const cantripsToChoose = cantripCol.toChoose
+  const spellBudget = describeSecretsInColumn(spellCol)
+  const cantripBudget = describeSecretsInColumn(cantripCol)
+  const secretCantrips = secrets.cantrips.filter(id => !caster.cantrips.includes(id))
+  const secretSpells = secrets.spells.filter(id => !choices.spells.includes(id))
   const school = getSchoolRestrictionStatus(sc, level, choices.spells)
-  const overflow = getSpellChoiceOverflow(caster, abilityScores)
+  const overflows = getSpellChoiceOverflows(caster, abilityScores)
 
   const abilityMod = calculateModifier(abilityScores[sc.ability])
 
@@ -170,7 +181,7 @@ function ClassSpellSection({
     if (required.includes(id)) return
     const cur = choices.cantrips.filter(c => !required.includes(c))
     if (cur.includes(id)) onChange({ cantrips: cur.filter(c => c !== id) })
-    else if (cur.length + required.length < cantripsNeeded) onChange({ cantrips: [...cur, id] })
+    else if (cur.length + required.length < cantripsToChoose) onChange({ cantrips: [...cur, id] })
   }
   function toggleSpell(id: string) {
     const cur = choices.spells
@@ -185,7 +196,7 @@ function ClassSpellSection({
   const spellsLabel =
     sc.type === 'prepared' ? `${choices.spells.length} preparadas (máx. ${maxSpells})`
     : sc.type === 'hybrid' ? `${choices.spells.length}/${maxSpells} no grimório`
-    : `${choices.spells.length}/${maxSpells} conhecidas`
+    : `${choices.spells.length}/${maxSpells} conhecidas${spellBudget ? ` (${spellBudget})` : ''}`
 
   return (
     <div className="mb-6 rounded-xl border border-parchment-900 bg-parchment-950/40 p-4">
@@ -200,7 +211,7 @@ function ClassSpellSection({
         <div className="flex flex-wrap gap-2 mb-3 mt-3">
           {cantripsNeeded > 0 && (
             <TabButton active={activeTab === 'cantrips'} onClick={() => setTab('cantrips')} accent={ACCENT}>
-              ✦ Truques <Counter current={caster.cantrips.length} max={cantripsNeeded} />
+              ✦ Truques <Counter current={caster.cantrips.length} max={cantripsToChoose} />
             </TabButton>
           )}
           {spellLevelTabs.map(lvl => (
@@ -214,21 +225,33 @@ function ClassSpellSection({
 
       <p className="text-parchment-600 text-xs mb-3 font-fantasy">{spellsLabel}</p>
 
-      {/* Atributo baixado depois da escolha: a etapa não apaga nada, só avisa do excesso. */}
-      {overflow && (
-        <p className="text-xs mb-3 rounded-lg border border-red-900/60 bg-red-950/20 px-3 py-2 text-red-400">
-          ⚠ {overflow.text}
+      {(secretSpells.length > 0 || secretCantrips.length > 0) && (
+        <p className="text-xs mb-3 rounded-lg border border-parchment-900 bg-parchment-950/60 px-3 py-2 text-parchment-400">
+          ✦ Seus Segredos Mágicos já estão contados aqui — o livro diz que eles fazem parte do número de
+          magias conhecidas do bardo (p. 54), então ocupam vaga em vez de somar por cima.
+          {secretSpells.length > 0 && <> Magias: {formatSpellNames(secretSpells)} — {spellBudget}.</>}
+          {secretCantrips.length > 0 && <> Truques: {formatSpellNames(secretCantrips)} — {cantripBudget}.</>}
+          {' '}Para trocar um Segredo, volte à etapa Classe.
         </p>
       )}
+
+      {/* Atributo baixado, ou Segredos que passaram a ocupar vaga: a etapa não apaga nada, só avisa do excesso. */}
+      {overflows.map(o => (
+        <p key={o.text} className="text-xs mb-3 rounded-lg border border-red-900/60 bg-red-950/20 px-3 py-2 text-red-400">
+          ⚠ {o.text}
+        </p>
+      ))}
 
       {activeTab === 'cantrips' && (
         <>
           <SectionHint>
             {required.length > 0
               ? <>Você conhece {cantripsNeeded} truques <InfoTooltip term="truque" />: {formatSpellNames(required)} já {required.length > 1 ? 'vêm' : 'vem'} com a característica; escolha os outros {cantripsNeeded - required.length}.</>
-              : <>Escolha {cantripsNeeded} truque{cantripsNeeded !== 1 ? 's' : ''} <InfoTooltip term="truque" />.</>}
+              : secretCantrips.length > 0
+                ? <>Você conhece {cantripsNeeded} truques <InfoTooltip term="truque" />: {formatSpellNames(secretCantrips)} já {secretCantrips.length > 1 ? 'ocupam' : 'ocupa'} vaga como Segredo Mágico; escolha os outros {cantripsToChoose}.</>
+                : <>Escolha {cantripsNeeded} truque{cantripsNeeded !== 1 ? 's' : ''} <InfoTooltip term="truque" />.</>}
           </SectionHint>
-          <SpellGrid spells={cantrips} selected={caster.cantrips} locked={required} max={cantripsNeeded} onToggle={toggleCantrip} onDetail={onDetail} detailId={detailId} />
+          <SpellGrid spells={cantrips} selected={caster.cantrips} locked={[...required, ...secrets.cantrips]} secretIds={secrets.cantrips} max={cantripsToChoose} onToggle={toggleCantrip} onDetail={onDetail} detailId={detailId} />
         </>
       )}
       {typeof activeTab === 'number' && (
@@ -238,7 +261,9 @@ function ClassSpellSection({
               ? `Prepare magias de ${ORDINALS[activeTab]} nível (pode trocar após descanso longo).`
               : sc.type === 'hybrid'
                 ? `Adicione magias de ${ORDINALS[activeTab]} nível ao grimório.`
-                : `Escolha magias de ${ORDINALS[activeTab]} nível.`}
+                : spellBudget
+                  ? `Escolha magias de ${ORDINALS[activeTab]} nível — ${maxSpells} no total, pois ${secretSpells.length === 1 ? 'uma vaga já é' : `${secretSpells.length} vagas já são`} dos Segredos Mágicos.`
+                  : `Escolha magias de ${ORDINALS[activeTab]} nível.`}
           </SectionHint>
           {school && (
             <p className="text-xs mb-3" style={{ color: school.freeUsed > school.freeSlots ? '#e74c3c' : '#a08a6a' }}>
@@ -250,6 +275,8 @@ function ClassSpellSection({
           <SpellGrid
             spells={getSpellsByLevel(casting.spellList, activeTab)}
             selected={choices.spells}
+            locked={secrets.spells}
+            secretIds={secrets.spells}
             max={maxSpells}
             isAllowed={spell => isAllowedBySchoolRestriction(sc, level, choices.spells, spell)}
             onToggle={toggleSpell}
@@ -373,12 +400,14 @@ function SectionHint({ children }: { children: React.ReactNode }) {
 }
 
 function SpellGrid({
-  spells, selected, locked = [], max, isAllowed, onToggle, onDetail, detailId,
+  spells, selected, locked = [], secretIds = [], max, isAllowed, onToggle, onDetail, detailId,
 }: {
   spells: Spell[]
   selected: string[]
   /** Já conhecidas pela característica: marcadas e sem como desmarcar. */
   locked?: string[]
+  /** Das travadas, as que vêm dos Segredos Mágicos (trocam-se na etapa Classe). */
+  secretIds?: string[]
   max: number
   /** Regra extra pra acrescentar (restrição de escola); sem ela, só o teto conta. */
   isAllowed?: (spell: Spell) => boolean
@@ -397,6 +426,7 @@ function SpellGrid({
             spell={spell}
             selected={isSelected || isLocked}
             locked={isLocked}
+            lockedTitle={secretIds.includes(spell.id) ? 'Segredo Mágico — troque na etapa Classe' : undefined}
             disabled={!isSelected && !isLocked && (
               (max !== Infinity && selected.length >= max) || (isAllowed ? !isAllowed(spell) : false)
             )}
@@ -421,11 +451,12 @@ function formatSchools(schools: string[]): string {
 }
 
 function SpellCard({
-  spell, selected, locked = false, disabled, active, onToggle, onDetail,
+  spell, selected, locked = false, lockedTitle = 'Vem com a característica — não sai da lista', disabled, active, onToggle, onDetail,
 }: {
   spell: Spell
   selected: boolean
   locked?: boolean
+  lockedTitle?: string
   disabled: boolean
   active: boolean
   onToggle: () => void
@@ -455,7 +486,7 @@ function SpellCard({
         <button
           onClick={e => { e.stopPropagation(); if (!locked && (!disabled || selected)) onToggle() }}
           disabled={locked}
-          title={locked ? 'Vem com a característica — não sai da lista' : undefined}
+          title={locked ? lockedTitle : undefined}
           className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center transition-all text-sm"
           style={{ backgroundColor: selected ? `${color}30` : '#1a1208', border: `1.5px solid ${selected ? color : '#3a2e1e'}`, color: selected ? color : '#4a3e2e' }}
         >

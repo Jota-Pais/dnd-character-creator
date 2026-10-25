@@ -36,7 +36,7 @@ import {
 import { getProgressionChoiceBlocks } from '../utils/progressionOptions'
 import {
   getSpell, getSpellSaveDC, formatSpellAttackBonus, getCombinedSpellSlots, getPactSlots,
-  getMaxPreparedSpells, describeCastingAids, getCasterEntries, getSpellChoiceOverflow,
+  getMaxPreparedSpells, describeCastingAids, getCasterEntries, getSpellChoiceOverflows,
 } from '../utils/spellUtils'
 import { RuleText } from './common/RuleText'
 import { formatAttackDamage } from '../utils/weaponFormat'
@@ -387,7 +387,7 @@ export function PrintableSheet() {
             )}
             {casters.map(caster => {
               const { entry, cls, casting, cantrips: cantripIds, spells: spellIds } = caster
-              const overflow = getSpellChoiceOverflow(caster, finalScores)
+              const overflows = getSpellChoiceOverflows(caster, finalScores)
               const cantrips = cantripIds.map(id => getSpell(id)?.name).filter(Boolean)
               const spells = spellIds.map(id => getSpell(id)).filter(Boolean)
               const secrets = caster.bonusSpells.map(getSpell).filter(s => s !== undefined)
@@ -402,9 +402,9 @@ export function PrintableSheet() {
                     <span className="text-gray-600">{isMc ? '' : `${casting.label}: `}</span>
                     {describeSpellRefresh(casting.spellcasting, entry.level, finalScores)}
                   </p>
-                  {overflow && (
-                    <p className="text-xs mb-0.5 border border-gray-400 px-1.5 py-1"><strong>⚠ {overflow.text}</strong></p>
-                  )}
+                  {overflows.map(o => (
+                    <p key={o.text} className="text-xs mb-0.5 border border-gray-400 px-1.5 py-1"><strong>⚠ {o.text}</strong></p>
+                  ))}
                   {cantrips.length > 0 && <p className="text-xs mb-0.5"><span className="text-gray-600">Truques (sempre disponíveis): </span>{cantrips.join(', ')}</p>}
                   {[...byLevel.keys()].sort((a, b) => a - b).map(lvl => (
                     <p key={lvl} className="text-xs mb-0.5"><span className="text-gray-600">{lvl}º nível: </span>{byLevel.get(lvl)!.join(', ')}</p>

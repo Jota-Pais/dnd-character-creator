@@ -41,9 +41,9 @@
     { "id": "lore-magical-secrets-6", "level": 6, "count": 2, "cumulative": true, "optionsListId": "any-known-spell", "label": "Segredos Mágicos Adicionais" }
   ],
   "bard": [
-    { "id": "bard-magical-secrets-10", "level": 10, "count": 2, "cumulative": true, "optionsListId": "any-known-spell", "label": "Segredos Mágicos" },
-    { "id": "bard-magical-secrets-14", "level": 14, "count": 2, "cumulative": true, "optionsListId": "any-known-spell", "label": "Segredos Mágicos" },
-    { "id": "bard-magical-secrets-18", "level": 18, "count": 2, "cumulative": true, "optionsListId": "any-known-spell", "label": "Segredos Mágicos" }
+    { "id": "bard-magical-secrets-10", "level": 10, "count": 2, "cumulative": true, "optionsListId": "any-known-spell", "countsAsKnownSpell": true, "label": "Segredos Mágicos" },
+    { "id": "bard-magical-secrets-14", "level": 14, "count": 2, "cumulative": true, "optionsListId": "any-known-spell", "countsAsKnownSpell": true, "label": "Segredos Mágicos" },
+    { "id": "bard-magical-secrets-18", "level": 18, "count": 2, "cumulative": true, "optionsListId": "any-known-spell", "countsAsKnownSpell": true, "label": "Segredos Mágicos" }
   ],
   "champion": [
     { "id": "champion-fighting-style-10", "level": 10, "count": 1, "cumulative": true, "optionsListId": "FIGHTING_STYLES", "label": "Estilo de Luta Adicional" }

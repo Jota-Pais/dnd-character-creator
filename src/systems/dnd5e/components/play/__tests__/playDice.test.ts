@@ -27,6 +27,24 @@ describe('rollGuideEntry', () => {
     expect(record.total).toBe(7)
   })
 
+  it('com vantagem, o natural é o d20 que ficou (o maior)', () => {
+    const e = entry({ mode: 'advantage', notation: '2d20kh1+3' })
+    const { record, natural } = rollGuideEntry(e, { roller: sequenceRoller([4, 18]) })
+    expect(natural).toBe(18)
+    expect(record.total).toBe(21)
+  })
+
+  it('crítico de dano fixo (sem dado): não há o que rolar nem dobrar', () => {
+    const e = entry({
+      id: 'damage:unarmed', kind: 'damage', label: 'Golpe desarmado', dice: '', modifier: 4, notation: '4',
+      crit: { dice: '', formula: '4 concussão', notation: '4' },
+    })
+    expect(canRollEntry(e)).toBe(false)
+    const { record } = rollGuideEntry(e, { crit: true, roller: sequenceRoller([]) })
+    expect(record.total).toBe(4)
+    expect(record.terms.flatMap(t => t.dice)).toEqual([])
+  })
+
   it('crit usa os dados dobrados e marca o rótulo; dano não tem natural', () => {
     const e = entry({
       id: 'damage:x', kind: 'damage', label: 'Machado', dice: '1d12', notation: '1d12+3',

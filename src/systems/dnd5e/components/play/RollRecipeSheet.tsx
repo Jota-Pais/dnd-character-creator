@@ -7,20 +7,33 @@ import { canRollEntry, rollGuideEntry, type GuideRoll } from './playDice'
 
 const reasonLabels = (reasons: { label: string }[]) => reasons.map(r => r.label).join(', ')
 
+/** Uma jogada ligada a esta, aberta de dentro da folha: o dano de um ataque. */
+export type RecipeLink = { label: string; entry: RollGuideEntry }
+
 /**
  * A "receita" de uma jogada: o que rolar e quanto somar, em letra grande, com o modo e os motivos,
  * a falha automática, as linhas condicionais e de onde vem cada parcela. O jogador rola os próprios
  * dados; com os dados do app ligados, um "Rolar" discreto rola pelo motor e grava no histórico.
  *
- * O 20 e o 1 naturais só ganham destaque: num teste comum eles não decidem nada (pág. 174).
+ * O 20 e o 1 naturais só ganham destaque: num teste comum eles não decidem nada (pág. 174). No
+ * ataque, a folha leva ao dano (`links`); com os dados do app, um natural a partir de
+ * `critThreshold` abre o dano já como crítico. A folha de dano aberta com `crit` mostra e rola os
+ * dados dobrados (pág. 196), com o "não foi crítico" para voltar ao normal.
  */
-export function RollRecipeSheet({ entry, appDice, onClose }: {
+export function RollRecipeSheet({ entry, appDice, onClose, crit = false, links = [], critThreshold = 20, onOpenLink }: {
   entry: RollGuideEntry
   appDice: boolean
   onClose: () => void
+  /** Abrir já no modo crítico (só jogada de dano, que tem `entry.crit`). */
+  crit?: boolean
+  links?: RecipeLink[]
+  /** A partir de que d20 natural o ataque é crítico. */
+  critThreshold?: number
+  onOpenLink?: (entry: RollGuideEntry, options: { crit: boolean }) => void
 }) {
   const run = usePlayStore(s => s.run)
   const [result, setResult] = useState<(GuideRoll & { crit: boolean }) | null>(null)
+  const [critMode, setCritMode] = useState(crit && entry.crit !== undefined)
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
@@ -30,15 +43,23 @@ export function RollRecipeSheet({ entry, appDice, onClose }: {
     return () => window.removeEventListener('keydown', handleKey)
   }, [onClose])
 
-  function rollIt(crit: boolean) {
-    const rolled = rollGuideEntry(entry, { crit })
+  function rollIt(asCrit: boolean) {
+    const rolled = rollGuideEntry(entry, { crit: asCrit })
     run(st => recordRoll(st, rolled.record))
-    setResult({ ...rolled, crit })
+    setResult({ ...rolled, crit: asCrit })
+  }
+
+  function leaveCrit() {
+    setCritMode(false)
+    setResult(null)
   }
 
   const titleId = `recipe-${entry.id}`
   const isD20 = entry.kind === 'd20'
   const canceled = entry.mode === 'normal' && entry.advantage.length > 0 && entry.disadvantage.length > 0
+  const shown = critMode && entry.crit ? entry.crit : { formula: entry.formula, dice: entry.dice }
+  // O ataque rolado pelo app deu crítico: o dano abre com os dados dobrados.
+  const critHit = isD20 && result !== null && result.natural !== null && result.natural >= critThreshold
 
   return (
     <div className="fixed inset-0 z-40 flex items-end sm:items-center justify-center bg-black/60" onClick={onClose}>
@@ -60,7 +81,16 @@ export function RollRecipeSheet({ entry, appDice, onClose }: {
           </button>
         </div>
 
-        <p className="mt-2 font-fantasy font-bold text-3xl text-gold-300" data-testid="recipe-formula">{entry.formula}</p>
+        <p className="mt-2 font-fantasy font-bold text-3xl text-gold-300" data-testid="recipe-formula">{shown.formula}</p>
+
+        {critMode && (
+          <div className="mt-2 rounded-lg border border-gold-800 bg-gold-900/30 px-3 py-2 text-sm text-gold-200">
+            <p>Acerto crítico: os dados de dano dobram, o modificador não (pág. 196).</p>
+            <button onClick={leaveCrit} className="mt-1 min-h-10 text-xs text-parchment-400 underline hover:text-parchment-200">
+              Não foi crítico
+            </button>
+          </div>
+        )}
 
         {entry.mode === 'advantage' && (
           <p className="mt-2 text-sm text-emerald-300">
@@ -85,7 +115,7 @@ export function RollRecipeSheet({ entry, appDice, onClose }: {
         {entry.dc !== undefined && (
           <p className="mt-2 text-sm text-parchment-300">CD {entry.dc}: o total precisa ser {entry.dc} ou mais.</p>
         )}
-        {entry.crit && (
+        {entry.crit && !critMode && (
           <p className="mt-2 text-sm text-parchment-400">
             Acerto crítico: <span className="text-parchment-200">{entry.crit.formula}</span> (só os dados dobram).
           </p>
@@ -103,10 +133,10 @@ export function RollRecipeSheet({ entry, appDice, onClose }: {
           <div className="mt-4">
             <p className="text-[11px] uppercase tracking-wider text-parchment-600">De onde vem</p>
             <ul className="mt-1 divide-y divide-parchment-900">
-              {entry.dice && (
+              {shown.dice && (
                 <li className="flex justify-between py-1 text-sm">
                   <span className="text-parchment-400">Dado</span>
-                  <span className="text-parchment-200">{entry.dice}</span>
+                  <span className="text-parchment-200">{shown.dice}</span>
                 </li>
               )}
               {entry.breakdown.map((b, i) => (
@@ -123,12 +153,12 @@ export function RollRecipeSheet({ entry, appDice, onClose }: {
           <div className="mt-5 border-t border-parchment-900 pt-4">
             <div className="flex flex-wrap gap-2">
               <button
-                onClick={() => rollIt(false)}
+                onClick={() => rollIt(critMode)}
                 className="min-h-10 px-4 rounded-lg border border-parchment-800 text-sm text-parchment-300 hover:text-parchment-100 hover:border-parchment-600 transition-colors"
               >
                 Rolar
               </button>
-              {entry.crit && (
+              {entry.crit && !critMode && (
                 <button
                   onClick={() => rollIt(true)}
                   className="min-h-10 px-4 rounded-lg border border-parchment-800 text-sm text-parchment-300 hover:text-parchment-100 hover:border-parchment-600 transition-colors"
@@ -138,6 +168,47 @@ export function RollRecipeSheet({ entry, appDice, onClose }: {
               )}
             </div>
             {result && <RollResult result={result} entry={entry} isD20={isD20} />}
+          </div>
+        )}
+
+        {links.length > 0 && onOpenLink && (
+          <div className="mt-5 border-t border-parchment-900 pt-4">
+            <p className="text-[11px] uppercase tracking-wider text-parchment-600">Acertou? Role o dano</p>
+            <ul className="mt-2 space-y-2">
+              {links.map(link => {
+                const canCrit = link.entry.crit !== undefined && link.entry.dice !== ''
+                return (
+                  <li key={link.entry.id} className="flex flex-wrap items-center gap-2">
+                    {critHit && canCrit ? (
+                      <button
+                        onClick={() => onOpenLink(link.entry, { crit: true })}
+                        className="min-h-10 px-3 rounded-lg border border-gold-600 bg-gold-900/40 text-sm text-gold-200 hover:border-gold-400"
+                      >
+                        {link.label} do crítico: {link.entry.crit?.formula}
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => onOpenLink(link.entry, { crit: false })}
+                          className="min-h-10 px-3 rounded-lg border border-parchment-800 text-sm text-parchment-200 hover:border-gold-700"
+                        >
+                          {link.label}: {link.entry.formula}
+                        </button>
+                        {canCrit && (
+                          <button
+                            onClick={() => onOpenLink(link.entry, { crit: true })}
+                            aria-label={`${link.label} do crítico`}
+                            className="min-h-10 px-3 rounded-lg border border-parchment-800 text-xs text-parchment-400 hover:text-parchment-200"
+                          >
+                            crítico
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
           </div>
         )}
       </div>

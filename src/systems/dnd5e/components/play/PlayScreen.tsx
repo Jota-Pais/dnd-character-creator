@@ -8,7 +8,7 @@ import { DeathSaves } from './DeathSaves'
 import { HpPanel } from './HpPanel'
 import { NoticeToast } from './NoticeToast'
 import { usePlayStore } from '../../stores/playStore'
-import { RollRecipeSheet } from './RollRecipeSheet'
+import { RollRecipeSheet, type RecipeLink } from './RollRecipeSheet'
 import { VitalsBar } from './VitalsBar'
 
 /**
@@ -26,8 +26,10 @@ export function PlayScreen() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [tab, setTab] = useState<PlayTabId>(PLAY_TABS[0].id)
   // A receita aberta. Guarda a entrada, mas mostra a versão atual do guia: se uma condição muda
-  // com a folha aberta, o modo e as notas acompanham.
-  const [recipe, setRecipe] = useState<RollGuideEntry | null>(null)
+  // com a folha aberta, o modo e as notas acompanham. `crit`: dano aberto como acerto crítico.
+  const [recipe, setRecipe] = useState<{ entry: RollGuideEntry; crit: boolean } | null>(null)
+  const openRecipe = (entry: RollGuideEntry, options?: { crit?: boolean }) =>
+    setRecipe({ entry, crit: options?.crit ?? false })
 
   if (!view) {
     return (
@@ -40,10 +42,18 @@ export function PlayScreen() {
     )
   }
 
-  const tabProps: PlayTabProps = { ...view, openRecipe: setRecipe }
+  const tabProps: PlayTabProps = { ...view, openRecipe }
   const current = PLAY_TABS.find(t => t.id === tab) ?? PLAY_TABS[0]
   const TabComponent = current.component
-  const liveRecipe = recipe ? findRollGuideEntry(view.guide, recipe.id) ?? recipe : null
+  const liveRecipe = recipe ? findRollGuideEntry(view.guide, recipe.entry.id) ?? recipe.entry : null
+  // Da folha de um ataque, o dano (e o dano a duas mãos) a um toque.
+  const attackRow = liveRecipe ? view.guide.attacks.find(a => a.attack.id === liveRecipe.id) : undefined
+  const recipeLinks: RecipeLink[] = attackRow
+    ? [
+      ...(attackRow.damage ? [{ label: 'Dano', entry: attackRow.damage }] : []),
+      ...(attackRow.versatile ? [{ label: 'Dano a duas mãos', entry: attackRow.versatile }] : []),
+    ]
+    : []
 
   return (
     <div className="min-h-screen bg-surface-base text-parchment-200">
@@ -84,7 +94,7 @@ export function PlayScreen() {
         </header>
 
         <div className="sticky top-0 z-20 -mx-4 px-4 py-2 bg-surface-base/95 backdrop-blur-sm border-b border-parchment-900">
-          <VitalsBar view={view} onOpenRecipe={setRecipe} />
+          <VitalsBar view={view} onOpenRecipe={openRecipe} />
         </div>
 
         {/* A 0 PV os testes contra a morte tomam a frente; dano e cura continuam valendo
@@ -126,10 +136,19 @@ export function PlayScreen() {
         </section>
       </div>
 
-      <NoticeToast view={view} onOpenRecipe={setRecipe} />
+      <NoticeToast view={view} onOpenRecipe={openRecipe} />
 
-      {liveRecipe && (
-        <RollRecipeSheet key={liveRecipe.id} entry={liveRecipe} appDice={view.appDice} onClose={() => setRecipe(null)} />
+      {liveRecipe && recipe && (
+        <RollRecipeSheet
+          key={`${liveRecipe.id}:${recipe.crit}`}
+          entry={liveRecipe}
+          appDice={view.appDice}
+          onClose={() => setRecipe(null)}
+          crit={recipe.crit}
+          links={recipeLinks}
+          critThreshold={attackRow?.critThreshold}
+          onOpenLink={openRecipe}
+        />
       )}
     </div>
   )

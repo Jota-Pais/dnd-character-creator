@@ -30,10 +30,11 @@ export type PlayView = {
 
 /**
  * Props de toda aba da tela de jogo: a visão inteira, mais o "abrir a receita" de uma jogada
- * (a folha `RollRecipeSheet`, com o "Rolar" quando os dados do app estão ligados).
+ * (a folha `RollRecipeSheet`, com o "Rolar" quando os dados do app estão ligados). `crit` abre
+ * uma jogada de dano já com os dados dobrados.
  */
 export type PlayTabProps = PlayView & {
-  openRecipe: (entry: RollGuideEntry) => void
+  openRecipe: (entry: RollGuideEntry, options?: { crit?: boolean }) => void
 }
 
 /** A visão da tela de jogo, ou null sem ficha aberta no playStore. */

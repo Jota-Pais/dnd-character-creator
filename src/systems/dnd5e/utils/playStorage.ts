@@ -78,3 +78,35 @@ export function deletePlayState(characterId: string): void {
 export function listPlayStateIds(): string[] {
   return Object.keys(readStore())
 }
+
+// ── Preferências do modo de jogo ────────────────────────────────────────────
+
+export const PLAY_PREFERENCES_KEY = 'dnd-play-preferences'
+
+/**
+ * Preferências do modo de jogo, do aparelho e não da ficha. `appDice`: usar os dados do app (o
+ * motor de `src/core/dice`) — desligado por padrão, porque o jogador rola os próprios dados
+ * (decisão de 2026-10-25).
+ */
+export type PlayPreferences = { appDice: boolean }
+
+export const DEFAULT_PLAY_PREFERENCES: PlayPreferences = { appDice: false }
+
+/** As preferências salvas, campo a campo; JSON quebrado ou campo estranho cai no padrão. */
+export function loadPlayPreferences(): PlayPreferences {
+  const raw = localStorage.getItem(PLAY_PREFERENCES_KEY)
+  if (!raw) return { ...DEFAULT_PLAY_PREFERENCES }
+  try {
+    const parsed = JSON.parse(raw) as Partial<Record<keyof PlayPreferences, unknown>> | null
+    return { appDice: parsed?.appDice === true }
+  } catch {
+    return { ...DEFAULT_PLAY_PREFERENCES }
+  }
+}
+
+/** Grava as preferências; devolve o que foi gravado. */
+export function savePlayPreferences(prefs: PlayPreferences): PlayPreferences {
+  const saved: PlayPreferences = { appDice: prefs.appDice === true }
+  localStorage.setItem(PLAY_PREFERENCES_KEY, JSON.stringify(saved))
+  return saved
+}

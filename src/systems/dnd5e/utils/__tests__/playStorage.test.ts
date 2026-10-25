@@ -7,8 +7,8 @@ import {
   spendHitDie, spendPactSlot, spendResource, spendSpellSlot, startConcentration,
 } from '../playState'
 import {
-  PLAY_STATES_KEY, PLAY_STORAGE_VERSION, deletePlayState, listPlayStateIds, loadOrCreatePlayState,
-  loadPlayState, loadPlayStateFor, savePlayState,
+  PLAY_PREFERENCES_KEY, PLAY_STATES_KEY, PLAY_STORAGE_VERSION, deletePlayState, listPlayStateIds,
+  loadOrCreatePlayState, loadPlayPreferences, loadPlayState, loadPlayStateFor, savePlayPreferences, savePlayState,
 } from '../playStorage'
 
 const LIBRARY_KEY = 'dnd-character-library'
@@ -139,5 +139,27 @@ describe('playStorage', () => {
     expect(loadLibrary()[0].draft).toEqual(draftBefore)
     expect(buildPlaySheet(loadLibrary()[0].draft)).toEqual(sheet)
     expect(loadPlayState('c1')?.characterId).toBe('c1')
+  })
+})
+
+describe('preferências do modo de jogo', () => {
+  it('padrão: dados do app desligados, sem gravar nada', () => {
+    expect(loadPlayPreferences()).toEqual({ appDice: false })
+    expect(localStorage.getItem(PLAY_PREFERENCES_KEY)).toBeNull()
+  })
+
+  it('salva e carrega, numa chave própria', () => {
+    expect(savePlayPreferences({ appDice: true })).toEqual({ appDice: true })
+    expect(loadPlayPreferences()).toEqual({ appDice: true })
+    expect(localStorage.getItem(PLAY_STATES_KEY)).toBeNull()
+    savePlayPreferences({ appDice: false })
+    expect(loadPlayPreferences()).toEqual({ appDice: false })
+  })
+
+  it('tolera JSON inválido e campo estranho', () => {
+    for (const raw of ['{quebrado', 'null', '42', '{"appDice":"sim"}', '[]']) {
+      localStorage.setItem(PLAY_PREFERENCES_KEY, raw)
+      expect(loadPlayPreferences(), raw).toEqual({ appDice: false })
+    }
   })
 })

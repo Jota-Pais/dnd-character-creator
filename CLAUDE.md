@@ -57,6 +57,7 @@ Ao adicionar uma característica nova, prefira declará-la como efeito nos dados
 - **D&D 5e clássico — PHB de 2014**
 - Não misturar regras do PHB 2024 / "One D&D" sem confirmação explícita do usuário
 - Suplementos (Xanathar, Tasha, etc.) ficam fora do escopo até decisão explícita
+- **Patrulheiro:** segue o texto do livro do projeto (o Patrulheiro Revisado do extract, conclaves da Besta, do Caçador e do Rastreador Subterrâneo), não o do PHB 2014 impresso (decisão de 2026-10-25). Por isso o Ataque Extra é feature de conclave (Caçador e Rastreador no 5º), não da classe base; a Besta tem Ataque Coordenado no lugar.
 
 ## Escopo da V1
 

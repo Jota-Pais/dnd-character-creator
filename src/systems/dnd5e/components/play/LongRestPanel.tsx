@@ -125,7 +125,7 @@ export function LongRestPanel({ view, onClose }: { view: PlayTabProps; onClose: 
                   type="checkbox"
                   checked={ateAndDrank}
                   onChange={e => setAteAndDrank(e.target.checked)}
-                  className="w-5 h-5 accent-gold-500"
+                  className="w-5 h-5 shrink-0 accent-gold-500"
                 />
                 Comeu e bebeu (tira 1 nível de exaustão)
               </label>

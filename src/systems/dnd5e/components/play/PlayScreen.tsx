@@ -109,7 +109,7 @@ export function PlayScreen() {
           <h1 className="font-fantasy font-bold text-xl text-parchment-100 leading-tight truncate">
             {view.characterName || 'Personagem sem nome'}
           </h1>
-          <p className="text-xs text-parchment-500 truncate">{formatPlaySubtitle(view.draft)}</p>
+          <p className="text-xs text-parchment-500 line-clamp-2">{formatPlaySubtitle(view.draft)}</p>
           {settingsOpen && <div className="mt-3"><PlaySettings /></div>}
         </header>
 

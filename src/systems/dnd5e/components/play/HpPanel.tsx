@@ -91,7 +91,7 @@ export function HpPanel({ view }: { view: PlayView }) {
             onClick={() => choose(a.id)}
             aria-pressed={action === a.id}
             className={[
-              'min-h-10 rounded-lg border px-1.5 py-1 text-sm leading-tight transition-colors',
+              'min-h-10 min-w-0 break-words rounded-lg border px-1.5 py-1 text-xs sm:text-sm leading-tight transition-colors',
               action === a.id
                 ? 'border-gold-500 bg-gold-900 text-gold-300'
                 : 'border-parchment-800 text-parchment-300 hover:border-parchment-600',
@@ -133,12 +133,12 @@ export function HpPanel({ view }: { view: PlayView }) {
           {action === 'damage' && (
             <div className="space-y-1">
               <label className="flex items-center gap-2 min-h-10 text-sm text-parchment-300 cursor-pointer">
-                <input type="checkbox" checked={resisted} onChange={e => setResisted(e.target.checked)} className="w-5 h-5 accent-gold-500" />
+                <input type="checkbox" checked={resisted} onChange={e => setResisted(e.target.checked)} className="w-5 h-5 shrink-0 accent-gold-500" />
                 Tenho resistência a esse dano (sofro a metade)
               </label>
               {atZero && (
                 <label className="flex items-center gap-2 min-h-10 text-sm text-parchment-300 cursor-pointer">
-                  <input type="checkbox" checked={critical} onChange={e => setCritical(e.target.checked)} className="w-5 h-5 accent-gold-500" />
+                  <input type="checkbox" checked={critical} onChange={e => setCritical(e.target.checked)} className="w-5 h-5 shrink-0 accent-gold-500" />
                   Foi acerto crítico (conta 2 fracassos)
                 </label>
               )}

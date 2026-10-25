@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { usePlayStore } from '../../stores/playStore'
 import { formatModifier } from '../../utils/abilityScoreUtils'
-import { recordRoll } from '../../utils/playState'
+import { endConcentration } from '../../utils/playState'
 import type { RollGuideEntry } from '../../utils/rollGuide'
 import { canRollEntry, rollGuideEntry, type GuideRoll } from './playDice'
 
@@ -31,7 +31,9 @@ export function RollRecipeSheet({ entry, appDice, onClose, crit = false, links =
   critThreshold?: number
   onOpenLink?: (entry: RollGuideEntry, options: { crit: boolean }) => void
 }) {
+  const logRoll = usePlayStore(s => s.logRoll)
   const run = usePlayStore(s => s.run)
+  const concentrating = usePlayStore(s => s.state?.concentration != null)
   const [result, setResult] = useState<(GuideRoll & { crit: boolean }) | null>(null)
   const [critMode, setCritMode] = useState(crit && entry.crit !== undefined)
 
@@ -45,8 +47,14 @@ export function RollRecipeSheet({ entry, appDice, onClose, crit = false, links =
 
   function rollIt(asCrit: boolean) {
     const rolled = rollGuideEntry(entry, { crit: asCrit })
-    run(st => recordRoll(st, rolled.record))
+    // Só o histórico: rolar não é um passo do desfazer nem apaga o aviso da última ação.
+    logRoll(rolled.record)
     setResult({ ...rolled, crit: asCrit })
+  }
+
+  function endFailedConcentration() {
+    run(st => endConcentration(st))
+    onClose()
   }
 
   function leaveCrit() {
@@ -60,6 +68,9 @@ export function RollRecipeSheet({ entry, appDice, onClose, crit = false, links =
   const shown = critMode && entry.crit ? entry.crit : { formula: entry.formula, dice: entry.dice }
   // O ataque rolado pelo app deu crítico: o dano abre com os dados dobrados.
   const critHit = isD20 && result !== null && result.natural !== null && result.natural >= critThreshold
+  // O TR de concentração rolado pelo app não passou: o "encerrar" fica na própria folha.
+  const failedConcentration = entry.id === 'concentration' && concentrating && result !== null
+    && entry.dc !== undefined && (entry.autoFail.length > 0 || result.record.total < entry.dc)
 
   return (
     <div className="fixed inset-0 z-40 flex items-end sm:items-center justify-center bg-black/60" onClick={onClose}>
@@ -171,6 +182,14 @@ export function RollRecipeSheet({ entry, appDice, onClose, crit = false, links =
               )}
             </div>
             {result && <RollResult result={result} entry={entry} isD20={isD20} />}
+            {failedConcentration && (
+              <button
+                onClick={endFailedConcentration}
+                className="mt-2 min-h-10 rounded-lg border border-violet-700 px-3 text-sm text-violet-200 hover:border-violet-400"
+              >
+                Falhei: encerrar
+              </button>
+            )}
           </div>
         )}
 

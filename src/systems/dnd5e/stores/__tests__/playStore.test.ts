@@ -5,6 +5,7 @@ import {
 } from '../../utils/playState'
 import { loadPlayPreferences, loadPlayState, savePlayState } from '../../utils/playStorage'
 import { COMPLETE_DRAFT } from '../../../../test/fixtures'
+import { roll, sequenceRoller } from '../../../../core/dice'
 
 const draft = () => structuredClone(COMPLETE_DRAFT)
 
@@ -86,6 +87,47 @@ describe('usePlayStore', () => {
     usePlayStore.getState().run(st => setInspiration(st, true))
     usePlayStore.getState().undo()
     expect(usePlayStore.getState().lastActionChanged).toBe(false)
+  })
+
+  it('logRoll grava no histórico fora do desfazer, sem mexer nos avisos', () => {
+    usePlayStore.getState().open('c1', draft())
+    usePlayStore.getState().run((st, sh) => applyDamage(st, sh, { amount: 4 }))
+    usePlayStore.getState().run((st, sh) => applyHealing(st, sh, Number.NaN))
+    const { notices, undoStack } = usePlayStore.getState()
+    usePlayStore.getState().logRoll(roll('1d20+2', { label: 'Iniciativa', roller: sequenceRoller([7]), at: 1 }))
+    const s = usePlayStore.getState()
+    expect(s.state?.rolls.map(r => r.total)).toEqual([9])
+    expect(loadPlayState('c1')?.rolls).toHaveLength(1)
+    expect(s.undoStack).toBe(undoStack)
+    expect(s.notices).toBe(notices)
+    expect(s.lastActionChanged).toBe(false)
+  })
+
+  it('logRoll não apaga o "Desfazer" da última ação, e o undo preserva o histórico', () => {
+    usePlayStore.getState().open('c1', draft())
+    usePlayStore.getState().run((st, sh) => applyDamage(st, sh, { amount: 4 }))
+    usePlayStore.getState().logRoll(roll('1d20', { roller: sequenceRoller([12]), at: 1 }))
+    expect(usePlayStore.getState().lastActionChanged).toBe(true)
+    usePlayStore.getState().undo()
+    expect(usePlayStore.getState().state?.damageTaken).toBe(0)
+    expect(usePlayStore.getState().state?.rolls.map(r => r.total)).toEqual([12])
+    expect(loadPlayState('c1')?.rolls).toHaveLength(1)
+  })
+
+  it('run em segundo plano grava e entra no desfazer, mas mantém os avisos', () => {
+    usePlayStore.getState().open('c1', draft())
+    usePlayStore.getState().run((st, sh) => applyDamage(st, sh, { amount: 4 }))
+    const notices = usePlayStore.getState().notices
+    usePlayStore.getState().run(st => setNote(st, 'O ferreiro mentiu'), { background: true })
+    const s = usePlayStore.getState()
+    expect(s.state?.note).toBe('O ferreiro mentiu')
+    expect(s.undoStack).toHaveLength(2)
+    expect(s.notices).toBe(notices)
+    // O "Desfazer" do aviso desfaria a nota, não o dano: some.
+    expect(s.lastActionChanged).toBe(false)
+    // Sem efeito, em segundo plano, também não toca nos avisos.
+    usePlayStore.getState().run((st, sh) => applyHealing(st, sh, Number.NaN), { background: true })
+    expect(usePlayStore.getState().notices).toBe(notices)
   })
 
   it('dismissNotices limpa os avisos', () => {

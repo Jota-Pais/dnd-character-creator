@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useCharacterStore } from '../../stores/characterStore'
-import { usePlayStore, type PlayOperation } from '../../stores/playStore'
+import { usePlayStore, type PlayOperation, type RunOptions } from '../../stores/playStore'
 import type { CharacterDraft } from '../../types/character'
 import type { PlayResult, PlaySheet, PlayState } from '../../types/playState'
 import type { ArmorClassResult } from '../../utils/armorClassUtils'
@@ -25,7 +25,7 @@ export type PlayView = {
   armorClass: ArmorClassResult
   /** Preferência "Usar os dados do app" (desligada por padrão). */
   appDice: boolean
-  run: (op: PlayOperation) => PlayResult | null
+  run: (op: PlayOperation, options?: RunOptions) => PlayResult | null
 }
 
 /**

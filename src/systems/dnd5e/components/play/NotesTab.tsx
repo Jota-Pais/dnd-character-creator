@@ -69,7 +69,8 @@ export function NotesTab({ state, appDice, run }: PlayTabProps) {
     const text = latest.current
     if (text === null) return
     latest.current = null
-    run(st => setNote(st, text))
+    // Em segundo plano: o autosave não apaga o aviso da última ação (a CD da concentração).
+    run(st => setNote(st, text), { background: true })
     setPending(p => (p === text ? null : p))
   }, [run])
 

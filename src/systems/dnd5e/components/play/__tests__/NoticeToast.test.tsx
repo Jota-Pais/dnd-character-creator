@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { act, render, screen, fireEvent, cleanup, within } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { usePlayStore } from '../../../stores/playStore'
@@ -6,7 +6,10 @@ import { grantTempHp, stabilize, startConcentration } from '../../../utils/playS
 import { openKrusk, resetPlay } from './openPlay'
 
 beforeEach(resetPlay)
-afterEach(() => cleanup())
+afterEach(() => {
+  cleanup()
+  vi.restoreAllMocks()
+})
 
 function damage(value: string) {
   fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
@@ -87,4 +90,54 @@ describe('desfazer e avisos', () => {
     fireEvent.click(within(screen.getByRole('status')).getByRole('button', { name: 'Falhei: encerrar' }))
     expect(usePlayStore.getState().state?.concentration).toBeNull()
   })
+
+  it('rolar o TR de concentração pelo app não apaga o aviso nem o "Desfazer" do dano', () => {
+    openKrusk()
+    usePlayStore.getState().setAppDice(true)
+    usePlayStore.getState().run(st => startConcentration(st, { label: 'Bênção' }, 0))
+    render(<PlayScreen />)
+    damage('10')
+    const undoBefore = usePlayStore.getState().undoStack.length
+    fireEvent.click(within(screen.getByRole('status')).getByRole('button', { name: 'Ver o que rolar' }))
+    forceD20(15)
+    fireEvent.click(screen.getByRole('button', { name: 'Rolar' }))
+    expect(screen.getByRole('dialog')).toHaveTextContent('Passou (CD 10).')
+    expect(within(screen.getByRole('dialog')).queryByRole('button', { name: 'Falhei: encerrar' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar' }))
+
+    const toast = screen.getByRole('status')
+    expect(toast).toHaveTextContent('CD 10')
+    expect(within(toast).getByRole('button', { name: 'Falhei: encerrar' })).toBeInTheDocument()
+    expect(usePlayStore.getState().state?.rolls).toHaveLength(1)
+    expect(usePlayStore.getState().undoStack).toHaveLength(undoBefore)
+    // O "Desfazer" do aviso ainda desfaz o dano, e o histórico fica.
+    fireEvent.click(within(toast).getByRole('button', { name: '↶ Desfazer' }))
+    expect(usePlayStore.getState().state?.damageTaken).toBe(0)
+    expect(usePlayStore.getState().state?.rolls).toHaveLength(1)
+  })
+
+  it('TR de concentração rolado abaixo da CD oferece "Falhei: encerrar" na própria folha', () => {
+    openKrusk()
+    usePlayStore.getState().setAppDice(true)
+    usePlayStore.getState().run(st => startConcentration(st, { label: 'Bênção' }, 0))
+    render(<PlayScreen />)
+    damage('10')
+    fireEvent.click(within(screen.getByRole('status')).getByRole('button', { name: 'Ver o que rolar' }))
+    forceD20(2)
+    fireEvent.click(screen.getByRole('button', { name: 'Rolar' }))
+    const dialog = screen.getByRole('dialog')
+    expect(dialog).toHaveTextContent('Não passou (CD 10).')
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Falhei: encerrar' }))
+    expect(usePlayStore.getState().state?.concentration).toBeNull()
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.getByRole('status')).toHaveTextContent('A concentração em Bênção terminou')
+  })
 })
+
+/** Faz o próximo d20 dos dados do app (Web Crypto) sair com a face dada. */
+function forceD20(face: number) {
+  vi.spyOn(globalThis.crypto, 'getRandomValues').mockImplementation(<T extends ArrayBufferView | null>(array: T): T => {
+    (array as unknown as Uint32Array)[0] = Math.floor(((face - 0.5) / 20) * 2 ** 32)
+    return array
+  })
+}

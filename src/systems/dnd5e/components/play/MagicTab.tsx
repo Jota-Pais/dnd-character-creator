@@ -15,6 +15,9 @@ import type { PlayTabProps } from './usePlayView'
 
 const UNIT_LABEL: Record<ResourceUnit, string> = { uses: 'usos', points: 'pontos', hp: 'PV', dice: 'dados' }
 
+/** Os textos de `describeResource` são pedaços de linha ("recupera em descanso longo"): aqui viram frase. */
+const sentence = (text: string) => `${text[0].toUpperCase()}${text.slice(1)}${/[.!?]$/.test(text) ? '' : '.'}`
+
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section>
@@ -60,8 +63,8 @@ function ResourceRow({ resource, view }: { resource: SheetResource; view: PlayTa
         />
       )}
       {resource.uses === 'unlimited' && <p className="text-xs text-parchment-400">Usos ilimitados.</p>}
-      {d.recharge && <p className="text-[11px] text-parchment-500">{d.recharge[0].toUpperCase() + d.recharge.slice(1)}.</p>}
-      {d.notes.map((n, i) => <p key={i} className="text-[11px] text-parchment-500 leading-snug">{n}</p>)}
+      {d.recharge && <p className="text-[11px] text-parchment-500">{sentence(d.recharge)}</p>}
+      {d.notes.map((n, i) => <p key={i} className="text-[11px] text-parchment-500 leading-snug">{sentence(n)}</p>)}
     </li>
   )
 }

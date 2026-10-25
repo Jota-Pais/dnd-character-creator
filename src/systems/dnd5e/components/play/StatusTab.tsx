@@ -2,6 +2,8 @@ import { useState, type FormEvent, type ReactNode } from 'react'
 import { endConcentration, setExhaustion, startConcentration } from '../../utils/playState'
 import { EXHAUSTION } from '../../utils/sheetEffects'
 import { ConditionsSection } from './ConditionsSection'
+import { LongRestPanel } from './LongRestPanel'
+import { ShortRestPanel } from './ShortRestPanel'
 import type { PlayTabProps } from './usePlayView'
 
 const EXHAUSTION_LEVELS = [0, 1, 2, 3, 4, 5, 6] as const
@@ -108,6 +110,39 @@ function ConcentrationSection({ state, run }: PlayTabProps) {
   )
 }
 
+/** Os dois descansos; um painel aberto por vez, cada um com o seu "Concluir"/"Cancelar". */
+function RestSection(view: PlayTabProps) {
+  const [open, setOpen] = useState<'short' | 'long' | null>(null)
+  const close = () => setOpen(null)
+  const tabs = [
+    { id: 'short' as const, label: 'Descanso curto' },
+    { id: 'long' as const, label: 'Descanso longo' },
+  ]
+  return (
+    <div className="space-y-2">
+      <div className="grid grid-cols-2 gap-1.5">
+        {tabs.map(t => (
+          <button
+            key={t.id}
+            onClick={() => setOpen(open === t.id ? null : t.id)}
+            aria-expanded={open === t.id}
+            className={[
+              'min-h-10 rounded-lg border px-2 text-sm transition-colors',
+              open === t.id
+                ? 'border-gold-500 bg-gold-900 text-gold-300'
+                : 'border-parchment-800 text-parchment-300 hover:border-parchment-600',
+            ].join(' ')}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      {open === 'short' && <ShortRestPanel view={view} onClose={close} />}
+      {open === 'long' && <LongRestPanel view={view} onClose={close} />}
+    </div>
+  )
+}
+
 /**
  * Aba "Estado": as condições (liga/desliga, regra a um toque, nota de duração), a exaustão, a
  * concentração e os descansos.
@@ -123,6 +158,9 @@ export function StatusTab(view: PlayTabProps) {
       </Section>
       <Section title="Concentração">
         <ConcentrationSection {...view} />
+      </Section>
+      <Section title="Descansos">
+        <RestSection {...view} />
       </Section>
     </div>
   )

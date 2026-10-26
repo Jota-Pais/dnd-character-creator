@@ -55,7 +55,7 @@ export function LongRestPanel({ view, onClose }: { view: PlayTabProps; onClose: 
   const items: string[] = preview.blocked ? [] : [
     // Desce quando o ajuste temporário do máximo acaba (linha abaixo).
     preview.hp.after !== preview.hp.before
-      ? `PV ${preview.hp.before} → ${preview.hp.after} (o máximo)`
+      ? `PV ${preview.hp.before} → ${preview.hp.after} (o máximo${preview.hp.after < preview.hp.before ? ', sem o ajuste' : ''})`
       : `PV ${preview.hp.before}: já no máximo`,
     ...(preview.hitDice.recoverable > 0 && !pickTypes
       ? [countLabel(preview.hitDice.recoverable, 'Dado de Vida', 'Dados de Vida')]

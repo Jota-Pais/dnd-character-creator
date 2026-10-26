@@ -227,7 +227,7 @@ function MaxHpAdjustment({ view }: { view: PlayView }) {
             Efeito que muda o seu PV máximo por um tempo, como a magia Ajuda (+5 no máximo e no atual, pág. 215).
             Aumentar sobe os dois; diminuir só corta o que passar do máximo. O descanso longo zera.
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <input
               type="number"
               inputMode="numeric"
@@ -238,19 +238,19 @@ function MaxHpAdjustment({ view }: { view: PlayView }) {
               onChange={e => setText(e.target.value)}
               aria-label="Quanto muda o PV máximo"
               placeholder="0"
-              className="min-h-10 w-24 rounded-lg border border-parchment-800 bg-surface-base px-3 text-lg text-parchment-100 outline-none focus:border-gold-600"
+              className="min-h-10 w-full min-w-0 rounded-lg border border-parchment-800 bg-surface-base px-3 text-lg text-parchment-100 outline-none focus:border-gold-600"
             />
             <button
               onClick={() => apply(1)}
               disabled={!amount}
-              className="min-h-10 rounded-lg border border-parchment-700 px-3 text-sm text-parchment-200 disabled:opacity-40 hover:border-gold-600"
+              className="min-h-10 min-w-0 whitespace-nowrap rounded-lg border border-parchment-700 px-1 text-xs sm:text-sm text-parchment-200 disabled:opacity-40 hover:border-gold-600"
             >
               + Aumentar
             </button>
             <button
               onClick={() => apply(-1)}
               disabled={!amount}
-              className="min-h-10 rounded-lg border border-parchment-700 px-3 text-sm text-parchment-200 disabled:opacity-40 hover:border-gold-600"
+              className="min-h-10 min-w-0 whitespace-nowrap rounded-lg border border-parchment-700 px-1 text-xs sm:text-sm text-parchment-200 disabled:opacity-40 hover:border-gold-600"
             >
               − Diminuir
             </button>

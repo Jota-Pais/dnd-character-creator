@@ -277,8 +277,8 @@ describe('getRollGuide — ataques', () => {
     // FOR 16 + 2 do meio-orc = +4.
     expect(axe.damage!.crit).toMatchObject({ formula: '2d12 + 4 cortante', notation: '2d12+4' })
     expect(axe.damage!.crit!.notes).toEqual([
-      'Crítico Brutal: no acerto crítico com esta arma corpo a corpo, role mais 2 dados de dano da arma e some ao dano.',
-      'Ataques Selvagens: no acerto crítico com esta arma corpo a corpo, role mais 1 dado de dano da arma e some ao dano.',
+      'Crítico Brutal: no acerto crítico com esta arma corpo a corpo, role mais 2d12 (o dado da arma neste ataque) e some ao dano.',
+      'Ataques Selvagens: no acerto crítico com esta arma corpo a corpo, role mais 1d12 (o dado da arma neste ataque) e some ao dano.',
     ])
     expect(axe.damage!.notes.some(n => n.includes('Crítico Brutal'))).toBe(false)
     // Arco (à distância) e golpe desarmado (não é arma): nada.
@@ -287,6 +287,26 @@ describe('getRollGuide — ataques', () => {
     // Bárbaro 8 humano: sem nenhuma das duas.
     const human = getRollGuide({ ...halfOrc, level: 8, race: 'human' }, play())
     expect(human.attacks.find(a => a.key === 'greataxe')!.damage!.crit!.notes).toBeUndefined()
+  })
+
+  it('o dado extra do crítico é o da arma naquele ataque: o versátil a duas mãos, o de Artes Marciais no monge', () => {
+    const barbarian = draft({ class: 'barbarian', level: 9, race: 'half-orc', abilityScores: SCORES, ...carrying('longsword') })
+    const sword = getRollGuide(barbarian, play()).attacks.find(a => a.key === 'longsword')!
+    expect(sword.damage!.crit!.notes).toEqual([
+      'Crítico Brutal: no acerto crítico com esta arma corpo a corpo, role mais 1d8 (o dado da arma neste ataque) e some ao dano.',
+      'Ataques Selvagens: no acerto crítico com esta arma corpo a corpo, role mais 1d8 (o dado da arma neste ataque) e some ao dano.',
+    ])
+    expect(sword.versatile!.crit!.notes).toEqual([
+      'Crítico Brutal: no acerto crítico com esta arma corpo a corpo, role mais 1d10 (o dado da arma neste ataque) e some ao dano.',
+      'Ataques Selvagens: no acerto crítico com esta arma corpo a corpo, role mais 1d10 (o dado da arma neste ataque) e some ao dano.',
+    ])
+    // Monge 11 meio-orc, sem armadura: a espada curta usa o d8 de Artes Marciais.
+    const monk = draft({ class: 'monk', level: 11, race: 'half-orc', abilityScores: SCORES, ...carrying('shortsword') })
+    const shortsword = getRollGuide(monk, play()).attacks.find(a => a.key === 'shortsword')!
+    expect(shortsword.damage!.dice).toBe('1d8')
+    expect(shortsword.damage!.crit!.notes).toEqual([
+      'Ataques Selvagens: no acerto crítico com esta arma corpo a corpo, role mais 1d8 (o dado da arma neste ataque) e some ao dano.',
+    ])
   })
 
   it('notas da arma (Duelismo) também no ataque, no dano e no dano a duas mãos', () => {

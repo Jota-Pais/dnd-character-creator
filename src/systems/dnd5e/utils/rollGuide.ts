@@ -387,14 +387,15 @@ type DamageInput = {
   damageType: string
   breakdown: GuideBreakdownItem[]
   notes?: string[]
-  /** Notas só do crítico (dados a mais que a fórmula não soma). */
-  critNotes?: string[]
+  /** Dados de arma a mais só no crítico (Crítico Brutal, Ataques Selvagens): viram nota, fora da fórmula. */
+  critExtraDice?: SheetEffect<number>[]
 }
 
 function damageEntry(input: DamageInput): RollGuideEntry {
   const { count, sides, modifier } = input.parsed
   const dice = count > 0 ? `${count}d${sides}` : ''
   const critDice = count > 0 ? `${count * 2}d${sides}` : ''
+  const critNotes = count > 0 ? (input.critExtraDice ?? []).map(e => critExtraDiceNote(e, sides)) : []
   const notes = [...(input.notes ?? [])]
   if (count === 0) notes.push('Dano fixo, sem dado: o acerto crítico não muda o valor (só os dados dobram, pág. 196).')
   return {
@@ -415,7 +416,7 @@ function damageEntry(input: DamageInput): RollGuideEntry {
       dice: critDice,
       formula: formatGuideFormula(critDice, modifier, input.damageType),
       notation: formatGuideNotation(critDice, modifier),
-      ...(count > 0 && input.critNotes?.length ? { notes: [...input.critNotes] } : {}),
+      ...(critNotes.length > 0 ? { notes: critNotes } : {}),
     },
   }
 }
@@ -445,10 +446,13 @@ type AttackGuideContext = {
   meleeCritExtraDice: SheetEffect<number>[]
 }
 
-/** "Crítico Brutal: no acerto crítico com esta arma corpo a corpo, role mais 2 dados de dano da arma…" */
-function critExtraDiceNote({ source, value }: SheetEffect<number>): string {
-  const dice = value === 1 ? '1 dado' : `${value} dados`
-  return `${source}: no acerto crítico com esta arma corpo a corpo, role mais ${dice} de dano da arma e some ao dano.`
+/**
+ * "Crítico Brutal: no acerto crítico com esta arma corpo a corpo, role mais 2d12…". O dado é o que
+ * a arma usa NAQUELE ataque (decisão de 2026-10-25): o versátil a duas mãos, o de Artes Marciais
+ * quando ele substitui o da arma — por isso a nota sai de cada entrada de dano, com os lados dela.
+ */
+function critExtraDiceNote({ source, value }: SheetEffect<number>, sides: number): string {
+  return `${source}: no acerto crítico com esta arma corpo a corpo, role mais ${value}d${sides} (o dado da arma neste ataque) e some ao dano.`
 }
 
 /**
@@ -485,7 +489,7 @@ function attackGuide(attack: SheetAttack, ctx: AttackGuideContext): AttackGuide 
     ? [{ source: 'weapon:heavy-small', label: `${attack.name} pesada para criatura Pequena` }]
     : []
   // Só arma corpo a corpo: o golpe desarmado não é arma (pág. 196).
-  const critNotes = attack.weapon?.melee ? ctx.meleeCritExtraDice.map(critExtraDiceNote) : []
+  const critExtraDice = attack.weapon?.melee ? ctx.meleeCritExtraDice : []
   const extraAttacks = attack.attacksPerAction > 1
     ? [`${ctx.attacksPerActionSource ?? 'Ataque Extra'}: você faz ${attack.attacksPerAction} ataques ao usar a ação de Atacar — role cada um.`]
     : []
@@ -523,7 +527,7 @@ function attackGuide(attack: SheetAttack, ctx: AttackGuideContext): AttackGuide 
       damageType: parsed.damageType,
       breakdown: damageBreakdown(parsed),
       notes,
-      critNotes,
+      critExtraDice,
     })
     : null
 
@@ -536,7 +540,7 @@ function attackGuide(attack: SheetAttack, ctx: AttackGuideContext): AttackGuide 
       damageType: versatileParsed.damageType || parsed.damageType,
       breakdown: damageBreakdown(versatileParsed),
       notes,
-      critNotes,
+      critExtraDice,
     })
     : null
 

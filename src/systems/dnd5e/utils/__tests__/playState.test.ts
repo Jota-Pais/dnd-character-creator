@@ -701,13 +701,20 @@ describe('setExhaustion', () => {
     expect(kinds(r)).toEqual(expect.arrayContaining(['died', 'concentrationEnded']))
   })
 
-  it('exaustão 6 inclui o corte da 4: o morto não fica com PV acima do máximo efetivo', () => {
+  it('quem morre por exaustão 6 fica com 0 PV, e o estado de antes é o que o desfazer devolve (decisão de 2026-10-25)', () => {
     const sh = sheet({ maxHp: 40 })
-    const r = setExhaustion(state(), sh, 6)
+    const before = state({ damageTaken: 5 })
+    const r = setExhaustion(before, sh, 6)
     expect(r.state.lifeState).toBe('dead')
-    expect(r.state.damageTaken).toBe(20)
-    expect(getEffectiveMaxHp(r.state, sh)).toBe(20)
+    expect(r.state.damageTaken).toBe(40)
+    expect(getCurrentHp(r.state, sh)).toBe(0)
+    expect(r.notices.find(n => n.kind === 'died')?.text).toBe('Exaustão 6: morte, com 0 PV (pág. 292).')
     expectInvariant(r.state, sh)
+    // A operação é pura: o estado anterior (o do desfazer) continua com os seus PV.
+    expect(getCurrentHp(before, sh)).toBe(35)
+    // Baixar a exaustão de um morto não devolve PV; um estado antigo, morto com PV, lê 0.
+    expect(getCurrentHp(setExhaustion(r.state, sh, 5).state, sh)).toBe(0)
+    expect(getCurrentHp(state({ lifeState: 'dead', exhaustionLevel: 6, damageTaken: 0 }), sh)).toBe(0)
   })
 
   it('recusa a exaustão 4 que daria máximo efetivo 0 a quem está consciente (Ponto em aberto 17)', () => {

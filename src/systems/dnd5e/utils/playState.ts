@@ -181,7 +181,7 @@ export function getResourceAvailable(state: PlayState, sheet: PlaySheet, id: str
 
 /**
  * Encaixa o estado nos máximos da ficha atual: gasto nunca acima do máximo, tipos de Dado de Vida
- * e recursos que a ficha não tem mais saem, a 0 PV o dano é o máximo, e vale o invariante
+ * e recursos que a ficha não tem mais saem, a 0 PV e morto o dano é o máximo, e vale o invariante
  * `máx. da ficha − damageTaken ≤ máx. efetivo` (o corte da exaustão 4, decisão 4).
  *
  * Exceção: com máximo efetivo 0 (ficha com 1 PV na exaustão 4) o corte não é aplicado a quem
@@ -195,8 +195,9 @@ export function reconcilePlayState(state: PlayState, sheet: PlaySheet): PlayStat
   const sheetMax = getBaseMaxHp(state, sheet)
   const effMax = getEffectiveMaxHp(state, sheet)
   let damageTaken = clampInt(state.damageTaken, 0, sheetMax)
-  if (isAtZeroHp(state)) damageTaken = sheetMax
-  else if (effMax >= 1 || state.lifeState === 'dead') damageTaken = Math.max(damageTaken, sheetMax - effMax)
+  // Morto tem 0 PV, qualquer que seja a causa (Exaustão 6: decisão de 2026-10-25).
+  if (isAtZeroHp(state) || state.lifeState === 'dead') damageTaken = sheetMax
+  else if (effMax >= 1) damageTaken = Math.max(damageTaken, sheetMax - effMax)
   if (state.lifeState === 'conscious' && sheetMax >= 1) damageTaken = Math.min(damageTaken, sheetMax - 1)
 
   const hitDiceSpent: Record<number, number> = {}
@@ -817,7 +818,8 @@ export function setConditionNote(state: PlayState, id: ConditionId, text: string
 /**
  * Define o nível de exaustão (0 a 6). Ao chegar na 4 ou mais, o PV atual acima do novo máximo SE
  * PERDE: o corte é gravado em `damageTaken` e não volta quando a exaustão baixa (decisão 4).
- * Exaustão 6 = morte, que encerra a concentração (assumido F). Recusa a entrada na exaustão 4 que
+ * Exaustão 6 = morte com 0 PV (decisão de 2026-10-25), que encerra a concentração (assumido F).
+ * Recusa a entrada na exaustão 4 que
  * daria máximo efetivo 0 a quem está consciente (Ponto em aberto 17 de `regras-dano-e-morte.md`).
  */
 export function setExhaustion(state0: PlayState, sheet: PlaySheet, level: number): PlayResult {
@@ -831,9 +833,9 @@ export function setExhaustion(state0: PlayState, sheet: PlaySheet, level: number
 
   const sheetMax = getBaseMaxHp(state, sheet)
   if (target === 6) {
-    if (state.lifeState !== 'dead') toDead(next, notices, 'Exaustão 6: morte (pág. 292).')
-    // O nível 6 inclui o 4 (cumulativa): o corte vale também para quem morre, mantendo o invariante.
-    next.damageTaken = Math.max(next.damageTaken, sheetMax - getEffectiveMaxHp(next, sheet))
+    if (state.lifeState !== 'dead') toDead(next, notices, 'Exaustão 6: morte, com 0 PV (pág. 292).')
+    // Quem morre por Exaustão 6 fica com 0 PV (decisão de 2026-10-25); o desfazer volta o de antes.
+    next.damageTaken = sheetMax
     return done(next, notices)
   }
 

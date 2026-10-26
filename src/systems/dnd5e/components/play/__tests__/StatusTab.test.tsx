@@ -106,6 +106,17 @@ describe('StatusTab — exaustão e concentração', () => {
     expect(effects).toHaveTextContent('Deslocamento reduzido à metade')
   })
 
+  it('exaustão 6: morto com 0 PV, e o desfazer devolve os PV de antes', () => {
+    openStatus()
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('14')
+    fireEvent.click(screen.getByRole('radio', { name: 'Exaustão 6 (morte)' }))
+    expect(playState().lifeState).toBe('dead')
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('0')
+    fireEvent.click(screen.getByRole('button', { name: 'Desfazer a última mudança' }))
+    expect(playState().lifeState).toBe('conscious')
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('14')
+  })
+
   it('concentração começa com nome livre e encerra', () => {
     openStatus()
     fireEvent.change(screen.getByLabelText('Magia em que vai se concentrar'), { target: { value: 'Bênção' } })

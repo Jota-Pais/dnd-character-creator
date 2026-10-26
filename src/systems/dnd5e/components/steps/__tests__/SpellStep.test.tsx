@@ -3,6 +3,7 @@ import { render, cleanup, fireEvent } from '@testing-library/react'
 import { SpellStep } from '../SpellStep'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { EMPTY_DRAFT, type CharacterDraft } from '../../../types/character'
+import { COMPLETE_DRAFT } from '../../../../../test/fixtures'
 
 // A etapa Magias vem depois de Atributos e Aprimoramentos para mostrar os modificadores FINAIS —
 // os mesmos da Revisão e da ficha imprimível. Ela lia os atributos base.
@@ -74,5 +75,30 @@ describe('SpellStep: magia repetida entre classes (aviso, não bloqueio)', () =>
     expect(text).toContain('também em Mago')
     // Nada apagado.
     expect(useCharacterStore.getState().draft.spellChoices.spells).toEqual(['magic-missile'])
+  })
+})
+
+describe('SpellStep: magia repetida dentro da mesma classe', () => {
+  it('bruxo do Tomo com Rajada Mística nos truques e no Livro das Sombras: o card aponta para o Livro', () => {
+    const { container } = renderWith({
+      ...structuredClone(COMPLETE_DRAFT),
+      class: 'warlock', level: 3,
+      classChoices: {
+        ...structuredClone(EMPTY_DRAFT.classChoices),
+        skills: ['arcana', 'deception'],
+        subclass: 'fiend',
+        progressionChoices: {
+          'warlock-invocations-2': ['armadura-de-sombras', 'visao-diabolica'],
+          'warlock-pact-boon-3': ['pact-of-the-tome'],
+          'warlock-pact-tome-cantrips-3': ['eldritch-blast', 'fire-bolt', 'sacred-flame'],
+        },
+      },
+      spellChoices: { cantrips: ['eldritch-blast', 'chill-touch'], spells: [] },
+    })
+    const text = container.textContent ?? ''
+    expect(text).toContain('Rajada Mística aparece em Bruxo e Bruxo — Truques do Livro das Sombras')
+    // A nota do card não aponta para a própria classe.
+    expect(text).toContain('também em Bruxo — Truques do Livro das Sombras')
+    expect(text).not.toMatch(/também em Bruxo(?! —)/)
   })
 })

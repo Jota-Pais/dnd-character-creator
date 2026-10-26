@@ -23,7 +23,7 @@ import {
   getSpellChoiceOverflows,
   getSecretSpellGroups,
   getRepeatedSpells,
-  getRepeatedSpellNotes,
+  getSpellCardNotes,
   formatRepeatedSpell,
   type RepeatedSpell,
   SCHOOL_COLORS,
@@ -181,8 +181,8 @@ function ClassSpellSection({
   // As repetidas que passam por esta classe (escolhas dela ou os Segredos dela): aviso na seção e
   // nota no card, dizendo onde mais a magia está.
   const ownRepeats = repeated.filter(r => r.sources.some(s => s.classId === cls.id))
-  const ownKeys = [...new Set(ownRepeats.flatMap(r => r.sources).filter(s => s.classId === cls.id).map(s => s.key))]
-  const repeatNotes: Record<string, string> = Object.assign({}, ...ownKeys.map(key => getRepeatedSpellNotes(repeated, key)))
+  // Nota de cada card da grade: as outras fontes da magia, contadas a partir da fonte do card.
+  const repeatNotes = getSpellCardNotes(repeated, caster)
   // A aba que tem magia repetida ganha ⚠, para achar o card sem abrir aba por aba.
   const repeatedLevels = new Set(Object.keys(repeatNotes).map(id => getSpell(id)?.level))
   const repeatMark = (lvl: number) => repeatedLevels.has(lvl)
@@ -451,7 +451,7 @@ function SpellGrid({
   locked?: string[]
   /** Das travadas, as que vêm dos Segredos Mágicos (trocam-se na etapa Classe). */
   secretIds?: string[]
-  /** Aviso curto por magia: "também em Feiticeiro" (getRepeatedSpellNotes). */
+  /** Aviso curto por magia: "também em Feiticeiro" (getSpellCardNotes). */
   notes?: Record<string, string>
   max: number
   /** Regra extra pra acrescentar (restrição de escola); sem ela, só o teto conta. */

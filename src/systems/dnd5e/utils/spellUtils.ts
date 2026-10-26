@@ -635,6 +635,33 @@ export function getRepeatedSpellNotes(repeated: RepeatedSpell[], sourceKey: stri
   return notes
 }
 
+/**
+ * Notas dos cards da seção de uma classe na etapa Magias. A grade mostra as escolhas da classe e os
+ * Segredos que ocupam vaga das colunas (knownSecrets); cada card é de UMA fonte — a classe, ou o
+ * slot de Segredo que conta nas conhecidas quando a magia não é escolha da classe — e a nota lista
+ * as outras, inclusive as da mesma classe ("também em Bruxo — Truques do Livro das Sombras").
+ * Juntar as notas de todas as fontes da classe fazia a nota de um slot sobrescrever a da classe e
+ * apontar para ela mesma ("também em Bruxo").
+ */
+export function getSpellCardNotes(repeated: RepeatedSpell[], caster: CasterEntry): Record<string, string> {
+  const { entry } = caster
+  const classKey = `class:${entry.classId}`
+  const columnSecretKeys = new Set(
+    getProgressionSlotsUpToLevel(entry.classId, entry.classChoices.subclass, entry.level, entry.classChoices.progressionChoices)
+      .filter(slot => isSpellChoiceSlot(slot) && slot.countsAsKnownSpell)
+      .map(slot => `secrets:${entry.classId}:${slot.label}`),
+  )
+  const inColumns = new Set([...caster.knownSecrets.cantrips, ...caster.knownSecrets.spells])
+  const notes: Record<string, string> = {}
+  for (const r of repeated) {
+    const own = r.sources.find(s => s.key === classKey)
+      ?? (inColumns.has(r.spellId) ? r.sources.find(s => columnSecretKeys.has(s.key)) : undefined)
+    if (!own) continue
+    notes[r.spellId] = `também em ${joinPt(r.sources.filter(s => s.key !== own.key).map(s => s.label))}`
+  }
+  return notes
+}
+
 // ── Restrição de escola (Cavaleiro Arcano p. 86, Trapaceiro Arcano p. 93) ──────
 
 export type SchoolRestrictionStatus = {

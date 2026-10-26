@@ -4,6 +4,8 @@ import {
   getRepeatedSpells,
   formatRepeatedSpell,
   getRepeatedSpellNotes,
+  getSpellCardNotes,
+  getCasterEntries,
 } from '../spellUtils'
 import { isStepComplete } from '../draftValidation'
 import { collectStepReasons } from '../pendingReasons'
@@ -160,6 +162,51 @@ describe('getRepeatedSpellNotes — nota do card na etapa Magias', () => {
     expect(getRepeatedSpellNotes(repeated, 'class:wizard')).toEqual({ 'magic-missile': 'também em Guerreiro (Cavaleiro Arcano)' })
     expect(getRepeatedSpellNotes(repeated, 'class:fighter')).toEqual({ 'magic-missile': 'também em Mago' })
     expect(getRepeatedSpellNotes(repeated, 'class:bard')).toEqual({})
+  })
+})
+
+describe('getSpellCardNotes — o card não aponta para a própria fonte', () => {
+  /** Bardo do Conhecimento 10: Adicionais (6º, por cima) e Segredos Mágicos (10º, contam nas conhecidas). */
+  function loreBard(spells: string[], progressionChoices: Record<string, string[]>): CharacterDraft {
+    return {
+      ...structuredClone(EMPTY_DRAFT),
+      class: 'bard', level: 10,
+      abilityScores: { STR: 8, DEX: 14, CON: 12, INT: 10, WIS: 10, CHA: 16 },
+      classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), subclass: 'college-of-lore', progressionChoices },
+      spellChoices: { cantrips: [], spells },
+    }
+  }
+
+  it('magia da classe também nos Adicionais: a nota fala dos Adicionais, não "também em Bardo"', () => {
+    const d = loreBard(['cure-wounds'], { 'lore-magical-secrets-6': ['cure-wounds', 'shield'] })
+    const repeated = getRepeatedSpells(d)
+    expect(getSpellCardNotes(repeated, getCasterEntries(d)[0])).toEqual({
+      'cure-wounds': 'também em Bardo — Segredos Mágicos Adicionais',
+    })
+  })
+
+  it('Segredo que conta nas conhecidas (card na grade) também nos Adicionais', () => {
+    const d = loreBard([], {
+      'lore-magical-secrets-6': ['fireball', 'shield'],
+      'bard-magical-secrets-10': ['fireball', 'counterspell'],
+    })
+    const repeated = getRepeatedSpells(d)
+    expect(getSpellCardNotes(repeated, getCasterEntries(d)[0])).toEqual({
+      fireball: 'também em Bardo — Segredos Mágicos Adicionais',
+    })
+  })
+
+  it('repetida só nos Adicionais e noutra classe: sem card na grade, sem nota', () => {
+    const d: CharacterDraft = {
+      ...loreBard([], { 'lore-magical-secrets-6': ['magic-missile', 'shield'] }),
+      multiclass: true,
+      additionalClasses: [extra('wizard', 1, { spellChoices: { cantrips: [], spells: ['magic-missile'] } })],
+    }
+    const repeated = getRepeatedSpells(d)
+    expect(repeated.map(r => r.spellId)).toEqual(['magic-missile'])
+    const [bard, wizard] = getCasterEntries(d)
+    expect(getSpellCardNotes(repeated, bard)).toEqual({})
+    expect(getSpellCardNotes(repeated, wizard)).toEqual({ 'magic-missile': 'também em Bardo — Segredos Mágicos Adicionais' })
   })
 })
 

@@ -8,7 +8,7 @@ import { buildPlaySheet } from '../playSheet'
 import {
   addCondition, adjustMaxHp, applyDamage, applyDamageDroppingToOneHp, applyHealing, clearTempHp, completeLongRest, completeShortRest,
   createPlayState, describeHpMaxImmunity, endConcentration, getBaseMaxHp, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable,
-  getLongRestHitDiceRecoverable, getPactSlotsAvailable, getPlayConditionEffects, getPlayConditionState,
+  getLongRestHitDiceRecoverable, getPactSlotsAvailable, getPlayConditionEffects, getPlayConditionState, getPlaySpeed,
   getResourceAvailable, getSpellSlotsAvailable, grantTempHp, previewLongRest, previewShortRest, reconcileLoadedPlayState,
   reconcilePlayState,
   recordDeathSave, recordRoll, recoverPactSlot, regainHpWhileStable, recoverResource, recoverSpellSlot, removeCondition,
@@ -615,6 +615,16 @@ describe('condições', () => {
     const r = standUp(state({ conditions: ['prone'] }), S)
     expect(r.notices[0].text).toContain('(4,5 m)')
     expect(r.notices[0].text).not.toContain('pés')
+  })
+
+  it('metade do deslocamento na grade de 1,5 m: 25 pés → 3 m; com Exaustão 2, levantar de 15 pés custa 1,5 m', () => {
+    const slow = sheet({ speed: 25 })
+    expect(standUp(state({ conditions: ['prone'] }), slow).notices[0].text).toContain('(3 m)')
+    expect(getPlaySpeed(state({ exhaustionLevel: 2 }), slow)).toBe(10)
+    // Exaustão 2 com 30 pés: anda 15 (4,5 m); levantar custa a metade disso na grade, 5 pés (1,5 m).
+    const tired = state({ conditions: ['prone'], exhaustionLevel: 2 })
+    expect(getPlaySpeed(tired, S)).toBe(15)
+    expect(standUp(tired, S).notices[0].text).toContain('(1,5 m)')
   })
 })
 

@@ -7,7 +7,7 @@ import {
 } from '../types/playState'
 import {
   getActiveConditionEffects, getCondition, getEffectiveConditions, getEffectiveHpMax,
-  applyConditionSpeed, withConditionApplied,
+  applyConditionSpeed, halveSpeedOnGrid, withConditionApplied,
   type ActiveConditionEffects, type ConditionState,
 } from './sheetEffects'
 import { formatMeters } from './abilityScoreUtils'
@@ -779,7 +779,7 @@ export function standUp(state: PlayState, sheet: PlaySheet): PlayResult {
   if (speed <= 0) return refuse(state, 'Com deslocamento 0 não é possível se levantar (pág. 193).')
   return done(
     withoutCondition(state, 'prone'),
-    [note('info', `Levantar-se custa metade do deslocamento (${formatMeters(Math.floor(speed / 2))}) (pág. 192).`)],
+    [note('info', `Levantar-se custa metade do deslocamento (${formatMeters(halveSpeedOnGrid(speed))}) (pág. 192).`)],
   )
 }
 

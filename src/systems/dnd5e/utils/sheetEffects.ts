@@ -1456,12 +1456,21 @@ export function getActiveConditionEffects(state: ConditionState): ActiveConditio
 }
 
 /**
+ * Metade de um deslocamento em pés, arredondada para baixo na grade de 1,5 m (5 pés): 25 pés →
+ * 10 pés (3 m), 30 → 15 (4,5 m). Decisão de 2026-10-25 (`regras-condicoes.md`, item 10): vale para
+ * toda metade de deslocamento do modo de jogo (Exaustão 2, levantar-se).
+ */
+export function halveSpeedOnGrid(speedFeet: number): number {
+  return Math.floor(speedFeet / 10) * 5
+}
+
+/**
  * Deslocamento efetivo em pés, a partir do da ficha JÁ com bônus: 0 se algo zera (o "sem bônus"
- * do Agarrado/Impedido dá no mesmo); metade arredondada para baixo na Exaustão 2 (pág. 7).
+ * do Agarrado/Impedido dá no mesmo); metade na grade de 1,5 m na Exaustão 2 (`halveSpeedOnGrid`).
  */
 export function applyConditionSpeed(speedFeet: number, effects: Pick<ActiveConditionEffects, 'speed'>): number {
   if (effects.speed.result === 'zero') return 0
-  if (effects.speed.result === 'half') return Math.floor(speedFeet / 2)
+  if (effects.speed.result === 'half') return halveSpeedOnGrid(speedFeet)
   return speedFeet
 }
 

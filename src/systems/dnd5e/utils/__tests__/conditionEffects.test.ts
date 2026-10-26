@@ -100,12 +100,14 @@ describe('exaustão cumulativa', () => {
     expect(fx.speed.result).toBe('normal')
   })
 
-  it('nível 2: + deslocamento à metade, arredondado para baixo', () => {
+  it('nível 2: + deslocamento à metade, para baixo na grade de 1,5 m (decisão de 2026-10-25)', () => {
     const fx = active([], 2)
     expect(fx.abilityChecks.WIS.mode).toBe('disadvantage')
     expect(fx.speed.result).toBe('half')
+    // 30 pés → 15 (4,5 m); 25 → 10 (3 m), não 12 (3,6 m); 35 → 15.
     expect(applyConditionSpeed(30, fx)).toBe(15)
-    expect(applyConditionSpeed(25, fx)).toBe(12)
+    expect(applyConditionSpeed(25, fx)).toBe(10)
+    expect(applyConditionSpeed(35, fx)).toBe(15)
   })
 
   it('nível 3: + desvantagem em ataques e em todos os testes de resistência', () => {

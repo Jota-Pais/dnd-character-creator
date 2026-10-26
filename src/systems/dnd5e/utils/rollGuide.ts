@@ -347,6 +347,39 @@ function d20Entry(input: D20Input, inspiration: boolean): RollGuideEntry {
   }
 }
 
+/** A fonte de vantagem da Inspiração gasta numa jogada (pág. 127). */
+export const INSPIRATION_REASON: GuideReason = { source: 'inspiration', label: 'Inspiração' }
+
+/**
+ * A jogada com a Inspiração gasta (`regras-rolagens-e-concentracao.md`, 11.5): a fonte
+ * `inspiration` entra na lista de vantagem e o modo é recalculado (uma de cada lado anula, pág.
+ * 175), com a notação que os dados do app rolam. A primeira nota diz o que o gasto fez — inclusive
+ * quando não mudou nada (já com vantagem, vantagem e desvantagem já anuladas, falha automática):
+ * a regra avisa, não impede. Só d20; as demais jogadas voltam iguais.
+ */
+export function withInspirationSpent(entry: RollGuideEntry): RollGuideEntry {
+  if (entry.kind !== 'd20' || entry.advantage.some(r => r.source === INSPIRATION_REASON.source)) return entry
+  const advantage = [...entry.advantage, INSPIRATION_REASON]
+  const mode = resolveRollMode(advantage, entry.disadvantage)
+  const canceled = entry.advantage.length > 0 && entry.disadvantage.length > 0
+  const effect = entry.autoFail.length > 0
+    ? 'não muda nada — a jogada falha automaticamente.'
+    : entry.mode === 'advantage'
+      ? 'a jogada já tinha vantagem; não muda nada (vantagens não se somam, pág. 175).'
+      : entry.mode === 'disadvantage'
+        ? 'anula a desvantagem: role um d20 só (pág. 175).'
+        : canceled
+          ? 'não muda nada — vantagem e desvantagem já se anulavam (pág. 175).'
+          : 'role com vantagem (pág. 127).'
+  return {
+    ...entry,
+    advantage,
+    mode,
+    notation: d20Notation(mode, entry.modifier),
+    notes: [`Inspiração gasta: ${effect}`, ...entry.notes],
+  }
+}
+
 type DamageInput = {
   id: string
   label: string

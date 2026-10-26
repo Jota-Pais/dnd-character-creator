@@ -10,7 +10,7 @@ import { getFinalAbilityScores } from '../asiUtils'
 import { getPassiveScore, getSavingThrowChecks, getSkillChecks } from '../proficiencyUtils'
 import {
   describeRollGuide, findRollGuideEntry, formatGuideFormula, getConcentrationGuide, getRollGuide, parseDamageText,
-  type RollGuide, type RollGuideEntry,
+  withInspirationSpent, type RollGuide, type RollGuideEntry,
 } from '../rollGuide'
 
 function draft(overrides: Partial<CharacterDraft>): CharacterDraft {
@@ -425,6 +425,37 @@ describe('getRollGuide — condições e modo', () => {
     expect(dex).toEqual(['Inspiração: não adianta aqui — a jogada falha automaticamente.'])
     // Sem falha automática, a nota de sempre.
     expect(guide.saves.WIS.notes.some(n => n.includes('rolar esta jogada com vantagem'))).toBe(true)
+  })
+
+  it('Inspiração gasta: vantagem na jogada normal, anula a desvantagem, avisa quando não muda nada', () => {
+    const guide = getRollGuide(fighter('longsword'), withConditions('poisoned'))
+    // Jogada normal: vira vantagem, com a notação de dois d20.
+    const save = withInspirationSpent(guide.saves.STR)
+    expect(save.mode).toBe('advantage')
+    expect(labelsOf(save.advantage)).toEqual(['Inspiração'])
+    expect(save.notation).toBe('2d20kh1+5')
+    expect(save.notes[0]).toBe('Inspiração gasta: role com vantagem (pág. 127).')
+    // Envenenado: desvantagem no teste e no ataque, que a Inspiração anula.
+    const check = withInspirationSpent(guide.checks.STR)
+    expect(check.mode).toBe('normal')
+    expect(check.notation).toBe('1d20+3')
+    expect(check.notes[0]).toBe('Inspiração gasta: anula a desvantagem: role um d20 só (pág. 175).')
+    expect(withInspirationSpent(guide.attacks[0].attack).mode).toBe('normal')
+    // Já com vantagem: não muda nada, mas avisa.
+    const already = withInspirationSpent({ ...guide.saves.STR, mode: 'advantage', advantage: [{ source: 'x', label: 'X' }] })
+    expect(already.mode).toBe('advantage')
+    expect(already.notes[0]).toContain('já tinha vantagem')
+    // Gastar duas vezes não empilha a fonte.
+    expect(withInspirationSpent(save)).toBe(save)
+  })
+
+  it('Inspiração gasta: com falha automática avisa e não muda; dano volta igual', () => {
+    const guide = getRollGuide(fighter('longsword'), withConditions('paralyzed'))
+    const dex = withInspirationSpent(guide.saves.DEX)
+    expect(dex.autoFail.length).toBeGreaterThan(0)
+    expect(dex.notes[0]).toBe('Inspiração gasta: não muda nada — a jogada falha automaticamente.')
+    const damage = guide.attacks[0].damage!
+    expect(withInspirationSpent(damage)).toBe(damage)
   })
 
   it('Incapacitado (por Paralisado) e sem fala: notas no ataque, no ataque de magia e nas notas gerais', () => {

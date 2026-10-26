@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { usePlayStore } from '../../stores/playStore'
 import { formatModifier } from '../../utils/abilityScoreUtils'
-import { endConcentration } from '../../utils/playState'
-import type { RollGuideEntry } from '../../utils/rollGuide'
+import { endConcentration, setInspiration } from '../../utils/playState'
+import { withInspirationSpent, type RollGuideEntry } from '../../utils/rollGuide'
 import { canRollEntry, rollGuideEntry, type GuideRoll } from './playDice'
 
 const reasonLabels = (reasons: { label: string }[]) => reasons.map(r => r.label).join(', ')
@@ -23,7 +23,7 @@ export type RecipeLink = { label: string; entry: RollGuideEntry }
  * `critThreshold` abre o dano já como crítico. A folha de dano aberta com `crit` mostra e rola os
  * dados dobrados (pág. 196), com o "não foi crítico" para voltar ao normal.
  */
-export function RollRecipeSheet({ entry, appDice, onClose, crit = false, links = [], critThreshold = 20, onOpenLink }: {
+export function RollRecipeSheet({ entry: baseEntry, appDice, onClose, crit = false, links = [], critThreshold = 20, onOpenLink }: {
   entry: RollGuideEntry
   appDice: boolean
   onClose: () => void
@@ -36,9 +36,18 @@ export function RollRecipeSheet({ entry, appDice, onClose, crit = false, links =
 }) {
   const logRoll = usePlayStore(s => s.logRoll)
   const run = usePlayStore(s => s.run)
+  const undo = usePlayStore(s => s.undo)
+  const undoTop = usePlayStore(s => s.undoStack.at(-1))
   const concentrating = usePlayStore(s => s.state?.concentration != null)
+  const inspired = usePlayStore(s => s.state?.inspiration === true)
   const [result, setResult] = useState<(GuideRoll & { crit: boolean }) | null>(null)
-  const [critMode, setCritMode] = useState(crit && entry.crit !== undefined)
+  const [critMode, setCritMode] = useState(crit && baseEntry.crit !== undefined)
+  // Inspiração gasta nesta folha (11.5): guarda o topo do desfazer logo depois do gasto, para o
+  // "devolver" desfazer só ele. Se ela voltou por outro caminho (o desfazer geral), a folha volta
+  // ao modo normal.
+  const [inspirationSpent, setInspirationSpent] = useState<{ undoTop: unknown } | null>(null)
+  const usingInspiration = inspirationSpent !== null && !inspired
+  const entry = usingInspiration ? withInspirationSpent(baseEntry) : baseEntry
 
   const dialogRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
@@ -89,6 +98,21 @@ export function RollRecipeSheet({ entry, appDice, onClose, crit = false, links =
 
   function leaveCrit() {
     setCritMode(false)
+    setResult(null)
+  }
+
+  /** Gasta a Inspiração nesta jogada: um passo do desfazer, e o modo mostrado e rolado muda. */
+  function spendInspiration() {
+    const r = run(st => setInspiration(st, false))
+    if (!r || r.state.inspiration) return
+    setInspirationSpent({ undoTop: usePlayStore.getState().undoStack.at(-1) })
+    setResult(null)
+  }
+
+  /** Devolve a Inspiração gasta aqui, desfazendo o gasto (só se ele ainda é o último passo). */
+  function returnInspiration() {
+    if (inspirationSpent && undoTop === inspirationSpent.undoTop) undo()
+    setInspirationSpent(null)
     setResult(null)
   }
 
@@ -155,6 +179,22 @@ export function RollRecipeSheet({ entry, appDice, onClose, crit = false, links =
           <p className="mt-2 text-sm text-parchment-400">
             Vantagem ({reasonLabels(entry.advantage)}) e desvantagem ({reasonLabels(entry.disadvantage)}) se anulam: role um d20 só.
           </p>
+        )}
+        {isD20 && inspired && !usingInspiration && (
+          <button
+            onClick={spendInspiration}
+            className="mt-2 min-h-10 rounded-lg border border-gold-700 px-3 text-sm text-gold-300 hover:border-gold-500"
+          >
+            ★ Usar inspiração
+          </button>
+        )}
+        {usingInspiration && inspirationSpent && undoTop === inspirationSpent.undoTop && (
+          <button
+            onClick={returnInspiration}
+            className="mt-1 min-h-10 text-xs text-parchment-400 underline hover:text-parchment-200"
+          >
+            Devolver a inspiração
+          </button>
         )}
         {entry.autoFail.length > 0 && (
           <p className="mt-2 rounded-lg border border-red-900 bg-red-950/30 px-3 py-2 text-sm text-red-300">

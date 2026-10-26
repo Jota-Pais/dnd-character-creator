@@ -240,11 +240,15 @@ describe('getRollGuide — ataques', () => {
     expect(attackIds).toEqual(['attack:longsword', 'attack:unarmed', 'spell-attack:wizard'])
   })
 
-  it('Campeão 15: Crítico Superior, 18 a 20', () => {
+  it('Campeão 15: Crítico Superior, 18 a 20 nas armas; o golpe desarmado fica no 20 (decisão de 2026-10-25)', () => {
     const d = draft({ class: 'fighter', level: 15, abilityScores: SCORES, classChoices: choices({ subclass: 'champion' }), ...carrying('longsword') })
-    const sword = getRollGuide(d, play()).attacks.find(a => a.key === 'longsword')!
+    const guide = getRollGuide(d, play())
+    const sword = guide.attacks.find(a => a.key === 'longsword')!
     expect(sword.critThreshold).toBe(18)
     expect(sword.attack.notes.some(n => n.startsWith('18 a 20 natural: crítico se acertar (Crítico Superior)'))).toBe(true)
+    const unarmed = guide.attacks.find(a => a.key === 'unarmed')!
+    expect(unarmed.critThreshold).toBe(20)
+    expect(unarmed.attack.notes.some(n => n.includes('Crítico Superior') || n.includes('Crítico Aprimorado'))).toBe(false)
   })
 
   it('arma pesada nas mãos de criatura Pequena: desvantagem no ataque, com o motivo (pág. 149)', () => {

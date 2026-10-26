@@ -15,7 +15,7 @@ import { getPrimaryLevel } from '../../utils/multiclassUtils'
 import { getEntrySpellcasting, getCantripsNeeded } from '../../utils/spellUtils'
 import { ABILITY_LABELS } from '../../utils/abilityScoreUtils'
 import { getClassSlotProficiencies } from '../../utils/proficiencyUtils'
-import { getTakenFightingStyles } from '../../utils/sheetEffects'
+import { getFeatManeuvers, getTakenFightingStyles } from '../../utils/sheetEffects'
 import { ClassCard } from '../class/ClassCard'
 import { ClassChoicePanel } from '../class/ClassChoicePanel'
 import { MulticlassPanel } from '../class/MulticlassPanel'
@@ -259,6 +259,7 @@ export function ClassStep() {
               onChange={updateClassChoices}
               proficiencies={proficiencies}
               takenFightingStyles={getTakenFightingStyles(draft, draft.class ?? '')}
+              takenManeuvers={getFeatManeuvers(draft)}
             />
           </div>
 

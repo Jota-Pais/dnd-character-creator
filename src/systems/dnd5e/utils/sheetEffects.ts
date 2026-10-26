@@ -22,6 +22,7 @@ import {
 } from './classResourceUtils'
 import { getActivePicks, getProgressionSlotsUpToLevel } from './progressionChoiceUtils'
 import { getProgressionOptions, getUnmetRequirement, type ProgressionOption } from './progressionOptions'
+import { formatManeuverSaveDc, getClassManeuvers, getManeuver, getManeuverSaveDc } from './maneuverUtils'
 import {
   allClassEntries, getAllAsiChoices, getTotalHpAverage, getTotalHpRolled,
 } from './multiclassUtils'
@@ -866,21 +867,39 @@ export type FeatChoiceSlot = {
   feat: Feat
   choices: NonNullable<NonNullable<Feat['effects']>['choices']>
   selections: FeatSelections
+  /**
+   * Manobras que o personagem já conhece pelo Mestre de Batalha (`getClassManeuvers`) — o
+   * Adepto Marcial não as oferece. Vazio para talento sem `maneuverChoice`.
+   */
+  takenManeuvers: string[]
 }
 
-/** Talentos possuídos que abrem escolhas de proficiência (Perito, Poliglota, Mestre de Armas). */
+/**
+ * Talentos possuídos que abrem escolhas (Perito, Poliglota, Mestre de Armas: proficiências;
+ * Adepto Marcial: manobras).
+ */
 export function getFeatChoiceSlots(draft: CharacterDraft): FeatChoiceSlot[] {
   return getOwnedFeats(draft)
     .filter(feat => {
       const choices = feat.effects?.choices
       // savingThrowFromAbilityChoice não abre slot: reaproveita o atributo do +1 do talento.
-      return choices?.skillOrToolChoice || choices?.languageChoice || choices?.weaponChoice
+      return choices?.skillOrToolChoice || choices?.languageChoice || choices?.weaponChoice || choices?.maneuverChoice
     })
     .map(feat => ({
       feat,
       choices: feat.effects!.choices!,
       selections: draft.featSelections[feat.id] ?? {},
+      takenManeuvers: feat.effects?.choices?.maneuverChoice ? getClassManeuvers(draft) : [],
     }))
+}
+
+/**
+ * Manobras escolhidas no talento que o personagem já conhece pelo Mestre de Batalha. O seletor
+ * não as oferece; só chegam aqui por ficha antiga ou importada, ou por subclasse trocada e
+ * desfeita. Seguram a etapa do talento até serem trocadas.
+ */
+export function getRepeatedFeatManeuvers(slot: FeatChoiceSlot): string[] {
+  return (slot.selections.maneuvers ?? []).filter(id => slot.takenManeuvers.includes(id))
 }
 
 /** Todas as escolhas de um talento estão preenchidas? Portão de conclusão da etapa dona dele. */
@@ -895,6 +914,10 @@ export function isFeatChoiceComplete(slot: FeatChoiceSlot): boolean {
   }
   if (choices.weaponChoice && (selections.weapons?.length ?? 0) < choices.weaponChoice.count) {
     return false
+  }
+  if (choices.maneuverChoice) {
+    if ((selections.maneuvers?.length ?? 0) < choices.maneuverChoice.count) return false
+    if (getRepeatedFeatManeuvers(slot).length > 0) return false
   }
   return true
 }
@@ -931,6 +954,35 @@ export function getFeatGrantedLanguages(draft: CharacterDraft): string[] {
 /** Armas liberadas por talento (Mestre de Armas). */
 export function getFeatWeaponProficiencies(draft: CharacterDraft): string[] {
   return selectionsOf(draft, 'weapons')
+}
+
+/** Manobras aprendidas por talento (Adepto Marcial) — o que o slot de manobra da classe não oferece. */
+export function getFeatManeuvers(draft: CharacterDraft): string[] {
+  return [...new Set(selectionsOf(draft, 'maneuvers'))]
+}
+
+/** Uma manobra do talento como a ficha a mostra; `repeated` quando o Mestre de Batalha já a dá. */
+export type SheetFeatManeuver = { id: string; name: string; text: string; repeated: boolean }
+
+/**
+ * As manobras que um talento ensina (Adepto Marcial, p. 167), com o texto, e a linha da CD
+ * (8 + proficiência + FOR ou DES, com os atributos FINAIS) — o que a Revisão e o PDF mostram
+ * sob o talento. null para talento sem `maneuverChoice` ou sem manobra escolhida.
+ */
+export function getFeatManeuverBlock(
+  draft: CharacterDraft,
+  featId: string,
+  scores: FinalScores,
+): { maneuvers: SheetFeatManeuver[]; saveDc: string } | null {
+  const slot = getFeatChoiceSlots(draft).find(s => s.feat.id === featId)
+  if (!slot?.choices.maneuverChoice) return null
+  const repeated = new Set(getRepeatedFeatManeuvers(slot))
+  const maneuvers = (slot.selections.maneuvers ?? []).flatMap((id): SheetFeatManeuver[] => {
+    const m = getManeuver(id)
+    return m ? [{ id, name: m.name, text: m.description ?? '', repeated: repeated.has(id) }] : []
+  })
+  if (maneuvers.length === 0) return null
+  return { maneuvers, saveDc: formatManeuverSaveDc(getManeuverSaveDc(draft.level, scores)) }
 }
 
 /**

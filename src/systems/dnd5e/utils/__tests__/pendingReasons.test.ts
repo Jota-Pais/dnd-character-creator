@@ -221,7 +221,7 @@ function corpus(): CharacterDraft[] {
     out.push(draft({ race: race.id, subrace: null, raceChoices: {} }))
     for (const sub of race.subraces) out.push(draft({ race: race.id, subrace: sub.id, raceChoices: {} }))
   }
-  for (const feat of ['perito', 'poliglota', 'mestre-de-armas', 'atleta', 'resiliente']) {
+  for (const feat of ['perito', 'poliglota', 'mestre-de-armas', 'atleta', 'resiliente', 'adepto-marcial']) {
     out.push(draft({ race: 'human', subrace: 'variant-human', raceChoices: { abilityBonuses: ['STR', 'DEX'], skills: ['athletics'], feat } }))
     out.push(draft({ level: 4, asiChoices: [{ kind: 'feat', featId: feat }] }))
     out.push(draft({ level: 4, asiChoices: [{ kind: 'feat', featId: feat, abilities: ['STR'] }] }))
@@ -247,9 +247,51 @@ function corpus(): CharacterDraft[] {
       spellChoices: { cantrips: ['fire-bolt', 'light'], spells: ['magic-missile', 'sleep', 'charm-person', 'fog-cloud', 'shield', 'burning-hands'] },
     }),
   )
-  out.push(...bardSecretsDrafts(), ...pactBoonDrafts(), ...draconicAncestorDrafts(), ...totemWarriorDrafts())
+  out.push(...bardSecretsDrafts(), ...pactBoonDrafts(), ...draconicAncestorDrafts(), ...totemWarriorDrafts(), ...martialAdeptDrafts())
   return out
 }
+
+/**
+ * Adepto Marcial (p. 167) sem, com uma, com duas manobras e com uma que o Mestre de Batalha já
+ * ensina — pelo espaço de ASI e pelo Humano Variante, com e sem o arquétipo.
+ */
+function martialAdeptDrafts(): CharacterDraft[] {
+  const out: CharacterDraft[] = []
+  const picks: (string[] | undefined)[] = [undefined, ['aparar'], ['aparar', 'ataque-de-precisao'], ['ataque-de-precisao', 'contra-atacar']]
+  const fighter = (subclass: string) => ({
+    class: 'fighter', level: 4,
+    classChoices: {
+      ...structuredClone(EMPTY_DRAFT.classChoices),
+      skills: ['athletics', 'perception'], fightingStyle: 'defense', subclass,
+      progressionChoices: { 'battle-master-maneuvers-3': ['aparar', 'derrubar', 'inspirar'] },
+    },
+  })
+  for (const maneuvers of picks) {
+    const featSelections: CharacterDraft['featSelections'] = maneuvers ? { 'adepto-marcial': { maneuvers } } : {}
+    out.push(draft({ level: 4, asiChoices: [{ kind: 'feat', featId: 'adepto-marcial' }], featSelections }))
+    for (const subclass of ['battle-master', 'champion']) {
+      out.push(draft({ ...fighter(subclass), asiChoices: [{ kind: 'feat', featId: 'adepto-marcial' }], featSelections }))
+      out.push(draft({
+        ...fighter(subclass),
+        race: 'human', subrace: 'variant-human',
+        raceChoices: { abilityBonuses: ['STR', 'DEX'], skills: ['athletics'], feat: 'adepto-marcial' },
+        featSelections,
+      }))
+    }
+  }
+  return out
+}
+
+describe('motivos × isStepComplete — Adepto Marcial', () => {
+  const drafts = martialAdeptDrafts()
+
+  it('o leque tem etapa Aprimoramentos e Raça aprovadas e reprovadas', () => {
+    for (const step of ['improvements', 'race'] as const) {
+      expect(drafts.some(d => isStepComplete(d, step)), step).toBe(true)
+      expect(drafts.some(d => !isStepComplete(d, step)), step).toBe(true)
+    }
+  })
+})
 
 /**
  * Feiticeiros da Linhagem Dracônica sem e com o Ancestral Dracônico (p. 80), e com a escolha

@@ -29,7 +29,8 @@ import {
 } from './abilityScoreUtils'
 import { getAsiSlotCount, getReachedAsiLevels, isAsiChoiceComplete, getRacialBonuses, getAsiBonuses, getFinalAbilityScores } from './asiUtils'
 import { getFeat } from './featUtils'
-import { getFeatChoiceSlots, getRepeatedFightingStyles, type FeatChoiceSlot } from './sheetEffects'
+import { getFeatChoiceSlots, getRepeatedFeatManeuvers, getRepeatedFightingStyles, type FeatChoiceSlot } from './sheetEffects'
+import { getManeuverName } from './maneuverUtils'
 import { getProgressionSlotsUpToLevel } from './progressionChoiceUtils'
 import { describeRequiredPick, getUnmetPickRequirements } from './progressionOptions'
 import {
@@ -89,6 +90,13 @@ function featChoiceReasons(slot: FeatChoiceSlot, where: string): string[] {
   if (choices.weaponChoice) {
     const missing = choices.weaponChoice.count - (selections.weapons?.length ?? 0)
     if (missing > 0) out.push(`${where}, talento ${feat.name}: escolha mais ${plural(missing, 'arma', 'armas')}`)
+  }
+  if (choices.maneuverChoice) {
+    const missing = choices.maneuverChoice.count - (selections.maneuvers?.length ?? 0)
+    if (missing > 0) out.push(`${where}, talento ${feat.name}: escolha mais ${plural(missing, 'manobra', 'manobras')}`)
+    for (const id of getRepeatedFeatManeuvers(slot)) {
+      out.push(`${where}, talento ${feat.name}: a manobra ${getManeuverName(id)} já vem do Mestre de Batalha — troque por outra`)
+    }
   }
   return out
 }

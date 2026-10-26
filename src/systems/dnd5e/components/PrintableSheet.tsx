@@ -43,10 +43,11 @@ import {
 import { RuleText } from './common/RuleText'
 import { formatAttackDamage } from '../utils/weaponFormat'
 import { getSheetAttacks } from '../utils/attackUtils'
+import { REPEATED_FEAT_MANEUVER_NOTE } from '../utils/maneuverUtils'
 import {
   getTotalHp, getInitiativeBonusTotal, getSheetSpeed, describeSpeedBonuses,
   getConditionalAcBonuses, getSheetResources, getSheetArmorClass,
-  describeAttacksPerAction, getSheetFightingStyles, describeConditionalSaveBonuses,
+  describeAttacksPerAction, getSheetFightingStyles, describeConditionalSaveBonuses, getFeatManeuverBlock,
 } from '../utils/sheetEffects'
 import type { CharacterDraft } from '../types/character'
 import type { ClassSpellcasting } from '../types/class'
@@ -592,6 +593,21 @@ export function PrintableSheet() {
                 <span className="text-gray-600"> {origin}</span>
               </p>
               <RuleText text={f.description} className="text-xs" />
+              {(() => {
+                const block = getFeatManeuverBlock(draft, f.id, finalScores)
+                if (!block) return null
+                return (
+                  <div className="pl-2 mt-0.5">
+                    <p className="text-xs font-bold">{block.saveDc}</p>
+                    {block.maneuvers.map(m => (
+                      <p key={m.id} className="text-xs mb-0.5">
+                        <strong>{m.name}.</strong> {m.text}
+                        {m.repeated && <strong> {REPEATED_FEAT_MANEUVER_NOTE}</strong>}
+                      </p>
+                    ))}
+                  </div>
+                )
+              })()}
             </div>
           ))}
         </Box>

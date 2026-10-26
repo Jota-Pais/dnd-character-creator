@@ -1,6 +1,8 @@
 import { useCharacterStore } from '../../stores/characterStore'
 import type { FeatChoiceSlot } from '../../utils/sheetEffects'
-import { getFeatChoiceSlots, isFeatChoiceComplete } from '../../utils/sheetEffects'
+import { getFeatChoiceSlots, getRepeatedFeatManeuvers, isFeatChoiceComplete } from '../../utils/sheetEffects'
+import { getManeuverName, getManeuverOptions } from '../../utils/maneuverUtils'
+import { ProgressionOptionCard } from '../class/ProgressionOptionCard'
 import {
   getExcludedSkillsForFeat, getExcludedToolsForFeat,
   getExcludedLanguagesForFeat, getExcludedWeaponsForFeat,
@@ -15,7 +17,7 @@ const ALL_TOOLS = toolsData as Tool[]
 
 /**
  * As escolhas que um talento abre — Perito (3 perícias ou ferramentas), Poliglota (3 idiomas),
- * Mestre de Armas (4 armas).
+ * Mestre de Armas (4 armas), Adepto Marcial (2 manobras do Mestre de Batalha).
  *
  * Fica ao LADO do catálogo, na etapa dona do talento, e não dentro do card: o card já é uma
  * escolha, e aninhar um segundo catálogo nele esconde a decisão em vez de apresentá-la.
@@ -68,7 +70,7 @@ function SlotBody({
 }: {
   slot: FeatChoiceSlot
   accent: string
-  onChange: (patch: { skills?: string[]; tools?: string[]; languages?: string[]; weapons?: string[] }) => void
+  onChange: (patch: { skills?: string[]; tools?: string[]; languages?: string[]; weapons?: string[]; maneuvers?: string[] }) => void
 }) {
   const draft = useCharacterStore(s => s.draft)
   const { feat, choices, selections } = slot
@@ -135,6 +137,47 @@ function SlotBody({
           accent={accent}
           onToggle={id => onChange({ weapons: toggle(selected, id) })}
         />
+      </>
+    )
+  }
+
+  if (choices.maneuverChoice) {
+    // As manobras que o Mestre de Batalha já ensinou não aparecem: aprender a mesma de novo não
+    // daria nada. A que já estava marcada (ficha antiga, subclasse trocada) fica à vista, com o
+    // aviso, para ser desmarcada.
+    const selected = selections.maneuvers ?? []
+    const max = choices.maneuverChoice.count
+    const repeated = getRepeatedFeatManeuvers(slot)
+    const options = getManeuverOptions()
+      .filter(m => !slot.takenManeuvers.includes(m.id) || selected.includes(m.id))
+    return (
+      <>
+        <Header label={`Manobras (${selected.length}/${max})`} />
+        <p className="text-[11px] text-parchment-600 mb-2">
+          Da lista do Mestre de Batalha.
+          {slot.takenManeuvers.length > 0 && ' As que você já conhece pelo arquétipo não aparecem.'}
+        </p>
+        {repeated.map(id => (
+          <p key={id} className="text-xs mb-2 text-red-400 font-semibold">
+            ⚠ {getManeuverName(id)} você já conhece pelo Mestre de Batalha — desmarque e escolha outra.
+          </p>
+        ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 items-stretch">
+          {options.map(opt => (
+            <ProgressionOptionCard
+              key={opt.id}
+              option={opt}
+              accent={accent}
+              picked={selected.includes(opt.id)}
+              pickedEarlier={false}
+              slotFull={selected.length >= max}
+              onToggle={() => {
+                if (!selected.includes(opt.id) && selected.length >= max) return
+                onChange({ maneuvers: toggle(selected, opt.id) })
+              }}
+            />
+          ))}
+        </div>
       </>
     )
   }

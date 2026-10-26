@@ -172,6 +172,11 @@ export type FeatureChoices = {
   /** Mestre de Armas: quatro armas simples ou marciais. */
   weaponChoice?: { count: number }
   /**
+   * Adepto Marcial: duas manobras da lista do Mestre de Batalha (p. 167). Não oferece a que o
+   * personagem já conhece pelo arquétipo — aprender a mesma de novo não daria nada.
+   */
+  maneuverChoice?: { count: number }
+  /**
    * Resiliente: proficiência no teste de resistência do atributo escolhido. Não é escolha nova —
    * reaproveita o atributo que já recebe o +1 do talento (`abilityIncrease`).
    */

@@ -56,14 +56,17 @@ export type RaceChoiceSelections = {
 
 /**
  * O que o jogador escolheu dentro de um talento que abre escolhas (Perito, Poliglota, Mestre de
- * Armas). Indexado por id do talento no draft: o livro não deixa pegar o mesmo talento duas
- * vezes, então uma entrada por talento basta — e evita espalhar seleção por AsiChoice e raça.
+ * Armas, Adepto Marcial). Indexado por id do talento no draft: o livro não deixa pegar o mesmo
+ * talento duas vezes, então uma entrada por talento basta — e evita espalhar seleção por
+ * AsiChoice e raça.
  */
 export type FeatSelections = {
   skills?: string[]
   tools?: string[]
   languages?: string[]
   weapons?: string[]
+  /** Manobras do Mestre de Batalha aprendidas pelo talento (Adepto Marcial, p. 167). */
+  maneuvers?: string[]
 }
 
 export type HpMethod = 'average' | 'roll'

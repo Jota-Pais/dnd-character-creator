@@ -37,9 +37,10 @@ import {
 import {
   getTotalHp, getInitiativeBonusTotal, getSheetSpeed, describeSpeedBonuses,
   getConditionalAcBonuses, getSheetResources, getSheetArmorClass,
-  describeAttacksPerAction, getSheetFightingStyles, describeConditionalSaveBonuses,
+  describeAttacksPerAction, getSheetFightingStyles, describeConditionalSaveBonuses, getFeatManeuverBlock,
 } from '../../utils/sheetEffects'
 import { getSheetAttacks } from '../../utils/attackUtils'
+import { REPEATED_FEAT_MANEUVER_NOTE } from '../../utils/maneuverUtils'
 import { formatAttackDamage } from '../../utils/weaponFormat'
 import { formatUnmetPick, getProgressionChoiceBlocks } from '../../utils/progressionOptions'
 import {
@@ -714,6 +715,22 @@ export function ReviewStep() {
                     <span className="font-sans font-normal text-xs text-parchment-600"> · {origin}</span>
                   </p>
                   <RuleText text={feat.description} className="text-sm text-parchment-500 leading-relaxed" />
+                  {(() => {
+                    const block = getFeatManeuverBlock(draft, feat.id, finalScores)
+                    if (!block) return null
+                    return (
+                      <div className="mt-1.5 pl-3 border-l border-parchment-800 space-y-1">
+                        <p className="text-xs font-semibold" style={{ color: accent }}>{block.saveDc}</p>
+                        {block.maneuvers.map(m => (
+                          <p key={m.id} className="text-sm text-parchment-500 leading-relaxed">
+                            <span className="font-semibold font-fantasy text-parchment-200">{m.name}. </span>
+                            {m.text}
+                            {m.repeated && <span className="text-red-400 font-semibold"> {REPEATED_FEAT_MANEUVER_NOTE}</span>}
+                          </p>
+                        ))}
+                      </div>
+                    )
+                  })()}
                 </div>
               ))}
             </div>

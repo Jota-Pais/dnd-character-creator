@@ -25,6 +25,8 @@ import { isEquipmentStepComplete } from './equipmentUtils'
 import { isImprovementsStepComplete, getFinalAbilityScores } from './asiUtils'
 import { areFeatChoicesComplete, hasRepeatedFightingStyle } from './sheetEffects'
 import { getUnmetPickRequirements } from './progressionOptions'
+import { getFeat } from './featUtils'
+import { getManeuver } from './maneuverUtils'
 import {
   getPrimaryLevel,
   allClassEntries,
@@ -102,6 +104,13 @@ function sanitizeFeatSelections(raw: unknown): Record<string, FeatSelections> {
     if (languages.length > 0) selections.languages = languages
     const weapons = toStringArray(value.weapons)
     if (weapons.length > 0) selections.weapons = weapons
+    // Manobras (Adepto Marcial): só da lista do Mestre de Batalha, sem repetir, até o que o
+    // talento dá — sobra de ficha editada à mão não vira manobra a mais.
+    const maxManeuvers = getFeat(featId)?.effects?.choices?.maneuverChoice?.count ?? 0
+    const maneuvers = [...new Set(toStringArray(value.maneuvers))]
+      .filter(id => getManeuver(id) !== undefined)
+      .slice(0, maxManeuvers)
+    if (maneuvers.length > 0) selections.maneuvers = maneuvers
     if (Object.keys(selections).length > 0) out[featId] = selections
   }
   return out

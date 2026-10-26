@@ -23,6 +23,7 @@ import {
 import { getMaxSpellLevel, getSecretCantripRoom, getSpell } from '../../utils/spellUtils'
 import type { ClassSlotProficiencies } from '../../utils/proficiencyUtils'
 import type { TakenFightingStyles } from '../../utils/sheetEffects'
+import { MANEUVER_LIST_ID } from '../../utils/maneuverUtils'
 
 type Tool = { id: string; name: string; category: 'artisan' | 'musical-instrument' | 'gaming-set' | 'other' | 'vehicle' }
 const ALL_TOOLS: Tool[] = toolsData as Tool[]
@@ -56,11 +57,16 @@ type Props = {
    * de `getTakenFightingStyles`: o mesmo estilo não se escolhe duas vezes (p. 85).
    */
   takenFightingStyles: TakenFightingStyles
+  /**
+   * Manobras que o personagem já aprendeu por talento (Adepto Marcial, `getFeatManeuvers`): o slot
+   * de manobras do Mestre de Batalha não as oferece — aprender a mesma de novo não daria nada.
+   */
+  takenManeuvers?: string[]
   /** Classe adicional (multiclasse): concede só o subconjunto de perícias e nenhuma escolha de ferramenta. */
   multiclass?: boolean
 }
 
-export function ClassChoicePanel({ cls, choices, accent, level, onChange, proficiencies, takenFightingStyles, multiclass = false }: Props) {
+export function ClassChoicePanel({ cls, choices, accent, level, onChange, proficiencies, takenFightingStyles, takenManeuvers = [], multiclass = false }: Props) {
   const skillOptions = getSkillOptions(cls)
   const excludedSkillSet = new Set(proficiencies.excludedBaseSkills)
   const excludedToolSet = new Set(proficiencies.excludedBaseTools)
@@ -330,6 +336,7 @@ export function ClassChoicePanel({ cls, choices, accent, level, onChange, profic
         choices={choices}
         accent={accent}
         takenFightingStyles={takenFightingStyles.slot}
+        takenManeuvers={takenManeuvers}
         onChange={(patch) => onChange({ progressionChoices: { ...choices.progressionChoices, ...patch } })}
       />
     </div>
@@ -600,6 +607,7 @@ function ProgressionChoicesPanel({
   choices,
   accent,
   takenFightingStyles,
+  takenManeuvers,
   onChange,
 }: {
   classId: string
@@ -609,6 +617,8 @@ function ProgressionChoicesPanel({
   accent: string
   /** Estilos que outra fonte já tomou (o da própria classe incluído) — fora do slot do campeão. */
   takenFightingStyles: string[]
+  /** Manobras do talento Adepto Marcial — fora dos slots de manobra do Mestre de Batalha. */
+  takenManeuvers: string[]
   onChange: (patch: Record<string, string[]>) => void
 }) {
   const slots = getProgressionSlotsUpToLevel(classId, subclassId, level, choices.progressionChoices)
@@ -660,6 +670,10 @@ function ProgressionChoicesPanel({
           : getProgressionOptions(optionsListId)
         ).filter(
           opt => !(optionsListId === 'FIGHTING_STYLES' && takenFightingStyles.includes(opt.id) && !pickedInGroup.includes(opt.id)),
+        ).filter(
+          // Manobra já aprendida pelo Adepto Marcial: a marcada antes fica à vista para desmarcar
+          // (o conflito trava a etapa do talento, getRepeatedFeatManeuvers).
+          opt => !(optionsListId === MANEUVER_LIST_ID && takenManeuvers.includes(opt.id) && !pickedInGroup.includes(opt.id)),
         )
 
         // Cada slot é renderizado separadamente; num grupo cumulativo, as opções já

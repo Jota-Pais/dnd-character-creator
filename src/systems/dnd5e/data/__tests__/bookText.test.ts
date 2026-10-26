@@ -4,6 +4,7 @@ import { stripInlineBold } from '../../utils/ruleText'
 import weaponsData from '../weapons.json'
 import spellsData from '../spells.json'
 import progressionFeatures from '../class-progression-features.json'
+import invocationsData from '../eldritch-invocations.json'
 
 /**
  * A digitalização do PHB vem de um PDF que usa Wingdings para os marcadores de lista: o extrator
@@ -116,6 +117,11 @@ describe('divergências pt-BR × inglês que seguem o inglês', () => {
   it('Ilusão Menor é S, M — o pt-BR diz V, M, mas a magia não tem componente verbal', () => {
     const spell = (spellsData as { id: string; components: string }[]).find(s => s.id === 'minor-illusion')
     expect(spell?.components).toBe('S, M (um pouco de lã)')
+  })
+  it('Correntes de Cárceri exige o Pacto da Corrente — o pt-BR diz "característica Corrente de Cárceri", que não existe', () => {
+    const invocation = (invocationsData as { id: string; prerequisite?: string }[]).find(i => i.id === 'correntes-de-carceri')
+    expect(invocation?.prerequisite).toContain('Pacto da Corrente')
+    expect(invocation?.prerequisite).not.toContain('Corrente de Cárceri')
   })
 })
 

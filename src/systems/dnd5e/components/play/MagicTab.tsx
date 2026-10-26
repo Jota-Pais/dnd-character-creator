@@ -125,6 +125,9 @@ export function MagicTab(view: PlayTabProps) {
               </li>
             ))}
           </ul>
+          <p className="mt-1.5 text-[11px] text-parchment-500">
+            Suas magias, com o texto de cada uma, estão na aba Regras.
+          </p>
         </Section>
       )}
 

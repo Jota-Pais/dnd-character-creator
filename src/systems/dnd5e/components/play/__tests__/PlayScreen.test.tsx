@@ -15,7 +15,7 @@ describe('PlayScreen — casca', () => {
     render(<PlayScreen />)
     expect(screen.getByRole('heading', { name: 'Krusk' })).toBeInTheDocument()
     expect(screen.getByText(/Meio-Orc · Bárbaro · nível 1/i)).toBeInTheDocument()
-    for (const label of ['Testes', 'Ataques', 'Magia', 'Estado', 'Notas']) {
+    for (const label of ['Testes', 'Ataques', 'Magia', 'Regras', 'Estado', 'Notas']) {
       expect(screen.getByRole('tab', { name: label })).toBeInTheDocument()
     }
     fireEvent.click(screen.getByRole('tab', { name: 'Notas' }))

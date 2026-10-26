@@ -128,11 +128,13 @@ export function PlayScreen() {
           {view.state.lifeState !== 'dead' && <HpPanel view={view} />}
         </div>
 
-        {/* No celular as abas dividem a largura em partes iguais: todas à vista, sem rolagem escondida. */}
+        {/* No celular as abas dividem a largura em partes iguais, sem recuo lateral: as seis cabem
+            em 360 px ("Ataques", a mais larga, ocupa ~51 dos 54 px), sem rolagem escondida. */}
         <nav
           role="tablist"
           aria-label="Seções da ficha"
-          className="mt-4 grid grid-cols-5 sm:flex sm:gap-1 border-b border-parchment-900"
+          className="mt-4 grid sm:flex sm:gap-1 border-b border-parchment-900"
+          style={{ gridTemplateColumns: `repeat(${PLAY_TABS.length}, minmax(0, 1fr))` }}
         >
           {PLAY_TABS.map(t => (
             <button
@@ -144,7 +146,7 @@ export function PlayScreen() {
               title={t.hint}
               onClick={() => setTab(t.id)}
               className={[
-                'min-h-10 min-w-0 px-1 sm:px-3 text-xs sm:text-sm font-fantasy border-b-2 -mb-px transition-colors',
+                'min-h-10 min-w-0 px-0 sm:px-3 text-[0.66rem] sm:text-sm font-fantasy border-b-2 -mb-px transition-colors',
                 t.id === current.id
                   ? 'border-gold-500 text-gold-300'
                   : 'border-transparent text-parchment-500 hover:text-parchment-200',

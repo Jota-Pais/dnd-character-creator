@@ -225,7 +225,7 @@ Vocabulário de `kind` proposto. **Onde mora (decidido, item 13):** estende `typ
 | `noActions` / `noReactions` | — | Incapacitado |
 | `hpMax` | `op: 'half'` | Exaustão 4 |
 | `damageResistance` | `types: 'all'` | Petrificado |
-| `immunity` | `to: string[]` | Petrificado (ver Pontos em aberto, item 5) |
+| `damageImmunity` | `damageType`, `label` | Petrificado: veneno (decidido, item 5) |
 | `againstYou` | `text`, `mode?`, `within?` | vantagem de atacantes, crítico a 1,5 m |
 | `notice` | `text` | narrativa: fala hesitante, peso ×10, não envelhece |
 | `death` | — | Exaustão 6 |
@@ -279,12 +279,12 @@ Vocabulário de `kind` proposto. **Onde mora (decidido, item 13):** estende `typ
 | Petrificado | ⇒ Incapacitado; não se move, não fala, sem ciência | 3 / 1 | `implies` + deslocamento efetivo 0 |
 | Petrificado | Falha automática em resistência de FOR/DES | 1 | `autoFail` |
 | Petrificado | Resistência a todo dano | 1 | Incondicional enquanto durar: o pipeline de dano de `regras-dano-e-morte.md` aplica a metade sozinho (decidido, item 5), com a origem visível; com vulnerabilidade ao mesmo tipo, só a resistência (decisão 10) |
-| Petrificado | Imune a veneno e doenças; veneno/doença prévios ficam suspensos | 3 | Envenenado ativo fica "suspenso" (sem efeito, não removido) enquanto Petrificado durar |
+| Petrificado | Imune a veneno e doenças; veneno/doença prévios ficam suspensos | 1 / 3 | Dano de veneno vira 0 no pipeline de dano (`damageImmunity`); Envenenado fica "suspenso" (sem efeito, não removido) enquanto Petrificado durar (decidido, item 5) |
 | Petrificado | Peso ×10, não envelhece | 2 | `notice` |
 | Petrificado | Ataques contra com vantagem | 2 | `againstYou` |
 | Surdo | Falha automática em teste que requer audição | 2 | Aviso |
 | Exaustão 1 | Desvantagem em **todos** os testes de habilidade | 1 | `rollMode` em perícias, atributo puro e **iniciativa** (teste de DES, pág. 179); valores passivos −5 (pág. 177; decidido, item 8) |
-| Exaustão 2 | Deslocamento à metade | 1 | `floor(deslocamento / 2)` (pág. 7) |
+| Exaustão 2 | Deslocamento à metade | 1 | Metade para baixo na grade de 1,5 m: `floor(deslocamento / 10) × 5` pés (decidido, item 10) |
 | Exaustão 3 | Desvantagem em ataques e **todos** os testes de resistência | 1 | Inclui o teste de resistência contra a morte e o de Constituição da concentração. O TR contra a morte de `regras-dano-e-morte.md` já recebe o modo (Notas, "Teste contra a morte"; item 16, segue a proposta) |
 | Exaustão 4 | PV máximo à metade | 1 | `floor(pvMax / 2)` (pág. 7) no `maxHp` efetivo. Ao entrar, o PV atual acima do novo máximo **se perde**: o corte é gravado em `damageTaken` e não volta quando a exaustão sai (decidido, item 4) |
 | Exaustão 5 | Deslocamento 0 | 1 | Prevalece sobre o "metade" do nível 2 |
@@ -316,15 +316,16 @@ Duas relações diferentes, que não devem ser confundidas no modelo:
 4. **Exaustão 4 e PV atual (linha 28545).** (a) só limitar na leitura ou (b) gravar o corte? **Decidido (2026-10-24):** (b). O PV atual acima do novo máximo se perde (o corte é gravado em `damageTaken`) e não volta quando a exaustão sai. O teto da cura e a morte instantânea usam o máximo efetivo (assumido (C), a confirmar; `regras-dano-e-morte.md`, item 5).
 5. **Petrificado "imune a veneno e doenças" (linhas 28599-28601).**
    - Resistência a todo dano: aplicar sozinha ou só mostrar? **Decidido (2026-10-24):** aplica no pipeline de dano, pela decisão de que efeito incondicional de condição entra no número (com vulnerabilidade ao mesmo tipo, só a resistência; decisão 10).
-   - **Continua aberto:** "imune a veneno" é ao dano do tipo veneno, à condição Envenenado ou aos dois? O rastreador de PV zera o dano de veneno? A suspensão do Envenenado ativo (6.3) segue como proposta.
+   - "Imune a veneno" é ao dano do tipo veneno, à condição Envenenado ou aos dois? **Decidido (2026-10-25):** aos dois. O dano de veneno vira 0 (imunidade; no rastreador de PV, a caixa "É dano de veneno" aparece no modo Dano enquanto o Petrificado durar, e dano 0 não muda nada) e a condição Envenenado fica suspensa enquanto durar o Petrificado, aplicada antes ou depois dele. Nos dados, efeito `damageImmunity` (`damageType: "poison"`).
 6. **0 PV ⇒ Inconsciente automático (linhas 17865-17868 e 17940-17941).** Modelo da 6.4 (derivado do `lifeState`, efeitos de `onApply` na transição para 0 PV, inclusive no nocaute). Segue a proposta até decisão em contrário. Partes já cobertas: o Caído continua ao acordar (**Decidido (2026-10-24)**, item 15); o fim da concentração ao ficar com 0 PV (**Assumido (2026-10-24), a confirmar (F)**). `regras-dano-e-morte.md` (Notas, "Máquina de estados de vida") já foi escrito igual.
 7. **Instâncias por condição.** Lista de instâncias (origem/duração) ou um booleano por condição no MVP? **Decidido (2026-10-25):** no MVP, um liga/desliga por condição, com uma nota opcional de texto livre para a duração ("até o fim do próximo turno"). O app não conta tempo nem encerra a condição sozinho. As instâncias ficam para depois.
 8. **Exaustão 1 nos valores passivos** (o mesmo vale para Envenenado). **Decidido (2026-10-24):** aplica: −5 na Percepção passiva e desvantagem na iniciativa.
 9. **Falha automática e o dado físico.** Bloquear a rolagem ou deixar rolar? **Decidido (2026-10-24):** mostra como falha, com um "rolar mesmo assim" discreto (não bloqueia).
-10. **Deslocamento à metade em metros.** 25 pés → 12 pés: mostrar 3,6 m ou arredondar para a grade de 1,5 m (3 m)? Sem decisão.
+10. **Deslocamento à metade em metros.** 25 pés → 12 pés: mostrar 3,6 m ou arredondar para a grade de 1,5 m (3 m)? **Decidido (2026-10-25):** arredonda para baixo na grade de 1,5 m (5 pés): 25 pés → 10 pés = 3 m; 30 → 15 pés = 4,5 m. Vale para toda metade de deslocamento do modo de jogo (Exaustão 2 e o custo de levantar-se), por `halveSpeedOnGrid`.
 11. **Atacar alvo paralisado/inconsciente.** Toggle "alvo paralisado/inconsciente a 1,5 m" que transforma o acerto em crítico? Decisão de produto, sem decisão.
 12. **Artefatos do extrato (não são divergências de regra):** "S CONDIÇÕES", "critura", o "conforme especificado no efeito" ausente na linha 28558 e o "Força e/ou Destreza" com o mesmo sentido. Só registro.
 13. **Onde moram os efeitos de condição (decisão de arquitetura).** (a) estender `types/effects.ts`/`sheetEffects.ts` ou (b) agregador próprio? **Decidido (2026-10-24):** (a). O mesmo agregador `utils/sheetEffects.ts`, com o estado de jogo como mais uma fonte; nada de agregador paralelo.
 14. **Padrão da caixa "comeu e bebeu" no descanso longo (linhas 28561-28563).** **Decidido (2026-10-24):** marcada por padrão, com o jogador podendo desmarcar.
 15. **Ao acordar, o personagem continua Caído? (linhas 28525-28526 e 28447-28448).** **Decidido (2026-10-24):** sim, continua Caído até se levantar.
 16. **TR contra a morte com vantagem/desvantagem** (Exaustão 3, linhas 28543-28544). Sem decisão própria. Segue a proposta (o TR contra a morte recebe as fontes de vantagem/desvantagem que valem para todos os testes de resistência) até decisão em contrário; já registrada em `regras-dano-e-morte.md` (Notas, "Teste contra a morte").
+17. **Sentido de Perigo e as condições do estado de jogo** (pág. 48). O benefício não vale "cego, surdo ou incapacitado". **Decidido (2026-10-25):** com Cego, Surdo ou Incapacitado em vigor (gravado ou derivado: Atordoado, Paralisado, Petrificado, o Inconsciente dos 0 PV), a linha condicional do Sentido de Perigo some das receitas. Nos dados, `unlessConditions` na linha condicional.

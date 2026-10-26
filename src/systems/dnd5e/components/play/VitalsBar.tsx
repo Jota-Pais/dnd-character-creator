@@ -85,12 +85,13 @@ export function VitalsBar({ view, onOpenRecipe }: { view: PlayView; onOpenRecipe
         </Stat>
       </div>
 
-      <div className="flex flex-wrap items-center gap-1.5">
+      {/* Uma faixa só, que rola de lado: com várias condições os vitais fixos não comem a tela. */}
+      <div className="flex flex-nowrap items-center gap-1.5 overflow-x-auto -mx-4 px-4 [scrollbar-width:none]" data-testid="vitals-chips">
         <button
           onClick={() => run(st => setInspiration(st, !st.inspiration))}
           aria-pressed={state.inspiration}
           className={[
-            'min-h-10 px-3 rounded-full border text-xs transition-colors',
+            'shrink-0 whitespace-nowrap min-h-10 px-3 rounded-full border text-xs transition-colors',
             state.inspiration
               ? 'border-gold-500 bg-gold-900 text-gold-300'
               : 'border-parchment-800 text-parchment-600 hover:text-parchment-300',
@@ -101,8 +102,8 @@ export function VitalsBar({ view, onOpenRecipe }: { view: PlayView; onOpenRecipe
         </button>
 
         {state.concentration && (
-          <span className="inline-flex items-center min-h-10 rounded-full border border-violet-800 bg-violet-950/40 pl-3 text-xs text-violet-200">
-            Concentrado: {state.concentration.label}
+          <span className="shrink-0 whitespace-nowrap inline-flex items-center min-h-10 rounded-full border border-violet-800 bg-violet-950/40 pl-3 text-xs text-violet-200">
+            <span className="max-w-[11rem] truncate" title={state.concentration.label}>Concentrado: {state.concentration.label}</span>
             <button
               onClick={() => run(st => endConcentration(st))}
               className="min-h-10 px-3 text-violet-300 underline hover:text-violet-100"
@@ -113,7 +114,7 @@ export function VitalsBar({ view, onOpenRecipe }: { view: PlayView; onOpenRecipe
         )}
 
         {state.exhaustionLevel > 0 && (
-          <span className="inline-flex items-center min-h-8 rounded-full border border-amber-800 px-3 text-xs text-amber-300">
+          <span className="shrink-0 whitespace-nowrap inline-flex items-center min-h-8 rounded-full border border-amber-800 px-3 text-xs text-amber-300">
             Exaustão {state.exhaustionLevel}
           </span>
         )}
@@ -124,14 +125,15 @@ export function VitalsBar({ view, onOpenRecipe }: { view: PlayView; onOpenRecipe
             <span
               key={c.id}
               className={[
-                'inline-flex items-center min-h-8 rounded-full border px-3 text-xs',
+                'shrink-0 whitespace-nowrap inline-flex items-center min-h-8 rounded-full border px-3 text-xs',
                 c.suspendedBy ? 'border-parchment-900 text-parchment-600' : 'border-red-900 text-red-200',
               ].join(' ')}
               title={note}
             >
               {c.name}
               {c.suspendedBy && ' (suspensa)'}
-              {note && <span className="ml-1 text-parchment-500">· {note}</span>}
+              {/* A nota inteira fica na aba Estado (e no title); aqui, uma linha cortada. */}
+              {note && <span className="ml-1 max-w-[8rem] truncate text-parchment-500">· {note}</span>}
             </span>
           )
         })}

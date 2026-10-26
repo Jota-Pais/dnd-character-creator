@@ -68,6 +68,28 @@ describe('HpPanel', () => {
     expect(usePlayStore.getState().state?.deathSaves.failures).toBe(2)
   })
 
+  it('nocaute: a caixa só com o personagem consciente, e o golpe que leva a 0 PV deixa estável', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
+    fireEvent.change(screen.getByLabelText('Quanto de dano'), { target: { value: '14' } })
+    fireEvent.click(screen.getByLabelText('Fui nocauteado (o atacante escolheu, corpo a corpo, pág. 200)'))
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
+    expect(usePlayStore.getState().state?.lifeState).toBe('stable')
+    fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
+    expect(screen.queryByLabelText(/Fui nocauteado/)).toBeNull()
+  })
+
+  it('nocaute com dano massivo: a morte instantânea vem antes (decisão de 2026-10-25)', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
+    fireEvent.change(screen.getByLabelText('Quanto de dano'), { target: { value: '28' } })
+    fireEvent.click(screen.getByLabelText(/Fui nocauteado/))
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
+    expect(usePlayStore.getState().state?.lifeState).toBe('dead')
+  })
+
   it('Petrificado: a caixa do dano de veneno só aparece com ele, e o veneno marcado não tira PV', () => {
     openKrusk()
     render(<PlayScreen />)

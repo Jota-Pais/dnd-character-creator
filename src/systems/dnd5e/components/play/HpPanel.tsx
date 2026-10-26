@@ -44,7 +44,10 @@ export function HpPanel({ view }: { view: PlayView }) {
   const [resisted, setResisted] = useState(false)
   const [critical, setCritical] = useState(false)
   const [immuneTo, setImmuneTo] = useState<ImmuneDamageType | null>(null)
+  const [knockout, setKnockout] = useState(false)
   const atZero = isAtZeroHp(state)
+  // Nocaute (pág. 200): só faz sentido para quem ainda está de pé — é o golpe que levaria a 0 PV.
+  const canBeKnockedOut = state.lifeState === 'conscious'
   // Imunidades das condições em vigor (Petrificado: veneno): o jogador marca quando o dano é desse tipo.
   const immunities = getPlayConditionEffects(state).damageImmunities
   const amount = parseAmount(text)
@@ -58,6 +61,7 @@ export function HpPanel({ view }: { view: PlayView }) {
     setResisted(false)
     setCritical(false)
     setImmuneTo(null)
+    setKnockout(false)
   }
 
   function choose(next: HpAction) {
@@ -73,6 +77,7 @@ export function HpPanel({ view }: { view: PlayView }) {
       const damageType = immuneTo && immunities.some(i => i.damageType === immuneTo) ? immuneTo : undefined
       result = run((st, sh) => applyDamage(st, sh, {
         amount, resisted, critical: atZero && critical, ...(damageType ? { damageType } : {}),
+        ...(canBeKnockedOut && knockout ? { knockout: true } : {}),
       }))
     } else if (action === 'heal') {
       result = run((st, sh) => applyHealing(st, sh, amount))
@@ -160,6 +165,12 @@ export function HpPanel({ view }: { view: PlayView }) {
                 <label className="flex items-center gap-2 min-h-10 text-sm text-parchment-300 cursor-pointer">
                   <input type="checkbox" checked={critical} onChange={e => setCritical(e.target.checked)} className="w-5 h-5 shrink-0 accent-gold-500" />
                   Foi acerto crítico (conta 2 fracassos)
+                </label>
+              )}
+              {canBeKnockedOut && (
+                <label className="flex items-center gap-2 min-h-10 text-xs text-parchment-400 cursor-pointer">
+                  <input type="checkbox" checked={knockout} onChange={e => setKnockout(e.target.checked)} className="w-5 h-5 shrink-0 accent-gold-500" />
+                  Fui nocauteado (o atacante escolheu, corpo a corpo, pág. 200)
                 </label>
               )}
             </div>

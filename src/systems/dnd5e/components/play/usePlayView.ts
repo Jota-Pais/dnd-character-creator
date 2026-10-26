@@ -56,7 +56,7 @@ export function usePlayView(): PlayView | null {
   return { draft, characterName, sheet, state, guide, armorClass, appDice, run }
 }
 
-/** "Meio-Orc · Bárbaro · nível 3"; na multiclasse, "Humano · Guerreiro 3° / Mago 2° — nível 5". */
+/** "Meio-Orc · Bárbaro · nível 3"; na multiclasse, "Humano · Guerreiro 3º / Mago 2º — nível 5". */
 export function formatPlaySubtitle(draft: CharacterDraft): string {
   const race = draft.race ? getRace(draft.race) : undefined
   const subrace = race && draft.subrace ? getSubrace(race, draft.subrace) : undefined

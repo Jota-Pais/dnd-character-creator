@@ -397,11 +397,11 @@ describe('formatClassLevelLabel — cabeçalho de identidade (Revisão e ficha i
 
   it('classe única com subclasse: o nível aparece uma vez só, no rótulo da classe', () => {
     const bard = makeDraft({ class: 'bard', level: 4, classChoices: { ...EMPTY_DRAFT.classChoices, subclass: 'college-of-lore' } })
-    expect(formatClassLevelLabel(bard)).toBe('Bardo 4° (Colégio do Conhecimento)')
+    expect(formatClassLevelLabel(bard)).toBe('Bardo 4º (Colégio do Conhecimento)')
   })
 
   it('classe única sem subclasse: sem sufixo de nível', () => {
-    expect(formatClassLevelLabel(makeDraft({ class: 'fighter', level: 1 }))).toBe('Guerreiro 1°')
+    expect(formatClassLevelLabel(makeDraft({ class: 'fighter', level: 1 }))).toBe('Guerreiro 1º')
   })
 
   it('multiclasse: cada classe com seu nível e o total no fim', () => {
@@ -410,6 +410,6 @@ describe('formatClassLevelLabel — cabeçalho de identidade (Revisão e ficha i
       level: 5,
       additionalClasses: [entry({ classId: 'fighter', level: 2, classChoices: { ...EMPTY_DRAFT.classChoices, subclass: 'battle-master' } })],
     })
-    expect(formatClassLevelLabel(mix)).toBe('Mago 3° / Guerreiro 2° (Mestre de Batalha) — nível 5')
+    expect(formatClassLevelLabel(mix)).toBe('Mago 3º / Guerreiro 2º (Mestre de Batalha) — nível 5')
   })
 })

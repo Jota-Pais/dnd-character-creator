@@ -142,9 +142,9 @@ export function getHitDicePool(draft: CharacterDraft): { die: number; count: num
 
 /**
  * Rótulo de classe e nível do cabeçalho de identidade, o mesmo na Revisão e na ficha imprimível.
- * Classe única: "Bardo 4° (Colégio do Conhecimento)" — o nível já está no rótulo, sem repetir.
- * Multiclasse: "Mago 3° / Guerreiro 2° (Mestre de Batalha) — nível 5" (o total vem no fim).
- * A escolha que qualifica a subclasse vem junto: "Feiticeiro 6° (Linhagem Dracônica, ancestral
+ * Classe única: "Bardo 4º (Colégio do Conhecimento)" — o nível já está no rótulo, sem repetir.
+ * Multiclasse: "Mago 3º / Guerreiro 2º (Mestre de Batalha) — nível 5" (o total vem no fim).
+ * A escolha que qualifica a subclasse vem junto: "Feiticeiro 6º (Linhagem Dracônica, ancestral
  * Vermelho)" (getSubclassDetails).
  * null quando nenhuma classe foi escolhida (cada tela decide o que mostrar no lugar).
  */
@@ -155,7 +155,7 @@ export function formatClassLevelLabel(draft: CharacterDraft): string | null {
     const cls = getClass(e.classId)
     const sub = cls && e.classChoices.subclass ? getSubclass(cls, e.classChoices.subclass) : undefined
     const subLabel = sub ? [sub.name, ...getSubclassDetails(e)].join(', ') : ''
-    return `${cls?.name ?? e.classId} ${e.level}°${subLabel ? ` (${subLabel})` : ''}`
+    return `${cls?.name ?? e.classId} ${e.level}º${subLabel ? ` (${subLabel})` : ''}`
   }).join(' / ')
   return entries.length > 1 ? `${label} — nível ${draft.level}` : label
 }

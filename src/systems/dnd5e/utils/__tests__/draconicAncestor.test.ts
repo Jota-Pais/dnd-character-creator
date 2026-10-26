@@ -69,7 +69,7 @@ describe('Ancestral Dracônico: o slot', () => {
     })
     expect(getStepPendingReasons(d({}), 'class')).toContain('Feiticeiro: escolha mais 1 em Ancestral Dracônico (ganho no 1º nível)')
     expect(isStepComplete(d({ [SLOT]: ['blue'] }), 'class')).toBe(true)
-    expect(formatClassLevelLabel(d({ [SLOT]: ['blue'] }))).toBe('Bárbaro 1° / Feiticeiro 1° (Linhagem Dracônica, ancestral Azul) — nível 2')
+    expect(formatClassLevelLabel(d({ [SLOT]: ['blue'] }))).toBe('Bárbaro 1º / Feiticeiro 1º (Linhagem Dracônica, ancestral Azul) — nível 2')
   })
 
   it('ficha antiga (sem o campo) carrega e fica pendente; a escolha sobrevive a export/import', () => {
@@ -101,15 +101,15 @@ describe('Ancestral Dracônico na ficha (Revisão e PDF)', () => {
 
   it('o ancestral sai junto da subclasse no cabeçalho, e não nas Escolhas de Progressão', () => {
     const d = sorcerer(6, { [SLOT]: ['silver'] })
-    expect(formatClassLevelLabel(d)).toBe('Feiticeiro 6° (Linhagem Dracônica, ancestral Prata)')
+    expect(formatClassLevelLabel(d)).toBe('Feiticeiro 6º (Linhagem Dracônica, ancestral Prata)')
     expect(getSubclassDetails(allClassEntries(d)[0])).toEqual(['ancestral Prata'])
     expect(getProgressionChoiceBlocks(allClassEntries(d))).toEqual([])
-    expect(formatClassLevelLabel(sorcerer(6, {}))).toBe('Feiticeiro 6° (Linhagem Dracônica)')
+    expect(formatClassLevelLabel(sorcerer(6, {}))).toBe('Feiticeiro 6º (Linhagem Dracônica)')
   })
 
   it('trocar de subclasse esconde o ancestral sem apagá-lo', () => {
     const d = sorcerer(6, { [SLOT]: ['silver'] }, 'wild-magic')
-    expect(formatClassLevelLabel(d)).toBe('Feiticeiro 6° (Magia Selvagem)')
+    expect(formatClassLevelLabel(d)).toBe('Feiticeiro 6º (Magia Selvagem)')
     expect(d.classChoices.progressionChoices[SLOT]).toEqual(['silver'])
   })
 

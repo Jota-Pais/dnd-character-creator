@@ -4,6 +4,14 @@ import { getFeatChoiceSlots, getRepeatedFeatManeuvers, isFeatChoiceComplete } fr
 import { getManeuverName, getManeuverOptions } from '../../utils/maneuverUtils'
 import { ProgressionOptionCard } from '../class/ProgressionOptionCard'
 import {
+  FEAT_SPELL_USAGE, formatRepeatedSpell, getFeatSpellcastingAbility, getFeatSpellOptions, getFeatSpellPicks,
+  getRepeatedSpells, type FeatSpellChoice,
+} from '../../utils/spellUtils'
+import { getClass } from '../../utils/classUtils'
+import { ABILITY_LABELS } from '../../utils/abilityScoreUtils'
+import type { FeatSelections } from '../../types/character'
+import type { SpellClass } from '../../types/spell'
+import {
   getExcludedSkillsForFeat, getExcludedToolsForFeat,
   getExcludedLanguagesForFeat, getExcludedWeaponsForFeat,
 } from '../../utils/proficiencyUtils'
@@ -17,7 +25,8 @@ const ALL_TOOLS = toolsData as Tool[]
 
 /**
  * As escolhas que um talento abre — Perito (3 perícias ou ferramentas), Poliglota (3 idiomas),
- * Mestre de Armas (4 armas), Adepto Marcial (2 manobras do Mestre de Batalha).
+ * Mestre de Armas (4 armas), Adepto Marcial (2 manobras do Mestre de Batalha), Iniciado em Magia
+ * (classe, 2 truques e 1 magia de 1º nível da lista dela).
  *
  * Fica ao LADO do catálogo, na etapa dona do talento, e não dentro do card: o card já é uma
  * escolha, e aninhar um segundo catálogo nele esconde a decisão em vez de apresentá-la.
@@ -70,7 +79,7 @@ function SlotBody({
 }: {
   slot: FeatChoiceSlot
   accent: string
-  onChange: (patch: { skills?: string[]; tools?: string[]; languages?: string[]; weapons?: string[]; maneuvers?: string[] }) => void
+  onChange: (patch: FeatSelections) => void
 }) {
   const draft = useCharacterStore(s => s.draft)
   const { feat, choices, selections } = slot
@@ -182,7 +191,80 @@ function SlotBody({
     )
   }
 
+  if (choices.spellChoice) {
+    return <SpellChoiceBody slot={slot} choice={choices.spellChoice} accent={accent} onChange={onChange} />
+  }
+
   return null
+}
+
+/**
+ * Iniciado em Magia (p. 170), em três passos no mesmo slot: a classe (com o atributo de
+ * conjuração que ela dá), os truques e a magia de 1º nível da lista dela. Trocar a classe limpa
+ * os truques e a magia — os da lista antiga não valem na nova.
+ */
+function SpellChoiceBody({
+  slot, choice, accent, onChange,
+}: {
+  slot: FeatChoiceSlot
+  choice: FeatSpellChoice
+  accent: string
+  onChange: (patch: FeatSelections) => void
+}) {
+  const draft = useCharacterStore(s => s.draft)
+  const picks = getFeatSpellPicks(choice, slot.selections)
+  const spellClass = picks.spellClass
+  const featSource = `feat:${slot.feat.id}`
+  const repeated = getRepeatedSpells(draft).filter(r => r.sources.some(s => s.key === featSource))
+  const classOptions = choice.classes.map(id => {
+    const ability = getFeatSpellcastingAbility(id as SpellClass)
+    return { id, name: `${getClass(id)?.name ?? id}${ability ? ` · ${ABILITY_LABELS[ability].short}` : ''}` }
+  })
+  return (
+    <>
+      <Header label="Classe" />
+      <p className="text-[11px] text-parchment-600 mb-2">
+        As magias vêm da lista dela, e o atributo de conjuração também.
+      </p>
+      <Group
+        options={classOptions}
+        selected={spellClass ? [spellClass] : []}
+        excluded={new Set()}
+        full={false}
+        accent={accent}
+        onToggle={id => onChange(id === spellClass
+          ? { spellClass: undefined, cantrips: [], spells: [] }
+          : { spellClass: id, cantrips: [], spells: [] })}
+      />
+      {spellClass && (
+        <>
+          <Header label={`Truques (${picks.cantrips.length}/${choice.cantrips})`} />
+          <Group
+            options={getFeatSpellOptions(spellClass, 0)}
+            selected={picks.cantrips}
+            excluded={new Set()}
+            full={picks.cantrips.length >= choice.cantrips}
+            accent={accent}
+            onToggle={id => onChange({ cantrips: toggle(picks.cantrips, id) })}
+          />
+          <Header label={`Magia de ${choice.spellLevel}º nível (${picks.spells.length}/${choice.spells})`} />
+          <p className="text-[11px] text-parchment-600 mb-2">{FEAT_SPELL_USAGE}.</p>
+          <Group
+            options={getFeatSpellOptions(spellClass, choice.spellLevel)}
+            selected={picks.spells}
+            excluded={new Set()}
+            full={picks.spells.length >= choice.spells}
+            accent={accent}
+            onToggle={id => onChange({ spells: toggle(picks.spells, id) })}
+          />
+          {/* Mesmo aviso da etapa Magias e da Revisão: a regra deixa repetir, a ficha só avisa. */}
+          {repeated.map(r => (
+            <p key={r.spellId} className="text-xs mt-2 text-red-400 font-semibold">⚠ {formatRepeatedSpell(r)}</p>
+          ))}
+        </>
+      )}
+    </>
+  )
 }
 
 function toggle(list: string[], id: string): string[] {

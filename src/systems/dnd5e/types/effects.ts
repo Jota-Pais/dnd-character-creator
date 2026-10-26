@@ -177,6 +177,13 @@ export type FeatureChoices = {
    */
   maneuverChoice?: { count: number }
   /**
+   * Iniciado em Magia (p. 170): escolhe uma das `classes`, aprende `cantrips` truques e `spells`
+   * magias de `spellLevel`º nível da lista dela, e conjura com o atributo de conjuração dela. Três
+   * passos no mesmo slot — classe → truques → magia —, gravados em `featSelections` (`spellClass`,
+   * `cantrips`, `spells`).
+   */
+  spellChoice?: { classes: string[]; cantrips: number; spells: number; spellLevel: number }
+  /**
    * Resiliente: proficiência no teste de resistência do atributo escolhido. Não é escolha nova —
    * reaproveita o atributo que já recebe o +1 do talento (`abilityIncrease`).
    */
@@ -354,4 +361,10 @@ export type ResourceEffect = {
    * já tiver dados de superioridade, você ganha um adicional; do contrário, [...] um d6".
    */
   addsToExisting?: boolean
+  /**
+   * O recurso é o uso de uma magia escolhida no próprio talento (`choices.spellChoice`): com a
+   * magia escolhida, o nome do recurso vira o dela (a Magia de 1º nível do Iniciado em Magia,
+   * p. 170: "Sono — 1 uso"). Sem escolha, fica o `name` declarado.
+   */
+  nameFromChosenSpell?: boolean
 }

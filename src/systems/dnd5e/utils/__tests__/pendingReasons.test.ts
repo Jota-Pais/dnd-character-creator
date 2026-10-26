@@ -221,7 +221,7 @@ function corpus(): CharacterDraft[] {
     out.push(draft({ race: race.id, subrace: null, raceChoices: {} }))
     for (const sub of race.subraces) out.push(draft({ race: race.id, subrace: sub.id, raceChoices: {} }))
   }
-  for (const feat of ['perito', 'poliglota', 'mestre-de-armas', 'atleta', 'resiliente', 'adepto-marcial']) {
+  for (const feat of ['perito', 'poliglota', 'mestre-de-armas', 'atleta', 'resiliente', 'adepto-marcial', 'iniciado-em-magia']) {
     out.push(draft({ race: 'human', subrace: 'variant-human', raceChoices: { abilityBonuses: ['STR', 'DEX'], skills: ['athletics'], feat } }))
     out.push(draft({ level: 4, asiChoices: [{ kind: 'feat', featId: feat }] }))
     out.push(draft({ level: 4, asiChoices: [{ kind: 'feat', featId: feat, abilities: ['STR'] }] }))
@@ -247,7 +247,7 @@ function corpus(): CharacterDraft[] {
       spellChoices: { cantrips: ['fire-bolt', 'light'], spells: ['magic-missile', 'sleep', 'charm-person', 'fog-cloud', 'shield', 'burning-hands'] },
     }),
   )
-  out.push(...bardSecretsDrafts(), ...pactBoonDrafts(), ...draconicAncestorDrafts(), ...totemWarriorDrafts(), ...martialAdeptDrafts())
+  out.push(...bardSecretsDrafts(), ...pactBoonDrafts(), ...draconicAncestorDrafts(), ...totemWarriorDrafts(), ...martialAdeptDrafts(), ...magicInitiateDrafts())
   return out
 }
 
@@ -284,6 +284,53 @@ function martialAdeptDrafts(): CharacterDraft[] {
 
 describe('motivos × isStepComplete — Adepto Marcial', () => {
   const drafts = martialAdeptDrafts()
+
+  it('o leque tem etapa Aprimoramentos e Raça aprovadas e reprovadas', () => {
+    for (const step of ['improvements', 'race'] as const) {
+      expect(drafts.some(d => isStepComplete(d, step)), step).toBe(true)
+      expect(drafts.some(d => !isStepComplete(d, step)), step).toBe(true)
+    }
+  })
+})
+
+/**
+ * Iniciado em Magia (p. 170) sem classe, com classe fora do talento, com escolhas faltando, com
+ * magia de outra lista e completo — pelo espaço de ASI e pelo Humano Variante, num bárbaro e num
+ * mago (truque repetido com o da classe: aviso, não pendência).
+ */
+function magicInitiateDrafts(): CharacterDraft[] {
+  const out: CharacterDraft[] = []
+  const picks: (CharacterDraft['featSelections'][string] | undefined)[] = [
+    undefined,
+    { spellClass: 'paladin', spells: ['cure-wounds'] },
+    { spellClass: 'wizard' },
+    { spellClass: 'wizard', cantrips: ['fire-bolt'] },
+    { spellClass: 'wizard', cantrips: ['fire-bolt', 'light'], spells: ['cure-wounds'] },
+    { spellClass: 'wizard', cantrips: ['fire-bolt', 'light'], spells: ['sleep'] },
+    { spellClass: 'cleric', cantrips: ['sacred-flame', 'guidance'], spells: ['cure-wounds'] },
+  ]
+  const wizard = {
+    class: 'wizard',
+    classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), skills: ['arcana', 'history'] },
+    spellChoices: { cantrips: ['fire-bolt', 'light', 'mage-hand'], spells: ['sleep', 'shield'] },
+  }
+  for (const selections of picks) {
+    const featSelections: CharacterDraft['featSelections'] = selections ? { 'iniciado-em-magia': selections } : {}
+    for (const cls of [{}, wizard]) {
+      out.push(draft({ ...cls, level: 4, asiChoices: [{ kind: 'feat', featId: 'iniciado-em-magia' }], featSelections }))
+      out.push(draft({
+        ...cls,
+        race: 'human', subrace: 'variant-human',
+        raceChoices: { abilityBonuses: ['STR', 'DEX'], skills: ['athletics'], feat: 'iniciado-em-magia' },
+        featSelections,
+      }))
+    }
+  }
+  return out
+}
+
+describe('motivos × isStepComplete — Iniciado em Magia', () => {
+  const drafts = magicInitiateDrafts()
 
   it('o leque tem etapa Aprimoramentos e Raça aprovadas e reprovadas', () => {
     for (const step of ['improvements', 'race'] as const) {

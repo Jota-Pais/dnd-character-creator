@@ -123,3 +123,35 @@ describe('Magia repetida entre fontes na Revisão e no PDF', () => {
     expect(container.textContent).toMatch(/Raio de Fogo aparece em Mago e .+ \(raça\)\. Repetir não é proibido/)
   })
 })
+
+describe('Iniciado em Magia na seção Magias da Revisão e do PDF', () => {
+  // Guerreiro (não conjura) Humano Variante com o talento pela raça: INT 15 + 1 = 16 (+3), proficiência +2 → CD 13, ataque +5.
+  const fighter: CharacterDraft = {
+    ...structuredClone(EMPTY_DRAFT),
+    name: 'Aldric',
+    race: 'human', subrace: 'variant-human', class: 'fighter', level: 1,
+    raceChoices: { abilityBonuses: ['INT', 'STR'], skills: ['arcana'], feat: 'iniciado-em-magia' },
+    abilityScores: { STR: 15, DEX: 14, CON: 13, INT: 15, WIS: 10, CHA: 8 },
+    featSelections: { 'iniciado-em-magia': { spellClass: 'wizard', cantrips: ['fire-bolt', 'light'], spells: ['sleep'] } },
+  }
+
+  it.each([
+    ['Revisão', () => render(<ReviewStep />)],
+    ['ficha imprimível', () => render(<PrintableSheet />)],
+  ])('%s: a fonte, a CD e o ataque pela INT, os truques e a magia de 1º com o uso', (_, renderIt) => {
+    useCharacterStore.setState({ draft: structuredClone(fighter) })
+    const text = renderIt().container.textContent ?? ''
+    expect(text).toContain('Iniciado em Magia (Mago)')
+    expect(text).toMatch(/13CD de Magia|CD: 13 /)
+    expect(text).toMatch(/\+5Bônus de Ataque|Ataque: \+5 /)
+    expect(text).toContain('Raio de Fogo')
+    expect(text).toContain('1º nível — 1×/descanso longo, no menor nível possível')
+    expect(text).toContain('Sono')
+  })
+
+  it('ficha imprimível: a descrição das magias do talento entra no grimório', () => {
+    useCharacterStore.setState({ draft: structuredClone(fighter) })
+    const text = render(<PrintableSheet />).container.textContent ?? ''
+    expect(text).toMatch(/Magias — descrições \(3\)/)
+  })
+})

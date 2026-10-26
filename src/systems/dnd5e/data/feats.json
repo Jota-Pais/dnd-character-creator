@@ -145,8 +145,11 @@
     "prerequisite": null,
     "description": "Escolha uma classe: bardo, bruxo, clérigo, druida, feiticeiro ou mago. Você aprende dois truques da lista de magias da classe escolhida.\nAlém disso, escolha uma magia de 1° nível da mesma lista. Você aprende essa magia e pode conjura-la com o menor nível possível. Uma vez que a conjure, você precisa terminar um descanso longo para poder conjura-la novamente. Essa restrição aplica-se apenas à magia adquirida através desse talento.\nSua habilidade de conjuração depende da classe que você escolher: Carisma para bardo, bruxo ou feiticeiro; Sabedoria para clérigo ou druida; ou Inteligência para mago.",
     "effects": {
+      "choices": {
+        "spellChoice": { "classes": ["bard", "warlock", "cleric", "druid", "sorcerer", "wizard"], "cantrips": 2, "spells": 1, "spellLevel": 1 }
+      },
       "resources": [
-        { "id": "magic-initiate-spell", "name": "Magia de 1º nível do talento", "uses": 1, "recharge": "long", "note": "só a magia escolhida no talento, no menor nível possível" }
+        { "id": "magic-initiate-spell", "name": "Magia de 1º nível do talento", "uses": 1, "recharge": "long", "note": "conjurada pelo talento, no menor nível possível", "nameFromChosenSpell": true }
       ]
     }
   },

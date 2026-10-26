@@ -1,13 +1,15 @@
 import type { Spell, SpellClass, SpellChoices, SpellSchool } from '../types/spell'
 import type { GameClass, ClassSpellcasting } from '../types/class'
 import type { AbilityScore } from '../types/race'
-import type { CharacterDraft, ClassEntry } from '../types/character'
+import type { CharacterDraft, ClassEntry, FeatSelections } from '../types/character'
+import type { FeatureChoices } from '../types/effects'
 import { calculateModifier, getProficiencyBonus } from './abilityScoreUtils'
 import { isActiveCaster, getClass, getSpellcastingSource } from './classUtils'
 import { allClassEntries, getCasterProgression, getCombinedCasterLevel } from './multiclassUtils'
 import { getKnownColumnSecretIds, getProgressionSlotsUpToLevel, getProgressionSpellIds, isSpellChoiceSlot } from './progressionChoiceUtils'
 import { getRace, getSubrace, getAllChoices, getAvailableInnateSpells } from './raceUtils'
 import { getGrantedSpellGroups } from './progressionOptions'
+import { getOwnedFeats } from './ownedFeats'
 import spellsData from '../data/spells.json'
 import progressionData from '../data/progression.json'
 
@@ -388,15 +390,125 @@ export function formatSecretSpellName(spell: Spell): string {
   return `${spell.name} (${spell.level === 0 ? 'truque' : `${spell.level}º`})`
 }
 
+// ── Magias ensinadas por talento (Iniciado em Magia, p. 170) ──────────────────
+
+/** O que um talento que ensina magias oferece (`choices.spellChoice` em feats.json). */
+export type FeatSpellChoice = NonNullable<FeatureChoices['spellChoice']>
+
+/** As escolhas de um talento que ensina magias, só as válidas (getFeatSpellPicks). */
+export type FeatSpellPicks = {
+  /** A classe escolhida, se é uma das que o talento oferece; senão null (e nada mais vale). */
+  spellClass: SpellClass | null
+  cantrips: string[]
+  spells: string[]
+}
+
+/**
+ * O que vale das escolhas gravadas: a classe, se o talento a oferece, e, da lista DELA, os truques
+ * e as magias do nível do talento, sem repetir e até o que o talento dá. O resto (ficha importada
+ * ou editada, magia de outra lista) não entra na ficha — e a escolha volta a ficar pendente.
+ */
+export function getFeatSpellPicks(choice: FeatSpellChoice, selections: FeatSelections): FeatSpellPicks {
+  const picked = selections.spellClass
+  const spellClass = picked && choice.classes.includes(picked) ? (picked as SpellClass) : null
+  if (!spellClass) return { spellClass: null, cantrips: [], spells: [] }
+  const valid = (ids: string[] | undefined, level: number, max: number) => [...new Set(ids ?? [])]
+    .filter(id => {
+      const spell = getSpell(id)
+      return !!spell && spell.level === level && spell.classes.includes(spellClass)
+    })
+    .slice(0, max)
+  return {
+    spellClass,
+    cantrips: valid(selections.cantrips, 0, choice.cantrips),
+    spells: valid(selections.spells, choice.spellLevel, choice.spells),
+  }
+}
+
+/** As magias de um nível da lista da classe, em ordem alfabética — o catálogo do slot do talento. */
+export function getFeatSpellOptions(spellClass: SpellClass, level: number): Spell[] {
+  return getSpellsByLevel(spellClass, level).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
+}
+
+/**
+ * Atributo de conjuração das magias do talento: o da classe escolhida (Carisma para bardo, bruxo e
+ * feiticeiro; Sabedoria para clérigo e druida; Inteligência para mago — p. 170), lido da
+ * conjuração dela em classes.json.
+ */
+export function getFeatSpellcastingAbility(spellClass: SpellClass): AbilityScore | null {
+  return getClass(spellClass)?.spellcasting?.ability ?? null
+}
+
+/** "Iniciado em Magia (Mago)" — a fonte das magias do talento na ficha e no aviso de repetida. */
+export function formatFeatSpellSource(featName: string, spellClass: SpellClass): string {
+  return `${featName} (${getClass(spellClass)?.name ?? spellClass})`
+}
+
+/** Como a magia de 1º nível do talento se usa: a regra da p. 170, que vale só para ela. */
+export const FEAT_SPELL_USAGE = '1×/descanso longo, no menor nível possível'
+
+/** As magias que um talento ensina, como a seção Magias da Revisão e do PDF mostra. */
+export type FeatSpellBlock = {
+  featId: string
+  /** "Iniciado em Magia (Mago)". */
+  label: string
+  spellClass: SpellClass
+  ability: AbilityScore
+  /** CD e ataque pelo atributo da classe escolhida, com os atributos FINAIS e a proficiência do personagem. */
+  saveDc: number
+  attackBonus: string
+  cantrips: Spell[]
+  spells: Spell[]
+  /** Título das magias de 1º nível ou mais, com o uso: "1º nível — 1×/descanso longo, ...". */
+  spellsTitle: string
+}
+
+/**
+ * Os talentos que ensinam magias (Iniciado em Magia), um bloco por talento com a classe escolhida:
+ * os truques (à vontade) e a magia de 1º nível (uma vez por descanso longo), com a CD e o ataque
+ * pelo atributo de conjuração daquela classe. Vale para qualquer personagem, conjurador ou não.
+ */
+export function getFeatSpellBlocks(
+  draft: CharacterDraft,
+  finalScores: Partial<Record<AbilityScore, number | null>>,
+): FeatSpellBlock[] {
+  return getOwnedFeats(draft).flatMap((feat): FeatSpellBlock[] => {
+    const choice = feat.effects?.choices?.spellChoice
+    if (!choice) return []
+    const picks = getFeatSpellPicks(choice, draft.featSelections[feat.id] ?? {})
+    const sc = picks.spellClass ? getClass(picks.spellClass)?.spellcasting : undefined
+    if (!picks.spellClass || !sc) return []
+    const toSpells = (ids: string[]) => ids.map(getSpell).filter((s): s is Spell => s !== undefined)
+    const level = draft.level ?? 1
+    return [{
+      featId: feat.id,
+      label: formatFeatSpellSource(feat.name, picks.spellClass),
+      spellClass: picks.spellClass,
+      ability: sc.ability,
+      saveDc: getSpellSaveDC(sc, finalScores, level),
+      attackBonus: formatSpellAttackBonus(sc, finalScores, level),
+      cantrips: toSpells(picks.cantrips),
+      spells: toSpells(picks.spells),
+      spellsTitle: `${choice.spellLevel}º nível — ${FEAT_SPELL_USAGE}`,
+    }]
+  })
+}
+
+/** A magia de 1º nível escolhida no talento (o nome do recurso de uso), ou undefined. */
+export function getFeatChosenSpell(choice: FeatSpellChoice, selections: FeatSelections): Spell | undefined {
+  const [id] = getFeatSpellPicks(choice, selections).spells
+  return id ? getSpell(id) : undefined
+}
+
 // ── Magia repetida entre fontes (decisão do usuário, 2026-10-25) ──────────────
 
 /** De onde vêm magias da ficha, para achar a mesma magia em duas (getRepeatedSpells). */
 export type SpellSource = {
-  /** Estável: 'class:wizard', 'secrets:bard:Segredos Mágicos', 'race-cantrip', 'race-innate'. */
+  /** Estável: 'class:wizard', 'secrets:bard:Segredos Mágicos', 'race-cantrip', 'race-innate', 'feat:iniciado-em-magia'. */
   key: string
-  /** "Mago", "Guerreiro (Cavaleiro Arcano)", "Bardo — Segredos Mágicos", "Alto Elfo (raça)". */
+  /** "Mago", "Guerreiro (Cavaleiro Arcano)", "Bardo — Segredos Mágicos", "Alto Elfo (raça)", "Iniciado em Magia (Mago)". */
   label: string
-  /** Classe conjuradora dona da fonte (a seção da etapa Magias); null para a raça. */
+  /** Classe conjuradora dona da fonte (a seção da etapa Magias); null para a raça e o talento. */
   classId: string | null
   spellIds: string[]
 }
@@ -404,9 +516,10 @@ export type SpellSource = {
 /**
  * As fontes de magia da ficha: cada classe conjuradora ativa (truques, os dados pela
  * característica inclusos, e magias — getCasterEntries), os Segredos Mágicos dela por slot, o
- * truque escolhido na raça (Alto Elfo) e os truques inatos da raça. Das magias inatas de 1º nível
- * ou mais a raça dá um uso sem espaço por descanso longo (p. 24, 43), o que a magia da classe não
- * repete — por isso só os truques inatos entram.
+ * truque escolhido na raça (Alto Elfo), os truques inatos da raça e os truques de talento (Iniciado
+ * em Magia). Das magias inatas de 1º nível ou mais a raça dá um uso sem espaço por descanso longo
+ * (p. 24, 43), o que a magia da classe não repete — por isso só os truques inatos entram; pelo
+ * mesmo motivo, só os truques do talento (a magia de 1º dele tem o uso por descanso longo, p. 170).
  */
 export function getSpellSources(draft: CharacterDraft): SpellSource[] {
   const sources: SpellSource[] = []
@@ -456,6 +569,20 @@ export function getSpellSources(draft: CharacterDraft): SpellSource[] {
     if (innateCantrips.length > 0) {
       sources.push({ key: 'race-innate', label, classId: null, spellIds: innateCantrips })
     }
+  }
+  // Talento (Iniciado em Magia): os truques. A magia de 1º nível fica de fora pelo mesmo motivo das
+  // inatas: o uso do talento por descanso longo (p. 170) não se repete na magia da classe.
+  for (const feat of getOwnedFeats(draft)) {
+    const choice = feat.effects?.choices?.spellChoice
+    if (!choice) continue
+    const picks = getFeatSpellPicks(choice, draft.featSelections[feat.id] ?? {})
+    if (!picks.spellClass || picks.cantrips.length === 0) continue
+    sources.push({
+      key: `feat:${feat.id}`,
+      label: formatFeatSpellSource(feat.name, picks.spellClass),
+      classId: null,
+      spellIds: picks.cantrips,
+    })
   }
   return sources.map(s => ({ ...s, spellIds: [...new Set(s.spellIds)] }))
 }

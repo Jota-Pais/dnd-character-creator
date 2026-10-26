@@ -20,7 +20,7 @@ import { getRace, getSubrace, isRaceStepComplete } from './raceUtils'
 import { getClass, getSubclass, getSpellcastingSource, isClassStepComplete } from './classUtils'
 import { getBackground, isBackgroundStepComplete, sanitizeBackgroundItemSelections } from './backgroundUtils'
 import { isAbilitiesStepComplete } from './abilityScoreUtils'
-import { getCasterEntries, getSpell, getSecretSpellIssues, getSpellStepOverflows, isSpellStepComplete } from './spellUtils'
+import { getCasterEntries, getFeatSpellPicks, getSpell, getSecretSpellIssues, getSpellStepOverflows, isSpellStepComplete } from './spellUtils'
 import { isEquipmentStepComplete } from './equipmentUtils'
 import { isImprovementsStepComplete, getFinalAbilityScores } from './asiUtils'
 import { areFeatChoicesComplete, hasRepeatedFightingStyle } from './sheetEffects'
@@ -111,6 +111,19 @@ function sanitizeFeatSelections(raw: unknown): Record<string, FeatSelections> {
       .filter(id => getManeuver(id) !== undefined)
       .slice(0, maxManeuvers)
     if (maneuvers.length > 0) selections.maneuvers = maneuvers
+    // Magias (Iniciado em Magia): a classe só se o talento a oferece; truques e magias só da lista
+    // dela, do nível certo, sem repetir e até o que o talento dá (getFeatSpellPicks).
+    const spellChoice = getFeat(featId)?.effects?.choices?.spellChoice
+    if (spellChoice) {
+      const picks = getFeatSpellPicks(spellChoice, {
+        spellClass: typeof value.spellClass === 'string' ? value.spellClass : undefined,
+        cantrips: toStringArray(value.cantrips),
+        spells: toStringArray(value.spells),
+      })
+      if (picks.spellClass) selections.spellClass = picks.spellClass
+      if (picks.cantrips.length > 0) selections.cantrips = picks.cantrips
+      if (picks.spells.length > 0) selections.spells = picks.spells
+    }
     if (Object.keys(selections).length > 0) out[featId] = selections
   }
   return out

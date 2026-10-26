@@ -29,7 +29,9 @@ import {
 } from './abilityScoreUtils'
 import { getAsiSlotCount, getReachedAsiLevels, isAsiChoiceComplete, getRacialBonuses, getAsiBonuses, getFinalAbilityScores } from './asiUtils'
 import { getFeat } from './featUtils'
-import { getFeatChoiceSlots, getRepeatedFeatManeuvers, getRepeatedFightingStyles, type FeatChoiceSlot } from './sheetEffects'
+import {
+  getFeatChoiceSlots, getFeatSpellChoiceGaps, getRepeatedFeatManeuvers, getRepeatedFightingStyles, type FeatChoiceSlot,
+} from './sheetEffects'
 import { getManeuverName } from './maneuverUtils'
 import { getProgressionSlotsUpToLevel } from './progressionChoiceUtils'
 import { describeRequiredPick, getUnmetPickRequirements } from './progressionOptions'
@@ -75,7 +77,7 @@ function ordinal(n: number): string {
   return `${n}º`
 }
 
-/** Escolhas de um talento que ainda faltam (Perito, Poliglota, Mestre de Armas). */
+/** Escolhas de um talento que ainda faltam (Perito, Poliglota, Mestre de Armas, Adepto Marcial, Iniciado em Magia). */
 function featChoiceReasons(slot: FeatChoiceSlot, where: string): string[] {
   const { choices, selections, feat } = slot
   const out: string[] = []
@@ -97,6 +99,15 @@ function featChoiceReasons(slot: FeatChoiceSlot, where: string): string[] {
     for (const id of getRepeatedFeatManeuvers(slot)) {
       out.push(`${where}, talento ${feat.name}: a manobra ${getManeuverName(id)} já vem do Mestre de Batalha — troque por outra`)
     }
+  }
+  const spellGaps = getFeatSpellChoiceGaps(slot)
+  if (spellGaps?.needsClass) {
+    out.push(`${where}, talento ${feat.name}: escolha a classe de cuja lista vêm as magias`)
+  } else if (spellGaps) {
+    const asks: string[] = []
+    if (spellGaps.cantrips > 0) asks.push(plural(spellGaps.cantrips, 'truque', 'truques'))
+    if (spellGaps.spells > 0) asks.push(plural(spellGaps.spells, `magia de ${ordinal(spellGaps.spellLevel)} nível`, `magias de ${ordinal(spellGaps.spellLevel)} nível`))
+    if (asks.length > 0) out.push(`${where}, talento ${feat.name}: escolha ${asks.join(' e ')}`)
   }
   return out
 }

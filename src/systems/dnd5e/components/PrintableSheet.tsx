@@ -38,7 +38,7 @@ import {
   getSpell, getSpellSaveDC, formatSpellAttackBonus, getCombinedSpellSlots, getPactSlots,
   getMaxPreparedSpells, describeCastingAids, getCasterEntries, getSpellChoiceOverflows,
   getSecretSpellGroups, formatSecretSpellName, getCasterColumnHeadings,
-  getRepeatedSpells, formatRepeatedSpell,
+  getRepeatedSpells, formatRepeatedSpell, getFeatSpellBlocks,
 } from '../utils/spellUtils'
 import { RuleText } from './common/RuleText'
 import { formatAttackDamage } from '../utils/weaponFormat'
@@ -182,6 +182,8 @@ export function PrintableSheet() {
 
   const casters = getCasterEntries(draft)
   const isCaster = casters.length > 0
+  // Magias de talento (Iniciado em Magia): têm seção mesmo sem classe conjuradora.
+  const featSpellBlocks = getFeatSpellBlocks(draft, finalScores)
 
   const fightingStyles = getSheetFightingStyles(draft)
 
@@ -192,7 +194,8 @@ export function PrintableSheet() {
   /**
    * Toda magia que o personagem conhece, por QUALQUER via:
    * - truques e magias das classes conjuradoras, com as de Segredos Mágicos (bonusSpells);
-   * - o truque racial, o da subclasse e as magias inatas da raça.
+   * - o truque racial, o da subclasse e as magias inatas da raça;
+   * - os truques e a magia de talento (Iniciado em Magia).
    *
    * Sem repetir e na ordem da mesa: truques primeiro, depois por nível, alfabético dentro de cada.
    */
@@ -202,6 +205,7 @@ export function PrintableSheet() {
       ...(draft.raceChoices.cantrip ? [draft.raceChoices.cantrip] : []),
       ...entries.flatMap(e => e.classChoices.subclassExtras.cantrip ? [e.classChoices.subclassExtras.cantrip] : []),
       ...innateSpells.map(s => s.spellId),
+      ...featSpellBlocks.flatMap(b => [...b.cantrips, ...b.spells].map(s => s.id)),
     ]
     return [...new Set(ids)]
       .map(getSpell)
@@ -376,7 +380,7 @@ export function PrintableSheet() {
       </Box>
 
       {/* Magias — pool combinado + Pacto; listas por classe conjuradora */}
-      {isCaster && (() => {
+      {(isCaster || featSpellBlocks.length > 0) && (() => {
         const slots = getCombinedSpellSlots(draft).map((count, i) => ({ lvl: i + 1, count })).filter(s => s.count > 0)
         const pact = getPactSlots(draft)
         return (
@@ -436,6 +440,25 @@ export function PrintableSheet() {
                 </div>
               )
             })}
+            {/* Talento (Iniciado em Magia, p. 170): CD e ataque pelo atributo da classe escolhida, como na Revisão. */}
+            {featSpellBlocks.map(block => (
+              <div key={block.featId} className="mb-1">
+                <p className="text-xs font-bold text-gray-700 mt-1">{block.label}</p>
+                <p className="text-xs mb-0.5">
+                  CD: <strong>{block.saveDc}</strong> · Ataque: <strong>{block.attackBonus}</strong> · Atributo: {ABILITY_LABELS[block.ability].short}
+                </p>
+                {block.cantrips.length > 0 && (
+                  <p className="text-xs mb-0.5"><span className="text-gray-600">Truques, sempre disponíveis: </span>{block.cantrips.map(s => s.name).join(', ')}</p>
+                )}
+                {block.spells.length > 0 && (
+                  <p className="text-xs mb-0.5">
+                    <span className="text-gray-600">{block.spellsTitle}: </span>
+                    {/* O uso se marca uma vez só, no bloco Recursos (o recurso leva o nome da magia). */}
+                    {block.spells.map(s => s.name).join(', ')}
+                  </p>
+                )}
+              </div>
+            ))}
           </Box>
         )
       })()}

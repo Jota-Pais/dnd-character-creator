@@ -67,6 +67,12 @@ export type FeatSelections = {
   weapons?: string[]
   /** Manobras do Mestre de Batalha aprendidas pelo talento (Adepto Marcial, p. 167). */
   maneuvers?: string[]
+  /** Classe de cuja lista o talento ensina magias (Iniciado em Magia, p. 170): bard, wizard... */
+  spellClass?: string
+  /** Truques aprendidos pelo talento, da lista de `spellClass`. */
+  cantrips?: string[]
+  /** Magias de 1º nível ou mais aprendidas pelo talento, da lista de `spellClass`. */
+  spells?: string[]
 }
 
 export type HpMethod = 'average' | 'roll'

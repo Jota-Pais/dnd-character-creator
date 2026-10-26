@@ -58,6 +58,7 @@ import {
   getCasterColumnHeadings,
   getRepeatedSpells,
   formatRepeatedSpell,
+  getFeatSpellBlocks,
 } from '../../utils/spellUtils'
 import { exportCharacter } from '../../utils/storage'
 import { getPendingSteps, getStepPendingReasons } from '../../utils/pendingReasons'
@@ -883,7 +884,9 @@ export function ReviewStep() {
       {/* Magias — slots combinados (pool único) + seleção por classe conjuradora */}
       {(() => {
         const casters = getCasterEntries(draft)
-        if (casters.length === 0) return null
+        // Magias de talento (Iniciado em Magia): entram aqui mesmo sem classe conjuradora.
+        const featSpellBlocks = getFeatSpellBlocks(draft, finalScores)
+        if (casters.length === 0 && featSpellBlocks.length === 0) return null
         const combined = getCombinedSpellSlots(draft).map((count, i) => ({ spellLevel: i + 1, count })).filter(s => s.count > 0)
         const pact = getPactSlots(draft)
         const repeatedSpells = getRepeatedSpells(draft)
@@ -993,6 +996,35 @@ export function ReviewStep() {
                   </div>
                 )
               })}
+              {/* Talento (Iniciado em Magia, p. 170): CD e ataque pelo atributo da classe escolhida. */}
+              {featSpellBlocks.map(block => (
+                <div key={block.featId}>
+                  <p className="text-sm font-fantasy font-bold mb-2" style={{ color: accent }}>
+                    {block.label} · {ABILITY_LABELS[block.ability].short}
+                  </p>
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <SpellStat label="CD de Magia" value={String(block.saveDc)} accent={accent} term="cd-de-magia" />
+                    <SpellStat label="Bônus de Ataque" value={block.attackBonus} accent={accent} term="bonus-ataque-magia" />
+                  </div>
+                  {block.cantrips.length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">Truques</p>
+                      <div className="flex flex-wrap gap-1.5">{block.cantrips.map(s => <SpellChip key={s.id} name={s.name} school={s.school} />)}</div>
+                    </div>
+                  )}
+                  {block.spells.length > 0 && (
+                    <div>
+                      <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">{block.spellsTitle}</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {block.spells.map(s => <SpellChip key={s.id} name={s.name} school={s.school} concentration={s.concentration} ritual={s.ritual} />)}
+                      </div>
+                    </div>
+                  )}
+                  {block.cantrips.length === 0 && block.spells.length === 0 && (
+                    <p className="text-parchment-700 text-sm italic">Nenhuma magia selecionada</p>
+                  )}
+                </div>
+              ))}
             </div>
           </Section>
         )

@@ -6,6 +6,7 @@ import type {
   ConditionalAcBonus, EquipmentRequirement, LoadingOverride, ResourceEffect, WeaponAttackEffect,
 } from '../types/effects'
 import { getFeat } from './featUtils'
+import { getOwnedFeats } from './ownedFeats'
 import {
   getClass, getSubclass, getClassFeaturesUpToLevel, getClassFightingStyleOptions, FIGHTING_STYLES,
 } from './classUtils'
@@ -23,6 +24,7 @@ import {
 import { getActivePicks, getProgressionSlotsUpToLevel } from './progressionChoiceUtils'
 import { getProgressionOptions, getUnmetRequirement, type ProgressionOption } from './progressionOptions'
 import { formatManeuverSaveDc, getClassManeuvers, getManeuver, getManeuverSaveDc } from './maneuverUtils'
+import { getFeatChosenSpell, getFeatSpellPicks } from './spellUtils'
 import {
   allClassEntries, getAllAsiChoices, getTotalHpAverage, getTotalHpRolled,
 } from './multiclassUtils'
@@ -43,23 +45,8 @@ import {
 /** Uma linha de efeito na ficha: o valor e de onde ele veio. */
 export type SheetEffect<T> = { source: string; value: T }
 
-/**
- * Talentos que o personagem possui, por qualquer via: o do Humano Variante e os escolhidos em
- * cada espaço de ASI (da classe primária e das adicionais). Sem repetir — o livro não deixa pegar
- * o mesmo talento duas vezes, mas a ficha não deve dobrar o bônus se isso escapar.
- */
-export function getOwnedFeats(draft: CharacterDraft): Feat[] {
-  const ids = [
-    ...(draft.raceChoices.feat ? [draft.raceChoices.feat] : []),
-    ...getAllAsiChoices(draft)
-      .filter(c => c.kind === 'feat')
-      .map(c => (c as { featId: string }).featId)
-      .filter(Boolean),
-  ]
-  return [...new Set(ids)]
-    .map(getFeat)
-    .filter((f): f is Feat => f !== undefined)
-}
+/** Talentos que o personagem possui — mora em `ownedFeats` (ver lá por quê). */
+export { getOwnedFeats }
 
 /**
  * Features de classe e subclasse que o personagem tem, de cada classe no nível que tem NELA: um
@@ -424,7 +411,14 @@ function getResourceDeclarations(draft: CharacterDraft): ResourceDeclaration[] {
 
   for (const feat of getOwnedFeats(draft)) {
     const source: ResourceSource = { kind: 'feat', id: feat.id, name: feat.name }
-    for (const effect of feat.effects?.resources ?? []) out.push({ effect, source, level: charLevel })
+    const spellChoice = feat.effects?.choices?.spellChoice
+    for (const effect of feat.effects?.resources ?? []) {
+      // O uso da magia do talento leva o nome da magia escolhida (Iniciado em Magia, p. 170).
+      const chosen = effect.nameFromChosenSpell && spellChoice
+        ? getFeatChosenSpell(spellChoice, draft.featSelections[feat.id] ?? {})
+        : undefined
+      out.push({ effect: chosen ? { ...effect, name: chosen.name } : effect, source, level: charLevel })
+    }
   }
   return out
 }
@@ -876,7 +870,7 @@ export type FeatChoiceSlot = {
 
 /**
  * Talentos possuídos que abrem escolhas (Perito, Poliglota, Mestre de Armas: proficiências;
- * Adepto Marcial: manobras).
+ * Adepto Marcial: manobras; Iniciado em Magia: classe, truques e magia).
  */
 export function getFeatChoiceSlots(draft: CharacterDraft): FeatChoiceSlot[] {
   return getOwnedFeats(draft)
@@ -884,6 +878,7 @@ export function getFeatChoiceSlots(draft: CharacterDraft): FeatChoiceSlot[] {
       const choices = feat.effects?.choices
       // savingThrowFromAbilityChoice não abre slot: reaproveita o atributo do +1 do talento.
       return choices?.skillOrToolChoice || choices?.languageChoice || choices?.weaponChoice || choices?.maneuverChoice
+        || choices?.spellChoice
     })
     .map(feat => ({
       feat,
@@ -919,7 +914,28 @@ export function isFeatChoiceComplete(slot: FeatChoiceSlot): boolean {
     if ((selections.maneuvers?.length ?? 0) < choices.maneuverChoice.count) return false
     if (getRepeatedFeatManeuvers(slot).length > 0) return false
   }
+  const spellGaps = getFeatSpellChoiceGaps(slot)
+  if (spellGaps && (spellGaps.needsClass || spellGaps.cantrips > 0 || spellGaps.spells > 0)) return false
   return true
+}
+
+/**
+ * O que falta no slot de magias do talento (Iniciado em Magia, p. 170): a classe, e quantos
+ * truques e magias da lista dela. Conta só as escolhas válidas (getFeatSpellPicks) — magia de
+ * outra lista, de ficha importada, não preenche. null para talento sem `spellChoice`.
+ */
+export function getFeatSpellChoiceGaps(
+  slot: FeatChoiceSlot,
+): { needsClass: boolean; cantrips: number; spells: number; spellLevel: number } | null {
+  const choice = slot.choices.spellChoice
+  if (!choice) return null
+  const picks = getFeatSpellPicks(choice, slot.selections)
+  return {
+    needsClass: picks.spellClass === null,
+    cantrips: choice.cantrips - picks.cantrips.length,
+    spells: choice.spells - picks.spells.length,
+    spellLevel: choice.spellLevel,
+  }
 }
 
 /**
@@ -932,7 +948,10 @@ export function areFeatChoicesComplete(draft: CharacterDraft, featIds?: string[]
     .every(isFeatChoiceComplete)
 }
 
-function selectionsOf(draft: CharacterDraft, key: keyof FeatSelections): string[] {
+/** As chaves de `FeatSelections` que são listas (a classe do Iniciado em Magia é uma só). */
+type FeatSelectionList = 'skills' | 'tools' | 'languages' | 'weapons' | 'maneuvers'
+
+function selectionsOf(draft: CharacterDraft, key: FeatSelectionList): string[] {
   return getOwnedFeats(draft).flatMap(f => draft.featSelections[f.id]?.[key] ?? [])
 }
 

@@ -4,7 +4,7 @@ import { roll } from '../../../../core/dice'
 import { usePlayStore } from '../../stores/playStore'
 import { recordDeathSave, recordRoll, regainHpWhileStable, revive, stabilize } from '../../utils/playState'
 import { describeRollGuide } from '../../utils/rollGuide'
-import { rollGuideEntry, type GuideRoll } from './playDice'
+import { rerollNaturalOne, rollGuideEntry, type GuideRoll } from './playDice'
 import type { PlayView } from './usePlayView'
 
 function Marks({ label, count, filled }: { label: string; count: DeathSaveCount; filled: string }) {
@@ -37,14 +37,31 @@ export function DeathSaves({ view }: { view: PlayView }) {
   }, [state.lifeState])
   // A rolagem do app que preencheu o campo: vai para o histórico junto com o teste.
   const [rolled, setRolled] = useState<GuideRoll | null>(null)
+  // Já jogou de novo pelo Sortudo: o novo resultado é o que vale, sem terceira chance (pág. 28).
+  const [luckUsed, setLuckUsed] = useState(false)
+  const logRoll = usePlayStore(s => s.logRoll)
   const entry = guide.deathSave
   const natural = /^\d+$/.test(text.trim()) ? Number(text.trim()) : null
   const valid = natural !== null && natural >= 1 && natural <= 20
+  // Sortudo: o 1 natural que os dados do app tiraram pode ser jogado de novo antes de registrar.
+  const luckSource = entry.rerollNaturalOne?.join(', ')
+  const offerLuck = Boolean(luckSource) && !luckUsed && rolled !== null && rolled.natural === 1 && natural === 1
 
   function handleRoll() {
     const result = rollGuideEntry(entry)
     setRolled(result)
+    setLuckUsed(false)
     setText(result.natural === null ? '' : String(result.natural))
+  }
+
+  function handleLuck() {
+    if (!rolled) return
+    // A primeira rolagem aconteceu: fica no histórico; o teste registra a nova.
+    logRoll(rolled.record)
+    const again = rerollNaturalOne(entry, rolled, luckSource ? { source: luckSource } : {})
+    setRolled(again)
+    setLuckUsed(true)
+    setText(again.natural === null ? '' : String(again.natural))
   }
 
   function handleSubmit(e: FormEvent) {
@@ -58,6 +75,7 @@ export function DeathSaves({ view }: { view: PlayView }) {
     })
     setText('')
     setRolled(null)
+    setLuckUsed(false)
   }
 
   if (state.lifeState === 'dead') {
@@ -103,7 +121,7 @@ export function DeathSaves({ view }: { view: PlayView }) {
           min={1}
           max={20}
           value={text}
-          onChange={e => { setText(e.target.value); setRolled(null) }}
+          onChange={e => { setText(e.target.value); setRolled(null); setLuckUsed(false) }}
           aria-label="d20 que você tirou (1 a 20)"
           placeholder="d20"
           className="min-h-10 w-24 rounded-lg border border-parchment-800 bg-surface-base px-3 text-lg text-parchment-100 outline-none focus:border-gold-600"
@@ -115,6 +133,15 @@ export function DeathSaves({ view }: { view: PlayView }) {
             className="min-h-10 rounded-lg border border-parchment-800 px-3 text-sm text-parchment-400 hover:text-parchment-200"
           >
             rolar
+          </button>
+        )}
+        {offerLuck && (
+          <button
+            type="button"
+            onClick={handleLuck}
+            className="min-h-10 rounded-lg border border-gold-700 px-3 text-sm text-gold-300 hover:border-gold-500"
+          >
+            Rolar de novo ({luckSource})
           </button>
         )}
         <button

@@ -41,6 +41,11 @@ export type ConditionalRollNote = {
    * (p. 199). Só quando a característica alcança todo teste de resistência (Sortudo).
    */
   deathSave?: boolean
+  /**
+   * A característica deixa jogar de novo o 1 natural (Sortudo, p. 28): quando os dados do app tiram
+   * 1, a tela oferece a nova rolagem (hoje, no teste contra a morte).
+   */
+  rerollNaturalOne?: boolean
   /** A regra, em português, com a página — exibida depois do nome de quem a dá. */
   text: string
 }

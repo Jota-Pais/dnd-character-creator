@@ -79,6 +79,11 @@ export type RollGuideEntry = {
    * vale só no crítico e fica fora da fórmula (Ataques Selvagens, Crítico Brutal).
    */
   crit?: { dice: string; formula: string; notation: string; notes?: string[] }
+  /**
+   * Quem deixa jogar de novo o 1 natural desta jogada (Sortudo): com os dados do app, a tela
+   * oferece a nova rolagem antes de registrar. Hoje só no teste contra a morte.
+   */
+  rerollNaturalOne?: string[]
 }
 
 /** Uma linha da tabela de ataques: a jogada de ataque, o dano e o dano a duas mãos (versátil). */
@@ -239,7 +244,14 @@ const STR_DEX: readonly AbilityScore[] = ['STR', 'DEX']
  * Linha condicional de uma condição ou característica, já com a categoria de jogada que ela
  * alcança. `deathSave`: vale também no teste contra a morte (Sortudo).
  */
-type ConditionalLine = { rolls: RollCategory[]; abilities?: AbilityScore[]; deathSave?: boolean; text: string }
+type ConditionalLine = {
+  rolls: RollCategory[]
+  abilities?: AbilityScore[]
+  deathSave?: boolean
+  /** Quem deixa jogar de novo o 1 natural (Sortudo): o nome, para a tela oferecer a rolagem. */
+  rerollNaturalOne?: string
+  text: string
+}
 
 /**
  * As linhas condicionais de jogada das condições em vigor (Amedrontado "com a fonte do medo na
@@ -271,6 +283,7 @@ function getSheetConditionalLines(draft: CharacterDraft): ConditionalLine[] {
     rolls: n.rolls,
     ...(n.abilities ? { abilities: n.abilities } : {}),
     ...(n.deathSave ? { deathSave: true } : {}),
+    ...(n.rerollNaturalOne ? { rerollNaturalOne: n.source } : {}),
     text: `${n.source}: ${n.text}`,
   }))
 }
@@ -760,17 +773,23 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
   })
 
   // Teste contra a morte: d20 puro, sem atributo (pág. 199); só as fontes de TODO teste de resistência.
-  const deathSave = d20Entry({
-    id: 'death-save',
-    label: 'Teste contra a morte',
-    modifier: 0,
-    breakdown: [],
-    condition: effects.deathSave,
-    notes: [
-      '10 ou mais: sucesso; 1: dois fracassos; 20: recupera 1 PV (pág. 199).',
-      ...lines.filter(l => l.deathSave).map(l => l.text),
-    ],
-  }, inspiration)
+  // Sortudo vale nele (decisão de 2026-10-25): a nota e, com os dados do app, o "rolar de novo".
+  const deathSaveLines = lines.filter(l => l.deathSave)
+  const deathSaveRerolls = deathSaveLines.flatMap(l => (l.rerollNaturalOne ? [l.rerollNaturalOne] : []))
+  const deathSave: RollGuideEntry = {
+    ...d20Entry({
+      id: 'death-save',
+      label: 'Teste contra a morte',
+      modifier: 0,
+      breakdown: [],
+      condition: effects.deathSave,
+      notes: [
+        '10 ou mais: sucesso; 1: dois fracassos; 20: recupera 1 PV (pág. 199).',
+        ...deathSaveLines.map(l => l.text),
+      ],
+    }, inspiration),
+    ...(deathSaveRerolls.length > 0 ? { rerollNaturalOne: deathSaveRerolls } : {}),
+  }
 
   const resilient = getOwnedFeats(draft).find(f => f.id === 'resistente')
   const hitDice = getHitDicePool(draft).map(({ die }): RollGuideEntry => {

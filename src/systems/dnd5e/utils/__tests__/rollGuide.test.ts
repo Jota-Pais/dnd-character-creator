@@ -517,6 +517,9 @@ describe('getRollGuide — linhas condicionais da ficha (traços e característi
     // Nunca muda o modo.
     expect(guide.saves.WIS.mode).toBe('normal')
     expect(has(getConcentrationGuide(halfling, play(), 10), lucky)).toBe(true)
+    // O teste contra a morte leva também quem deixa jogar de novo (decisão de 2026-10-25).
+    expect(guide.deathSave.rerollNaturalOne).toEqual(['Sortudo'])
+    expect(getRollGuide(fighter(), play()).deathSave.rerollNaturalOne).toBeUndefined()
   })
 
   it('Bravura (halfling): em todo TR, não nos testes nem no teste contra a morte', () => {

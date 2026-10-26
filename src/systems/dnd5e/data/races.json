@@ -207,6 +207,7 @@
             {
               "rolls": ["attack", "abilityCheck", "save"],
               "deathSave": true,
+              "rerollNaturalOne": true,
               "text": "tirou 1 natural no d20? Pode jogar de novo e usar o novo resultado; com vantagem ou desvantagem, só um dos dois dados (págs. 28 e 175)."
             }
           ]

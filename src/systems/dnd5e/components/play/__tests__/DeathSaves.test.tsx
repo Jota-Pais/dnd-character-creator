@@ -1,12 +1,16 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, fireEvent, cleanup } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { usePlayStore } from '../../../stores/playStore'
 import { applyDamage, stabilize } from '../../../utils/playState'
-import { openKrusk, resetPlay } from './openPlay'
+import { COMPLETE_DRAFT } from '../../../../../test/fixtures'
+import { openDraft, openKrusk, resetPlay } from './openPlay'
 
 beforeEach(resetPlay)
-afterEach(() => cleanup())
+afterEach(() => {
+  cleanup()
+  vi.restoreAllMocks()
+})
 
 /** Krusk cai a 0 PV, morrendo. */
 function dropToZero() {
@@ -107,4 +111,45 @@ describe('DeathSaves', () => {
     expect(st.rolls).toHaveLength(1)
     expect(st.rolls[0].label).toBe('Teste contra a morte')
   })
+
+  it('Sortudo: a nota aparece e, com 1 natural dos dados do app, oferece jogar de novo antes de registrar', () => {
+    const halfling = structuredClone(COMPLETE_DRAFT)
+    halfling.race = 'halfling'
+    halfling.subrace = 'lightfoot-halfling'
+    openDraft(halfling)
+    usePlayStore.getState().setAppDice(true)
+    usePlayStore.getState().run((st, sh) => applyDamage(st, sh, { amount: sh.maxHp }))
+    render(<PlayScreen />)
+    expect(screen.getByText(/Sortudo: tirou 1 natural no d20\?/)).toBeInTheDocument()
+
+    forceD20(1)
+    fireEvent.click(screen.getByRole('button', { name: 'rolar' }))
+    forceD20(15)
+    fireEvent.click(screen.getByRole('button', { name: 'Rolar de novo (Sortudo)' }))
+    expect((screen.getByLabelText(/d20 que você tirou/) as HTMLInputElement).value).toBe('15')
+    // O novo resultado vale: sem terceira chance.
+    expect(screen.queryByRole('button', { name: 'Rolar de novo (Sortudo)' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Registrar' }))
+    const st = usePlayStore.getState().state!
+    expect(st.deathSaves).toEqual({ successes: 1, failures: 0 })
+    expect(st.rolls.map(r => r.label)).toEqual(['Teste contra a morte', 'Teste contra a morte — de novo (Sortudo)'])
+  })
+
+  it('sem Sortudo, o 1 natural dos dados do app não oferece jogar de novo', () => {
+    openKrusk()
+    usePlayStore.getState().setAppDice(true)
+    dropToZero()
+    render(<PlayScreen />)
+    forceD20(1)
+    fireEvent.click(screen.getByRole('button', { name: 'rolar' }))
+    expect(screen.queryByRole('button', { name: /Rolar de novo/ })).toBeNull()
+  })
 })
+
+/** Faz o próximo d20 dos dados do app (Web Crypto) sair com a face dada. */
+function forceD20(face: number) {
+  vi.spyOn(globalThis.crypto, 'getRandomValues').mockImplementation(<T extends ArrayBufferView | null>(array: T): T => {
+    (array as unknown as Uint32Array)[0] = Math.floor(((face - 0.5) / 20) * 2 ** 32)
+    return array
+  })
+}

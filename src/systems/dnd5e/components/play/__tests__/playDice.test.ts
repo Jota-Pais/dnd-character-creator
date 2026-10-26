@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { sequenceRoller } from '../../../../../core/dice'
 import { formatGuideFormula, formatGuideNotation, type RollGuideEntry } from '../../../utils/rollGuide'
-import { canRollEntry, rollGuideEntry } from '../playDice'
+import { canRollEntry, rerollNaturalOne, rollGuideEntry } from '../playDice'
 
 function entry(over: Partial<RollGuideEntry>): RollGuideEntry {
   return {
@@ -59,5 +59,34 @@ describe('rollGuideEntry', () => {
   it('dano fixo, sem dado, não é rolável', () => {
     expect(canRollEntry(entry({ kind: 'damage', dice: '', notation: '1' }))).toBe(false)
     expect(canRollEntry(entry({}))).toBe(true)
+  })
+})
+
+describe('rerollNaturalOne (Sortudo)', () => {
+  const death = entry({ id: 'death-save', label: 'Teste contra a morte', modifier: 0, notation: '1d20' })
+
+  it('sem vantagem nem desvantagem: o d20 novo vale, num registro próprio', () => {
+    const first = rollGuideEntry(death, { roller: sequenceRoller([1]) })
+    const again = rerollNaturalOne(death, first, { roller: sequenceRoller([14]), source: 'Sortudo' })
+    expect(again.natural).toBe(14)
+    expect(again.record.label).toBe('Teste contra a morte — de novo (Sortudo)')
+    expect(again.record.notation).toBe('1d20')
+  })
+
+  it('com desvantagem, só o dado que saiu 1 é rolado de novo e vale o menor do par', () => {
+    const e = { ...death, mode: 'disadvantage' as const, notation: '2d20kl1' }
+    const first = rollGuideEntry(e, { roller: sequenceRoller([15, 1]) })
+    expect(first.natural).toBe(1)
+    expect(rerollNaturalOne(e, first, { roller: sequenceRoller([12]) }).natural).toBe(12)
+    expect(rerollNaturalOne(e, first, { roller: sequenceRoller([18]) }).natural).toBe(15)
+    // Dois 1: o outro continua 1.
+    const ones = rollGuideEntry(e, { roller: sequenceRoller([1, 1]) })
+    expect(rerollNaturalOne(e, ones, { roller: sequenceRoller([20]) }).natural).toBe(1)
+  })
+
+  it('com vantagem (os dois saíram 1), vale o novo', () => {
+    const e = { ...death, mode: 'advantage' as const, notation: '2d20kh1' }
+    const first = rollGuideEntry(e, { roller: sequenceRoller([1, 1]) })
+    expect(rerollNaturalOne(e, first, { roller: sequenceRoller([9]) }).natural).toBe(9)
   })
 })

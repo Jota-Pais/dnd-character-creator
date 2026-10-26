@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import type { DeathSaveCount } from '../../types/playState'
-import { recordDeathSave, recordRoll, revive, stabilize } from '../../utils/playState'
+import { roll } from '../../../../core/dice'
+import { usePlayStore } from '../../stores/playStore'
+import { recordDeathSave, recordRoll, regainHpWhileStable, revive, stabilize } from '../../utils/playState'
 import { describeRollGuide } from '../../utils/rollGuide'
 import { rollGuideEntry, type GuideRoll } from './playDice'
 import type { PlayView } from './usePlayView'
@@ -75,16 +77,7 @@ export function DeathSaves({ view }: { view: PlayView }) {
     )
   }
 
-  if (state.lifeState === 'stable') {
-    return (
-      <div className="rounded-xl border border-parchment-800 bg-surface-raised p-4">
-        <p className="font-fantasy font-bold text-parchment-200">Estável, com 0 PV</p>
-        <p className="mt-1 text-xs text-parchment-400 leading-snug">
-          Não rola mais testes contra a morte, mas continua inconsciente até recuperar PV. Se sofrer dano, volta a morrer.
-        </p>
-      </div>
-    )
-  }
+  if (state.lifeState === 'stable') return <StablePanel view={view} />
 
   return (
     <div ref={rootRef} className="rounded-xl border border-red-900 bg-red-950/20 p-4">
@@ -147,6 +140,56 @@ export function DeathSaves({ view }: { view: PlayView }) {
       <p className="mt-1 text-[11px] text-parchment-600 leading-snug">
         Use quando alguém te estabilizar: um aliado com teste de Sabedoria (Medicina) CD 10, um Kit de Primeiros Socorros ou uma magia (pág. 200).
       </p>
+    </div>
+  )
+}
+
+/**
+ * Estável com 0 PV (pág. 200): sem testes contra a morte, inconsciente até recuperar PV. Se ninguém
+ * curar, recupera 1 PV depois de 1d4 horas — o app não conta o tempo, o jogador confirma. Com os
+ * dados do app, o 1d4 de horas pode ser rolado (vai para o histórico).
+ */
+function StablePanel({ view }: { view: PlayView }) {
+  const { appDice, run } = view
+  const logRoll = usePlayStore(s => s.logRoll)
+  const [hours, setHours] = useState<number | null>(null)
+
+  function rollHours() {
+    const record = roll('1d4', { label: 'Estável: horas até recuperar 1 PV' })
+    logRoll(record)
+    setHours(record.total)
+  }
+
+  return (
+    <div className="rounded-xl border border-parchment-800 bg-surface-raised p-4">
+      <p className="font-fantasy font-bold text-parchment-200">Estável, com 0 PV</p>
+      <p className="mt-1 text-xs text-parchment-400 leading-snug">
+        Não rola mais testes contra a morte, mas continua inconsciente até recuperar PV. Se sofrer dano, volta a morrer.
+      </p>
+      <p className="mt-2 text-sm text-parchment-300 leading-snug">
+        Se ninguém te curar, recupera 1 PV depois de 1d4 horas (pág. 200).
+      </p>
+      {appDice && (
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <button
+            onClick={rollHours}
+            className="min-h-10 rounded-lg border border-parchment-800 px-3 text-sm text-parchment-400 hover:text-parchment-200"
+          >
+            rolar 1d4
+          </button>
+          {hours !== null && (
+            <span className="text-sm text-parchment-200" aria-live="polite">
+              {hours === 1 ? 'Recupera 1 PV em 1 hora.' : `Recupera 1 PV em ${hours} horas.`}
+            </span>
+          )}
+        </div>
+      )}
+      <button
+        onClick={() => run((st, sh) => regainHpWhileStable(st, sh))}
+        className="mt-3 min-h-10 rounded-lg border border-parchment-700 px-3 text-sm text-parchment-200 hover:border-gold-600"
+      >
+        Passou o tempo: recuperei 1 PV
+      </button>
     </div>
   )
 }

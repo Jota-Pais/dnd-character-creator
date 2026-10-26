@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, cleanup } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { usePlayStore } from '../../../stores/playStore'
-import { applyDamage } from '../../../utils/playState'
+import { applyDamage, stabilize } from '../../../utils/playState'
 import { openKrusk, resetPlay } from './openPlay'
 
 beforeEach(resetPlay)
@@ -56,6 +56,31 @@ describe('DeathSaves', () => {
     expect(screen.getByText('Estável, com 0 PV')).toBeInTheDocument()
   })
 
+  it('estável: ensina o 1 PV depois de 1d4 horas e o registra com um toque', () => {
+    openKrusk()
+    dropToZero()
+    usePlayStore.getState().run(st => stabilize(st))
+    render(<PlayScreen />)
+    expect(screen.getByText('Se ninguém te curar, recupera 1 PV depois de 1d4 horas (pág. 200).')).toBeInTheDocument()
+    // Dados do app desligados: nada de rolar.
+    expect(screen.queryByRole('button', { name: 'rolar 1d4' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Passou o tempo: recuperei 1 PV' }))
+    expect(usePlayStore.getState().state?.lifeState).toBe('conscious')
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('1')
+  })
+
+  it('estável, com os dados do app: rola o 1d4 de horas para o histórico', () => {
+    openKrusk()
+    usePlayStore.getState().setAppDice(true)
+    dropToZero()
+    usePlayStore.getState().run(st => stabilize(st))
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('button', { name: 'rolar 1d4' }))
+    expect(screen.getByText(/^Recupera 1 PV em [1-4] horas?\.$/)).toBeInTheDocument()
+    const st = usePlayStore.getState().state!
+    expect(st.rolls.at(-1)?.label).toBe('Estável: horas até recuperar 1 PV')
+    expect(st.lifeState).toBe('stable')
+  })
   it('três fracassos: morto, e "Fui revivido" volta com 1 PV', () => {
     openKrusk()
     dropToZero()

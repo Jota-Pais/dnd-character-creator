@@ -541,6 +541,19 @@ export function stabilize(state: PlayState): PlayResult {
 }
 
 /**
+ * Estável que ninguém curou: "recupera 1 ponto de vida depois de 1d4 horas" (pág. 200). O app não
+ * conta o tempo do jogo: o jogador confirma que ele passou. Só para quem está estável; a cura de 1
+ * PV acorda, como qualquer cura a 0 PV.
+ */
+export function regainHpWhileStable(state0: PlayState, sheet: PlaySheet): PlayResult {
+  if (state0.lifeState !== 'stable') {
+    return refuse(state0, 'Só quem está estável, com 0 PV, recupera 1 PV depois de 1d4 horas (pág. 200).')
+  }
+  const notices: PlayNotice[] = []
+  return done(heal(reconcilePlayState(state0, sheet), sheet, 1, notices), notices)
+}
+
+/**
  * "Fui revivido" (decisão 13): de morto para consciente com 1 PV e contadores zerados. Com exaustão
  * 6 recusa: o que fazer com ela ao reviver não está decidido (`regras-dano-e-morte.md`, Ponto em
  * aberto 18) — o jogador baixa a exaustão antes, se a mesa assim decidir.

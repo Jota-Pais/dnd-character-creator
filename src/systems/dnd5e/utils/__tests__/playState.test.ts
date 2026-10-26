@@ -11,7 +11,7 @@ import {
   getLongRestHitDiceRecoverable, getPactSlotsAvailable, getPlayConditionEffects, getPlayConditionState,
   getResourceAvailable, getSpellSlotsAvailable, grantTempHp, previewLongRest, previewShortRest, reconcileLoadedPlayState,
   reconcilePlayState,
-  recordDeathSave, recordRoll, recoverPactSlot, recoverResource, recoverSpellSlot, removeCondition,
+  recordDeathSave, recordRoll, recoverPactSlot, regainHpWhileStable, recoverResource, recoverSpellSlot, removeCondition,
   revive, sanitizePlayState, setConditionNote, setExhaustion, setInspiration, setNote, spendHitDie, spendPactSlot,
   spendResource, spendSpellSlot, stabilize, standUp, startConcentration, suggestLongRestHitDice,
   suggestTempHpChoice,
@@ -466,6 +466,19 @@ describe('stabilize e revive', () => {
     expect(r.state.deathSaves).toEqual({ successes: 0, failures: 0 })
   })
 
+  it('estável sem cura: passadas 1d4 horas, recupera 1 PV e acorda (pág. 200)', () => {
+    const r = regainHpWhileStable(state({ lifeState: 'stable', damageTaken: 20, conditions: ['prone'] }), S)
+    expect(r.state.lifeState).toBe('conscious')
+    expect(getCurrentHp(r.state, S)).toBe(1)
+    expect(kinds(r)).toEqual(['healed', 'regainedConsciousness'])
+    // Só para quem está estável.
+    for (const lifeState of ['conscious', 'dying', 'dead'] as const) {
+      const s = state({ lifeState, damageTaken: lifeState === 'conscious' ? 5 : 20 })
+      const refused = regainHpWhileStable(s, S)
+      expect(refused.state).toBe(s)
+      expect(kinds(refused)).toEqual(['refused'])
+    }
+  })
   it('recusa quem não está morto, e a morte por exaustão 6 (Ponto em aberto 18)', () => {
     const alive = state()
     expect(revive(alive, S).state).toBe(alive)

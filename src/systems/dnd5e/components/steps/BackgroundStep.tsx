@@ -8,7 +8,12 @@ import {
   getToolName,
   getBackgroundItemChoices,
 } from '../../utils/backgroundUtils'
-import { getExcludedTools, getExcludedLanguages } from '../../utils/proficiencyUtils'
+import {
+  getExcludedTools,
+  getExcludedLanguages,
+  getBackgroundUnproficientTools,
+  formatUnproficientTool,
+} from '../../utils/proficiencyUtils'
 import { BackgroundCard } from '../background/BackgroundCard'
 import { BackgroundChoicePanel } from '../background/BackgroundChoicePanel'
 import { StepNav } from '../../../../components/wizard/StepNav'
@@ -33,6 +38,9 @@ export function BackgroundStep() {
   // Idiomas/ferramentas já obtidos de raça ou classe (inclusive da subclasse) não se repetem
   const langExcluded = getExcludedLanguages(draft, 'background')
   const toolExcluded = getExcludedTools(draft, 'background')
+  // Item do antecedente sem a proficiência (Dados de Osso com proficiência em Baralho): só avisa,
+  // como na Revisão e na ficha — a regra deixa usar, sem o bônus (p. 156).
+  const unproficientTools = getBackgroundUnproficientTools(draft)
 
   useEffect(() => {
     const current = draft.backgroundChoices.languages ?? []
@@ -176,6 +184,15 @@ export function BackgroundStep() {
                     excludedLanguages={langExcluded}
                     excludedTools={toolExcluded}
                   />
+                  {unproficientTools.length > 0 && (
+                    <div className="mt-3 rounded-lg border border-parchment-800 bg-parchment-950/40 px-3 py-2 space-y-0.5">
+                      {unproficientTools.map(u => (
+                        <p key={u.itemId} className="text-xs text-parchment-500 leading-relaxed">
+                          ⚠ {formatUnproficientTool(u)}
+                        </p>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 

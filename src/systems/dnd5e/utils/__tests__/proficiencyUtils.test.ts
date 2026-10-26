@@ -25,6 +25,7 @@ import {
   getLanguageLabels,
   EXOTIC_LANGUAGE_NOTE,
   getUnproficientTools,
+  getBackgroundUnproficientTools,
   getUnproficientArmor,
   hasInstrumentSpellcastingFocus,
   formatUnproficientTool,
@@ -733,6 +734,22 @@ describe('getUnproficientTools — ferramenta carregada sem proficiência (p. 15
       'Sem proficiência: Dados de Osso (Conjunto de Dados) — pode usar, mas não soma o bônus de proficiência nos testes com ele',
     )
     expect(getUnproficientTools(soldier('dice-set'))).toEqual([])
+  })
+
+  it('getBackgroundUnproficientTools: só o que vem do antecedente, para o aviso da etapa Antecedente', () => {
+    const d = draft({
+      class: 'monk',
+      background: 'soldier',
+      backgroundChoices: { tools: ['playing-card-set'], items: { 'gaming-set': 'bone-dice' } },
+      equipment: {
+        method: 'wealth',
+        classResolutions: [],
+        rolledGold: 100,
+        purchasedItems: [{ itemId: 'smiths-tools', quantity: 1, source: 'purchased' }],
+      },
+    })
+    expect(getUnproficientTools(d).map(u => u.itemId)).toEqual(['smiths-tools', 'bone-dice'])
+    expect(getBackgroundUnproficientTools(d).map(u => u.itemId)).toEqual(['bone-dice'])
   })
 
   it('ferramenta do antecedente que é a própria proficiência (Artista) não avisa', () => {

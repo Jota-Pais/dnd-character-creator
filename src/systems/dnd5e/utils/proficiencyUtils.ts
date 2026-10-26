@@ -563,13 +563,7 @@ export type UnproficientTool = {
  */
 export function getUnproficientTools(draft: CharacterDraft): UnproficientTool[] {
   const classEquipment = draft.class ? getClass(draft.class)?.startingEquipment : undefined
-  const bg = draft.background ? getBackground(draft.background) : undefined
-  const backgroundIds = bg
-    ? resolveBackgroundItems(bg, draft.backgroundChoices)
-      .map(item => item.id)
-      .filter((id): id is string => id !== null)
-    : []
-  const carried = uniq([...getCarriedToolIds(draft.equipment, classEquipment), ...backgroundIds])
+  const carried = uniq([...getCarriedToolIds(draft.equipment, classEquipment), ...getBackgroundItemIds(draft)])
   const granted = new Set(getAllGrantedTools(draft))
   const instrumentFocus = hasInstrumentSpellcastingFocus(draft)
   return carried.flatMap(itemId => {
@@ -585,6 +579,25 @@ export function getUnproficientTools(draft: CharacterDraft): UnproficientTool[] 
   })
 }
 
+/** Ids dos itens que o antecedente dá, com as escolhas de item já resolvidas. */
+function getBackgroundItemIds(draft: CharacterDraft): string[] {
+  const bg = draft.background ? getBackground(draft.background) : undefined
+  return bg
+    ? resolveBackgroundItems(bg, draft.backgroundChoices)
+      .map(item => item.id)
+      .filter((id): id is string => id !== null)
+    : []
+}
+
+/**
+ * Os de `getUnproficientTools` que vêm do antecedente — o aviso da etapa Antecedente, onde se faz a
+ * escolha que causa isso (os Dados de Osso do Soldado com proficiência em Baralho de Cartas).
+ */
+export function getBackgroundUnproficientTools(draft: CharacterDraft): UnproficientTool[] {
+  const fromBackground = new Set(getBackgroundItemIds(draft))
+  return getUnproficientTools(draft).filter(u => fromBackground.has(u.itemId))
+}
+
 /**
  * O que significa carregar a ferramenta sem proficiência, pra ler ao lado do nome: "pode usar,
  * mas não soma o bônus de proficiência nos testes com ele; continua servindo de foco de
@@ -596,7 +609,7 @@ export function describeToolWithoutProficiency(spellcastingFocus: boolean): stri
 }
 
 /**
- * Linha da Revisão e da ficha: "Sem proficiência: Alaúde — pode usar, mas não soma...". Item que
+ * Linha da Revisão, da ficha e da etapa Antecedente: "Sem proficiência: Alaúde — pode usar, mas não soma...". Item que
  * vale como outra ferramenta leva o nome dela junto: "Dados de Osso (Conjunto de Dados)".
  */
 export function formatUnproficientTool({ tool, itemName, spellcastingFocus }: UnproficientTool): string {

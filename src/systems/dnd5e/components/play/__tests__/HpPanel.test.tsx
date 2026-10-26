@@ -66,4 +66,26 @@ describe('HpPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
     expect(usePlayStore.getState().state?.deathSaves.failures).toBe(2)
   })
+
+  it('± PV máximo: Ajuda +5 sobe o máximo e o atual, "encerrar" volta, e o desfazer devolve', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    // Discreto: o campo só aparece depois do toque.
+    expect(screen.queryByLabelText('Quanto muda o PV máximo')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: '± PV máximo' }))
+    fireEvent.change(screen.getByLabelText('Quanto muda o PV máximo'), { target: { value: '5' } })
+    fireEvent.click(screen.getByRole('button', { name: '+ Aumentar' }))
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('19')
+    expect(screen.getByTestId('vitals-hp')).toHaveTextContent('/ 19')
+    expect(screen.getByText('(máx. +5)')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Quanto muda o PV máximo')).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'encerrar' }))
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('14')
+    expect(usePlayStore.getState().state!.maxHpAdjustment).toBe(0)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Desfazer a última mudança' }))
+    expect(usePlayStore.getState().state!.maxHpAdjustment).toBe(5)
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('19')
+  })
 })

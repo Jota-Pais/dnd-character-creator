@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import type { PlayResult } from '../../types/playState'
 import {
-  applyDamage, applyHealing, grantTempHp, isAtZeroHp, suggestTempHpChoice,
+  adjustMaxHp, applyDamage, applyHealing, formatHpAdjustment, grantTempHp, isAtZeroHp, suggestTempHpChoice,
 } from '../../utils/playState'
 import type { PlayView } from './usePlayView'
 
@@ -102,6 +102,8 @@ export function HpPanel({ view }: { view: PlayView }) {
         ))}
       </div>
 
+      <MaxHpAdjustment view={view} />
+
       {current && (
         <form onSubmit={handleSubmit} className="mt-3 space-y-2">
           <p className="text-xs text-parchment-500 leading-snug">{current.help}</p>
@@ -170,6 +172,90 @@ export function HpPanel({ view }: { view: PlayView }) {
             </div>
           )}
         </form>
+      )}
+    </div>
+  )
+}
+
+/**
+ * O ajuste temporário do PV máximo, discreto: um link abre o campo. Aumentar sobe o máximo e o
+ * atual juntos (a magia Ajuda); diminuir só corta o que passar do máximo. O descanso longo zera, e
+ * "encerrar" desfaz o ajuste quando o efeito acaba antes. Cada mudança é um passo do desfazer.
+ */
+function MaxHpAdjustment({ view }: { view: PlayView }) {
+  const { state, run } = view
+  const [open, setOpen] = useState(false)
+  const [text, setText] = useState('')
+  const amount = parseAmount(text)
+  const adjustment = state.maxHpAdjustment
+
+  function apply(sign: 1 | -1) {
+    if (amount === null || amount === 0) return
+    const result = run((st, sh) => adjustMaxHp(st, sh, sign * amount))
+    // Recusado (o aviso diz por quê): o campo fica aberto com o valor.
+    if (result && result.state !== state) {
+      setText('')
+      setOpen(false)
+    }
+  }
+
+  return (
+    <div className="mt-2">
+      <div className="flex flex-wrap items-center gap-x-3">
+        {adjustment !== 0 && (
+          <span className="text-xs text-sky-300">
+            Máximo {formatHpAdjustment(adjustment)} até o descanso longo
+            <button
+              onClick={() => run((st, sh) => adjustMaxHp(st, sh, -st.maxHpAdjustment))}
+              className="min-h-10 px-2 text-xs text-parchment-400 underline hover:text-parchment-200"
+            >
+              encerrar
+            </button>
+          </span>
+        )}
+        <button
+          onClick={() => setOpen(o => !o)}
+          aria-expanded={open}
+          className="min-h-10 text-xs text-parchment-500 underline hover:text-parchment-300"
+        >
+          ± PV máximo
+        </button>
+      </div>
+      {open && (
+        <div className="mt-1 space-y-2">
+          <p className="text-xs text-parchment-500 leading-snug">
+            Efeito que muda o seu PV máximo por um tempo, como a magia Ajuda (+5 no máximo e no atual, pág. 215).
+            Aumentar sobe os dois; diminuir só corta o que passar do máximo. O descanso longo zera.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <input
+              type="number"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              min={0}
+              step={1}
+              value={text}
+              onChange={e => setText(e.target.value)}
+              aria-label="Quanto muda o PV máximo"
+              placeholder="0"
+              className="min-h-10 w-24 rounded-lg border border-parchment-800 bg-surface-base px-3 text-lg text-parchment-100 outline-none focus:border-gold-600"
+            />
+            <button
+              onClick={() => apply(1)}
+              disabled={!amount}
+              className="min-h-10 rounded-lg border border-parchment-700 px-3 text-sm text-parchment-200 disabled:opacity-40 hover:border-gold-600"
+            >
+              + Aumentar
+            </button>
+            <button
+              onClick={() => apply(-1)}
+              disabled={!amount}
+              className="min-h-10 rounded-lg border border-parchment-700 px-3 text-sm text-parchment-200 disabled:opacity-40 hover:border-gold-600"
+            >
+              − Diminuir
+            </button>
+          </div>
+        </div>
       )}
     </div>
   )

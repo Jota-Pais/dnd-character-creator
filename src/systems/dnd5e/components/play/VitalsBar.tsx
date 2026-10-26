@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
 import { formatMeters, formatModifier } from '../../utils/abilityScoreUtils'
 import {
-  endConcentration, getCurrentHp, getEffectiveMaxHp, getPlayConditionEffects, getPlaySpeed, setInspiration,
+  endConcentration, formatHpAdjustment, getBaseMaxHp, getCurrentHp, getEffectiveMaxHp, getPlayConditionEffects, getPlaySpeed,
+  setInspiration,
 } from '../../utils/playState'
 import type { RollGuideEntry } from '../../utils/rollGuide'
 import { getConditionalAcBonuses } from '../../utils/sheetEffects'
@@ -48,7 +49,8 @@ export function VitalsBar({ view, onOpenRecipe, onOpenSource }: {
   const { draft, state, sheet, guide, armorClass, run } = view
   const current = getCurrentHp(state, sheet)
   const effMax = getEffectiveMaxHp(state, sheet)
-  const sheetMax = Math.max(0, sheet.maxHp)
+  // O máximo antes da exaustão: o da ficha com o ajuste temporário (Ajuda).
+  const baseMax = getBaseMaxHp(state, sheet)
   const speed = getPlaySpeed(state, sheet)
   const effects = getPlayConditionEffects(state)
   const initiative = guide.initiative
@@ -69,14 +71,19 @@ export function VitalsBar({ view, onOpenRecipe, onOpenSource }: {
           <span className="leading-tight">
             <span className="font-fantasy font-black text-2xl text-parchment-100" data-testid="hp-current">{current}</span>
             <span className="text-sm text-parchment-500"> / {effMax}</span>
+            {state.maxHpAdjustment !== 0 && (
+              <span className="ml-1 text-[10px] text-sky-300" title="Ajuste temporário do PV máximo, até o descanso longo">
+                (máx. {formatHpAdjustment(state.maxHpAdjustment)})
+              </span>
+            )}
             {state.tempHp > 0 && (
               <span className="ml-1.5 text-sm font-bold text-sky-300" title="PV temporários: somem antes dos seus PV">+{state.tempHp} temp.</span>
             )}
           </span>
           {life && <span className="text-xs font-bold text-red-300 leading-none">{life}</span>}
-          {!life && effMax < sheetMax && (
+          {!life && effMax < baseMax && (
             <span className="text-[10px] text-amber-300 leading-tight">
-              Exaustão {state.exhaustionLevel}: máximo {sheetMax} → {effMax}
+              Exaustão {state.exhaustionLevel}: máximo {baseMax} → {effMax}
             </span>
           )}
         </div>

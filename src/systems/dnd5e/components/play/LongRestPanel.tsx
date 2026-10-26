@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { completeLongRest, getHitDiceAvailable, previewLongRest } from '../../utils/playState'
+import { completeLongRest, formatHpAdjustment, getHitDiceAvailable, previewLongRest } from '../../utils/playState'
 import { countLabel } from '../../utils/textUtils'
 import { ordinal } from './playFormat'
 import type { PlayTabProps } from './usePlayView'
@@ -53,7 +53,8 @@ export function LongRestPanel({ view, onClose }: { view: PlayTabProps; onClose: 
   }
 
   const items: string[] = preview.blocked ? [] : [
-    preview.hp.after > preview.hp.before
+    // Desce quando o ajuste temporário do máximo acaba (linha abaixo).
+    preview.hp.after !== preview.hp.before
       ? `PV ${preview.hp.before} → ${preview.hp.after} (o máximo)`
       : `PV ${preview.hp.before}: já no máximo`,
     ...(preview.hitDice.recoverable > 0 && !pickTypes
@@ -79,6 +80,11 @@ export function LongRestPanel({ view, onClose }: { view: PlayTabProps; onClose: 
             </ul>
             {preview.tempHpLost > 0 && (
               <p className="mt-1 text-xs text-parchment-400">Os {preview.tempHpLost} PV temporários acabam.</p>
+            )}
+            {preview.maxHpAdjustmentEnds !== 0 && (
+              <p className="mt-1 text-xs text-parchment-400">
+                O ajuste do PV máximo ({formatHpAdjustment(preview.maxHpAdjustmentEnds)}) acaba.
+              </p>
             )}
           </div>
 

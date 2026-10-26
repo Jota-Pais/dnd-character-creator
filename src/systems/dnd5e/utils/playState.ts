@@ -46,6 +46,9 @@ const toCount = (n: number): DeathSaveCount => clampInt(n, 0, 3) as DeathSaveCou
 
 const signed = (n: number) => (n < 0 ? `− ${Math.abs(n)}` : `+ ${n}`)
 
+/** O ajuste do PV máximo como se escreve na ficha: "+5", "−3". */
+export const formatHpAdjustment = (n: number) => (n < 0 ? `−${Math.abs(n)}` : `+${n}`)
+
 const ZERO_SAVES = { successes: 0, failures: 0 } as const
 
 /** Estado novo, vazio, para uma ficha que começa a jogar. */
@@ -55,6 +58,7 @@ export function createPlayState(characterId: string, now = 0): PlayState {
     characterId,
     updatedAt: now,
     damageTaken: 0,
+    maxHpAdjustment: 0,
     tempHp: 0,
     lifeState: 'conscious',
     deathSaves: { ...ZERO_SAVES },
@@ -95,13 +99,23 @@ export function getPlayConditionEffects(state: PlayState): ActiveConditionEffect
 }
 
 /**
- * PV máximo efetivo: o da ficha × multiplicador da exaustão (metade a partir da 4, pág. 292). Com
- * a característica que impede reduzir o máximo (Acostumado à Morte-Vida, pág. 101), o da ficha.
+ * PV máximo antes da exaustão: o da ficha mais o ajuste temporário (`maxHpAdjustment`: Ajuda +5).
+ * É contra ele que `damageTaken` se mede.
+ */
+export function getBaseMaxHp(state: PlayState, sheet: PlaySheet): number {
+  return Math.max(0, sheet.maxHp + state.maxHpAdjustment)
+}
+
+/**
+ * PV máximo efetivo: o da ficha com o ajuste temporário (`getBaseMaxHp`) × multiplicador da
+ * exaustão (metade a partir da 4, pág. 292) — a Exaustão 4 corta o máximo JÁ somado ao ajuste
+ * (decisão do dono, 2026-10-25). Com a característica que impede reduzir o máximo (Acostumado à
+ * Morte-Vida, pág. 101), sem o corte.
  */
 export function getEffectiveMaxHp(state: PlayState, sheet: PlaySheet): number {
-  const sheetMax = Math.max(0, sheet.maxHp)
-  if (sheet.hpMaxReductionImmunity) return sheetMax
-  return getEffectiveHpMax(sheetMax, getPlayConditionEffects(state))
+  const baseMax = getBaseMaxHp(state, sheet)
+  if (sheet.hpMaxReductionImmunity) return baseMax
+  return getEffectiveHpMax(baseMax, getPlayConditionEffects(state))
 }
 
 /**
@@ -115,12 +129,12 @@ export function describeHpMaxImmunity(state: PlayState, sheet: PlaySheet): strin
 }
 
 /**
- * PV atual = max(0, máx. da ficha − dano sofrido), lido do estado JÁ reconciliado com esta ficha:
+ * PV atual = max(0, máx. base − dano sofrido), lido do estado JÁ reconciliado com esta ficha:
  * um estado salvo antes de a ficha mudar no criador nunca mostra PV acima do máximo efetivo, nem
  * PV positivo a 0 PV, nem 0 PV consciente.
  */
 export function getCurrentHp(state: PlayState, sheet: PlaySheet): number {
-  return Math.max(0, Math.max(0, sheet.maxHp) - reconcilePlayState(state, sheet).damageTaken)
+  return Math.max(0, getBaseMaxHp(state, sheet) - reconcilePlayState(state, sheet).damageTaken)
 }
 
 /** Deslocamento efetivo em pés, com as condições e a exaustão. */
@@ -178,7 +192,7 @@ export function getResourceAvailable(state: PlayState, sheet: PlaySheet, id: str
  * `lifeState` só muda pelo pipeline de dano (`regras-dano-e-morte.md`, Notas; pág. 199).
  */
 export function reconcilePlayState(state: PlayState, sheet: PlaySheet): PlayState {
-  const sheetMax = Math.max(0, sheet.maxHp)
+  const sheetMax = getBaseMaxHp(state, sheet)
   const effMax = getEffectiveMaxHp(state, sheet)
   let damageTaken = clampInt(state.damageTaken, 0, sheetMax)
   if (isAtZeroHp(state)) damageTaken = sheetMax
@@ -218,7 +232,7 @@ export function reconcilePlayState(state: PlayState, sheet: PlaySheet): PlayStat
 export function reconcileLoadedPlayState(state: PlayState, sheet: PlaySheet): PlayResult {
   const next = reconcilePlayState(state, sheet)
   if (state.lifeState !== 'conscious') return done(next)
-  const sheetMax = Math.max(0, sheet.maxHp)
+  const sheetMax = getBaseMaxHp(state, sheet)
   const before = Math.max(0, sheetMax - state.damageTaken)
   const after = Math.max(0, sheetMax - next.damageTaken)
   const effMax = getEffectiveMaxHp(next, sheet)
@@ -346,7 +360,7 @@ function damagePipeline(state0: PlayState, sheet: PlaySheet, input: DamageInput,
     return done(state0, notices)
   }
 
-  const sheetMax = Math.max(0, sheet.maxHp)
+  const sheetMax = getBaseMaxHp(state, sheet)
   const effMax = getEffectiveMaxHp(state, sheet)
   const absorbed = Math.min(state.tempHp, total)
   const rest = total - absorbed
@@ -418,7 +432,7 @@ function heal(state: PlayState, sheet: PlaySheet, amount: number, notices: PlayN
   const current = getCurrentHp(state, sheet)
   const effMax = getEffectiveMaxHp(state, sheet)
   const after = Math.max(current, Math.min(effMax, current + value))
-  const next: PlayState = { ...state, damageTaken: Math.max(0, sheet.maxHp) - after }
+  const next: PlayState = { ...state, damageTaken: getBaseMaxHp(state, sheet) - after }
   const lost = current + value - after
   notices.push(note('healed', `Recuperou ${after - current} PV (${current} → ${after})${lost > 0 ? `; ${lost} acima do máximo se perderam` : ''}.`))
   if (isAtZeroHp(state) && after > 0) toConscious(next, notices, { awake: 'Recuperou PV e acordou.', cause: 'Recuperou PV' })
@@ -467,6 +481,65 @@ export function grantTempHp(state: PlayState, amount: number, choice?: 'keep' | 
   return done({ ...state, tempHp }, notices)
 }
 
+/**
+ * Ajuste temporário do PV máximo (`maxHpAdjustment`), em `delta` sobre o atual. Zera no descanso
+ * longo (`completeLongRest`); antes disso, quando o efeito acaba, a tela desfaz o ajuste com o
+ * delta oposto.
+ *
+ * - Aumentar sobe o máximo e o atual juntos, como a magia Ajuda (pág. 215). A Exaustão 4 corta o
+ *   máximo já somado ao ajuste (decisão do dono), e o atual nunca passa dele.
+ * - Diminuir só corta o atual que passar do máximo novo: os PV atuais vão do máximo até 0
+ *   (pág. 198).
+ * - A 0 PV, só o máximo muda: o livro não diz se o atual que a Ajuda acrescenta conta como
+ *   recuperar PV (acordar). O aviso manda registrar a cura, se a mesa decidir que conta.
+ *
+ * Recusa morto, valor inválido, máximo que ficaria abaixo de 1 (o que acontece depende do efeito)
+ * e reduzir abaixo do máximo da ficha com a característica que o impede (Acostumado à Morte-Vida,
+ * pág. 101).
+ */
+export function adjustMaxHp(state0: PlayState, sheet: PlaySheet, delta: number): PlayResult {
+  if (!isInt(delta)) return refuse(state0, 'Ajuste do PV máximo inválido.')
+  if (delta === 0) return done(state0)
+  if (state0.lifeState === 'dead') {
+    return refuse(state0, 'O personagem está morto: o ajuste do PV máximo não tem efeito. Use "fui revivido".')
+  }
+  const adjustment = state0.maxHpAdjustment + delta
+  if (adjustment < 0 && sheet.hpMaxReductionImmunity) {
+    return refuse(state0, `${sheet.hpMaxReductionImmunity}: seu máximo de pontos de vida não pode ser reduzido (pág. 101).`)
+  }
+  if (sheet.maxHp + adjustment < 1) {
+    return refuse(state0, `O PV máximo ficaria em ${Math.max(0, sheet.maxHp + adjustment)}: o que acontece depende do efeito que o reduziu, e o livro não traz uma regra geral. Combine com o Mestre.`, 'unresolvedRule')
+  }
+
+  const state = reconcilePlayState(state0, sheet)
+  const current = getCurrentHp(state, sheet)
+  const maxBefore = getEffectiveMaxHp(state, sheet)
+  const next: PlayState = { ...state, maxHpAdjustment: adjustment }
+  const baseAfter = getBaseMaxHp(next, sheet)
+  const maxAfter = getEffectiveMaxHp(next, sheet)
+  const notices: PlayNotice[] = []
+  const label = `Ajuste do PV máximo: ${formatHpAdjustment(adjustment)}`
+
+  if (isAtZeroHp(state)) {
+    next.damageTaken = baseAfter
+    notices.push(note('info', `${label}. Máximo ${maxBefore} → ${maxAfter}; continua com 0 PV.`))
+    if (delta > 0) {
+      notices.push(note('unresolvedRule', 'A 0 PV, o livro não diz se o atual que o efeito acrescenta (Ajuda) conta como recuperar PV. Se a mesa decidir que conta, registre como cura.'))
+    }
+    return done(next, notices)
+  }
+
+  const raised = delta > 0 ? current + delta : current
+  const currentAfter = Math.min(raised, maxAfter)
+  if (currentAfter < 1) {
+    // Máximo efetivo 0 com a Exaustão 4: o mesmo caso que `setExhaustion` recusa (Ponto em aberto 17).
+    return refuse(state0, `Com a exaustão ${state.exhaustionLevel}, o PV máximo efetivo ficaria em ${maxAfter} e levaria a 0 PV sem dano: o livro não trata do caso.`, 'unresolvedRule')
+  }
+  next.damageTaken = baseAfter - currentAfter
+  notices.push(note('info', `${label}. Máximo ${maxBefore} → ${maxAfter}; PV atual ${current} → ${currentAfter}.`))
+  return done(next, notices)
+}
+
 /** Fim dos PV temporários antes do descanso longo (a característica que os deu tinha duração). */
 export function clearTempHp(state: PlayState): PlayResult {
   return state.tempHp === 0 ? done(state) : done({ ...state, tempHp: 0 })
@@ -499,7 +572,7 @@ export function recordDeathSave(state0: PlayState, sheet: PlaySheet, input: Deat
   const next: PlayState = { ...state }
 
   if (natural === 20) {
-    next.damageTaken = Math.max(0, sheet.maxHp - 1)
+    next.damageTaken = Math.max(0, getBaseMaxHp(state, sheet) - 1)
     toConscious(next, notices, {
       awake: '20 natural no teste contra a morte: recupera 1 PV e acorda (pág. 199).',
       cause: '20 natural no teste contra a morte: recupera 1 PV (pág. 199)',
@@ -564,7 +637,7 @@ export function revive(state0: PlayState, sheet: PlaySheet): PlayResult {
     return refuse(state0, 'Com exaustão 6 a morte continua: o livro não diz o que acontece com a exaustão ao reviver. Ajuste o nível de exaustão antes.', 'unresolvedRule')
   }
   const state = reconcilePlayState(state0, sheet)
-  const next: PlayState = { ...state, damageTaken: Math.max(0, sheet.maxHp - 1) }
+  const next: PlayState = { ...state, damageTaken: Math.max(0, getBaseMaxHp(state, sheet) - 1) }
   const notices: PlayNotice[] = []
   toConscious(next, notices, { awake: 'Revivido: consciente com 1 PV.', cause: 'Revivido com 1 PV' })
   return done(next, notices)
@@ -746,7 +819,7 @@ export function setExhaustion(state0: PlayState, sheet: PlaySheet, level: number
   const notices: PlayNotice[] = []
   const next: PlayState = { ...state, exhaustionLevel: target }
 
-  const sheetMax = Math.max(0, sheet.maxHp)
+  const sheetMax = getBaseMaxHp(state, sheet)
   if (target === 6) {
     if (state.lifeState !== 'dead') toDead(next, notices, 'Exaustão 6: morte (pág. 292).')
     // O nível 6 inclui o 4 (cumulativa): o corte vale também para quem morre, mantendo o invariante.
@@ -967,6 +1040,8 @@ export type LongRestPreview = {
   pactSlots: number
   resources: { id: string; name: string; amount: number }[]
   tempHpLost: number
+  /** O ajuste temporário do PV máximo que acaba com o descanso (0 sem ajuste). */
+  maxHpAdjustmentEnds: number
   exhaustion: { before: ExhaustionLevel; after: ExhaustionLevel }
   /** Avisos fixos da prévia (24 horas, interrupção). */
   notices: PlayNotice[]
@@ -1005,16 +1080,20 @@ export function previewLongRest(state0: PlayState, sheet: PlaySheet, options: Lo
       pactSlots: 0,
       resources: [],
       tempHpLost: 0,
+      maxHpAdjustmentEnds: 0,
       exhaustion: { before: state.exhaustionLevel, after: state.exhaustionLevel },
       notices,
     }
   }
 
   const exhaustionAfter = (ateAndDrank ? Math.max(0, state.exhaustionLevel - 1) : state.exhaustionLevel) as ExhaustionLevel
-  const maxAfter = getEffectiveMaxHp({ ...state, exhaustionLevel: exhaustionAfter }, sheet)
+  // O ajuste temporário do PV máximo termina com o descanso: o máximo depois é o da ficha.
+  const after = { ...state, exhaustionLevel: exhaustionAfter, maxHpAdjustment: 0 }
+  const maxAfter = getEffectiveMaxHp(after, sheet)
   return {
     blocked: false,
-    hp: { before: current, after: Math.max(current, maxAfter), max: maxAfter },
+    // Nunca acima do máximo base de depois (o ajuste que acabou não fica); sem o ajuste, só sobe.
+    hp: { before: current, after: Math.max(Math.min(current, getBaseMaxHp(after, sheet)), maxAfter), max: maxAfter },
     hitDice: {
       recoverable: getLongRestHitDiceRecoverable(state, sheet),
       suggestion: suggestLongRestHitDice(state, sheet),
@@ -1025,6 +1104,7 @@ export function previewLongRest(state0: PlayState, sheet: PlaySheet, options: Lo
       .filter(r => r.recharge && LONG_REST_RECHARGES.has(r.recharge) && (state.resourcesSpent[r.id] ?? 0) > 0)
       .map(r => ({ id: r.id, name: r.name, amount: state.resourcesSpent[r.id] })),
     tempHpLost: state.tempHp,
+    maxHpAdjustmentEnds: state.maxHpAdjustment,
     exhaustion: { before: state.exhaustionLevel, after: exhaustionAfter },
     notices,
   }
@@ -1069,12 +1149,13 @@ export function completeLongRest(state0: PlayState, sheet: PlaySheet, options: L
   const resourcesSpent = { ...state.resourcesSpent }
   for (const r of preview.resources) delete resourcesSpent[r.id]
 
-  const sheetMax = Math.max(0, sheet.maxHp)
   const next: PlayState = {
     ...state,
     exhaustionLevel: preview.exhaustion.after,
-    // Todos os PV perdidos até o máximo efetivo depois do −1 de exaustão (Ponto em aberto 12).
-    damageTaken: Math.min(state.damageTaken, sheetMax - preview.hp.max),
+    maxHpAdjustment: 0,
+    // Todos os PV perdidos até o máximo efetivo depois do −1 de exaustão (Ponto em aberto 12),
+    // medidos contra o máximo da ficha: o ajuste temporário acabou.
+    damageTaken: Math.max(0, sheet.maxHp) - preview.hp.after,
     tempHp: 0,
     hitDiceSpent,
     spellSlotsSpent: Array(SPELL_LEVELS).fill(0),
@@ -1087,6 +1168,7 @@ export function completeLongRest(state0: PlayState, sheet: PlaySheet, options: L
   const parts = [
     `PV ${preview.hp.before} → ${preview.hp.after}`,
     ...(chosen > 0 ? [countLabel(chosen, 'Dado de Vida', 'Dados de Vida')] : []),
+    ...(preview.maxHpAdjustmentEnds !== 0 ? [`o ajuste do PV máximo (${formatHpAdjustment(preview.maxHpAdjustmentEnds)}) acabou`] : []),
     ...(preview.exhaustion.after < preview.exhaustion.before ? [`exaustão ${preview.exhaustion.before} → ${preview.exhaustion.after}`] : []),
   ]
   return done(next, [note('recovered', `Descanso longo: ${parts.join('; ')}.`)])
@@ -1184,6 +1266,9 @@ export function sanitizePlayState(raw: unknown, characterId: string): PlayState 
     ...base,
     updatedAt: typeof raw.updatedAt === 'number' && Number.isFinite(raw.updatedAt) ? raw.updatedAt : 0,
     damageTaken: nonNegInt(raw.damageTaken),
+    maxHpAdjustment: typeof raw.maxHpAdjustment === 'number' && Number.isFinite(raw.maxHpAdjustment)
+      ? Math.trunc(raw.maxHpAdjustment)
+      : 0,
     tempHp: nonNegInt(raw.tempHp),
     lifeState,
     deathSaves,

@@ -51,8 +51,16 @@ export type PlayState = {
   /** Última gravação, em ms desde a época. Carimbado por `playStorage`. */
   updatedAt: number
 
-  /** PV perdidos, medidos contra o máximo DA FICHA: PV atual = max(0, máx. da ficha − damageTaken). */
+  /**
+   * PV perdidos, medidos contra o máximo BASE (o da ficha + `maxHpAdjustment`, antes da exaustão):
+   * PV atual = max(0, máx. base − damageTaken).
+   */
   damageTaken: number
+  /**
+   * Ajuste temporário do PV máximo, positivo ou negativo: a magia Ajuda (+5 no máximo e no atual,
+   * pág. 215). Soma ao máximo da ficha antes do corte da Exaustão 4; zera no descanso longo.
+   */
+  maxHpAdjustment: number
   /** Reserva à parte; pode passar do máximo e não some ao cair a 0 PV. */
   tempHp: number
   lifeState: LifeState

@@ -6,8 +6,8 @@ import type { SheetResource } from '../classResourceUtils'
 import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
 import { buildPlaySheet } from '../playSheet'
 import {
-  addCondition, applyDamage, applyDamageDroppingToOneHp, applyHealing, clearTempHp, completeLongRest, completeShortRest,
-  createPlayState, describeHpMaxImmunity, endConcentration, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable,
+  addCondition, adjustMaxHp, applyDamage, applyDamageDroppingToOneHp, applyHealing, clearTempHp, completeLongRest, completeShortRest,
+  createPlayState, describeHpMaxImmunity, endConcentration, getBaseMaxHp, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable,
   getLongRestHitDiceRecoverable, getPactSlotsAvailable, getPlayConditionEffects, getPlayConditionState,
   getResourceAvailable, getSpellSlotsAvailable, grantTempHp, previewLongRest, previewShortRest, reconcileLoadedPlayState,
   reconcilePlayState,
@@ -75,7 +75,7 @@ const kinds = (r: { notices: { kind: string }[] }) => r.notices.map(n => n.kind)
 
 /** O invariante da exaustão 4: o PV atual nunca passa do máximo efetivo. */
 function expectInvariant(s: PlayState, sh: PlaySheet) {
-  expect(sh.maxHp - s.damageTaken).toBeLessThanOrEqual(getEffectiveMaxHp(s, sh))
+  expect(getBaseMaxHp(s, sh) - s.damageTaken).toBeLessThanOrEqual(getEffectiveMaxHp(s, sh))
 }
 
 // ── Estado novo e leituras ────────────────────────────────────────────────────
@@ -974,6 +974,84 @@ describe('previewLongRest e completeLongRest', () => {
   })
 })
 
+describe('ajuste temporário do PV máximo (Ajuda, pág. 215)', () => {
+  const hp = (s: PlayState, sh = S) => [getCurrentHp(s, sh), getEffectiveMaxHp(s, sh)]
+
+  it('Ajuda +5 em 20/20 dá 25/25, e o descanso longo volta a 20/20', () => {
+    const r = adjustMaxHp(state(), S, 5)
+    expect(r.state.maxHpAdjustment).toBe(5)
+    expect(hp(r.state)).toEqual([25, 25])
+    expect(r.notices[0].text).toBe('Ajuste do PV máximo: +5. Máximo 20 → 25; PV atual 20 → 25.')
+    const preview = previewLongRest(r.state, S)
+    expect(preview.hp).toEqual({ before: 25, after: 20, max: 20 })
+    expect(preview.maxHpAdjustmentEnds).toBe(5)
+    const rested = completeLongRest(r.state, S)
+    expect(rested.state.maxHpAdjustment).toBe(0)
+    expect(hp(rested.state)).toEqual([20, 20])
+    expect(rested.notices[0].text).toContain('o ajuste do PV máximo (+5) acabou')
+  })
+
+  it('ferido também sobe 5; o dano e a cura usam o máximo novo', () => {
+    const aided = adjustMaxHp(state({ damageTaken: 8 }), S, 5).state
+    expect(hp(aided)).toEqual([17, 25])
+    expect(hp(applyHealing(aided, S, 20).state)).toEqual([25, 25])
+    expect(hp(applyDamage(aided, S, { amount: 10 }).state)).toEqual([7, 25])
+  })
+
+  it('desfazer o ajuste só corta o atual que passar do máximo (pág. 198)', () => {
+    const full = adjustMaxHp(state(), S, 5).state
+    expect(hp(adjustMaxHp(full, S, -5).state)).toEqual([20, 20])
+    const hurt = applyDamage(full, S, { amount: 8 }).state
+    expect(hp(adjustMaxHp(hurt, S, -5).state)).toEqual([17, 20])
+  })
+
+  it('a Exaustão 4 corta o máximo já somado ao ajuste (decisão do dono)', () => {
+    const tired = setExhaustion(state(), S, 4).state
+    expect(hp(tired)).toEqual([10, 10])
+    // 20 + 5 = 25, metade 12: o atual sobe até o máximo, não 15.
+    const aided = adjustMaxHp(tired, S, 5).state
+    expect(hp(aided)).toEqual([12, 12])
+    expectInvariant(aided, S)
+    // Na ordem inversa, o mesmo máximo.
+    const later = setExhaustion(adjustMaxHp(state(), S, 5).state, S, 4).state
+    expect(hp(later)).toEqual([12, 12])
+  })
+
+  it('Acostumado à Morte-Vida: reduzir abaixo da ficha é recusado; aumentar e voltar ao normal, não', () => {
+    const sh = sheet({ hpMaxReductionImmunity: 'Acostumado à Morte-Vida' })
+    const refused = adjustMaxHp(state(), sh, -3)
+    expect(kinds(refused)).toEqual(['refused'])
+    const aided = adjustMaxHp(state(), sh, 5).state
+    expect(adjustMaxHp(aided, sh, -5).state.maxHpAdjustment).toBe(0)
+  })
+
+  it('recusa máximo abaixo de 1, morto, valor quebrado; 0 não muda nada', () => {
+    expect(kinds(adjustMaxHp(state(), S, -20))).toEqual(['unresolvedRule'])
+    const reduced = adjustMaxHp(state(), S, -19).state
+    expect(hp(reduced)).toEqual([1, 1])
+    expect(kinds(adjustMaxHp(state({ lifeState: 'dead' }), S, 5))).toEqual(['refused'])
+    expect(kinds(adjustMaxHp(state(), S, 2.5))).toEqual(['refused'])
+    const s = state()
+    expect(adjustMaxHp(s, S, 0).state).toBe(s)
+  })
+
+  it('a 0 PV só o máximo muda, com o aviso de que o livro não decide se acorda', () => {
+    const dying = state({ lifeState: 'dying', damageTaken: 20 })
+    const r = adjustMaxHp(dying, S, 5)
+    expect(hp(r.state)).toEqual([0, 25])
+    expect(r.state.lifeState).toBe('dying')
+    expect(kinds(r)).toEqual(['info', 'unresolvedRule'])
+    // A cura depois usa o máximo novo.
+    expect(hp(applyHealing(r.state, S, 30).state)).toEqual([25, 25])
+  })
+
+  it('o sanitizador aceita inteiro (inclusive negativo) e zera o resto', () => {
+    expect(sanitizePlayState({ maxHpAdjustment: 5 }, 'c').maxHpAdjustment).toBe(5)
+    expect(sanitizePlayState({ maxHpAdjustment: -4 }, 'c').maxHpAdjustment).toBe(-4)
+    expect(sanitizePlayState({ maxHpAdjustment: 'x' }, 'c').maxHpAdjustment).toBe(0)
+    expect(sanitizePlayState({}, 'c').maxHpAdjustment).toBe(0)
+  })
+})
 // ── Reconciliação e sanitizador ──────────────────────────────────────────────
 
 describe('reconcilePlayState', () => {

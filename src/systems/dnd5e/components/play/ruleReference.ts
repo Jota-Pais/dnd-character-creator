@@ -1,12 +1,13 @@
 import type { CharacterDraft } from '../../types/character'
 import type { Spell } from '../../types/spell'
-import { ABILITY_LABELS } from '../../utils/abilityScoreUtils'
+import { ABILITY_LABELS, formatMeters } from '../../utils/abilityScoreUtils'
 import { getCharacterFeats, getSheetClassFeatures } from '../../utils/asiUtils'
 import { getClass, getSubclass } from '../../utils/classUtils'
 import { allClassEntries } from '../../utils/multiclassUtils'
 import { getProgressionChoiceBlocks } from '../../utils/progressionOptions'
 import {
-  describeInnateSpellUsage, getAvailableInnateSpells, getEffectiveTraitsWithChoices, getRace, getSubrace,
+  describeDarkvision, describeInnateSpellUsage, getAvailableInnateSpells, getEffectiveDarkvision,
+  getEffectiveTraitsWithChoices, getRace, getSubrace,
 } from '../../utils/raceUtils'
 import { getSheetFightingStyles } from '../../utils/sheetEffects'
 import { getCasterEntries, getSpell } from '../../utils/spellUtils'
@@ -177,30 +178,36 @@ function classSection(draft: CharacterDraft): RuleSection | null {
   return blocks.length > 0 ? { id: 'class', title: 'Características de classe', blocks } : null
 }
 
-/** Traços da raça e da sub-raça, com a escolha feita em cada um (`getEffectiveTraitsWithChoices`). */
+/**
+ * Traços da raça e da sub-raça, com a escolha feita em cada um (`getEffectiveTraitsWithChoices`).
+ * A Visão no Escuro vem antes, como no livro: os dados guardam só o alcance (`getEffectiveDarkvision`,
+ * o mesmo da Revisão e da ficha imprimível), fora de `traits`.
+ */
 function raceSection(draft: CharacterDraft): RuleSection | null {
   const race = draft.race ? getRace(draft.race) : undefined
   if (!race) return null
   const subrace = draft.subrace ? getSubrace(race, draft.subrace) : undefined
   const raceName = subrace?.name ?? race.name
-  const traits = getEffectiveTraitsWithChoices(race, subrace ?? null, draft.raceChoices)
-  if (traits.length === 0) return null
-  return {
-    id: 'race',
-    title: 'Traços raciais',
-    blocks: [{
-      label: null,
-      groups: [{
-        title: null,
-        entries: traits.map(({ trait, chosen }, i) => ({
-          key: `race:${i}:${trait.name}`,
-          name: trait.name,
-          meta: null,
-          detail: { kind: 'text', kicker: `Traço · ${raceName}`, text: trait.description, chosen },
-        })),
-      }],
-    }],
-  }
+  const kicker = `Traço · ${raceName}`
+  const darkvision = getEffectiveDarkvision(race, subrace ?? null)
+  const entries: RuleEntry[] = [
+    ...(darkvision > 0
+      ? [{
+        key: 'race:darkvision',
+        name: 'Visão no Escuro',
+        meta: formatMeters(darkvision),
+        detail: { kind: 'text' as const, kicker, text: describeDarkvision(darkvision), chosen: null },
+      }]
+      : []),
+    ...getEffectiveTraitsWithChoices(race, subrace ?? null, draft.raceChoices).map(({ trait, chosen }, i) => ({
+      key: `race:${i}:${trait.name}`,
+      name: trait.name,
+      meta: null,
+      detail: { kind: 'text' as const, kicker, text: trait.description, chosen },
+    })),
+  ]
+  if (entries.length === 0) return null
+  return { id: 'race', title: 'Traços raciais', blocks: [{ label: null, groups: [{ title: null, entries }] }] }
 }
 
 /** Talentos (`getCharacterFeats`: o racial do Humano Variante e os dos Incrementos), com a origem. */

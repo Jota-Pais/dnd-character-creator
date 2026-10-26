@@ -81,6 +81,12 @@ describe('RulesTab', () => {
     const traits = within(panel).getByRole('region', { name: 'Traços raciais' })
     fireEvent.click(within(traits).getByRole('button', { name: /^Ataques Selvagens/ }))
     expect(screen.getByRole('dialog', { name: 'Ataques Selvagens' })).toHaveTextContent('acerto crítico')
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar' }))
+
+    // A Visão no Escuro fica no alcance da raça (`darkvision`), fora de `traits`: aparece mesmo assim.
+    fireEvent.click(within(traits).getByRole('button', { name: /^Visão no Escuro.*18 m/ }))
+    expect(screen.getByRole('dialog', { name: 'Visão no Escuro' }))
+      .toHaveTextContent('Você enxerga na penumbra a até 18 m como se fosse luz plena')
   })
 })
 
@@ -99,6 +105,19 @@ describe('getRuleReference', () => {
     expect(feats.map(f => [f.name, f.meta])).toEqual([['Alerta', 'Incremento nv 4']])
     const classGroups = sections.find(s => s.id === 'class')!.blocks[0].groups
     expect(classGroups.find(g => g.title === 'Estilo de Luta')?.entries[0].name).toBe('Defesa')
+  })
+
+  it('Visão no Escuro: primeira dos traços, com o alcance da sub-raça; sem ela, não aparece', () => {
+    const raceEntries = (draft: CharacterDraft) =>
+      getRuleReference(draft).find(s => s.id === 'race')!.blocks[0].groups[0].entries
+    const drow: CharacterDraft = { ...structuredClone(COMPLETE_DRAFT), race: 'elf', subrace: 'drow' }
+    const [first] = raceEntries(drow)
+    expect(first.name).toBe('Visão no Escuro')
+    expect(first.meta).toBe('36 m')
+    expect(first.detail).toMatchObject({ kind: 'text', kicker: 'Traço · Elfo Negro (Drow)', text: expect.stringContaining('até 36 m') })
+
+    const human: CharacterDraft = { ...structuredClone(COMPLETE_DRAFT), race: 'human', subrace: null }
+    expect(raceEntries(human).map(e => e.name)).not.toContain('Visão no Escuro')
   })
 
   it('truques da raça e magias inatas saem em "Outras magias", com o jeito de usar', () => {

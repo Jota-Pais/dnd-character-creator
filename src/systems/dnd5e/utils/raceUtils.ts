@@ -6,7 +6,7 @@ import toolsData from '../data/tools.json'
 // Dado bruto, não spellUtils: spellUtils → classUtils → raceUtils fecharia um ciclo de import.
 import spellsData from '../data/spells.json'
 import { getFeat } from './featUtils'
-import { ABILITY_LABELS } from './abilityScoreUtils'
+import { ABILITY_LABELS, formatMeters } from './abilityScoreUtils'
 import { getDragonAncestor } from './dragonAncestors'
 
 /**
@@ -131,6 +131,15 @@ export function getEffectiveSpeed(race: Race, subrace: Subrace | null): number {
 
 export function getEffectiveDarkvision(race: Race, subrace: Subrace | null): number {
   return subrace?.overrides.darkvision ?? race.darkvision
+}
+
+/**
+ * O texto do traço Visão no Escuro, que os dados guardam só como alcance (`darkvision`), fora de
+ * `traits`. É o mesmo nas raças do livro (anão, elfo, gnomo, meio-elfo, meio-orc, tiefling; págs.
+ * 20, 23, 37, 39, 41, 43), com o alcance da raça ou da sub-raça (o drow, 36 m).
+ */
+export function describeDarkvision(feet: number): string {
+  return `Você enxerga na penumbra a até ${formatMeters(feet)} como se fosse luz plena, e no escuro como se fosse na penumbra. Você não pode discernir cores no escuro, apenas tons de cinza.`
 }
 
 /**

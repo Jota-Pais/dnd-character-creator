@@ -135,6 +135,7 @@ Casos que seguem o inglês:
 - **Ilusão Menor**: componentes **S, M**, não "V, M" — a magia não tem componente verbal.
 - **Presença Intimidante** (bárbaro Furioso, p. 49): a ação seguinte estende o medo até o **fim** do próximo turno, não o "início".
 - **Golpe de Sorte** (ladino 20, p. 92): vale para **teste de habilidade** (não "um teste qualquer", que abriria para resistência), e o d20 vira 20 (sem "natural").
+- **Correntes de Cárceri** (invocação do bruxo, p. 61): pré-requisito **Pacto da Corrente** (`requiresPick: pact-of-the-chain`), não "característica Corrente de Cárceri", que não existe.
 
 Avaliado e mantido no pt-BR: **Presença Dracônica** (feiticeiro dracônico 18) — nenhuma das duas edições dá a CD da resistência, então não há divergência a corrigir.
 

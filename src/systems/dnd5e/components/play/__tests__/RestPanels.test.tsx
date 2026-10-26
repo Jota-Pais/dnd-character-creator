@@ -110,6 +110,10 @@ describe('Descanso curto', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Descanso curto' }))
     expect(screen.getByText(/A 0 PV não dá para gastar Dados de Vida/)).toBeInTheDocument()
     expect(screen.queryByLabelText('Quanto tirou no d12')).toBeNull()
+    // O resto do descanso vale (decisão de 2026-10-25): concluir não é recusado.
+    fireEvent.click(screen.getByRole('button', { name: 'Concluir descanso curto' }))
+    expect(store().notices.some(n => n.kind === 'refused')).toBe(false)
+    expect(screen.getByRole('status')).toHaveTextContent('Descanso curto concluído.')
   })
 })
 

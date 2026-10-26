@@ -876,6 +876,20 @@ describe('completeShortRest', () => {
     expect(kinds(completeShortRest(state({ lifeState: 'dead' }), S))).toEqual(['refused'])
   })
 
+  it('a 0 PV: Pacto e recarga curta voltam; só os Dados de Vida são recusados (decisão de 2026-10-25)', () => {
+    const sh = sheet({ pactSlots: { slots: 2, slotLevel: 1 } })
+    const stable = state({ lifeState: 'stable', damageTaken: 20, pactSlotsSpent: 2, resourcesSpent: { 'second-wind': 1, rage: 1 } })
+    expect(kinds(spendHitDie(stable, sh, { die: 8, value: 5 }))).toEqual(['refused'])
+    const rested = completeShortRest(stable, sh)
+    expect(kinds(rested)).toEqual(['recovered'])
+    expect(rested.state.pactSlotsSpent).toBe(0)
+    expect(rested.state.resourcesSpent).toEqual({ rage: 1 })
+    // Continua com 0 PV, estável.
+    expect(rested.state.lifeState).toBe('stable')
+    expect(getCurrentHp(rested.state, sh)).toBe(0)
+    expect(kinds(completeShortRest(state({ lifeState: 'dying', damageTaken: 20, pactSlotsSpent: 1 }), sh))).toEqual(['recovered'])
+  })
+
   it('recurso de recarga curta e Pacto voltam no mesmo descanso', () => {
     const sh = sheet({ pactSlots: { slots: 2, slotLevel: 3 } })
     const s = state({ pactSlotsSpent: 2, resourcesSpent: { 'second-wind': 1, rage: 1 } })

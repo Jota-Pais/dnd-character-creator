@@ -10,6 +10,7 @@ import { formatClassLevelLabel } from '../../utils/multiclassUtils'
 import { getRace, getSubrace } from '../../utils/raceUtils'
 import { getRollGuide, type RollGuide, type RollGuideEntry } from '../../utils/rollGuide'
 import { getSheetArmorClass } from '../../utils/sheetEffects'
+import type { NumberSource } from './numberSources'
 
 /**
  * Tudo que a tela de jogo lê, num lugar só: a ficha (draft, só leitura), o `PlaySheet` e o
@@ -31,10 +32,12 @@ export type PlayView = {
 /**
  * Props de toda aba da tela de jogo: a visão inteira, mais o "abrir a receita" de uma jogada
  * (a folha `RollRecipeSheet`, com o "Rolar" quando os dados do app estão ligados). `crit` abre
- * uma jogada de dano já com os dados dobrados.
+ * uma jogada de dano já com os dados dobrados. `openSource` abre o "de onde vem" de um número que
+ * não se rola (CA, CD de magia, Percepção passiva).
  */
 export type PlayTabProps = PlayView & {
   openRecipe: (entry: RollGuideEntry, options?: { crit?: boolean }) => void
+  openSource: (source: NumberSource) => void
 }
 
 /** A visão da tela de jogo, ou null sem ficha aberta no playStore. */

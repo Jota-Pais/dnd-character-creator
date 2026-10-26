@@ -1,14 +1,12 @@
-import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
+import { useState } from 'react'
 import { usePlayStore } from '../../stores/playStore'
 import { formatModifier } from '../../utils/abilityScoreUtils'
 import { endConcentration, setInspiration } from '../../utils/playState'
 import { withInspirationSpent, type RollGuideEntry } from '../../utils/rollGuide'
 import { canRollEntry, rollGuideEntry, type GuideRoll } from './playDice'
+import { PlayDialog } from './PlayDialog'
 
 const reasonLabels = (reasons: { label: string }[]) => reasons.map(r => r.label).join(', ')
-
-/** O que recebe o foco dentro da folha (para prender o Tab). */
-const FOCUSABLE = 'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
 /** Uma jogada ligada a esta, aberta de dentro da folha: o dano de um ataque. */
 export type RecipeLink = { label: string; entry: RollGuideEntry }
@@ -48,41 +46,6 @@ export function RollRecipeSheet({ entry: baseEntry, appDice, onClose, crit = fal
   const [inspirationSpent, setInspirationSpent] = useState<{ undoTop: unknown } | null>(null)
   const usingInspiration = inspirationSpent !== null && !inspired
   const entry = usingInspiration ? withInspirationSpent(baseEntry) : baseEntry
-
-  const dialogRef = useRef<HTMLDivElement>(null)
-  const closeRef = useRef<HTMLButtonElement>(null)
-
-  useEffect(() => {
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', handleKey)
-    return () => window.removeEventListener('keydown', handleKey)
-  }, [onClose])
-
-  // Diálogo modal: o foco entra na folha ao abrir e volta para quem a abriu ao fechar.
-  useEffect(() => {
-    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
-    closeRef.current?.focus()
-    return () => {
-      if (opener?.isConnected) opener.focus()
-    }
-  }, [])
-
-  // O Tab circula dentro da folha: a ficha atrás do fundo escuro não recebe o foco.
-  function trapTab(e: ReactKeyboardEvent<HTMLDivElement>) {
-    if (e.key !== 'Tab' || !dialogRef.current) return
-    const focusable = [...dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)]
-    if (focusable.length === 0) return
-    const first = focusable[0]
-    const last = focusable[focusable.length - 1]
-    const active = document.activeElement
-    const inside = active instanceof Node && dialogRef.current.contains(active)
-    if (e.shiftKey ? (!inside || active === first) : (!inside || active === last)) {
-      e.preventDefault()
-      ;(e.shiftKey ? last : first).focus()
-    }
-  }
 
   function rollIt(asCrit: boolean) {
     const rolled = rollGuideEntry(entry, { crit: asCrit })
@@ -129,187 +92,165 @@ export function RollRecipeSheet({ entry: baseEntry, appDice, onClose, crit = fal
     && entry.dc !== undefined && (entry.autoFail.length > 0 || result.record.total < entry.dc)
 
   return (
-    <div className="fixed inset-0 z-40 flex items-end sm:items-center justify-center bg-black/60" onClick={onClose}>
-      <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        onClick={e => e.stopPropagation()}
-        onKeyDown={trapTab}
-        className="w-full sm:max-w-md max-h-[85vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl border border-parchment-800 bg-surface-raised px-5 pt-4 pb-6"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <h2 id={titleId} className="font-fantasy font-bold text-base text-parchment-200 leading-snug pt-2">{entry.label}</h2>
-          <button
-            ref={closeRef}
-            onClick={onClose}
-            aria-label="Fechar"
-            className="w-10 h-10 shrink-0 flex items-center justify-center rounded-lg text-parchment-500 hover:text-parchment-200"
-          >
-            ✕
+    <PlayDialog title={entry.label} titleId={titleId} onClose={onClose}>
+      <p className="mt-2 font-fantasy font-bold text-3xl text-gold-300" data-testid="recipe-formula">{shown.formula}</p>
+
+      {critMode && (
+        <div className="mt-2 rounded-lg border border-gold-800 bg-gold-900/30 px-3 py-2 text-sm text-gold-200">
+          <p>Acerto crítico: os dados de dano dobram, o modificador não (pág. 196).</p>
+          {entry.crit?.notes?.map((n, i) => (
+            <p key={i} className="mt-1 text-xs text-gold-100" data-testid="crit-note">• {n}</p>
+          ))}
+          <button onClick={leaveCrit} className="mt-1 min-h-10 text-xs text-parchment-400 underline hover:text-parchment-200">
+            Não foi crítico
           </button>
         </div>
+      )}
 
-        <p className="mt-2 font-fantasy font-bold text-3xl text-gold-300" data-testid="recipe-formula">{shown.formula}</p>
+      {entry.mode === 'advantage' && (
+        <p className="mt-2 text-sm text-emerald-300">
+          Com vantagem: role dois d20 e fique com o maior. <span className="text-parchment-500">({reasonLabels(entry.advantage)})</span>
+        </p>
+      )}
+      {entry.mode === 'disadvantage' && (
+        <p className="mt-2 text-sm text-red-300">
+          Com desvantagem: role dois d20 e fique com o menor. <span className="text-parchment-500">({reasonLabels(entry.disadvantage)})</span>
+        </p>
+      )}
+      {canceled && (
+        <p className="mt-2 text-sm text-parchment-400">
+          Vantagem ({reasonLabels(entry.advantage)}) e desvantagem ({reasonLabels(entry.disadvantage)}) se anulam: role um d20 só.
+        </p>
+      )}
+      {isD20 && inspired && !usingInspiration && (
+        <button
+          onClick={spendInspiration}
+          className="mt-2 min-h-10 rounded-lg border border-gold-700 px-3 text-sm text-gold-300 hover:border-gold-500"
+        >
+          ★ Usar inspiração
+        </button>
+      )}
+      {usingInspiration && inspirationSpent && undoTop === inspirationSpent.undoTop && (
+        <button
+          onClick={returnInspiration}
+          className="mt-1 min-h-10 text-xs text-parchment-400 underline hover:text-parchment-200"
+        >
+          Devolver a inspiração
+        </button>
+      )}
+      {entry.autoFail.length > 0 && (
+        <p className="mt-2 rounded-lg border border-red-900 bg-red-950/30 px-3 py-2 text-sm text-red-300">
+          Falha automática ({reasonLabels(entry.autoFail)}).
+        </p>
+      )}
+      {entry.dc !== undefined && (
+        <p className="mt-2 text-sm text-parchment-300">CD {entry.dc}: o total precisa ser {entry.dc} ou mais.</p>
+      )}
+      {entry.crit && !critMode && (
+        <p className="mt-2 text-sm text-parchment-400">
+          Acerto crítico: <span className="text-parchment-200">{entry.crit.formula}</span> (só os dados dobram).
+        </p>
+      )}
 
-        {critMode && (
-          <div className="mt-2 rounded-lg border border-gold-800 bg-gold-900/30 px-3 py-2 text-sm text-gold-200">
-            <p>Acerto crítico: os dados de dano dobram, o modificador não (pág. 196).</p>
-            {entry.crit?.notes?.map((n, i) => (
-              <p key={i} className="mt-1 text-xs text-gold-100" data-testid="crit-note">• {n}</p>
-            ))}
-            <button onClick={leaveCrit} className="mt-1 min-h-10 text-xs text-parchment-400 underline hover:text-parchment-200">
-              Não foi crítico
-            </button>
-          </div>
-        )}
+      {entry.notes.length > 0 && (
+        <ul className="mt-3 space-y-1">
+          {entry.notes.map((n, i) => (
+            <li key={i} className="text-xs text-parchment-400 leading-snug">• {n}</li>
+          ))}
+        </ul>
+      )}
 
-        {entry.mode === 'advantage' && (
-          <p className="mt-2 text-sm text-emerald-300">
-            Com vantagem: role dois d20 e fique com o maior. <span className="text-parchment-500">({reasonLabels(entry.advantage)})</span>
-          </p>
-        )}
-        {entry.mode === 'disadvantage' && (
-          <p className="mt-2 text-sm text-red-300">
-            Com desvantagem: role dois d20 e fique com o menor. <span className="text-parchment-500">({reasonLabels(entry.disadvantage)})</span>
-          </p>
-        )}
-        {canceled && (
-          <p className="mt-2 text-sm text-parchment-400">
-            Vantagem ({reasonLabels(entry.advantage)}) e desvantagem ({reasonLabels(entry.disadvantage)}) se anulam: role um d20 só.
-          </p>
-        )}
-        {isD20 && inspired && !usingInspiration && (
-          <button
-            onClick={spendInspiration}
-            className="mt-2 min-h-10 rounded-lg border border-gold-700 px-3 text-sm text-gold-300 hover:border-gold-500"
-          >
-            ★ Usar inspiração
-          </button>
-        )}
-        {usingInspiration && inspirationSpent && undoTop === inspirationSpent.undoTop && (
-          <button
-            onClick={returnInspiration}
-            className="mt-1 min-h-10 text-xs text-parchment-400 underline hover:text-parchment-200"
-          >
-            Devolver a inspiração
-          </button>
-        )}
-        {entry.autoFail.length > 0 && (
-          <p className="mt-2 rounded-lg border border-red-900 bg-red-950/30 px-3 py-2 text-sm text-red-300">
-            Falha automática ({reasonLabels(entry.autoFail)}).
-          </p>
-        )}
-        {entry.dc !== undefined && (
-          <p className="mt-2 text-sm text-parchment-300">CD {entry.dc}: o total precisa ser {entry.dc} ou mais.</p>
-        )}
-        {entry.crit && !critMode && (
-          <p className="mt-2 text-sm text-parchment-400">
-            Acerto crítico: <span className="text-parchment-200">{entry.crit.formula}</span> (só os dados dobram).
-          </p>
-        )}
-
-        {entry.notes.length > 0 && (
-          <ul className="mt-3 space-y-1">
-            {entry.notes.map((n, i) => (
-              <li key={i} className="text-xs text-parchment-400 leading-snug">• {n}</li>
+      {entry.breakdown.length > 0 && (
+        <div className="mt-4">
+          <p className="text-[11px] uppercase tracking-wider text-parchment-600">De onde vem</p>
+          <ul className="mt-1 divide-y divide-parchment-900">
+            {shown.dice && (
+              <li className="flex justify-between py-1 text-sm">
+                <span className="text-parchment-400">Dado</span>
+                <span className="text-parchment-200">{shown.dice}</span>
+              </li>
+            )}
+            {entry.breakdown.map((b, i) => (
+              <li key={i} className="flex justify-between py-1 text-sm">
+                <span className="text-parchment-400">{b.label}</span>
+                <span className="text-parchment-200">{formatModifier(b.value)}</span>
+              </li>
             ))}
           </ul>
-        )}
+        </div>
+      )}
 
-        {entry.breakdown.length > 0 && (
-          <div className="mt-4">
-            <p className="text-[11px] uppercase tracking-wider text-parchment-600">De onde vem</p>
-            <ul className="mt-1 divide-y divide-parchment-900">
-              {shown.dice && (
-                <li className="flex justify-between py-1 text-sm">
-                  <span className="text-parchment-400">Dado</span>
-                  <span className="text-parchment-200">{shown.dice}</span>
-                </li>
-              )}
-              {entry.breakdown.map((b, i) => (
-                <li key={i} className="flex justify-between py-1 text-sm">
-                  <span className="text-parchment-400">{b.label}</span>
-                  <span className="text-parchment-200">{formatModifier(b.value)}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {appDice && canRollEntry(entry) && (
-          <div className="mt-5 border-t border-parchment-900 pt-4">
-            <div className="flex flex-wrap gap-2">
+      {appDice && canRollEntry(entry) && (
+        <div className="mt-5 border-t border-parchment-900 pt-4">
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => rollIt(critMode)}
+              className="min-h-10 px-4 rounded-lg border border-parchment-800 text-sm text-parchment-300 hover:text-parchment-100 hover:border-parchment-600 transition-colors"
+            >
+              Rolar
+            </button>
+            {entry.crit && !critMode && (
               <button
-                onClick={() => rollIt(critMode)}
+                onClick={() => rollIt(true)}
                 className="min-h-10 px-4 rounded-lg border border-parchment-800 text-sm text-parchment-300 hover:text-parchment-100 hover:border-parchment-600 transition-colors"
               >
-                Rolar
-              </button>
-              {entry.crit && !critMode && (
-                <button
-                  onClick={() => rollIt(true)}
-                  className="min-h-10 px-4 rounded-lg border border-parchment-800 text-sm text-parchment-300 hover:text-parchment-100 hover:border-parchment-600 transition-colors"
-                >
-                  Rolar crítico
-                </button>
-              )}
-            </div>
-            {result && <RollResult result={result} entry={entry} isD20={isD20} autoMiss={autoMiss} />}
-            {failedConcentration && (
-              <button
-                onClick={endFailedConcentration}
-                className="mt-2 min-h-10 rounded-lg border border-violet-700 px-3 text-sm text-violet-200 hover:border-violet-400"
-              >
-                Falhei: encerrar
+                Rolar crítico
               </button>
             )}
           </div>
-        )}
+          {result && <RollResult result={result} entry={entry} isD20={isD20} autoMiss={autoMiss} />}
+          {failedConcentration && (
+            <button
+              onClick={endFailedConcentration}
+              className="mt-2 min-h-10 rounded-lg border border-violet-700 px-3 text-sm text-violet-200 hover:border-violet-400"
+            >
+              Falhei: encerrar
+            </button>
+          )}
+        </div>
+      )}
 
-        {links.length > 0 && onOpenLink && !autoMiss && (
-          <div className="mt-5 border-t border-parchment-900 pt-4">
-            <p className="text-[11px] uppercase tracking-wider text-parchment-600">Acertou? Role o dano</p>
-            <ul className="mt-2 space-y-2">
-              {links.map(link => {
-                const canCrit = link.entry.crit !== undefined && link.entry.dice !== ''
-                return (
-                  <li key={link.entry.id} className="flex flex-wrap items-center gap-2">
-                    {critHit && canCrit ? (
+      {links.length > 0 && onOpenLink && !autoMiss && (
+        <div className="mt-5 border-t border-parchment-900 pt-4">
+          <p className="text-[11px] uppercase tracking-wider text-parchment-600">Acertou? Role o dano</p>
+          <ul className="mt-2 space-y-2">
+            {links.map(link => {
+              const canCrit = link.entry.crit !== undefined && link.entry.dice !== ''
+              return (
+                <li key={link.entry.id} className="flex flex-wrap items-center gap-2">
+                  {critHit && canCrit ? (
+                    <button
+                      onClick={() => onOpenLink(link.entry, { crit: true })}
+                      className="min-h-10 px-3 rounded-lg border border-gold-600 bg-gold-900/40 text-sm text-gold-200 hover:border-gold-400"
+                    >
+                      {link.label} do crítico: {link.entry.crit?.formula}
+                    </button>
+                  ) : (
+                    <>
                       <button
-                        onClick={() => onOpenLink(link.entry, { crit: true })}
-                        className="min-h-10 px-3 rounded-lg border border-gold-600 bg-gold-900/40 text-sm text-gold-200 hover:border-gold-400"
+                        onClick={() => onOpenLink(link.entry, { crit: false })}
+                        className="min-h-10 px-3 rounded-lg border border-parchment-800 text-sm text-parchment-200 hover:border-gold-700"
                       >
-                        {link.label} do crítico: {link.entry.crit?.formula}
+                        {link.label}: {link.entry.formula}
                       </button>
-                    ) : (
-                      <>
+                      {canCrit && (
                         <button
-                          onClick={() => onOpenLink(link.entry, { crit: false })}
-                          className="min-h-10 px-3 rounded-lg border border-parchment-800 text-sm text-parchment-200 hover:border-gold-700"
+                          onClick={() => onOpenLink(link.entry, { crit: true })}
+                          aria-label={`${link.label} do crítico`}
+                          className="min-h-10 px-3 rounded-lg border border-parchment-800 text-xs text-parchment-400 hover:text-parchment-200"
                         >
-                          {link.label}: {link.entry.formula}
+                          crítico
                         </button>
-                        {canCrit && (
-                          <button
-                            onClick={() => onOpenLink(link.entry, { crit: true })}
-                            aria-label={`${link.label} do crítico`}
-                            className="min-h-10 px-3 rounded-lg border border-parchment-800 text-xs text-parchment-400 hover:text-parchment-200"
-                          >
-                            crítico
-                          </button>
-                        )}
-                      </>
-                    )}
-                  </li>
-                )
-              })}
-            </ul>
-          </div>
-        )}
-      </div>
-    </div>
+                      )}
+                    </>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )}
+    </PlayDialog>
   )
 }
 

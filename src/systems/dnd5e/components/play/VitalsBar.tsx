@@ -4,18 +4,34 @@ import {
   endConcentration, getCurrentHp, getEffectiveMaxHp, getPlayConditionEffects, getPlaySpeed, setInspiration,
 } from '../../utils/playState'
 import type { RollGuideEntry } from '../../utils/rollGuide'
+import { getConditionalAcBonuses } from '../../utils/sheetEffects'
+import { armorClassSource, passiveSource, type NumberSource } from './numberSources'
 import { ModeMark } from './RollMarks'
 import type { PlayView } from './usePlayView'
 
 const LIFE_LABEL = { dying: 'Morrendo', stable: 'Estável', dead: 'Morto' } as const
 
-function Stat({ label, children, sub }: { label: string; children: ReactNode; sub?: ReactNode }) {
-  return (
-    <div className="flex flex-col items-center justify-center min-w-0 rounded-lg border border-parchment-900 bg-surface-raised px-1 py-1.5 min-h-12">
-      <span className="text-[10px] uppercase tracking-wider text-parchment-600 leading-none">{label}</span>
+/** Um número dos vitais. Com `onOpen`, vira botão (rótulo dourado, como a iniciativa): "de onde vem". */
+function Stat({ label, children, sub, onOpen, ariaLabel }: {
+  label: string
+  children: ReactNode
+  sub?: ReactNode
+  onOpen?: () => void
+  ariaLabel?: string
+}) {
+  const content = (
+    <>
+      <span className={`text-[10px] uppercase tracking-wider leading-none ${onOpen ? 'text-gold-500' : 'text-parchment-600'}`}>{label}</span>
       <span className="font-fantasy font-bold text-lg text-parchment-100 leading-tight">{children}</span>
       {sub && <span className="text-[10px] text-parchment-500 leading-none truncate max-w-full">{sub}</span>}
-    </div>
+    </>
+  )
+  const box = 'flex flex-col items-center justify-center min-w-0 rounded-lg border bg-surface-raised px-1 py-1.5 min-h-12'
+  if (!onOpen) return <div className={`${box} border-parchment-900`}>{content}</div>
+  return (
+    <button onClick={onOpen} aria-label={ariaLabel} className={`${box} border-parchment-800 hover:border-gold-700 transition-colors`}>
+      {content}
+    </button>
   )
 }
 
@@ -24,8 +40,12 @@ function Stat({ label, children, sub }: { label: string; children: ReactNode; su
  * CA, deslocamento efetivo, iniciativa (tocável: abre a receita), Percepção passiva, inspiração,
  * concentração e as condições ativas (só leitura; quem mexe nelas é a aba Estado).
  */
-export function VitalsBar({ view, onOpenRecipe }: { view: PlayView; onOpenRecipe: (entry: RollGuideEntry) => void }) {
-  const { state, sheet, guide, armorClass, run } = view
+export function VitalsBar({ view, onOpenRecipe, onOpenSource }: {
+  view: PlayView
+  onOpenRecipe: (entry: RollGuideEntry) => void
+  onOpenSource: (source: NumberSource) => void
+}) {
+  const { draft, state, sheet, guide, armorClass, run } = view
   const current = getCurrentHp(state, sheet)
   const effMax = getEffectiveMaxHp(state, sheet)
   const sheetMax = Math.max(0, sheet.maxHp)
@@ -60,7 +80,13 @@ export function VitalsBar({ view, onOpenRecipe }: { view: PlayView; onOpenRecipe
             </span>
           )}
         </div>
-        <Stat label="CA">{armorClass.value}</Stat>
+        <Stat
+          label="CA"
+          onOpen={() => onOpenSource(armorClassSource(armorClass, getConditionalAcBonuses(draft)))}
+          ariaLabel={`Classe de Armadura ${armorClass.value}: de onde vem`}
+        >
+          {armorClass.value}
+        </Stat>
         <Stat
           label="Desloc."
           sub={speed !== sheet.speed ? <span className="text-amber-300">era {formatMeters(sheet.speed)}</span> : undefined}
@@ -80,6 +106,8 @@ export function VitalsBar({ view, onOpenRecipe }: { view: PlayView; onOpenRecipe
         <Stat
           label="Percep."
           sub={passive.adjustment !== 0 ? `passiva ${passive.adjustment > 0 ? '+5' : '−5'}` : 'passiva'}
+          onOpen={() => onOpenSource(passiveSource(passive))}
+          ariaLabel={`Percepção passiva ${passive.value}: de onde vem`}
         >
           {passive.value}
         </Stat>

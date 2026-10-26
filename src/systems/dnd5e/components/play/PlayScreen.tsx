@@ -10,6 +10,8 @@ import { NoticeToast } from './NoticeToast'
 import { usePlayStore } from '../../stores/playStore'
 import { RollRecipeSheet, type RecipeLink } from './RollRecipeSheet'
 import { VitalsBar } from './VitalsBar'
+import { NumberSourceSheet } from './NumberSourceSheet'
+import type { NumberSource } from './numberSources'
 
 /** Folga de fundo sem aviso aberto (px): o fim da página não encosta na borda. */
 const MIN_BOTTOM_GAP = 128
@@ -35,6 +37,8 @@ export function PlayScreen() {
   const [recipe, setRecipe] = useState<{ entry: RollGuideEntry; crit: boolean } | null>(null)
   const openRecipe = (entry: RollGuideEntry, options?: { crit?: boolean }) =>
     setRecipe({ entry, crit: options?.crit ?? false })
+  // O "de onde vem" aberto de um número que não se rola (CA, CD de magia, Percepção passiva).
+  const [source, setSource] = useState<NumberSource | null>(null)
 
   // No celular, trocar de app pode descartar a aba sem aviso: o que está sendo digitado (nota da
   // sessão, nota de duração) grava assim que a página some.
@@ -62,7 +66,7 @@ export function PlayScreen() {
     )
   }
 
-  const tabProps: PlayTabProps = { ...view, openRecipe }
+  const tabProps: PlayTabProps = { ...view, openRecipe, openSource: setSource }
   const current = PLAY_TABS.find(t => t.id === tab) ?? PLAY_TABS[0]
   const TabComponent = current.component
   const liveRecipe = recipe ? findRollGuideEntry(view.guide, recipe.entry.id) ?? recipe.entry : null
@@ -114,7 +118,7 @@ export function PlayScreen() {
         </header>
 
         <div className="sticky top-0 z-20 -mx-4 px-4 py-2 bg-surface-base/95 backdrop-blur-sm border-b border-parchment-900">
-          <VitalsBar view={view} onOpenRecipe={openRecipe} />
+          <VitalsBar view={view} onOpenRecipe={openRecipe} onOpenSource={setSource} />
         </div>
 
         {/* A 0 PV os testes contra a morte tomam a frente; dano e cura continuam valendo
@@ -176,6 +180,7 @@ export function PlayScreen() {
           onOpenLink={openRecipe}
         />
       )}
+      {source && <NumberSourceSheet source={source} onClose={() => setSource(null)} />}
     </div>
   )
 }

@@ -9,6 +9,7 @@ import {
   recoverPactSlot, recoverResource, recoverSpellSlot, spendPactSlot, spendResource, spendSpellSlot,
 } from '../../utils/playState'
 import { pluralize } from '../../utils/textUtils'
+import { spellSaveDcSource } from './numberSources'
 import { ordinal, rollButtonLabel } from './playFormat'
 import { RollMarks } from './RollMarks'
 import { RemainingTrack, UsesTrack } from './UsesTrack'
@@ -76,7 +77,7 @@ function ResourceRow({ resource, view }: { resource: SheetResource; view: PlayTa
  * os recursos da ficha (`sheet.resources`) com os usos e a recarga; e os Dados de Vida que restam.
  */
 export function MagicTab(view: PlayTabProps) {
-  const { state, sheet, guide, run, openRecipe } = view
+  const { state, sheet, guide, run, openRecipe, openSource } = view
   const slotsAvailable = getSpellSlotsAvailable(state, sheet)
   const slotLevels = sheet.spellSlots.map((max, i) => ({ level: i + 1, max })).filter(s => s.max > 0)
   const pact = sheet.pactSlots
@@ -99,13 +100,14 @@ export function MagicTab(view: PlayTabProps) {
               <li key={sc.classId} className="rounded-xl border border-parchment-900 bg-surface-raised p-3">
                 <p className="font-fantasy text-parchment-100">{sc.label}</p>
                 <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                  <div
-                    className="min-h-10 flex items-center gap-1.5 rounded-lg border border-parchment-900 px-3"
-                    title={sc.saveDcBreakdown.map(b => `${b.label} ${formatModifier(b.value)}`).join(', ')}
+                  <button
+                    onClick={() => openSource(spellSaveDcSource(sc))}
+                    aria-label={`CD de magia ${sc.saveDc}: de onde vem`}
+                    className="min-h-10 flex items-center gap-1.5 rounded-lg border border-parchment-800 px-3 hover:border-gold-600 transition-colors"
                   >
-                    <span className="text-[10px] uppercase tracking-wider text-parchment-500">CD de magia</span>
-                    <span className="font-fantasy font-bold text-lg text-parchment-100">{sc.saveDc}</span>
-                  </div>
+                    <span className="text-[10px] uppercase tracking-wider text-gold-500">CD de magia</span>
+                    <span className="font-fantasy font-bold text-lg text-parchment-100" aria-hidden="true">{sc.saveDc}</span>
+                  </button>
                   <button
                     onClick={() => openRecipe(sc.attack)}
                     aria-label={rollButtonLabel(sc.attack)}

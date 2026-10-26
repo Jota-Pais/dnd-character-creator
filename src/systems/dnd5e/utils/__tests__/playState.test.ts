@@ -9,7 +9,7 @@ import {
   addCondition, adjustMaxHp, applyDamage, applyDamageDroppingToOneHp, applyHealing, clearTempHp, completeLongRest, completeShortRest,
   createPlayState, describeHpMaxImmunity, endConcentration, getBaseMaxHp, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable,
   getLongRestHitDiceRecoverable, getPactSlotsAvailable, getPlayConditionEffects, getPlayConditionState, getPlaySpeed,
-  getResourceAvailable, getSpellSlotsAvailable, grantTempHp, previewLongRest, previewShortRest, reconcileLoadedPlayState,
+  getResourceAvailable, getShortRestSlotRecovery, getSpellSlotsAvailable, grantTempHp, previewLongRest, previewShortRest, reconcileLoadedPlayState,
   reconcilePlayState,
   recordDeathSave, recordRoll, recoverPactSlot, regainHpWhileStable, recoverResource, recoverSpellSlot, removeCondition,
   revive, sanitizePlayState, setConditionNote, setExhaustion, setInspiration, setNote, spendHitDie, spendPactSlot,
@@ -909,6 +909,30 @@ describe('completeShortRest', () => {
     expect(kinds(completeShortRest(state({ hitDiceSpent: { 8: 2 } }), bard, { hitDiceSpent: 0 }))).not.toContain('warning')
     expect(kinds(completeShortRest(state(), bard))).not.toContain('warning')
     expect(kinds(completeShortRest(state(), S, { hitDiceSpent: 3 }))).not.toContain('warning')
+  })
+})
+
+describe('getShortRestSlotRecovery (Recuperação Arcana)', () => {
+  const wizard = (level: number) => buildPlaySheet({
+    ...structuredClone(EMPTY_DRAFT), class: 'wizard', level,
+    abilityScores: { STR: 10, DEX: 14, CON: 14, INT: 16, WIS: 10, CHA: 8 },
+  })
+
+  it('com uso disponível: o lembrete com a soma dos níveis (metade do nível de mago, para cima) e o teto', () => {
+    const sh = wizard(5)
+    expect(getShortRestSlotRecovery(state(), sh)).toEqual([{
+      id: 'arcane-recovery', name: 'Recuperação Arcana', levels: 3, maxSlotLevel: 5, page: 97,
+      text: 'Recuperação Arcana: neste descanso curto, você pode recuperar espaços de magia gastos que somem até 3 níveis, nenhum de 6º nível ou superior (pág. 97). Escolha quais e devolva nas bolinhas da aba Magia; depois marque o uso.',
+    }])
+    expect(getShortRestSlotRecovery(state(), wizard(1))[0].text).toContain('até 1 nível,')
+  })
+
+  it('sem uso, morto ou sem o recurso: nada', () => {
+    const sh = wizard(5)
+    expect(getShortRestSlotRecovery(state({ resourcesSpent: { 'arcane-recovery': 1 } }), sh)).toEqual([])
+    expect(getShortRestSlotRecovery(state({ lifeState: 'dead' }), sh)).toEqual([])
+    // O recurso sem a declaração `slotRecovery` (a ficha de teste) não vira lembrete.
+    expect(getShortRestSlotRecovery(state(), S)).toEqual([])
   })
 })
 

@@ -3,8 +3,8 @@ import type { RollRecord } from '../../../../core/dice'
 import { usePlayStore, type ShortRestSpend } from '../../stores/playStore'
 import type { PlayNotice, PlaySheet, PlayState } from '../../types/playState'
 import {
-  completeShortRest, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable, isAtZeroHp, previewShortRest,
-  recordRoll, spendHitDie,
+  completeShortRest, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable, getShortRestSlotRecovery, isAtZeroHp,
+  previewShortRest, recordRoll, spendHitDie,
 } from '../../utils/playState'
 import type { RollGuideEntry } from '../../utils/rollGuide'
 import { countLabel, pluralize } from '../../utils/textUtils'
@@ -129,6 +129,8 @@ export function ShortRestPanel({ view, onClose }: { view: PlayTabProps; onClose:
 
   const sim = simulate(state, sheet, spends)
   const preview = previewShortRest(state, sheet)
+  // Recuperação Arcana (e afins) com uso: só o lembrete; a escolha é nas bolinhas da aba Magia.
+  const slotRecovery = getShortRestSlotRecovery(state, sheet)
   const pool = getHitDiceAvailable(sim.state, sheet)
   const hpBefore = getCurrentHp(state, sheet)
   const hpAfter = getCurrentHp(sim.state, sheet)
@@ -193,6 +195,12 @@ export function ShortRestPanel({ view, onClose }: { view: PlayTabProps; onClose:
       <p className="text-sm text-parchment-300">
         Ao concluir, voltam: {comesBack.length > 0 ? comesBack.join(', ') : 'nada além do que os Dados de Vida curarem'}.
       </p>
+
+      {slotRecovery.map(r => (
+        <p key={r.id} className="rounded-lg border border-sky-900 bg-sky-950/30 px-3 py-2 text-xs text-sky-200 leading-snug" data-testid="slot-recovery">
+          {r.text}
+        </p>
+      ))}
 
       {blocked ? (
         <p className="rounded-lg border border-red-900 bg-red-950/30 px-3 py-2 text-sm text-red-200">{blocked}</p>

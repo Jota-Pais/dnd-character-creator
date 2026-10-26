@@ -393,7 +393,7 @@
         "description": "Uma vez por dia, ao terminar um descanso curto, recupere espaços de magia gastos somando até metade do seu nível de mago (arredondado para cima), nenhum acima do 5° nível.",
         "effects": {
           "resources": [
-            { "id": "arcane-recovery", "name": "Recuperação Arcana", "uses": 1, "recharge": "day", "amount": { "value": { "halfClassLevel": "up" }, "unit": "slotLevels" }, "note": "ao terminar um descanso curto; nenhum espaço de 6º nível ou superior" }
+            { "id": "arcane-recovery", "name": "Recuperação Arcana", "uses": 1, "recharge": "day", "amount": { "value": { "halfClassLevel": "up" }, "unit": "slotLevels" }, "note": "ao terminar um descanso curto; nenhum espaço de 6º nível ou superior", "slotRecovery": { "maxSlotLevel": 5, "page": 97 } }
           ]
         }
       },
@@ -981,7 +981,7 @@
         "description": "Durante um descanso curto, recupere espaços de magia gastos cujo total de níveis seja até metade do seu nível de druida (arredondado para baixo), nenhum de 6° nível ou superior. Depois de usar, só pode usar de novo após terminar um descanso longo.",
         "effects": {
           "resources": [
-            { "id": "natural-recovery", "name": "Recuperação Natural", "uses": 1, "recharge": "long", "amount": { "value": { "halfClassLevel": "down" }, "unit": "slotLevels" }, "note": "durante um descanso curto; nenhum espaço de 6º nível ou superior" }
+            { "id": "natural-recovery", "name": "Recuperação Natural", "uses": 1, "recharge": "long", "amount": { "value": { "halfClassLevel": "down" }, "unit": "slotLevels" }, "note": "durante um descanso curto; nenhum espaço de 6º nível ou superior", "slotRecovery": { "maxSlotLevel": 5, "page": 75 } }
           ]
         }
       },

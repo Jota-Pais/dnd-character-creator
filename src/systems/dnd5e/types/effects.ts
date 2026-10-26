@@ -389,6 +389,9 @@ export type ResourceUnit = 'uses' | 'points' | 'hp' | 'dice'
  */
 export type ResourceAmountUnit = 'bonus' | 'hp' | 'slotLevels' | 'saveDc'
 
+/** Espaços de magia recuperados num descanso curto: o nível mais alto e a página da regra. */
+export type SlotRecovery = { maxSlotLevel: number; page: number }
+
 export type ResourceEffect = {
   /**
    * Identificador estável. Duas classes que dão o MESMO recurso usam o mesmo id e a ficha não
@@ -409,6 +412,12 @@ export type ResourceEffect = {
   unlimitedFrom?: number
   /** Ressalva curta do livro que muda o uso na mesa (ex.: "nenhum espaço de 6º nível ou superior"). */
   note?: string
+  /**
+   * O recurso recupera espaços de magia gastos num descanso curto (Recuperação Arcana, Recuperação
+   * Natural): `amount` em `slotLevels` é a soma dos níveis; nenhum espaço acima de `maxSlotLevel`.
+   * O modo de jogo lembra disso no painel do descanso curto — a escolha dos espaços é do jogador.
+   */
+  slotRecovery?: SlotRecovery
   /**
    * Se o personagem já tem um recurso com este `id` vindo de outra fonte, os usos daqui SOMAM aos
    * dele (e o dado continua o dele); senão, este vale sozinho. É o Adepto Marcial (p. 167): "Se você

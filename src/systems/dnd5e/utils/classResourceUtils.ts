@@ -1,6 +1,6 @@
 import type { AbilityScore } from '../types/race'
 import type {
-  LevelStep, ResourceAmountUnit, ResourceEffect, ResourceQuantity, ResourceRecharge, ResourceUnit,
+  LevelStep, ResourceAmountUnit, ResourceEffect, ResourceQuantity, ResourceRecharge, ResourceUnit, SlotRecovery,
 } from '../types/effects'
 import { calculateModifier } from './abilityScoreUtils'
 
@@ -70,6 +70,8 @@ export type SheetResource = {
   amount?: { value: number; unit: ResourceAmountUnit }
   recharge?: ResourceRecharge
   note?: string
+  /** Recupera espaços de magia no descanso curto (Recuperação Arcana): até que nível, e a página. */
+  slotRecovery?: SlotRecovery
   /**
    * Outras fontes que também dão este recurso. O livro não soma os usos (p. 166) — fica o maior,
    * e a ficha avisa que é um poço só.
@@ -121,6 +123,7 @@ export function evaluateResource(
     ...(effect.amount ? { amount: { value: q(effect.amount.value), unit: effect.amount.unit } } : {}),
     ...(recharge && !unlimited ? { recharge } : {}),
     ...(effect.note ? { note: effect.note } : {}),
+    ...(effect.slotRecovery ? { slotRecovery: { ...effect.slotRecovery } } : {}),
     sharedWith: [],
     addedFrom: [],
   }

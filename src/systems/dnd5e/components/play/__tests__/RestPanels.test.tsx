@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { render, screen, fireEvent, cleanup } from '@testing-library/react'
+import { act, render, screen, fireEvent, cleanup } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { usePlayStore } from '../../../stores/playStore'
 import { applyDamage, spendResource } from '../../../utils/playState'
@@ -100,6 +100,21 @@ describe('Descanso curto', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Descanso curto' }))
     spendDie('1')
     expect(screen.queryByLabelText('Quanto tirou no d12')).toBeNull()
+  })
+
+  it('Recuperação Arcana com uso: o painel lembra o que dá para recuperar; sem uso, some', () => {
+    const wizard = structuredClone(COMPLETE_DRAFT)
+    wizard.class = 'wizard'
+    wizard.level = 4
+    openDraft(wizard)
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Estado' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Descanso curto' }))
+    expect(screen.getByTestId('slot-recovery')).toHaveTextContent(
+      'Recuperação Arcana: neste descanso curto, você pode recuperar espaços de magia gastos que somem até 2 níveis, nenhum de 6º nível ou superior (pág. 97).',
+    )
+    act(() => { store().run((st, sh) => spendResource(st, sh, 'arcane-recovery')) })
+    expect(screen.queryByTestId('slot-recovery')).toBeNull()
   })
 
   it('a 0 PV não deixa gastar Dados de Vida', () => {

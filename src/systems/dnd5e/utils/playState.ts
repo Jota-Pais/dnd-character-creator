@@ -982,6 +982,36 @@ export function previewShortRest(state0: PlayState, sheet: PlaySheet): ShortRest
   }
 }
 
+export type ShortRestSlotRecovery = {
+  id: string
+  name: string
+  /** Soma máxima dos níveis dos espaços recuperados (metade do nível de mago, para cima…). */
+  levels: number
+  maxSlotLevel: number
+  page: number
+  /** O lembrete pronto para a tela. */
+  text: string
+}
+
+/**
+ * Os recursos que recuperam espaços de magia num descanso curto (`slotRecovery`: Recuperação
+ * Arcana, Recuperação Natural) e ainda têm uso. Só lembrete (decisão de 2026-10-25): quais espaços
+ * voltar é escolha do jogador, nas bolinhas da aba Magia, e o uso é marcado lá também.
+ */
+export function getShortRestSlotRecovery(state0: PlayState, sheet: PlaySheet): ShortRestSlotRecovery[] {
+  if (state0.lifeState === 'dead') return []
+  const state = reconcilePlayState(state0, sheet)
+  return sheet.resources.flatMap(r => {
+    const recovery = r.slotRecovery
+    if (!recovery || r.amount?.unit !== 'slotLevels' || r.amount.value < 1) return []
+    const available = getResourceAvailable(state, sheet, r.id)
+    if (available !== 'unlimited' && !(typeof available === 'number' && available > 0)) return []
+    const levels = r.amount.value
+    const text = `${r.name}: neste descanso curto, você pode recuperar espaços de magia gastos que somem até ${countLabel(levels, 'nível', 'níveis')}, nenhum de ${recovery.maxSlotLevel + 1}º nível ou superior (pág. ${recovery.page}). Escolha quais e devolva nas bolinhas da aba Magia; depois marque o uso.`
+    return [{ id: r.id, name: r.name, levels, maxSlotLevel: recovery.maxSlotLevel, page: recovery.page, text }]
+  })
+}
+
 /** Id do recurso da Canção de Descanso do bardo em `class-progression-features.json`. */
 const SONG_OF_REST_ID = 'song-of-rest'
 

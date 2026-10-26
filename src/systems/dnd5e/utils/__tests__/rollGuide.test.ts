@@ -195,6 +195,24 @@ describe('getRollGuide — ataques', () => {
     expect(unarmed.versatile).toBeNull()
   })
 
+  it('golpe desarmado com Força baixa: mostra 0 e diz que não causa dano (decisão de 2026-10-25)', () => {
+    const noDamage = 'Não causa dano: o valor fixo mais o modificador dá 0 ou menos, e o dano nunca é negativo.'
+    const weak = (STR: number) => getRollGuide(draft({ class: 'wizard', level: 1, abilityScores: { ...SCORES, STR } }), play())
+      .attacks.find(a => a.key === 'unarmed')!.damage!
+    // FOR 8: 1 − 1 = 0.
+    expect(weak(8)).toMatchObject({ modifier: 0, formula: '0 concussão', notation: '0' })
+    expect(weak(8).notes).toContain(noDamage)
+    expect(weak(8).notes.some(n => n.startsWith('Dano fixo'))).toBe(false)
+    // FOR 6: 1 − 2 = −1, com o piso 0 do dano; a conta fecha com a parcela do mínimo.
+    expect(weak(6)).toMatchObject({ modifier: 0, formula: '0 concussão', crit: { formula: '0 concussão' } })
+    expect(weak(6).breakdown).toEqual([
+      { label: 'Golpe desarmado', value: 1 }, { label: 'Força', value: -2 }, { label: 'Mínimo 0', value: 1 },
+    ])
+    expect(weak(6).notes).toContain(noDamage)
+    // FOR 10: 1, sem a nota.
+    expect(weak(10).notes).not.toContain(noDamage)
+  })
+
   it('Rede (sem dano): só a jogada de ataque', () => {
     const guide = getRollGuide(fighter('net'), play())
     const net = guide.attacks.find(a => a.key === 'net')!

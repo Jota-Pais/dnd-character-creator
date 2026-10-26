@@ -404,13 +404,22 @@ type DamageInput = {
   critExtraDice?: SheetEffect<number>[]
 }
 
+/** O que a ficha diz do dano fixo que dá 0 (golpe desarmado com Força baixa). */
+const NO_DAMAGE_NOTE = 'Não causa dano: o valor fixo mais o modificador dá 0 ou menos, e o dano nunca é negativo.'
+
 function damageEntry(input: DamageInput): RollGuideEntry {
-  const { count, sides, modifier } = input.parsed
+  const { count, sides } = input.parsed
+  // Dano fixo tem piso 0 (decisão 14 de `regras-dano-e-morte.md`): Força 6-7 no golpe desarmado
+  // dá 0, não −1, e a ficha diz que não causa dano (decisão de 2026-10-25).
+  const modifier = count === 0 ? Math.max(0, input.parsed.modifier) : input.parsed.modifier
+  const floor = modifier - input.parsed.modifier
   const dice = count > 0 ? `${count}d${sides}` : ''
   const critDice = count > 0 ? `${count * 2}d${sides}` : ''
   const critNotes = count > 0 ? (input.critExtraDice ?? []).map(e => critExtraDiceNote(e, sides)) : []
   const notes = [...(input.notes ?? [])]
-  if (count === 0) notes.push('Dano fixo, sem dado: o acerto crítico não muda o valor (só os dados dobram, pág. 196).')
+  if (count === 0 && modifier === 0) notes.push(NO_DAMAGE_NOTE)
+  else if (count === 0) notes.push('Dano fixo, sem dado: o acerto crítico não muda o valor (só os dados dobram, pág. 196).')
+  const breakdown = floor > 0 ? [...input.breakdown, { label: 'Mínimo 0', value: floor }] : input.breakdown
   return {
     id: input.id,
     kind: 'damage',
@@ -423,7 +432,7 @@ function damageEntry(input: DamageInput): RollGuideEntry {
     advantage: [],
     disadvantage: [],
     autoFail: [],
-    breakdown: closeBreakdown(input.breakdown, modifier),
+    breakdown: closeBreakdown(breakdown, modifier),
     notes,
     crit: {
       dice: critDice,

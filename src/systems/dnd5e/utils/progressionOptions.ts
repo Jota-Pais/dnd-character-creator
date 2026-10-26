@@ -14,7 +14,7 @@ import type { Spell } from '../types/spell'
 import type { FeatureEffects } from '../types/effects'
 import type { ClassEntry } from '../types/character'
 import type { LevelFeature } from '../types/class'
-import { FIGHTING_STYLES } from './classUtils'
+import { FIGHTING_STYLES, getClass } from './classUtils'
 import { DRAGON_ANCESTORS } from './dragonAncestors'
 import {
   getActivePicks, getProgressionSlots, getProgressionSlotsUpToLevel, isSpellChoiceSlot, SPELL_OPTIONS_LIST_ID,
@@ -89,11 +89,16 @@ function totemOptions(tier: 'tier3' | 'tier6' | 'tier14'): ProgressionOption[] {
   return (totemWarriorTotems as TotemAnimal[]).map(a => ({ id: a.id, name: a.name, description: a[tier] }))
 }
 
+/** As classes da lista da magia pelo nome ("Bardo, Bruxo"), não pelo id dos dados. */
+function formatSpellClasses(s: Spell): string {
+  return s.classes.map(id => getClass(id)?.name ?? id).join(', ')
+}
+
 function spellOption(s: Spell): ProgressionOption {
   return {
     id: s.id,
     name: s.name,
-    description: `${s.level === 0 ? 'Truque' : `${s.level}º nível`} (${s.school}) - ${s.classes.join(', ')}`,
+    description: `${s.level === 0 ? 'Truque' : `${s.level}º nível`} (${s.school}) - ${formatSpellClasses(s)}`,
   }
 }
 

@@ -202,6 +202,12 @@ describe('seletor de Segredos Mágicos: nível que o bardo conjura, ou truque (p
     expect([...levels].some(l => l > 5)).toBe(false)
   })
 
+  it('a descrição traz as classes da magia pelo nome em português, não pelo id', () => {
+    const options = getSecretSpellOptions(5)
+    expect(options.find(o => o.id === 'charm-person')?.description).toBe('1º nível (encantamento) - Bardo, Bruxo, Druida, Feiticeiro, Mago')
+    expect(options.find(o => o.id === 'eldritch-blast')?.description).toBe('Truque (evocação) - Bruxo')
+  })
+
   it('escolha antiga acima do limite fica na lista, sinalizada, para dar pra desmarcar', () => {
     const options = getSecretSpellOptions(3, ['wish'])
     const wish = options.find(o => o.id === 'wish')

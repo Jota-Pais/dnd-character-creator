@@ -148,6 +148,31 @@ describe('applyDamage', () => {
     expect(getCurrentHp(applyDamage(s, S, { amount: 9, resisted: true }).state, S)).toBe(16)
   })
 
+  it('Petrificado: dano de veneno vira 0 (imunidade) e não muda nada; sem o tipo, só a resistência', () => {
+    const s = state({ conditions: ['petrified'], damageTaken: 2 })
+    const r = applyDamage(s, S, { amount: 9, damageType: 'poison' })
+    expect(r.state).toBe(s)
+    expect(r.notices.map(n => n.text)).toEqual([
+      'Imune a dano de veneno (Petrificado): o dano vira 0.',
+      'Dano total 0: não conta como dano. Nada foi alterado.',
+    ])
+    expect(getCurrentHp(applyDamage(s, S, { amount: 9 }).state, S)).toBe(14)
+    // Sem a condição, o tipo não muda nada.
+    expect(getCurrentHp(applyDamage(state(), S, { amount: 9, damageType: 'poison' }).state, S)).toBe(11)
+  })
+
+  it('Petrificado suspende o Envenenado, aplicado antes ou depois, e ele volta ao sair', () => {
+    const before = addCondition(addCondition(state(), 'poisoned').state, 'petrified').state
+    const after = addCondition(addCondition(state(), 'petrified').state, 'poisoned').state
+    for (const s of [before, after]) {
+      const poisoned = getPlayConditionEffects(s).conditions.find(c => c.id === 'poisoned')
+      expect(poisoned?.suspendedBy).toEqual(['petrified'])
+      expect(getPlayConditionEffects(s).attack.disadvantage).toEqual([])
+    }
+    const freed = removeCondition(after, 'petrified').state
+    expect(getPlayConditionEffects(freed).attack.disadvantage.map(d => d.label)).toEqual(['Envenenado'])
+  })
+
   it('cair a 0 PV: morrendo, Caído gravado, aviso de largar o que segura e fim da concentração', () => {
     const s = state({ damageTaken: 15, concentration: { label: 'Bênção', startedAt: 0 } })
     const r = applyDamage(s, S, { amount: 8 })

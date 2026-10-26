@@ -313,7 +313,8 @@ function availableDropToOneHp(state: PlayState, sheet: PlaySheet): PlaySheet['dr
 
 /**
  * Um evento de dano (`regras-dano-e-morte.md`, "Ordem de aplicação de um dano recebido"):
- * piso 0; resistência informada ou do Petrificado (uma só, metade para baixo); PV temporários
+ * imunidade de condição ao tipo informado (Petrificado: veneno → 0); piso 0; resistência informada
+ * ou do Petrificado (uma só, metade para baixo); PV temporários
  * absorvem primeiro; consciente → 0 PV com morte instantânea pelo máximo EFETIVO (assumido C),
  * nocaute → estável; já a 0 PV → +1 fracasso (2 se crítico), mesmo se os temporários absorvem
  * tudo (decisão 5), e o estável volta a morrer (assumido D). Concentração: aviso de TR de CON com
@@ -344,9 +345,18 @@ function damagePipeline(state0: PlayState, sheet: PlaySheet, input: DamageInput,
   const notices: PlayNotice[] = []
   const effects = getPlayConditionEffects(state)
 
+  // Imunidade de condição ao tipo informado (Petrificado: veneno, decisão de 2026-10-25): o dano
+  // vira 0 e, como dano 0, não muda nada (abaixo).
+  const immunity = input.damageType
+    ? effects.damageImmunities.find(i => i.damageType === input.damageType)
+    : undefined
+  if (immunity) {
+    notices.push(note('resisted', `Imune a dano de ${immunity.label} (${immunity.sources.map(s => s.label).join(', ')}): o dano vira 0.`))
+  }
+
   // Piso 0 (decisão 3) e resistência: várias contam como uma (pág. 199).
-  const raw = Math.max(0, Math.floor(input.amount))
-  const resistedBy = [
+  const raw = immunity ? 0 : Math.max(0, Math.floor(input.amount))
+  const resistedBy = immunity ? [] : [
     ...(input.resisted ? ['resistência'] : []),
     ...effects.resistAllDamage.sources.map(s => s.label),
   ]

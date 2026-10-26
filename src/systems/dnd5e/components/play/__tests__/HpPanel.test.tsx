@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, cleanup } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { usePlayStore } from '../../../stores/playStore'
+import { addCondition } from '../../../utils/playState'
 import { openKrusk, resetPlay } from './openPlay'
 
 beforeEach(resetPlay)
@@ -65,6 +66,23 @@ describe('HpPanel', () => {
     fireEvent.click(screen.getByLabelText(/acerto crítico/))
     fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
     expect(usePlayStore.getState().state?.deathSaves.failures).toBe(2)
+  })
+
+  it('Petrificado: a caixa do dano de veneno só aparece com ele, e o veneno marcado não tira PV', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
+    expect(screen.queryByLabelText(/dano de veneno/)).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
+    usePlayStore.getState().run(st => addCondition(st, 'petrified'))
+    fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
+    fireEvent.change(screen.getByLabelText('Quanto de dano'), { target: { value: '9' } })
+    fireEvent.click(screen.getByLabelText(/É dano de veneno \(Petrificado/))
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('14')
+    // Sem marcar: a resistência do Petrificado, metade.
+    act('Dano', 'Quanto de dano', '9')
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('10')
   })
 
   it('± PV máximo: Ajuda +5 sobe o máximo e o atual, "encerrar" volta, e o desfazer devolve', () => {

@@ -1147,7 +1147,7 @@ export function getClassFeatureSavingThrows(draft: CharacterDraft): AbilityScore
 
 import conditionsData from '../data/conditions.json'
 import type {
-  Condition, ConditionCatalog, ConditionEffect, ConditionId, ExhaustionLevel, RollMode,
+  Condition, ConditionCatalog, ConditionEffect, ConditionId, ExhaustionLevel, ImmuneDamageType, RollMode,
 } from '../types/condition'
 
 const CONDITION_CATALOG = conditionsData as ConditionCatalog
@@ -1235,9 +1235,14 @@ export type ActiveConditionEffects = {
   cannotSpeak: ConditionFlag
   endsConcentration: ConditionFlag
   resistAllDamage: ConditionFlag
+  /** Imunidades a um tipo de dano (Petrificado: veneno), cada uma com quem a dá. */
+  damageImmunities: ConditionDamageImmunity[]
   dead: ConditionFlag
   lines: ConditionLine[]
 }
+
+/** Imunidade ativa a um tipo de dano: o dano desse tipo vira 0 no rastreador de PV. */
+export type ConditionDamageImmunity = { damageType: ImmuneDamageType; label: string; sources: ConditionSource[] }
 
 /**
  * Vantagem e desvantagem (pág. 175): várias do mesmo lado valem uma; uma de cada lado anula,
@@ -1358,6 +1363,7 @@ export function getActiveConditionEffects(state: ConditionState): ActiveConditio
     death: [] as ConditionSource[],
   }
   const resistAll: ConditionSource[] = []
+  const immunities: ConditionDamageImmunity[] = []
 
   for (const { source, effect } of tagged) {
     if (effect.scope === 'notice') {
@@ -1398,6 +1404,12 @@ export function getActiveConditionEffects(state: ConditionState): ActiveConditio
       case 'damageResistance':
         resistAll.push(source)
         break
+      case 'damageImmunity': {
+        const existing = immunities.find(i => i.damageType === effect.damageType)
+        if (existing) existing.sources.push(source)
+        else immunities.push({ damageType: effect.damageType, label: effect.label, sources: [source] })
+        break
+      }
       case 'noActions':
       case 'noReactions':
       case 'cannotSpeak':
@@ -1437,6 +1449,7 @@ export function getActiveConditionEffects(state: ConditionState): ActiveConditio
     cannotSpeak: flag(stateFlags.cannotSpeak),
     endsConcentration: flag(stateFlags.endsConcentration),
     resistAllDamage: flag(resistAll),
+    damageImmunities: immunities,
     dead: flag(stateFlags.death),
     lines,
   }

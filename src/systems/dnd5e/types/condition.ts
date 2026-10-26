@@ -64,6 +64,15 @@ export type HpMaxEffect = { kind: 'hpMax'; op: 'half'; scope: 'sheet' }
 /** Resistência a todos os tipos de dano (Petrificado). */
 export type DamageResistanceEffect = { kind: 'damageResistance'; types: 'all'; scope: 'sheet' }
 
+/** Tipos de dano a que uma condição dá imunidade (Petrificado: veneno, pág. 293). */
+export type ImmuneDamageType = 'poison'
+
+/**
+ * Imunidade a um tipo de dano: o dano desse tipo vira 0 no rastreador de PV (Petrificado "imune a
+ * veneno", decisão de 2026-10-25). `label` é o nome do tipo em português, para a tela.
+ */
+export type DamageImmunityEffect = { kind: 'damageImmunity'; damageType: ImmuneDamageType; label: string; scope: 'sheet' }
+
 /** Efeitos que mexem no estado de jogo, sem número. */
 export type StateEffect = {
   kind: 'noActions' | 'noReactions' | 'cannotSpeak' | 'endsConcentration' | 'death'
@@ -90,6 +99,7 @@ export type ConditionEffect =
   | SpeedEffect
   | HpMaxEffect
   | DamageResistanceEffect
+  | DamageImmunityEffect
   | StateEffect
   | SuspendEffect
   | AgainstYouEffect

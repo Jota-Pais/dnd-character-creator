@@ -1,7 +1,9 @@
 import { useState, type FormEvent } from 'react'
+import type { ImmuneDamageType } from '../../types/condition'
 import type { PlayResult } from '../../types/playState'
 import {
-  adjustMaxHp, applyDamage, applyHealing, formatHpAdjustment, grantTempHp, isAtZeroHp, suggestTempHpChoice,
+  adjustMaxHp, applyDamage, applyHealing, formatHpAdjustment, getPlayConditionEffects, grantTempHp, isAtZeroHp,
+  suggestTempHpChoice,
 } from '../../utils/playState'
 import type { PlayView } from './usePlayView'
 
@@ -41,7 +43,10 @@ export function HpPanel({ view }: { view: PlayView }) {
   const [text, setText] = useState('')
   const [resisted, setResisted] = useState(false)
   const [critical, setCritical] = useState(false)
+  const [immuneTo, setImmuneTo] = useState<ImmuneDamageType | null>(null)
   const atZero = isAtZeroHp(state)
+  // Imunidades das condições em vigor (Petrificado: veneno): o jogador marca quando o dano é desse tipo.
+  const immunities = getPlayConditionEffects(state).damageImmunities
   const amount = parseAmount(text)
   const current = ACTIONS.find(a => a.id === action)
   // PV temporários já presentes: o jogador escolhe manter ou trocar (pág. 200).
@@ -52,21 +57,23 @@ export function HpPanel({ view }: { view: PlayView }) {
     setText('')
     setResisted(false)
     setCritical(false)
+    setImmuneTo(null)
   }
 
   function choose(next: HpAction) {
     if (next === action) return reset()
+    reset()
     setAction(next)
-    setText('')
-    setResisted(false)
-    setCritical(false)
   }
 
   function apply(choice?: 'keep' | 'replace') {
     if (amount === null || !action) return
     let result: PlayResult | null
     if (action === 'damage') {
-      result = run((st, sh) => applyDamage(st, sh, { amount, resisted, critical: atZero && critical }))
+      const damageType = immuneTo && immunities.some(i => i.damageType === immuneTo) ? immuneTo : undefined
+      result = run((st, sh) => applyDamage(st, sh, {
+        amount, resisted, critical: atZero && critical, ...(damageType ? { damageType } : {}),
+      }))
     } else if (action === 'heal') {
       result = run((st, sh) => applyHealing(st, sh, amount))
     } else {
@@ -138,6 +145,17 @@ export function HpPanel({ view }: { view: PlayView }) {
                 <input type="checkbox" checked={resisted} onChange={e => setResisted(e.target.checked)} className="w-5 h-5 shrink-0 accent-gold-500" />
                 Tenho resistência a esse dano (sofro a metade)
               </label>
+              {immunities.map(i => (
+                <label key={i.damageType} className="flex items-center gap-2 min-h-10 text-sm text-parchment-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={immuneTo === i.damageType}
+                    onChange={e => setImmuneTo(e.target.checked ? i.damageType : null)}
+                    className="w-5 h-5 shrink-0 accent-gold-500"
+                  />
+                  É dano de {i.label} ({i.sources.map(s => s.label).join(', ')}: imune, não sofre nada)
+                </label>
+              ))}
               {atZero && (
                 <label className="flex items-center gap-2 min-h-10 text-sm text-parchment-300 cursor-pointer">
                   <input type="checkbox" checked={critical} onChange={e => setCritical(e.target.checked)} className="w-5 h-5 shrink-0 accent-gold-500" />

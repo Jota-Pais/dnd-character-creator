@@ -26,7 +26,7 @@ export function NoticeToast({ view, onOpenRecipe, onHeightChange }: {
   onOpenRecipe: (entry: RollGuideEntry) => void
   /**
    * A altura ocupada no pé da tela (0 sem aviso): a tela usa como folga de fundo, para o aviso
-   * nunca cobrir o último controle (o "Registrar" do teste contra a morte).
+   * nunca cobrir o último controle, e o teste contra a morte rola o d20 para cima dele.
    */
   onHeightChange?: (height: number) => void
 }) {

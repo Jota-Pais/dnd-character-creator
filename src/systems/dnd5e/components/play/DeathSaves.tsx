@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react'
 import type { DeathSaveCount } from '../../types/playState'
 import { roll } from '../../../../core/dice'
 import { usePlayStore } from '../../stores/playStore'
 import { recordDeathSave, recordRoll, regainHpWhileStable, revive, stabilize } from '../../utils/playState'
 import { describeRollGuide } from '../../utils/rollGuide'
 import { rerollNaturalOne, rollGuideEntry, type GuideRoll } from './playDice'
+import { getDeathSaveScrollDelta } from './deathSaveScroll'
 import type { PlayView } from './usePlayView'
 
 function Marks({ label, count, filled }: { label: string; count: DeathSaveCount; filled: string }) {
@@ -26,14 +27,35 @@ function Marks({ label, count, filled }: { label: string; count: DeathSaveCount;
  * natural que valeu; o app soma o que vale para todo teste de resistência (`guide.deathSave`) e
  * chama `recordDeathSave`. Estável e morto mostram o que ainda dá para fazer.
  */
-export function DeathSaves({ view }: { view: PlayView }) {
+export function DeathSaves({ view, bottomInset = 0 }: {
+  view: PlayView
+  /** Altura do aviso preso ao pé da tela (0 sem aviso): o d20 não pode ficar embaixo dele. */
+  bottomInset?: number
+}) {
   const { state, guide, appDice, run } = view
   const rootRef = useRef<HTMLDivElement>(null)
+  const formRef = useRef<HTMLFormElement>(null)
+  const insetRef = useRef(bottomInset)
   const [text, setText] = useState('')
 
-  // Caiu a 0 PV: o teste contra a morte vem para o meio da tela (o aviso da queda fica no pé).
+  useLayoutEffect(() => {
+    insetRef.current = bottomInset
+  })
+  // Caiu a 0 PV: o teste contra a morte vem para o meio da tela, com o d20 e o "Registrar" acima
+  // do aviso da queda. Um quadro depois: o aviso já mediu a altura e a folga de fundo já cresceu.
   useEffect(() => {
-    if (state.lifeState === 'dying') rootRef.current?.scrollIntoView?.({ block: 'center', behavior: 'smooth' })
+    if (state.lifeState !== 'dying' || typeof requestAnimationFrame === 'undefined') return
+    const frame = requestAnimationFrame(() => {
+      const panel = rootRef.current?.getBoundingClientRect()
+      const form = formRef.current?.getBoundingClientRect()
+      // Sem layout (o jsdom dos testes), nada a rolar.
+      if (!panel || !form || panel.height === 0) return
+      const delta = getDeathSaveScrollDelta({
+        panel, form, viewportHeight: window.innerHeight, bottomInset: insetRef.current,
+      })
+      if (Math.abs(delta) >= 1) window.scrollBy({ top: delta, behavior: 'smooth' })
+    })
+    return () => cancelAnimationFrame(frame)
   }, [state.lifeState])
   // A rolagem do app que preencheu o campo: vai para o histórico junto com o teste.
   const [rolled, setRolled] = useState<GuideRoll | null>(null)
@@ -113,7 +135,7 @@ export function DeathSaves({ view }: { view: PlayView }) {
         <Marks label="Fracassos" count={state.deathSaves.failures} filled="border-red-400 bg-red-600" />
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-3 flex flex-wrap gap-2">
+      <form ref={formRef} onSubmit={handleSubmit} className="mt-3 flex flex-wrap gap-2">
         <input
           type="number"
           inputMode="numeric"

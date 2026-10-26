@@ -124,7 +124,7 @@ export function PlayScreen() {
         {/* A 0 PV os testes contra a morte tomam a frente; dano e cura continuam valendo
             (dano a 0 PV conta fracasso, cura acorda). Morto, só o "Fui revivido". */}
         <div className="mt-3 space-y-2">
-          {view.state.lifeState !== 'conscious' && <DeathSaves view={view} />}
+          {view.state.lifeState !== 'conscious' && <DeathSaves view={view} bottomInset={toastHeight} />}
           {view.state.lifeState !== 'dead' && <HpPanel view={view} />}
         </div>
 

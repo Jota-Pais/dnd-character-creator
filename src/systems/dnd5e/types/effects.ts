@@ -1,5 +1,5 @@
 import type { ArmorProficiency } from './class'
-import type { RollCategory } from './condition'
+import type { ConditionId, RollCategory } from './condition'
 import type { AbilityScore } from './race'
 
 /**
@@ -46,6 +46,11 @@ export type ConditionalRollNote = {
    * 1, a tela oferece a nova rolagem (hoje, no teste contra a morte).
    */
   rerollNaturalOne?: boolean
+  /**
+   * Condições que tiram o benefício (Sentido de Perigo: cego, surdo ou incapacitado, p. 48). Com
+   * uma delas em vigor no modo de jogo, gravada ou derivada, a linha some das receitas.
+   */
+  unlessConditions?: ConditionId[]
   /** A regra, em português, com a página — exibida depois do nome de quem a dá. */
   text: string
 }

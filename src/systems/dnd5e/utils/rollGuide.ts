@@ -276,10 +276,12 @@ function getConditionalLines(effects: ActiveConditionEffects): ConditionalLine[]
 /**
  * As linhas condicionais que a ficha declara (`getConditionalRollNotes`): Resiliência Anã, Bravura,
  * Sortudo, Sentido de Perigo — "Sortudo: tirou 1 natural no d20?…". A ressalva do livro vai no
- * texto; a ficha não a esconde pela condição (o Sentido de Perigo continua visível com Cego).
+ * texto; a que o estado de jogo conhece (`unlessConditions`: Cego, Surdo, Incapacitado, gravados ou
+ * derivados) tira a linha enquanto valer (decisão de 2026-10-25).
  */
-function getSheetConditionalLines(draft: CharacterDraft): ConditionalLine[] {
-  return getConditionalRollNotes(draft).map(n => ({
+function getSheetConditionalLines(draft: CharacterDraft, effects: ActiveConditionEffects): ConditionalLine[] {
+  const active = new Set(effects.conditions.filter(c => !c.suspendedBy).map(c => c.id))
+  return getConditionalRollNotes(draft).filter(n => !n.unlessConditions?.some(id => active.has(id))).map(n => ({
     rolls: n.rolls,
     ...(n.abilities ? { abilities: n.abilities } : {}),
     ...(n.deathSave ? { deathSave: true } : {}),
@@ -622,7 +624,7 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
   // As linhas das condições e as da ficha. O valor passivo leva só as das condições: rerrolar ou
   // "vantagem contra veneno" não alcançam um número que não se rola.
   const conditionLines = getConditionalLines(effects)
-  const lines = [...conditionLines, ...getSheetConditionalLines(draft)]
+  const lines = [...conditionLines, ...getSheetConditionalLines(draft, effects)]
   const inspiration = state.inspiration
 
   // Fontes da ficha.
@@ -843,7 +845,7 @@ export function getConcentrationGuide(draft: CharacterDraft, state: PlayState, d
   const mods = Object.fromEntries(ALL_ABILITY_SCORES.map(ab => [ab, calculateModifier(scores[ab])])) as Record<AbilityScore, number>
   const prof = getProficiencyBonus(draft.level ?? 1)
   const effects = getPlayConditionEffects(state)
-  const lines = [...getConditionalLines(effects), ...getSheetConditionalLines(draft)]
+  const lines = [...getConditionalLines(effects), ...getSheetConditionalLines(draft, effects)]
   const sheet: SheetModeSources = { unproficientArmor: [], stealth: [] }
   const input = saveInput('CON', getSavingThrowChecks(draft, scores).CON, mods, prof, effects, sheet, lines)
   const amount = Number.isFinite(damage) ? Math.max(0, Math.floor(damage)) : 0

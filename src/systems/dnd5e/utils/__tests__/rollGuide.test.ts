@@ -556,15 +556,25 @@ describe('getRollGuide — linhas condicionais da ficha (traços e característi
     expect(has(guide.attacks[0].attack, 'Resiliência Anã')).toBe(false)
   })
 
-  it('Sentido de Perigo (bárbaro 2): só no TR de Destreza, com a ressalva, mesmo Cego', () => {
+  it('Sentido de Perigo (bárbaro 2): só no TR de Destreza, com a ressalva', () => {
     const barbarian = (level: number) => draft({ class: 'barbarian', level, abilityScores: SCORES })
     const guide = getRollGuide(barbarian(2), play())
     expect(guide.saves.DEX.notes.find(n => n.startsWith('Sentido de Perigo'))).toContain('não vale se estiver cego, surdo ou incapacitado')
     expect(guide.saves.DEX.mode).toBe('normal')
     expect(has(guide.saves.WIS, 'Sentido de Perigo')).toBe(false)
     expect(has(guide.checks.DEX, 'Sentido de Perigo')).toBe(false)
-    expect(has(getRollGuide(barbarian(2), withConditions('blinded')).saves.DEX, 'Sentido de Perigo')).toBe(true)
     expect(has(getRollGuide(barbarian(1), play()).saves.DEX, 'Sentido de Perigo')).toBe(false)
+  })
+
+  it('Sentido de Perigo some com Cego, Surdo ou Incapacitado, inclusive derivado (decisão de 2026-10-25)', () => {
+    const barbarian = draft({ class: 'barbarian', level: 2, abilityScores: SCORES })
+    for (const id of ['blinded', 'deafened', 'incapacitated', 'stunned', 'paralyzed'] as ConditionId[]) {
+      expect(has(getRollGuide(barbarian, withConditions(id)).saves.DEX, 'Sentido de Perigo'), id).toBe(false)
+    }
+    // A 0 PV: o Inconsciente derivado incapacita.
+    expect(has(getRollGuide(barbarian, play({ lifeState: 'stable', damageTaken: 99 })).saves.DEX, 'Sentido de Perigo')).toBe(false)
+    // Outras condições não tiram a linha.
+    expect(has(getRollGuide(barbarian, withConditions('poisoned')).saves.DEX, 'Sentido de Perigo')).toBe(true)
   })
 })
 

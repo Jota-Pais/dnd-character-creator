@@ -31,7 +31,7 @@
         "description": "Você tem vantagem em resistências de Destreza contra efeitos que possa ver (armadilhas, magias), desde que não esteja cego, surdo ou incapacitado.",
         "effects": {
           "conditionalRolls": [
-            { "rolls": ["save"], "abilities": ["DEX"], "text": "vantagem contra efeitos que você possa ver, como armadilhas e magias — não vale se estiver cego, surdo ou incapacitado (pág. 48)." }
+            { "rolls": ["save"], "abilities": ["DEX"], "unlessConditions": ["blinded", "deafened", "incapacitated"], "text": "vantagem contra efeitos que você possa ver, como armadilhas e magias — não vale se estiver cego, surdo ou incapacitado (pág. 48)." }
           ]
         }
       },

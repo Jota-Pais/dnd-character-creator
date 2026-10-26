@@ -16,6 +16,13 @@ const KIND_STYLE: Partial<Record<PlayNoticeKind, { prefix: string; className: st
 }
 const DEFAULT_STYLE = { prefix: '', className: 'border-parchment-800 bg-surface-base text-parchment-200' }
 
+/** Avisos que pedem uma escolha agora vêm primeiro: com a lista rolando, o botão nunca fica escondido. */
+const ACTION_KINDS: PlayNoticeKind[] = ['dropToOneHp', 'concentrationCheck']
+const sortByAction = (notices: PlayNotice[]) => [
+  ...notices.filter(n => ACTION_KINDS.includes(n.kind)),
+  ...notices.filter(n => !ACTION_KINDS.includes(n.kind)),
+]
+
 /**
  * Os avisos da última ação do modo de jogo (ou da abertura, se a ficha mudou), presos ao pé da
  * tela, com o "Desfazer" quando a ação mudou algo. O aviso de concentração traz a CD e a receita
@@ -64,9 +71,11 @@ export function NoticeToast({ view, onOpenRecipe, onHeightChange }: {
           aria-live="polite"
           className="pointer-events-auto rounded-xl border border-parchment-800 bg-surface-raised p-3 shadow-xl shadow-black/50"
         >
-          {/* Muitos avisos (um descanso com vários recursos) rolam dentro do cartão: ele nunca passa da metade da tela. */}
-          <ul className="space-y-1.5 max-h-[50vh] overflow-y-auto">
-            {notices.map((n, i) => (
+          {/* Muitos avisos (um descanso com vários recursos) rolam dentro do cartão: ele nunca passa da
+              metade da tela e, em celular baixo, deixa espaço para os vitais fixos e o d20 do teste
+              contra a morte entre os dois. */}
+          <ul className="space-y-1.5 max-h-[min(50vh,calc(100vh_-_24rem))] overflow-y-auto">
+            {sortByAction(notices).map((n, i) => (
               <NoticeLine key={i} notice={n} view={view} onOpenRecipe={onOpenRecipe} canUndo={canUndo} />
             ))}
           </ul>

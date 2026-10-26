@@ -153,7 +153,10 @@ describe('desfazer e avisos', () => {
     openKrusk()
     render(<PlayScreen />)
     damage('20')
-    expect(screen.getByRole('status').querySelector('ul')).toHaveClass('max-h-[50vh]', 'overflow-y-auto')
+    const list = screen.getByRole('status').querySelector('ul')
+    expect(list).toHaveClass('max-h-[min(50vh,calc(100vh_-_24rem))]', 'overflow-y-auto')
+    // O aviso que pede escolha (Resistência Implacável) vem primeiro, fora da parte que rola.
+    expect(list?.querySelector('li')).toHaveTextContent('Resistência Implacável')
   })
 })
 

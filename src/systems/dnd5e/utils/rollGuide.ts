@@ -538,9 +538,14 @@ function attackGuide(attack: SheetAttack, ctx: AttackGuideContext): AttackGuide 
     ],
   }, inspiration)
 
-  const parsed = parseDamageText(attack.damage)
+  // O texto do dano fixo já vem com o piso 0 ("0 concussão"): a conta aberta sai do valor fixo da
+  // arma mais o modificador, e o damageEntry põe de volta o piso como parcela ("Mínimo 0").
+  const text = parseDamageText(attack.damage)
+  const parsed = text && text.count === 0 && attack.fixedDamageBase !== undefined
+    ? { ...text, modifier: attack.fixedDamageBase + mods[ability] }
+    : text
   const damageBreakdown = (p: ParsedDamage): GuideBreakdownItem[] => [
-    ...(p.count === 0 ? [{ label: attack.name, value: p.modifier - mods[ability] }] : []),
+    ...(p.count === 0 ? [{ label: attack.name, value: attack.fixedDamageBase ?? p.modifier - mods[ability] }] : []),
     { label: attack.ability, value: mods[ability] },
   ]
   const damage = parsed

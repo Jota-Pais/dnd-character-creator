@@ -318,7 +318,7 @@ describe('weaponFormat', () => {
       const atk = getUnarmedStrike({ strMod: 3, dexMod: 1, proficiencyBonus: 2 })
       expect(atk).toEqual({
         name: 'Golpe desarmado', ability: 'Força', attackBonus: '+5', proficient: true,
-        damage: '4 concussão', properties: '', attacksPerAction: 1, notes: [],
+        damage: '4 concussão', fixedDamageBase: 1, properties: '', attacksPerAction: 1, notes: [],
       })
     })
 

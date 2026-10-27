@@ -172,6 +172,11 @@ export type WeaponAttack = {
   /** Dano empunhando com as duas mãos, da arma versátil (ex.: "1d10+3"), sem o tipo — é o mesmo. */
   versatileDamage?: string
   /**
+   * O valor fixo do dano sem dado, antes do modificador (golpe desarmado e zarabatana: 1). O `damage`
+   * já sai com o piso 0, e o modo de jogo precisa da conta aberta para dizer de onde veio o 0.
+   */
+  fixedDamageBase?: number
+  /**
    * Propriedades da arma (ex.: "acuidade, leve, arremesso (6/18 m)"), ou "" se não tiver.
    * Sem elas a ficha não diz o alcance de arremesso/munição.
    */
@@ -268,6 +273,7 @@ export function getWeaponAttack(weapon: Weapon, ctx: AttackContext): WeaponAttac
     proficient,
     damage,
     ...(versatileDamage ? { versatileDamage } : {}),
+    ...(roll && !('dice' in roll && roll.dice) ? { fixedDamageBase: roll.flat ?? 0 } : {}),
     properties: formatWeaponProperties(weapon.properties),
     attacksPerAction,
     notes,
@@ -338,6 +344,7 @@ export function getUnarmedStrike(ctx: UnarmedStrikeContext): WeaponAttack {
     attackBonus: signed(attackBonus),
     proficient: true,
     damage: `${formatRoll(roll, mod)} ${DAMAGE_TYPE_PT.bludgeoning}`,
+    ...(die > 0 ? {} : { fixedDamageBase: 1 }),
     properties: '',
     attacksPerAction: ctx.attacksPerAction?.value ?? 1,
     notes,

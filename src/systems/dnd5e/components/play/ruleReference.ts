@@ -10,7 +10,7 @@ import {
   getEffectiveTraitsWithChoices, getRace, getSubrace,
 } from '../../utils/raceUtils'
 import { getSheetFightingStyles } from '../../utils/sheetEffects'
-import { getCasterEntries, getSpell } from '../../utils/spellUtils'
+import { getCasterEntries, getSecretSpellGroups, getSpell } from '../../utils/spellUtils'
 import { ordinal } from './playFormat'
 
 /**
@@ -73,9 +73,10 @@ function groupByLevel(items: { spell: Spell; source: string | null }[], keyPrefi
 
 /**
  * Magias: as de cada classe conjuradora (`getCasterEntries`, as mesmas da Revisão e da ficha
- * imprimível: truques com os dados pela característica, magias conhecidas ou preparadas e os
- * Segredos Mágicos), e depois as que vêm de fora da conjuração da classe — o truque da raça, o da
- * subclasse e as magias inatas — com o jeito de usar de `describeInnateSpellUsage`.
+ * imprimível: truques com os dados pela característica, magias conhecidas ou preparadas e as de
+ * slot de progressão, com o rótulo do grupo de `getSecretSpellGroups`), e depois as que vêm de
+ * fora da conjuração da classe — o truque da raça, o da subclasse e as magias inatas — com o
+ * jeito de usar de `describeInnateSpellUsage`.
  */
 function spellSection(draft: CharacterDraft): RuleSection | null {
   const casters = getCasterEntries(draft)
@@ -91,7 +92,10 @@ function spellSection(draft: CharacterDraft): RuleSection | null {
     }
     caster.cantrips.forEach(id => add(id, null))
     caster.spells.forEach(id => add(id, null))
-    caster.bonusSpells.forEach(id => add(id, 'Segredo Mágico'))
+    // A origem de cada magia de slot é o grupo da Revisão e do PDF (Segredos Mágicos, Truques do
+    // Livro das Sombras, Pacto da Corrente…), nunca um rótulo fixo.
+    const groupLabel = new Map(getSecretSpellGroups(caster).flatMap(g => g.spells.map(s => [s.id, g.label] as const)))
+    caster.bonusSpells.forEach(id => add(id, groupLabel.get(id) ?? null))
     // Conjuração de subclasse (Cavaleiro/Trapaceiro Arcano) se identifica mesmo sem multiclasse.
     const showLabel = isMc || caster.casting.casterId !== caster.cls.id
     return { label: showLabel ? caster.casting.label : null, groups: groupByLevel(items, caster.cls.id) }

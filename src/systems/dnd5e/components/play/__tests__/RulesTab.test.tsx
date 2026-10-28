@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { getRuleReference } from '../ruleReference'
-import type { CharacterDraft } from '../../../types/character'
+import { EMPTY_DRAFT, type CharacterDraft } from '../../../types/character'
 import { COMPLETE_DRAFT } from '../../../../../test/fixtures'
 import { openDraft, openKrusk, resetPlay } from './openPlay'
 
@@ -23,6 +23,28 @@ const WIZARD_3: CharacterDraft = {
     spells: ['magic-missile', 'shield', 'sleep', 'detect-magic', 'misty-step'],
   },
 }
+
+/** Bruxo 3 (Corruptor) com a Dádiva do Pacto dada (e o que mais vier nas escolhas de progressão). */
+function warlock3(progressionChoices: Record<string, string[]>): CharacterDraft {
+  return {
+    ...structuredClone(COMPLETE_DRAFT),
+    name: 'Morgana',
+    class: 'warlock',
+    level: 3,
+    classChoices: {
+      ...structuredClone(EMPTY_DRAFT.classChoices),
+      skills: ['arcana', 'deception'],
+      subclass: 'fiend',
+      progressionChoices: { 'warlock-invocations-2': ['armadura-de-sombras', 'visao-diabolica'], ...progressionChoices },
+    },
+    spellChoices: { cantrips: ['eldritch-blast', 'chill-touch'], spells: [] },
+  }
+}
+
+const WARLOCK_TOME = warlock3({
+  'warlock-pact-boon-3': ['pact-of-the-tome'],
+  'warlock-pact-tome-cantrips-3': ['guidance', 'fire-bolt', 'sacred-flame'],
+})
 
 function openRules(draft?: CharacterDraft) {
   if (draft) openDraft(draft)
@@ -88,6 +110,15 @@ describe('RulesTab', () => {
     expect(screen.getByRole('dialog', { name: 'Visão no Escuro' }))
       .toHaveTextContent('Você enxerga na penumbra a até 18 m como se fosse luz plena')
   })
+
+  it('bruxo do Tomo: os truques do Livro das Sombras dizem de onde vêm, como na Revisão', () => {
+    const panel = openRules(WARLOCK_TOME)
+    const spells = within(panel).getByRole('region', { name: 'Magias' })
+    expect(within(spells).getByRole('button', { name: /^Orientação.*Truques do Livro das Sombras/ })).toBeInTheDocument()
+    expect(spells).not.toHaveTextContent('Segredo Mágico')
+    fireEvent.click(within(spells).getByRole('button', { name: /^Chama Sagrada/ }))
+    expect(screen.getByRole('dialog', { name: 'Chama Sagrada' })).toHaveTextContent('Truque de evocação · Truques do Livro das Sombras')
+  })
 })
 
 describe('getRuleReference', () => {
@@ -130,5 +161,48 @@ describe('getRuleReference', () => {
       expect.stringContaining('truque, à vontade'),
       expect.stringContaining('1 uso por descanso longo, como magia de 2º nível'),
     ])
+  })
+
+  describe('magias de slot de progressão: a origem é o grupo da Revisão e do PDF (getSecretSpellGroups)', () => {
+    const sources = (draft: CharacterDraft) => getRuleReference(draft).find(s => s.id === 'spells')!.blocks
+      .flatMap(b => b.groups.flatMap(g => g.entries))
+      .map(e => [e.name, e.detail.kind === 'spell' ? e.detail.source : 'não é magia'])
+
+    it('Pacto do Tomo: os truques do Livro das Sombras, ao lado dos truques do bruxo', () => {
+      expect(sources(WARLOCK_TOME)).toEqual([
+        ['Chama Sagrada', 'Truques do Livro das Sombras'],
+        ['Orientação', 'Truques do Livro das Sombras'],
+        ['Raio de Fogo', 'Truques do Livro das Sombras'],
+        ['Rajada Mística', null],
+        ['Toque Arrepiante', null],
+      ])
+    })
+
+    it('Pacto da Corrente: convocar familiar vem do pacto', () => {
+      const chain = getRuleReference(warlock3({ 'warlock-pact-boon-3': ['pact-of-the-chain'] }))
+      const familiar = chain.find(s => s.id === 'spells')!.blocks[0].groups
+        .flatMap(g => g.entries).find(e => e.key.endsWith(':find-familiar'))
+      expect(familiar?.meta).toBe('1 hora · ritual · Pacto da Corrente')
+      expect(familiar?.detail).toMatchObject({ kind: 'spell', source: 'Pacto da Corrente' })
+    })
+
+    it('bardo 10: os Segredos Mágicos', () => {
+      const bard: CharacterDraft = {
+        ...structuredClone(COMPLETE_DRAFT),
+        class: 'bard',
+        level: 10,
+        classChoices: {
+          ...structuredClone(EMPTY_DRAFT.classChoices),
+          skills: ['arcana', 'history', 'insight'],
+          progressionChoices: { 'bard-magical-secrets-10': ['fireball', 'counterspell'] },
+        },
+        spellChoices: { cantrips: ['vicious-mockery'], spells: ['healing-word'] },
+      }
+      expect(sources(bard)).toEqual(expect.arrayContaining([
+        ['Bola de Fogo', 'Segredos Mágicos'],
+        ['Contramágica', 'Segredos Mágicos'],
+        ['Palavra Curativa', null],
+      ]))
+    })
   })
 })

@@ -4,7 +4,7 @@ import type { RollMode } from '../../types/condition'
 import { formatModifier } from '../../utils/abilityScoreUtils'
 import { endConcentration, setInspiration } from '../../utils/playState'
 import { withInspirationSpent, withTableMode, type RollGuideEntry } from '../../utils/rollGuide'
-import { canRollEntry, rollGuideEntry, type GuideRoll } from './playDice'
+import { canRollEntry, describeRolledFormula, formatRollCopyText, rollGuideEntry, type GuideRoll } from './playDice'
 import { PlayDialog } from './PlayDialog'
 import { RollOutcome } from './RollOutcome'
 
@@ -46,6 +46,9 @@ function TableModePicker({ value, onChange }: { value: RollMode; onChange: (mode
   )
 }
 
+/** Uma rolagem dos dados do app feita na folha, com a fórmula (e o modo) que valia nela. */
+type SheetRoll = GuideRoll & { crit: boolean; formula: string }
+
 /** Uma jogada ligada a esta, aberta de dentro da folha: o dano de um ataque. */
 export type RecipeLink = { label: string; entry: RollGuideEntry }
 
@@ -78,7 +81,7 @@ export function RollRecipeSheet({ entry: baseEntry, appDice, onClose, crit = fal
   const undoTop = usePlayStore(s => s.undoStack.at(-1))
   const concentrating = usePlayStore(s => s.state?.concentration != null)
   const inspired = usePlayStore(s => s.state?.inspiration === true)
-  const [result, setResult] = useState<(GuideRoll & { crit: boolean }) | null>(null)
+  const [result, setResult] = useState<SheetRoll | null>(null)
   const [critMode, setCritMode] = useState(crit && baseEntry.crit !== undefined)
   // Inspiração gasta nesta folha (11.5): guarda o topo do desfazer logo depois do gasto, para o
   // "devolver" desfazer só ele. Se ela voltou por outro caminho (o desfazer geral), a folha volta
@@ -94,7 +97,7 @@ export function RollRecipeSheet({ entry: baseEntry, appDice, onClose, crit = fal
     const rolled = rollGuideEntry(entry, { crit: asCrit })
     // Só o histórico: rolar não é um passo do desfazer nem apaga o aviso da última ação.
     logRoll(rolled.record)
-    setResult({ ...rolled, crit: asCrit })
+    setResult({ ...rolled, crit: asCrit, formula: describeRolledFormula(entry, asCrit) })
   }
 
   function endFailedConcentration() {
@@ -309,7 +312,7 @@ export function RollRecipeSheet({ entry: baseEntry, appDice, onClose, crit = fal
 }
 
 function RollResult({ result, entry, isD20, autoMiss }: {
-  result: GuideRoll & { crit: boolean }
+  result: SheetRoll
   entry: RollGuideEntry
   isD20: boolean
   /** Ataque com 1 natural: erra automaticamente. */
@@ -320,6 +323,7 @@ function RollResult({ result, entry, isD20, autoMiss }: {
     <RollOutcome
       record={record}
       natural={isD20 ? natural : null}
+      copyText={formatRollCopyText({ label: record.label ?? entry.label, formula: result.formula, record })}
       prefix={result.crit ? 'Crítico: ' : ''}
       naturalOneText={autoMiss ? '1 natural: erra automaticamente (pág. 196).' : '1 natural.'}
     >

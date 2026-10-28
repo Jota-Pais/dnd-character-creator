@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, fireEvent, cleanup, act, within } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { usePlayStore } from '../../../stores/playStore'
@@ -6,7 +6,11 @@ import { addCondition, setInspiration } from '../../../utils/playState'
 import { openKrusk, resetPlay } from './openPlay'
 
 beforeEach(resetPlay)
-afterEach(() => cleanup())
+afterEach(() => {
+  cleanup()
+  // O clipboard de mentira de cada teste: o jsdom não tem um.
+  Reflect.deleteProperty(navigator, 'clipboard')
+})
 
 function openAthletics() {
   render(<PlayScreen />)
@@ -147,5 +151,21 @@ describe('RollRecipeSheet — resultado dos dados do app', () => {
     expect(live).toBeEmptyDOMElement()
     fireEvent.click(screen.getByRole('button', { name: 'Rolar' }))
     expect(live).toContainElement(screen.getByTestId('roll-total'))
+  })
+
+  it('"Copiar resultado" leva o rótulo, a fórmula com o modo da mesa e as faces', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    usePlayStore.getState().setAppDice(true)
+    openKrusk()
+    openAthletics()
+    fireEvent.click(within(screen.getByRole('group', { name: 'Vantagem ou desvantagem da mesa' })).getByRole('button', { name: 'Vantagem' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Rolar' }))
+    const record = usePlayStore.getState().state!.rolls.at(-1)!
+    const [a, b] = record.terms[0].dice
+    const faces = [a, b].map(d => (d.kept ? String(d.value) : `${d.value} descartado`)).join(', ')
+    fireEvent.click(screen.getByRole('button', { name: 'Copiar resultado' }))
+    expect(writeText).toHaveBeenCalledWith(`Atletismo: ${record.total} (1d20 + 5, com vantagem; dados: ${faces})`)
+    expect(await screen.findByText('Copiado.')).toBeInTheDocument()
   })
 })

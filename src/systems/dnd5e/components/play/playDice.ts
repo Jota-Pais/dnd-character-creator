@@ -28,6 +28,24 @@ export function rollGuideEntry(
   return { record, natural }
 }
 
+/** "1d20 + 5, com vantagem": a fórmula da jogada que foi rolada, com o modo, para o texto copiado. */
+export function describeRolledFormula(entry: RollGuideEntry, crit = false): string {
+  const formula = crit && entry.crit ? entry.crit.formula : entry.formula
+  if (entry.mode === 'advantage') return `${formula}, com vantagem`
+  if (entry.mode === 'disadvantage') return `${formula}, com desvantagem`
+  return formula
+}
+
+/**
+ * O texto do "Copiar resultado": rótulo, total, fórmula e faces, com o d20 descartado dito por
+ * extenso — "Atletismo: 17 (1d20 + 5, com vantagem; dados: 12, 4 descartado)". Texto puro, sem
+ * marcação, para colar em qualquer conversa.
+ */
+export function formatRollCopyText({ label, formula, record }: { label: string; formula: string; record: RollRecord }): string {
+  const faces = record.terms.flatMap(t => t.dice).map(d => (d.kept ? String(d.value) : `${d.value} descartado`))
+  return `${label}: ${record.total} (${formula}; dados: ${faces.join(', ')})`
+}
+
 /**
  * Joga de novo o 1 natural de uma rolagem d20 (Sortudo, pág. 28): um d20 só, no lugar do dado que
  * saiu 1. Com vantagem ou desvantagem, o outro dado do par fica e vale o maior/menor dos dois

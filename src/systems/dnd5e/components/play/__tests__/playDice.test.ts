@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { sequenceRoller } from '../../../../../core/dice'
 import { formatGuideFormula, formatGuideNotation, type RollGuideEntry } from '../../../utils/rollGuide'
-import { canRollEntry, rerollNaturalOne, rollGuideEntry } from '../playDice'
+import { canRollEntry, describeRolledFormula, formatRollCopyText, rerollNaturalOne, rollGuideEntry } from '../playDice'
 
 function entry(over: Partial<RollGuideEntry>): RollGuideEntry {
   return {
@@ -88,5 +88,27 @@ describe('rerollNaturalOne (Sortudo)', () => {
     const e = { ...death, mode: 'advantage' as const, notation: '2d20kh1' }
     const first = rollGuideEntry(e, { roller: sequenceRoller([1, 1]) })
     expect(rerollNaturalOne(e, first, { roller: sequenceRoller([9]) }).natural).toBe(9)
+  })
+})
+
+describe('copiar resultado', () => {
+  it('rótulo, total, fórmula e faces; o d20 descartado dito por extenso', () => {
+    const e = entry({ label: 'Atletismo', modifier: 5, formula: '1d20 + 5', mode: 'advantage', notation: '2d20kh1+5' })
+    const { record } = rollGuideEntry(e, { roller: sequenceRoller([4, 12]) })
+    expect(formatRollCopyText({ label: record.label!, formula: describeRolledFormula(e), record }))
+      .toBe('Atletismo: 17 (1d20 + 5, com vantagem; dados: 4 descartado, 12)')
+  })
+
+  it('desvantagem, normal e o dano do crítico com os dados dobrados', () => {
+    expect(describeRolledFormula(entry({ mode: 'disadvantage' }))).toBe('1d20 + 3, com desvantagem')
+    expect(describeRolledFormula(entry({}))).toBe('1d20 + 3')
+    const damage = entry({
+      id: 'damage:x', kind: 'damage', label: 'Machado — dano', dice: '1d12', formula: '1d12 + 3 cortante', notation: '1d12+3',
+      crit: { dice: '2d12', formula: '2d12 + 3 cortante', notation: '2d12+3' },
+    })
+    expect(describeRolledFormula(damage, true)).toBe('2d12 + 3 cortante')
+    const { record } = rollGuideEntry(damage, { crit: true, roller: sequenceRoller([5, 7]) })
+    expect(formatRollCopyText({ label: record.label!, formula: describeRolledFormula(damage, true), record }))
+      .toBe('Machado — dano (crítico): 15 (2d12 + 3 cortante; dados: 5, 7)')
   })
 })

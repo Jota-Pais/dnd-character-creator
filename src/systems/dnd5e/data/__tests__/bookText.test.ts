@@ -180,6 +180,8 @@ describe('ortografia corrigida não volta', () => {
     // "especifica" sem acento também é verbo ("você especifica um local"): só a forma adjetiva.
     /\bespecific(?:o|as)\b/, /(?:criatura|área|espécie|quão) especifica\b/,
     /\bmantem\b/, /\b\w+a-l[oa]s?\b/, /\bcompreende-lo\b/,
+    // Livro de Segredos Antigos (invocação do bruxo, p. 61): eram duas magias no singular.
+    /A magia aparece no livro e não conta/, /tenha aprendido elas/, /encontrar tais magias, você pode adicioná-la/,
   ]
   const lines = Object.entries(DATA).flatMap(([path, mod]) => collectLines(path.replace('../', ''), mod.default))
 

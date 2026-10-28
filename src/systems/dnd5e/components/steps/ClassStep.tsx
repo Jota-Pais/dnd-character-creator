@@ -179,9 +179,9 @@ export function ClassStep() {
                 </div>
               </div>
 
-              {/* Features de nível 1 */}
+              {/* Características de nível 1 */}
               <div className="rounded-xl border border-parchment-900 bg-parchment-950/60 p-4">
-                <SectionTitle>Features de Nível 1</SectionTitle>
+                <SectionTitle>Características de nível 1</SectionTitle>
                 <div className="space-y-2.5">
                   {/* Mesmo texto da ficha impressa: a tabela por nível é a única fonte. */}
                   {[

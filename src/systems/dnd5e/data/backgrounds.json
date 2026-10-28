@@ -38,7 +38,7 @@
       "name": "Filiação a Guilda",
       "description": "Como membro respeitado de uma guilda, você pode contar com auxílio de outros membros em viagens. Recebe abrigo gratuito ou alojamento básico em casas de membros, acessa redes de contatos políticos e comerciais, e a guilda paga sua fiança em casos legais menores. Em troca, paga taxas mensais de 5 po e mantém os princípios da guilda."
     },
-    "variant": "Comerciante: substitui a proficiência em ferramentas de artesão por proficiência em ferramentas de navegação ou em um idioma adicional. A feature representa contatos comerciais em vez de filiação a guilda.",
+    "variant": "Comerciante: substitui a proficiência em ferramentas de artesão por proficiência em ferramentas de navegação ou em um idioma adicional. A característica representa contatos comerciais em vez de filiação a guilda.",
     "detailTable": {
       "label": "Negócios da guilda",
       "options": [
@@ -307,7 +307,7 @@
       "name": "Passagem de Navio",
       "description": "Quando precisar, você pode garantir passagem livre em uma embarcação para si e seus companheiros de aventura. Pode estar viajando em troca de trabalho ou conhecer o capitão pessoalmente. A passagem é apenas pelo trajeto — não inclui viagens marítimas confortáveis. O capitão pode pedir um favor de sua parte em momento oportuno."
     },
-    "variant": "Pirata: mecanicamente idêntico, mas substitui a feature por Pessoa Má — em vez de passagem livre por simpatia, você intimida estabelecimentos costeiros a fornecer comida e abrigo gratuitos por reputação como pirata.",
+    "variant": "Pirata: mecanicamente idêntico, mas substitui a característica por Pessoa Má — em vez de passagem livre por simpatia, você intimida estabelecimentos costeiros a fornecer comida e abrigo gratuitos por reputação como pirata.",
     "equipment": {
       "items": [
         { "kind": "specific", "id": "belaying-pin", "itemType": "general", "quantity": 1 },

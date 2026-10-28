@@ -156,9 +156,9 @@ export function BackgroundStep() {
                 </div>
               </div>
 
-              {/* Feature */}
+              {/* Característica de antecedente */}
               <div className="rounded-xl border border-parchment-900 bg-parchment-950/60 p-4">
-                <SectionTitle>Feature de Antecedente</SectionTitle>
+                <SectionTitle>Característica de Antecedente</SectionTitle>
                 <p className="text-sm font-semibold text-parchment-200 font-fantasy mb-1">
                   {selectedBg.feature.name}
                 </p>

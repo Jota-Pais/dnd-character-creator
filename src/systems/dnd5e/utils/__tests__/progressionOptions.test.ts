@@ -101,7 +101,7 @@ describe('getProgressionChoiceBlocks', () => {
   it('Guerreiro Totêmico: o texto do Totem Espiritual não muda com o nível (as outras são escolhas à parte)', () => {
     const [block] = getProgressionChoiceBlocks(allClassEntries(totemWarrior(20, { 'totem-warrior-totem-3': ['wolf'] })))
     expect(block.slots).toHaveLength(1)
-    expect(block.slots[0].picks[0].text).toMatch(/^Quando estiver em fúria, seus amigos tem vantagem/)
+    expect(block.slots[0].picks[0].text).toMatch(/^Quando estiver em fúria, seus amigos têm vantagem/)
   })
 
   it('Guerreiro Totêmico: escolha de nível ainda não alcançado fica fora da ficha', () => {

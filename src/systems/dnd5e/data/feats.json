@@ -50,7 +50,7 @@
     "id": "atirador-agucado",
     "name": "Atirador Aguçado",
     "prerequisite": null,
-    "description": "Você dominou o uso de armas à distância e pode realizar tiros que seriam impossíveis para outros. Você ganha os seguintes benefícios:\n- Atacar um alvo além da distância normal não impõem desvantagem nas suas jogadas de ataque com armas à distância.\n- Seus ataques com armas à distância ignoram meia-cobertura e três-quartos de cobertura.\n- Antes de realizar um ataque com uma arma à distância na qual você seja proficiente, você pode escolher sofrer –5 de penalidade na jogada de ataque. Se o ataque atingir, você adiciona +10 no dano do ataque."
+    "description": "Você dominou o uso de armas à distância e pode realizar tiros que seriam impossíveis para outros. Você ganha os seguintes benefícios:\n- Atacar um alvo além da distância normal não impõe desvantagem nas suas jogadas de ataque com armas à distância.\n- Seus ataques com armas à distância ignoram meia-cobertura e três-quartos de cobertura.\n- Antes de realizar um ataque com uma arma à distância na qual você seja proficiente, você pode escolher sofrer –5 de penalidade na jogada de ataque. Se o ataque atingir, você adiciona +10 no dano do ataque."
   },
   {
     "id": "atirador-de-magia",
@@ -93,7 +93,7 @@
     "id": "conjurador-de-ritual",
     "name": "Conjurador de Ritual",
     "prerequisite": "Inteligência ou Sabedoria 13 ou maior",
-    "description": "Você aprendeu um número de magias que você pode conjurar como rituais. Essas magias são escritas em um livro de rituais, o qual deve estar em suas mãos enquanto você conjura uma dessas magias.\nQuando você escolhe esse talento, você adquire um livro de rituais que contem duas magias de 1° nível, à sua escolha. Escolha uma das seguintes classes: bardo, bruxo, clérigo, druida, feiticeiro ou mago. Você deve escolher suas magias da lista de magias dessa classe e as magias escolhidas devem ter o descritor ritual. A classe que você escolheu também determina a habilidade de conjuração dessas magias: Carisma para bardo, bruxo ou feiticeiro; Sabedoria para clérigo ou druida; ou Inteligência para mago.\nSe você encontrar uma magia na forma escrita, como a contida em um pergaminho de magia ou o grimório de um mago, você é capaz de adicioná-la ao seu livro de rituais. A magia deve estar na lista de magias da classe escolhida, o nível da magia não pode ser maior que metade do seu nível (arredondado para cima) e deve conter o descritor ritual. O processo para copiar a magia no seu livro de rituais leva 2 horas por nível da magia e custa 50 po por nível. O custo representa os componentes materiais que você gasta para experimentar a magia até dominá-la, bem como as finas tintas utilizadas para escrevê-la."
+    "description": "Você aprendeu um número de magias que você pode conjurar como rituais. Essas magias são escritas em um livro de rituais, o qual deve estar em suas mãos enquanto você conjura uma dessas magias.\nQuando você escolhe esse talento, você adquire um livro de rituais que contém duas magias de 1° nível, à sua escolha. Escolha uma das seguintes classes: bardo, bruxo, clérigo, druida, feiticeiro ou mago. Você deve escolher suas magias da lista de magias dessa classe e as magias escolhidas devem ter o descritor ritual. A classe que você escolheu também determina a habilidade de conjuração dessas magias: Carisma para bardo, bruxo ou feiticeiro; Sabedoria para clérigo ou druida; ou Inteligência para mago.\nSe você encontrar uma magia na forma escrita, como a contida em um pergaminho de magia ou o grimório de um mago, você é capaz de adicioná-la ao seu livro de rituais. A magia deve estar na lista de magias da classe escolhida, o nível da magia não pode ser maior que metade do seu nível (arredondado para cima) e deve conter o descritor ritual. O processo para copiar a magia no seu livro de rituais leva 2 horas por nível da magia e custa 50 po por nível. O custo representa os componentes materiais que você gasta para experimentar a magia até dominá-la, bem como as finas tintas utilizadas para escrevê-la."
   },
   {
     "id": "curandeiro",
@@ -111,7 +111,7 @@
     "id": "especialista-em-besta",
     "name": "Especialista em Besta",
     "prerequisite": null,
-    "description": "Graças a sua pratica extensiva com bestas, você ganha os seguintes benefícios:\n- Você ignora a qualidade de recarga de bestas nas quais você é proficiente.\n- Estar a 1,5 metro de uma criatura hostil não impõem desvantagem nas suas jogadas de ataque à distância.\n- Quando você usa a ação de Ataque e ataca com uma arma de uma mão, você pode usar sua ação bônus para atacar com uma besta de mão carregada que você esteja empunhando.",
+    "description": "Graças a sua prática extensiva com bestas, você ganha os seguintes benefícios:\n- Você ignora a qualidade de recarga de bestas nas quais você é proficiente.\n- Estar a 1,5 metro de uma criatura hostil não impõe desvantagem nas suas jogadas de ataque à distância.\n- Quando você usa a ação de Ataque e ataca com uma arma de uma mão, você pode usar sua ação bônus para atacar com uma besta de mão carregada que você esteja empunhando.",
     "effects": {
       "ignoresLoading": { "weapons": ["hand-crossbow", "light-crossbow", "heavy-crossbow"], "requiresProficiency": true }
     }
@@ -143,7 +143,7 @@
     "id": "iniciado-em-magia",
     "name": "Iniciado em Magia",
     "prerequisite": null,
-    "description": "Escolha uma classe: bardo, bruxo, clérigo, druida, feiticeiro ou mago. Você aprende dois truques da lista de magias da classe escolhida.\nAlém disso, escolha uma magia de 1° nível da mesma lista. Você aprende essa magia e pode conjura-la com o menor nível possível. Uma vez que a conjure, você precisa terminar um descanso longo para poder conjura-la novamente. Essa restrição aplica-se apenas à magia adquirida através desse talento.\nSua habilidade de conjuração depende da classe que você escolher: Carisma para bardo, bruxo ou feiticeiro; Sabedoria para clérigo ou druida; ou Inteligência para mago.",
+    "description": "Escolha uma classe: bardo, bruxo, clérigo, druida, feiticeiro ou mago. Você aprende dois truques da lista de magias da classe escolhida.\nAlém disso, escolha uma magia de 1° nível da mesma lista. Você aprende essa magia e pode conjurá-la com o menor nível possível. Uma vez que a conjure, você precisa terminar um descanso longo para poder conjurá-la novamente. Essa restrição aplica-se apenas à magia adquirida através desse talento.\nSua habilidade de conjuração depende da classe que você escolher: Carisma para bardo, bruxo ou feiticeiro; Sabedoria para clérigo ou druida; ou Inteligência para mago.",
     "effects": {
       "choices": {
         "spellChoice": { "classes": ["bard", "warlock", "cleric", "druid", "sorcerer", "wizard"], "cantrips": 2, "spells": 1, "spellLevel": 1 }
@@ -377,7 +377,7 @@
     "id": "sorrateiro",
     "name": "Sorrateiro",
     "prerequisite": "Destreza 13 ou maior",
-    "description": "Você é especialista em espreitar através das sombras. Você ganha os seguintes benefícios:\n- Você pode tentar se esconder quando estiver levemente obscurecido para a criatura de quem você está tentando se esconder.\n- Quando você estiver escondido de uma criatura e errar um ataque à distância contra ela, realizar esse ataque não revelará sua posição.\n- Penumbra não impõem desvantagem nos seus testes de Sabedoria (Percepção) relacionados a visão."
+    "description": "Você é especialista em espreitar através das sombras. Você ganha os seguintes benefícios:\n- Você pode tentar se esconder quando estiver levemente obscurecido para a criatura de quem você está tentando se esconder.\n- Quando você estiver escondido de uma criatura e errar um ataque à distância contra ela, realizar esse ataque não revelará sua posição.\n- Penumbra não impõe desvantagem nos seus testes de Sabedoria (Percepção) relacionados a visão."
   },
   {
     "id": "sortudo",

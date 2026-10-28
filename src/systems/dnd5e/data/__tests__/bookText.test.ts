@@ -163,3 +163,28 @@ describe('características de classe que seguem o inglês', () => {
     expect(casting?.description).toContain(expected)
   })
 })
+
+/**
+ * Erros de ortografia e concordância que vieram do livro ou da digitalização e foram corrigidos
+ * (decisão do usuário, 2026-10-26: não mudam regra). A digitalização em docs/ foi corrigida junto
+ * quando os dados saem dela (spells.json ← docs/magias), mas copiar o trecho do extract de novo os
+ * traria de volta: cada forma errada fica presa aqui.
+ */
+describe('ortografia corrigida não volta', () => {
+  const WRONG = [
+    /\bespirito\b/, /\bimpõem desvantagem/, /amigos tem vantagem/, /pequenos explosões/,
+    /\bpratica extensiva/, /que contem duas/, /mudanças não podem exceder/, /força magica/,
+    /criaturas tem desvantagem/, /limos tem desvantagem/, /de um magia/, /circunstancia\b/,
+    /influencia um criatura/, /\bdozes\b/, /\bficara cego/, /\bnevoa\b/, /\bobvio\b/, /\bpressagio\b/,
+    /\bsolid[oa]\b/, /\bcubico\b/, /\bai[,.]? (?:então|pela)/,
+    // "especifica" sem acento também é verbo ("você especifica um local"): só a forma adjetiva.
+    /\bespecific(?:o|as)\b/, /(?:criatura|área|espécie|quão) especifica\b/,
+    /\bmantem\b/, /\b\w+a-l[oa]s?\b/, /\bcompreende-lo\b/,
+  ]
+  const lines = Object.entries(DATA).flatMap(([path, mod]) => collectLines(path.replace('../', ''), mod.default))
+
+  it.each(WRONG.map(re => [re.source, re] as const))('%s', (_source, re) => {
+    const found = lines.filter(l => re.test(l.line))
+    expect(found.map(l => `${l.file} (${l.key}): ${l.line.slice(0, 100)}`)).toEqual([])
+  })
+})

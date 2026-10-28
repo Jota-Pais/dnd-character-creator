@@ -1,7 +1,9 @@
 import type { CharacterDraft } from '../systems/dnd5e/types/character'
 
 // Ficha completa sem escolhas pendentes além das perícias de classe:
-// meio-orc (sem sub-raça/choices) + bárbaro (só 2 perícias) + marinheiro (sem choices)
+// meio-orc (sem sub-raça/choices) + bárbaro (só 2 perícias) + marinheiro (sem choices).
+// As perícias do bárbaro ficam fora das que o meio-orc (Intimidação) e o marinheiro (Atletismo,
+// Percepção) já dão: repetidas, a etapa Classe reprova (p. 125).
 export const COMPLETE_DRAFT: CharacterDraft = {
   name: 'Krusk',
   level: 1,
@@ -10,7 +12,7 @@ export const COMPLETE_DRAFT: CharacterDraft = {
   raceChoices: {},
   class: 'barbarian',
   classChoices: {
-    skills: ['athletics', 'intimidation'],
+    skills: ['animal-handling', 'survival'],
     subclass: null,
     fightingStyle: null,
     expertiseItems: [],

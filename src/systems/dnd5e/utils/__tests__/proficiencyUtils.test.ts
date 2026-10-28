@@ -30,6 +30,13 @@ import {
   hasInstrumentSpellcastingFocus,
   formatUnproficientTool,
   describeToolWithoutProficiency,
+  getRepeatedProficiencies,
+  getClassRepeatedProficiencies,
+  getRaceRepeatedProficiencies,
+  getBackgroundRepeatedProficiencies,
+  getFeatRepeatedProficiencies,
+  formatRepeatedProficiency,
+  getRepeatedProficiencyNotes,
 } from '../proficiencyUtils'
 import { getWeaponById } from '../equipmentUtils'
 import { EMPTY_CLASS_CHOICES } from '../../types/class'
@@ -856,5 +863,137 @@ describe('getSavingThrowProficiencies / getSavingThrowChecks', () => {
     const checks = getSavingThrowChecks(single('bard', 2), scores)
     expect(checks.STR).toEqual({ proficient: false, bonus: 0 })
     expect(checks.CHA).toEqual({ proficient: true, bonus: 1 })
+  })
+})
+
+// p. 125: quem ganharia a mesma proficiência de duas fontes escolhe outra. Os seletores escondem o
+// que já se tem, mas a outra fonte pode chegar depois (antecedente ou raça trocados, ficha antiga):
+// a escolha fica no draft e vira pendência da etapa dona dela.
+describe('proficiência repetida (p. 125)', () => {
+  const fighter = (background: string): CharacterDraft => draft({
+    race: 'human',
+    class: 'fighter',
+    classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['athletics', 'perception'] },
+    background,
+  })
+
+  function extra(classId: string, choices: Partial<CharacterDraft['classChoices']>): ClassEntry {
+    return {
+      classId, level: 1,
+      classChoices: { ...EMPTY_DRAFT.classChoices, ...choices },
+      spellChoices: { cantrips: [], spells: [] }, asiChoices: [], hpRolls: [],
+    }
+  }
+
+  it('Guerreiro com Atletismo e Percepção: com o Acólito, nada; trocado pelo Marinheiro, as duas repetem', () => {
+    expect(getRepeatedProficiencies(fighter('acolyte'))).toEqual([])
+    const sailor = fighter('sailor')
+    const repeated = getClassRepeatedProficiencies(sailor)
+    expect(repeated.map(r => r.id)).toEqual(['athletics', 'perception'])
+    expect(repeated[0].owner).toEqual({ kind: 'class', slot: { classId: 'fighter', part: 'base' } })
+    expect(formatRepeatedProficiency(repeated[0])).toBe('Atletismo já vem do antecedente Marinheiro — troque por outra perícia')
+    // A escolha não some: o personagem continua proficiente (uma vez só).
+    expect(getAllGrantedSkills(sailor).filter(id => id === 'athletics')).toEqual(['athletics'])
+  })
+
+  it('Meio-Orc com Intimidação escolhida na classe: a fixa da raça tem a palavra final', () => {
+    const d = draft({
+      race: 'half-orc', class: 'barbarian', background: 'sailor',
+      classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['intimidation', 'survival'] },
+    })
+    expect(getClassRepeatedProficiencies(d).map(formatRepeatedProficiency))
+      .toEqual(['Intimidação já vem da raça Meio-Orc — troque por outra perícia'])
+  })
+
+  it('multiclasse: troca a classe adicional, não a inicial', () => {
+    const d = draft({
+      class: 'barbarian', level: 3,
+      classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['animal-handling', 'survival'] },
+      additionalClasses: [extra('ranger', { skills: ['survival'] })],
+      multiclass: true,
+    })
+    expect(getClassRepeatedProficiencies(d, 'barbarian')).toEqual([])
+    expect(getClassRepeatedProficiencies(d, 'ranger').map(formatRepeatedProficiency))
+      .toEqual(['Sobrevivência já vem da classe Bárbaro — troque por outra perícia'])
+  })
+
+  it('Colégio do Conhecimento: perícia do colégio que repete a da lista do bardo troca no colégio', () => {
+    const d = draft({
+      class: 'bard', level: 3,
+      classChoices: {
+        ...EMPTY_DRAFT.classChoices,
+        skills: ['acrobatics', 'deception', 'performance'],
+        subclass: 'college-of-lore',
+        subclassExtras: { skills: ['deception', 'arcana', 'history'] },
+      },
+    })
+    const [r] = getClassRepeatedProficiencies(d)
+    expect(r.owner).toEqual({ kind: 'class', slot: { classId: 'bard', part: 'subclass' } })
+    expect(formatRepeatedProficiency(r)).toBe('Enganação já vem da classe Bardo — troque por outra perícia')
+  })
+
+  it('Domínio do Conhecimento dobra o que já se tem: repetir é o ponto, não pendência', () => {
+    const d = draft({
+      class: 'cleric', background: 'sage',
+      classChoices: {
+        ...EMPTY_DRAFT.classChoices,
+        skills: ['insight', 'medicine'],
+        subclass: 'knowledge-domain',
+        subclassExtras: { skills: ['arcana', 'history'] },
+      },
+    })
+    expect(getRepeatedProficiencies(d)).toEqual([])
+  })
+
+  it('ferramenta: o instrumento do Artista que o bardo já toca troca no antecedente', () => {
+    const d = draft({
+      class: 'bard', background: 'entertainer',
+      classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['arcana', 'history', 'insight'], tools: ['lute', 'flute', 'drum'] },
+      backgroundChoices: { tools: ['lute'] },
+    })
+    expect(getClassRepeatedProficiencies(d)).toEqual([])
+    expect(getBackgroundRepeatedProficiencies(d).map(formatRepeatedProficiency))
+      .toEqual(['Alaúde já vem da classe Bardo — troque por outro instrumento'])
+  })
+
+  it('ferramenta do Mestre de Batalha que o anão já escolheu troca na subclasse', () => {
+    const d = draft({
+      race: 'dwarf', subrace: 'hill-dwarf', raceChoices: { tools: ['smiths-tools'] },
+      class: 'fighter', level: 3,
+      classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['acrobatics', 'history'], subclass: 'battle-master', subclassExtras: { tools: ['smiths-tools'] } },
+    })
+    expect(getRaceRepeatedProficiencies(d)).toEqual([])
+    expect(getClassRepeatedProficiencies(d).map(formatRepeatedProficiency))
+      .toEqual(['Ferramentas de Ferreiro já vêm da raça Anão da Colina — troque por outra ferramenta'])
+  })
+
+  it('a escolha da raça repete a fixa do antecedente: troca na raça', () => {
+    const d = draft({ race: 'half-elf', raceChoices: { skills: ['insight', 'stealth'] }, background: 'acolyte' })
+    expect(getRaceRepeatedProficiencies(d).map(formatRepeatedProficiency))
+      .toEqual(['Intuição já vem do antecedente Acólito — troque por outra perícia'])
+  })
+
+  it('Perito: a perícia do talento que o antecedente já dá troca no talento', () => {
+    const d = draft({
+      class: 'fighter', level: 4, background: 'sailor',
+      classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['acrobatics', 'history'] },
+      asiChoices: [{ kind: 'feat', featId: 'perito' }],
+      featSelections: { perito: { skills: ['athletics', 'stealth'], tools: ['lute'] } },
+    })
+    expect(getFeatRepeatedProficiencies(d, ['perito']).map(formatRepeatedProficiency))
+      .toEqual(['Atletismo já vem do antecedente Marinheiro — troque por outra perícia ou ferramenta'])
+    expect(getFeatRepeatedProficiencies(d, ['outro'])).toEqual([])
+  })
+
+  it('getRepeatedProficiencyNotes: o aviso por id, só do seletor pedido', () => {
+    const d = fighter('sailor')
+    const notes = {
+      athletics: 'Atletismo já vem do antecedente Marinheiro — troque por outra perícia',
+      perception: 'Percepção já vem do antecedente Marinheiro — troque por outra perícia',
+    }
+    expect(getRepeatedProficiencyNotes(d, { kind: 'class', slot: { classId: 'fighter', part: 'base' } })).toEqual(notes)
+    expect(getRepeatedProficiencyNotes(d, { kind: 'class', slot: { classId: 'fighter', part: 'subclass' } })).toEqual({})
+    expect(getRepeatedProficiencyNotes(d, { kind: 'background' })).toEqual({})
+    expect(getClassSlotProficiencies(d, 'fighter')).toMatchObject({ repeatedBase: notes, repeatedSubclass: {} })
   })
 })

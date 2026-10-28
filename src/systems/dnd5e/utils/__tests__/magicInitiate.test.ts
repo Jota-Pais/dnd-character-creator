@@ -100,7 +100,7 @@ describe('Iniciado em Magia — o slot', () => {
     const d: CharacterDraft = {
       ...structuredClone(COMPLETE_DRAFT),
       race: 'human', subrace: 'variant-human',
-      raceChoices: { abilityBonuses: ['STR', 'DEX'], skills: ['athletics'], languages: ['elvish'], feat: FEAT },
+      raceChoices: { abilityBonuses: ['STR', 'DEX'], skills: ['insight'], languages: ['elvish'], feat: FEAT },
     }
     expect(getStepPendingReasons(d, 'race')).toEqual(['Humano (Variante), talento Iniciado em Magia: escolha a classe de cuja lista vêm as magias'])
     expect(isStepComplete({ ...d, featSelections: { [FEAT]: WIZARD_PICKS } }, 'race')).toBe(true)

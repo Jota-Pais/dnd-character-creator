@@ -57,6 +57,10 @@ import {
   meetsMulticlassPrereq,
   describeMulticlassPrereq,
 } from './multiclassUtils'
+import {
+  formatRepeatedProficiency, getBackgroundRepeatedProficiencies, getClassRepeatedProficiencies,
+  getFeatRepeatedProficiencies, getRaceRepeatedProficiencies,
+} from './proficiencyUtils'
 import { isStepComplete, getMissingSteps } from './draftValidation'
 
 /**
@@ -113,9 +117,14 @@ function featChoiceReasons(slot: FeatChoiceSlot, where: string): string[] {
 }
 
 function featChoicesReasons(draft: CharacterDraft, featIds: string[], where: string): string[] {
-  return getFeatChoiceSlots(draft)
+  const choices = getFeatChoiceSlots(draft)
     .filter(slot => featIds.includes(slot.feat.id))
     .flatMap(slot => featChoiceReasons(slot, where))
+  const repeated = getFeatRepeatedProficiencies(draft, featIds).map(r => {
+    const featId = r.owner.kind === 'feat' ? r.owner.featId : ''
+    return `${where}, talento ${getFeat(featId)?.name ?? featId}: ${formatRepeatedProficiency(r)}`
+  })
+  return [...choices, ...repeated]
 }
 
 // ── Raça ────────────────────────────────────────────────────────────────────────
@@ -168,6 +177,7 @@ function raceReasons(draft: CharacterDraft): string[] {
       }
     }
   }
+  for (const r of getRaceRepeatedProficiencies(draft)) out.push(`${name}: ${formatRepeatedProficiency(r)}`)
   if (choices.feat) out.push(...featChoicesReasons(draft, [choices.feat], name))
   return out
 }
@@ -276,17 +286,32 @@ function countWordMasc(n: number): string {
   return n === 1 ? 'um' : String(n)
 }
 
+/**
+ * Perícias e ferramentas que uma classe escolheu e outra fonte já dá (getClassRepeatedProficiencies):
+ * "Guerreiro: Atletismo já vem do antecedente Marinheiro — troque por outra perícia".
+ */
+function classRepeatedReasons(draft: CharacterDraft, cls: GameClass, choices: ClassChoiceSelections): string[] {
+  const subclass = choices.subclass ? cls.subclasses.find(s => s.id === choices.subclass) : undefined
+  return getClassRepeatedProficiencies(draft, cls.id).map(r => {
+    const fromSubclass = r.owner.kind === 'class' && r.owner.slot.part === 'subclass' && subclass
+    return `${fromSubclass ? `${cls.name} (${subclass.name})` : cls.name}: ${formatRepeatedProficiency(r)}`
+  })
+}
+
 function classReasons(draft: CharacterDraft): string[] {
   const cls = draft.class ? (getClass(draft.class) ?? null) : null
   if (!cls) return ['Escolha uma classe']
-  const out = classEntryReasons(cls, draft.classChoices, getPrimaryLevel(draft), false)
+  const out = [
+    ...classEntryReasons(cls, draft.classChoices, getPrimaryLevel(draft), false),
+    ...classRepeatedReasons(draft, cls, draft.classChoices),
+  ]
   if (getAdditionalLevelsUsed(draft) > draft.level - 1) {
     out.push(`As classes adicionais somam mais níveis do que o personagem tem (${draft.level}) — reduza algum`)
   }
   for (const entry of draft.additionalClasses) {
     const ec = getClass(entry.classId)
     if (!ec) out.push(`Classe adicional desconhecida (${entry.classId}): remova-a`)
-    else out.push(...classEntryReasons(ec, entry.classChoices, entry.level, true))
+    else out.push(...classEntryReasons(ec, entry.classChoices, entry.level, true), ...classRepeatedReasons(draft, ec, entry.classChoices))
   }
   for (const id of getRepeatedFightingStyles(draft)) {
     const name = FIGHTING_STYLES.find(s => s.id === id)?.name ?? id
@@ -446,6 +471,7 @@ function backgroundReasons(draft: CharacterDraft): string[] {
     const what = toolChoices.length === 1 ? (TOOL_CHOICE_LABEL[toolChoices[0].from] ?? 'Ferramenta') : 'Ferramenta'
     out.push(`${background.name}: escolha ${toolsMissing === 1 ? 'a' : toolsMissing} proficiência em ${what}`)
   }
+  for (const r of getBackgroundRepeatedProficiencies(draft)) out.push(`${background.name}: ${formatRepeatedProficiency(r)}`)
 
   const languagesMissing = background.choices
     .filter((c): c is Extract<BackgroundChoice, { kind: 'language-choice' }> => c.kind === 'language-choice')

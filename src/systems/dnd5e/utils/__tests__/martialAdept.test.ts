@@ -33,7 +33,7 @@ function battleMaster(maneuvers?: string[], subclass = 'battle-master'): Charact
     level: 4,
     classChoices: {
       ...structuredClone(EMPTY_DRAFT.classChoices),
-      skills: ['athletics', 'perception'],
+      skills: ['acrobatics', 'history'],
       fightingStyle: 'defense',
       subclass,
       progressionChoices: { 'battle-master-maneuvers-3': ['aparar', 'derrubar', 'inspirar'] },
@@ -75,7 +75,7 @@ describe('Adepto Marcial — escolha das manobras', () => {
     const d: CharacterDraft = {
       ...structuredClone(COMPLETE_DRAFT),
       race: 'human', subrace: 'variant-human',
-      raceChoices: { abilityBonuses: ['STR', 'DEX'], skills: ['athletics'], languages: ['elvish'], feat: FEAT },
+      raceChoices: { abilityBonuses: ['STR', 'DEX'], skills: ['insight'], languages: ['elvish'], feat: FEAT },
     }
     expect(isStepComplete(d, 'race')).toBe(false)
     expect(getStepPendingReasons(d, 'race')).toEqual(['Humano (Variante), talento Adepto Marcial: escolha mais 2 manobras'])

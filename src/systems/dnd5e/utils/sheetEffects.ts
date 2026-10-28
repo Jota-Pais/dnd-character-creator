@@ -1051,18 +1051,20 @@ export function areFeatChoicesComplete(draft: CharacterDraft, featIds?: string[]
 /** As chaves de `FeatSelections` que são listas (a classe do Iniciado em Magia é uma só). */
 type FeatSelectionList = 'skills' | 'tools' | 'languages' | 'weapons' | 'maneuvers'
 
+/**
+ * O que cada talento possuído escolheu numa lista, com o talento dono — as perícias e ferramentas
+ * do Perito entram assim nas concessões de `proficiencyUtils`, que precisa saber de qual talento
+ * cada uma veio para dizer o que repete.
+ */
+export function getFeatSelectionsByFeat(
+  draft: CharacterDraft,
+  key: FeatSelectionList,
+): { featId: string; ids: string[] }[] {
+  return getOwnedFeats(draft).map(f => ({ featId: f.id, ids: draft.featSelections[f.id]?.[key] ?? [] }))
+}
+
 function selectionsOf(draft: CharacterDraft, key: FeatSelectionList): string[] {
-  return getOwnedFeats(draft).flatMap(f => draft.featSelections[f.id]?.[key] ?? [])
-}
-
-/** Perícias ganhas por talento (Perito). */
-export function getFeatGrantedSkills(draft: CharacterDraft): string[] {
-  return selectionsOf(draft, 'skills')
-}
-
-/** Ferramentas ganhas por talento (Perito). */
-export function getFeatGrantedTools(draft: CharacterDraft): string[] {
-  return selectionsOf(draft, 'tools')
+  return getFeatSelectionsByFeat(draft, key).flatMap(s => s.ids)
 }
 
 /** Idiomas aprendidos por talento (Poliglota). */

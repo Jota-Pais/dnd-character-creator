@@ -28,6 +28,10 @@ import { getUnmetPickRequirements } from './progressionOptions'
 import { getFeat } from './featUtils'
 import { getManeuver } from './maneuverUtils'
 import {
+  getBackgroundRepeatedProficiencies, getClassRepeatedProficiencies, getFeatRepeatedProficiencies,
+  getRaceRepeatedProficiencies,
+} from './proficiencyUtils'
+import {
   getPrimaryLevel,
   allClassEntries,
   getAdditionalLevelsUsed,
@@ -379,9 +383,12 @@ export function isStepComplete(draft: CharacterDraft, step: WizardStep): boolean
       return draft.name.trim().length > 0
     case 'race': {
       if (!isRaceStepComplete(race, subrace, draft.raceChoices)) return false
+      // Perícia ou ferramenta escolhida que outra fonte já dá: troca-se por outra (p. 125).
+      if (getRaceRepeatedProficiencies(draft).length > 0) return false
       // O talento do Humano Variante pode abrir escolhas próprias (Perito, Poliglota...).
       const racialFeat = draft.raceChoices.feat
-      return !racialFeat || areFeatChoicesComplete(draft, [racialFeat])
+      return !racialFeat
+        || (areFeatChoicesComplete(draft, [racialFeat]) && getFeatRepeatedProficiencies(draft, [racialFeat]).length === 0)
     }
     case 'class': {
       // Classe primária no nível dela (total − adicionais); cada adicional no nível dela
@@ -394,6 +401,9 @@ export function isStepComplete(draft: CharacterDraft, step: WizardStep): boolean
         if (!isClassStepComplete(ec, entry.classChoices, entry.level, true)) return false
         if (hasSecretSpellIssues(entry.classId, entry.classChoices, entry.level)) return false
       }
+      // Perícia ou ferramenta escolhida numa classe que outra fonte já dá — o antecedente ou a
+      // raça trocados depois, ficha antiga: troca-se por outra (p. 125). A escolha fica no draft.
+      if (getClassRepeatedProficiencies(draft).length > 0) return false
       // O mesmo Estilo de Luta não vale duas vezes, nem vindo de classes diferentes (p. 85).
       return !hasRepeatedFightingStyle(draft)
     }
@@ -412,6 +422,7 @@ export function isStepComplete(draft: CharacterDraft, step: WizardStep): boolean
     }
     case 'background':
       return isBackgroundStepComplete(background, draft.backgroundChoices)
+        && getBackgroundRepeatedProficiencies(draft).length === 0
     case 'equipment':
       return isEquipmentStepComplete(draft.equipment, cls?.startingEquipment)
     case 'review':

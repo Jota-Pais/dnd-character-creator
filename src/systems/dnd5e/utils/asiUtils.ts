@@ -6,6 +6,7 @@ import { getRace, getSubrace, getEffectiveAbilityBonuses } from './raceUtils'
 import { ALL_ABILITY_SCORES, ABILITY_LABELS } from './abilityScoreUtils'
 import { getFeat } from './featUtils'
 import { areFeatChoicesComplete } from './sheetEffects'
+import { getFeatRepeatedProficiencies } from './proficiencyUtils'
 import { getClass, getSubclass, getClassFeaturesUpToLevel } from './classUtils'
 import { allClassEntries, getAllAsiChoices } from './multiclassUtils'
 import { describeFeaturePick } from './progressionOptions'
@@ -254,6 +255,8 @@ export function isImprovementsStepComplete(draft: CharacterDraft): boolean {
     .filter(c => c?.kind === 'feat')
     .map(c => (c as { featId: string }).featId)
   if (!areFeatChoicesComplete(draft, featIds)) return false
+  // Perícia ou ferramenta do talento (Perito) que outra fonte já dá: troca-se por outra (p. 125).
+  if (getFeatRepeatedProficiencies(draft, featIds).length > 0) return false
 
   // teto de 20 sobre o conjunto de todas as escolhas alcançadas (todas as classes)
   const racial = getRacialBonuses(draft)

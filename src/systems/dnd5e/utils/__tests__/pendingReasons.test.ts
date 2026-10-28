@@ -25,7 +25,7 @@ function entry(over: Partial<ClassEntry> & { classId: string }): ClassEntry {
 
 const paladin2: CharacterDraft = draft({
   class: 'paladin', level: 2,
-  classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['athletics', 'religion'] },
+  classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['insight', 'religion'] },
   spellChoices: { cantrips: [], spells: ['bless'] },
 })
 
@@ -42,7 +42,7 @@ describe('getStepPendingReasons — casos das fichas antigas', () => {
     const d = draft({
       class: 'barbarian', level: 3,
       abilityScores: { STR: 15, DEX: 14, CON: 13, INT: 12, WIS: 13, CHA: 8 },
-      additionalClasses: [entry({ classId: 'ranger', level: 2, classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['survival'] } })],
+      additionalClasses: [entry({ classId: 'ranger', level: 2, classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['stealth'] } })],
       multiclass: true,
     })
     expect(getStepPendingReasons(d, 'class')).toEqual([
@@ -68,7 +68,7 @@ describe('getStepPendingReasons — casos das fichas antigas', () => {
   it('Cavaleiro Arcano e Trapaceiro Arcano sem truques e magias', () => {
     const ek = draft({
       class: 'fighter', level: 3,
-      classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['athletics', 'perception'], fightingStyle: 'defense', subclass: 'eldritch-knight' },
+      classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['acrobatics', 'history'], fightingStyle: 'defense', subclass: 'eldritch-knight' },
     })
     expect(getStepPendingReasons(ek, 'spells')).toEqual(['Guerreiro (Cavaleiro Arcano): escolha 2 truques e 3 magias de mago'])
     const partial = { ...ek, spellChoices: { cantrips: ['fire-bolt', 'light'], spells: ['shield', 'magic-missile'] } }
@@ -101,16 +101,16 @@ describe('getStepPendingReasons — demais regras', () => {
     ]))
     const perito = draft({
       race: 'human', subrace: 'variant-human',
-      raceChoices: { abilityBonuses: ['STR', 'CON'], skills: ['athletics'], languages: ['elvish'], feat: 'perito' },
+      raceChoices: { abilityBonuses: ['STR', 'CON'], skills: ['insight'], languages: ['elvish'], feat: 'perito' },
       featSelections: { perito: { skills: ['stealth'] } },
     })
     expect(getStepPendingReasons(perito, 'race')).toEqual(['Humano (Variante), talento Perito: escolha mais 2 perícias ou ferramentas'])
   })
 
   it('perícias da classe: falta e excesso', () => {
-    const falta = draft({ classChoices: { ...COMPLETE_DRAFT.classChoices, skills: ['athletics'] } })
+    const falta = draft({ classChoices: { ...COMPLETE_DRAFT.classChoices, skills: ['animal-handling'] } })
     expect(getStepPendingReasons(falta, 'class')).toEqual(['Bárbaro: escolha mais 1 perícia da classe'])
-    const excesso = draft({ classChoices: { ...COMPLETE_DRAFT.classChoices, skills: ['athletics', 'intimidation', 'survival'] } })
+    const excesso = draft({ classChoices: { ...COMPLETE_DRAFT.classChoices, skills: ['animal-handling', 'nature', 'survival'] } })
     expect(getStepPendingReasons(excesso, 'class')[0]).toMatch(/^Bárbaro: 1 perícia marcada a mais/)
   })
 
@@ -132,13 +132,84 @@ describe('getStepPendingReasons — demais regras', () => {
   it('Estilo de Luta repetido entre classes', () => {
     const d = draft({
       class: 'fighter', level: 3,
-      classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['athletics', 'perception'], fightingStyle: 'defense' },
+      classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['acrobatics', 'history'], fightingStyle: 'defense' },
       additionalClasses: [entry({ classId: 'paladin', level: 2, classChoices: { ...EMPTY_DRAFT.classChoices, fightingStyle: 'defense' } })],
       multiclass: true,
     })
     expect(getStepPendingReasons(d, 'class')).toEqual([
       'Estilo de Luta Defesa escolhido duas vezes — o mesmo estilo não vale duas vezes (p. 85); troque um deles',
     ])
+  })
+
+  it('perícia repetida pelo antecedente trocado depois: a etapa Classe diz o que trocar', () => {
+    // Guerreiro com Atletismo e Percepção que troca o Acólito pelo Marinheiro (p. 125).
+    const fighter = draft({
+      class: 'fighter',
+      classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['athletics', 'perception'], fightingStyle: 'defense' },
+    })
+    expect(isStepComplete({ ...fighter, background: 'acolyte' }, 'class')).toBe(true)
+    expect(isStepComplete(fighter, 'class')).toBe(false)
+    expect(getStepPendingReasons(fighter, 'class')).toEqual([
+      'Guerreiro: Atletismo já vem do antecedente Marinheiro — troque por outra perícia',
+      'Guerreiro: Percepção já vem do antecedente Marinheiro — troque por outra perícia',
+    ])
+    // Meio-Orc (Intimidação fixa) com Intimidação escolhida no bárbaro.
+    const halfOrc = draft({ classChoices: { ...COMPLETE_DRAFT.classChoices, skills: ['intimidation', 'survival'] } })
+    expect(getStepPendingReasons(halfOrc, 'class')).toEqual(['Bárbaro: Intimidação já vem da raça Meio-Orc — troque por outra perícia'])
+  })
+
+  it('perícia repetida na subclasse e na classe da multiclasse: diz qual delas troca', () => {
+    const lore = draft({
+      class: 'bard', level: 3,
+      classChoices: {
+        ...EMPTY_DRAFT.classChoices,
+        skills: ['acrobatics', 'deception', 'performance'], tools: ['lute', 'flute', 'drum'],
+        expertiseItems: ['acrobatics', 'deception'],
+        subclass: 'college-of-lore', subclassExtras: { skills: ['deception', 'arcana', 'history'] },
+      },
+    })
+    expect(getStepPendingReasons(lore, 'class')).toEqual([
+      'Bardo (Colégio do Conhecimento): Enganação já vem da classe Bardo — troque por outra perícia',
+    ])
+    const ranger = draft({
+      class: 'barbarian', level: 3,
+      abilityScores: { STR: 15, DEX: 14, CON: 13, INT: 12, WIS: 13, CHA: 8 },
+      additionalClasses: [entry({ classId: 'ranger', level: 2, classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['survival'], fightingStyle: 'archery' } })],
+      multiclass: true,
+    })
+    expect(getStepPendingReasons(ranger, 'class')).toEqual(['Patrulheiro: Sobrevivência já vem da classe Bárbaro — troque por outra perícia'])
+  })
+
+  it('raça, antecedente e talento: a mesma regra, cada um na sua etapa', () => {
+    const halfElf = draft({
+      race: 'half-elf',
+      raceChoices: { abilityBonuses: ['STR', 'DEX'], skills: ['insight', 'stealth'], languages: ['dwarvish'] },
+      background: 'acolyte',
+    })
+    expect(getStepPendingReasons(halfElf, 'race')).toEqual(['Meio-Elfo: Intuição já vem do antecedente Acólito — troque por outra perícia'])
+
+    const entertainer = draft({
+      class: 'bard',
+      classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['arcana', 'history', 'insight'], tools: ['lute', 'flute', 'drum'], expertiseItems: [] },
+      background: 'entertainer', backgroundChoices: { tools: ['lute'] },
+    })
+    expect(getStepPendingReasons(entertainer, 'background')).toContain('Artista: Alaúde já vem da classe Bardo — troque por outro instrumento')
+    expect(isStepComplete(entertainer, 'class')).toBe(true)
+
+    const perito = draft({ level: 4, asiChoices: [{ kind: 'feat', featId: 'perito' }], featSelections: { perito: { skills: ['athletics', 'stealth', 'arcana'] } } })
+    expect(getStepPendingReasons(perito, 'improvements')).toEqual([
+      'Aprimoramentos, talento Perito: Atletismo já vem do antecedente Marinheiro — troque por outra perícia ou ferramenta',
+    ])
+  })
+
+  it('ficha antiga com a perícia repetida carrega com a escolha no lugar e fica pendente', () => {
+    const old = sanitizeImportedDraft(JSON.parse(JSON.stringify(draft({
+      class: 'fighter',
+      classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['athletics', 'perception'], fightingStyle: 'defense' },
+    }))))!
+    expect(old.classChoices.skills).toEqual(['athletics', 'perception'])
+    expect(getPendingSteps(old).map(p => p.step)).toEqual(['class'])
+    expect(getStepPendingReasons(old, 'class')[0]).toBe('Guerreiro: Atletismo já vem do antecedente Marinheiro — troque por outra perícia')
   })
 
   it('atributos: compra de pontos com sobra', () => {
@@ -210,7 +281,7 @@ function corpus(): CharacterDraft[] {
     // Como classe adicional, com pré-requisito reprovado (atributos baixos) e aprovado.
     out.push(draft({
       class: 'fighter', level: 5,
-      classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['athletics', 'perception'], fightingStyle: 'defense', subclass: 'champion' },
+      classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['acrobatics', 'history'], fightingStyle: 'defense', subclass: 'champion' },
       abilityScores: { STR: 8, DEX: 8, CON: 8, INT: 8, WIS: 8, CHA: 8 },
       abilityMethod: 'custom',
       additionalClasses: [entry({ classId: cls.id, level: 2 })],
@@ -222,7 +293,7 @@ function corpus(): CharacterDraft[] {
     for (const sub of race.subraces) out.push(draft({ race: race.id, subrace: sub.id, raceChoices: {} }))
   }
   for (const feat of ['perito', 'poliglota', 'mestre-de-armas', 'atleta', 'resiliente', 'adepto-marcial', 'iniciado-em-magia']) {
-    out.push(draft({ race: 'human', subrace: 'variant-human', raceChoices: { abilityBonuses: ['STR', 'DEX'], skills: ['athletics'], feat } }))
+    out.push(draft({ race: 'human', subrace: 'variant-human', raceChoices: { abilityBonuses: ['STR', 'DEX'], skills: ['insight'], feat } }))
     out.push(draft({ level: 4, asiChoices: [{ kind: 'feat', featId: feat }] }))
     out.push(draft({ level: 4, asiChoices: [{ kind: 'feat', featId: feat, abilities: ['STR'] }] }))
   }
@@ -243,13 +314,90 @@ function corpus(): CharacterDraft[] {
     draft({ class: 'fighter', equipment: { method: 'standard', classResolutions: [{ optionIndex: 0, pickedIds: [] }, { optionIndex: 1, pickedIds: ['longsword'] }], rolledGold: null, purchasedItems: [] } }),
     draft({
       class: 'fighter', level: 8,
-      classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['athletics', 'perception'], fightingStyle: 'defense', subclass: 'eldritch-knight' },
+      classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['acrobatics', 'history'], fightingStyle: 'defense', subclass: 'eldritch-knight' },
       spellChoices: { cantrips: ['fire-bolt', 'light'], spells: ['magic-missile', 'sleep', 'charm-person', 'fog-cloud', 'shield', 'burning-hands'] },
     }),
   )
   out.push(...bardSecretsDrafts(), ...pactBoonDrafts(), ...draconicAncestorDrafts(), ...totemWarriorDrafts(), ...martialAdeptDrafts(), ...magicInitiateDrafts())
+  out.push(...repeatedProficiencyDrafts())
   return out
 }
+
+/**
+ * Perícia e ferramenta repetidas entre fontes (p. 125), com e sem a repetição: na lista da classe
+ * (pelo antecedente e pela raça), na subclasse, na classe da multiclasse, na raça, no antecedente e
+ * no talento (pelo espaço de ASI e pelo Humano Variante). O Domínio do Conhecimento repete sem
+ * pendência.
+ */
+function repeatedProficiencyDrafts(): CharacterDraft[] {
+  const fighter = (skills: string[], background: string) => draft({
+    class: 'fighter', background,
+    classChoices: { ...EMPTY_DRAFT.classChoices, skills, fightingStyle: 'defense' },
+  })
+  const bard = (subclassSkills: string[], bgTools: string[]) => draft({
+    class: 'bard', level: 3, background: 'entertainer', backgroundChoices: { tools: bgTools },
+    classChoices: {
+      ...EMPTY_DRAFT.classChoices,
+      skills: ['acrobatics', 'deception', 'insight'], tools: ['lute', 'flute', 'drum'], expertiseItems: ['deception', 'insight'],
+      subclass: 'college-of-lore', subclassExtras: { skills: subclassSkills },
+    },
+  })
+  const halfElf = (skills: string[]) => draft({
+    race: 'half-elf', background: 'acolyte',
+    raceChoices: { abilityBonuses: ['STR', 'DEX'], skills, languages: ['dwarvish'] },
+  })
+  const peritoAsi = (skills: string[]) => draft({ level: 4, asiChoices: [{ kind: 'feat', featId: 'perito' }], featSelections: { perito: { skills } } })
+  const peritoRace = (skills: string[]) => draft({
+    race: 'human', subrace: 'variant-human',
+    raceChoices: { abilityBonuses: ['STR', 'DEX'], skills: ['insight'], languages: ['elvish'], feat: 'perito' },
+    featSelections: { perito: { skills } },
+  })
+  const dwarf = (tools: string[]) => draft({
+    race: 'dwarf', subrace: 'hill-dwarf', raceChoices: { tools: ['smiths-tools'] },
+    class: 'fighter', level: 3,
+    classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['acrobatics', 'history'], fightingStyle: 'defense', subclass: 'battle-master', subclassExtras: { tools } },
+  })
+  const ranger = (skills: string[]) => draft({
+    class: 'barbarian', level: 3,
+    abilityScores: { STR: 15, DEX: 14, CON: 13, INT: 12, WIS: 13, CHA: 8 },
+    additionalClasses: [entry({ classId: 'ranger', level: 2, classChoices: { ...EMPTY_DRAFT.classChoices, skills, fightingStyle: 'archery' } })],
+    multiclass: true,
+  })
+  return [
+    fighter(['athletics', 'perception'], 'sailor'),
+    fighter(['athletics', 'perception'], 'acolyte'),
+    fighter(['intimidation', 'history'], 'acolyte'),
+    draft({ classChoices: { ...COMPLETE_DRAFT.classChoices, skills: ['intimidation', 'survival'] } }),
+    bard(['deception', 'arcana', 'history'], ['viol']),
+    bard(['arcana', 'history', 'nature'], ['lute']),
+    bard(['arcana', 'history', 'nature'], ['viol']),
+    draft({
+      class: 'cleric', background: 'sage',
+      classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['insight', 'medicine'], subclass: 'knowledge-domain', subclassExtras: { skills: ['arcana', 'history'], languages: ['elvish', 'dwarvish'] } },
+    }),
+    halfElf(['insight', 'stealth']),
+    halfElf(['arcana', 'stealth']),
+    peritoAsi(['athletics', 'stealth', 'arcana']),
+    peritoAsi(['nature', 'stealth', 'arcana']),
+    peritoRace(['insight', 'stealth', 'arcana']),
+    peritoRace(['nature', 'stealth', 'arcana']),
+    dwarf(['smiths-tools']),
+    dwarf(['masons-tools']),
+    ranger(['survival']),
+    ranger(['stealth']),
+  ]
+}
+
+describe('motivos × isStepComplete — perícia e ferramenta repetidas', () => {
+  const drafts = repeatedProficiencyDrafts()
+
+  it('o leque tem as etapas donas da escolha aprovadas e reprovadas', () => {
+    for (const step of ['race', 'class', 'improvements', 'background'] as const) {
+      expect(drafts.some(d => isStepComplete(d, step)), step).toBe(true)
+      expect(drafts.some(d => !isStepComplete(d, step)), step).toBe(true)
+    }
+  })
+})
 
 /**
  * Adepto Marcial (p. 167) sem, com uma, com duas manobras e com uma que o Mestre de Batalha já
@@ -262,7 +410,7 @@ function martialAdeptDrafts(): CharacterDraft[] {
     class: 'fighter', level: 4,
     classChoices: {
       ...structuredClone(EMPTY_DRAFT.classChoices),
-      skills: ['athletics', 'perception'], fightingStyle: 'defense', subclass,
+      skills: ['acrobatics', 'history'], fightingStyle: 'defense', subclass,
       progressionChoices: { 'battle-master-maneuvers-3': ['aparar', 'derrubar', 'inspirar'] },
     },
   })
@@ -274,7 +422,7 @@ function martialAdeptDrafts(): CharacterDraft[] {
       out.push(draft({
         ...fighter(subclass),
         race: 'human', subrace: 'variant-human',
-        raceChoices: { abilityBonuses: ['STR', 'DEX'], skills: ['athletics'], feat: 'adepto-marcial' },
+        raceChoices: { abilityBonuses: ['STR', 'DEX'], skills: ['insight'], feat: 'adepto-marcial' },
         featSelections,
       }))
     }
@@ -321,7 +469,7 @@ function magicInitiateDrafts(): CharacterDraft[] {
       out.push(draft({
         ...cls,
         race: 'human', subrace: 'variant-human',
-        raceChoices: { abilityBonuses: ['STR', 'DEX'], skills: ['athletics'], feat: 'iniciado-em-magia' },
+        raceChoices: { abilityBonuses: ['STR', 'DEX'], skills: ['insight'], feat: 'iniciado-em-magia' },
         featSelections,
       }))
     }
@@ -397,7 +545,7 @@ function totemWarriorDrafts(): CharacterDraft[] {
       out.push(draft({ class: 'barbarian', level, classChoices }))
       out.push(draft({
         class: 'fighter', level: level + 1,
-        classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['athletics', 'perception'], fightingStyle: 'defense', subclass: 'champion' },
+        classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['acrobatics', 'history'], fightingStyle: 'defense', subclass: 'champion' },
         abilityMethod: 'custom',
         abilityScores: { STR: 15, DEX: 14, CON: 13, INT: 12, WIS: 10, CHA: 8 },
         additionalClasses: [entry({ classId: 'barbarian', level, classChoices: { ...classChoices, skills: [] } })],

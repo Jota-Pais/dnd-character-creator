@@ -8,14 +8,16 @@ import {
 } from './raceUtils'
 import { getClass, getSubclass, getExpertiseCount, getSpellcastingSource } from './classUtils'
 import { allClassEntries } from './multiclassUtils'
-import { getBackground, resolveBackgroundItems } from './backgroundUtils'
+import { getBackground, resolveBackgroundItems, getSkillName, getToolName } from './backgroundUtils'
+import { getFeat } from './featUtils'
 import {
   getEquippedArmor, getArmor, getWeaponById, ALL_WEAPONS, getCarriedToolIds, getToolEquivalent, getItemName,
+  getToolById,
 } from './equipmentUtils'
 import {
   getFeatArmorProficiencies, getFeatWeaponProficiencies, getFeatSavingThrows,
   getClassFeatureSavingThrows,
-  getFeatGrantedSkills, getFeatGrantedTools, getFeatGrantedLanguages,
+  getFeatSelectionsByFeat, getFeatGrantedLanguages,
   getCheckProficiencyBonus, getPassiveScoreBonus, type CheckProficiency,
   getHalfProficiencySources, getBestHalfProficiencySource,
 } from './sheetEffects'
@@ -28,7 +30,9 @@ import {
  * Regra do livro: ao ganhar uma proficiência que já se possui de outra fonte,
  * escolhe-se outra do mesmo tipo. Aqui centralizamos, por fonte, as perícias e
  * ferramentas concedidas (fixas + escolhidas), para os pickers oferecerem só o
- * que ainda não se tem e a ficha refletir todas as proficiências reais.
+ * que ainda não se tem e a ficha refletir todas as proficiências reais. O que
+ * chega repetido depois (antecedente ou raça trocados, ficha antiga) não é
+ * apagado: vira pendência da etapa dona da escolha (getRepeatedProficiencies).
  */
 export type ProficiencySource = 'race' | 'class' | 'background'
 
@@ -59,128 +63,271 @@ function subclassExtrasOf(classId: string, choices: ClassChoiceSelections) {
   return getSubclass(cls, choices.subclass)?.extras ?? null
 }
 
-// ── Perícias ───────────────────────────────────────────────────────────────────
+// ── Concessões de perícia e ferramenta ─────────────────────────────────────────
 
-/** Perícias por slot de classe, para exclusão cruzada dentro da própria classe. */
-function classSkillSlots(draft: CharacterDraft): { slot: ClassSlot; skills: string[] }[] {
-  return classEntries(draft).flatMap(({ classId, choices }) => [
-    { slot: { classId, part: 'base' } as ClassSlot, skills: choices.skills },
-    { slot: { classId, part: 'subclass' } as ClassSlot, skills: choices.subclassExtras.skills ?? [] },
-  ])
+/**
+ * Quem concede uma perícia ou ferramenta. Cada slot de classe é um dono próprio (ver ClassSlot), e
+ * cada talento também: são as unidades entre as quais a proficiência não se repete.
+ */
+export type ProficiencyOwner =
+  | { kind: 'race' }
+  | { kind: 'class'; slot: ClassSlot }
+  | { kind: 'feat'; featId: string }
+  | { kind: 'background' }
+
+type ProficiencyKind = 'skill' | 'tool'
+
+/** Uma perícia ou ferramenta concedida, com o dono e o jeito como chegou. */
+type ProficiencyGrant = {
+  id: string
+  owner: ProficiencyOwner
+  /** Escolhida num seletor — é a que se troca quando repete (p. 125). A fixa vem com a fonte. */
+  chosen: boolean
+  /**
+   * Escolha que pode repetir o que o personagem já tem: as perícias do Domínio do Conhecimento
+   * dobram o bônus, e dobrar uma perícia que você já tem é o ponto (p. 66).
+   */
+  mayRepeat?: boolean
 }
 
-function raceSkills(draft: CharacterDraft): string[] {
+function grantsOf(ids: string[], owner: ProficiencyOwner, chosen: boolean): ProficiencyGrant[] {
+  return ids.map(id => ({ id, owner, chosen }))
+}
+
+function raceGrants(draft: CharacterDraft, kind: ProficiencyKind): ProficiencyGrant[] {
   const race = draft.race ? getRace(draft.race) : undefined
   if (!race) return []
   const subrace = draft.subrace ? (getSubrace(race, draft.subrace) ?? null) : null
-  return [...getRaceGrantedSkills(race, subrace), ...(draft.raceChoices.skills ?? [])]
+  const owner: ProficiencyOwner = { kind: 'race' }
+  return kind === 'skill'
+    ? [...grantsOf(getRaceGrantedSkills(race, subrace), owner, false), ...grantsOf(draft.raceChoices.skills ?? [], owner, true)]
+    : [...grantsOf(getRaceGrantedTools(race, subrace), owner, false), ...grantsOf(draft.raceChoices.tools ?? [], owner, true)]
 }
 
-function classSkills(draft: CharacterDraft): string[] {
-  return classSkillSlots(draft).flatMap(s => s.skills)
-}
-
-function backgroundSkills(draft: CharacterDraft): string[] {
-  const bg = draft.background ? getBackground(draft.background) : undefined
-  return bg?.skillProficiencies ?? []
-}
-
-// ── Ferramentas ────────────────────────────────────────────────────────────────
-
-/** Ferramentas por slot de classe: fixas + escolhidas da classe, fixas + escolhidas da subclasse. */
-function classToolSlots(draft: CharacterDraft): { slot: ClassSlot; tools: string[] }[] {
+/** Por classe da multiclasse: a lista da classe (fixas + escolhidas) e os extras da subclasse. */
+function classGrants(draft: CharacterDraft, kind: ProficiencyKind): ProficiencyGrant[] {
   return classEntries(draft).flatMap(({ classId, choices }) => {
+    const base: ProficiencyOwner = { kind: 'class', slot: { classId, part: 'base' } }
+    const subclass: ProficiencyOwner = { kind: 'class', slot: { classId, part: 'subclass' } }
     const extras = subclassExtrasOf(classId, choices)
+    if (kind === 'skill') {
+      const doubled = extras?.expertiseSkills?.from ?? []
+      return [
+        ...grantsOf(choices.skills, base, true),
+        ...(choices.subclassExtras.skills ?? []).map(id => ({ id, owner: subclass, chosen: true, mayRepeat: doubled.includes(id) })),
+      ]
+    }
     return [
-      {
-        slot: { classId, part: 'base' } as ClassSlot,
-        tools: [...(getClass(classId)?.toolProficiencies.granted ?? []), ...choices.tools],
-      },
-      {
-        slot: { classId, part: 'subclass' } as ClassSlot,
-        tools: [...(extras?.grantedTools ?? []), ...(choices.subclassExtras.tools ?? [])],
-      },
+      ...grantsOf(getClass(classId)?.toolProficiencies.granted ?? [], base, false),
+      ...grantsOf(choices.tools, base, true),
+      ...grantsOf(extras?.grantedTools ?? [], subclass, false),
+      ...grantsOf(choices.subclassExtras.tools ?? [], subclass, true),
     ]
   })
 }
 
-function raceTools(draft: CharacterDraft): string[] {
-  const race = draft.race ? getRace(draft.race) : undefined
-  if (!race) return []
-  const subrace = draft.subrace ? (getSubrace(race, draft.subrace) ?? null) : null
-  return [...getRaceGrantedTools(race, subrace), ...(draft.raceChoices.tools ?? [])]
-}
-
-function classTools(draft: CharacterDraft): string[] {
-  return classToolSlots(draft).flatMap(s => s.tools)
-}
-
-function backgroundTools(draft: CharacterDraft): string[] {
+function backgroundGrants(draft: CharacterDraft, kind: ProficiencyKind): ProficiencyGrant[] {
   const bg = draft.background ? getBackground(draft.background) : undefined
-  return [...(bg?.toolProficiencies ?? []), ...(draft.backgroundChoices.tools ?? [])]
+  if (!bg) return []
+  const owner: ProficiencyOwner = { kind: 'background' }
+  return kind === 'skill'
+    ? grantsOf(bg.skillProficiencies, owner, false)
+    : [...grantsOf(bg.toolProficiencies, owner, false), ...grantsOf(draft.backgroundChoices.tools ?? [], owner, true)]
 }
 
-// ── Consultas ──────────────────────────────────────────────────────────────────
-
-export function getSkillsBySource(draft: CharacterDraft): Record<ProficiencySource, string[]> {
-  return {
-    race: raceSkills(draft),
-    class: classSkills(draft),
-    background: backgroundSkills(draft),
-  }
+/** As escolhidas em talento (Perito), cada uma com o talento dono. */
+function featGrants(draft: CharacterDraft, kind: ProficiencyKind): ProficiencyGrant[] {
+  return getFeatSelectionsByFeat(draft, kind === 'skill' ? 'skills' : 'tools')
+    .flatMap(({ featId, ids }) => grantsOf(ids, { kind: 'feat', featId }, true))
 }
 
-export function getToolsBySource(draft: CharacterDraft): Record<ProficiencySource, string[]> {
-  return {
-    race: raceTools(draft),
-    class: classTools(draft),
-    background: backgroundTools(draft),
-  }
-}
-
-/** Perícias já concedidas por fontes DIFERENTES da informada (para excluir do picker). */
-export function getExcludedSkills(draft: CharacterDraft, source: ProficiencySource): string[] {
-  const bySource = getSkillsBySource(draft)
-  return uniq([
-    ...ALL_SOURCES.filter(s => s !== source).flatMap(s => bySource[s]),
-    ...getFeatGrantedSkills(draft),
-  ])
-}
-
-/** Ferramentas já concedidas por fontes DIFERENTES da informada (para excluir do picker). */
-export function getExcludedTools(draft: CharacterDraft, source: ProficiencySource): string[] {
-  const bySource = getToolsBySource(draft)
-  return uniq([
-    ...ALL_SOURCES.filter(s => s !== source).flatMap(s => bySource[s]),
-    ...getFeatGrantedTools(draft),
-  ])
+/** Todas as concessões de um tipo, na ordem da ficha: raça, classes, antecedente, talentos. */
+function proficiencyGrants(draft: CharacterDraft, kind: ProficiencyKind): ProficiencyGrant[] {
+  return [
+    ...raceGrants(draft, kind),
+    ...classGrants(draft, kind),
+    ...backgroundGrants(draft, kind),
+    ...featGrants(draft, kind),
+  ]
 }
 
 function sameSlot(a: ClassSlot, b: ClassSlot): boolean {
   return a.classId === b.classId && a.part === b.part
 }
 
+function sameOwner(a: ProficiencyOwner, b: ProficiencyOwner): boolean {
+  if (a.kind === 'class' && b.kind === 'class') return sameSlot(a.slot, b.slot)
+  if (a.kind === 'feat' && b.kind === 'feat') return a.featId === b.featId
+  return a.kind === b.kind
+}
+
+function idsWhere(grants: ProficiencyGrant[], keep: (owner: ProficiencyOwner) => boolean): string[] {
+  return grants.filter(g => keep(g.owner)).map(g => g.id)
+}
+
+function bySource(grants: ProficiencyGrant[]): Record<ProficiencySource, string[]> {
+  return {
+    race: idsWhere(grants, o => o.kind === 'race'),
+    class: idsWhere(grants, o => o.kind === 'class'),
+    background: idsWhere(grants, o => o.kind === 'background'),
+  }
+}
+
+// ── Consultas ──────────────────────────────────────────────────────────────────
+
+export function getSkillsBySource(draft: CharacterDraft): Record<ProficiencySource, string[]> {
+  return bySource(proficiencyGrants(draft, 'skill'))
+}
+
+export function getToolsBySource(draft: CharacterDraft): Record<ProficiencySource, string[]> {
+  return bySource(proficiencyGrants(draft, 'tool'))
+}
+
+/** Perícias já concedidas por fontes DIFERENTES da informada, talentos inclusos (para excluir do picker). */
+export function getExcludedSkills(draft: CharacterDraft, source: ProficiencySource): string[] {
+  return uniq(idsWhere(proficiencyGrants(draft, 'skill'), o => o.kind !== source))
+}
+
+/** Ferramentas já concedidas por fontes DIFERENTES da informada, talentos inclusos (para excluir do picker). */
+export function getExcludedTools(draft: CharacterDraft, source: ProficiencySource): string[] {
+  return uniq(idsWhere(proficiencyGrants(draft, 'tool'), o => o.kind !== source))
+}
+
+function notThisClassSlot(slot: ClassSlot) {
+  return (owner: ProficiencyOwner) => !(owner.kind === 'class' && sameSlot(owner.slot, slot))
+}
+
 /**
- * Perícias fora de alcance de UM slot de classe: raça, antecedente e todos os outros slots de
- * classe (a outra parte da mesma classe e as demais classes da multiclasse).
+ * Perícias fora de alcance de UM slot de classe: raça, antecedente, talentos e todos os outros
+ * slots de classe (a outra parte da mesma classe e as demais classes da multiclasse).
  */
 export function getExcludedSkillsForClassSlot(draft: CharacterDraft, slot: ClassSlot): string[] {
-  return uniq([
-    ...raceSkills(draft),
-    ...backgroundSkills(draft),
-    ...getFeatGrantedSkills(draft),
-    ...classSkillSlots(draft).filter(s => !sameSlot(s.slot, slot)).flatMap(s => s.skills),
-  ])
+  return uniq(idsWhere(proficiencyGrants(draft, 'skill'), notThisClassSlot(slot)))
 }
 
 /** Idem para ferramentas. */
 export function getExcludedToolsForClassSlot(draft: CharacterDraft, slot: ClassSlot): string[] {
-  return uniq([
-    ...raceTools(draft),
-    ...backgroundTools(draft),
-    ...getFeatGrantedTools(draft),
-    ...classToolSlots(draft).filter(s => !sameSlot(s.slot, slot)).flatMap(s => s.tools),
-  ])
+  return uniq(idsWhere(proficiencyGrants(draft, 'tool'), notThisClassSlot(slot)))
+}
+
+// ── Proficiência repetida ──────────────────────────────────────────────────────
+
+/**
+ * Uma perícia ou ferramenta escolhida que outra fonte já dá. O livro manda escolher outra (p. 125);
+ * os seletores já escondem o que se tem, mas a outra fonte pode chegar depois (o antecedente
+ * trocado, a raça trocada) ou vir de ficha antiga. A ficha não apaga a escolha: avisa e segura a
+ * etapa dona dela até trocar.
+ */
+export type RepeatedProficiency = {
+  kind: ProficiencyKind
+  id: string
+  /** O slot que escolheu: é ele que tem de trocar. */
+  owner: ProficiencyOwner
+  /** De onde mais a proficiência já vem, pronto para a frase: "do antecedente Marinheiro". */
+  source: string
+}
+
+/**
+ * A ordem do wizard entre os donos (raça e o talento dela, classes, talentos dos Aprimoramentos,
+ * antecedente). Entre duas escolhas repetidas, troca a que veio depois — a proficiência que se
+ * "ganharia de novo".
+ */
+function wizardRank(draft: CharacterDraft, owner: ProficiencyOwner): number {
+  switch (owner.kind) {
+    case 'race': return 0
+    case 'feat': return owner.featId === draft.raceChoices.feat ? 1 : 3
+    case 'class': return 2
+    case 'background': return 4
+  }
+}
+
+/** "da raça Meio-Orc", "da classe Bardo (Colégio do Conhecimento)", "do talento Perito", "do antecedente Marinheiro". */
+function describeOwner(draft: CharacterDraft, owner: ProficiencyOwner): string {
+  switch (owner.kind) {
+    case 'race': {
+      const race = draft.race ? getRace(draft.race) : undefined
+      const subrace = race && draft.subrace ? getSubrace(race, draft.subrace) : undefined
+      return `da raça ${subrace?.name ?? race?.name ?? draft.race}`
+    }
+    case 'class': {
+      const cls = getClass(owner.slot.classId)
+      const name = cls?.name ?? owner.slot.classId
+      const subclassId = classEntries(draft).find(e => e.classId === owner.slot.classId)?.choices.subclass
+      const sub = owner.slot.part === 'subclass' && cls && subclassId ? getSubclass(cls, subclassId) : undefined
+      return `da classe ${name}${sub ? ` (${sub.name})` : ''}`
+    }
+    case 'feat':
+      return `do talento ${getFeat(owner.featId)?.name ?? owner.featId}`
+    case 'background': {
+      const bg = draft.background ? getBackground(draft.background) : undefined
+      return `do antecedente ${bg?.name ?? draft.background}`
+    }
+  }
+}
+
+function findRepeated(draft: CharacterDraft, kind: ProficiencyKind): RepeatedProficiency[] {
+  // sort é estável: dentro do mesmo passo, vale a ordem da ficha (classe inicial antes das adicionais).
+  const ordered = [...proficiencyGrants(draft, kind)]
+    .sort((a, b) => wizardRank(draft, a.owner) - wizardRank(draft, b.owner))
+  return ordered.flatMap((grant, i) => {
+    if (!grant.chosen || grant.mayRepeat) return []
+    const same = (g: ProficiencyGrant) => g.id === grant.id && !sameOwner(g.owner, grant.owner)
+    // A fixa tem a palavra final; senão, a escolha de outra fonte feita antes.
+    const other = ordered.find(g => !g.chosen && same(g)) ?? ordered.slice(0, i).find(same)
+    return other ? [{ kind, id: grant.id, owner: grant.owner, source: describeOwner(draft, other.owner) }] : []
+  })
+}
+
+/**
+ * Perícias e ferramentas escolhidas que outra fonte já dá — fixa, ou escolhida num passo anterior.
+ * As etapas donas (Raça, Classe, Aprimoramentos, Antecedente) reprovam enquanto houver uma delas
+ * (draftValidation), com o motivo de `formatRepeatedProficiency` (pendingReasons).
+ */
+export function getRepeatedProficiencies(draft: CharacterDraft): RepeatedProficiency[] {
+  return [...findRepeated(draft, 'skill'), ...findRepeated(draft, 'tool')]
+}
+
+/** As repetidas que alguma das classes do personagem escolheu (lista da classe ou subclasse). */
+export function getClassRepeatedProficiencies(draft: CharacterDraft, classId?: string): RepeatedProficiency[] {
+  return getRepeatedProficiencies(draft)
+    .filter(r => r.owner.kind === 'class' && (classId === undefined || r.owner.slot.classId === classId))
+}
+
+/** As repetidas que a raça escolheu (meio-elfo, Humano Variante, ferramenta do anão). */
+export function getRaceRepeatedProficiencies(draft: CharacterDraft): RepeatedProficiency[] {
+  return getRepeatedProficiencies(draft).filter(r => r.owner.kind === 'race')
+}
+
+/** As repetidas que o antecedente escolheu (a ferramenta à escolha). */
+export function getBackgroundRepeatedProficiencies(draft: CharacterDraft): RepeatedProficiency[] {
+  return getRepeatedProficiencies(draft).filter(r => r.owner.kind === 'background')
+}
+
+/** As repetidas que um dos talentos informados escolheu (Perito). */
+export function getFeatRepeatedProficiencies(draft: CharacterDraft, featIds: string[]): RepeatedProficiency[] {
+  return getRepeatedProficiencies(draft).filter(r => r.owner.kind === 'feat' && featIds.includes(r.owner.featId))
+}
+
+/** "Atletismo já vem do antecedente Marinheiro — troque por outra perícia": o aviso do seletor e o motivo da pendência. */
+export function formatRepeatedProficiency(r: RepeatedProficiency): string {
+  const name = r.kind === 'skill' ? getSkillName(r.id) : getToolName(r.id)
+  const instead = r.owner.kind === 'feat' ? 'outra perícia ou ferramenta'
+    : r.kind === 'skill' ? 'outra perícia'
+      : getToolById(r.id)?.category === 'musical-instrument' ? 'outro instrumento' : 'outra ferramenta'
+  // "Ferramentas de Ferreiro", "Suprimentos de Alquimista", "Veículos Terrestres": nome no plural.
+  const verb = /^\S+s\b/.test(name) ? 'vêm' : 'vem'
+  return `${name} já ${verb} ${r.source} — troque por ${instead}`
+}
+
+/**
+ * As repetidas de UM seletor (a raça, um slot de classe, o antecedente, um talento), por id, com o
+ * aviso pronto: a escolha continua marcada no seletor, com o aviso, até o jogador trocar. Ids de
+ * perícia e de ferramenta não colidem, então um mapa só serve aos dois.
+ */
+export function getRepeatedProficiencyNotes(draft: CharacterDraft, owner: ProficiencyOwner): Record<string, string> {
+  return Object.fromEntries(getRepeatedProficiencies(draft)
+    .filter(r => sameOwner(r.owner, owner))
+    .map(r => [r.id, formatRepeatedProficiency(r)]))
 }
 
 // ── Exclusões dos pickers de talento ───────────────────────────────────────────
@@ -217,14 +364,12 @@ export function getExcludedWeaponsForFeat(draft: CharacterDraft, featId: string)
 
 /** Todas as perícias em que o personagem é proficiente (união das fontes). */
 export function getAllGrantedSkills(draft: CharacterDraft): string[] {
-  const b = getSkillsBySource(draft)
-  return uniq([...b.race, ...b.class, ...b.background, ...getFeatGrantedSkills(draft)])
+  return uniq(proficiencyGrants(draft, 'skill').map(g => g.id))
 }
 
 /** Todas as ferramentas em que o personagem é proficiente (união das fontes). */
 export function getAllGrantedTools(draft: CharacterDraft): string[] {
-  const b = getToolsBySource(draft)
-  return uniq([...b.race, ...b.class, ...b.background, ...getFeatGrantedTools(draft)])
+  return uniq(proficiencyGrants(draft, 'tool').map(g => g.id))
 }
 
 // ── Especialização (bônus de proficiência dobrado) ─────────────────────────────
@@ -385,6 +530,12 @@ export type ClassSlotProficiencies = {
   grantedSkills: string[]
   grantedTools: string[]
   excludedExpertise: string[]
+  /**
+   * Perícias e ferramentas escolhidas em cada slot que outra fonte já dá (id → aviso): ficam
+   * marcadas, com o aviso, para o jogador trocar — a etapa reprova até lá (p. 125).
+   */
+  repeatedBase: Record<string, string>
+  repeatedSubclass: Record<string, string>
 }
 
 export function getClassSlotProficiencies(
@@ -402,6 +553,8 @@ export function getClassSlotProficiencies(
     grantedSkills: getAllGrantedSkills(draft),
     grantedTools: getAllGrantedTools(draft),
     excludedExpertise: expertiseOutsideClassPicker(draft, classId),
+    repeatedBase: getRepeatedProficiencyNotes(draft, { kind: 'class', slot: base }),
+    repeatedSubclass: getRepeatedProficiencyNotes(draft, { kind: 'class', slot: subclass }),
   }
 }
 

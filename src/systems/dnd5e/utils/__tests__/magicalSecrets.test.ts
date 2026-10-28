@@ -277,7 +277,7 @@ describe('Segredos truque não passam da coluna Truques Conhecidos', () => {
       additionalClasses: [{
         classId: 'bard',
         level: 18,
-        classChoices: { ...bardClassChoices('college-of-valor', sixCantripSecrets), skills: ['performance'], tools: [] },
+        classChoices: { ...bardClassChoices('college-of-valor', sixCantripSecrets), skills: ['performance'], tools: ['lute'] },
         spellChoices: { cantrips: [], spells: [] },
         asiChoices: [],
         hpRolls: [],
@@ -337,7 +337,7 @@ describe('Segredo acima do nível que o bardo conjura reprova a etapa Classe (pp
         classChoices: {
           ...bardClassChoices('college-of-lore', { 'lore-magical-secrets-6': ['revivify', 'haste'], 'bard-magical-secrets-10': ['fireball', 'wish'] }),
           skills: ['performance'],
-          tools: [],
+          tools: ['lute'],
         },
         spellChoices: { cantrips: [], spells: [] },
         asiChoices: [],
@@ -403,7 +403,7 @@ describe('Segredos nos níveis 14 e 18 e na multiclasse', () => {
         classChoices: {
           ...bardClassChoices('college-of-lore', { 'lore-magical-secrets-6': ['revivify', 'haste'], 'bard-magical-secrets-10': ['fire-bolt', 'fireball'] }),
           skills: ['performance'],
-          tools: [],
+          tools: ['lute'],
         },
         spellChoices: { cantrips: BARD_CANTRIPS.slice(0, 3), spells: POOL.slice(0, 13) },
         asiChoices: [],

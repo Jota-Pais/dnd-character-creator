@@ -15,6 +15,7 @@ import { getPrimaryLevel } from '../../utils/multiclassUtils'
 import { getEntrySpellcasting, getCantripsNeeded } from '../../utils/spellUtils'
 import { ABILITY_LABELS } from '../../utils/abilityScoreUtils'
 import { getClassSlotProficiencies } from '../../utils/proficiencyUtils'
+import { getToolName } from '../../utils/backgroundUtils'
 import { getFeatManeuvers, getTakenFightingStyles } from '../../utils/sheetEffects'
 import { ClassCard } from '../class/ClassCard'
 import { ClassChoicePanel } from '../class/ClassChoicePanel'
@@ -153,7 +154,7 @@ export function ClassStep() {
                   {selectedClass.toolProficiencies.granted.length > 0 && (
                     <Stat
                       label="🔧 Ferramentas"
-                      value={selectedClass.toolProficiencies.granted.join(', ')}
+                      value={selectedClass.toolProficiencies.granted.map(getToolName).join(', ')}
                     />
                   )}
                   {activeCaster && casting && (

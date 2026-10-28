@@ -80,6 +80,15 @@ describe('ClassStep: perícia repetida por outra fonte', () => {
   })
 })
 
+describe('ClassStep: card de proficiências da classe', () => {
+  it('ferramenta fixa da classe sai com o nome da tabela, não com o id', () => {
+    useCharacterStore.setState({ draft: { ...structuredClone(EMPTY_DRAFT), race: 'human', class: 'druid' } })
+    const { container } = render(<ClassStep />)
+    expect(container.textContent).toContain('Kit de Herbalismo')
+    expect(container.textContent).not.toContain('herbalism-kit')
+  })
+})
+
 // Decisão de 2026-10-26: slot de progressão de 1 escolha não cumulativo é rádio — clicar noutra
 // opção troca direto, sem desmarcar antes. O de N escolhas mantém o limite.
 

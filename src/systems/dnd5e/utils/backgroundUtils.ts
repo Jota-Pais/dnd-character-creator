@@ -12,6 +12,9 @@ export const BACKGROUNDS: Background[] = backgroundsData as Background[]
 type Tool = { id: string; name: string; category: string }
 const ALL_TOOLS: Tool[] = toolsData as Tool[]
 
+/** Todas as ferramentas da tabela de equipamento (p. 154-156), na ordem de tools.json. */
+export const TOOLS: readonly Tool[] = ALL_TOOLS
+
 export type { BackgroundChoice }
 
 export function getBackground(id: string): Background | undefined {

@@ -16,6 +16,13 @@ export type BackgroundChoice = BackgroundToolChoice | BackgroundLanguageChoice
 export type BackgroundChoiceSelections = {
   languages?: string[]
   tools?: string[]
+  /**
+   * A perícia ou ferramenta escolhida no lugar da fixa do antecedente que outra fonte também dá
+   * fixa (p. 125: Meio-Orc e Soldado com Intimidação). Opcional; só valem as que ainda têm a
+   * repetição que as abriu (`getBackgroundSubstitutes`), as outras ficam guardadas sem efeito.
+   */
+  substituteSkills?: string[]
+  substituteTools?: string[]
   /** Item escolhido em cada `item-choice` do equipamento do antecedente: key → id do item. */
   items?: Record<string, string>
 }

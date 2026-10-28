@@ -14,9 +14,14 @@ import {
   getBackgroundUnproficientTools,
   formatUnproficientTool,
   getRepeatedProficiencyNotes,
+  getBackgroundFixedOverlaps,
+  getAllGrantedSkills,
+  getAllGrantedTools,
 } from '../../utils/proficiencyUtils'
 import { BackgroundCard } from '../background/BackgroundCard'
 import { BackgroundChoicePanel } from '../background/BackgroundChoicePanel'
+import { SubstituteProficiencyPicker } from '../background/SubstituteProficiencyPicker'
+import { RepetitionsCausedNotes } from '../common/RepetitionsCausedNotes'
 import { StepNav } from '../../../../components/wizard/StepNav'
 import { formatPendingHint, getStepPendingReasons } from '../../utils/pendingReasons'
 
@@ -42,6 +47,11 @@ export function BackgroundStep() {
   const langExcluded = getExcludedLanguages(draft, 'background')
   const toolExcluded = getExcludedTools(draft, 'background')
   const repeated = getRepeatedProficiencyNotes(draft, { kind: 'background' })
+  // Fixo × fixo com a raça ou a classe (Meio-Orc e Soldado com Intimidação): a substituta opcional
+  // da p. 125. O picker não oferece o que o personagem já tem, menos a que ele mesmo marcou.
+  const overlaps = getBackgroundFixedOverlaps(draft)
+  const substituteSkills = draft.backgroundChoices.substituteSkills ?? []
+  const substituteTools = draft.backgroundChoices.substituteTools ?? []
   // Item do antecedente sem a proficiência (Dados de Osso com proficiência em Baralho): só avisa,
   // como na Revisão e na ficha — a regra deixa usar, sem o bônus (p. 156).
   const unproficientTools = getBackgroundUnproficientTools(draft)
@@ -147,6 +157,38 @@ export function BackgroundStep() {
                   )}
                 </div>
               </div>
+
+              {/* O que o antecedente repetiu em escolha de outra etapa (a pendência fica lá) */}
+              <RepetitionsCausedNotes source={{ kind: 'background' }} />
+
+              {/* Fixo × fixo: a substituta opcional (p. 125) */}
+              {(overlaps.skills.length > 0 || overlaps.tools.length > 0) && (
+                <div className="rounded-xl border border-parchment-900 bg-parchment-950/60 p-4 space-y-4">
+                  <SectionTitle>Proficiência repetida</SectionTitle>
+                  {overlaps.skills.length > 0 && (
+                    <SubstituteProficiencyPicker
+                      kind="skill"
+                      overlaps={overlaps.skills}
+                      selected={substituteSkills}
+                      excluded={getAllGrantedSkills(draft).filter(id => !substituteSkills.includes(id))}
+                      repeated={repeated}
+                      accent={accent}
+                      onChange={ids => updateBackgroundChoices({ substituteSkills: ids })}
+                    />
+                  )}
+                  {overlaps.tools.length > 0 && (
+                    <SubstituteProficiencyPicker
+                      kind="tool"
+                      overlaps={overlaps.tools}
+                      selected={substituteTools}
+                      excluded={getAllGrantedTools(draft).filter(id => !substituteTools.includes(id))}
+                      repeated={repeated}
+                      accent={accent}
+                      onChange={ids => updateBackgroundChoices({ substituteTools: ids })}
+                    />
+                  )}
+                </div>
+              )}
 
               {/* Característica de antecedente */}
               <div className="rounded-xl border border-parchment-900 bg-parchment-950/60 p-4">

@@ -78,3 +78,61 @@ describe('BackgroundStep: idioma repetido por outra fonte', () => {
     expect(container.textContent).not.toContain('Élfico já vem')
   })
 })
+
+// Decisão de 2026-10-28: trocar o antecedente que repete uma perícia escolhida na classe avisa já
+// aqui, com o atalho para ir trocar lá (a pendência continua na etapa Classe).
+describe('BackgroundStep: repetição causada em outra etapa', () => {
+  it('Marinheiro com Atletismo e Percepção escolhidas no guerreiro: avisa e leva à Classe', () => {
+    useCharacterStore.setState({
+      draft: {
+        ...structuredClone(EMPTY_DRAFT),
+        race: 'human',
+        class: 'fighter',
+        classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), skills: ['athletics', 'perception'], fightingStyle: 'defense' },
+        background: 'sailor',
+      },
+      currentStep: 'background',
+    })
+    const { container, getAllByRole } = render(<BackgroundStep />)
+    expect(container.textContent).toContain(
+      '⚠ Atletismo, que o antecedente também dá, já está entre as escolhas da classe Guerreiro — troque lá por outra perícia',
+    )
+    fireEvent.click(getAllByRole('button', { name: 'Trocar em Classe →' })[0])
+    expect(useCharacterStore.getState().currentStep).toBe('class')
+  })
+})
+
+// p. 125: Meio-Orc e Soldado dão Intimidação fixa. Sem escolha a trocar, o antecedente abre a
+// substituta opcional (decisão de 2026-10-28).
+describe('BackgroundStep: substituta do fixo × fixo', () => {
+  it('mostra de onde vem a repetida e deixa escolher outra perícia, sem pendurar a etapa', () => {
+    useCharacterStore.setState({
+      draft: {
+        ...structuredClone(EMPTY_DRAFT),
+        race: 'half-orc',
+        class: 'barbarian',
+        classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), skills: ['animal-handling', 'survival'] },
+        background: 'soldier',
+        backgroundChoices: { tools: ['dice-set'], items: { 'gaming-set': 'bone-dice' } },
+      },
+    })
+    const { container, getByRole } = render(<BackgroundStep />)
+    expect(container.textContent).toContain('Proficiência repetida')
+    expect(container.textContent).toContain('Intimidação vem também da raça Meio-Orc.')
+    expect(container.textContent).not.toContain('⚠ Soldado')
+    // O que o personagem já tem vem com ✓ e travado.
+    expect((getByRole('button', { name: '✓ Atletismo' }) as HTMLButtonElement).disabled).toBe(true)
+
+    fireEvent.click(getByRole('button', { name: 'Persuasão' }))
+    expect(useCharacterStore.getState().draft.backgroundChoices.substituteSkills).toEqual(['persuasion'])
+    // Escolha de 1: outra troca direto.
+    fireEvent.click(getByRole('button', { name: 'Enganação' }))
+    expect(useCharacterStore.getState().draft.backgroundChoices.substituteSkills).toEqual(['deception'])
+  })
+
+  it('sem fixo × fixo, a seção não aparece', () => {
+    useCharacterStore.setState({ draft: { ...structuredClone(EMPTY_DRAFT), race: 'human', background: 'soldier' } })
+    const { container } = render(<BackgroundStep />)
+    expect(container.textContent).not.toContain('Proficiência repetida')
+  })
+})

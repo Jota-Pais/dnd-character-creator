@@ -38,6 +38,11 @@ import {
   getFeatRepeatedProficiencies,
   formatRepeatedProficiency,
   getRepeatedProficiencyNotes,
+  getRepetitionsCausedBy,
+  formatRepetitionCaused,
+  getOwnerStep,
+  getBackgroundFixedOverlaps,
+  getBackgroundSubstitutes,
 } from '../proficiencyUtils'
 import { getWeaponById } from '../equipmentUtils'
 import { EMPTY_CLASS_CHOICES } from '../../types/class'
@@ -999,6 +1004,35 @@ describe('proficiência repetida (p. 125)', () => {
       .toEqual(['Ferramentas de Ferreiro já vêm da raça Anão da Colina — troque por outra ferramenta'])
   })
 
+  // Decisão de 2026-10-28: a etapa da fonte (antecedente, raça) avisa da repetição que causou na
+  // escolha de outra etapa, com o caminho até lá. A pendência continua na etapa da escolha.
+  it('o antecedente sabe o que repetiu na classe, e em qual etapa trocar', () => {
+    const sailor = fighter('sailor')
+    const caused = getRepetitionsCausedBy(sailor, { kind: 'background' })
+    expect(caused.map(r => r.id)).toEqual(['athletics', 'perception'])
+    expect(formatRepetitionCaused(sailor, caused[0]))
+      .toBe('Atletismo, que o antecedente também dá, já está entre as escolhas da classe Guerreiro — troque lá por outra perícia')
+    expect(getOwnerStep(sailor, caused[0].owner)).toBe('class')
+    // Quem escolheu não "causou": a classe não avisa de si mesma.
+    expect(getRepetitionsCausedBy(sailor, { kind: 'class', slot: { classId: 'fighter', part: 'base' } })).toEqual([])
+  })
+
+  it('a raça também: Intimidação fixa do Meio-Orc repete a escolhida no bárbaro', () => {
+    const d = draft({
+      race: 'half-orc', class: 'barbarian', background: 'sailor',
+      classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['intimidation', 'survival'] },
+    })
+    expect(getRepetitionsCausedBy(d, { kind: 'race' }).map(r => formatRepetitionCaused(d, r)))
+      .toEqual(['Intimidação, que a raça também dá, já está entre as escolhas da classe Bárbaro — troque lá por outra perícia'])
+    expect(getRepetitionsCausedBy(d, { kind: 'background' })).toEqual([])
+  })
+
+  it('talento do Humano Variante fica na etapa Raça; o de Aprimoramentos, lá', () => {
+    const d = draft({ raceChoices: { feat: 'perito' } })
+    expect(getOwnerStep(d, { kind: 'feat', featId: 'perito' })).toBe('race')
+    expect(getOwnerStep(d, { kind: 'feat', featId: 'poliglota' })).toBe('improvements')
+  })
+
   // Decisão de 2026-10-28: o idioma escolhido que outra fonte passou a dar segue a mesma regra —
   // fica no draft, com o aviso, e a etapa dona dele fica pendente (antes era apagado em silêncio).
   it('idioma do antecedente que a raça trocada passou a dar troca no antecedente', () => {
@@ -1060,5 +1094,56 @@ describe('proficiência repetida (p. 125)', () => {
     expect(getRepeatedProficiencyNotes(d, { kind: 'class', slot: { classId: 'fighter', part: 'subclass' } })).toEqual({})
     expect(getRepeatedProficiencyNotes(d, { kind: 'background' })).toEqual({})
     expect(getClassSlotProficiencies(d, 'fighter')).toMatchObject({ repeatedBase: notes, repeatedSubclass: {} })
+  })
+})
+
+// p. 125: "se um personagem fosse obter a mesma proficiência de duas fontes diferentes, ele pode
+// escolher uma proficiência diferente do mesmo tipo". Fixo × fixo não tem escolha a trocar: o
+// antecedente abre uma substituta opcional (decisão de 2026-10-28).
+describe('fixo × fixo: a substituta do antecedente (p. 125)', () => {
+  const halfOrcSoldier = (over: Partial<CharacterDraft> = {}): CharacterDraft => draft({
+    race: 'half-orc', class: 'barbarian', background: 'soldier',
+    classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['animal-handling', 'survival'] },
+    ...over,
+  })
+
+  it('Meio-Orc e Soldado com Intimidação: uma perícia substituta, com a fonte', () => {
+    expect(getBackgroundFixedOverlaps(halfOrcSoldier())).toEqual({
+      skills: [{ id: 'intimidation', source: 'da raça Meio-Orc' }],
+      tools: [],
+    })
+    expect(getRepeatedProficiencies(halfOrcSoldier())).toEqual([])
+  })
+
+  it('a substituta escolhida vira proficiência do antecedente', () => {
+    const d = halfOrcSoldier({ backgroundChoices: { substituteSkills: ['persuasion'] } })
+    expect(getBackgroundSubstitutes(d)).toEqual({ skills: ['persuasion'], tools: [] })
+    expect(getAllGrantedSkills(d)).toContain('persuasion')
+    expect(getSkillsBySource(d).background).toEqual(['athletics', 'intimidation', 'persuasion'])
+  })
+
+  it('sem a repetição (outra raça), a substituta fica guardada mas não vale', () => {
+    const d = halfOrcSoldier({ race: 'human', backgroundChoices: { substituteSkills: ['persuasion'] } })
+    expect(getBackgroundFixedOverlaps(d).skills).toEqual([])
+    expect(getBackgroundSubstitutes(d).skills).toEqual([])
+    expect(getAllGrantedSkills(d)).not.toContain('persuasion')
+    expect(d.backgroundChoices.substituteSkills).toEqual(['persuasion'])
+  })
+
+  it('ferramenta: o druida e o Eremita com o Kit de Herbalismo', () => {
+    const d = draft({ class: 'druid', background: 'hermit' })
+    expect(getBackgroundFixedOverlaps(d).tools).toEqual([{ id: 'herbalism-kit', source: 'da classe Druida' }])
+    const chosen = { ...d, backgroundChoices: { substituteTools: ['smiths-tools'] } }
+    expect(getAllGrantedTools(chosen)).toContain('smiths-tools')
+  })
+
+  it('escolhida em vez de fixa não é fixo × fixo: segue a regra da repetida', () => {
+    // Atletismo escolhido no guerreiro + Soldado: troca na classe, não abre substituta.
+    const d = draft({
+      race: 'human', class: 'fighter', background: 'soldier',
+      classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['athletics', 'perception'] },
+    })
+    expect(getBackgroundFixedOverlaps(d).skills).toEqual([])
+    expect(getClassRepeatedProficiencies(d).map(r => r.id)).toEqual(['athletics'])
   })
 })

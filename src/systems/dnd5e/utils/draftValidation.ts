@@ -187,6 +187,10 @@ function sanitizeBackgroundChoices(raw: unknown, background: Background): Backgr
   if (languages.length > 0) choices.languages = languages
   const tools = toStringArray(raw.tools)
   if (tools.length > 0) choices.tools = tools
+  const substituteSkills = toStringArray(raw.substituteSkills)
+  if (substituteSkills.length > 0) choices.substituteSkills = substituteSkills
+  const substituteTools = toStringArray(raw.substituteTools)
+  if (substituteTools.length > 0) choices.substituteTools = substituteTools
   // Item escolhido no equipamento do antecedente: só chaves e opções que o antecedente tem.
   if (isRecord(raw.items)) {
     const items = sanitizeBackgroundItemSelections(background, raw.items)

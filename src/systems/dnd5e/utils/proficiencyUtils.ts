@@ -1,4 +1,4 @@
-import type { CharacterDraft, ClassEntry } from '../types/character'
+import type { CharacterDraft, ClassEntry, WizardStep } from '../types/character'
 import type { ClassChoiceSelections, ArmorProficiency } from '../types/class'
 import type { AbilityScore } from '../types/race'
 import type { Armor, ArmorCategory, Tool, Weapon } from '../types/equipment'
@@ -161,9 +161,48 @@ function backgroundGrants(draft: CharacterDraft, kind: ProficiencyKind): Profici
   if (!bg) return []
   const owner: ProficiencyOwner = { kind: 'background' }
   if (kind === 'language') return grantsOf(draft.backgroundChoices.languages ?? [], owner, true)
+  const substitutes = getBackgroundSubstitutes(draft)
   return kind === 'skill'
-    ? grantsOf(bg.skillProficiencies, owner, false)
-    : [...grantsOf(bg.toolProficiencies, owner, false), ...grantsOf(draft.backgroundChoices.tools ?? [], owner, true)]
+    ? [...grantsOf(bg.skillProficiencies, owner, false), ...grantsOf(substitutes.skills, owner, true)]
+    : [
+      ...grantsOf(bg.toolProficiencies, owner, false),
+      ...grantsOf(draft.backgroundChoices.tools ?? [], owner, true),
+      ...grantsOf(substitutes.tools, owner, true),
+    ]
+}
+
+/**
+ * Fixo × fixo (p. 125): a perícia ou ferramenta fixa do antecedente que a raça ou a classe também
+ * dá fixa — o Meio-Orc e o Soldado com Intimidação, o druida e o Eremita com o Kit de Herbalismo.
+ * Não há escolha a trocar (nada pendura), mas o livro deixa escolher outra do mesmo tipo no lugar:
+ * cada uma abre uma substituta no antecedente. `source` é a outra fonte, pronta para a frase.
+ */
+export type BackgroundOverlap = { id: string; source: string }
+
+export function getBackgroundFixedOverlaps(draft: CharacterDraft): { skills: BackgroundOverlap[]; tools: BackgroundOverlap[] } {
+  const bg = draft.background ? getBackground(draft.background) : undefined
+  if (!bg) return { skills: [], tools: [] }
+  // Só as fixas de raça e classe: talento não dá perícia fixa, e as do antecedente são a outra ponta.
+  const overlaps = (kind: ProficiencyKind, ids: string[]): BackgroundOverlap[] => {
+    const fixed = [...raceGrants(draft, kind), ...classGrants(draft, kind)].filter(g => !g.chosen)
+    return ids.flatMap(id => {
+      const other = fixed.find(g => g.id === id)
+      return other ? [{ id, source: describeOwner(draft, other.owner) }] : []
+    })
+  }
+  return { skills: overlaps('skill', bg.skillProficiencies), tools: overlaps('tool', bg.toolProficiencies) }
+}
+
+/**
+ * As substitutas que valem: as primeiras escolhidas, até quantas repetições fixas ainda existem.
+ * Trocar de raça ou de classe e desfazer a repetição não apaga a escolha — ela só deixa de valer.
+ */
+export function getBackgroundSubstitutes(draft: CharacterDraft): { skills: string[]; tools: string[] } {
+  const overlaps = getBackgroundFixedOverlaps(draft)
+  return {
+    skills: (draft.backgroundChoices.substituteSkills ?? []).slice(0, overlaps.skills.length),
+    tools: (draft.backgroundChoices.substituteTools ?? []).slice(0, overlaps.tools.length),
+  }
 }
 
 /** As escolhidas em talento (Perito, Poliglota), cada uma com o talento dono. */
@@ -256,6 +295,8 @@ export type RepeatedProficiency = {
   owner: ProficiencyOwner
   /** De onde mais a proficiência já vem, pronto para a frase: "do antecedente Marinheiro". */
   source: string
+  /** Essa outra fonte, a que fica: a etapa dela avisa que causou a repetição (getRepetitionsCausedBy). */
+  sourceOwner: ProficiencyOwner
 }
 
 /**
@@ -305,7 +346,9 @@ function findRepeated(draft: CharacterDraft, kind: ProficiencyKind): RepeatedPro
     const same = (g: ProficiencyGrant) => g.id === grant.id && !sameOwner(g.owner, grant.owner)
     // A fixa tem a palavra final; senão, a escolha de outra fonte feita antes.
     const other = ordered.find(g => !g.chosen && same(g)) ?? ordered.slice(0, i).find(same)
-    return other ? [{ kind, id: grant.id, owner: grant.owner, source: describeOwner(draft, other.owner) }] : []
+    return other
+      ? [{ kind, id: grant.id, owner: grant.owner, source: describeOwner(draft, other.owner), sourceOwner: other.owner }]
+      : []
   })
 }
 
@@ -340,15 +383,51 @@ export function getFeatRepeatedProficiencies(draft: CharacterDraft, featIds: str
 }
 
 /** "Atletismo já vem do antecedente Marinheiro — troque por outra perícia": o aviso do seletor e o motivo da pendência. */
+function repeatedName(r: RepeatedProficiency): string {
+  return r.kind === 'skill' ? getSkillName(r.id) : r.kind === 'language' ? getLanguageName(r.id) : getToolName(r.id)
+}
+
+/** "outra perícia", "outro instrumento", "outro idioma" — pelo que se troca a repetida. */
+function repeatedInstead(r: RepeatedProficiency): string {
+  if (r.kind === 'language') return 'outro idioma'
+  if (r.owner.kind === 'feat') return 'outra perícia ou ferramenta'
+  if (r.kind === 'skill') return 'outra perícia'
+  return getToolById(r.id)?.category === 'musical-instrument' ? 'outro instrumento' : 'outra ferramenta'
+}
+
 export function formatRepeatedProficiency(r: RepeatedProficiency): string {
-  const name = r.kind === 'skill' ? getSkillName(r.id) : r.kind === 'language' ? getLanguageName(r.id) : getToolName(r.id)
-  const instead = r.kind === 'language' ? 'outro idioma'
-    : r.owner.kind === 'feat' ? 'outra perícia ou ferramenta'
-    : r.kind === 'skill' ? 'outra perícia'
-      : getToolById(r.id)?.category === 'musical-instrument' ? 'outro instrumento' : 'outra ferramenta'
+  const name = repeatedName(r)
   // "Ferramentas de Ferreiro", "Suprimentos de Alquimista", "Veículos Terrestres": nome no plural.
   const verb = /^\S+s\b/.test(name) ? 'vêm' : 'vem'
-  return `${name} já ${verb} ${r.source} — troque por ${instead}`
+  return `${name} já ${verb} ${r.source} — troque por ${repeatedInstead(r)}`
+}
+
+/** A etapa do wizard onde mora a escolha de um dono — o talento do Humano Variante fica na Raça. */
+export function getOwnerStep(draft: CharacterDraft, owner: ProficiencyOwner): WizardStep {
+  switch (owner.kind) {
+    case 'race': return 'race'
+    case 'class': return 'class'
+    case 'feat': return owner.featId === draft.raceChoices.feat ? 'race' : 'improvements'
+    case 'background': return 'background'
+  }
+}
+
+/**
+ * As repetições que uma fonte causou na escolha de OUTRA etapa: o antecedente trocado para o
+ * Marinheiro, com Atletismo escolhido na classe. A pendência mora na etapa da escolha; a etapa da
+ * fonte avisa, para quem acabou de trocar ver o que mudou lá (decisão de 2026-10-28).
+ */
+export function getRepetitionsCausedBy(draft: CharacterDraft, source: ProficiencyOwner): RepeatedProficiency[] {
+  return getRepeatedProficiencies(draft).filter(r => sameOwner(r.sourceOwner, source) && !sameOwner(r.owner, source))
+}
+
+const CAUSE_SUBJECT: Record<ProficiencyOwner['kind'], string> = {
+  race: 'a raça', class: 'a classe', feat: 'o talento', background: 'o antecedente',
+}
+
+/** "Atletismo, que o antecedente também dá, já está entre as escolhas da classe Guerreiro — troque lá por outra perícia". */
+export function formatRepetitionCaused(draft: CharacterDraft, r: RepeatedProficiency): string {
+  return `${repeatedName(r)}, que ${CAUSE_SUBJECT[r.sourceOwner.kind]} também dá, já está entre as escolhas ${describeOwner(draft, r.owner)} — troque lá por ${repeatedInstead(r)}`
 }
 
 /**

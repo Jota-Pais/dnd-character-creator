@@ -22,6 +22,7 @@ import { ABILITY_LABELS, formatBonus, formatMeters, formatSpeed } from '../../ut
 import { RaceCard } from '../race/RaceCard'
 import { SubraceCard } from '../race/SubraceCard'
 import { ChoicePanel } from '../race/ChoicePanel'
+import { RepetitionsCausedNotes } from '../common/RepetitionsCausedNotes'
 import { StepNav } from '../../../../components/wizard/StepNav'
 import { formatPendingHint, getStepPendingReasons } from '../../utils/pendingReasons'
 
@@ -228,6 +229,9 @@ export function RaceStep() {
                   />
                 </div>
               )}
+
+              {/* O que a raça repetiu em escolha de outra etapa (a pendência fica lá) */}
+              <RepetitionsCausedNotes source={{ kind: 'race' }} />
 
             </div>
           </div>

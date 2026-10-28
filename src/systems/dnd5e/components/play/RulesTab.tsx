@@ -42,7 +42,7 @@ function TextBody({ detail }: { detail: Extract<RuleDetail, { kind: 'text' }> })
       {detail.kicker && <p className="text-xs text-parchment-500">{detail.kicker}</p>}
       {detail.chosen && (
         <p className="mt-2 text-sm text-parchment-400">
-          Escolha: <span className="font-semibold text-gold-300">{detail.chosen}</span>
+          {detail.chosenLabel ?? 'Escolha'}: <span className="font-semibold text-gold-300">{detail.chosen}</span>
         </p>
       )}
       <RuleText text={detail.text} className="mt-3 text-sm text-parchment-300 leading-relaxed" headingClassName={HEADING} />

@@ -119,6 +119,31 @@ describe('RulesTab', () => {
     fireEvent.click(within(spells).getByRole('button', { name: /^Chama Sagrada/ }))
     expect(screen.getByRole('dialog', { name: 'Chama Sagrada' })).toHaveTextContent('Truque de evocação · Truques do Livro das Sombras')
   })
+
+  it('feiticeiro dracônico 6: a escolha sai com o rótulo da Revisão ("Tipo de dano" na Afinidade Elemental)', () => {
+    const sorcerer: CharacterDraft = {
+      ...structuredClone(COMPLETE_DRAFT),
+      name: 'Vex',
+      class: 'sorcerer',
+      level: 6,
+      classChoices: {
+        ...structuredClone(EMPTY_DRAFT.classChoices),
+        skills: ['arcana', 'persuasion'],
+        subclass: 'draconic-bloodline',
+        progressionChoices: { 'draconic-ancestor-1': ['blue'] },
+      },
+    }
+    const features = within(openRules(sorcerer)).getByRole('region', { name: 'Características de classe' })
+
+    fireEvent.click(within(features).getByRole('button', { name: /^Afinidade Elemental/ }))
+    const affinity = screen.getByRole('dialog', { name: 'Afinidade Elemental' })
+    expect(affinity).toHaveTextContent('Tipo de dano: elétrico (ancestral Azul)')
+    expect(affinity).not.toHaveTextContent('Escolha:')
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar' }))
+
+    fireEvent.click(within(features).getByRole('button', { name: /^Ancestral Dracônico/ }))
+    expect(screen.getByRole('dialog', { name: 'Ancestral Dracônico' })).toHaveTextContent('Escolha: Azul (dano elétrico)')
+  })
 })
 
 describe('getRuleReference', () => {

@@ -16,10 +16,12 @@ import { ordinal } from './playFormat'
 /**
  * O que a folha de uma linha mostra: a magia inteira (tempo, alcance, componentes, duração e o
  * texto) ou o texto de uma característica, traço ou talento, com a escolha feita nele.
+ * `chosenLabel` é o rótulo da escolha, como na Revisão e no PDF ("Tipo de dano" na Afinidade
+ * Elemental); null = "Escolha".
  */
 export type RuleDetail =
   | { kind: 'spell'; spell: Spell; source: string | null }
-  | { kind: 'text'; kicker: string | null; text: string; chosen: string | null }
+  | { kind: 'text'; kicker: string | null; text: string; chosen: string | null; chosenLabel: string | null }
 
 /** Uma linha tocável: o nome, uma pista curta ao lado e a regra completa na folha. */
 export type RuleEntry = { key: string; name: string; meta: string | null; detail: RuleDetail }
@@ -150,7 +152,13 @@ function classSection(draft: CharacterDraft): RuleSection | null {
           key: `${entry.classId}:feature:${i}`,
           name: f.name,
           meta: `${ordinal(f.level)} nível`,
-          detail: { kind: 'text', kicker: `${cls.name} · ${ordinal(f.level)} nível`, text: f.description, chosen: f.chosen },
+          detail: {
+            kind: 'text',
+            kicker: `${cls.name} · ${ordinal(f.level)} nível`,
+            text: f.description,
+            chosen: f.chosen,
+            chosenLabel: f.chosenLabel ?? null,
+          },
         })),
       })
     }
@@ -162,7 +170,7 @@ function classSection(draft: CharacterDraft): RuleSection | null {
           key: `${entry.classId}:style`,
           name: style.name,
           meta: null,
-          detail: { kind: 'text', kicker: `${cls.name} · Estilo de Luta`, text: style.description, chosen: null },
+          detail: { kind: 'text', kicker: `${cls.name} · Estilo de Luta`, text: style.description, chosen: null, chosenLabel: null },
         }],
       })
     }
@@ -173,7 +181,7 @@ function classSection(draft: CharacterDraft): RuleSection | null {
           key: `${entry.classId}:${slot.id}:${p.id}`,
           name: p.name,
           meta: null,
-          detail: { kind: 'text', kicker: `${cls.name} · ${slot.label}`, text: p.text, chosen: null },
+          detail: { kind: 'text', kicker: `${cls.name} · ${slot.label}`, text: p.text, chosen: null, chosenLabel: null },
         })),
       })
     }
@@ -200,14 +208,14 @@ function raceSection(draft: CharacterDraft): RuleSection | null {
         key: 'race:darkvision',
         name: 'Visão no Escuro',
         meta: formatMeters(darkvision),
-        detail: { kind: 'text' as const, kicker, text: describeDarkvision(darkvision), chosen: null },
+        detail: { kind: 'text' as const, kicker, text: describeDarkvision(darkvision), chosen: null, chosenLabel: null },
       }]
       : []),
     ...getEffectiveTraitsWithChoices(race, subrace ?? null, draft.raceChoices).map(({ trait, chosen }, i) => ({
       key: `race:${i}:${trait.name}`,
       name: trait.name,
       meta: null,
-      detail: { kind: 'text' as const, kicker, text: trait.description, chosen },
+      detail: { kind: 'text' as const, kicker, text: trait.description, chosen, chosenLabel: null },
     })),
   ]
   if (entries.length === 0) return null
@@ -229,7 +237,7 @@ function featSection(draft: CharacterDraft): RuleSection | null {
           key: `feat:${feat.id}`,
           name: feat.name,
           meta: origin,
-          detail: { kind: 'text', kicker: `Talento · ${origin}`, text: feat.description, chosen: null },
+          detail: { kind: 'text', kicker: `Talento · ${origin}`, text: feat.description, chosen: null, chosenLabel: null },
         })),
       }],
     }],

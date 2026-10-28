@@ -46,6 +46,20 @@ const WARLOCK_TOME = warlock3({
   'warlock-pact-tome-cantrips-3': ['guidance', 'fire-bolt', 'sacred-flame'],
 })
 
+const MAGIC_INITIATE = 'iniciado-em-magia'
+const CLERIC_PICKS = { spellClass: 'cleric', cantrips: ['sacred-flame', 'guidance'], spells: ['cure-wounds'] }
+
+/** Guerreiro 4 (meio-orc), sem conjuração de classe, com Iniciado em Magia de clérigo no 4º nível. */
+const FIGHTER_INITIATE: CharacterDraft = {
+  ...structuredClone(COMPLETE_DRAFT),
+  name: 'Brom',
+  class: 'fighter',
+  level: 4,
+  classChoices: { ...structuredClone(COMPLETE_DRAFT.classChoices), fightingStyle: 'defense' },
+  asiChoices: [{ kind: 'feat', featId: MAGIC_INITIATE }],
+  featSelections: { [MAGIC_INITIATE]: CLERIC_PICKS },
+}
+
 function openRules(draft?: CharacterDraft) {
   if (draft) openDraft(draft)
   else openKrusk()
@@ -118,6 +132,20 @@ describe('RulesTab', () => {
     expect(spells).not.toHaveTextContent('Segredo Mágico')
     fireEvent.click(within(spells).getByRole('button', { name: /^Chama Sagrada/ }))
     expect(screen.getByRole('dialog', { name: 'Chama Sagrada' })).toHaveTextContent('Truque de evocação · Truques do Livro das Sombras')
+  })
+
+  it('guerreiro com Iniciado em Magia: o bloco do talento, com os truques e a magia de 1º com o uso escrito', () => {
+    const spells = within(openRules(FIGHTER_INITIATE)).getByRole('region', { name: 'Magias' })
+    expect(within(spells).getByText('Iniciado em Magia (Clérigo)')).toBeInTheDocument()
+    expect(within(spells).getByRole('heading', { name: 'Truques' })).toBeInTheDocument()
+    expect(within(spells).getByRole('heading', { name: '1º nível — 1×/descanso longo, no menor nível possível' })).toBeInTheDocument()
+    expect(within(spells).getByRole('button', { name: /^Chama Sagrada/ })).toBeInTheDocument()
+    expect(within(spells).getByRole('button', { name: /^Orientação/ })).toBeInTheDocument()
+
+    fireEvent.click(within(spells).getByRole('button', { name: /^Curar Ferimentos/ }))
+    expect(screen.getByRole('dialog', { name: 'Curar Ferimentos' })).toHaveTextContent(
+      '1º nível de evocação · Iniciado em Magia (Clérigo) · 1×/descanso longo, no menor nível possível',
+    )
   })
 
   it('feiticeiro dracônico 6: a escolha sai com o rótulo da Revisão ("Tipo de dano" na Afinidade Elemental)', () => {
@@ -197,6 +225,26 @@ describe('getRuleReference', () => {
       expect.stringContaining('truque, à vontade'),
       expect.stringContaining('1 uso por descanso longo, como magia de 2º nível'),
     ])
+  })
+
+  it('Iniciado em Magia: um bloco por talento (getFeatSpellBlocks), depois o da classe, mesmo sendo da mesma lista', () => {
+    const cleric: CharacterDraft = {
+      ...FIGHTER_INITIATE,
+      class: 'cleric',
+      classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), skills: ['history', 'medicine'], subclass: 'life-domain' },
+      spellChoices: { cantrips: ['sacred-flame', 'light', 'thaumaturgy'], spells: [] },
+    }
+    const blocks = getRuleReference(cleric).find(s => s.id === 'spells')!.blocks
+    expect(blocks.map(b => b.label)).toEqual([null, 'Iniciado em Magia (Clérigo)'])
+    const [, feat] = blocks
+    expect(feat.groups.map(g => [g.title, g.entries.map(e => [e.name, e.meta])])).toEqual([
+      ['Truques', [['Chama Sagrada', '1 ação'], ['Orientação', '1 ação · concentração']]],
+      ['1º nível — 1×/descanso longo, no menor nível possível', [['Curar Ferimentos', '1 ação']]],
+    ])
+    // A Chama Sagrada da classe e a do talento: chaves que não colidem.
+    const keys = blocks.flatMap(b => b.groups.flatMap(g => g.entries.map(e => e.key)))
+    expect(new Set(keys).size).toBe(keys.length)
+    expect(keys).toEqual(expect.arrayContaining(['cleric:sacred-flame', `feat:${MAGIC_INITIATE}:sacred-flame`]))
   })
 
   describe('magias de slot de progressão: a origem é o grupo da Revisão e do PDF (getSecretSpellGroups)', () => {

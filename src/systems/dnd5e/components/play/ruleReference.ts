@@ -1,7 +1,7 @@
 import type { CharacterDraft } from '../../types/character'
 import type { Spell } from '../../types/spell'
 import { ABILITY_LABELS, formatMeters } from '../../utils/abilityScoreUtils'
-import { getCharacterFeats, getSheetClassFeatures } from '../../utils/asiUtils'
+import { getCharacterFeats, getFinalAbilityScores, getSheetClassFeatures } from '../../utils/asiUtils'
 import { getClass, getSubclass } from '../../utils/classUtils'
 import { allClassEntries } from '../../utils/multiclassUtils'
 import { getProgressionChoiceBlocks } from '../../utils/progressionOptions'
@@ -10,7 +10,9 @@ import {
   getEffectiveTraitsWithChoices, getRace, getSubrace,
 } from '../../utils/raceUtils'
 import { getSheetFightingStyles } from '../../utils/sheetEffects'
-import { getCasterEntries, getSecretSpellGroups, getSpell } from '../../utils/spellUtils'
+import {
+  FEAT_SPELL_USAGE, getCasterEntries, getFeatSpellBlocks, getSecretSpellGroups, getSpell,
+} from '../../utils/spellUtils'
 import { ordinal } from './playFormat'
 
 /**
@@ -29,7 +31,7 @@ export type RuleEntry = { key: string; name: string; meta: string | null; detail
 /** Linhas sob um subtítulo ("Truques", "1º nível", "Manobras"); `title` null = sem subtítulo. */
 export type RuleGroup = { title: string | null; entries: RuleEntry[] }
 
-/** Um bloco por classe (ou pela raça); `label` null quando não há o que distinguir. */
+/** Um bloco por classe (ou pelo talento, pela raça); `label` null quando não há o que distinguir. */
 export type RuleBlock = { label: string | null; groups: RuleGroup[] }
 
 export type RuleSection = { id: 'spells' | 'class' | 'race' | 'feats'; title: string; blocks: RuleBlock[] }
@@ -57,8 +59,9 @@ function spellMeta(spell: Spell, extra: string | null): string {
   ].filter(Boolean).join(' · ')
 }
 
-function spellEntry(key: string, spell: Spell, source: string | null): RuleEntry {
-  return { key, name: spell.name, meta: spellMeta(spell, source), detail: { kind: 'spell', spell, source } }
+/** `metaExtra`: a pista ao lado do nome, quando difere da origem que a folha mostra. */
+function spellEntry(key: string, spell: Spell, source: string | null, metaExtra = source): RuleEntry {
+  return { key, name: spell.name, meta: spellMeta(spell, metaExtra), detail: { kind: 'spell', spell, source } }
 }
 
 /** Agrupa por nível de magia, truques primeiro, alfabético dentro de cada nível. */
@@ -76,9 +79,10 @@ function groupByLevel(items: { spell: Spell; source: string | null }[], keyPrefi
 /**
  * Magias: as de cada classe conjuradora (`getCasterEntries`, as mesmas da Revisão e da ficha
  * imprimível: truques com os dados pela característica, magias conhecidas ou preparadas e as de
- * slot de progressão, com o rótulo do grupo de `getSecretSpellGroups`), e depois as que vêm de
- * fora da conjuração da classe — o truque da raça, o da subclasse e as magias inatas — com o
- * jeito de usar de `describeInnateSpellUsage`.
+ * slot de progressão, com o rótulo do grupo de `getSecretSpellGroups`), as de cada talento que
+ * ensina magias (`getFeatSpellBlocks`), e depois as que vêm de fora da conjuração da classe — o
+ * truque da raça, o da subclasse e as magias inatas — com o jeito de usar de
+ * `describeInnateSpellUsage`.
  */
 function spellSection(draft: CharacterDraft): RuleSection | null {
   const casters = getCasterEntries(draft)
@@ -102,6 +106,20 @@ function spellSection(draft: CharacterDraft): RuleSection | null {
     const showLabel = isMc || caster.casting.casterId !== caster.cls.id
     return { label: showLabel ? caster.casting.label : null, groups: groupByLevel(items, caster.cls.id) }
   })
+
+  // Talento que ensina magias (Iniciado em Magia, p. 170): um bloco por talento, como na Revisão e
+  // no PDF. A magia de 1º nível sai sob o título com o uso (`spellsTitle`), e a folha dela o repete:
+  // é lá que a mesa lê antes de conjurar.
+  for (const feat of getFeatSpellBlocks(draft, getFinalAbilityScores(draft))) {
+    const groups: RuleGroup[] = []
+    const entries = (spells: Spell[], source: string) =>
+      [...spells].sort(byName).map(s => spellEntry(`feat:${feat.featId}:${s.id}`, s, source, null))
+    if (feat.cantrips.length > 0) groups.push({ title: 'Truques', entries: entries(feat.cantrips, feat.label) })
+    if (feat.spells.length > 0) {
+      groups.push({ title: feat.spellsTitle, entries: entries(feat.spells, `${feat.label} · ${FEAT_SPELL_USAGE}`) })
+    }
+    blocks.push({ label: feat.label, groups })
+  }
 
   const race = draft.race ? getRace(draft.race) : undefined
   const subrace = race && draft.subrace ? getSubrace(race, draft.subrace) : undefined

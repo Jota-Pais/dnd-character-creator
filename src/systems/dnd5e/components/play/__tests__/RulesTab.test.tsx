@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { getRuleReference } from '../ruleReference'
@@ -143,6 +143,17 @@ describe('RulesTab', () => {
 
     fireEvent.click(within(features).getByRole('button', { name: /^Ancestral Dracônico/ }))
     expect(screen.getByRole('dialog', { name: 'Ancestral Dracônico' })).toHaveTextContent('Escolha: Azul (dano elétrico)')
+  })
+
+  it('bruxo 5: as Invocações do 2º e do 5º nível são grupos distintos, com o nível no título', () => {
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const warlock5 = { ...warlock3({ 'warlock-pact-boon-3': ['pact-of-the-tome'], 'warlock-invocations-5': ['idioma-bestial'] }), level: 5 }
+    const features = within(openRules(warlock5)).getByRole('region', { name: 'Características de classe' })
+    expect(within(features).getByRole('heading', { name: 'Invocações Místicas (2º nível)' })).toBeInTheDocument()
+    expect(within(features).getByRole('heading', { name: 'Invocações Místicas (5º nível)' })).toBeInTheDocument()
+    expect(within(features).getByRole('heading', { name: 'Dádiva do Pacto' })).toBeInTheDocument()
+    expect(errors.mock.calls.flat().join(' ')).not.toContain('same key')
+    errors.mockRestore()
   })
 })
 

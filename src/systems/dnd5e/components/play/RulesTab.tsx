@@ -76,7 +76,7 @@ export function RulesTab({ draft }: PlayTabProps) {
               <div key={block.label ?? bi}>
                 {block.label && <p className="font-fantasy text-sm text-gold-400">{block.label}</p>}
                 {block.groups.map((group, gi) => (
-                  <div key={group.title ?? gi} className="mt-1">
+                  <div key={`${gi}:${group.title ?? ''}`} className="mt-1">
                     {group.title && <h3 className="mt-2 text-xs text-parchment-500">{group.title}</h3>}
                     <ul className="divide-y divide-parchment-900">
                       {group.entries.map(entry => (

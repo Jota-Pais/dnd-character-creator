@@ -176,7 +176,8 @@ function classSection(draft: CharacterDraft): RuleSection | null {
     }
     for (const { slot, picks } of progression.find(b => b.entry.classId === entry.classId)?.slots ?? []) {
       groups.push({
-        title: slot.label,
+        // Slot cumulativo se repete por nível (Invocações do 2º e do 5º): o nível distingue, como na Revisão.
+        title: slot.cumulative ? `${slot.label} (${ordinal(slot.level)} nível)` : slot.label,
         entries: picks.map(p => ({
           key: `${entry.classId}:${slot.id}:${p.id}`,
           name: p.name,

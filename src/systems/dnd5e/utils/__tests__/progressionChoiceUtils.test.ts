@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest'
 import {
   getProgressionSlots,
   getProgressionSlotsUpToLevel,
-  isProgressionChoicesComplete
+  isProgressionChoicesComplete,
+  isSingleChoiceSlot,
 } from '../progressionChoiceUtils'
 import type { ClassChoiceSelections } from '../../types/character'
 import { EMPTY_CLASS_CHOICES } from '../../types/class'
@@ -32,6 +33,25 @@ describe('progressionChoiceUtils', () => {
       const earlySlots = getProgressionSlotsUpToLevel('bard', null, 12)
       expect(earlySlots.length).toBeLessThan(allSlots.length)
       expect(earlySlots.every(s => s.level <= 12)).toBe(true)
+    })
+  })
+
+  describe('isSingleChoiceSlot', () => {
+    const slot = (id: string, classId: string, subclassId: string | null = null) =>
+      getProgressionSlots(classId, subclassId).find(s => s.id === id)!
+
+    it('slot de 1 escolha não cumulativo é rádio', () => {
+      expect(isSingleChoiceSlot(slot('warlock-pact-boon-3', 'warlock'))).toBe(true)
+      expect(isSingleChoiceSlot(slot('draconic-ancestor-1', 'sorcerer', 'draconic-bloodline'))).toBe(true)
+      expect(isSingleChoiceSlot(slot('totem-warrior-totem-3', 'barbarian', 'totem-warrior'))).toBe(true)
+      expect(isSingleChoiceSlot(slot('totem-warrior-aspect-6', 'barbarian', 'totem-warrior'))).toBe(true)
+      expect(isSingleChoiceSlot(slot('totem-warrior-attunement-14', 'barbarian', 'totem-warrior'))).toBe(true)
+    })
+
+    it('de N escolhas ou cumulativo, não', () => {
+      expect(isSingleChoiceSlot(slot('warlock-invocations-2', 'warlock'))).toBe(false)
+      expect(isSingleChoiceSlot(slot('warlock-invocations-5', 'warlock'))).toBe(false)
+      expect(isSingleChoiceSlot(slot('warlock-pact-tome-cantrips-3', 'warlock'))).toBe(false)
     })
   })
 

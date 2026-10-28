@@ -16,7 +16,10 @@ import type { TermId } from '../../utils/glossary'
 import { SKILLS, getLanguageName } from '../../utils/raceUtils'
 import { LanguagePicker } from '../common/LanguagePicker'
 import toolsData from '../../data/tools.json'
-import { getActivePicks, getProgressionSlotsUpToLevel, SPELL_OPTIONS_LIST_ID, type ProgressionSlot } from '../../utils/progressionChoiceUtils'
+import {
+  getActivePicks, getProgressionSlotsUpToLevel, isSingleChoiceSlot, SPELL_OPTIONS_LIST_ID, type ProgressionSlot,
+} from '../../utils/progressionChoiceUtils'
+import { isChoiceFull, toggleChoice } from '../../utils/choiceToggle'
 import {
   describeRequiredPick, getProgressionOptions, getSecretSpellOptions, getUnmetRequirement, type ProgressionOption,
 } from '../../utils/progressionOptions'
@@ -667,14 +670,11 @@ function ProgressionChoicesPanel({
     }
   }
 
-  function handleOptionToggle(slotId: string, optionId: string, maxCount: number) {
-    const current = choices.progressionChoices[slotId] ?? []
-    if (current.includes(optionId)) {
-      onChange({ [slotId]: current.filter(id => id !== optionId) })
-    } else {
-      if (current.length >= maxCount) return
-      onChange({ [slotId]: [...current, optionId] })
-    }
+  // Slot de 1 escolha (Dádiva do Pacto, Ancestral Dracônico, totens) é rádio: outra opção troca a
+  // marcada. O de N, e o cumulativo, mantém o limite (decisão de 2026-10-26).
+  function handleOptionToggle(slot: ProgressionSlot, optionId: string) {
+    const next = toggleChoice(choices.progressionChoices[slot.id] ?? [], optionId, slot.count, isSingleChoiceSlot(slot))
+    if (next) onChange({ [slot.id]: next })
   }
 
   return (
@@ -703,7 +703,8 @@ function ProgressionChoicesPanel({
         // escolhidas nos slots de níveis anteriores aparecem marcadas e desabilitadas.
         return group.slots.map((slot, index) => {
           const currentPicked = choices.progressionChoices[slot.id] ?? []
-          
+          const slotFull = isChoiceFull(currentPicked.length, slot.count, isSingleChoiceSlot(slot))
+
           // Calcula opções já escolhidas em slots cumulativos anteriores para desabilitar
           const previousPicks = new Set<string>()
           if (slot.cumulative) {
@@ -747,12 +748,12 @@ function ProgressionChoicesPanel({
                   options={options}
                   picked={currentPicked}
                   previousPicks={previousPicks}
-                  max={slot.count}
+                  full={slotFull}
                   isLocked={isLocked}
                   accent={accent}
                   onToggle={optId => {
                     if (isLocked(optId) && !currentPicked.includes(optId)) return
-                    handleOptionToggle(slot.id, optId, slot.count)
+                    handleOptionToggle(slot, optId)
                   }}
                 />
               </ChoiceSection>
@@ -772,9 +773,9 @@ function ProgressionChoicesPanel({
                       accent={accent}
                       picked={currentPicked.includes(opt.id)}
                       pickedEarlier={previousPicks.has(opt.id)}
-                      slotFull={currentPicked.length >= slot.count}
+                      slotFull={slotFull}
                       unmetRequirement={unmet ? describeRequiredPick(unmet) : null}
-                      onToggle={() => handleOptionToggle(slot.id, opt.id, slot.count)}
+                      onToggle={() => handleOptionToggle(slot, opt.id)}
                     />
                   )
                 })}
@@ -796,7 +797,7 @@ function SpellPickerList({
   options,
   picked,
   previousPicks,
-  max,
+  full,
   isLocked,
   accent,
   onToggle,
@@ -804,7 +805,8 @@ function SpellPickerList({
   options: ProgressionOption[]
   picked: string[]
   previousPicks: Set<string>
-  max: number
+  /** Slot cheio para magia nova (`isChoiceFull`: o de 1 escolha troca, nunca enche). */
+  full: boolean
   /** Opção que não pode entrar agora (truque com Truques Conhecidos cheios de Segredos). */
   isLocked?: (optionId: string) => boolean
   accent: string
@@ -837,7 +839,7 @@ function SpellPickerList({
           const pickedEarlier = previousPicks.has(opt.id)
           const isPicked = picked.includes(opt.id)
           const selected = isPicked || pickedEarlier
-          const disabled = pickedEarlier || (!isPicked && (picked.length >= max || (isLocked?.(opt.id) ?? false)))
+          const disabled = pickedEarlier || (!isPicked && (full || (isLocked?.(opt.id) ?? false)))
 
           return (
             <button

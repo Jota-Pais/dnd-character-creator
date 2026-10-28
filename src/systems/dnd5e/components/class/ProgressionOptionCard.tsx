@@ -7,7 +7,10 @@ type Props = {
   picked: boolean
   /** Já escolhida num slot de nível anterior do mesmo grupo cumulativo — não dá pra repetir. */
   pickedEarlier: boolean
-  /** Slot cheio: dá pra ler, não dá pra marcar. */
+  /**
+   * Slot cheio: dá pra ler, não dá pra marcar. O slot de 1 escolha nunca vem cheio — é rádio, e a
+   * opção nova troca a marcada (`isChoiceFull`, decisão de 2026-10-26).
+   */
   slotFull: boolean
   /**
    * Pré-requisito de opção que falta ("requer Pacto da Lâmina (Dádiva do Pacto, 3º nível)"): a
@@ -42,6 +45,7 @@ export function ProgressionOptionCard({
     <button
       onClick={() => { if (!pickedEarlier) onToggle() }}
       disabled={disabled}
+      aria-pressed={selected}
       title={pickedEarlier ? 'Já escolhida num nível anterior' : unmetRequirement && !picked ? `Indisponível: ${unmetRequirement}` : slotFull && !picked ? 'Slot completo' : undefined}
       className="text-left p-3 rounded-xl border-2 transition-all duration-200 h-full"
       style={{

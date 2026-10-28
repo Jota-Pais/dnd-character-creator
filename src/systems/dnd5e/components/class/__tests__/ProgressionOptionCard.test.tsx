@@ -37,6 +37,18 @@ describe('ProgressionOptionCard — pré-requisito de pacto', () => {
     expect(onToggle).toHaveBeenCalledOnce()
   })
 
+  it('slot de 1 escolha (rádio, nunca cheio): a opção sem o pré-requisito continua travada', () => {
+    const onToggle = vi.fn()
+    const { getByRole } = render(
+      <ProgressionOptionCard
+        option={thirstingBlade} accent="#c9a" picked={false} pickedEarlier={false} slotFull={false}
+        unmetRequirement={REQUIREMENT} onToggle={onToggle}
+      />,
+    )
+    fireEvent.click(getByRole('button'))
+    expect(onToggle).not.toHaveBeenCalled()
+  })
+
   it('com o pacto, nada de aviso', () => {
     const { queryByText } = render(
       <ProgressionOptionCard

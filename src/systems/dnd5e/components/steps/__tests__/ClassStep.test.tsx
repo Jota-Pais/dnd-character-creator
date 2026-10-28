@@ -48,3 +48,69 @@ describe('ClassStep: perícia repetida por outra fonte', () => {
     expect(container.textContent).not.toContain('já vem')
   })
 })
+
+// Decisão de 2026-10-26: slot de progressão de 1 escolha não cumulativo é rádio — clicar noutra
+// opção troca direto, sem desmarcar antes. O de N escolhas mantém o limite.
+
+function withClass(classId: string, level: number, subclass: string | null, progressionChoices: Record<string, string[]> = {}): CharacterDraft {
+  return {
+    ...structuredClone(EMPTY_DRAFT),
+    race: 'human',
+    class: classId,
+    level,
+    classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), subclass, progressionChoices },
+  }
+}
+
+const picks = (slotId: string) => useCharacterStore.getState().draft.classChoices.progressionChoices[slotId]
+
+/** O card de opção de progressão com aquele nome (o nome também aparece em textos de característica). */
+function optionCard(getAllByText: (text: string) => HTMLElement[], name: string): HTMLButtonElement {
+  const card = getAllByText(name)
+    .map(el => el.closest('button'))
+    .find(button => button?.hasAttribute('aria-pressed'))
+  if (!card) throw new Error(`card ${name} não encontrado`)
+  return card
+}
+
+describe('ClassStep: slot de 1 escolha troca direto', () => {
+  it('Dádiva do Pacto: outro pacto troca o marcado, sem travar os outros cards', () => {
+    useCharacterStore.setState({ draft: withClass('warlock', 3, 'the-fiend', { 'warlock-pact-boon-3': ['pact-of-the-blade'] }) })
+    const { getAllByText } = render(<ClassStep />)
+    expect(optionCard(getAllByText, 'Pacto da Corrente').disabled).toBe(false)
+    expect(optionCard(getAllByText, 'Pacto do Tomo').disabled).toBe(false)
+
+    fireEvent.click(optionCard(getAllByText, 'Pacto da Corrente'))
+    expect(picks('warlock-pact-boon-3')).toEqual(['pact-of-the-chain'])
+    expect(optionCard(getAllByText, 'Pacto da Corrente').getAttribute('aria-pressed')).toBe('true')
+    expect(optionCard(getAllByText, 'Pacto da Lâmina').getAttribute('aria-pressed')).toBe('false')
+
+    // Clicar no marcado ainda desmarca.
+    fireEvent.click(optionCard(getAllByText, 'Pacto da Corrente'))
+    expect(picks('warlock-pact-boon-3')).toEqual([])
+  })
+
+  it('Ancestral Dracônico e Totem Espiritual também trocam direto', () => {
+    useCharacterStore.setState({ draft: withClass('sorcerer', 1, 'draconic-bloodline', { 'draconic-ancestor-1': ['red'] }) })
+    const sorcerer = render(<ClassStep />)
+    fireEvent.click(optionCard(sorcerer.getAllByText, 'Azul'))
+    expect(picks('draconic-ancestor-1')).toEqual(['blue'])
+    sorcerer.unmount()
+
+    useCharacterStore.setState({ draft: withClass('barbarian', 3, 'totem-warrior', { 'totem-warrior-totem-3': ['bear'] }) })
+    const barbarian = render(<ClassStep />)
+    fireEvent.click(optionCard(barbarian.getAllByText, 'Lobo'))
+    expect(picks('totem-warrior-totem-3')).toEqual(['wolf'])
+  })
+
+  it('slot de N escolhas mantém o limite: cheio, a opção nova trava e o clique não muda nada', () => {
+    useCharacterStore.setState({
+      draft: withClass('warlock', 3, 'the-fiend', { 'warlock-invocations-2': ['explosao-agonizante', 'armadura-de-sombras'] }),
+    })
+    const { getAllByText } = render(<ClassStep />)
+    const third = optionCard(getAllByText, 'Idioma Bestial')
+    expect(third.disabled).toBe(true)
+    fireEvent.click(third)
+    expect(picks('warlock-invocations-2')).toEqual(['explosao-agonizante', 'armadura-de-sombras'])
+  })
+})

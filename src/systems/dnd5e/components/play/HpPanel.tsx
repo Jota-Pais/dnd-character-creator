@@ -158,7 +158,7 @@ export function HpPanel({ view }: { view: PlayView }) {
                     onChange={e => setImmuneTo(e.target.checked ? i.damageType : null)}
                     className="w-5 h-5 shrink-0 accent-gold-500"
                   />
-                  É dano de {i.label} ({i.sources.map(s => s.label).join(', ')}: imune, não sofre nada)
+                  É {i.damageLabel} ({i.sources.map(s => s.label).join(', ')}: imune, não sofre nada)
                 </label>
               ))}
               {atZero && (

@@ -1244,7 +1244,7 @@ export type ActiveConditionEffects = {
 }
 
 /** Imunidade ativa a um tipo de dano: o dano desse tipo vira 0 no rastreador de PV. */
-export type ConditionDamageImmunity = { damageType: ImmuneDamageType; label: string; sources: ConditionSource[] }
+export type ConditionDamageImmunity = { damageType: ImmuneDamageType; damageLabel: string; sources: ConditionSource[] }
 
 /**
  * Vantagem e desvantagem (pág. 175): várias do mesmo lado valem uma; uma de cada lado anula,
@@ -1409,7 +1409,7 @@ export function getActiveConditionEffects(state: ConditionState): ActiveConditio
       case 'damageImmunity': {
         const existing = immunities.find(i => i.damageType === effect.damageType)
         if (existing) existing.sources.push(source)
-        else immunities.push({ damageType: effect.damageType, label: effect.label, sources: [source] })
+        else immunities.push({ damageType: effect.damageType, damageLabel: effect.damageLabel, sources: [source] })
         break
       }
       case 'noActions':

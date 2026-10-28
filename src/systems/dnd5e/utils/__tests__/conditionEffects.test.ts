@@ -38,6 +38,16 @@ describe('catálogo de condições', () => {
     }
   })
 
+  it('imunidade a dano guarda o dano por extenso, como a tabela do Ancestral Dracônico', () => {
+    // A tela usa o texto direto ("Imune a dano de veneno"): montar "dano de ${tipo}" daria
+    // "dano de elétrico" num tipo adjetivo.
+    const immunities = CONDITIONS.flatMap(c => c.effects).filter(e => e.kind === 'damageImmunity')
+    expect(immunities.map(e => [e.damageType, e.damageLabel])).toEqual([['poison', 'dano de veneno']])
+    expect(active(['petrified']).damageImmunities).toEqual([
+      { damageType: 'poison', damageLabel: 'dano de veneno', sources: [{ source: 'condition:petrified', label: 'Petrificado' }] },
+    ])
+  })
+
   it('Cego e Surdo trazem "não pode ver" / "não pode ouvir" (decisão 15)', () => {
     const text = (id: ConditionId) => CONDITIONS.find(c => c.id === id)!.text.join(' ')
     expect(text('blinded')).toContain('não pode ver')

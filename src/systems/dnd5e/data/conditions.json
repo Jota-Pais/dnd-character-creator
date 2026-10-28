@@ -221,7 +221,7 @@
         { "kind": "cannotSpeak", "scope": "gameState" },
         { "kind": "autoFail", "roll": "save", "abilities": ["STR", "DEX"], "scope": "sheet" },
         { "kind": "damageResistance", "types": "all", "scope": "sheet" },
-        { "kind": "damageImmunity", "damageType": "poison", "label": "veneno", "scope": "sheet" },
+        { "kind": "damageImmunity", "damageType": "poison", "damageLabel": "dano de veneno", "scope": "sheet" },
         { "kind": "suspends", "conditions": ["poisoned"], "scope": "gameState" },
         { "kind": "notice", "scope": "notice", "text": "Transformado em pedra (com os objetos não-mágicos que veste ou carrega): peso ×10 e não envelhece." },
         { "kind": "notice", "scope": "notice", "text": "Não tem ciência dos arredores." },

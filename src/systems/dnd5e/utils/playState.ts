@@ -352,7 +352,7 @@ function damagePipeline(state0: PlayState, sheet: PlaySheet, input: DamageInput,
     ? effects.damageImmunities.find(i => i.damageType === input.damageType)
     : undefined
   if (immunity) {
-    notices.push(note('resisted', `Imune a dano de ${immunity.label} (${immunity.sources.map(s => s.label).join(', ')}): o dano vira 0.`))
+    notices.push(note('resisted', `Imune a ${immunity.damageLabel} (${immunity.sources.map(s => s.label).join(', ')}): o dano vira 0.`))
   }
 
   // Piso 0 (decisão 3) e resistência: várias contam como uma (pág. 199).

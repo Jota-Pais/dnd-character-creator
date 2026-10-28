@@ -69,9 +69,10 @@ export type ImmuneDamageType = 'poison'
 
 /**
  * Imunidade a um tipo de dano: o dano desse tipo vira 0 no rastreador de PV (Petrificado "imune a
- * veneno", decisão de 2026-10-25). `label` é o nome do tipo em português, para a tela.
+ * veneno", decisão de 2026-10-25). `damageLabel` é o dano por extenso, para a tela ("dano de
+ * veneno"; um tipo adjetivo seria "dano elétrico") — nunca montar "dano de ${tipo}".
  */
-export type DamageImmunityEffect = { kind: 'damageImmunity'; damageType: ImmuneDamageType; label: string; scope: 'sheet' }
+export type DamageImmunityEffect = { kind: 'damageImmunity'; damageType: ImmuneDamageType; damageLabel: string; scope: 'sheet' }
 
 /** Efeitos que mexem no estado de jogo, sem número. */
 export type StateEffect = {

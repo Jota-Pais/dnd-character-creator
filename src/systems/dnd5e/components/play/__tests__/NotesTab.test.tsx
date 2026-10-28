@@ -98,4 +98,60 @@ describe('NotesTab', () => {
     expect(items[1]).toHaveTextContent('20 natural')
     expect(items[1]).toHaveTextContent('25')
   })
+
+  it('vários d20 que valem todos (rolador livre) não viram "20 natural" no histórico', () => {
+    usePlayStore.getState().setAppDice(true)
+    openKrusk()
+    usePlayStore.getState().logRoll(roll('3d20', { label: 'Rolagem livre: 3d20', roller: sequenceRoller([20, 5, 7]), at: 1 }))
+    openNotes()
+    const item = within(screen.getByTestId('roll-history')).getByRole('listitem')
+    expect(item).toHaveTextContent('32')
+    expect(item).not.toHaveTextContent('20 natural')
+  })
+})
+
+describe('NotesTab — rolador livre', () => {
+  const dieButton = (name: string) => within(screen.getByRole('group', { name: 'Dado' })).getByRole('button', { name })
+
+  it('só com os dados do app', () => {
+    openKrusk()
+    openNotes()
+    expect(screen.queryByText('Rolador livre')).toBeNull()
+    expect(screen.queryByRole('group', { name: 'Dado' })).toBeNull()
+  })
+
+  it('d4 a d100, quantidade e modificador; rola, mostra o total e grava no histórico fora do desfazer', () => {
+    usePlayStore.getState().setAppDice(true)
+    openKrusk()
+    openNotes()
+    expect(within(screen.getByRole('group', { name: 'Dado' })).getAllByRole('button').map(b => b.textContent))
+      .toEqual(['d4', 'd6', 'd8', 'd10', 'd12', 'd20', 'd100'])
+    expect(dieButton('d20')).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(dieButton('d6'))
+    expect(dieButton('d6')).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(screen.getByRole('button', { name: 'Aumentar quantidade' }))
+    fireEvent.change(screen.getByLabelText('Modificador'), { target: { value: '3' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Rolar 2d6 + 3' }))
+
+    const record = playState().rolls.at(-1)!
+    expect(record.label).toBe('Rolagem livre: 2d6 + 3')
+    expect(record.notation).toBe('2d6+3')
+    expect(screen.getByTestId('roll-total')).toHaveTextContent(String(record.total))
+    expect(within(screen.getByTestId('roll-history')).getAllByRole('listitem')[0]).toHaveTextContent('Rolagem livre: 2d6 + 3')
+    expect(usePlayStore.getState().undoStack).toHaveLength(0)
+  })
+
+  it('modificador negativo pelo "−", e o campo fora do limite volta ao que foi rolado', () => {
+    usePlayStore.getState().setAppDice(true)
+    openKrusk()
+    openNotes()
+    fireEvent.click(dieButton('d100'))
+    fireEvent.click(screen.getByRole('button', { name: 'Diminuir modificador' }))
+    fireEvent.change(screen.getByLabelText('Quantidade'), { target: { value: '500' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Rolar 100d100 - 1' }))
+    expect(playState().rolls.at(-1)!.notation).toBe('100d100-1')
+    expect(screen.getByLabelText('Quantidade')).toHaveValue('100')
+    expect(screen.getByRole('button', { name: 'Diminuir quantidade' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Aumentar quantidade' })).toBeDisabled()
+  })
 })

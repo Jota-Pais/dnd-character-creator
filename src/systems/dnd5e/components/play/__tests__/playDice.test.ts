@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import { sequenceRoller } from '../../../../../core/dice'
 import { formatGuideFormula, formatGuideNotation, type RollGuideEntry } from '../../../utils/rollGuide'
-import { canRollEntry, describeRolledFormula, formatRollCopyText, rerollNaturalOne, rollGuideEntry } from '../playDice'
+import {
+  canRollEntry, describeRolledFormula, formatFreeRoll, formatRollCopyText, readFreeRollNumber, rerollNaturalOne, rollFree,
+  rollGuideEntry,
+} from '../playDice'
 
 function entry(over: Partial<RollGuideEntry>): RollGuideEntry {
   return {
@@ -110,5 +113,37 @@ describe('copiar resultado', () => {
     const { record } = rollGuideEntry(damage, { crit: true, roller: sequenceRoller([5, 7]) })
     expect(formatRollCopyText({ label: record.label!, formula: describeRolledFormula(damage, true), record }))
       .toBe('Machado — dano (crítico): 15 (2d12 + 3 cortante; dados: 5, 7)')
+  })
+})
+
+describe('rolador livre', () => {
+  it('lê o número digitado, preso entre o mínimo e o máximo; vazio ou texto dá o padrão', () => {
+    expect(readFreeRollNumber('3', 1, 100, 1)).toBe(3)
+    expect(readFreeRollNumber(' -2 ', -99, 99, 0)).toBe(-2)
+    expect(readFreeRollNumber('−4', -99, 99, 0)).toBe(-4)
+    expect(readFreeRollNumber('+1', -99, 99, 0)).toBe(1)
+    expect(readFreeRollNumber('0', 1, 100, 1)).toBe(1)
+    expect(readFreeRollNumber('500', 1, 100, 1)).toBe(100)
+    expect(readFreeRollNumber('', 1, 100, 1)).toBe(1)
+    expect(readFreeRollNumber('-', -99, 99, 0)).toBe(0)
+    expect(readFreeRollNumber('2.5', 1, 100, 1)).toBe(1)
+  })
+
+  it('a fórmula como nas receitas, e a rolagem com o rótulo do histórico', () => {
+    expect(formatFreeRoll({ count: 2, sides: 6, modifier: 3 })).toBe('2d6 + 3')
+    expect(formatFreeRoll({ count: 1, sides: 100, modifier: 0 })).toBe('1d100')
+    expect(formatFreeRoll({ count: 1, sides: 4, modifier: -1 })).toBe('1d4 - 1')
+    const { record, natural } = rollFree({ count: 2, sides: 6, modifier: 3 }, { roller: sequenceRoller([4, 2]), at: 1 })
+    expect(record.label).toBe('Rolagem livre: 2d6 + 3')
+    expect(record.notation).toBe('2d6+3')
+    expect(record.total).toBe(9)
+    expect(natural).toBeNull()
+    expect(formatRollCopyText({ label: 'Rolagem livre', formula: '2d6 + 3', record })).toBe('Rolagem livre: 9 (2d6 + 3; dados: 4, 2)')
+  })
+
+  it('d100 sai de 1 a 100 direto; só um d20 sozinho tem natural', () => {
+    expect(rollFree({ count: 1, sides: 100, modifier: 0 }, { roller: sequenceRoller([73]) }).record.total).toBe(73)
+    expect(rollFree({ count: 1, sides: 20, modifier: 2 }, { roller: sequenceRoller([20]) }).natural).toBe(20)
+    expect(rollFree({ count: 2, sides: 20, modifier: 0 }, { roller: sequenceRoller([20, 3]) }).natural).toBeNull()
   })
 })

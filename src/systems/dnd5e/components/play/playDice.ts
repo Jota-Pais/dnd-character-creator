@@ -1,5 +1,5 @@
 import { keptFaces, roll, type DieRoller, type RollRecord } from '../../../../core/dice'
-import type { RollGuideEntry } from '../../utils/rollGuide'
+import { formatGuideFormula, formatGuideNotation, type RollGuideEntry } from '../../utils/rollGuide'
 
 /** Uma rolagem dos dados do app para uma jogada do guia. `natural` só no d20: o dado que valeu. */
 export type GuideRoll = { record: RollRecord; natural: number | null }
@@ -25,6 +25,44 @@ export function rollGuideEntry(
   })
   const first = record.terms[0]
   const natural = entry.kind === 'd20' && first ? keptFaces(first)[0] ?? null : null
+  return { record, natural }
+}
+
+/** Os dados do rolador livre, na ordem da tela. */
+export const FREE_ROLL_DICE = [4, 6, 8, 10, 12, 20, 100] as const
+
+/** Teto (para mais e para menos) do modificador do rolador livre: cobre qualquer bônus da ficha. */
+export const FREE_ROLL_MAX_MODIFIER = 99
+
+/** Uma rolagem do rolador livre: quantos dados, de quantos lados, e o que somar. */
+export type FreeRoll = { count: number; sides: number; modifier: number }
+
+/**
+ * Lê um inteiro digitado no rolador livre ("3", "-2", "+1", com o "−" tipográfico também), preso
+ * entre `min` e `max`. Vazio ou texto que não é número dá `fallback`.
+ */
+export function readFreeRollNumber(text: string, min: number, max: number, fallback: number): number {
+  const trimmed = text.trim().replace('−', '-')
+  if (!/^[+-]?\d+$/.test(trimmed)) return fallback
+  return Math.min(max, Math.max(min, Number(trimmed)))
+}
+
+/** "2d6 + 3": a fórmula do rolador livre, escrita como as receitas. */
+export function formatFreeRoll({ count, sides, modifier }: FreeRoll): string {
+  return formatGuideFormula(`${count}d${sides}`, modifier)
+}
+
+/**
+ * Rola pelo motor a rolagem livre, que vai ao histórico como "Rolagem livre: 2d6 + 3". Só um d20
+ * sozinho tem `natural` (o destaque do 20 e do 1); a rolagem livre não é jogada de regra nenhuma.
+ */
+export function rollFree(free: FreeRoll, options: { roller?: DieRoller; at?: number } = {}): GuideRoll {
+  const record = roll(formatGuideNotation(`${free.count}d${free.sides}`, free.modifier), {
+    label: `Rolagem livre: ${formatFreeRoll(free)}`,
+    ...(options.roller ? { roller: options.roller } : {}),
+    ...(options.at !== undefined ? { at: options.at } : {}),
+  })
+  const natural = free.count === 1 && free.sides === 20 ? record.terms[0]?.dice[0]?.value ?? null : null
   return { record, natural }
 }
 

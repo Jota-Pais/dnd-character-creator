@@ -3,6 +3,7 @@ import { keptFaces, type RollRecord } from '../../../../core/dice'
 import { registerPendingEdit } from '../../stores/playStore'
 import { formatModifier } from '../../utils/abilityScoreUtils'
 import { setNote } from '../../utils/playState'
+import { FreeRoller } from './FreeRoller'
 import type { PlayTabProps } from './usePlayView'
 
 /** Quanto esperar sem digitar antes de gravar a nota: cada pausa vira um passo do desfazer. */
@@ -11,17 +12,21 @@ const NOTE_SAVE_DELAY_MS = 800
 /** Quantas rolagens o histórico mostra (o estado guarda até 100). */
 const HISTORY_SHOWN = 30
 
-/** O d20 natural de uma rolagem de d20 (o que ficou, na vantagem), ou null. */
+/**
+ * O d20 natural de uma rolagem de d20 (o que ficou, na vantagem), ou null. Vários d20 que valem
+ * todos (o 3d20 do rolador livre) não têm um natural.
+ */
 function d20Natural(record: RollRecord): number | null {
   const first = record.terms[0]
   if (!first || first.term.sides !== 20) return null
-  return keptFaces(first)[0] ?? null
+  const kept = keptFaces(first)
+  return kept.length === 1 ? kept[0] : null
 }
 
 function RollHistory({ rolls }: { rolls: RollRecord[] }) {
   const recent = [...rolls].reverse().slice(0, HISTORY_SHOWN)
   if (recent.length === 0) {
-    return <p className="text-xs text-parchment-500">Nenhuma rolagem ainda. Use o "Rolar" da receita de uma jogada.</p>
+    return <p className="text-xs text-parchment-500">Nenhuma rolagem ainda. Use o "Rolar" da receita de uma jogada ou o rolador livre.</p>
   }
   return (
     <ul className="divide-y divide-parchment-900" data-testid="roll-history">
@@ -53,8 +58,8 @@ function RollHistory({ rolls }: { rolls: RollRecord[] }) {
 
 /**
  * Aba "Notas": a anotação livre da sessão, gravada sozinha numa pausa da digitação (e ao sair do
- * campo), sem travar quem digita; e, só com os dados do app ligados, o histórico curto das
- * rolagens, das mais recentes para as mais antigas, com o 20 e o 1 naturais em destaque.
+ * campo), sem travar quem digita; e, só com os dados do app ligados, o rolador livre e o histórico
+ * curto das rolagens, das mais recentes para as mais antigas, com o 20 e o 1 naturais em destaque.
  */
 export function NotesTab({ state, appDice, run }: PlayTabProps) {
   // O texto em edição ainda não gravado; null mostra o do estado (e acompanha o desfazer).
@@ -109,6 +114,13 @@ export function NotesTab({ state, appDice, run }: PlayTabProps) {
         />
         <p className="text-[11px] text-parchment-600">Grava sozinha enquanto você escreve.</p>
       </section>
+
+      {appDice && (
+        <section>
+          <h2 className="text-[11px] uppercase tracking-wider text-parchment-600 font-fantasy mb-1.5">Rolador livre</h2>
+          <FreeRoller />
+        </section>
+      )}
 
       {appDice && (
         <section>

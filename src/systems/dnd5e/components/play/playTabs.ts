@@ -32,5 +32,5 @@ export const PLAY_TABS: readonly PlayTab[] = [
   { id: 'magic', label: 'Magia', hint: 'Espaços de magia, CD, ataque de magia e os usos das suas características.', component: MagicTab },
   { id: 'rules', label: 'Regras', hint: 'Suas magias, características, traços e talentos, com a regra inteira a um toque.', component: RulesTab },
   { id: 'status', label: 'Estado', hint: 'Condições, exaustão, concentração e descansos.', component: StatusTab },
-  { id: 'notes', label: 'Notas', hint: 'Suas anotações da sessão e o histórico de rolagens.', component: NotesTab },
+  { id: 'notes', label: 'Notas', hint: 'Suas anotações da sessão; com os dados do app, o rolador livre e o histórico de rolagens.', component: NotesTab },
 ]

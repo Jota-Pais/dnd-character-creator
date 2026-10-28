@@ -43,7 +43,7 @@ import {
 import { RuleText } from './common/RuleText'
 import { formatAttackDamage } from '../utils/weaponFormat'
 import { getSheetAttacks } from '../utils/attackUtils'
-import { REPEATED_FEAT_MANEUVER_NOTE } from '../utils/maneuverUtils'
+import { REPEATED_FEAT_MANEUVER_NOTE, getClassManeuverSaveDc, isManeuverSlot } from '../utils/maneuverUtils'
 import {
   getTotalHp, getInitiativeBonusTotal, getSheetSpeed, describeSpeedBonuses,
   getConditionalAcBonuses, getSheetResources, getSheetArmorClass,
@@ -190,6 +190,7 @@ export function PrintableSheet() {
   // Manobras, invocações, metamagia, totem, terreno, presa — o mesmo helper da Revisão. Os
   // Segredos Mágicos saem com as magias do bardo (bonusSpells), não aqui.
   const progressionBlocks = getProgressionChoiceBlocks(entries)
+  const maneuverDc = getClassManeuverSaveDc(draft, finalScores)
 
   /**
    * Toda magia que o personagem conhece, por QUALQUER via:
@@ -579,6 +580,9 @@ export function PrintableSheet() {
                   <p className="text-[10px] uppercase tracking-wide text-gray-600">
                     {slot.label}{slot.cumulative ? ` (nv ${slot.level})` : ''}
                   </p>
+                  {maneuverDc && slot === slots.find(s => isManeuverSlot(s.slot))?.slot && (
+                    <p className="text-xs font-bold">{maneuverDc}</p>
+                  )}
                   {picks.map(opt => (
                     <p key={opt.id} className="text-xs mb-0.5">
                       <strong>{opt.name}.</strong> {opt.text}{opt.unmet && <> <strong>{formatUnmetPick(opt.unmet)}</strong></>}

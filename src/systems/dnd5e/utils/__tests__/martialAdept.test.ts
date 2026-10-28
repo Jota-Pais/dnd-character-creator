@@ -7,7 +7,7 @@ import {
   getFeatChoiceSlots, getFeatManeuverBlock, getFeatManeuvers, getRepeatedFeatManeuvers, isFeatChoiceComplete,
 } from '../sheetEffects'
 import {
-  formatManeuverSaveDc, getClassManeuvers, getManeuverOptions, getManeuverSaveDc,
+  formatManeuverSaveDc, getClassManeuverSaveDc, getClassManeuvers, getManeuverOptions, getManeuverSaveDc,
 } from '../maneuverUtils'
 import { getFinalAbilityScores } from '../asiUtils'
 
@@ -135,6 +135,21 @@ describe('Adepto Marcial — CD das manobras na ficha', () => {
     const d = battleMaster(['aparar', 'ataque-de-precisao'])
     const block = getFeatManeuverBlock(d, FEAT, getFinalAbilityScores(d))!
     expect(block.maneuvers.find(m => m.id === 'aparar')?.repeated).toBe(true)
+  })
+})
+
+describe('Mestre de Batalha — CD das manobras na ficha', () => {
+  it('a mesma linha do talento, com os atributos finais', () => {
+    // Meio-orc: FOR 17 (+3), DES 14 (+2); proficiência +2 no 4º.
+    const d = battleMaster()
+    expect(getClassManeuverSaveDc(d, getFinalAbilityScores(d))).toBe('CD das manobras: 13 (Força) ou 12 (Destreza), à sua escolha')
+  })
+
+  it('sem manobra do arquétipo (outra subclasse ou nada escolhido), nada sai', () => {
+    const champion = battleMaster(undefined, 'champion')
+    expect(getClassManeuverSaveDc(champion, getFinalAbilityScores(champion))).toBeNull()
+    const empty: CharacterDraft = { ...battleMaster(), classChoices: { ...battleMaster().classChoices, progressionChoices: {} } }
+    expect(getClassManeuverSaveDc(empty, getFinalAbilityScores(empty))).toBeNull()
   })
 })
 

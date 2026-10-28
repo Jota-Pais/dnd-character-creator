@@ -211,3 +211,34 @@ describe('Truques do Livro das Sombras na Revisão e no PDF', () => {
     expect(group).not.toContain('(truque)')
   })
 })
+
+// Mestre de Batalha (p. 87): a CD das manobras sai calculada nas Escolhas de Progressão, uma vez,
+// como sob o talento Adepto Marcial — o texto da característica só dá a fórmula.
+describe('CD das manobras do Mestre de Batalha', () => {
+  it.each([
+    ['Revisão', () => render(<ReviewStep />)],
+    ['ficha imprimível', () => render(<PrintableSheet />)],
+  ])('%s: uma linha, mesmo com manobras de dois degraus', (_, renderIt) => {
+    useCharacterStore.setState({
+      draft: {
+        ...structuredClone(EMPTY_DRAFT),
+        name: 'Aldric',
+        race: 'human', class: 'fighter', level: 7,
+        abilityScores: { STR: 16, DEX: 12, CON: 14, INT: 10, WIS: 10, CHA: 8 },
+        classChoices: {
+          ...structuredClone(EMPTY_DRAFT.classChoices),
+          subclass: 'battle-master',
+          progressionChoices: {
+            'battle-master-maneuvers-3': ['aparar', 'derrubar', 'inspirar'],
+            'battle-master-maneuvers-7': ['ataque-de-precisao', 'contra-atacar'],
+          },
+        },
+      },
+    })
+    const text = renderIt().container.textContent ?? ''
+    // Humano: FOR 17 (+3), DES 13 (+1); proficiência +3 no 7º.
+    const line = 'CD das manobras: 14 (Força) ou 12 (Destreza), à sua escolha'
+    expect(text).toContain(line)
+    expect(text.indexOf(line)).toBe(text.lastIndexOf(line))
+  })
+})

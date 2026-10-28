@@ -40,7 +40,7 @@ import {
   describeAttacksPerAction, getSheetFightingStyles, describeConditionalSaveBonuses, getFeatManeuverBlock,
 } from '../../utils/sheetEffects'
 import { getSheetAttacks } from '../../utils/attackUtils'
-import { REPEATED_FEAT_MANEUVER_NOTE } from '../../utils/maneuverUtils'
+import { REPEATED_FEAT_MANEUVER_NOTE, getClassManeuverSaveDc, isManeuverSlot } from '../../utils/maneuverUtils'
 import { formatAttackDamage } from '../../utils/weaponFormat'
 import { formatUnmetPick, getProgressionChoiceBlocks } from '../../utils/progressionOptions'
 import {
@@ -812,6 +812,7 @@ export function ReviewStep() {
       {cls && (() => {
         const blocks = getProgressionChoiceBlocks(entries)
         if (blocks.length === 0) return null
+        const maneuverDc = getClassManeuverSaveDc(draft, finalScores)
 
         return (
           <Section title="Escolhas de Progressão">
@@ -827,6 +828,9 @@ export function ReviewStep() {
                         <p className="text-xs text-parchment-700 font-fantasy uppercase tracking-widest mb-1.5">
                           {slot.label} {slot.cumulative ? `(Nível ${slot.level})` : ''}
                         </p>
+                        {maneuverDc && slot === slots.find(s => isManeuverSlot(s.slot))?.slot && (
+                          <p className="text-xs font-semibold mb-1.5" style={{ color: accent }}>{maneuverDc}</p>
+                        )}
                         {picks.map(opt => (
                           <div key={opt.id} className="mb-2 last:mb-0">
                             <span className="text-sm font-semibold font-fantasy text-parchment-200">{opt.name}. </span>

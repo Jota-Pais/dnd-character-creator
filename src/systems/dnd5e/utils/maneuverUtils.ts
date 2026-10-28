@@ -1,7 +1,7 @@
 import type { CharacterDraft } from '../types/character'
 import { getProficiencyBonus, calculateModifier } from './abilityScoreUtils'
 import type { FinalScores } from './classResourceUtils'
-import { getProgressionSlotsUpToLevel } from './progressionChoiceUtils'
+import { getProgressionSlotsUpToLevel, type ProgressionSlot } from './progressionChoiceUtils'
 import { getProgressionOptions, type ProgressionOption } from './progressionOptions'
 import { allClassEntries } from './multiclassUtils'
 
@@ -59,6 +59,21 @@ export function getManeuverSaveDc(level: number, scores: FinalScores): ManeuverS
 export function formatManeuverSaveDc(dc: ManeuverSaveDc): string {
   if (dc.strength === dc.dexterity) return `CD das manobras: ${dc.strength} (Força ou Destreza)`
   return `CD das manobras: ${dc.strength} (Força) ou ${dc.dexterity} (Destreza), à sua escolha`
+}
+
+/** Slot de manobras do Mestre de Batalha (um por degrau: 3º, 7º, 10º e 15º). */
+export function isManeuverSlot(slot: ProgressionSlot): boolean {
+  return slot.optionsListId === MANEUVER_LIST_ID
+}
+
+/**
+ * A linha da CD das manobras que o Mestre de Batalha ensina — a mesma conta e o mesmo texto do
+ * Adepto Marcial —, que a Revisão e o PDF mostram uma vez, no primeiro slot de manobras das
+ * Escolhas de Progressão. null sem manobra escolhida pelo arquétipo.
+ */
+export function getClassManeuverSaveDc(draft: CharacterDraft, scores: FinalScores): string | null {
+  if (getClassManeuvers(draft).length === 0) return null
+  return formatManeuverSaveDc(getManeuverSaveDc(draft.level, scores))
 }
 
 /**

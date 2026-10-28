@@ -5,10 +5,9 @@ import {
   describeResource, groupResourcesBySource, resourceGroupsNeedLabels, resourceSourceLabel, type SheetResource,
 } from '../../utils/classResourceUtils'
 import {
-  getHitDiceAvailable, getPactSlotsAvailable, getResourceAvailable, getSpellSlotsAvailable,
+  getPactSlotsAvailable, getResourceAvailable, getSpellSlotsAvailable,
   recoverPactSlot, recoverResource, recoverSpellSlot, spendPactSlot, spendResource, spendSpellSlot,
 } from '../../utils/playState'
-import { pluralize } from '../../utils/textUtils'
 import { spellSaveDcSource } from './numberSources'
 import { ordinal, rollButtonLabel } from './playFormat'
 import { RollMarks } from './RollMarks'
@@ -75,7 +74,8 @@ function ResourceRow({ resource, view }: { resource: SheetResource; view: PlayTa
  * Aba "Magia": por classe conjuradora e por talento que ensina magias (Iniciado em Magia) a CD e
  * o ataque de magia (tocável); os espaços
  * do pool e os de Magia de Pacto, à parte, como bolinhas que gastam e recuperam com um toque;
- * os recursos da ficha (`sheet.resources`) com os usos e a recarga; e os Dados de Vida que restam.
+ * e os recursos da ficha (`sheet.resources`) com os usos e a recarga. Os Dados de Vida ficam nos
+ * vitais fixos, junto do "Descanso".
  */
 export function MagicTab(view: PlayTabProps) {
   const { state, sheet, guide, run, openRecipe, openSource } = view
@@ -84,7 +84,6 @@ export function MagicTab(view: PlayTabProps) {
   const pact = sheet.pactSlots
   const groups = groupResourcesBySource(sheet.resources)
   const labelGroups = resourceGroupsNeedLabels(groups)
-  const hitDice = getHitDiceAvailable(state, sheet)
 
   return (
     <div className="space-y-5">
@@ -185,19 +184,6 @@ export function MagicTab(view: PlayTabProps) {
 
       {guide.spellcasting.length === 0 && slotLevels.length === 0 && !pact && groups.length === 0 && (
         <p className="text-sm text-parchment-500">Sem magias nem recursos com usos nesta ficha.</p>
-      )}
-
-      {hitDice.length > 0 && (
-        <Section title="Dados de Vida">
-          <ul className="space-y-1">
-            {hitDice.map(h => (
-              <li key={h.die} className="text-sm text-parchment-200" data-testid={`hit-dice-d${h.die}`}>
-                d{h.die}: <span className="font-fantasy font-bold">{h.available}</span> de {h.total} {pluralize(h.available, 'disponível', 'disponíveis')}
-              </li>
-            ))}
-          </ul>
-          <p className="mt-1 text-[11px] text-parchment-500">Gaste no descanso curto, na aba Estado. O descanso longo devolve metade.</p>
-        </Section>
       )}
     </div>
   )

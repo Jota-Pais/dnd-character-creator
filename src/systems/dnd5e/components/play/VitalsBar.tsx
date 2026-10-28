@@ -1,12 +1,14 @@
 import type { ReactNode } from 'react'
 import { formatMeters, formatModifier } from '../../utils/abilityScoreUtils'
 import {
-  endConcentration, formatHpAdjustment, getBaseMaxHp, getCurrentHp, getEffectiveMaxHp, getPlayConditionEffects, getPlaySpeed,
-  setInspiration,
+  endConcentration, formatHpAdjustment, getBaseMaxHp, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable,
+  getPlayConditionEffects, getPlaySpeed, setInspiration,
 } from '../../utils/playState'
 import type { RollGuideEntry } from '../../utils/rollGuide'
 import { getConditionalAcBonuses } from '../../utils/sheetEffects'
-import { getHpBand, getHpBarPercent, type HpBand } from './hpVitals'
+import {
+  describeHitDiceAvailable, formatHitDiceAvailable, getHpBand, getHpBarPercent, type HpBand,
+} from './hpVitals'
 import { armorClassSource, passiveSource, type NumberSource } from './numberSources'
 import { ModeMark } from './RollMarks'
 import type { PlayView } from './usePlayView'
@@ -63,14 +65,16 @@ function Stat({ label, children, sub, onOpen, ariaLabel }: {
 
 /**
  * Os vitais, fixos no topo da tela de jogo: PV (com a barra por faixa, o aviso de PV baixo e o
- * corte da exaustão à vista), PV temporários,
- * CA, deslocamento efetivo, iniciativa (tocável: abre a receita), Percepção passiva, inspiração,
- * concentração e as condições ativas (só leitura; quem mexe nelas é a aba Estado).
+ * corte da exaustão à vista), PV temporários, os Dados de Vida que restam (tocável: leva aos
+ * descansos), CA, deslocamento efetivo, iniciativa (tocável: abre a receita), Percepção passiva,
+ * inspiração, concentração e as condições ativas (só leitura; quem mexe nelas é a aba Estado).
  */
-export function VitalsBar({ view, onOpenRecipe, onOpenSource }: {
+export function VitalsBar({ view, onOpenRecipe, onOpenSource, onOpenRests }: {
   view: PlayView
   onOpenRecipe: (entry: RollGuideEntry) => void
   onOpenSource: (source: NumberSource) => void
+  /** Leva aos descansos curto e longo (aba Estado). */
+  onOpenRests: () => void
 }) {
   const { draft, state, sheet, guide, armorClass, run } = view
   const current = getCurrentHp(state, sheet)
@@ -83,74 +87,98 @@ export function VitalsBar({ view, onOpenRecipe, onOpenSource }: {
   const passive = guide.passivePerception
   const life = state.lifeState === 'conscious' ? null : LIFE_LABEL[state.lifeState]
   const band = getHpBand(current, effMax)
+  const hitDice = getHitDiceAvailable(state, sheet)
 
   return (
     <div className="space-y-2">
-      <div className="grid grid-cols-4 sm:grid-cols-[minmax(0,1.6fr)_repeat(4,minmax(0,1fr))] gap-1.5">
-        <div
-          className={[
-            'col-span-4 sm:col-span-1 flex flex-col justify-center rounded-lg border px-2.5 py-1.5 min-h-12',
-            life ? 'border-red-900 bg-red-950/30' : band === 'low' ? 'border-red-900 bg-surface-raised' : 'border-gold-800 bg-surface-raised',
-          ].join(' ')}
-          data-testid="vitals-hp"
-        >
-          <span className="flex items-center justify-between gap-2 leading-none">
-            <span className="text-[10px] uppercase tracking-wider text-parchment-600">Pontos de vida</span>
-            {band === 'low' && (
-              <span className="text-[10px] font-bold uppercase tracking-wider text-red-300" data-testid="hp-low">PV baixo</span>
-            )}
-          </span>
-          <span className="leading-tight">
-            <span className="font-fantasy font-black text-2xl text-parchment-100" data-testid="hp-current">{current}</span>
-            <span className="text-sm text-parchment-500"> / {effMax}</span>
-            {state.maxHpAdjustment !== 0 && (
-              <span className="ml-1 text-[10px] text-sky-300" title="Ajuste temporário do PV máximo, até o descanso longo">
-                (máx. {formatHpAdjustment(state.maxHpAdjustment)})
+      {/* No celular, duas linhas: PV e Descanso (largo o bastante para "Dados de Vida" em 360 px),
+          depois os outros quatro. Do sm para cima, as linhas somem (`contents`) e é uma fila só. */}
+      <div className="space-y-1.5 sm:space-y-0 sm:grid sm:grid-cols-[minmax(0,2fr)_repeat(5,minmax(0,1fr))] sm:gap-1.5">
+        <div className="grid grid-cols-[minmax(0,1fr)_96px] gap-1.5 sm:contents">
+          <div
+            className={[
+              'flex flex-col justify-center rounded-lg border px-2.5 py-1.5 min-h-12',
+              life ? 'border-red-900 bg-red-950/30' : band === 'low' ? 'border-red-900 bg-surface-raised' : 'border-gold-800 bg-surface-raised',
+            ].join(' ')}
+            data-testid="vitals-hp"
+          >
+            {/* Na fila única do sm a caixa é estreita: o "PV baixo" desce de linha, sem quebrar. */}
+            <span className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 leading-none">
+              <span className="whitespace-nowrap text-[10px] uppercase tracking-wider text-parchment-600">Pontos de vida</span>
+              {band === 'low' && (
+                <span className="whitespace-nowrap text-[10px] font-bold uppercase tracking-wider text-red-300">PV baixo</span>
+              )}
+            </span>
+            <span className="leading-tight">
+              <span className="font-fantasy font-black text-2xl text-parchment-100" data-testid="hp-current">{current}</span>
+              <span className="text-sm text-parchment-500"> / {effMax}</span>
+              {state.maxHpAdjustment !== 0 && (
+                <span className="ml-1 text-[10px] text-sky-300" title="Ajuste temporário do PV máximo, até o descanso longo">
+                  (máx. {formatHpAdjustment(state.maxHpAdjustment)})
+                </span>
+              )}
+              {state.tempHp > 0 && (
+                <span className="ml-1.5 text-sm font-bold text-sky-300" title="PV temporários: somem antes dos seus PV">+{state.tempHp} temp.</span>
+              )}
+            </span>
+            <HpBar current={current} max={effMax} band={band} />
+            {life && <span className="text-xs font-bold text-red-300 leading-none">{life}</span>}
+            {!life && effMax < baseMax && (
+              <span className="text-[10px] text-amber-300 leading-tight">
+                Exaustão {state.exhaustionLevel}: máximo {baseMax} → {effMax}
               </span>
             )}
-            {state.tempHp > 0 && (
-              <span className="ml-1.5 text-sm font-bold text-sky-300" title="PV temporários: somem antes dos seus PV">+{state.tempHp} temp.</span>
-            )}
-          </span>
-          <HpBar current={current} max={effMax} band={band} />
-          {life && <span className="text-xs font-bold text-red-300 leading-none">{life}</span>}
-          {!life && effMax < baseMax && (
-            <span className="text-[10px] text-amber-300 leading-tight">
-              Exaustão {state.exhaustionLevel}: máximo {baseMax} → {effMax}
-            </span>
-          )}
+          </div>
+          <Stat
+            label="Descanso"
+            sub="Dados de Vida"
+            onOpen={onOpenRests}
+            ariaLabel={`Descanso. Dados de Vida disponíveis: ${describeHitDiceAvailable(hitDice) || 'nenhum'}. Abre os descansos curto e longo`}
+          >
+            {hitDice.length === 0 ? '—' : formatHitDiceAvailable(hitDice).map((text, i) => (
+              <span
+                key={hitDice[i].die}
+                className={`block text-sm ${hitDice[i].available === 0 ? 'text-parchment-600' : ''}`}
+                data-testid={`vitals-hit-dice-d${hitDice[i].die}`}
+              >
+                {text}
+              </span>
+            ))}
+          </Stat>
         </div>
-        <Stat
-          label="CA"
-          onOpen={() => onOpenSource(armorClassSource(armorClass, getConditionalAcBonuses(draft)))}
-          ariaLabel={`Classe de Armadura ${armorClass.value}: de onde vem`}
-        >
-          {armorClass.value}
-        </Stat>
-        <Stat
-          label="Desloc."
-          sub={speed !== sheet.speed ? <span className="text-amber-300">era {formatMeters(sheet.speed)}</span> : undefined}
-        >
-          <span className="text-sm">{formatMeters(speed)}</span>
-        </Stat>
-        <button
-          onClick={() => onOpenRecipe(initiative)}
-          aria-label={`Iniciativa ${formatModifier(initiative.modifier)}: ver o que rolar`}
-          className="flex flex-col items-center justify-center min-w-0 rounded-lg border border-parchment-800 bg-surface-raised px-1 py-1.5 min-h-12 hover:border-gold-700 transition-colors"
-        >
-          <span className="text-[10px] uppercase tracking-wider text-gold-500 leading-none">Inic.</span>
-          <span className="font-fantasy font-bold text-lg text-parchment-100 leading-tight">
-            {formatModifier(initiative.modifier)} <ModeMark entry={initiative} />
-          </span>
-        </button>
-        <Stat
-          label="Percep."
-          sub={passive.adjustment !== 0 ? `passiva ${passive.adjustment > 0 ? '+5' : '−5'}` : 'passiva'}
-          onOpen={() => onOpenSource(passiveSource(passive))}
-          ariaLabel={`Percepção passiva ${passive.value}: de onde vem`}
-        >
-          {passive.value}
-        </Stat>
+        <div className="grid grid-cols-4 gap-1.5 sm:contents">
+          <Stat
+            label="CA"
+            onOpen={() => onOpenSource(armorClassSource(armorClass, getConditionalAcBonuses(draft)))}
+            ariaLabel={`Classe de Armadura ${armorClass.value}: de onde vem`}
+          >
+            {armorClass.value}
+          </Stat>
+          <Stat
+            label="Desloc."
+            sub={speed !== sheet.speed ? <span className="text-amber-300">era {formatMeters(sheet.speed)}</span> : undefined}
+          >
+            <span className="text-sm">{formatMeters(speed)}</span>
+          </Stat>
+          <button
+            onClick={() => onOpenRecipe(initiative)}
+            aria-label={`Iniciativa ${formatModifier(initiative.modifier)}: ver o que rolar`}
+            className="flex flex-col items-center justify-center min-w-0 rounded-lg border border-parchment-800 bg-surface-raised px-1 py-1.5 min-h-12 hover:border-gold-700 transition-colors"
+          >
+            <span className="text-[10px] uppercase tracking-wider text-gold-500 leading-none">Inic.</span>
+            <span className="font-fantasy font-bold text-lg text-parchment-100 leading-tight">
+              {formatModifier(initiative.modifier)} <ModeMark entry={initiative} />
+            </span>
+          </button>
+          <Stat
+            label="Percep."
+            sub={passive.adjustment !== 0 ? `passiva ${passive.adjustment > 0 ? '+5' : '−5'}` : 'passiva'}
+            onOpen={() => onOpenSource(passiveSource(passive))}
+            ariaLabel={`Percepção passiva ${passive.value}: de onde vem`}
+          >
+            {passive.value}
+          </Stat>
+        </div>
       </div>
 
       {/* Uma faixa só, que rola de lado: com várias condições os vitais fixos não comem a tela. */}

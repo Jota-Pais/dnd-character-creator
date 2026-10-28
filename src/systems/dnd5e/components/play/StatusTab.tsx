@@ -9,9 +9,12 @@ import type { PlayTabProps } from './usePlayView'
 
 const EXHAUSTION_LEVELS = [0, 1, 2, 3, 4, 5, 6] as const
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+/** A seção dos descansos: o "Descanso" dos vitais rola até ela. */
+export const REST_SECTION_ID = 'play-rests'
+
+function Section({ title, id, children }: { title: string; id?: string; children: ReactNode }) {
   return (
-    <section>
+    <section id={id}>
       <h2 className="text-[11px] uppercase tracking-wider text-parchment-600 font-fantasy mb-1.5">{title}</h2>
       {children}
     </section>
@@ -164,7 +167,7 @@ export function StatusTab(view: PlayTabProps) {
       <Section title="Concentração">
         <ConcentrationSection {...view} />
       </Section>
-      <Section title="Descansos">
+      <Section title="Descansos" id={REST_SECTION_ID}>
         <RestSection {...view} />
       </Section>
     </div>

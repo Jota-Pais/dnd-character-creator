@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { useCharacterStore } from '../../stores/characterStore'
 import { PLAY_TABS, type PlayTabId } from './playTabs'
 import { PlaySettings } from './PlaySettings'
@@ -12,9 +13,13 @@ import { RollRecipeSheet, type RecipeLink } from './RollRecipeSheet'
 import { VitalsBar } from './VitalsBar'
 import { NumberSourceSheet } from './NumberSourceSheet'
 import type { NumberSource } from './numberSources'
+import { REST_SECTION_ID } from './StatusTab'
 
 /** Folga de fundo sem aviso aberto (px): o fim da página não encosta na borda. */
 const MIN_BOTTOM_GAP = 128
+
+/** Folga (px) entre os vitais fixos e o título da seção para a qual a tela rola. */
+const STICKY_GAP = 8
 
 /**
  * Modo de jogo do D&D 5e: a ficha de UM personagem durante a sessão. Pensada para o celular
@@ -39,6 +44,22 @@ export function PlayScreen() {
     setRecipe({ entry, crit: options?.crit ?? false })
   // O "de onde vem" aberto de um número que não se rola (CA, CD de magia, Percepção passiva).
   const [source, setSource] = useState<NumberSource | null>(null)
+  const stickyRef = useRef<HTMLDivElement>(null)
+
+  // O "Descanso" dos vitais: abre a aba Estado e rola até os descansos, logo abaixo dos vitais
+  // fixos, com o foco no primeiro botão (o teclado e o leitor de tela chegam junto).
+  function openRests() {
+    flushSync(() => setTab('status'))
+    const section = document.getElementById(REST_SECTION_ID)
+    if (!section) return
+    section.querySelector('button')?.focus({ preventScroll: true })
+    const rect = section.getBoundingClientRect()
+    // Sem layout (o jsdom dos testes), nada a rolar.
+    if (rect.height === 0) return
+    const covered = stickyRef.current?.getBoundingClientRect().height ?? 0
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    window.scrollBy({ top: rect.top - covered - STICKY_GAP, behavior: reduceMotion ? 'auto' : 'smooth' })
+  }
 
   // No celular, trocar de app pode descartar a aba sem aviso: o que está sendo digitado (nota da
   // sessão, nota de duração) grava assim que a página some.
@@ -117,8 +138,8 @@ export function PlayScreen() {
           {settingsOpen && <div className="mt-3"><PlaySettings /></div>}
         </header>
 
-        <div className="sticky top-0 z-20 -mx-4 px-4 py-2 bg-surface-base/95 backdrop-blur-sm border-b border-parchment-900">
-          <VitalsBar view={view} onOpenRecipe={openRecipe} onOpenSource={setSource} />
+        <div ref={stickyRef} className="sticky top-0 z-20 -mx-4 px-4 py-2 bg-surface-base/95 backdrop-blur-sm border-b border-parchment-900">
+          <VitalsBar view={view} onOpenRecipe={openRecipe} onOpenSource={setSource} onOpenRests={openRests} />
         </div>
 
         {/* A 0 PV os testes contra a morte tomam a frente; dano e cura continuam valendo

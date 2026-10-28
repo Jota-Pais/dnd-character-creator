@@ -16,9 +16,11 @@ import {
   describeInnateSpellUsage,
   RACES,
   TOOL_NAMES,
+  getRaceGrantedToolNames,
 } from '../raceUtils'
 import { getToolName } from '../backgroundUtils'
 import toolsData from '../../data/tools.json'
+import racesData from '../../data/races.json'
 import type { RaceChoiceSelections } from '../../types/character'
 import type { RaceChoice } from '../../types/race'
 
@@ -362,5 +364,44 @@ describe('getEffectiveTraitsWithChoices', () => {
   it('humano comum mostra o idioma adicional escolhido', () => {
     const view = getEffectiveTraitsWithChoices(human, null, { languages: ['elvish'] })
     expect(view.find(v => v.trait.name === 'Idiomas')?.chosen).toBe('Élfico')
+  })
+})
+
+// Gnomo das Rochas (p. 37): o traço diz "ferramentas de engenhoqueiro", como o livro, e a ficha
+// chama o item pelo nome da tabela de equipamento — o traço leva esse nome entre parênteses.
+describe('Engenhoqueiro: o nome do livro com o da tabela (toolNote)', () => {
+  const gnome = getRace('gnome')!
+  const rock = getSubrace(gnome, 'rock-gnome')!
+
+  it('o texto do livro fica, com o nome de tools.json entre parênteses logo depois', () => {
+    const trait = getEffectiveTraits(gnome, rock).find(t => t.name === 'Engenhoqueiro')
+    expect(trait?.description).toContain(`usando ferramentas de engenhoqueiro (${getToolName('tinkers-tools')}).`)
+    expect(trait?.description).toContain('ferramentas de engenhoqueiro (Ferramentas de Funileiro)')
+  })
+
+  it('a Revisão e o PDF leem o mesmo texto (getEffectiveTraitsWithChoices)', () => {
+    const view = getEffectiveTraitsWithChoices(gnome, rock, {})
+    expect(view.find(v => v.trait.name === 'Engenhoqueiro')?.trait.description).toContain('(Ferramentas de Funileiro)')
+  })
+
+  it('a etapa Raça mostra a proficiência com o nome de tools.json', () => {
+    expect(getRaceGrantedToolNames(gnome, rock)).toEqual(['Ferramentas de Funileiro'])
+    expect(getRaceGrantedToolNames(gnome, getSubrace(gnome, 'forest-gnome')!)).toEqual([])
+  })
+
+  type RawTrait = { name: string; description: string; toolNote?: { tool: string; after: string } }
+  type RawOwner = { id: string; traits: RawTrait[]; grantedProficiencies: { type: string; value: string }[] }
+  const owners = (racesData as (RawOwner & { subraces: RawOwner[] })[]).flatMap(r => [r, ...r.subraces])
+  const withNote = owners.flatMap(o => o.traits.filter(t => t.toolNote).map(t => [`${o.id}: ${t.name}`, o, t] as const))
+
+  it('há traço com toolNote (o teste não está olhando o lugar errado)', () => {
+    expect(withNote.map(([label]) => label)).toEqual(['rock-gnome: Engenhoqueiro'])
+  })
+
+  it.each(withNote)('%s: a ferramenta existe, é concedida pela mesma raça e o nome do livro está no texto', (_label, owner, trait) => {
+    const note = trait.toolNote!
+    expect(TOOL_NAMES[note.tool]).toBeDefined()
+    expect(owner.grantedProficiencies).toContainEqual({ type: 'tool', value: note.tool })
+    expect(trait.description).toContain(note.after)
   })
 })

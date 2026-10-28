@@ -10,6 +10,7 @@ import {
   getEffectiveAbilityBonuses,
   getAllChoices,
   getEffectiveTraits,
+  getRaceGrantedToolNames,
   RACE_PRESENTATION,
   LANGUAGES,
 } from '../../utils/raceUtils'
@@ -43,6 +44,8 @@ export function RaceStep() {
   const effectiveBonuses = selectedRace
     ? getEffectiveAbilityBonuses(selectedRace, selectedSubrace ?? null, draft.raceChoices)
     : []
+  // Ferramenta fixa da raça (gnomo das rochas), com o nome que ela tem na ficha (tools.json).
+  const grantedTools = selectedRace ? getRaceGrantedToolNames(selectedRace, selectedSubrace ?? null) : []
 
 
   // Perícias/ferramentas já obtidas de classe ou antecedente não podem ser re-escolhidas. A que
@@ -146,6 +149,7 @@ export function RaceStep() {
                   />
                   <Stat label="📏 Tamanho" value={selectedRace.size === 'Small' ? 'Pequeno' : 'Médio'} />
                   <Stat label="🗣️ Idiomas" value={selectedRace.grantedLanguages.map(id => LANGUAGES.find(l => l.id === id)?.name ?? id).join(', ')} />
+                  {grantedTools.length > 0 && <Stat label="🛠️ Ferramentas" value={grantedTools.join(', ')} />}
                 </div>
 
                 {effectiveBonuses.length > 0 && (

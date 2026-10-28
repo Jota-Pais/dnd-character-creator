@@ -524,7 +524,8 @@
           },
           {
             "name": "Engenhoqueiro",
-            "description": "Permite construir pequenos mecanismos (brinquedos, isqueiros ou caixas de música) usando ferramentas de engenhoqueiro."
+            "description": "Permite construir pequenos mecanismos (brinquedos, isqueiros ou caixas de música) usando ferramentas de engenhoqueiro.",
+            "toolNote": { "tool": "tinkers-tools", "after": "ferramentas de engenhoqueiro" }
           }
         ],
         "overrides": {}

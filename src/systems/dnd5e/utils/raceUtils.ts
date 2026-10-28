@@ -10,6 +10,30 @@ import { ABILITY_LABELS, formatMeters } from './abilityScoreUtils'
 import { getDragonAncestor } from './dragonAncestors'
 
 /**
+ * Nome de cada ferramenta, lido de tools.json: o mesmo da etapa Raça, da Revisão e da ficha. Era
+ * uma cópia à mão, e o gnomo das rochas saía com "Ferramentas de Engenhoqueiro" na ficha e
+ * "Ferramentas de Funileiro" na Revisão. O item leva o nome da tabela de equipamento (p. 156); o
+ * texto do traço Engenhoqueiro (races.json) segue a redação do livro (p. 37), com o nome da
+ * tabela entre parênteses (`toolNote`). Antes de RACES, que o lê na carga.
+ */
+export const TOOL_NAMES: Record<string, string> = Object.fromEntries(
+  (toolsData as { id: string; name: string }[]).map(t => [t.id, t.name]),
+)
+
+/**
+ * Traço que chama a ferramenta pelo nome do livro (`toolNote`) ganha o nome de tools.json entre
+ * parênteses logo depois dele: "usando ferramentas de engenhoqueiro (Ferramentas de Funileiro)".
+ * Feito na carga, como os traços do ancestral dracônico: a etapa Raça, a Revisão e o PDF leem o
+ * mesmo texto.
+ */
+function withToolNote(trait: RacialTrait): RacialTrait {
+  const note = trait.toolNote
+  const name = note ? TOOL_NAMES[note.tool] : undefined
+  if (!note || !name || !trait.description.includes(note.after)) return trait
+  return { ...trait, description: trait.description.replace(note.after, `${note.after} (${name})`) }
+}
+
+/**
  * Sub-raça com ancestral dracônico (draconato, p. 34) ganha os traços da linha da tabela: o tipo
  * de dano e a área do sopro. Feito na carga, todo leitor de traços (etapa Raça, Revisão, PDF, os
  * efeitos) vê o mesmo.
@@ -29,7 +53,8 @@ function withDragonAncestorTraits(subrace: Subrace): Subrace {
 
 export const RACES: Race[] = (racesData as Race[]).map(race => ({
   ...race,
-  subraces: race.subraces.map(withDragonAncestorTraits),
+  traits: race.traits.map(withToolNote),
+  subraces: race.subraces.map(withDragonAncestorTraits).map(sub => ({ ...sub, traits: sub.traits.map(withToolNote) })),
 }))
 
 export const SKILLS = [
@@ -102,16 +127,6 @@ export const RACE_PRESENTATION: Record<string, RacePresentation> = {
   'half-orc': { emoji: '⚔️',  accent: '#4ade80', beginnerFriendly: true, beginnerNote: 'Forte e durável, perfeito pra partir pra briga sem medo.' },
   tiefling:   { emoji: '🔮',  accent: '#c084fc' },
 }
-
-/**
- * Nome de cada ferramenta, lido de tools.json: o mesmo da etapa Raça, da Revisão e da ficha. Era
- * uma cópia à mão, e o gnomo das rochas saía com "Ferramentas de Engenhoqueiro" na ficha e
- * "Ferramentas de Funileiro" na Revisão. O item leva o nome da tabela de equipamento (p. 156); o
- * texto do traço Engenhoqueiro (races.json) segue a redação do livro (p. 37).
- */
-export const TOOL_NAMES: Record<string, string> = Object.fromEntries(
-  (toolsData as { id: string; name: string }[]).map(t => [t.id, t.name]),
-)
 
 export function getRace(raceId: string): Race | undefined {
   return RACES.find(r => r.id === raceId)
@@ -251,6 +266,11 @@ export function getRaceGrantedTools(race: Race, subrace: Subrace | null): string
   return getEffectiveGrantedProficiencies(race, subrace)
     .filter(g => g.type === 'tool')
     .map(g => g.value)
+}
+
+/** As mesmas ferramentas com o nome de tools.json — o que a etapa Raça mostra ("Ferramentas de Funileiro"). */
+export function getRaceGrantedToolNames(race: Race, subrace: Subrace | null): string[] {
+  return getRaceGrantedTools(race, subrace).map(id => TOOL_NAMES[id] ?? id)
 }
 
 /** Magias inatas da raça + sub-raça (respeita replacesParentTraits). */

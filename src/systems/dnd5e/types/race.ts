@@ -103,6 +103,13 @@ export type RacialTrait = {
    * "Escolha: Dracônico" ao lado do traço. Toda escolha da raça tem um traço com este campo.
    */
   choice?: RaceChoice['kind']
+  /**
+   * Ferramenta que o traço concede e o livro chama por outro nome que o da tabela de equipamento
+   * (Engenhoqueiro, p. 37: as "ferramentas de engenhoqueiro" são as Ferramentas de Funileiro,
+   * p. 156). Na carga das raças, o nome de tools.json entra entre parênteses logo depois de
+   * `after` na descrição: o texto do livro fica, e a ficha diz qual é o item.
+   */
+  toolNote?: { tool: string; after: string }
   /** Efeitos que a ficha calcula sozinha (ver `sheetEffects`). Ausente = só descritivo. */
   effects?: RacialTraitEffects
 }

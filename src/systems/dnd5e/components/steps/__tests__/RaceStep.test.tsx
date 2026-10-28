@@ -63,3 +63,20 @@ describe('RaceStep: escolha de 1 troca direto', () => {
     expect((getByRole('button', { name: 'CON' }) as HTMLButtonElement).disabled).toBe(true)
   })
 })
+
+// Gnomo das Rochas (p. 37): a etapa mostra a proficiência que a sub-raça dá com o nome de
+// tools.json, e o traço mantém o texto do livro com esse nome entre parênteses.
+describe('RaceStep: ferramenta concedida pela raça', () => {
+  it('Gnomo das Rochas: Ferramentas de Funileiro nas estatísticas e no traço Engenhoqueiro', () => {
+    useCharacterStore.setState({ draft: { ...structuredClone(EMPTY_DRAFT), race: 'gnome', subrace: 'rock-gnome' } })
+    const text = render(<RaceStep />).container.textContent ?? ''
+    expect(text).toContain('🛠️ FerramentasFerramentas de Funileiro')
+    expect(text).toContain('usando ferramentas de engenhoqueiro (Ferramentas de Funileiro).')
+  })
+
+  it('sem ferramenta fixa, sem a linha', () => {
+    useCharacterStore.setState({ draft: { ...structuredClone(EMPTY_DRAFT), race: 'gnome', subrace: 'forest-gnome' } })
+    const text = render(<RaceStep />).container.textContent ?? ''
+    expect(text).not.toContain('🛠️ Ferramentas')
+  })
+})

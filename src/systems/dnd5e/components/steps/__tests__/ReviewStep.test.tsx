@@ -155,3 +155,23 @@ describe('Iniciado em Magia na seção Magias da Revisão e do PDF', () => {
     expect(text).toMatch(/Magias — descrições \(3\)/)
   })
 })
+
+// Gnomo das Rochas (p. 37): o traço Engenhoqueiro mantém "ferramentas de engenhoqueiro" do livro,
+// com o nome que o item tem na ficha (tools.json) entre parênteses — e a proficiência sai com ele.
+describe('Engenhoqueiro com o nome da ferramenta na Revisão e no PDF', () => {
+  const rockGnome: CharacterDraft = {
+    ...structuredClone(EMPTY_DRAFT),
+    name: 'Bimpnottin',
+    race: 'gnome', subrace: 'rock-gnome', class: 'wizard', level: 1,
+    abilityScores: { STR: 8, DEX: 14, CON: 13, INT: 15, WIS: 12, CHA: 10 },
+  }
+
+  it.each([
+    ['Revisão', () => render(<ReviewStep />)],
+    ['ficha imprimível', () => render(<PrintableSheet />)],
+  ])('%s: texto do livro com a nota entre parênteses', (_, renderIt) => {
+    useCharacterStore.setState({ draft: structuredClone(rockGnome) })
+    const text = renderIt().container.textContent ?? ''
+    expect(text).toContain('usando ferramentas de engenhoqueiro (Ferramentas de Funileiro).')
+  })
+})

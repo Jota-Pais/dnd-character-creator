@@ -1,7 +1,7 @@
 import { LANGUAGES, type Language } from '../../utils/raceUtils'
 import { isChoiceFull, toggleChoice } from '../../utils/choiceToggle'
 import { RepeatedProficiencyNotes } from './RepeatedProficiencyNotes'
-import { REPEATED_CHIP_STYLE } from './repeatedChipStyle'
+import { REPEATED_OPTION_STYLE } from './repeatedChipStyle'
 
 type Props = {
   /** Quantos idiomas esta concessão deixa escolher. */
@@ -61,7 +61,7 @@ export function LanguagePicker({ count, selected, excluded, repeated = {}, accen
                 backgroundColor: isSelected ? `${accent}15` : 'transparent',
                 color: isSelected ? accent : isExcluded ? '#3a2614' : isDisabled ? '#5a3e24' : '#9a7650',
                 cursor: isDisabled ? 'not-allowed' : 'pointer',
-                ...(isRepeated ? REPEATED_CHIP_STYLE : {}),
+                ...(isRepeated ? REPEATED_OPTION_STYLE : {}),
               }}
             >
               {isRepeated ? '⚠ ' : isExcluded ? '✓ ' : ''}{lang.name}

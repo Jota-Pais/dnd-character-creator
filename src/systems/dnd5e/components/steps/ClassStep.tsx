@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import type { GameClass } from '../../types/class'
 import { useCharacterStore } from '../../stores/characterStore'
 import {
@@ -51,20 +51,9 @@ export function ClassStep() {
 
   // Perícias/ferramentas já obtidas de outra fonte não podem ser re-escolhidas. A exclusão é por
   // slot: a lista da classe e os extras da subclasse são concessões distintas (ver proficiencyUtils).
+  // A que chegou repetida depois (antecedente ou raça trocados, ficha antiga) NÃO é apagada: fica
+  // marcada com o aviso, e a etapa reprova até o jogador trocar (p. 125, getRepeatedProficiencies).
   const proficiencies = getClassSlotProficiencies(draft, draft.class ?? '')
-  const { excludedBaseSkills, excludedBaseTools } = proficiencies
-
-  useEffect(() => {
-    const skills = draft.classChoices.skills
-    const filtered = skills.filter(id => !excludedBaseSkills.includes(id))
-    if (filtered.length !== skills.length) updateClassChoices({ skills: filtered })
-  }, [excludedBaseSkills.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    const tools = draft.classChoices.tools
-    const filtered = tools.filter(id => !excludedBaseTools.includes(id))
-    if (filtered.length !== tools.length) updateClassChoices({ tools: filtered })
-  }, [excludedBaseTools.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleClassSelect(classId: string) {
     setClass(classId)

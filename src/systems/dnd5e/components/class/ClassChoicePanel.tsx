@@ -24,6 +24,8 @@ import { getMaxSpellLevel, getSecretCantripRoom, getSpell } from '../../utils/sp
 import type { ClassSlotProficiencies } from '../../utils/proficiencyUtils'
 import type { TakenFightingStyles } from '../../utils/sheetEffects'
 import { MANEUVER_LIST_ID } from '../../utils/maneuverUtils'
+import { RepeatedProficiencyNotes } from '../common/RepeatedProficiencyNotes'
+import { REPEATED_CHIP_STYLE } from '../common/repeatedChipStyle'
 
 type Tool = { id: string; name: string; category: 'artisan' | 'musical-instrument' | 'gaming-set' | 'other' | 'vehicle' }
 const ALL_TOOLS: Tool[] = toolsData as Tool[]
@@ -70,6 +72,7 @@ export function ClassChoicePanel({ cls, choices, accent, level, onChange, profic
   const skillOptions = getSkillOptions(cls)
   const excludedSkillSet = new Set(proficiencies.excludedBaseSkills)
   const excludedToolSet = new Set(proficiencies.excludedBaseTools)
+  const { repeatedBase } = proficiencies
   // Ao multiclassar, a classe dá só o subconjunto de perícias da Tabela de Proficiências (0 ou 1).
   const skillLimit = multiclass ? (cls.multiclassProficiencies.skills?.count ?? 0) : cls.skillChoices.count
   // Especialização chega em levas (ladino no 1º e 6º, bardo no 3º e 10º), pelo nível NESTA classe.
@@ -141,27 +144,32 @@ export function ClassChoicePanel({ cls, choices, accent, level, onChange, profic
         <div className="flex flex-wrap gap-1.5">
           {skillOptions.map(skill => {
             const selected = choices.skills.includes(skill.id)
-            const excluded = excludedSkillSet.has(skill.id)
+            // O que outra fonte já dá não se escolhe. Marcada assim mesmo (o antecedente ou a raça
+            // trocados depois, ficha antiga), fica à vista com o aviso, para desmarcar e trocar.
+            const repeated = selected ? repeatedBase[skill.id] : undefined
+            const excluded = !selected && excludedSkillSet.has(skill.id)
             const disabled = excluded || (!selected && choices.skills.length >= skillLimit)
             return (
               <button
                 key={skill.id}
-                onClick={() => { if (!excluded) handleSkillToggle(skill.id) }}
+                onClick={() => { if (!disabled) handleSkillToggle(skill.id) }}
                 disabled={disabled}
-                title={excluded ? 'Você já possui esta perícia de outra fonte' : undefined}
+                title={repeated ?? (excluded ? 'Você já possui esta perícia de outra fonte' : undefined)}
                 className="px-2.5 py-1 rounded-lg text-xs font-semibold transition-all"
                 style={{
                   backgroundColor: selected ? accent : disabled ? 'rgba(30, 20, 8, 0.4)' : 'rgba(40, 28, 12, 0.8)',
                   color: selected ? '#0a0704' : disabled ? '#4a3520' : '#c4a97a',
                   border: selected ? 'none' : `1px solid ${disabled ? 'rgba(60, 40, 20, 0.3)' : 'rgba(90, 62, 36, 0.5)'}`,
                   cursor: disabled ? 'not-allowed' : 'pointer',
+                  ...(repeated ? REPEATED_CHIP_STYLE : {}),
                 }}
               >
-                {excluded ? '✓ ' : ''}{skill.name}
+                {repeated ? '⚠ ' : excluded ? '✓ ' : ''}{skill.name}
               </button>
             )
           })}
         </div>
+        <RepeatedProficiencyNotes ids={choices.skills} notes={repeatedBase} />
       </ChoiceSection>
       )}
 
@@ -178,27 +186,33 @@ export function ClassChoicePanel({ cls, choices, accent, level, onChange, profic
             <div className="flex flex-wrap gap-1.5">
               {filtered.map(tool => {
                 const selected = choices.tools.includes(tool.id)
-                const excluded = excludedToolSet.has(tool.id)
+                const repeated = selected ? repeatedBase[tool.id] : undefined
+                const excluded = !selected && excludedToolSet.has(tool.id)
                 const disabled = excluded || (!selected && choices.tools.length >= toolChoice.count)
                 return (
                   <button
                     key={tool.id}
-                    onClick={() => { if (!excluded) handleToolToggle(tool.id, toolChoice.count) }}
+                    onClick={() => { if (!disabled) handleToolToggle(tool.id, toolChoice.count) }}
                     disabled={disabled}
-                    title={excluded ? 'Você já possui esta ferramenta de outra fonte' : undefined}
+                    title={repeated ?? (excluded ? 'Você já possui esta ferramenta de outra fonte' : undefined)}
                     className="px-2.5 py-1 rounded-lg text-xs font-semibold transition-all"
                     style={{
                       backgroundColor: selected ? accent : disabled ? 'rgba(30, 20, 8, 0.4)' : 'rgba(40, 28, 12, 0.8)',
                       color: selected ? '#0a0704' : disabled ? '#4a3520' : '#c4a97a',
                       border: selected ? 'none' : `1px solid ${disabled ? 'rgba(60, 40, 20, 0.3)' : 'rgba(90, 62, 36, 0.5)'}`,
                       cursor: disabled ? 'not-allowed' : 'pointer',
+                      ...(repeated ? REPEATED_CHIP_STYLE : {}),
                     }}
                   >
-                    {excluded ? '✓ ' : ''}{tool.name}
+                    {repeated ? '⚠ ' : excluded ? '✓ ' : ''}{tool.name}
                   </button>
                 )
               })}
             </div>
+            <RepeatedProficiencyNotes
+              ids={choices.tools.filter(id => filtered.some(t => t.id === id))}
+              notes={repeatedBase}
+            />
           </ChoiceSection>
         )
       })}
@@ -279,6 +293,7 @@ export function ClassChoicePanel({ cls, choices, accent, level, onChange, profic
           excludedSkills={proficiencies.excludedSubclassSkills}
           excludedTools={proficiencies.excludedSubclassTools}
           excludedLanguages={proficiencies.excludedSubclassLanguages}
+          repeated={proficiencies.repeatedSubclass}
           onChangeExtras={(patch) =>
             onChange({ subclassExtras: { ...choices.subclassExtras, ...patch } })
           }
@@ -359,6 +374,8 @@ type SubclassExtrasPanelProps = {
   excludedTools: string[]
   /** Idiomas que o personagem já fala por outra fonte (raça, antecedente, talento, outra classe). */
   excludedLanguages: string[]
+  /** Perícias e ferramentas escolhidas aqui que outra fonte já dá (id → aviso): marcadas, para trocar. */
+  repeated: Record<string, string>
   onChangeExtras: (patch: Partial<import('../../types/class').SubclassChoiceSelections>) => void
 }
 
@@ -370,7 +387,7 @@ const ARMOR_LABELS: Record<string, string> = {
 }
 
 function SubclassExtrasPanel({
-  extras, subclassExtras, accent, excludedSkills, excludedTools, excludedLanguages, onChangeExtras,
+  extras, subclassExtras, accent, excludedSkills, excludedTools, excludedLanguages, repeated, onChangeExtras,
 }: SubclassExtrasPanelProps) {
   const [cantripInput, setCantripInput] = useState(subclassExtras.cantrip ?? '')
   const excludedSkillSet = new Set(excludedSkills)
@@ -471,16 +488,17 @@ function SubclassExtrasPanel({
           <div className="flex flex-wrap gap-1.5">
             {resolveSkillOptions(extras.skillChoice.from).map(skill => {
               const selected = (subclassExtras.skills ?? []).includes(skill.id)
-              const excluded = excludedSkillSet.has(skill.id)
+              const isRepeated = selected ? repeated[skill.id] : undefined
+              const excluded = !selected && excludedSkillSet.has(skill.id)
               const disabled = excluded
                 || (!selected && (subclassExtras.skills ?? []).length >= extras.skillChoice!.count)
               return (
                 <button
                   key={skill.id}
                   disabled={disabled}
-                  title={excluded ? 'Você já possui esta perícia de outra fonte' : undefined}
+                  title={isRepeated ?? (excluded ? 'Você já possui esta perícia de outra fonte' : undefined)}
                   onClick={() => {
-                    if (excluded) return
+                    if (disabled) return
                     const current = subclassExtras.skills ?? []
                     onChangeExtras({
                       skills: selected ? current.filter(s => s !== skill.id) : [...current, skill.id],
@@ -492,13 +510,15 @@ function SubclassExtrasPanel({
                     color: selected ? '#0a0704' : disabled ? '#4a3520' : '#c4a97a',
                     border: selected ? 'none' : `1px solid ${disabled ? 'rgba(60,40,20,0.3)' : 'rgba(90,62,36,0.5)'}`,
                     cursor: disabled ? 'not-allowed' : 'pointer',
+                    ...(isRepeated ? REPEATED_CHIP_STYLE : {}),
                   }}
                 >
-                  {excluded ? '✓ ' : ''}{skill.name}
+                  {isRepeated ? '⚠ ' : excluded ? '✓ ' : ''}{skill.name}
                 </button>
               )
             })}
           </div>
+          <RepeatedProficiencyNotes ids={subclassExtras.skills ?? []} notes={repeated} />
         </ChoiceSection>
       )}
 
@@ -511,16 +531,17 @@ function SubclassExtrasPanel({
           <div className="flex flex-wrap gap-1.5">
             {filterToolsBySource(extras.toolChoice.from).map(tool => {
               const selected = (subclassExtras.tools ?? []).includes(tool.id)
-              const excluded = excludedToolSet.has(tool.id)
+              const isRepeated = selected ? repeated[tool.id] : undefined
+              const excluded = !selected && excludedToolSet.has(tool.id)
               const disabled = excluded
                 || (!selected && (subclassExtras.tools ?? []).length >= extras.toolChoice!.count)
               return (
                 <button
                   key={tool.id}
                   disabled={disabled}
-                  title={excluded ? 'Você já possui esta ferramenta de outra fonte' : undefined}
+                  title={isRepeated ?? (excluded ? 'Você já possui esta ferramenta de outra fonte' : undefined)}
                   onClick={() => {
-                    if (excluded) return
+                    if (disabled) return
                     const current = subclassExtras.tools ?? []
                     onChangeExtras({
                       tools: selected ? current.filter(t => t !== tool.id) : [...current, tool.id],
@@ -532,13 +553,15 @@ function SubclassExtrasPanel({
                     color: selected ? '#0a0704' : disabled ? '#4a3520' : '#c4a97a',
                     border: selected ? 'none' : `1px solid ${disabled ? 'rgba(60,40,20,0.3)' : 'rgba(90,62,36,0.5)'}`,
                     cursor: disabled ? 'not-allowed' : 'pointer',
+                    ...(isRepeated ? REPEATED_CHIP_STYLE : {}),
                   }}
                 >
-                  {excluded ? '✓ ' : ''}{tool.name}
+                  {isRepeated ? '⚠ ' : excluded ? '✓ ' : ''}{tool.name}
                 </button>
               )
             })}
           </div>
+          <RepeatedProficiencyNotes ids={subclassExtras.tools ?? []} notes={repeated} />
         </ChoiceSection>
       )}
 

@@ -118,8 +118,10 @@ function persistCurrent(currentId: string | null, draft: CharacterDraft, step: W
 // ── Salvamento automático ────────────────────────────────────────────────────
 // Toda alteração do jogador no draft é gravada sozinha, AUTOSAVE_DELAY_MS depois da última
 // (cliques em sequência viram uma gravação só). Navegar entre etapas continua gravando na hora,
-// e trocar de ficha (abrir, nova, importar, duplicar, galeria, Concluir) grava antes o que estava
-// pendente — o timer nunca dispara depois da troca, então não escreve na ficha errada.
+// e trocar de ficha (abrir, nova, importar, duplicar, galeria, Concluir, jogar) grava antes o que
+// estava pendente — o timer nunca dispara depois da troca, então não escreve na ficha errada. O
+// modo de jogo nunca chama setter de draft (o estado de jogo vai pelo playStore/playStorage): no
+// jogo não há timer, e o pagehide e o exitPlay não têm o que gravar.
 
 /** Espera, depois da última alteração do draft, até gravar a ficha. */
 export const AUTOSAVE_DELAY_MS = 400

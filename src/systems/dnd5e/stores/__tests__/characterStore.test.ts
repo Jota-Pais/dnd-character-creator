@@ -15,6 +15,22 @@ beforeEach(() => {
   useCharacterStore.setState({ library: [] })
 })
 
+const LIBRARY_KEY = 'dnd-character-library'
+
+/** Esconde a aba (troca de app no celular): `visibilitychange` com o documento oculto. */
+function hidePage(): void {
+  Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true })
+  try {
+    document.dispatchEvent(new Event('visibilitychange'))
+  } finally {
+    Reflect.deleteProperty(document, 'visibilityState')
+  }
+}
+
+/** Quantas vezes a biblioteca foi gravada desde que o espião começou. */
+const libraryWrites = (setItem: { mock: { calls: unknown[][] } }) =>
+  setItem.mock.calls.filter(([key]) => key === LIBRARY_KEY).length
+
 describe('nextStep (navegação livre)', () => {
   it('avança mesmo com o passo atual incompleto (o gate é só na Revisão)', () => {
     useCharacterStore.getState().nextStep()
@@ -263,6 +279,29 @@ describe('recarregar a página no modo de jogo', () => {
     expect(app.getState().activeSystemId).toBe('dnd5e')
   })
 
+  it('o jogo retomado não regrava a ficha ao fechar ou esconder a aba', async () => {
+    useCharacterStore.getState().importDraft(structuredClone(COMPLETE_DRAFT))
+    const id = useCharacterStore.getState().currentId!
+    useCharacterStore.getState().playCharacter(id)
+    const before = localStorage.getItem(LIBRARY_KEY)
+
+    const { chars, play } = await reload()
+    expect(chars.getState()).toMatchObject({ view: 'play', currentId: id })
+    vi.useFakeTimers()
+    const setItem = vi.spyOn(Storage.prototype, 'setItem')
+    try {
+      play.getState().run(st => setInspiration(st, true))
+      window.dispatchEvent(new Event('pagehide'))
+      hidePage()
+      vi.advanceTimersByTime(AUTOSAVE_DELAY_MS * 3)
+      expect(libraryWrites(setItem)).toBe(0)
+      expect(localStorage.getItem(LIBRARY_KEY)).toBe(before)
+    } finally {
+      setItem.mockRestore()
+      vi.useRealTimers()
+    }
+  })
+
   it('ignora (e limpa) a marca de uma ficha que não existe mais', async () => {
     saveOpenPlayId('sumiu')
     const { chars, play, app } = await reload()
@@ -391,13 +430,32 @@ describe('salvamento automático a cada alteração (decisão de 2026-10-26)', (
     expect(stored(id)?.draft.name).toBe('Último clique')
 
     useCharacterStore.getState().setName('Aba escondida')
-    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true })
-    try {
-      document.dispatchEvent(new Event('visibilitychange'))
-    } finally {
-      Reflect.deleteProperty(document, 'visibilityState')
-    }
+    hidePage()
     expect(stored(id)?.draft.name).toBe('Aba escondida')
+  })
+
+  it('o modo de jogo não regrava a ficha: fechar ou esconder a aba no jogo, ou depois de sair, não toca a biblioteca', () => {
+    const id = openSaved()
+    useCharacterStore.getState().setName('Krusk, o Breve')
+    useCharacterStore.getState().playCharacter(id) // a pendente vai para a ficha antes do jogo
+    expect(stored(id)?.draft.name).toBe('Krusk, o Breve')
+    const before = localStorage.getItem(LIBRARY_KEY)
+    const setItem = vi.spyOn(Storage.prototype, 'setItem')
+
+    // O jogo grava no estado de jogo (playStore/playStorage), nunca num setter de draft.
+    usePlayStore.getState().run(st => setInspiration(st, true))
+    window.dispatchEvent(new Event('pagehide'))
+    hidePage()
+    vi.advanceTimersByTime(AUTOSAVE_DELAY_MS * 3)
+    expect(libraryWrites(setItem)).toBe(0)
+    expect(loadPlayState(id)?.inspiration).toBe(true)
+
+    useCharacterStore.getState().exitPlay()
+    window.dispatchEvent(new Event('pagehide'))
+    hidePage()
+    vi.advanceTimersByTime(AUTOSAVE_DELAY_MS * 3)
+    expect(libraryWrites(setItem)).toBe(0)
+    expect(localStorage.getItem(LIBRARY_KEY)).toBe(before)
   })
 
   it('abrir outra ficha no modo de jogo grava a pendente na ficha que estava aberta', () => {

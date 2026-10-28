@@ -11,7 +11,8 @@ import { getPlayConditionEffects } from './playState'
 import { getRace } from './raceUtils'
 import { getSavingThrowChecks, getSkillChecks, getPassiveScore, getUnproficientArmor } from './proficiencyUtils'
 import {
-  EXHAUSTION, getAttacksPerAction, getBestHalfProficiencySource, getCondition, getConditionalRollNotes,
+  EXHAUSTION, describeConditionalSaveBonuses, getAttacksPerAction, getBestHalfProficiencySource, getCondition,
+  getConditionalRollNotes,
   getHalfProficiencySources, getMeleeCritExtraWeaponDice,
   getInitiativeAdvantageSources, getInitiativeBonuses, getOwnedFeats, getSheetArmorClass, getWeaponCritThreshold, resolveRollMode,
   type ActiveConditionEffects, type ConditionRoll, type SheetEffect,
@@ -676,8 +677,12 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
   })) as Record<AbilityScore, RollGuideEntry>
 
   const saveChecks = getSavingThrowChecks(draft, scores)
+  // Bônus que depende da situação (Aura de Proteção, pág. 111): fica fora do número, como na
+  // Revisão e no PDF, e vira nota com a condição — o mesmo texto de describeConditionalSaveBonuses.
+  const conditionalSaveLines = describeConditionalSaveBonuses(draft, scores)
   const saves = Object.fromEntries(ALL_ABILITY_SCORES.map(ab => {
     const input = saveInput(ab, saveChecks[ab], mods, prof, effects, sheet, lines)
+    if (conditionalSaveLines.length > 0) input.notes = [...(input.notes ?? []), ...conditionalSaveLines]
     if (ab === 'CON' && warCaster) {
       input.notes = [...(input.notes ?? []), `${warCaster.label}: vantagem neste TR para manter a concentração ao sofrer dano (pág. 169).`]
     }

@@ -711,3 +711,23 @@ describe('getConcentrationGuide', () => {
     expect(save.notes.some(n => n.startsWith('Conjurador de Guerra'))).toBe(true)
   })
 })
+
+describe('getRollGuide — bônus condicional nas resistências', () => {
+  // Aura de Proteção (pág. 111): fica fora do número, como na Revisão e no PDF, e vira nota.
+  const aura = '+3 em todos os testes de resistência (Aura de Proteção: você e criaturas amigáveis a até 3 m, enquanto você estiver consciente; mínimo +1)'
+
+  it('paladino 6 com CAR 16: a nota em todo TR, sem mexer no modificador', () => {
+    const d = draft({ class: 'paladin', level: 6, abilityScores: { ...SCORES, CHA: 16 } })
+    const guide = getRollGuide(d, play())
+    const saves = getSavingThrowChecks(d, getFinalAbilityScores(d))
+    for (const ab of ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'] as const) {
+      expect(guide.saves[ab].notes).toContain(aura)
+      expect(guide.saves[ab].modifier).toBe(saves[ab].bonus)
+    }
+  })
+
+  it('antes do 6º nível de paladino, nada', () => {
+    const d = draft({ class: 'paladin', level: 5, abilityScores: { ...SCORES, CHA: 16 } })
+    expect(getRollGuide(d, play()).saves.WIS.notes.some(n => n.includes('Aura de Proteção'))).toBe(false)
+  })
+})

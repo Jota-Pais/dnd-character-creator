@@ -34,6 +34,16 @@
   /* Texto sobre o accent (CTA preenchido). O dourado do D&D é claro demais pra texto branco;
      o vermelho do Ordem é escuro demais pra texto preto — por isso é token, não valor fixo. */
   --color-on-accent: #0a0704;
+
+  /* Modo de jogo: o número de PV pulsa ao tomar dano ou curar. A cor vem da classe do número; o
+     pulso só entra com `motion-safe:` (com prefers-reduced-motion, fica só a cor). */
+  --animate-hp-flash: hp-flash 0.6s ease-out;
+
+  @keyframes hp-flash {
+    0% { transform: scale(1); }
+    25% { transform: scale(1.2); text-shadow: 0 0 12px currentColor; }
+    100% { transform: scale(1); text-shadow: none; }
+  }
 }
 
 /* Tema do módulo Ordem Paranormal (handoff "Redesign Ordem", 2026-07-13): acento vermelho do

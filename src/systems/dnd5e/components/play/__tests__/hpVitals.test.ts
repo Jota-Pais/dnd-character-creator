@@ -1,5 +1,23 @@
 import { describe, it, expect } from 'vitest'
-import { getHpBand, getHpBarPercent, LOW_HP_FRACTION } from '../hpVitals'
+import { getHpBand, getHpBarPercent, getHpFlash, LOW_HP_FRACTION } from '../hpVitals'
+
+describe('getHpFlash', () => {
+  it('PV que cai é dano; PV que sobe é cura', () => {
+    expect(getHpFlash({ current: 14, tempHp: 0 }, { current: 9, tempHp: 0 })).toBe('damage')
+    expect(getHpFlash({ current: 9, tempHp: 0 }, { current: 14, tempHp: 0 })).toBe('heal')
+    // O golpe que gasta os temporários e ainda tira PV: dano.
+    expect(getHpFlash({ current: 14, tempHp: 3 }, { current: 12, tempHp: 0 })).toBe('damage')
+  })
+
+  it('os temporários absorvem o golpe inteiro: o PV fica, mas é dano', () => {
+    expect(getHpFlash({ current: 14, tempHp: 5 }, { current: 14, tempHp: 2 })).toBe('damage')
+  })
+
+  it('ganhar PV temporários, ou nada mudar, não pisca', () => {
+    expect(getHpFlash({ current: 14, tempHp: 0 }, { current: 14, tempHp: 5 })).toBeNull()
+    expect(getHpFlash({ current: 9, tempHp: 0 }, { current: 9, tempHp: 0 })).toBeNull()
+  })
+})
 
 describe('getHpBand', () => {
   it('PV baixo é acima de 0 e até 1/4 do máximo efetivo', () => {

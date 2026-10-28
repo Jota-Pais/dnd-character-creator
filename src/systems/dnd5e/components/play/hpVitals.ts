@@ -26,6 +26,26 @@ export function getHpBarPercent(current: number, max: number): number {
   return Math.min(100, Math.max(0, (current / max) * 100))
 }
 
+/** Quanto tempo (ms) o número de PV fica vermelho ou verde depois de mudar. */
+export const HP_FLASH_MS = 900
+
+/** O retorno visual de uma mudança de PV: vermelho no dano, verde na cura. */
+export type HpFlash = 'damage' | 'heal'
+
+/** O que o retorno compara entre um desenho e o seguinte. */
+export type HpReading = { current: number; tempHp: number }
+
+/**
+ * Vermelho quando o PV cai, ou quando os PV temporários absorvem o golpe inteiro (o PV fica, mas o
+ * dano veio); verde quando o PV sobe. Ganhar PV temporários não é cura: sem cor.
+ */
+export function getHpFlash(before: HpReading, after: HpReading): HpFlash | null {
+  if (after.current < before.current) return 'damage'
+  if (after.current > before.current) return 'heal'
+  if (after.tempHp < before.tempHp) return 'damage'
+  return null
+}
+
 /** Os Dados de Vida que ainda dá para gastar, um por tipo, como a ficha escreve: "1d12", "2d8". */
 export function formatHitDiceAvailable(hitDice: HitDiceAvailability[]): string[] {
   return hitDice.map(h => `${h.available}d${h.die}`)

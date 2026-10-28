@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { formatMeters, formatModifier } from '../../utils/abilityScoreUtils'
 import {
   endConcentration, formatHpAdjustment, getBaseMaxHp, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable,
@@ -7,7 +7,8 @@ import {
 import type { RollGuideEntry } from '../../utils/rollGuide'
 import { getConditionalAcBonuses } from '../../utils/sheetEffects'
 import {
-  describeHitDiceAvailable, formatHitDiceAvailable, getHpBand, getHpBarPercent, type HpBand,
+  describeHitDiceAvailable, formatHitDiceAvailable, getHpBand, getHpBarPercent, getHpFlash, HP_FLASH_MS,
+  type HpBand, type HpFlash, type HpReading,
 } from './hpVitals'
 import { armorClassSource, passiveSource, type NumberSource } from './numberSources'
 import { ModeMark } from './RollMarks'
@@ -20,6 +21,36 @@ const BAR_COLOR: Record<HpBand, string> = {
   wounded: 'bg-amber-500',
   low: 'bg-red-500',
   zero: 'bg-transparent',
+}
+
+/**
+ * A cor do número de PV durante o retorno. O pulso (`animate-hp-flash`, em index.css) só vem com
+ * `motion-safe:`: com prefers-reduced-motion, fica só a cor.
+ */
+const FLASH_CLASS: Record<HpFlash, string> = {
+  damage: 'text-red-400 motion-safe:animate-hp-flash',
+  heal: 'text-emerald-300 motion-safe:animate-hp-flash',
+}
+
+/**
+ * O retorno visual do PV: a cor acende quando o PV (ou a reserva temporária) muda entre um desenho
+ * e o seguinte, e apaga depois de `HP_FLASH_MS`. Pega toda mudança, venha de onde vier (painel de
+ * PV, descanso, desfazer); abrir a ficha não pisca. O `id` novo a cada golpe reinicia o pulso.
+ */
+function useHpFlash(reading: HpReading): { kind: HpFlash; id: number } | null {
+  const [seen, setSeen] = useState({ ...reading, flashes: 0 })
+  const [flash, setFlash] = useState<{ kind: HpFlash; id: number } | null>(null)
+  if (seen.current !== reading.current || seen.tempHp !== reading.tempHp) {
+    const kind = getHpFlash(seen, reading)
+    setSeen({ ...reading, flashes: seen.flashes + (kind ? 1 : 0) })
+    if (kind) setFlash({ kind, id: seen.flashes + 1 })
+  }
+  useEffect(() => {
+    if (!flash) return
+    const timer = setTimeout(() => setFlash(null), HP_FLASH_MS)
+    return () => clearTimeout(timer)
+  }, [flash])
+  return flash
 }
 
 /**
@@ -88,6 +119,7 @@ export function VitalsBar({ view, onOpenRecipe, onOpenSource, onOpenRests }: {
   const life = state.lifeState === 'conscious' ? null : LIFE_LABEL[state.lifeState]
   const band = getHpBand(current, effMax)
   const hitDice = getHitDiceAvailable(state, sheet)
+  const flash = useHpFlash({ current, tempHp: state.tempHp })
 
   return (
     <div className="space-y-2">
@@ -110,7 +142,14 @@ export function VitalsBar({ view, onOpenRecipe, onOpenSource, onOpenRests }: {
               )}
             </span>
             <span className="leading-tight">
-              <span className="font-fantasy font-black text-2xl text-parchment-100" data-testid="hp-current">{current}</span>
+              <span
+                key={flash?.id ?? 'idle'}
+                className={`inline-block font-fantasy font-black text-2xl ${flash ? FLASH_CLASS[flash.kind] : 'text-parchment-100'}`}
+                data-testid="hp-current"
+                data-flash={flash?.kind}
+              >
+                {current}
+              </span>
               <span className="text-sm text-parchment-500"> / {effMax}</span>
               {state.maxHpAdjustment !== 0 && (
                 <span className="ml-1 text-[10px] text-sky-300" title="Ajuste temporário do PV máximo, até o descanso longo">

@@ -1,10 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { act, render, screen, cleanup, fireEvent } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { usePlayStore } from '../../../stores/playStore'
-import { applyDamage, grantTempHp } from '../../../utils/playState'
+import { applyDamage, applyHealing, grantTempHp } from '../../../utils/playState'
 import { EMPTY_DRAFT } from '../../../types/character'
 import { COMPLETE_DRAFT } from '../../../../../test/fixtures'
+import { HP_FLASH_MS } from '../hpVitals'
 import { openDraft, openKrusk, resetPlay } from './openPlay'
 
 beforeEach(resetPlay)
@@ -89,5 +90,49 @@ describe('VitalsBar — Dados de Vida e Descanso', () => {
     fireEvent.click(restButton())
     expect(screen.getByRole('tab', { name: 'Estado' })).toHaveAttribute('aria-selected', 'true')
     expect(screen.getByRole('button', { name: 'Descanso curto' })).toHaveFocus()
+  })
+})
+
+describe('VitalsBar — retorno do dano e da cura', () => {
+  afterEach(() => { vi.useRealTimers() })
+
+  const flash = () => screen.getByTestId('hp-current').getAttribute('data-flash')
+
+  it('abrir a ficha não pisca; o dano pisca vermelho e a cura verde, por instantes', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    openKrusk()
+    render(<PlayScreen />)
+    expect(flash()).toBeNull()
+
+    damage(5)
+    expect(flash()).toBe('damage')
+    expect(screen.getByTestId('hp-current')).toHaveClass('text-red-400')
+    act(() => { vi.advanceTimersByTime(HP_FLASH_MS) })
+    expect(flash()).toBeNull()
+
+    act(() => { usePlayStore.getState().run((st, sh) => applyHealing(st, sh, 3)) })
+    expect(flash()).toBe('heal')
+    expect(screen.getByTestId('hp-current')).toHaveClass('text-emerald-300')
+    act(() => { vi.advanceTimersByTime(HP_FLASH_MS) })
+    expect(flash()).toBeNull()
+  })
+
+  it('o pulso só vem com motion-safe: com prefers-reduced-motion, fica só a cor', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    damage(2)
+    const number = screen.getByTestId('hp-current')
+    expect(number.className).toContain('motion-safe:animate-hp-flash')
+    expect(number.className).not.toMatch(/(^|\s)animate-hp-flash/)
+  })
+
+  it('os temporários que absorvem o golpe piscam vermelho; ganhá-los não pisca', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    act(() => { usePlayStore.getState().run(st => grantTempHp(st, 5)) })
+    expect(flash()).toBeNull()
+    damage(3)
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('14')
+    expect(flash()).toBe('damage')
   })
 })

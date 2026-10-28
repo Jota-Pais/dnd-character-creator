@@ -8,6 +8,7 @@ import {
   getClassFightingStyleOptions,
   SUBCLASS_LABEL,
   getSubclassFeaturesUpToLevel,
+  getClassToolChoices,
 } from '../../utils/classUtils'
 import { ClassSubclassCard } from './ClassSubclassCard'
 import { ProgressionOptionCard } from './ProgressionOptionCard'
@@ -67,7 +68,7 @@ type Props = {
    * de manobras do Mestre de Batalha não as oferece — aprender a mesma de novo não daria nada.
    */
   takenManeuvers?: string[]
-  /** Classe adicional (multiclasse): concede só o subconjunto de perícias e nenhuma escolha de ferramenta. */
+  /** Classe adicional (multiclasse): concede só o subconjunto de perícias e de instrumentos (p. 164). */
   multiclass?: boolean
 }
 
@@ -166,8 +167,8 @@ export function ClassChoicePanel({ cls, choices, accent, level, onChange, profic
       </ChoiceSection>
       )}
 
-      {/* ── Ferramentas (Bardo/Monge) — só na classe inicial ── */}
-      {!multiclass && cls.toolProficiencies.choices.map((toolChoice, i) => {
+      {/* ── Ferramentas (Bardo/Monge; na multiclasse, o instrumento do bardo) ── */}
+      {getClassToolChoices(cls, multiclass).map((toolChoice, i) => {
         const filtered = filterToolsBySource(toolChoice.from)
         const label = TOOL_CHOICE_LABELS[toolChoice.from]
         return (

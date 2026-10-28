@@ -198,3 +198,25 @@ describe('ClassStep: slot de 1 escolha troca direto', () => {
     expect(picks('warlock-invocations-2')).toEqual(['explosao-agonizante', 'armadura-de-sombras'])
   })
 })
+
+// p. 164: o bardo como classe adicional dá um instrumento musical à escolha. A perícia da
+// multiclasse e o instrumento são escolhas de 1: trocam direto.
+describe('ClassStep: bardo como classe adicional', () => {
+  it('mostra o seletor do instrumento, que troca direto', () => {
+    useCharacterStore.setState({
+      draft: {
+        ...withClass('barbarian', 2, null),
+        multiclass: true,
+        additionalClasses: [{
+          classId: 'bard', level: 1, spellChoices: { cantrips: [], spells: [] }, asiChoices: [], hpRolls: [],
+          classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), skills: ['stealth'], tools: ['lute'] },
+        }],
+      },
+    })
+    const { getByRole, container } = render(<ClassStep />)
+    expect(container.textContent).toContain('Instrumento Musical (1/1)')
+    fireEvent.click(getByRole('button', { name: 'Flauta' }))
+    const bard = () => useCharacterStore.getState().draft.additionalClasses[0].classChoices
+    expect(bard().tools).toEqual(['flute'])
+  })
+})

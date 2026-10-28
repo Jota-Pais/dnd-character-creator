@@ -61,6 +61,20 @@ describe('getStepPendingReasons — casos das fichas antigas', () => {
     expect(getStepPendingReasons(ok, 'class')).toEqual([])
   })
 
+  // p. 164: o bardo como classe adicional dá armadura leve, uma perícia e UM instrumento musical.
+  it('bardo como classe da multiclasse pede o instrumento', () => {
+    const bard = (tools: string[]) => draft({
+      class: 'barbarian', level: 2,
+      abilityScores: { STR: 15, DEX: 14, CON: 13, INT: 12, WIS: 10, CHA: 13 },
+      additionalClasses: [entry({ classId: 'bard', classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['stealth'], tools } })],
+      multiclass: true,
+    })
+    expect(getStepPendingReasons(bard([]), 'class')).toEqual(['Bardo: escolha mais 1 instrumento musical'])
+    expect(isStepComplete(bard([]), 'class')).toBe(false)
+    expect(getStepPendingReasons(bard(['lute']), 'class')).toEqual([])
+    expect(isStepComplete(bard(['lute']), 'class')).toBe(true)
+  })
+
   it('patrulheiro 2 como classe da multiclasse sem Estilo de Luta', () => {
     const d = draft({
       class: 'barbarian', level: 3,

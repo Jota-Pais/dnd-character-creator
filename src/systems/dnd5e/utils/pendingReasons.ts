@@ -7,6 +7,7 @@ import { getRace, getSubrace, getAllChoices, requiresSubrace } from './raceUtils
 import {
   getClass,
   getClassFightingStyleOptions,
+  getClassToolChoices,
   getExpertiseCount,
   isActiveCaster,
   FIGHTING_STYLES,
@@ -208,14 +209,12 @@ function classEntryReasons(cls: GameClass, choices: ClassChoiceSelections, level
     out.push(`${cls.name}: ${plural(-skillDiff, 'perícia marcada', 'perícias marcadas')} a mais — a classe dá ${skillCount}${multiclass ? ' na multiclasse' : ''}; desmarque o excesso`)
   }
 
-  if (!multiclass) {
-    const toolChoices = cls.toolProficiencies.choices
-    const required = toolChoices.reduce((sum, c) => sum + c.count, 0)
-    const missing = required - choices.tools.length
-    if (missing > 0) {
-      const [one, many] = toolChoices.length === 1 ? TOOL_SOURCE_WORDS[toolChoices[0].from] : ['ferramenta', 'ferramentas']
-      out.push(`${cls.name}: escolha mais ${plural(missing, one, many)}`)
-    }
+  const toolChoices = getClassToolChoices(cls, multiclass)
+  const requiredTools = toolChoices.reduce((sum, c) => sum + c.count, 0)
+  const missingTools = requiredTools - choices.tools.length
+  if (missingTools > 0) {
+    const [one, many] = toolChoices.length === 1 ? TOOL_SOURCE_WORDS[toolChoices[0].from] : ['ferramenta', 'ferramentas']
+    out.push(`${cls.name}: escolha mais ${plural(missingTools, one, many)}`)
   }
 
   const fightingStyles = getClassFightingStyleOptions(cls, level)

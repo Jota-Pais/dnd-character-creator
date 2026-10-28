@@ -270,6 +270,17 @@ export function getExpertiseOptions(
     : fromSkills
 }
 
+/**
+ * As escolhas de ferramenta da classe: as da classe inicial (bardo, 3 instrumentos; monge, 1
+ * ferramenta) ou, na classe adicional, os instrumentos das Proficiências de Multiclasse (o bardo dá
+ * 1, p. 164). Seletor, validação e motivo de pendência leem daqui.
+ */
+export function getClassToolChoices(cls: GameClass, multiclass: boolean): GameClass['toolProficiencies']['choices'] {
+  if (!multiclass) return cls.toolProficiencies.choices
+  const instruments = cls.multiclassProficiencies.instruments
+  return instruments > 0 ? [{ count: instruments, from: 'musical-instrument' }] : []
+}
+
 export function isClassStepComplete(
   cls: GameClass | null,
   choices: ClassChoiceSelections,
@@ -283,9 +294,8 @@ export function isClassStepComplete(
   const skillCount = multiclass ? (cls.multiclassProficiencies.skills?.count ?? 0) : cls.skillChoices.count
   if (choices.skills.length !== skillCount) return false
 
-  // Escolhas de ferramenta/instrumento só valem para a 1ª classe; as adicionais recebem as
-  // proficiências de multiclasse já concedidas (sem seletor nesta fase).
-  const requiredTools = multiclass ? 0 : cls.toolProficiencies.choices.reduce((sum, c) => sum + c.count, 0)
+  // Ferramentas e instrumentos à escolha: os da classe inicial, ou o instrumento do bardo adicional.
+  const requiredTools = getClassToolChoices(cls, multiclass).reduce((sum, c) => sum + c.count, 0)
   if (choices.tools.length < requiredTools) return false
 
   // Estilo de Luta só a partir do nível em que a classe o dá (paladino e patrulheiro, 2º).

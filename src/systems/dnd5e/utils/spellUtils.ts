@@ -338,12 +338,28 @@ export type SecretSpellGroup = {
   kind: 'in-columns' | 'additional'
   /**
    * "Segredos Mágicos (contam nas conhecidas)"; os que vêm por cima levam o rótulo do slot:
-   * "Segredos Mágicos Adicionais (por cima das conhecidas)", "Truques do Livro das Sombras (...)".
+   * "Segredos Mágicos Adicionais (por cima das conhecidas)", "Truques do Livro das Sombras (por
+   * cima dos truques conhecidos)". A coluna concorda com o que o grupo tem (knownColumnsPhrase).
    */
   title: string
   /** O rótulo do slot de onde vêm ("Segredos Mágicos", "Truques do Livro das Sombras"). */
   label: string
   spells: Spell[]
+}
+
+/**
+ * A coluna de que o grupo fala, concordando com o que ele tem: só truques → "truques conhecidos"
+ * (Livro das Sombras, p. 59; Segredo truque, que ocupa vaga de Truques Conhecidos); só magias de 1º
+ * nível ou mais → "conhecidas" (as Magias Conhecidas); os dois → "truques e magias conhecidos".
+ * `prep` dá a contração: "nos"/"nas" (contam nas…) ou "dos"/"das" (por cima das…).
+ */
+function knownColumnsPhrase(spells: Spell[], prep: 'em' | 'de'): string {
+  const hasCantrip = spells.some(s => s.level === 0)
+  const hasSpell = spells.some(s => s.level > 0)
+  const masculine = prep === 'em' ? 'nos' : 'dos'
+  if (hasCantrip && hasSpell) return `${masculine} truques e magias conhecidos`
+  if (hasCantrip) return `${masculine} truques conhecidos`
+  return prep === 'em' ? 'nas conhecidas' : 'das conhecidas'
 }
 
 /**
@@ -358,11 +374,12 @@ export function getSecretSpellGroups(caster: CasterEntry): SecretSpellGroup[] {
   const { progressionChoices } = entry.classChoices
   const inColumns = new Set([...caster.knownSecrets.cantrips, ...caster.knownSecrets.spells])
   const toSpells = (ids: string[]) => ids.map(getSpell).filter((s): s is Spell => s !== undefined)
+  const secrets = toSpells(caster.bonusSpells.filter(id => inColumns.has(id)))
   const groups: SecretSpellGroup[] = [{
     kind: 'in-columns',
-    title: 'Segredos Mágicos (contam nas conhecidas)',
+    title: `Segredos Mágicos (contam ${knownColumnsPhrase(secrets, 'em')})`,
     label: 'Segredos Mágicos',
-    spells: toSpells(caster.bonusSpells.filter(id => inColumns.has(id))),
+    spells: secrets,
   }]
   const additionalByLabel = new Map<string, string[]>()
   const placed = new Set(inColumns)
@@ -380,7 +397,8 @@ export function getSecretSpellGroups(caster: CasterEntry): SecretSpellGroup[] {
     if (ids.length > 0) additionalByLabel.set(granted.label, [...(additionalByLabel.get(granted.label) ?? []), ...ids])
   }
   for (const [label, ids] of additionalByLabel) {
-    groups.push({ kind: 'additional', title: `${label} (por cima das conhecidas)`, label, spells: toSpells(ids) })
+    const spells = toSpells(ids)
+    groups.push({ kind: 'additional', title: `${label} (por cima ${knownColumnsPhrase(spells, 'de')})`, label, spells })
   }
   return groups.filter(g => g.spells.length > 0)
 }

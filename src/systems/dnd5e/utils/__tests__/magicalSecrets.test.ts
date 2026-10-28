@@ -465,8 +465,25 @@ describe('getSecretSpellGroups: Segredos que ocupam vaga × Adicionais por cima'
     })
     const groups = getSecretSpellGroups(columns(draft).caster)
     expect(groups.map(g => [g.kind, g.title, g.spells.map(formatSecretSpellName)])).toEqual([
-      ['in-columns', 'Segredos Mágicos (contam nas conhecidas)', ['Raio de Fogo (truque)', 'Bola de Fogo (3º)']],
+      ['in-columns', 'Segredos Mágicos (contam nos truques e magias conhecidos)', ['Raio de Fogo (truque)', 'Bola de Fogo (3º)']],
       ['additional', 'Segredos Mágicos Adicionais (por cima das conhecidas)', ['Revivificar (3º)', 'Velocidade (3º)']],
+    ])
+  })
+
+  it('o título concorda com o que o grupo tem: truques, magias ou os dois', () => {
+    const titles = (secrets10: string[], lore6: string[]) => getSecretSpellGroups(columns(bard10({
+      subclass: 'college-of-lore',
+      cantrips: BARD_CANTRIPS.slice(0, 3),
+      spells: BARD_SPELLS.slice(0, 12),
+      progressionChoices: { 'lore-magical-secrets-6': lore6, 'bard-magical-secrets-10': secrets10 },
+    })).caster).map(g => g.title)
+    expect(titles(['revivify', 'haste'], ['fire-bolt', 'sacred-flame'])).toEqual([
+      'Segredos Mágicos (contam nas conhecidas)',
+      'Segredos Mágicos Adicionais (por cima dos truques conhecidos)',
+    ])
+    expect(titles(['fire-bolt'], ['fireball', 'sacred-flame'])).toEqual([
+      'Segredos Mágicos (contam nos truques conhecidos)',
+      'Segredos Mágicos Adicionais (por cima dos truques e magias conhecidos)',
     ])
   })
 

@@ -169,13 +169,13 @@ describe('ficha: Revisão e PDF', () => {
     expect(pick?.unmet?.name).toBe('Pacto da Lâmina')
   })
 
-  it('os truques do Livro das Sombras entram como magias do bruxo, por cima das conhecidas', () => {
+  it('os truques do Livro das Sombras entram como magias do bruxo, por cima dos truques conhecidos', () => {
     const d = warlock(3, { ...INVOCATIONS_2, [PACT]: ['pact-of-the-tome'], [TOME]: ['guidance', 'fire-bolt', 'sacred-flame'] })
     const [caster] = getCasterEntries(d)
     expect(caster.bonusSpells).toEqual(['guidance', 'fire-bolt', 'sacred-flame'])
     expect(caster.knownSecrets).toEqual({ cantrips: [], spells: [] })
     expect(getSecretSpellGroups(caster).map(g => [g.kind, g.title, g.spells.map(s => s.id)])).toEqual([
-      ['additional', 'Truques do Livro das Sombras (por cima das conhecidas)', ['guidance', 'fire-bolt', 'sacred-flame']],
+      ['additional', 'Truques do Livro das Sombras (por cima dos truques conhecidos)', ['guidance', 'fire-bolt', 'sacred-flame']],
     ])
   })
 

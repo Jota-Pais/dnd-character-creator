@@ -6,6 +6,8 @@ import {
 } from '../../utils/backgroundUtils'
 import { getItemName } from '../../utils/equipmentUtils'
 import { LanguagePicker } from '../common/LanguagePicker'
+import { RepeatedProficiencyNotes } from '../common/RepeatedProficiencyNotes'
+import { REPEATED_OPTION_STYLE } from '../common/repeatedChipStyle'
 
 type Props = {
   choices: BackgroundChoice[]
@@ -16,10 +18,12 @@ type Props = {
   onChange: (updates: Partial<BackgroundChoiceSelections>) => void
   excludedLanguages?: string[]
   excludedTools?: string[]
+  /** Ferramenta escolhida aqui que outra fonte já dá (id → aviso): fica marcada, para trocar (p. 125). */
+  repeatedTools?: Record<string, string>
 }
 
 export function BackgroundChoicePanel({
-  choices, itemChoices = [], selections, accent, onChange, excludedLanguages, excludedTools,
+  choices, itemChoices = [], selections, accent, onChange, excludedLanguages, excludedTools, repeatedTools = {},
 }: Props) {
   if (choices.length === 0 && itemChoices.length === 0) return null
 
@@ -34,6 +38,7 @@ export function BackgroundChoicePanel({
               accent={accent}
               selected={selections.tools ?? []}
               excluded={excludedTools}
+              repeated={repeatedTools}
               onSelect={tools => onChange({ tools })}
             />
           )
@@ -69,10 +74,11 @@ type ToolCategoryFieldProps = {
   accent: string
   selected: string[]
   excluded?: string[]
+  repeated: Record<string, string>
   onSelect: (tools: string[]) => void
 }
 
-function ToolCategoryField({ from, accent, selected, excluded, onSelect }: ToolCategoryFieldProps) {
+function ToolCategoryField({ from, accent, selected, excluded, repeated, onSelect }: ToolCategoryFieldProps) {
   const tools = getToolsByCategory(from)
   const label = TOOL_CHOICE_LABEL[from]
 
@@ -92,27 +98,31 @@ function ToolCategoryField({ from, accent, selected, excluded, onSelect }: ToolC
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
         {tools.map(tool => {
-          const isExcluded = excluded?.includes(tool.id) ?? false
           const isSelected = selected.includes(tool.id)
+          // Marcada e repetida por outra fonte (ficha antiga): à vista com o aviso, para trocar.
+          const repeatedNote = isSelected ? repeated[tool.id] : undefined
+          const isExcluded = !isSelected && (excluded?.includes(tool.id) ?? false)
           return (
             <button
               key={tool.id}
               onClick={() => { if (!isExcluded) handleClick(tool.id) }}
               disabled={isExcluded}
-              title={isExcluded ? 'Você já possui esta ferramenta de outra fonte' : undefined}
+              title={repeatedNote ?? (isExcluded ? 'Você já possui esta ferramenta de outra fonte' : undefined)}
               className="px-3 py-2 rounded-lg border text-sm text-left transition-all"
               style={{
                 borderColor: isSelected ? accent : isExcluded ? '#1e150a' : 'rgba(58, 38, 20, 0.6)',
                 backgroundColor: isSelected ? `${accent}15` : 'transparent',
                 color: isSelected ? accent : isExcluded ? '#3a2614' : '#9a7650',
                 cursor: isExcluded ? 'not-allowed' : 'pointer',
+                ...(repeatedNote ? REPEATED_OPTION_STYLE : {}),
               }}
             >
-              {isExcluded ? '✓ ' : ''}{tool.name}
+              {repeatedNote ? '⚠ ' : isExcluded ? '✓ ' : ''}{tool.name}
             </button>
           )
         })}
       </div>
+      <RepeatedProficiencyNotes ids={selected.filter(id => tools.some(t => t.id === id))} notes={repeated} />
     </div>
   )
 }

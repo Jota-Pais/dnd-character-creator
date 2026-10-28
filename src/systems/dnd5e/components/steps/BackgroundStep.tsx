@@ -13,6 +13,7 @@ import {
   getExcludedLanguages,
   getBackgroundUnproficientTools,
   formatUnproficientTool,
+  getRepeatedProficiencyNotes,
 } from '../../utils/proficiencyUtils'
 import { BackgroundCard } from '../background/BackgroundCard'
 import { BackgroundChoicePanel } from '../background/BackgroundChoicePanel'
@@ -35,9 +36,12 @@ export function BackgroundStep() {
 
   const itemChoices = selectedBg ? getBackgroundItemChoices(selectedBg) : []
 
-  // Idiomas/ferramentas já obtidos de raça ou classe (inclusive da subclasse) não se repetem
+  // Idiomas/ferramentas já obtidos de raça ou classe (inclusive da subclasse) não se repetem. A
+  // ferramenta que ficou repetida depois (ficha antiga) NÃO é apagada: fica marcada com o aviso, e
+  // a etapa reprova até o jogador trocar (p. 125, getRepeatedProficiencies).
   const langExcluded = getExcludedLanguages(draft, 'background')
   const toolExcluded = getExcludedTools(draft, 'background')
+  const toolRepeated = getRepeatedProficiencyNotes(draft, { kind: 'background' })
   // Item do antecedente sem a proficiência (Dados de Osso com proficiência em Baralho): só avisa,
   // como na Revisão e na ficha — a regra deixa usar, sem o bônus (p. 156).
   const unproficientTools = getBackgroundUnproficientTools(draft)
@@ -49,14 +53,6 @@ export function BackgroundStep() {
       updateBackgroundChoices({ languages: filtered })
     }
   }, [langExcluded.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    const current = draft.backgroundChoices.tools ?? []
-    const filtered = current.filter(id => !toolExcluded.includes(id))
-    if (filtered.length !== current.length) {
-      updateBackgroundChoices({ tools: filtered })
-    }
-  }, [toolExcluded.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleSelect(id: string) {
     setBackground(id)
@@ -183,6 +179,7 @@ export function BackgroundStep() {
                     onChange={updateBackgroundChoices}
                     excludedLanguages={langExcluded}
                     excludedTools={toolExcluded}
+                    repeatedTools={toolRepeated}
                   />
                   {unproficientTools.length > 0 && (
                     <div className="mt-3 rounded-lg border border-parchment-800 bg-parchment-950/40 px-3 py-2 space-y-0.5">

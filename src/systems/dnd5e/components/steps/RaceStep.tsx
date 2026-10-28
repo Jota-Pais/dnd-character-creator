@@ -13,7 +13,9 @@ import {
   RACE_PRESENTATION,
   LANGUAGES,
 } from '../../utils/raceUtils'
-import { getExcludedSkills, getExcludedTools, getExcludedLanguages } from '../../utils/proficiencyUtils'
+import {
+  getExcludedSkills, getExcludedTools, getExcludedLanguages, getRepeatedProficiencyNotes,
+} from '../../utils/proficiencyUtils'
 import { ABILITY_LABELS, formatBonus, formatMeters, formatSpeed } from '../../utils/abilityScoreUtils'
 import { RaceCard } from '../race/RaceCard'
 import { SubraceCard } from '../race/SubraceCard'
@@ -43,9 +45,12 @@ export function RaceStep() {
     : []
 
 
-  // Perícias/ferramentas já obtidas de classe ou antecedente não podem ser re-escolhidas
+  // Perícias/ferramentas já obtidas de classe ou antecedente não podem ser re-escolhidas. A que
+  // chegou repetida depois (antecedente trocado, ficha antiga) NÃO é apagada: fica marcada com o
+  // aviso, e a etapa reprova até o jogador trocar (p. 125, getRepeatedProficiencies).
   const excludedSkills = getExcludedSkills(draft, 'race')
   const excludedTools = getExcludedTools(draft, 'race')
+  const repeated = getRepeatedProficiencyNotes(draft, { kind: 'race' })
   // Idiomas: os fixos da própria raça (não dá pra escolher Comum de novo) mais os de outras fontes.
   const excludedLanguages = [
     ...(selectedRace?.grantedLanguages ?? []),
@@ -57,18 +62,6 @@ export function RaceStep() {
     const filtered = languages.filter(id => !excludedLanguages.includes(id))
     if (filtered.length !== languages.length) updateRaceChoices({ languages: filtered })
   }, [excludedLanguages.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    const skills = draft.raceChoices.skills ?? []
-    const filtered = skills.filter(id => !excludedSkills.includes(id))
-    if (filtered.length !== skills.length) updateRaceChoices({ skills: filtered })
-  }, [excludedSkills.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    const tools = draft.raceChoices.tools ?? []
-    const filtered = tools.filter(id => !excludedTools.includes(id))
-    if (filtered.length !== tools.length) updateRaceChoices({ tools: filtered })
-  }, [excludedTools.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleRaceSelect(raceId: string) {
     setRace(raceId)
@@ -221,6 +214,7 @@ export function RaceStep() {
                     excludedLanguages={excludedLanguages}
                     excludedSkills={excludedSkills}
                     excludedTools={excludedTools}
+                    repeated={repeated}
                   />
                 </div>
               )}

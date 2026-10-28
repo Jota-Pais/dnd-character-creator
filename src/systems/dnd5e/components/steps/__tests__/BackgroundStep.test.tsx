@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { render, cleanup } from '@testing-library/react'
+import { render, cleanup, fireEvent } from '@testing-library/react'
 import { BackgroundStep } from '../BackgroundStep'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { EMPTY_DRAFT, type CharacterDraft } from '../../../types/character'
@@ -29,5 +29,27 @@ describe('BackgroundStep: ferramenta do antecedente sem proficiência', () => {
     useCharacterStore.setState({ draft: soldier('dice-set') })
     const { container } = render(<BackgroundStep />)
     expect(container.textContent).not.toContain('Sem proficiência')
+  })
+})
+
+// A ferramenta escolhida no antecedente que outra fonte já dá (ficha antiga) não some ao abrir a
+// etapa: fica marcada, com o aviso, até o jogador trocar (p. 125).
+describe('BackgroundStep: ferramenta repetida por outra fonte', () => {
+  const entertainer: CharacterDraft = {
+    ...structuredClone(EMPTY_DRAFT),
+    class: 'bard',
+    classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), skills: ['arcana', 'history', 'insight'], tools: ['lute', 'flute', 'drum'] },
+    background: 'entertainer',
+    backgroundChoices: { tools: ['lute'] },
+  }
+
+  it('o Alaúde que o bardo já toca fica marcado, com o aviso; trocar por outro instrumento resolve', () => {
+    useCharacterStore.setState({ draft: structuredClone(entertainer) })
+    const { container, getByRole } = render(<BackgroundStep />)
+    expect(useCharacterStore.getState().draft.backgroundChoices.tools).toEqual(['lute'])
+    expect(container.textContent).toContain('⚠ Alaúde já vem da classe Bardo — troque por outro instrumento')
+    fireEvent.click(getByRole('button', { name: 'Violino' }))
+    expect(useCharacterStore.getState().draft.backgroundChoices.tools).toEqual(['viol'])
+    expect(container.textContent).not.toContain('Alaúde já vem')
   })
 })

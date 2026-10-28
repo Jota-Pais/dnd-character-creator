@@ -46,3 +46,21 @@ describe('FeatChoiceSlots — Iniciado em Magia', () => {
     expect(getByText('Chama Sagrada')).not.toBeNull()
   })
 })
+
+describe('FeatChoiceSlots — Perito com perícia que outra fonte já dá (p. 125)', () => {
+  it('a perícia repetida fica marcada, com o aviso, e desmarca para trocar', () => {
+    useCharacterStore.setState({
+      draft: {
+        ...structuredClone(EMPTY_DRAFT),
+        class: 'fighter', level: 4, background: 'sailor',
+        asiChoices: [{ kind: 'feat', featId: 'perito' }],
+        featSelections: { perito: { skills: ['athletics', 'stealth', 'arcana'] } },
+      },
+    })
+    const { container, getByRole } = render(<FeatChoiceSlots accent="#fff" featIds={['perito']} />)
+    expect(container.textContent).toContain('⚠ Atletismo já vem do antecedente Marinheiro — troque por outra perícia ou ferramenta')
+    fireEvent.click(getByRole('button', { name: '⚠ Atletismo' }))
+    expect(useCharacterStore.getState().draft.featSelections.perito?.skills).toEqual(['stealth', 'arcana'])
+    expect(container.textContent).not.toContain('Atletismo já vem')
+  })
+})

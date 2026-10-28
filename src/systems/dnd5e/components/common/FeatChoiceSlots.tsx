@@ -9,14 +9,16 @@ import {
 } from '../../utils/spellUtils'
 import { getClass } from '../../utils/classUtils'
 import { ABILITY_LABELS } from '../../utils/abilityScoreUtils'
-import type { FeatSelections } from '../../types/character'
+import type { CharacterDraft, FeatSelections } from '../../types/character'
 import type { SpellClass } from '../../types/spell'
 import {
   getExcludedSkillsForFeat, getExcludedToolsForFeat,
-  getExcludedLanguagesForFeat, getExcludedWeaponsForFeat,
+  getExcludedLanguagesForFeat, getExcludedWeaponsForFeat, getRepeatedProficiencyNotes,
 } from '../../utils/proficiencyUtils'
 import { SKILLS } from '../../utils/raceUtils'
 import { LanguagePicker } from './LanguagePicker'
+import { RepeatedProficiencyNotes } from './RepeatedProficiencyNotes'
+import { REPEATED_CHIP_STYLE } from './repeatedChipStyle'
 import { ALL_WEAPONS } from '../../utils/equipmentUtils'
 import toolsData from '../../data/tools.json'
 
@@ -32,7 +34,8 @@ const ALL_TOOLS = toolsData as Tool[]
  * escolha, e aninhar um segundo catálogo nele esconde a decisão em vez de apresentá-la.
  *
  * O que o personagem já tem por outra fonte aparece marcado e travado — o livro manda escolher
- * outra coisa em vez de repetir a proficiência.
+ * outra coisa em vez de repetir a proficiência. A escolha que ficou repetida depois (antecedente
+ * trocado, ficha antiga) segue marcada, com o aviso, para trocar (p. 125).
  *
  * `featIds` limita quais talentos este bloco desenha, para cada etapa cuidar dos seus (a Raça
  * mostra só o do Humano Variante; Aprimoramentos, só os dos espaços de ASI).
@@ -52,7 +55,7 @@ export function FeatChoiceSlots({ accent, featIds }: { accent: string; featIds?:
           key={slot.feat.id}
           className="rounded-xl border p-3"
           style={{
-            borderColor: isFeatChoiceComplete(slot) ? `${accent}50` : 'rgba(153, 27, 27, 0.6)',
+            borderColor: isFeatChoiceComplete(slot) && !hasRepeated(draft, slot.feat.id) ? `${accent}50` : 'rgba(153, 27, 27, 0.6)',
             backgroundColor: 'rgba(15, 10, 4, 0.5)',
           }}
         >
@@ -68,6 +71,10 @@ export function FeatChoiceSlots({ accent, featIds }: { accent: string; featIds?:
       ))}
     </div>
   )
+}
+
+function hasRepeated(draft: CharacterDraft, featId: string): boolean {
+  return Object.keys(getRepeatedProficiencyNotes(draft, { kind: 'feat', featId })).length > 0
 }
 
 type Option = { id: string; name: string }
@@ -90,6 +97,7 @@ function SlotBody({
     const full = picked >= choices.skillOrToolChoice.count
     const excludedSkills = new Set(getExcludedSkillsForFeat(draft, feat.id))
     const excludedTools = new Set(getExcludedToolsForFeat(draft, feat.id))
+    const repeated = getRepeatedProficiencyNotes(draft, { kind: 'feat', featId: feat.id })
     return (
       <>
         <Header
@@ -100,6 +108,7 @@ function SlotBody({
           options={SKILLS}
           selected={selections.skills ?? []}
           excluded={excludedSkills}
+          repeated={repeated}
           full={full}
           accent={accent}
           onToggle={id => onChange({ skills: toggle(selections.skills ?? [], id) })}
@@ -109,10 +118,12 @@ function SlotBody({
           options={ALL_TOOLS}
           selected={selections.tools ?? []}
           excluded={excludedTools}
+          repeated={repeated}
           full={full}
           accent={accent}
           onToggle={id => onChange({ tools: toggle(selections.tools ?? [], id) })}
         />
+        <RepeatedProficiencyNotes ids={[...(selections.skills ?? []), ...(selections.tools ?? [])]} notes={repeated} />
       </>
     )
   }
@@ -276,12 +287,14 @@ function Header({ label }: { label: string }) {
 }
 
 function Group({
-  title, options, selected, excluded, full, accent, onToggle,
+  title, options, selected, excluded, repeated = {}, full, accent, onToggle,
 }: {
   title?: string
   options: OptionList
   selected: string[]
   excluded: Set<string>
+  /** Marcadas que outra fonte já dá (id → aviso): em vermelho, para desmarcar e trocar. */
+  repeated?: Record<string, string>
   full: boolean
   accent: string
   onToggle: (id: string) => void
@@ -292,13 +305,14 @@ function Group({
       <div className="flex flex-wrap gap-1.5">
         {options.map(option => {
           const isSelected = selected.includes(option.id)
-          const isExcluded = excluded.has(option.id)
+          const repeatedNote = isSelected ? repeated[option.id] : undefined
+          const isExcluded = !isSelected && excluded.has(option.id)
           const disabled = isExcluded || (!isSelected && full)
           return (
             <button
               key={option.id}
               disabled={disabled}
-              title={isExcluded ? 'Você já possui esta proficiência de outra fonte' : undefined}
+              title={repeatedNote ?? (isExcluded ? 'Você já possui esta proficiência de outra fonte' : undefined)}
               onClick={() => { if (!disabled) onToggle(option.id) }}
               className="px-2 py-1 rounded-lg text-xs font-semibold transition-all"
               style={{
@@ -306,9 +320,10 @@ function Group({
                 color: isSelected ? '#0a0704' : disabled ? '#4a3520' : '#c4a97a',
                 border: isSelected ? 'none' : `1px solid ${disabled ? 'rgba(60,40,20,0.3)' : 'rgba(90,62,36,0.5)'}`,
                 cursor: disabled ? 'not-allowed' : 'pointer',
+                ...(repeatedNote ? REPEATED_CHIP_STYLE : {}),
               }}
             >
-              {isExcluded ? '✓ ' : ''}{option.name}
+              {repeatedNote ? '⚠ ' : isExcluded ? '✓ ' : ''}{option.name}
             </button>
           )
         })}

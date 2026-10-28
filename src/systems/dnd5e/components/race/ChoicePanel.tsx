@@ -7,6 +7,8 @@ import { getFeat } from '../../utils/featUtils'
 import { FeatCatalog } from '../common/FeatCatalog'
 import { FeatChoiceSlots } from '../common/FeatChoiceSlots'
 import { LanguagePicker } from '../common/LanguagePicker'
+import { RepeatedProficiencyNotes } from '../common/RepeatedProficiencyNotes'
+import { REPEATED_OPTION_STYLE } from '../common/repeatedChipStyle'
 
 type Props = {
   choices: RaceChoice[]
@@ -16,9 +18,14 @@ type Props = {
   excludedLanguages?: string[]
   excludedSkills?: string[]
   excludedTools?: string[]
+  /**
+   * Perícias e ferramentas escolhidas aqui que outra fonte já dá (id → aviso, de
+   * `getRepeatedProficiencyNotes`): ficam marcadas, com o aviso, para trocar (p. 125).
+   */
+  repeated?: Record<string, string>
 }
 
-export function ChoicePanel({ choices, selections, accent, onChange, excludedLanguages, excludedSkills, excludedTools }: Props) {
+export function ChoicePanel({ choices, selections, accent, onChange, excludedLanguages, excludedSkills, excludedTools, repeated = {} }: Props) {
   if (choices.length === 0) return null
 
   return (
@@ -45,6 +52,7 @@ export function ChoicePanel({ choices, selections, accent, onChange, excludedLan
                 accent={accent}
                 selected={selections.skills ?? []}
                 excluded={excludedSkills}
+                repeated={repeated}
                 onSelect={skills => onChange({ skills })}
               />
             )
@@ -67,6 +75,7 @@ export function ChoicePanel({ choices, selections, accent, onChange, excludedLan
                 accent={accent}
                 selected={selections.tools ?? []}
                 excluded={excludedTools}
+                repeated={repeated}
                 onSelect={tools => onChange({ tools })}
               />
             )
@@ -160,10 +169,11 @@ type SkillChoiceFieldProps = {
   accent: string
   selected: string[]
   excluded?: string[]
+  repeated: Record<string, string>
   onSelect: (skills: string[]) => void
 }
 
-function SkillChoiceField({ count, from, accent, selected, excluded, onSelect }: SkillChoiceFieldProps) {
+function SkillChoiceField({ count, from, accent, selected, excluded, repeated, onSelect }: SkillChoiceFieldProps) {
   const available = from === 'any' ? SKILLS : SKILLS.filter(s => (from as string[]).includes(s.id))
 
   function toggle(skillId: string) {
@@ -182,28 +192,33 @@ function SkillChoiceField({ count, from, accent, selected, excluded, onSelect }:
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
         {available.map(skill => {
-          const isExcluded = excluded?.includes(skill.id) ?? false
           const isSelected = selected.includes(skill.id)
+          // Marcada e repetida por outra fonte (antecedente trocado depois, ficha antiga): fica à
+          // vista com o aviso, para desmarcar e trocar — nunca travada nem apagada.
+          const repeatedNote = isSelected ? repeated[skill.id] : undefined
+          const isExcluded = !isSelected && (excluded?.includes(skill.id) ?? false)
           const isDisabled = isExcluded || (!isSelected && selected.length >= count)
           return (
             <button
               key={skill.id}
               onClick={() => toggle(skill.id)}
               disabled={isDisabled}
-              title={isExcluded ? 'Você já possui esta perícia de outra fonte' : undefined}
+              title={repeatedNote ?? (isExcluded ? 'Você já possui esta perícia de outra fonte' : undefined)}
               className="px-2 py-1.5 rounded-lg border text-xs text-left transition-all"
               style={{
                 borderColor: isSelected ? accent : isExcluded ? '#1e150a' : 'rgba(58, 38, 20, 0.6)',
                 backgroundColor: isSelected ? `${accent}15` : 'transparent',
                 color: isSelected ? accent : isExcluded ? '#3a2614' : isDisabled ? '#5a3e24' : '#9a7650',
                 cursor: isDisabled ? 'not-allowed' : 'pointer',
+                ...(repeatedNote ? REPEATED_OPTION_STYLE : {}),
               }}
             >
-              {isExcluded ? '✓ ' : ''}{skill.name}
+              {repeatedNote ? '⚠ ' : isExcluded ? '✓ ' : ''}{skill.name}
             </button>
           )
         })}
       </div>
+      <RepeatedProficiencyNotes ids={selected} notes={repeated} />
     </div>
   )
 }
@@ -233,10 +248,11 @@ type ToolChoiceFieldProps = {
   accent: string
   selected: string[]
   excluded?: string[]
+  repeated: Record<string, string>
   onSelect: (tools: string[]) => void
 }
 
-function ToolChoiceField({ from, accent, selected, excluded, onSelect }: ToolChoiceFieldProps) {
+function ToolChoiceField({ from, accent, selected, excluded, repeated, onSelect }: ToolChoiceFieldProps) {
   return (
     <div>
       <p className="text-sm font-semibold text-parchment-300 mb-2 font-fantasy">
@@ -244,27 +260,30 @@ function ToolChoiceField({ from, accent, selected, excluded, onSelect }: ToolCho
       </p>
       <div className="flex flex-col gap-1.5">
         {from.map(toolId => {
-          const isExcluded = excluded?.includes(toolId) ?? false
           const isSelected = selected.includes(toolId)
+          const repeatedNote = isSelected ? repeated[toolId] : undefined
+          const isExcluded = !isSelected && (excluded?.includes(toolId) ?? false)
           return (
             <button
               key={toolId}
               onClick={() => { if (!isExcluded) onSelect([toolId]) }}
               disabled={isExcluded}
-              title={isExcluded ? 'Você já possui esta ferramenta de outra fonte' : undefined}
+              title={repeatedNote ?? (isExcluded ? 'Você já possui esta ferramenta de outra fonte' : undefined)}
               className="px-3 py-2 rounded-lg border text-sm text-left transition-all"
               style={{
                 borderColor: isSelected ? accent : isExcluded ? '#1e150a' : 'rgba(58, 38, 20, 0.6)',
                 backgroundColor: isSelected ? `${accent}15` : 'transparent',
                 color: isSelected ? accent : isExcluded ? '#3a2614' : '#9a7650',
                 cursor: isExcluded ? 'not-allowed' : 'pointer',
+                ...(repeatedNote ? REPEATED_OPTION_STYLE : {}),
               }}
             >
-              {isExcluded ? '✓ ' : ''}{TOOL_NAMES[toolId] ?? toolId}
+              {repeatedNote ? '⚠ ' : isExcluded ? '✓ ' : ''}{TOOL_NAMES[toolId] ?? toolId}
             </button>
           )
         })}
       </div>
+      <RepeatedProficiencyNotes ids={selected} notes={repeated} />
     </div>
   )
 }

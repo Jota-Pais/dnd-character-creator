@@ -68,6 +68,18 @@ Ao adicionar uma característica nova, prefira declará-la como efeito nos dados
 - **Atributo de conjuração é sempre o final** (`getFinalAbilityScores`: raça + aprimoramentos), na etapa Magias, na Revisão e no PDF — nunca `draft.abilityScores`. Magias escolhidas acima do teto (atributo baixado depois) não são apagadas: `getSpellChoiceOverflow` vira aviso nas três telas.
 - **Segredos Mágicos** (bardo 10/14/18, Colégio do Conhecimento 6) são escolhas de progressão (`SPELL_OPTIONS_LIST_ID`), mas são magias da classe: saem em `bonusSpells` de `getCasterEntries` e aparecem com as magias do bardo. As **Escolhas de Progressão** da Revisão e do PDF vêm de `getProgressionChoiceBlocks` (`progressionOptions.ts`), que deixa esses slots de fora.
 
+### Modo de jogo (ficha viva do D&D 5e, Fase 1 em 2026-10-27)
+
+A ficha usada durante a sessão: botão "Jogar" na galeria (só ficha sem etapa pendente) → view `play` do `characterStore` (`playCharacter` / `exitPlay`) → `components/play/PlayScreen.tsx`, com abas Testes, Ataques, Magia, Regras, Estado e Notas. Plano, fases e o que fica para depois em `docs/estudo-dnd-beyond-modulo-jogo.md`; as regras digitalizadas e as decisões do usuário em `docs/regras-{descanso,dano-e-morte,condicoes,rolagens-e-concentracao}.md` (itens "Decidido"). Campanha, mestre e multiplayer ficam fora até haver backend.
+
+- **A ficha não muda em jogo.** O estado de jogo (`types/playState.ts`) é separado do draft e guarda só o que foi gasto ou marcado: dano tomado, PV temporários, ajuste temporário do PV máximo, espaços, Pacto e recursos gastos (por `id`, os de `getSheetResources`), Dados de Vida gastos, condições com a nota de duração, exaustão, concentração, testes contra a morte, inspiração, nota livre e histórico de rolagens. O que sai do livro em jogo (preparar magia, equipar) é sessão, nunca reescreve o draft.
+- **Os números vêm das fontes únicas.** `buildPlaySheet(draft)` (`utils/playSheet.ts`) tira o que o jogo usa com as funções da Revisão (`getTotalHp`, `getSavingThrowChecks`, `getSheetSpeed`, `getHitDicePool`, `getCombinedSpellSlots`…) — nenhuma conta refeita. Ficha que mudou depois é reconciliada na abertura (`reconcileLoadedPlayState`), com um aviso.
+- **Regras em funções puras** (`utils/playState.ts`): toda ação é `(state, sheet, …) → PlayResult { state, notices }` (`applyDamage`, `applyHealing`, `recordDeathSave`, `addCondition`, `spendHitDie`, `completeShortRest`, `completeLongRest`…). Recusa e regra em aberto viram `notice` (`refused`, `unresolvedRule`), nunca exceção nem número inventado. Os testes de regra moram em `playState.test.ts`.
+- **A tela ensina a rolar; não rola** (decisão de 2026-10-25: "eles gostam de rolar seus dados por si só"). `getRollGuide(draft, state)` (`utils/rollGuide.ts`) é a receita de cada jogada da ficha — fórmula ("1d20 + 5"), notação para o motor, modo com os motivos, "de onde vem" (breakdown), notas condicionais e crítico — e `describeRollGuide` a frase pronta. O jogador digita resultado só onde o app precisa (dano, cura, d20 do teste contra a morte, Dado de Vida). Os dados do app (`src/core/dice`, motor puro com RNG injetável) são preferência **desligada por padrão e sem destaque** (`PlayPreferences.appDice`); rolagem do app vai para o histórico fora do desfazer (`logRoll`).
+- **Condições do Apêndice A** são dados (`data/conditions.json`, agregadas no fim de `sheetEffects.ts`: `getActiveConditionEffects`, com as derivadas — Inconsciente implica Incapacitado — e as suspensas). Mesma regra de ouro da ficha: efeito incondicional muda o número ou o modo (exaustão 4 no PV máximo, deslocamento 0 ou pela metade, na grade de 1,5 m por `halveSpeedOnGrid`), condicional vira nota na jogada.
+- **O que as características fazem em jogo também é efeito declarado**, nunca `if` pelo nome: `weaponCritThreshold` (Crítico Aprimorado/Superior, só armas), `meleeCritExtraWeaponDice` (Crítico Brutal, Ataques Selvagens — nota no crítico, com o dado que a arma usa naquele ataque), `initiativeAdvantage` (Instinto Selvagem), `hpMaxCannotBeReduced` (Acostumado à Morte-Vida), `conditionalRolls` (Resiliência Anã, Bravura, Sentido de Perigo, Sortudo — com `unlessConditions`, `deathSave`, `rerollNaturalOne`), `dropToOneHpInstead` (Resistência Implacável) e `slotRecovery` (lembrete da Recuperação Arcana). Bônus condicional da ficha (Aura de Proteção) entra nas notas da jogada com o mesmo texto da Revisão.
+- **Store com desfazer** (`stores/playStore.ts`): toda mudança passa por `run(op)`, que grava, empilha o estado anterior (até 30) e publica os avisos; o "Desfazer" do aviso só aparece quando a última ação mudou algo (`lastActionChanged`). Texto em edição (nota livre, nota de duração) registra-se em `registerPendingEdit` e é gravado no `close` e no `pagehide`.
+
 ## Versão de D&D
 
 - **D&D 5e clássico — PHB de 2014**
@@ -93,6 +105,7 @@ Ao adicionar uma característica nova, prefira declará-la como efeito nos dados
   9. Revisão
 - Salvar/carregar localmente
 - Exportar/importar ficha como JSON (portabilidade entre dispositivos)
+- **Modo de jogo do D&D 5e** (entrou em 2026-10-23): a ficha individual durante a sessão, com o guia de rolagens (ver "Modo de jogo" acima). Só D&D por enquanto; o Ordem fica para depois
 
 **Fora do escopo da V1:** evolução de personagem em sessão (level up dinâmico / XP), suplementos, raças/classes homebrew. (Multiclasse **entrou** no escopo em 2026-07-14, para o D&D 5e.)
 
@@ -111,6 +124,7 @@ Ao adicionar uma característica nova, prefira declará-la como efeito nos dados
 
 - Toda leitura/escrita de ficha passa pela camada de storage **do próprio sistema**: `src/systems/<sistema>/utils/storage.ts` (hoje `dnd5e` e `ordem`). O núcleo (`src/core`) e a galeria global (`src/GlobalGallery.tsx`) não acessam localStorage: usam as funções exportadas por essas camadas
 - No `storage.ts` do dnd5e ficam a sessão do wizard (versionada por `SESSION_VERSION`) e a biblioteca; campo novo no draft ganha default em `withDraftDefaults` (e sanitização em `utils/draftValidation.ts`)
+- O modo de jogo tem a sua camada, `utils/playStorage.ts`: o estado de jogo por ficha (versionado por `PLAY_STORAGE_VERSION`, campo novo com default em `sanitizePlayState`), as preferências (`appDice`) e a ficha aberta no jogo (`saveOpenPlayId`, para recarregar a página voltar à mesa). Apagar a ficha apaga o estado de jogo dela (`deleteCharacter` → `deletePlayState`)
 - A V1 implementa essas camadas usando localStorage
 - Componentes e stores **nunca** acessam localStorage diretamente
 - Isso permite migrar para IndexedDB no futuro sem refatorar a aplicação

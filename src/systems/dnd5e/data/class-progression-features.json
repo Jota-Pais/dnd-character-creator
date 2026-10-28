@@ -1326,6 +1326,11 @@
         "description": "Com 8 horas de trabalho e 50 po em ervas raras e boa comida, você chama um animal selvagem como companheiro leal: arminho gigante, javali, gorila, lobo, mula, pantera, texugo gigante ou urso negro (o Mestre pode limitar a escolha pelo terreno ou ampliar a lista). Você só pode ter um companheiro por vez. Se ele morrer, com 8 horas e 25 po você o traz de volta com um corpo novo, mesmo sem nenhuma parte do corpo antigo. Se já tiver outro companheiro, o atual vai embora e o ressuscitado assume o lugar."
       },
       {
+        "level": 3,
+        "name": "Vínculo com o Companheiro",
+        "description": "Enquanto estiver vinculado a você, o companheiro animal perde a ação Ataques Múltiplos, se tiver. Ele obedece aos seus comandos da melhor forma possível: rola a própria iniciativa, mas você decide as ações, decisões e atitudes dele; se você estiver incapacitado ou ausente, ele age por conta própria. Ele usa o seu bônus de proficiência no lugar do dele e, além de onde já o aplicaria, soma-o à CA e às jogadas de dano. Tem proficiência em duas perícias à sua escolha e em todos os testes de resistência. A cada nível que você ganha depois do 3º, ele ganha um Dado de Vida a mais, com os pontos de vida correspondentes. Quando você usa o Explorador Natural, você e ele podem se mover furtivamente em ritmo normal."
+      },
+      {
         "level": 5,
         "name": "Ataque Coordenado",
         "description": "Quando você usa a ação de Ataque no seu turno, se o seu companheiro animal puder ver você, ele pode usar a reação dele para fazer um ataque corpo a corpo."

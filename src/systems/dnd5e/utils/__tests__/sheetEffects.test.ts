@@ -547,6 +547,17 @@ describe('getAttacksPerAction (Ataque Extra)', () => {
     expect(names(null)).not.toContain('Ataque Extra')
   })
 
+  it('patrulheiro 3 da Besta tem o Vínculo com o Companheiro junto do Companheiro Animal (p. 119)', () => {
+    const features = getOwnedClassFeatures(single('ranger', 3, 'beast-master'))
+    const bond = features.find(f => f.name === 'Vínculo com o Companheiro')
+    expect(bond?.level).toBe(3)
+    expect(bond?.description).toMatch(/Ataques Múltiplos/)
+    expect(bond?.description).toMatch(/duas perícias/)
+    expect(bond?.description).toMatch(/todos os testes de resistência/)
+    expect(features.map(f => f.name)).toContain('Companheiro Animal')
+    expect(getOwnedClassFeatures(single('ranger', 3, 'hunter')).map(f => f.name)).not.toContain('Vínculo com o Companheiro')
+  })
+
   it('multiclasse: patrulheiro da Besta 5 / guerreiro 5 faz 2 (o do guerreiro)', () => {
     const d = draft({
       level: 10, multiclass: true, class: 'ranger',

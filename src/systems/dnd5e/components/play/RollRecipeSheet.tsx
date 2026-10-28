@@ -1,12 +1,49 @@
 import { useState } from 'react'
 import { usePlayStore } from '../../stores/playStore'
+import type { RollMode } from '../../types/condition'
 import { formatModifier } from '../../utils/abilityScoreUtils'
 import { endConcentration, setInspiration } from '../../utils/playState'
-import { withInspirationSpent, type RollGuideEntry } from '../../utils/rollGuide'
+import { withInspirationSpent, withTableMode, type RollGuideEntry } from '../../utils/rollGuide'
 import { canRollEntry, rollGuideEntry, type GuideRoll } from './playDice'
 import { PlayDialog } from './PlayDialog'
 
 const reasonLabels = (reasons: { label: string }[]) => reasons.map(r => r.label).join(', ')
+
+const TABLE_MODES: { mode: RollMode; label: string; pressed: string }[] = [
+  { mode: 'normal', label: 'Normal', pressed: 'border-parchment-500 bg-parchment-800 text-parchment-100' },
+  { mode: 'advantage', label: 'Vantagem', pressed: 'border-emerald-600 bg-emerald-950 text-emerald-200' },
+  { mode: 'disadvantage', label: 'Desvantagem', pressed: 'border-red-700 bg-red-950 text-red-200' },
+]
+
+/**
+ * Normal / Vantagem / Desvantagem da mesa: a circunstância que a ficha não conhece (o Mestre, o
+ * Ataque Descuidado, a ação Ajudar). Entra como mais uma fonte do modo (`withTableMode`), pela regra
+ * da pág. 175; não é o modo final — as linhas logo abaixo dizem o que resultou.
+ */
+function TableModePicker({ value, onChange }: { value: RollMode; onChange: (mode: RollMode) => void }) {
+  return (
+    <div className="mt-3">
+      <div className="grid grid-cols-3 gap-1.5" role="group" aria-label="Vantagem ou desvantagem da mesa">
+        {TABLE_MODES.map(m => (
+          <button
+            key={m.mode}
+            onClick={() => onChange(m.mode)}
+            aria-pressed={value === m.mode}
+            className={[
+              'min-h-10 min-w-0 rounded-lg border px-1.5 text-xs sm:text-sm transition-colors',
+              value === m.mode ? m.pressed : 'border-parchment-800 text-parchment-400 hover:border-parchment-600',
+            ].join(' ')}
+          >
+            {m.label}
+          </button>
+        ))}
+      </div>
+      <p className="mt-1 text-[11px] text-parchment-600 leading-snug">
+        O Mestre ou a cena dá vantagem ou impõe desvantagem? Marque aqui; a ficha junta com o que ela já sabe.
+      </p>
+    </div>
+  )
+}
 
 /** Uma jogada ligada a esta, aberta de dentro da folha: o dano de um ataque. */
 export type RecipeLink = { label: string; entry: RollGuideEntry }
@@ -15,6 +52,8 @@ export type RecipeLink = { label: string; entry: RollGuideEntry }
  * A "receita" de uma jogada: o que rolar e quanto somar, em letra grande, com o modo e os motivos,
  * a falha automática, as linhas condicionais e de onde vem cada parcela. O jogador rola os próprios
  * dados; com os dados do app ligados, um "Rolar" discreto rola pelo motor e grava no histórico.
+ * Nas jogadas de d20, o Normal / Vantagem / Desvantagem da mesa vale só enquanto a folha está
+ * aberta, e o "Rolar" usa o modo que resultou.
  *
  * O 20 e o 1 naturais só ganham destaque: num teste comum eles não decidem nada (pág. 174). No
  * ataque, a folha leva ao dano (`links`); com os dados do app, um natural a partir de
@@ -45,7 +84,10 @@ export function RollRecipeSheet({ entry: baseEntry, appDice, onClose, crit = fal
   // ao modo normal.
   const [inspirationSpent, setInspirationSpent] = useState<{ undoTop: unknown } | null>(null)
   const usingInspiration = inspirationSpent !== null && !inspired
-  const entry = usingInspiration ? withInspirationSpent(baseEntry) : baseEntry
+  // A circunstância da mesa: só desta folha aberta, nunca gravada.
+  const [tableMode, setTableMode] = useState<RollMode>('normal')
+  const atTable = withTableMode(baseEntry, tableMode)
+  const entry = usingInspiration ? withInspirationSpent(atTable) : atTable
 
   function rollIt(asCrit: boolean) {
     const rolled = rollGuideEntry(entry, { crit: asCrit })
@@ -79,6 +121,12 @@ export function RollRecipeSheet({ entry: baseEntry, appDice, onClose, crit = fal
     setResult(null)
   }
 
+  /** Outra circunstância da mesa: o resultado anterior saiu com o modo de antes e some. */
+  function chooseTableMode(mode: RollMode) {
+    setTableMode(mode)
+    if (mode !== tableMode) setResult(null)
+  }
+
   const titleId = `recipe-${entry.id}`
   const isD20 = entry.kind === 'd20'
   const canceled = entry.mode === 'normal' && entry.advantage.length > 0 && entry.disadvantage.length > 0
@@ -106,6 +154,8 @@ export function RollRecipeSheet({ entry: baseEntry, appDice, onClose, crit = fal
           </button>
         </div>
       )}
+
+      {isD20 && <TableModePicker value={tableMode} onChange={chooseTableMode} />}
 
       {entry.mode === 'advantage' && (
         <p className="mt-2 text-sm text-emerald-300">

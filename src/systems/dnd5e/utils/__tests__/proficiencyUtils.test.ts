@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   getSkillsBySource,
+  getToolsBySource,
   getExcludedSkills,
   getExcludedTools,
   getExcludedSkillsForClassSlot,
@@ -484,6 +485,37 @@ describe('getAllGrantedSkills / getAllGrantedTools', () => {
     const all = getAllGrantedTools(d)
     expect(all).toContain('tinkers-tools')
     expect(all).toContain('lute')
+  })
+
+  // Proficiências de Multiclasse (p. 164): a classe adicional dá só o subconjunto da tabela — o
+  // druida, nenhuma ferramenta; o ladino, as ferramentas de ladrão.
+  function extraClass(classId: string, level = 1): ClassEntry {
+    return {
+      classId, level,
+      classChoices: { ...EMPTY_CLASS_CHOICES },
+      spellChoices: { cantrips: [], spells: [] }, asiChoices: [], hpRolls: [],
+    }
+  }
+
+  it('o druida como classe adicional não dá Kit de Herbalismo; como classe inicial, dá', () => {
+    expect(getAllGrantedTools(draft({ class: 'druid' }))).toEqual(['herbalism-kit'])
+    const monkDruid = draft({
+      class: 'monk', level: 3,
+      classChoices: { ...EMPTY_CLASS_CHOICES, skills: ['acrobatics', 'stealth'], tools: ['herbalism-kit'] },
+      additionalClasses: [extraClass('druid')],
+      multiclass: true,
+    })
+    expect(getAllGrantedTools(monkDruid)).toEqual(['herbalism-kit'])
+    expect(getToolsBySource(monkDruid).class).toEqual(['herbalism-kit'])
+    expect(getClassRepeatedProficiencies(monkDruid)).toEqual([])
+    expect(getExcludedToolsForClassSlot(monkDruid, { classId: 'monk', part: 'base' })).not.toContain('herbalism-kit')
+    expect(getAllGrantedTools(draft({ class: 'fighter', level: 2, additionalClasses: [extraClass('druid')], multiclass: true })))
+      .toEqual([])
+  })
+
+  it('o ladino como classe adicional continua dando as ferramentas de ladrão', () => {
+    const d = draft({ class: 'fighter', level: 2, additionalClasses: [extraClass('rogue')], multiclass: true })
+    expect(getAllGrantedTools(d)).toEqual(['thieves-tools'])
   })
 })
 

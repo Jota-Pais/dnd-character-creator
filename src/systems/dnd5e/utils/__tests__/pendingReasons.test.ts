@@ -23,6 +23,29 @@ function entry(over: Partial<ClassEntry> & { classId: string }): ClassEntry {
   }
 }
 
+/** Monge 2 / Druida 1 com a ferramenta do monge escolhida (p. 164: o druida adicional não dá ferramenta). */
+function monkDruidDraft(tools: string[], background: string): CharacterDraft {
+  return draft({
+    class: 'monk', level: 3, background,
+    abilityScores: { STR: 8, DEX: 15, CON: 13, INT: 10, WIS: 14, CHA: 12 },
+    classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['acrobatics', 'stealth'], tools },
+    additionalClasses: [entry({ classId: 'druid' })],
+    multiclass: true,
+  })
+}
+
+/** Humano Variante com Perito (ferramentas à escolha) e o druida como classe adicional. */
+function peritoDruidDraft(tools: string[]): CharacterDraft {
+  return draft({
+    race: 'human', subrace: 'variant-human', level: 2,
+    abilityScores: { STR: 15, DEX: 14, CON: 13, INT: 10, WIS: 13, CHA: 8 },
+    raceChoices: { abilityBonuses: ['STR', 'WIS'], skills: ['insight'], languages: ['elvish'], feat: 'perito' },
+    featSelections: { perito: { skills: ['nature', 'stealth'], tools } },
+    additionalClasses: [entry({ classId: 'druid' })],
+    multiclass: true,
+  })
+}
+
 const paladin2: CharacterDraft = draft({
   class: 'paladin', level: 2,
   classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['insight', 'religion'] },
@@ -178,6 +201,19 @@ describe('getStepPendingReasons — demais regras', () => {
       multiclass: true,
     })
     expect(getStepPendingReasons(ranger, 'class')).toEqual(['Patrulheiro: Sobrevivência já vem da classe Bárbaro — troque por outra perícia'])
+  })
+
+  it('druida como classe adicional não dá Kit de Herbalismo: a ferramenta do monge ou do Perito não repete', () => {
+    // Proficiências de Multiclasse (p. 164): o druida adicional não dá ferramenta.
+    const monkDruid = monkDruidDraft(['herbalism-kit'], 'sailor')
+    expect(getStepPendingReasons(monkDruid, 'class')).toEqual([])
+    expect(isStepComplete(monkDruid, 'class')).toBe(true)
+    // Com o Eremita, o Kit de Herbalismo vem mesmo de outra fonte.
+    expect(getStepPendingReasons(monkDruidDraft(['herbalism-kit'], 'hermit'), 'class'))
+      .toEqual(['Monge: Kit de Herbalismo já vem do antecedente Eremita — troque por outra ferramenta'])
+    const perito = peritoDruidDraft(['herbalism-kit'])
+    expect(getStepPendingReasons(perito, 'race')).toEqual([])
+    expect(isStepComplete(perito, 'race')).toBe(true)
   })
 
   it('raça, antecedente e talento: a mesma regra, cada um na sua etapa', () => {
@@ -385,6 +421,12 @@ function repeatedProficiencyDrafts(): CharacterDraft[] {
     dwarf(['masons-tools']),
     ranger(['survival']),
     ranger(['stealth']),
+    // Druida como classe adicional: não dá ferramenta (p. 164), então o Kit de Herbalismo do monge
+    // ou do Perito só repete quando outra fonte o dá de fato (Eremita).
+    monkDruidDraft(['herbalism-kit'], 'sailor'),
+    monkDruidDraft(['herbalism-kit'], 'hermit'),
+    peritoDruidDraft(['herbalism-kit']),
+    peritoDruidDraft(['navigators-tools']),
   ]
 }
 

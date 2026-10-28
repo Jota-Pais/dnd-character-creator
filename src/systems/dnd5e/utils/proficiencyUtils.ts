@@ -50,11 +50,25 @@ function uniq(ids: string[]): string[] {
   return [...new Set(ids)]
 }
 
-/** Classe primária + adicionais da multiclasse, cada uma com suas escolhas. */
-function classEntries(draft: CharacterDraft): { classId: string; choices: ClassChoiceSelections }[] {
-  const primary = draft.class ? [{ classId: draft.class, choices: draft.classChoices }] : []
-  const extra = draft.additionalClasses.map(e => ({ classId: e.classId, choices: e.classChoices }))
+/**
+ * Classe primária + adicionais da multiclasse, cada uma com suas escolhas. `initial` marca a classe
+ * inicial: só ela dá as proficiências iniciais completas; as outras, o subconjunto da p. 164.
+ */
+function classEntries(draft: CharacterDraft): { classId: string; choices: ClassChoiceSelections; initial: boolean }[] {
+  const primary = draft.class ? [{ classId: draft.class, choices: draft.classChoices, initial: true }] : []
+  const extra = draft.additionalClasses.map(e => ({ classId: e.classId, choices: e.classChoices, initial: false }))
   return [...primary, ...extra]
+}
+
+/**
+ * Ferramenta fixa da classe: a da classe inicial (druida: Kit de Herbalismo) ou, na classe
+ * adicional, a das Proficiências de Multiclasse (p. 164: o ladino dá as ferramentas de ladrão; o
+ * druida, nenhuma).
+ */
+function classFixedTools(classId: string, initial: boolean): string[] {
+  const cls = getClass(classId)
+  if (!cls) return []
+  return initial ? cls.toolProficiencies.granted : cls.multiclassProficiencies.tools
 }
 
 function subclassExtrasOf(classId: string, choices: ClassChoiceSelections) {
@@ -106,7 +120,7 @@ function raceGrants(draft: CharacterDraft, kind: ProficiencyKind): ProficiencyGr
 
 /** Por classe da multiclasse: a lista da classe (fixas + escolhidas) e os extras da subclasse. */
 function classGrants(draft: CharacterDraft, kind: ProficiencyKind): ProficiencyGrant[] {
-  return classEntries(draft).flatMap(({ classId, choices }) => {
+  return classEntries(draft).flatMap(({ classId, choices, initial }) => {
     const base: ProficiencyOwner = { kind: 'class', slot: { classId, part: 'base' } }
     const subclass: ProficiencyOwner = { kind: 'class', slot: { classId, part: 'subclass' } }
     const extras = subclassExtrasOf(classId, choices)
@@ -118,7 +132,7 @@ function classGrants(draft: CharacterDraft, kind: ProficiencyKind): ProficiencyG
       ]
     }
     return [
-      ...grantsOf(getClass(classId)?.toolProficiencies.granted ?? [], base, false),
+      ...grantsOf(classFixedTools(classId, initial), base, false),
       ...grantsOf(choices.tools, base, true),
       ...grantsOf(extras?.grantedTools ?? [], subclass, false),
       ...grantsOf(choices.subclassExtras.tools ?? [], subclass, true),

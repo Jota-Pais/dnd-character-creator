@@ -97,12 +97,12 @@ export function ClassChoicePanel({ cls, choices, accent, level, onChange, profic
     if (kept.length !== items.length) onChange({ expertiseItems: kept })
   }, [grantedSkills.join(','), grantedTools.join(','), excludedExpertise.join(','), expertiseCount]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Desmarcar não mexe na Especialização: ela vale para a perícia que o personagem tem de qualquer
+  // fonte, e quem a tira quando a perícia some de todas é o efeito acima. Assim, trocar a perícia
+  // repetida pelo antecedente (p. 125) não apaga a Especialização que continua valendo.
   function handleSkillToggle(skillId: string) {
     if (choices.skills.includes(skillId)) {
-      onChange({
-        skills: choices.skills.filter(s => s !== skillId),
-        expertiseItems: choices.expertiseItems.filter(e => e !== skillId),
-      })
+      onChange({ skills: choices.skills.filter(s => s !== skillId) })
     } else {
       if (choices.skills.length >= skillLimit) return
       onChange({ skills: [...choices.skills, skillId] })

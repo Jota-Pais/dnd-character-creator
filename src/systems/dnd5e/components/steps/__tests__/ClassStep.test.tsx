@@ -42,6 +42,37 @@ describe('ClassStep: perícia repetida por outra fonte', () => {
     expect(container.textContent).not.toContain('Atletismo já vem')
   })
 
+  // Especialização vale para qualquer perícia que o personagem tenha (p. 91): desmarcar a perícia
+  // repetida na lista da classe não a tira, porque o antecedente continua dando a proficiência.
+  it('Ladino: desmarcar a perícia repetida mantém a Especialização nela; sem outra fonte, ela sai', () => {
+    const rogue = (background: string): CharacterDraft => ({
+      ...structuredClone(EMPTY_DRAFT),
+      race: 'human',
+      class: 'rogue',
+      classChoices: {
+        ...structuredClone(EMPTY_DRAFT.classChoices),
+        skills: ['athletics', 'stealth', 'acrobatics', 'deception'],
+        expertiseItems: ['athletics', 'stealth'],
+      },
+      background,
+    })
+    const expertise = () => useCharacterStore.getState().draft.classChoices.expertiseItems
+
+    useCharacterStore.setState({ draft: rogue('sailor') })
+    const sailor = render(<ClassStep />)
+    fireEvent.click(sailor.getByRole('button', { name: '⚠ Atletismo' }))
+    expect(skills()).toEqual(['stealth', 'acrobatics', 'deception'])
+    expect(expertise()).toEqual(['athletics', 'stealth'])
+    cleanup()
+
+    useCharacterStore.setState({ draft: rogue('acolyte') })
+    const acolyte = render(<ClassStep />)
+    // O primeiro chip é o da lista de perícias; o segundo, o do seletor de Especialização.
+    fireEvent.click(acolyte.getAllByRole('button', { name: 'Atletismo' })[0])
+    expect(skills()).toEqual(['stealth', 'acrobatics', 'deception'])
+    expect(expertise()).toEqual(['stealth'])
+  })
+
   it('sem repetição, nada a avisar', () => {
     useCharacterStore.setState({ draft: fighter('acolyte') })
     const { container } = render(<ClassStep />)

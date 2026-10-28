@@ -175,3 +175,39 @@ describe('Engenhoqueiro com o nome da ferramenta na Revisão e no PDF', () => {
     expect(text).toContain('usando ferramentas de engenhoqueiro (Ferramentas de Funileiro).')
   })
 })
+
+// Truques do Livro das Sombras (Pacto do Tomo, p. 59): o título do grupo já diz que são truques, e
+// cada item sai só com o nome — sem "(truque)" repetido.
+describe('Truques do Livro das Sombras na Revisão e no PDF', () => {
+  const tomeWarlock: CharacterDraft = {
+    ...structuredClone(EMPTY_DRAFT),
+    name: 'Morwen',
+    race: 'human', class: 'warlock', level: 3,
+    abilityScores: { STR: 8, DEX: 14, CON: 13, INT: 12, WIS: 10, CHA: 15 },
+    classChoices: {
+      ...structuredClone(EMPTY_DRAFT.classChoices),
+      subclass: 'fiend',
+      progressionChoices: {
+        'warlock-invocations-2': ['armadura-de-sombras', 'visao-diabolica'],
+        'warlock-pact-boon-3': ['pact-of-the-tome'],
+        'warlock-pact-tome-cantrips-3': ['guidance', 'fire-bolt', 'sacred-flame'],
+      },
+    },
+    spellChoices: { cantrips: ['eldritch-blast', 'chill-touch'], spells: [] },
+  }
+
+  it.each([
+    ['Revisão', () => render(<ReviewStep />)],
+    ['ficha imprimível', () => render(<PrintableSheet />)],
+  ])('%s: os truques sem o sufixo', (_, renderIt) => {
+    useCharacterStore.setState({ draft: structuredClone(tomeWarlock) })
+    const text = renderIt().container.textContent ?? ''
+    const title = 'Truques do Livro das Sombras (por cima dos truques conhecidos)'
+    const start = text.indexOf(title)
+    expect(start).toBeGreaterThan(-1)
+    const group = text.slice(start + title.length, text.indexOf('Chama Sagrada', start) + 'Chama Sagrada'.length + 10)
+    expect(group).toContain('Orientação')
+    expect(group).toContain('Raio de Fogo')
+    expect(group).not.toContain('(truque)')
+  })
+})

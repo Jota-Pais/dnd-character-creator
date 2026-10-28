@@ -54,7 +54,7 @@ import {
   describeCastingAids,
   getSpellChoiceOverflows,
   getSecretSpellGroups,
-  formatSecretSpellName,
+  formatSecretGroupSpellName,
   getCasterColumnHeadings,
   getRepeatedSpells,
   formatRepeatedSpell,
@@ -981,7 +981,7 @@ export function ReviewStep() {
                           {group.spells.map(s => (
                             <SpellChip
                               key={s.id}
-                              name={formatSecretSpellName(s)}
+                              name={formatSecretGroupSpellName(group, s)}
                               school={s.school}
                               concentration={s.concentration}
                               ritual={s.ritual}

@@ -5,7 +5,7 @@ import { getProgressionSlotsUpToLevel } from '../progressionChoiceUtils'
 import { getProgressionChoiceBlocks, getProgressionOptions, getUnmetPickRequirements } from '../progressionOptions'
 import { isStepComplete, sanitizeImportedDraft } from '../draftValidation'
 import { getStepPendingReasons } from '../pendingReasons'
-import { getCasterEntries, getRepeatedSpells, getSecretSpellGroups } from '../spellUtils'
+import { getCasterEntries, getRepeatedSpells, getSecretSpellGroups, formatSecretGroupSpellName } from '../spellUtils'
 import { allClassEntries } from '../multiclassUtils'
 
 // Dádiva do Pacto (bruxo 3, p. 58-59) e as invocações que exigem um pacto (p. 61-62).
@@ -177,6 +177,9 @@ describe('ficha: Revisão e PDF', () => {
     expect(getSecretSpellGroups(caster).map(g => [g.kind, g.title, g.spells.map(s => s.id)])).toEqual([
       ['additional', 'Truques do Livro das Sombras (por cima dos truques conhecidos)', ['guidance', 'fire-bolt', 'sacred-flame']],
     ])
+    // O título já diz que são truques: cada item sai só com o nome, sem "(truque)".
+    const [tome] = getSecretSpellGroups(caster)
+    expect(tome.spells.map(s => formatSecretGroupSpellName(tome, s))).toEqual(['Orientação', 'Raio de Fogo', 'Chama Sagrada'])
   })
 
   it('truque do Livro igual a um truque do bruxo vira aviso de magia repetida', () => {

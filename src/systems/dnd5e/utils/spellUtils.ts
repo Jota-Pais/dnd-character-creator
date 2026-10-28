@@ -408,6 +408,15 @@ export function formatSecretSpellName(spell: Spell): string {
   return `${spell.name} (${spell.level === 0 ? 'truque' : `${spell.level}º`})`
 }
 
+/**
+ * Uma magia de um grupo de getSecretSpellGroups na Revisão e no PDF: com o nível
+ * (formatSecretSpellName), salvo no grupo só de truques — o título já diz "truques conhecidos"
+ * (Truques do Livro das Sombras, Segredo truque), e o "(truque)" em cada item sobraria.
+ */
+export function formatSecretGroupSpellName(group: SecretSpellGroup, spell: Spell): string {
+  return group.spells.every(s => s.level === 0) ? spell.name : formatSecretSpellName(spell)
+}
+
 // ── Magias ensinadas por talento (Iniciado em Magia, p. 170) ──────────────────
 
 /** O que um talento que ensina magias oferece (`choices.spellChoice` em feats.json). */

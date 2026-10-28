@@ -14,6 +14,7 @@ import {
   getSpellsByClass,
   getSecretSpellGroups,
   formatSecretSpellName,
+  formatSecretGroupSpellName,
   getCasterColumnHeadings,
 } from '../spellUtils'
 import { collectStepReasons } from '../pendingReasons'
@@ -484,6 +485,23 @@ describe('getSecretSpellGroups: Segredos que ocupam vaga × Adicionais por cima'
     expect(titles(['fire-bolt'], ['fireball', 'sacred-flame'])).toEqual([
       'Segredos Mágicos (contam nos truques conhecidos)',
       'Segredos Mágicos Adicionais (por cima dos truques e magias conhecidos)',
+    ])
+  })
+
+  it('o nível sai em cada item, salvo no grupo só de truques, cujo título já diz', () => {
+    const names = (secrets10: string[], lore6: string[]) => getSecretSpellGroups(columns(bard10({
+      subclass: 'college-of-lore',
+      cantrips: BARD_CANTRIPS.slice(0, 3),
+      spells: BARD_SPELLS.slice(0, 12),
+      progressionChoices: { 'lore-magical-secrets-6': lore6, 'bard-magical-secrets-10': secrets10 },
+    })).caster).map(g => g.spells.map(s => formatSecretGroupSpellName(g, s)))
+    expect(names(['revivify', 'haste'], ['fire-bolt', 'sacred-flame'])).toEqual([
+      ['Revivificar (3º)', 'Velocidade (3º)'],
+      ['Raio de Fogo', 'Chama Sagrada'],
+    ])
+    expect(names(['fire-bolt'], ['fireball', 'sacred-flame'])).toEqual([
+      ['Raio de Fogo'],
+      ['Bola de Fogo (3º)', 'Chama Sagrada (truque)'],
     ])
   })
 

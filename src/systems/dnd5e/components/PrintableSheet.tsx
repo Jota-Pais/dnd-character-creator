@@ -37,7 +37,7 @@ import { formatUnmetPick, getProgressionChoiceBlocks } from '../utils/progressio
 import {
   getSpell, getSpellSaveDC, formatSpellAttackBonus, getCombinedSpellSlots, getPactSlots,
   getMaxPreparedSpells, describeCastingAids, getCasterEntries, getSpellChoiceOverflows,
-  getSecretSpellGroups, formatSecretSpellName, getCasterColumnHeadings,
+  getSecretSpellGroups, formatSecretGroupSpellName, getCasterColumnHeadings,
   getRepeatedSpells, formatRepeatedSpell, getFeatSpellBlocks,
 } from '../utils/spellUtils'
 import { RuleText } from './common/RuleText'
@@ -434,7 +434,7 @@ export function PrintableSheet() {
                   {secretGroups.map(group => (
                     <p key={group.title} className="text-xs mb-0.5">
                       <span className="text-gray-600">{group.title}: </span>
-                      {group.spells.map(formatSecretSpellName).join(', ')}
+                      {group.spells.map(s => formatSecretGroupSpellName(group, s)).join(', ')}
                     </p>
                   ))}
                 </div>

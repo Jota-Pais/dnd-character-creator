@@ -84,9 +84,11 @@ export type SheetAttack = WeaponAttack & { key: string; weapon: SheetAttackWeapo
  * no fim, o golpe desarmado, que todo personagem tem (p. 196) e é o ataque principal do monge.
  *
  * Cada linha já vem com o que as características fazem nela (`getWeaponAttackEffects`): Arquearia
- * no número; Duelismo, Armas Grandes e o ataque da outra mão como nota. Artes Marciais entra no
- * número das armas de monge e do golpe desarmado quando o equipamento deixa (sem armadura nem
- * escudo); quando não deixa, a linha do golpe desarmado diz o que a impede. O "2×" do Ataque Extra
+ * no número; Duelismo, Armas Grandes, o ataque da outra mão e o Dano de Fúria como nota — este só
+ * nas armas corpo a corpo: no pt-BR o golpe desarmado "não conta como arma" (p. 196), e a
+ * divergência com o inglês, que o trata como ataque com arma, espera decisão. Artes Marciais
+ * entra no número das armas de monge e do golpe desarmado quando o equipamento deixa (sem armadura
+ * nem escudo); quando não deixa, a linha do golpe desarmado diz o que a impede. O "2×" do Ataque Extra
  * vem em cada linha (`attacksPerAction`): arma de recarga fica em 1 (p. 149), salvo Especialista em Besta.
  */
 export function getSheetAttacks(draft: CharacterDraft, finalScores: FinalScores): SheetAttack[] {
@@ -94,7 +96,7 @@ export function getSheetAttacks(draft: CharacterDraft, finalScores: FinalScores)
     strMod: calculateModifier(finalScores.STR),
     dexMod: calculateModifier(finalScores.DEX),
     proficiencyBonus: getProficiencyBonus(draft.level ?? 1),
-    effects: getWeaponAttackEffects(draft),
+    effects: getWeaponAttackEffects(draft, finalScores),
     attacksPerAction: getAttacksPerAction(draft),
     loadingOverrides: getLoadingOverrides(draft),
     twoLightMeleeWeapons: carriesTwoLightMeleeWeapons(draft),

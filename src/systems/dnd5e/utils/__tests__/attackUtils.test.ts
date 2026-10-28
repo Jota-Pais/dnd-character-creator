@@ -148,6 +148,52 @@ describe('getSheetAttacks', () => {
   })
 })
 
+// p. 48-49: o Dano de Fúria (+2, +3 no 9º, +4 no 16º de bárbaro) vale em fúria, sem armadura
+// pesada, nos ataques com arma corpo a corpo usando Força — nota na linha, nunca o número.
+describe('Dano de Fúria nas linhas de ataque', () => {
+  const RAGE = (n: number) => `+${n} de dano em fúria, sem armadura pesada (Dano de Fúria)`
+  const isRage = (note: string) => note.includes('(Dano de Fúria)')
+  const barbarian = (level: number, ...items: string[]) => draft({ level, class: 'barbarian', ...carrying(...items) })
+  const rageNotes = (d: CharacterDraft) =>
+    Object.fromEntries(getSheetAttacks(d, scores({ STR: 16, DEX: 14 })).map(a => [a.key, a.notes.filter(isRage)]))
+
+  it('bárbaro 1: nota nas armas corpo a corpo, não no arco nem no golpe desarmado', () => {
+    const notes = rageNotes(barbarian(1, 'greataxe', 'javelin', 'longbow'))
+    expect(notes.greataxe).toEqual([RAGE(2)])
+    expect(notes.javelin).toEqual(['+2 de dano em fúria, sem armadura pesada, atacando corpo a corpo, sem arremessar (Dano de Fúria)'])
+    expect(notes.longbow).toEqual([])
+    expect(notes.unarmed).toEqual([])
+    // O número não muda: 1d12 + FOR 3.
+    expect(getSheetAttacks(barbarian(1, 'greataxe'), scores({ STR: 16 }))[0].damage).toBe('1d12+3 cortante')
+  })
+
+  it('o valor segue o nível de bárbaro: +3 no 9º, +4 no 16º (o mesmo de Recursos)', () => {
+    expect(rageNotes(barbarian(9, 'greataxe')).greataxe).toEqual([RAGE(3)])
+    expect(rageNotes(barbarian(16, 'greataxe')).greataxe).toEqual([RAGE(4)])
+  })
+
+  it('multiclasse: pelo nível NA classe bárbaro — guerreiro 10 / bárbaro 2 tem +2', () => {
+    const d = draft({
+      level: 12, class: 'fighter', multiclass: true,
+      additionalClasses: [extraClass('barbarian', 2)], ...carrying('greataxe'),
+    })
+    expect(rageNotes(d).greataxe).toEqual([RAGE(2)])
+    expect(getWeaponAttackEffects(d, scores({})).find(e => e.source === 'Fúria')?.conditionalDamage)
+      .toEqual({ value: 2, name: 'Dano de Fúria', condition: 'em fúria, sem armadura pesada' })
+  })
+
+  it('de armadura pesada vestida, a nota diz que não vale agora', () => {
+    expect(rageNotes(barbarian(1, 'greataxe', 'chain-mail')).greataxe)
+      .toEqual([`${RAGE(2)} — não vale agora: você está de Cota de Malha`])
+    // Armadura média não impede.
+    expect(rageNotes(barbarian(1, 'greataxe', 'scale-mail')).greataxe).toEqual([RAGE(2)])
+  })
+
+  it('quem não é bárbaro não tem a nota', () => {
+    expect(rageNotes(draft({ level: 5, class: 'fighter', ...carrying('greataxe') })).greataxe).toEqual([])
+  })
+})
+
 describe('compras de outro método não vestem o monge', () => {
   it('monge 10 no método padrão com Camisão de Malha que sobrou da riqueza: Defesa sem Armadura e Artes Marciais', () => {
     const d = draft({
@@ -259,7 +305,7 @@ describe('Estilo de Luta Adicional do campeão (guerreiro 10)', () => {
 
   it('soma o estilo do slot ao da classe', () => {
     expect(getOwnedFightingStyleIds(champion('dueling'))).toEqual(['archery', 'dueling'])
-    expect(getWeaponAttackEffects(champion('dueling')).map(e => e.source)).toEqual(['Arquearia', 'Duelismo'])
+    expect(getWeaponAttackEffects(champion('dueling'), scores({})).map(e => e.source)).toEqual(['Arquearia', 'Duelismo'])
   })
 
   it('Defesa escolhida no slot entra na CA', () => {

@@ -50,6 +50,20 @@ describe('AttacksTab', () => {
     expect(screen.queryByTestId('crit-note')).toBeNull()
   })
 
+  it('Dano de Fúria: nota no cartão do machado e na receita do dano, fora da fórmula; nada no golpe desarmado', () => {
+    openWithGreataxe()
+    const rage = '• +2 de dano em fúria, sem armadura pesada (Dano de Fúria)'
+    const axeCard = screen.getByRole('heading', { name: 'Machado Grande' }).closest('li')!
+    expect(within(axeCard).getByText(rage)).toBeInTheDocument()
+    const unarmedCard = screen.getByRole('heading', { name: 'Golpe desarmado' }).closest('li')!
+    expect(within(unarmedCard).queryByText(/Dano de Fúria/)).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: /^Machado Grande — dano: 1d12 \+ 3 cortante$/ }))
+    const sheet = screen.getByRole('dialog')
+    expect(within(sheet).getByTestId('recipe-formula')).toHaveTextContent('1d12 + 3 cortante')
+    expect(within(sheet).getByText(rage)).toBeInTheDocument()
+  })
+
   it('o rodapé lê a margem de crítico: 20 natural sem o Campeão', () => {
     openWithGreataxe()
     expect(screen.getByText(/20 natural: crítico, os dados de dano dobram\./)).toBeInTheDocument()

@@ -203,6 +203,58 @@ describe('weaponFormat', () => {
     })
   })
 
+  // p. 48: em fúria, sem armadura pesada, o Dano de Fúria entra "quando você desferir um ataque
+  // com arma corpo-a-corpo usando Força" — condicional, então nota, nunca o número. Arremessar é
+  // ataque à distância (p. 149 e 196).
+  describe('Dano de Fúria na linha de ataque', () => {
+    const rage = (value: number, blockedBy?: string): Partial<AttackContext> => ({
+      effects: [{
+        source: 'Fúria',
+        value: { weapons: 'melee-strength', conditionalDamage: { resource: 'rage-damage', condition: 'em fúria, sem armadura pesada' } },
+        conditionalDamage: { value, name: 'Dano de Fúria', condition: 'em fúria, sem armadura pesada', ...(blockedBy ? { blockedBy } : {}) },
+      }],
+    })
+    const notes = (id: string, str: number, dex: number, extra = rage(2)) =>
+      getWeaponAttack(getWeaponById(id)!, ctx(str, dex, 2, true, extra)).notes
+
+    it('machado grande com Força: a nota com o valor, e o dano sem o bônus', () => {
+      const atk = getWeaponAttack(getWeaponById('greataxe')!, ctx(3, 1, 2, true, rage(3)))
+      expect(atk.damage).toBe('1d12+3 cortante')
+      expect(atk.notes).toEqual(['+3 de dano em fúria, sem armadura pesada (Dano de Fúria)'])
+    })
+
+    it('arma de acuidade cuja linha usa Destreza: vale atacando com Força', () => {
+      expect(notes('rapier', 1, 3)).toEqual(['+2 de dano em fúria, sem armadura pesada, atacando com Força em vez de Destreza (Dano de Fúria)'])
+      // Com a Força melhor, a linha já usa Força: sem ressalva.
+      expect(notes('rapier', 3, 1)).toEqual(['+2 de dano em fúria, sem armadura pesada (Dano de Fúria)'])
+    })
+
+    it('arma de arremesso: só sem arremessar, que é ataque à distância', () => {
+      expect(notes('handaxe', 3, 1)).toEqual(['+2 de dano em fúria, sem armadura pesada, atacando corpo a corpo, sem arremessar (Dano de Fúria)'])
+      expect(notes('dagger', 1, 3)).toEqual(['+2 de dano em fúria, sem armadura pesada, atacando corpo a corpo com Força em vez de Destreza, sem arremessar (Dano de Fúria)'])
+    })
+
+    it('arma à distância não leva a nota — nem o dardo, de arremesso e acuidade', () => {
+      expect(notes('longbow', 1, 3)).toEqual([])
+      expect(notes('dart', 1, 3)).toEqual([])
+    })
+
+    it('de armadura pesada: a nota diz que não vale agora', () => {
+      expect(notes('greataxe', 3, 1, rage(2, 'Placas'))).toEqual([
+        '+2 de dano em fúria, sem armadura pesada (Dano de Fúria) — não vale agora: você está de Placas',
+      ])
+    })
+
+    it('sem o valor calculado, a declaração sozinha não vira nota', () => {
+      const declared = { effects: [{ source: 'Fúria', value: rage(2).effects![0].value }] }
+      expect(notes('greataxe', 3, 1, declared)).toEqual([])
+    })
+
+    it('o golpe desarmado não leva a nota', () => {
+      expect(getUnarmedStrike({ strMod: 3, dexMod: 1, proficiencyBonus: 2, ...rage(2) }).notes).toEqual([])
+    })
+  })
+
   // p. 149: arma de recarga dispara uma munição por ação, "não importando quantos ataques você
   // possua"; o Especialista em Besta ignora a recarga das bestas com que se é proficiente (p. 169).
   describe('recarga e ataques por ação', () => {

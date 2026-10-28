@@ -94,8 +94,24 @@ export function isWeaponInScope(weapon: Weapon, scope: AttackScope): boolean {
     case 'melee-one-handed': return melee && !hasProperty(weapon, 'two-handed')
     case 'melee-two-handed': return melee && (hasProperty(weapon, 'two-handed') || hasProperty(weapon, 'versatile'))
     case 'melee-light': return melee && hasProperty(weapon, 'light')
+    // Toda arma corpo a corpo pode atacar com Força; o que a linha não cumpre vai na nota.
+    case 'melee-strength': return melee
     case 'unarmed': return false
   }
+}
+
+/**
+ * O que a linha não cumpre do escopo `melee-strength` ("ataque com arma corpo a corpo usando
+ * Força", p. 48), dito depois da condição: a linha que usa Destreza (acuidade, Artes Marciais) vale
+ * atacando com Força, e a arma de arremesso só sem arremessar — arremessar é ataque à distância
+ * (p. 149 e 196). Vazio fora desse escopo e quando a linha já cumpre.
+ */
+function scopeCaveat(weapon: Weapon, scope: AttackScope, useDex: boolean): string {
+  if (scope !== 'melee-strength') return ''
+  const thrown = hasProperty(weapon, 'thrown')
+  if (!useDex && !thrown) return ''
+  const how = [thrown ? 'corpo a corpo' : '', useDex ? 'com Força em vez de Destreza' : ''].filter(Boolean).join(' ')
+  return `, atacando ${how}${thrown ? ', sem arremessar' : ''}`
 }
 
 /** Média de uma rolagem de dano — para comparar o dano da arma com o dado de Artes Marciais. */
@@ -126,8 +142,28 @@ function formatRoll(damage: DamageRoll, mod: number): string {
   return `${damage.dice}d${damage.sides}${bonus !== 0 ? signed(bonus) : ''}`
 }
 
-/** Um efeito de ataque com o nome de quem o dá (o `SheetEffect` de `sheetEffects`). */
-export type SourcedAttackEffect = { source: string; value: WeaponAttackEffect }
+/**
+ * O `conditionalDamage` de um efeito já calculado para o personagem (`getWeaponAttackEffects`): o
+ * valor do recurso no nível NA classe dona, o nome dele ("Dano de Fúria") e a condição;
+ * `blockedBy` é o que, no equipamento, descumpre a condição agora (a armadura pesada vestida).
+ */
+export type ResolvedConditionalDamage = { value: number; name: string; condition: string; blockedBy?: string }
+
+/**
+ * Um efeito de ataque com o nome de quem o dá (o `SheetEffect` de `sheetEffects`) e, se ele declara
+ * `conditionalDamage`, o bônus já calculado — sem este, a declaração sozinha não vira nota.
+ */
+export type SourcedAttackEffect = {
+  source: string
+  value: WeaponAttackEffect
+  conditionalDamage?: ResolvedConditionalDamage
+}
+
+/** "+2 de dano em fúria, sem armadura pesada (Dano de Fúria)", com a ressalva da linha e o bloqueio. */
+function formatConditionalDamage(bonus: ResolvedConditionalDamage, caveat: string): string {
+  const text = `${signed(bonus.value)} de dano ${bonus.condition}${caveat} (${bonus.name})`
+  return bonus.blockedBy ? `${text} — não vale agora: você está de ${bonus.blockedBy}` : text
+}
 
 /** Artes Marciais em vigor — quem chama já conferiu o equipamento. */
 export type ActiveMartialArts = { source: string; die: number; condition: string }
@@ -143,7 +179,7 @@ export type AttackContext = {
    * nenhuma chamada esquecer a pergunta.
    */
   proficient: boolean
-  /** Efeitos de ataque possuídos (`getWeaponAttackEffects`): Estilo de Luta, Golpes de Chi. */
+  /** Efeitos de ataque possuídos (`getWeaponAttackEffects`): Estilo de Luta, Golpes de Chi, Fúria. */
   effects?: SourcedAttackEffect[]
   /** Artes Marciais, só quando o equipamento deixa usá-la (sem armadura nem escudo). */
   martialArts?: ActiveMartialArts
@@ -208,8 +244,9 @@ export function formatAttackDamage(attack: WeaponAttack): string {
  *
  * Aplica a regra de ouro dos efeitos: o que vale SEMPRE com aquela arma entra no número
  * (Arquearia numa arma à distância; Artes Marciais numa arma de monge, com o dado maior); o que
- * depende de como ela é empunhada vira nota com a condição (Duelismo, Armas Grandes, o ataque da
- * outra mão). Arma versátil leva o dano a duas mãos como segundo valor.
+ * depende de como ela é empunhada ou da situação vira nota com a condição (Duelismo, Armas
+ * Grandes, o ataque da outra mão, o Dano de Fúria). Arma versátil leva o dano a duas mãos como
+ * segundo valor.
  *
  * O bônus de proficiência só entra se `proficient` — "Se você realizar uma jogada de ataque
  * utilizando uma arma com a qual não tenha proficiência, não adiciona seu bônus de proficiência
@@ -248,8 +285,10 @@ export function getWeaponAttack(weapon: Weapon, ctx: AttackContext): WeaponAttac
     notes.push(`inclui ${martialArts.source} (${martialArts.condition})`)
   }
 
-  for (const { source, value } of effects) {
-    if (value.note) notes.push(`${value.note} (${source})`)
+  for (const { source, value, conditionalDamage } of effects) {
+    const caveat = scopeCaveat(weapon, value.weapons, useDex)
+    if (value.note) notes.push(`${value.note}${caveat} (${source})`)
+    if (conditionalDamage) notes.push(formatConditionalDamage(conditionalDamage, caveat))
   }
 
   const attacksPerAction = getWeaponAttacksPerAction(weapon, ctx, notes)

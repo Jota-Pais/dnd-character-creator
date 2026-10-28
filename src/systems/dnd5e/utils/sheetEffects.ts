@@ -3,8 +3,8 @@ import type { Feat } from '../types/feat'
 import type { ArmorProficiency, LevelFeature } from '../types/class'
 import type { AbilityScore, RacialTrait } from '../types/race'
 import type {
-  ConditionalAcBonus, ConditionalRollNote, EquipmentRequirement, LevelStep, LoadingOverride, ResourceEffect,
-  WeaponAttackEffect,
+  ConditionalAcBonus, ConditionalRollNote, EquipmentRequirement, FeatureEffects, LevelStep, LoadingOverride,
+  ResourceEffect,
 } from '../types/effects'
 import { getFeat } from './featUtils'
 import { getOwnedFeats } from './ownedFeats'
@@ -26,6 +26,7 @@ import { getActivePicks, getProgressionSlotsUpToLevel } from './progressionChoic
 import { getProgressionOptions, getUnmetRequirement, type ProgressionOption } from './progressionOptions'
 import { formatManeuverSaveDc, getClassManeuvers, getManeuver, getManeuverSaveDc } from './maneuverUtils'
 import { getFeatChosenSpell, getFeatSpellPicks } from './spellUtils'
+import type { SourcedAttackEffect } from './weaponFormat'
 import {
   allClassEntries, getAllAsiChoices, getTotalHpAverage, getTotalHpRolled,
 } from './multiclassUtils'
@@ -866,23 +867,49 @@ export function getSheetFightingStyles(draft: CharacterDraft): SheetFightingStyl
 
 /**
  * O que as características fazem nas linhas de ataque (`effects.weaponAttacks`): o Estilo de Luta
- * escolhido, features de classe (Golpes de Chi) e talentos. Cada fonte entra uma vez só. Quem
- * aplica numa arma é `getWeaponAttack` — o bônus incondicional no número, o resto como nota.
+ * escolhido, features de classe (Golpes de Chi, Fúria) e talentos. Cada fonte entra uma vez só.
+ * Quem aplica numa arma é `getWeaponAttack` — o bônus incondicional no número, o resto como nota.
+ *
+ * O bônus de dano condicional (`conditionalDamage`) sai daqui calculado: o `amount` do recurso que
+ * a MESMA característica declara, no nível NA classe dona (bárbaro 9 / guerreiro 3 tem o Dano de
+ * Fúria +3; talento, no de personagem), com os atributos finais, e o equipamento que descumpre a
+ * condição — a armadura vestida, o mesmo critério da CA.
  */
-export function getWeaponAttackEffects(draft: CharacterDraft): SheetEffect<WeaponAttackEffect>[] {
-  const out: SheetEffect<WeaponAttackEffect>[] = []
+export function getWeaponAttackEffects(draft: CharacterDraft, finalScores: FinalScores): SourcedAttackEffect[] {
+  const charLevel = draft.level ?? 1
+  const prof = getProficiencyBonus(charLevel)
+  const equipped = getDraftEquippedArmor(draft)
+  const out: SourcedAttackEffect[] = []
   const seen = new Set<string>()
-  const add = (source: string, effects: WeaponAttackEffect[] | undefined) => {
-    if (!effects || seen.has(source)) return
+  const add = (source: string, effects: FeatureEffects | undefined, level: number) => {
+    if (!effects?.weaponAttacks || seen.has(source)) return
     seen.add(source)
-    for (const value of effects) out.push({ source, value })
+    for (const value of effects.weaponAttacks) {
+      const damage = value.conditionalDamage
+      const resource = damage && effects.resources?.find(r => r.id === damage.resource)
+      if (!damage || !resource?.amount) {
+        out.push({ source, value })
+        continue
+      }
+      const blockedBy = damage.requires ? equipmentBlocker(damage.requires, equipped) : undefined
+      out.push({
+        source, value,
+        conditionalDamage: {
+          value: evaluateQuantity(resource.amount.value, level, finalScores, prof),
+          name: resource.name, condition: damage.condition,
+          ...(blockedBy ? { blockedBy } : {}),
+        },
+      })
+    }
   }
   for (const id of getOwnedFightingStyleIds(draft)) {
     const style = FIGHTING_STYLES.find(s => s.id === id)
-    if (style) add(style.name, style.effects?.weaponAttacks)
+    if (style) add(style.name, style.effects, charLevel)
   }
-  for (const feature of getOwnedClassFeatures(draft)) add(feature.name, feature.effects?.weaponAttacks)
-  for (const feat of getOwnedFeats(draft)) add(feat.name, feat.effects?.weaponAttacks)
+  for (const { entry, features } of getOwnedClassFeaturesByEntry(draft)) {
+    for (const feature of features) add(feature.name, feature.effects, entry.level)
+  }
+  for (const feat of getOwnedFeats(draft)) add(feat.name, feat.effects, charLevel)
   return out
 }
 

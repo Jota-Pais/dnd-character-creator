@@ -9,6 +9,9 @@
           "resources": [
             { "id": "rage", "name": "Fúria", "uses": { "byLevel": [{ "from": 1, "value": 2 }, { "from": 3, "value": 3 }, { "from": 6, "value": 4 }, { "from": 12, "value": 5 }, { "from": 17, "value": 6 }] }, "unlimitedFrom": 20, "recharge": "long" },
             { "id": "rage-damage", "name": "Dano de Fúria", "amount": { "value": { "byLevel": [{ "from": 1, "value": 2 }, { "from": 9, "value": 3 }, { "from": 16, "value": 4 }] }, "unit": "bonus" } }
+          ],
+          "weaponAttacks": [
+            { "weapons": "melee-strength", "conditionalDamage": { "resource": "rage-damage", "condition": "em fúria, sem armadura pesada", "requires": "noHeavyArmor" } }
           ]
         }
       },

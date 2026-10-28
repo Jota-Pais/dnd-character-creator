@@ -339,6 +339,19 @@ describe('getRollGuide — ataques', () => {
     expect(sword.versatile!.notes).toContain(dueling)
   })
 
+  it('Dano de Fúria: nota na receita do dano das armas corpo a corpo, fora da fórmula; o golpe desarmado fica sem', () => {
+    const barbarian = draft({ class: 'barbarian', level: 9, abilityScores: SCORES, ...carrying('greataxe', 'longbow') })
+    const guide = getRollGuide(barbarian, play())
+    const axe = guide.attacks.find(a => a.key === 'greataxe')!
+    const rage = '+3 de dano em fúria, sem armadura pesada (Dano de Fúria)'
+    expect(axe.damage!.notes).toContain(rage)
+    expect(axe.damage).toMatchObject({ formula: '1d12 + 3 cortante', breakdown: [{ label: 'Força', value: 3 }] })
+    expect(axe.notes).toContain(rage)
+    const hasRage = (key: string) => guide.attacks.find(a => a.key === key)!.damage!.notes.some(n => n.includes('Dano de Fúria'))
+    expect(hasRage('longbow')).toBe(false)
+    expect(hasRage('unarmed')).toBe(false)
+  })
+
   it('outra mão (duas adagas): a regra-base no dano', () => {
     const d = draft({
       class: 'rogue', level: 1, abilityScores: SCORES,

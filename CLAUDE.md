@@ -129,6 +129,7 @@ A ficha usada durante a sessão: botão "Jogar" na galeria (só ficha sem etapa 
 - A V1 implementa essas camadas usando localStorage
 - Componentes e stores **nunca** acessam localStorage diretamente
 - Isso permite migrar para IndexedDB no futuro sem refatorar a aplicação
+- **Salvamento automático do dnd5e** (decisão do usuário, 2026-10-26): toda alteração do draft é gravada sozinha, `AUTOSAVE_DELAY_MS` (400 ms) depois da última, e `pagehide`/`visibilitychange` (hidden) gravam na hora (`stores/characterStore.ts`). Setter novo de draft passa por `editDraft` — `set` direto não agenda a gravação. Ação que troca de ficha (abrir, nova, importar, duplicar, galeria, Concluir) chama `flushAutosave` antes; excluir a ficha aberta cancela o timer, navegar entre etapas também (já grava tudo). A regra de existência não mudou: ficha que já está na biblioteca é sempre atualizada; a nova só entra com nome ou ao navegar entre etapas — abrir o wizard em branco não cria entrada na galeria
 
 ## Fontes da Verdade
 

@@ -137,3 +137,15 @@ describe('RollRecipeSheet — Normal / Vantagem / Desvantagem da mesa', () => {
     expect(screen.queryByRole('group', { name: 'Vantagem ou desvantagem da mesa' })).toBeNull()
   })
 })
+
+describe('RollRecipeSheet — resultado dos dados do app', () => {
+  it('o resultado nasce dentro de uma região viva que já existia antes de rolar', () => {
+    usePlayStore.getState().setAppDice(true)
+    openKrusk()
+    openAthletics()
+    const live = screen.getByRole('dialog').querySelector('[aria-live="polite"]')!
+    expect(live).toBeEmptyDOMElement()
+    fireEvent.click(screen.getByRole('button', { name: 'Rolar' }))
+    expect(live).toContainElement(screen.getByTestId('roll-total'))
+  })
+})

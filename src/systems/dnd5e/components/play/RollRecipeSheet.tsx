@@ -6,6 +6,7 @@ import { endConcentration, setInspiration } from '../../utils/playState'
 import { withInspirationSpent, withTableMode, type RollGuideEntry } from '../../utils/rollGuide'
 import { canRollEntry, rollGuideEntry, type GuideRoll } from './playDice'
 import { PlayDialog } from './PlayDialog'
+import { RollOutcome } from './RollOutcome'
 
 const reasonLabels = (reasons: { label: string }[]) => reasons.map(r => r.label).join(', ')
 
@@ -248,7 +249,10 @@ export function RollRecipeSheet({ entry: baseEntry, appDice, onClose, crit = fal
               </button>
             )}
           </div>
-          {result && <RollResult result={result} entry={entry} isD20={isD20} autoMiss={autoMiss} />}
+          {/* A região viva existe antes da primeira rolagem: o leitor de tela anuncia cada resultado. */}
+          <div aria-live="polite">
+            {result && <RollResult key={result.record.id} result={result} entry={entry} isD20={isD20} autoMiss={autoMiss} />}
+          </div>
           {failedConcentration && (
             <button
               onClick={endFailedConcentration}
@@ -312,31 +316,18 @@ function RollResult({ result, entry, isD20, autoMiss }: {
   autoMiss: boolean
 }) {
   const { record, natural } = result
-  const faces = record.terms.flatMap(t => t.dice)
   return (
-    <div className="mt-3" aria-live="polite">
-      <p className="text-sm text-parchment-400">
-        {result.crit ? 'Crítico: ' : ''}Total{' '}
-        <span className="font-fantasy font-bold text-2xl text-parchment-100" data-testid="roll-total">{record.total}</span>
-      </p>
-      <p className="text-xs text-parchment-600">
-        Dados:{' '}
-        {faces.map((d, i) => (
-          <span key={i} className={d.kept ? 'text-parchment-300' : 'line-through'}>{i > 0 ? ', ' : ''}{d.value}</span>
-        ))}
-        {record.modifierTotal !== 0 && <> ({formatModifier(record.modifierTotal)})</>}
-      </p>
-      {isD20 && natural === 20 && <p className="mt-1 text-sm font-bold text-gold-300">20 natural!</p>}
-      {isD20 && natural === 1 && (
-        <p className="mt-1 text-sm font-bold text-red-400">
-          {autoMiss ? '1 natural: erra automaticamente (pág. 196).' : '1 natural.'}
-        </p>
-      )}
+    <RollOutcome
+      record={record}
+      natural={isD20 ? natural : null}
+      prefix={result.crit ? 'Crítico: ' : ''}
+      naturalOneText={autoMiss ? '1 natural: erra automaticamente (pág. 196).' : '1 natural.'}
+    >
       {entry.dc !== undefined && entry.autoFail.length === 0 && (
         <p className={`mt-1 text-sm ${record.total >= entry.dc ? 'text-emerald-300' : 'text-red-300'}`}>
           {record.total >= entry.dc ? `Passou (CD ${entry.dc}).` : `Não passou (CD ${entry.dc}).`}
         </p>
       )}
-    </div>
+    </RollOutcome>
   )
 }

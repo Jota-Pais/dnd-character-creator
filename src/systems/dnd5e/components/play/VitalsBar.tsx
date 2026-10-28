@@ -6,11 +6,36 @@ import {
 } from '../../utils/playState'
 import type { RollGuideEntry } from '../../utils/rollGuide'
 import { getConditionalAcBonuses } from '../../utils/sheetEffects'
+import { getHpBand, getHpBarPercent, type HpBand } from './hpVitals'
 import { armorClassSource, passiveSource, type NumberSource } from './numberSources'
 import { ModeMark } from './RollMarks'
 import type { PlayView } from './usePlayView'
 
 const LIFE_LABEL = { dying: 'Morrendo', stable: 'Estável', dead: 'Morto' } as const
+
+const BAR_COLOR: Record<HpBand, string> = {
+  healthy: 'bg-emerald-500',
+  wounded: 'bg-amber-500',
+  low: 'bg-red-500',
+  zero: 'bg-transparent',
+}
+
+/**
+ * A barra do PV atual sobre o máximo efetivo, com a cor da faixa (`getHpBand`). Os PV temporários
+ * não entram nela: não somam ao PV (pág. 200), ficam no "+X temp." ao lado do número.
+ */
+function HpBar({ current, max, band }: { current: number; max: number; band: HpBand }) {
+  return (
+    <span className="mt-1 block h-1.5 w-full overflow-hidden rounded-full bg-parchment-800" aria-hidden="true">
+      <span
+        className={`block h-full rounded-full ${BAR_COLOR[band]} transition-[width] duration-500 motion-reduce:transition-none`}
+        style={{ width: `${getHpBarPercent(current, max)}%` }}
+        data-testid="hp-bar"
+        data-band={band}
+      />
+    </span>
+  )
+}
 
 /** Um número dos vitais. Com `onOpen`, vira botão (rótulo dourado, como a iniciativa): "de onde vem". */
 function Stat({ label, children, sub, onOpen, ariaLabel }: {
@@ -37,7 +62,8 @@ function Stat({ label, children, sub, onOpen, ariaLabel }: {
 }
 
 /**
- * Os vitais, fixos no topo da tela de jogo: PV (com o corte da exaustão à vista), PV temporários,
+ * Os vitais, fixos no topo da tela de jogo: PV (com a barra por faixa, o aviso de PV baixo e o
+ * corte da exaustão à vista), PV temporários,
  * CA, deslocamento efetivo, iniciativa (tocável: abre a receita), Percepção passiva, inspiração,
  * concentração e as condições ativas (só leitura; quem mexe nelas é a aba Estado).
  */
@@ -56,6 +82,7 @@ export function VitalsBar({ view, onOpenRecipe, onOpenSource }: {
   const initiative = guide.initiative
   const passive = guide.passivePerception
   const life = state.lifeState === 'conscious' ? null : LIFE_LABEL[state.lifeState]
+  const band = getHpBand(current, effMax)
 
   return (
     <div className="space-y-2">
@@ -63,11 +90,16 @@ export function VitalsBar({ view, onOpenRecipe, onOpenSource }: {
         <div
           className={[
             'col-span-4 sm:col-span-1 flex flex-col justify-center rounded-lg border px-2.5 py-1.5 min-h-12',
-            life ? 'border-red-900 bg-red-950/30' : 'border-gold-800 bg-surface-raised',
+            life ? 'border-red-900 bg-red-950/30' : band === 'low' ? 'border-red-900 bg-surface-raised' : 'border-gold-800 bg-surface-raised',
           ].join(' ')}
           data-testid="vitals-hp"
         >
-          <span className="text-[10px] uppercase tracking-wider text-parchment-600 leading-none">Pontos de vida</span>
+          <span className="flex items-center justify-between gap-2 leading-none">
+            <span className="text-[10px] uppercase tracking-wider text-parchment-600">Pontos de vida</span>
+            {band === 'low' && (
+              <span className="text-[10px] font-bold uppercase tracking-wider text-red-300" data-testid="hp-low">PV baixo</span>
+            )}
+          </span>
           <span className="leading-tight">
             <span className="font-fantasy font-black text-2xl text-parchment-100" data-testid="hp-current">{current}</span>
             <span className="text-sm text-parchment-500"> / {effMax}</span>
@@ -80,6 +112,7 @@ export function VitalsBar({ view, onOpenRecipe, onOpenSource }: {
               <span className="ml-1.5 text-sm font-bold text-sky-300" title="PV temporários: somem antes dos seus PV">+{state.tempHp} temp.</span>
             )}
           </span>
+          <HpBar current={current} max={effMax} band={band} />
           {life && <span className="text-xs font-bold text-red-300 leading-none">{life}</span>}
           {!life && effMax < baseMax && (
             <span className="text-[10px] text-amber-300 leading-tight">

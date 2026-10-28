@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { useCharacterStore, AUTOSAVE_DELAY_MS } from '../characterStore'
 import { EMPTY_DRAFT } from '../../types/character'
 import { loadLibrary } from '../../utils/storage'
+import { getMissingSteps } from '../../utils/draftValidation'
 import { COMPLETE_DRAFT } from '../../../../test/fixtures'
 import { useAppStore } from '../../../../core/stores/appStore'
 import { usePlayStore } from '../playStore'
@@ -300,6 +301,26 @@ describe('recarregar a página no modo de jogo', () => {
       setItem.mockRestore()
       vi.useRealTimers()
     }
+  })
+
+  it('não volta ao jogo de uma ficha que ganhou pendência, como o "Jogar" da galeria', async () => {
+    // Bárbaro com Atletismo da classe + Marinheiro, que também dá Atletismo: a perícia repetida
+    // deixa a etapa Classe pendente (ficha antiga, de antes da regra).
+    useCharacterStore.getState().importDraft({
+      ...structuredClone(COMPLETE_DRAFT),
+      classChoices: { ...structuredClone(COMPLETE_DRAFT.classChoices), skills: ['athletics', 'survival'] },
+    })
+    const id = useCharacterStore.getState().currentId!
+    expect(getMissingSteps(useCharacterStore.getState().draft)).toEqual(['class'])
+    saveOpenPlayId(id)
+    savePlayState({ ...createPlayState(id), inspiration: true })
+
+    const { chars, play, app } = await reload()
+    expect(chars.getState().view).toBe('gallery')
+    expect(play.getState().characterId).toBeNull()
+    expect(app.getState().activeSystemId).toBeNull()
+    expect(loadOpenPlayId()).toBeNull()
+    expect(loadPlayState(id)?.inspiration).toBe(true)
   })
 
   it('ignora (e limpa) a marca de uma ficha que não existe mais', async () => {

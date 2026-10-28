@@ -8,7 +8,7 @@ import { getAdditionalLevelsUsed } from '../utils/multiclassUtils'
 import { EMPTY_EQUIPMENT_DRAFT } from '../types/equipment'
 import { EMPTY_SPELL_CHOICES } from '../types/spell'
 import { loadLibrary, saveCharacterEntry, deleteCharacterEntry, newId, type SavedCharacter } from '../utils/storage'
-import { getFirstIncompleteStep } from '../utils/draftValidation'
+import { getFirstIncompleteStep, getMissingSteps } from '../utils/draftValidation'
 import { useAppStore } from '../../../core/stores/appStore'
 import { deletePlayState, loadOpenPlayId, saveOpenPlayId } from '../utils/playStorage'
 import { usePlayStore } from './playStore'
@@ -17,13 +17,18 @@ const initialLibrary = loadLibrary()
 
 /**
  * A ficha que estava aberta no modo de jogo quando a página recarregou (ou o celular descartou a
- * aba). Se ela não existe mais, a marca é limpa e o app abre normalmente.
+ * aba). Se ela não existe mais, ou ganhou etapa pendente (ficha antiga com perícia repetida, ficha
+ * alterada em outra aba), a marca é limpa e o app abre normalmente: é a regra do "Jogar" da
+ * galeria, que só aparece sem pendência. O estado de jogo dela fica guardado para quando voltar.
  */
 function findResumablePlay(): SavedCharacter | undefined {
   const id = loadOpenPlayId()
   if (!id) return undefined
   const char = initialLibrary.find(c => c.id === id)
-  if (!char) saveOpenPlayId(null)
+  if (!char || getMissingSteps(char.draft).length > 0) {
+    saveOpenPlayId(null)
+    return undefined
+  }
   return char
 }
 

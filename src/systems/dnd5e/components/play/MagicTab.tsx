@@ -72,7 +72,8 @@ function ResourceRow({ resource, view }: { resource: SheetResource; view: PlayTa
 }
 
 /**
- * Aba "Magia": por classe conjuradora a CD e o ataque de magia (tocável); os espaços
+ * Aba "Magia": por classe conjuradora e por talento que ensina magias (Iniciado em Magia) a CD e
+ * o ataque de magia (tocável); os espaços
  * do pool e os de Magia de Pacto, à parte, como bolinhas que gastam e recuperam com um toque;
  * os recursos da ficha (`sheet.resources`) com os usos e a recarga; e os Dados de Vida que restam.
  */
@@ -97,7 +98,7 @@ export function MagicTab(view: PlayTabProps) {
         <Section title="Conjuração">
           <ul className="space-y-2">
             {guide.spellcasting.map(sc => (
-              <li key={sc.classId} className="rounded-xl border border-parchment-900 bg-surface-raised p-3">
+              <li key={sc.key} className="rounded-xl border border-parchment-900 bg-surface-raised p-3">
                 <p className="font-fantasy text-parchment-100">{sc.label}</p>
                 <div className="mt-1.5 flex flex-wrap items-center gap-2">
                   <button

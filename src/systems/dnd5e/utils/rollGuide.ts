@@ -17,7 +17,7 @@ import {
   getInitiativeAdvantageSources, getInitiativeBonuses, getOwnedFeats, getSheetArmorClass, getWeaponCritThreshold, resolveRollMode,
   type ActiveConditionEffects, type ConditionRoll, type SheetEffect,
 } from './sheetEffects'
-import { getCasterEntries, getSpellAttackBonus, getSpellSaveDC } from './spellUtils'
+import { getCasterEntries, getFeatSpellBlocks, getSpellAttackBonus, getSpellSaveDC } from './spellUtils'
 
 /**
  * Guia de rolagens do modo de jogo: a "receita" de cada jogada da ficha — o que rolar, quanto
@@ -47,8 +47,8 @@ export type GuideBreakdownItem = { label: string; value: number }
 export type RollGuideEntry = {
   /**
    * `check:STR` | `save:DEX` | `skill:stealth` | `initiative` | `attack:<key>` | `damage:<key>` |
-   * `damage:<key>:versatile` | `spell-attack:<classId>` | `death-save` | `concentration` |
-   * `hit-die:<faces>`.
+   * `damage:<key>:versatile` | `spell-attack:<classId>` | `spell-attack:feat:<featId>` |
+   * `death-save` | `concentration` | `hit-die:<faces>`.
    */
   id: string
   kind: GuideKind
@@ -108,10 +108,21 @@ export type AttackGuide = {
   versatile: RollGuideEntry | null
 }
 
-/** Conjuração de uma classe: a CD que os alvos enfrentam e o ataque de magia. */
+/**
+ * Conjuração de uma classe ou de um talento que ensina magias (Iniciado em Magia, p. 170): a CD
+ * que os alvos enfrentam e o ataque de magia.
+ */
 export type SpellcastingGuide = {
+  /**
+   * Única no guia: `class:<classId>` ou `feat:<featId>` — o clérigo com Iniciado em Magia de
+   * clérigo tem as duas, cada uma com a sua CD.
+   */
+  key: string
+  /** A classe da lista e do atributo: a conjuradora, ou a escolhida no talento. */
   classId: string
-  /** "Mago", "Guerreiro (Cavaleiro Arcano)". */
+  /** O talento que ensina as magias; null na conjuração da classe. */
+  featId: string | null
+  /** "Mago", "Guerreiro (Cavaleiro Arcano)", "Iniciado em Magia (Clérigo)". */
   label: string
   ability: AbilityScore
   saveDc: number
@@ -620,6 +631,9 @@ function saveInput(
   }
 }
 
+/** Uma conjuração (classe ou talento) com a CD e o bônus de ataque já calculados pela fonte dela. */
+type SpellcastingInput = Omit<SpellcastingGuide, 'saveDcBreakdown' | 'attack'> & { attackId: string; attackModifier: number }
+
 /** O guia de todas as jogadas da ficha, com o estado de jogo aplicado. Pura. */
 export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide {
   const scores = getFinalAbilityScores(draft)
@@ -763,23 +777,18 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
   }
   const attacks = getSheetAttacks(draft, scores).map(a => attackGuide(a, attackContext))
 
-  const spellcasting = getCasterEntries(draft).map((caster): SpellcastingGuide => {
-    const sc = caster.casting.spellcasting
-    const ab = sc.ability
-    const abilityPart = { label: ABILITY_LABELS[ab].long, value: mods[ab] }
-    const saveDc = getSpellSaveDC(sc, scores, level)
+  // A CD e o ataque de magia de uma conjuração, com os números prontos da fonte dela.
+  const spellcastingGuide = ({ attackId, attackModifier, ...source }: SpellcastingInput): SpellcastingGuide => {
+    const abilityPart = { label: ABILITY_LABELS[source.ability].long, value: mods[source.ability] }
     return {
-      classId: caster.cls.id,
-      label: caster.casting.label,
-      ability: ab,
-      saveDc,
-      saveDcBreakdown: closeBreakdown([{ label: 'Base', value: 8 }, { label: 'Proficiência', value: prof }, abilityPart], saveDc),
+      ...source,
+      saveDcBreakdown: closeBreakdown([{ label: 'Base', value: 8 }, { label: 'Proficiência', value: prof }, abilityPart], source.saveDc),
       attack: d20Entry({
-        id: `spell-attack:${caster.cls.id}`,
-        label: `Ataque de magia — ${caster.casting.label}`,
+        id: attackId,
+        label: `Ataque de magia — ${source.label}`,
         attackRoll: true,
-        ability: ab,
-        modifier: getSpellAttackBonus(sc, scores, level),
+        ability: source.ability,
+        modifier: attackModifier,
         breakdown: [abilityPart, { label: 'Proficiência', value: prof }],
         condition: effects.attack,
         notes: [
@@ -791,7 +800,34 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
         ],
       }, inspiration),
     }
-  })
+  }
+  const spellcasting = [
+    ...getCasterEntries(draft).map(caster => {
+      const sc = caster.casting.spellcasting
+      return spellcastingGuide({
+        key: `class:${caster.cls.id}`,
+        classId: caster.cls.id,
+        featId: null,
+        label: caster.casting.label,
+        ability: sc.ability,
+        saveDc: getSpellSaveDC(sc, scores, level),
+        attackId: `spell-attack:${caster.cls.id}`,
+        attackModifier: getSpellAttackBonus(sc, scores, level),
+      })
+    }),
+    // Talento que ensina magias (Iniciado em Magia, p. 170): a CD e o ataque pelo atributo da classe
+    // escolhida nele, os de getFeatSpellBlocks — os mesmos da Revisão e do PDF.
+    ...getFeatSpellBlocks(draft, scores).map(block => spellcastingGuide({
+      key: `feat:${block.featId}`,
+      classId: block.spellClass,
+      featId: block.featId,
+      label: block.label,
+      ability: block.ability,
+      saveDc: block.saveDc,
+      attackId: `spell-attack:feat:${block.featId}`,
+      attackModifier: Number(block.attackBonus),
+    })),
+  ]
 
   // Teste contra a morte: d20 puro, sem atributo (pág. 199); só as fontes de TODO teste de resistência.
   // Sortudo vale nele (decisão de 2026-10-25): a nota e, com os dados do app, o "rolar de novo".

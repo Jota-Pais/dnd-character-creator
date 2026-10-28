@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { render, screen, fireEvent, cleanup, within } from '@testing-library/react'
+import { act, render, screen, fireEvent, cleanup, within } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { usePlayStore } from '../../../stores/playStore'
+import { completeLongRest } from '../../../utils/playState'
 import { EMPTY_DRAFT, type CharacterDraft } from '../../../types/character'
 import { COMPLETE_DRAFT } from '../../../../../test/fixtures'
 import { openDraft, openKrusk, resetPlay } from './openPlay'
@@ -22,6 +23,22 @@ const WARLOCK_WIZARD: CharacterDraft = {
     spellChoices: { cantrips: [], spells: [] }, asiChoices: [], hpRolls: [],
   }],
   multiclass: true,
+}
+
+const MAGIC_INITIATE = 'iniciado-em-magia'
+
+/**
+ * Guerreiro 4 (meio-orc, SAB 10), sem conjuração de classe, com Iniciado em Magia de clérigo no
+ * 4º nível: CD 10 e ataque +2 pela Sabedoria; Curar Ferimentos uma vez por descanso longo.
+ */
+const FIGHTER_INITIATE: CharacterDraft = {
+  ...structuredClone(COMPLETE_DRAFT),
+  name: 'Brom',
+  class: 'fighter',
+  level: 4,
+  classChoices: { ...structuredClone(COMPLETE_DRAFT.classChoices), fightingStyle: 'defense' },
+  asiChoices: [{ kind: 'feat', featId: MAGIC_INITIATE }],
+  featSelections: { [MAGIC_INITIATE]: { spellClass: 'cleric', cantrips: ['sacred-flame', 'guidance'], spells: ['cure-wounds'] } },
 }
 
 function openMagic(draft: CharacterDraft) {
@@ -58,6 +75,38 @@ describe('MagicTab', () => {
     expect(screen.getAllByText('CD de magia')).toHaveLength(2)
     fireEvent.click(screen.getAllByRole('button', { name: /^Ataque de magia — / })[0])
     expect(screen.getByRole('dialog')).toBeInTheDocument()
+  })
+
+  describe('guerreiro com Iniciado em Magia (sem conjuração de classe)', () => {
+    it('a CD e o ataque do talento na Conjuração, tocáveis como os da classe', () => {
+      openMagic(FIGHTER_INITIATE)
+      expect(screen.queryByText('Sem magias nem recursos com usos nesta ficha.')).not.toBeInTheDocument()
+      expect(screen.getByText('Conjuração')).toBeInTheDocument()
+      expect(screen.getByText('Iniciado em Magia (Clérigo)')).toBeInTheDocument()
+
+      fireEvent.click(screen.getByRole('button', { name: 'CD de magia 10: de onde vem' }))
+      const dc = screen.getByRole('dialog', { name: 'CD de magia — Iniciado em Magia (Clérigo)' })
+      expect(within(dc).getByTestId('source-items')).toHaveTextContent('Sabedoria')
+      fireEvent.click(within(dc).getByRole('button', { name: 'Fechar' }))
+
+      fireEvent.click(screen.getByRole('button', { name: 'Ataque de magia — Iniciado em Magia (Clérigo): 1d20 + 2' }))
+      expect(screen.getByRole('dialog', { name: 'Ataque de magia — Iniciado em Magia (Clérigo)' })).toHaveTextContent('1d20 + 2')
+    })
+
+    it('o uso da magia de 1º, com o nome dela, gasta e recupera nos Recursos; o descanso longo devolve', () => {
+      openMagic(FIGHTER_INITIATE)
+      expect(screen.getByText('Iniciado em Magia (talento)')).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: 'Gastar: Curar Ferimentos' }))
+      expect(usePlayStore.getState().state!.resourcesSpent['magic-initiate-spell']).toBe(1)
+      expect(screen.getByRole('group', { name: 'Curar Ferimentos: 0 de 1' })).toBeInTheDocument()
+
+      fireEvent.click(screen.getByRole('button', { name: 'Recuperar: Curar Ferimentos' }))
+      expect(usePlayStore.getState().state!.resourcesSpent['magic-initiate-spell'] ?? 0).toBe(0)
+
+      fireEvent.click(screen.getByRole('button', { name: 'Gastar: Curar Ferimentos' }))
+      act(() => { usePlayStore.getState().run((st, sh) => completeLongRest(st, sh)) })
+      expect(screen.getByRole('group', { name: 'Curar Ferimentos: 1 de 1' })).toBeInTheDocument()
+    })
   })
 
   it('bárbaro: Fúria com usos e a recarga escrita; Dados de Vida disponíveis', () => {

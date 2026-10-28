@@ -6,8 +6,10 @@ import type { ConditionId, ExhaustionLevel } from '../../types/condition'
 import type { PlayState } from '../../types/playState'
 import { COMPLETE_DRAFT } from '../../../../test/fixtures'
 import { createPlayState } from '../playState'
+import { formatModifier } from '../abilityScoreUtils'
 import { getFinalAbilityScores } from '../asiUtils'
 import { getPassiveScore, getSavingThrowChecks, getSkillChecks } from '../proficiencyUtils'
+import { getFeatSpellBlocks } from '../spellUtils'
 import {
   describeRollGuide, findRollGuideEntry, formatGuideFormula, getConcentrationGuide, getRollGuide, parseDamageText,
   withInspirationSpent, type RollGuide, type RollGuideEntry,
@@ -672,6 +674,60 @@ describe('getRollGuide — conjurador multiclasse', () => {
     expect(guide.spellcasting[1].attack.id).toBe('spell-attack:cleric')
     // O poço de Dados de Vida das duas classes.
     expect(guide.hitDice.map(h => h.id)).toEqual(['hit-die:8', 'hit-die:6'])
+  })
+})
+
+describe('getRollGuide — magias de talento (Iniciado em Magia, p. 170)', () => {
+  const FEAT = 'iniciado-em-magia'
+  const withMagicInitiate = (d: CharacterDraft): CharacterDraft => ({
+    ...d,
+    asiChoices: [{ kind: 'feat', featId: FEAT }],
+    featSelections: { [FEAT]: { spellClass: 'cleric', cantrips: ['sacred-flame', 'guidance'], spells: ['cure-wounds'] } },
+  })
+
+  it('guerreiro sem conjuração ganha a CD e o ataque do talento, pelo atributo da classe escolhida', () => {
+    // Guerreiro 4: SAB 12 (+1), proficiência +2 → CD 11, ataque +3.
+    const d = withMagicInitiate(draft({ class: 'fighter', level: 4, abilityScores: SCORES }))
+    const guide = getRollGuide(d, play())
+    expect(guide.spellcasting).toHaveLength(1)
+    const [sc] = guide.spellcasting
+    expect(sc).toMatchObject({
+      key: `feat:${FEAT}`, classId: 'cleric', featId: FEAT, label: 'Iniciado em Magia (Clérigo)', ability: 'WIS', saveDc: 11,
+    })
+    expect(sc.saveDcBreakdown).toEqual([
+      { label: 'Base', value: 8 }, { label: 'Proficiência', value: 2 }, { label: 'Sabedoria', value: 1 },
+    ])
+    expect(sc.attack).toMatchObject({
+      id: `spell-attack:feat:${FEAT}`, label: 'Ataque de magia — Iniciado em Magia (Clérigo)', formula: '1d20 + 3', attackRoll: true,
+    })
+    expect(sc.attack.breakdown).toEqual([{ label: 'Sabedoria', value: 1 }, { label: 'Proficiência', value: 2 }])
+    expect(sc.attack.notes.some(n => n.startsWith('20 natural: acerta e é crítico'))).toBe(true)
+    expect(findRollGuideEntry(guide, sc.attack.id)).toBe(sc.attack)
+    // Os números são os da Revisão e do PDF.
+    const [block] = getFeatSpellBlocks(d, getFinalAbilityScores(d))
+    expect([sc.saveDc, formatModifier(sc.attack.modifier)]).toEqual([block.saveDc, block.attackBonus])
+  })
+
+  it('clérigo com Iniciado em Magia de clérigo: duas conjurações, com chaves e jogadas que não colidem', () => {
+    const guide = getRollGuide(withMagicInitiate(draft({ class: 'cleric', level: 4, abilityScores: SCORES })), play())
+    expect(guide.spellcasting.map(s => [s.key, s.attack.id, s.label])).toEqual([
+      ['class:cleric', 'spell-attack:cleric', 'Clérigo'],
+      [`feat:${FEAT}`, `spell-attack:feat:${FEAT}`, 'Iniciado em Magia (Clérigo)'],
+    ])
+    expect(findRollGuideEntry(guide, 'spell-attack:cleric')?.label).toBe('Ataque de magia — Clérigo')
+    expect(findRollGuideEntry(guide, `spell-attack:feat:${FEAT}`)?.label).toBe('Ataque de magia — Iniciado em Magia (Clérigo)')
+  })
+
+  it('armadura sem proficiência impede também a magia do talento (pág. 144)', () => {
+    // Bárbaro não tem proficiência com armadura pesada.
+    const d = withMagicInitiate(draft({ class: 'barbarian', level: 4, abilityScores: SCORES, ...carrying('chain-mail') }))
+    const [sc] = getRollGuide(d, play()).spellcasting
+    expect(sc.attack.notes[0]).toBe('Usando Cota de Malha sem proficiência, você não pode conjurar magias (pág. 144).')
+  })
+
+  it('sem a classe escolhida no talento, sem conjuração', () => {
+    const d = { ...withMagicInitiate(draft({ class: 'fighter', level: 4, abilityScores: SCORES })), featSelections: {} }
+    expect(getRollGuide(d, play()).spellcasting).toEqual([])
   })
 })
 

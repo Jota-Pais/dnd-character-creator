@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { useCharacterStore } from '../characterStore'
+import { useCharacterStore, AUTOSAVE_DELAY_MS } from '../characterStore'
 import { EMPTY_DRAFT } from '../../types/character'
 import { loadLibrary } from '../../utils/storage'
 import { COMPLETE_DRAFT } from '../../../../test/fixtures'
@@ -9,8 +9,10 @@ import { createPlayState, setInspiration } from '../../utils/playState'
 import { loadOpenPlayId, loadPlayState, saveOpenPlayId, savePlayState } from '../../utils/playStorage'
 
 beforeEach(() => {
-  localStorage.clear()
+  // newCharacter grava a alteração pendente do teste anterior — só depois o storage é limpo
   useCharacterStore.getState().newCharacter()
+  localStorage.clear()
+  useCharacterStore.setState({ library: [] })
 })
 
 describe('nextStep (navegação livre)', () => {
@@ -268,5 +270,148 @@ describe('recarregar a página no modo de jogo', () => {
     expect(play.getState().characterId).toBeNull()
     expect(app.getState().activeSystemId).toBeNull()
     expect(loadOpenPlayId()).toBeNull()
+  })
+})
+
+describe('salvamento automático a cada alteração (decisão de 2026-10-26)', () => {
+  const stored = (id: string) => loadLibrary().find(c => c.id === id)
+  /** Abre uma ficha que já está na biblioteca e devolve o id dela. */
+  const openSaved = (name = 'Krusk') => {
+    useCharacterStore.getState().importDraft({ ...structuredClone(COMPLETE_DRAFT), name })
+    return useCharacterStore.getState().currentId!
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.useRealTimers()
+  })
+
+  it('grava a alteração depois da espera, sem precisar navegar, e a galeria acompanha', () => {
+    const id = openSaved()
+    useCharacterStore.getState().setName('Krusk, o Breve')
+    vi.advanceTimersByTime(AUTOSAVE_DELAY_MS - 1)
+    expect(stored(id)?.draft.name).toBe('Krusk')
+    vi.advanceTimersByTime(1)
+    expect(stored(id)?.draft.name).toBe('Krusk, o Breve')
+    expect(stored(id)?.step).toBe('review')
+    expect(useCharacterStore.getState().library.find(c => c.id === id)?.draft.name).toBe('Krusk, o Breve')
+  })
+
+  it('várias alterações em sequência viram uma gravação só', () => {
+    const id = openSaved()
+    const setItem = vi.spyOn(Storage.prototype, 'setItem')
+    const store = useCharacterStore.getState()
+    store.setName('K')
+    vi.advanceTimersByTime(100)
+    store.setName('Ku')
+    vi.advanceTimersByTime(100)
+    store.setLevel(5)
+    vi.advanceTimersByTime(AUTOSAVE_DELAY_MS - 1)
+    expect(setItem).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(1)
+    expect(setItem).toHaveBeenCalledTimes(1)
+    expect(stored(id)?.draft).toMatchObject({ name: 'Ku', level: 5 })
+    vi.advanceTimersByTime(AUTOSAVE_DELAY_MS * 3)
+    expect(setItem).toHaveBeenCalledTimes(1)
+  })
+
+  it('setter que não muda o draft não grava; navegar grava na hora e descarta o timer', () => {
+    openSaved()
+    const setItem = vi.spyOn(Storage.prototype, 'setItem')
+    useCharacterStore.getState().addClass(COMPLETE_DRAFT.class!) // a primária não se repete: nada muda
+    vi.advanceTimersByTime(AUTOSAVE_DELAY_MS)
+    expect(setItem).not.toHaveBeenCalled()
+
+    useCharacterStore.getState().setName('Krusk II')
+    useCharacterStore.getState().goToStep('name')
+    expect(setItem).toHaveBeenCalledTimes(1)
+    vi.advanceTimersByTime(AUTOSAVE_DELAY_MS * 3)
+    expect(setItem).toHaveBeenCalledTimes(1)
+  })
+
+  it('ficha nova sem nome não vira entrada na galeria; com nome, passa a existir', () => {
+    useCharacterStore.getState().setLevel(3)
+    vi.advanceTimersByTime(AUTOSAVE_DELAY_MS)
+    expect(loadLibrary()).toEqual([])
+    expect(useCharacterStore.getState().library).toEqual([])
+
+    useCharacterStore.getState().setName('Conan')
+    vi.advanceTimersByTime(AUTOSAVE_DELAY_MS)
+    const id = useCharacterStore.getState().currentId!
+    expect(stored(id)?.draft).toMatchObject({ name: 'Conan', level: 3 })
+    expect(stored(id)?.step).toBe('name')
+  })
+
+  it('trocar de ficha grava a pendente na ficha certa — o timer não escreve na outra', () => {
+    const idA = openSaved('Alda')
+    const idB = openSaved('Bento')
+    useCharacterStore.getState().openCharacter(idA)
+    useCharacterStore.getState().setName('Alda, a Breve')
+    const bBefore = stored(idB)
+
+    useCharacterStore.getState().openCharacter(idB) // antes da espera acabar
+    expect(stored(idA)?.draft.name).toBe('Alda, a Breve')
+    expect(useCharacterStore.getState().draft.name).toBe('Bento')
+
+    vi.advanceTimersByTime(AUTOSAVE_DELAY_MS * 3)
+    expect(stored(idB)).toEqual(bBefore)
+    expect(stored(idA)?.draft.name).toBe('Alda, a Breve')
+  })
+
+  it('ficha nova ou volta à galeria também gravam a pendente antes de trocar', () => {
+    const id = openSaved()
+    useCharacterStore.getState().setLevel(7)
+    useCharacterStore.getState().newCharacter()
+    expect(stored(id)?.draft.level).toBe(7)
+    vi.advanceTimersByTime(AUTOSAVE_DELAY_MS * 3)
+    expect(loadLibrary()).toHaveLength(1) // a ficha em branco não entrou
+
+    useCharacterStore.getState().openCharacter(id)
+    useCharacterStore.getState().setName('') // sem nome, a galeria sozinha não gravaria
+    useCharacterStore.getState().goToGallery()
+    expect(stored(id)?.draft.name).toBe('')
+  })
+
+  it('excluir a ficha aberta descarta a gravação pendente (não a recria)', () => {
+    const id = openSaved()
+    useCharacterStore.getState().setName('Fantasma')
+    useCharacterStore.getState().deleteCharacter(id)
+    vi.advanceTimersByTime(AUTOSAVE_DELAY_MS * 3)
+    expect(stored(id)).toBeUndefined()
+    expect(loadLibrary()).toEqual([])
+  })
+
+  it('fechar ou esconder a aba grava na hora, sem esperar o timer', () => {
+    const id = openSaved()
+    useCharacterStore.getState().setName('Último clique')
+    window.dispatchEvent(new Event('pagehide'))
+    expect(stored(id)?.draft.name).toBe('Último clique')
+
+    useCharacterStore.getState().setName('Aba escondida')
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true })
+    try {
+      document.dispatchEvent(new Event('visibilitychange'))
+    } finally {
+      Reflect.deleteProperty(document, 'visibilityState')
+    }
+    expect(stored(id)?.draft.name).toBe('Aba escondida')
+  })
+
+  it('abrir outra ficha no modo de jogo grava a pendente na ficha que estava aberta', () => {
+    const idA = openSaved('Alda')
+    const idB = openSaved('Bento')
+    useCharacterStore.getState().openCharacter(idA)
+    useCharacterStore.getState().setName('Alda, a Breve')
+    const bBefore = stored(idB)
+
+    useCharacterStore.getState().playCharacter(idB)
+    expect(stored(idA)?.draft.name).toBe('Alda, a Breve')
+    expect(useCharacterStore.getState().draft.name).toBe('Bento')
+    vi.advanceTimersByTime(AUTOSAVE_DELAY_MS * 3)
+    expect(stored(idB)).toEqual(bBefore)
+    useCharacterStore.getState().exitPlay()
   })
 })

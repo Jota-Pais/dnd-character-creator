@@ -115,6 +115,53 @@ function persistCurrent(currentId: string | null, draft: CharacterDraft, step: W
   return { id, library }
 }
 
+// ── Salvamento automático ────────────────────────────────────────────────────
+// Toda alteração do jogador no draft é gravada sozinha, AUTOSAVE_DELAY_MS depois da última
+// (cliques em sequência viram uma gravação só). Navegar entre etapas continua gravando na hora,
+// e trocar de ficha (abrir, nova, importar, duplicar, galeria, Concluir) grava antes o que estava
+// pendente — o timer nunca dispara depois da troca, então não escreve na ficha errada.
+
+/** Espera, depois da última alteração do draft, até gravar a ficha. */
+export const AUTOSAVE_DELAY_MS = 400
+
+let autosaveTimer: ReturnType<typeof setTimeout> | null = null
+
+function cancelAutosave(): void {
+  if (autosaveTimer === null) return
+  clearTimeout(autosaveTimer)
+  autosaveTimer = null
+}
+
+/**
+ * Grava agora a alteração pendente, se houver. A regra de quando uma ficha passa a existir na
+ * biblioteca é a de sempre: a que já está lá é sempre atualizada; a nova só entra com nome (como
+ * ao voltar para a galeria) ou ao navegar entre etapas — abrir o wizard em branco não cria entrada.
+ */
+export function flushAutosave(): void {
+  if (autosaveTimer === null) return
+  cancelAutosave()
+  const { currentId, draft, currentStep, library } = useCharacterStore.getState()
+  const inLibrary = currentId !== null && library.some(c => c.id === currentId)
+  if (!inLibrary && !draft.name.trim()) return
+  const saved = persistCurrent(currentId, draft, currentStep)
+  useCharacterStore.setState({ currentId: saved.id, library: saved.library })
+}
+
+function scheduleAutosave(): void {
+  cancelAutosave()
+  autosaveTimer = setTimeout(flushAutosave, AUTOSAVE_DELAY_MS)
+}
+
+/**
+ * Alteração do jogador no draft: aplica e, se o draft mudou, agenda o salvamento automático.
+ * Todo setter de draft passa por aqui; carregar uma ficha (abrir, nova, importar) não.
+ */
+function editDraft(update: (state: CharacterStore) => Partial<CharacterStore>): void {
+  const before = useCharacterStore.getState().draft
+  useCharacterStore.setState(update)
+  if (useCharacterStore.getState().draft !== before) scheduleAutosave()
+}
+
 export const useCharacterStore = create<CharacterStore>((set, get) => ({
   view: resumedPlay ? 'play' : initialLibrary.length > 0 ? 'gallery' : 'wizard',
   library: initialLibrary,
@@ -122,17 +169,22 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
   currentStep: resumedPlay?.step ?? 'name',
   draft: resumedPlay?.draft ?? { ...EMPTY_DRAFT },
 
-  newCharacter: () =>
-    set({ view: 'wizard', currentId: newId(), currentStep: 'name', draft: { ...EMPTY_DRAFT } }),
+  newCharacter: () => {
+    flushAutosave()
+    set({ view: 'wizard', currentId: newId(), currentStep: 'name', draft: { ...EMPTY_DRAFT } })
+  },
 
-  openCharacter: (id) =>
+  openCharacter: (id) => {
+    flushAutosave()
     set(state => {
       const char = state.library.find(c => c.id === id)
       if (!char) return {}
       return { view: 'wizard', currentId: id, currentStep: char.step, draft: char.draft }
-    }),
+    })
+  },
 
-  duplicateCharacter: (id) =>
+  duplicateCharacter: (id) => {
+    flushAutosave() // a cópia leva a última alteração, se for da ficha aberta
     set(state => {
       const char = state.library.find(c => c.id === id)
       if (!char) return {}
@@ -140,9 +192,12 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
       copy.name = `${copy.name} (cópia)`.trim()
       const library = saveCharacterEntry({ id: newId(), updatedAt: Date.now(), step: char.step, draft: copy })
       return { library }
-    }),
+    })
+  },
 
   deleteCharacter: (id) => {
+    // excluir a ficha aberta descarta a gravação pendente — senão o timer a recriaria
+    if (get().currentId === id) cancelAutosave()
     // Fecha antes de apagar: o close grava as edições pendentes, que não podem ressuscitar o estado.
     if (usePlayStore.getState().characterId === id) usePlayStore.getState().close()
     // O estado de jogo mora em outra chave: some junto com a ficha (playStorage).
@@ -155,6 +210,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
   },
 
   goToGallery: () => {
+    flushAutosave()
     set(state => {
       // salva a ficha atual antes de sair (se tem nome, vale a pena guardar)
       if (state.draft.name.trim()) {
@@ -172,6 +228,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
   exitPrint: () => set({ view: 'wizard' }),
 
   playCharacter: (id) => {
+    flushAutosave() // a alteração pendente da ficha aberta vai para ela, não para a do jogo
     const char = get().library.find(c => c.id === id)
     if (!char) return
     set({ view: 'play', currentId: id, currentStep: char.step, draft: char.draft })
@@ -188,10 +245,10 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     useAppStore.getState().setActiveSystem(null)
   },
 
-  setName: (name) => set(state => ({ draft: { ...state.draft, name } })),
+  setName: (name) => editDraft(state => ({ draft: { ...state.draft, name } })),
 
   setLevel: (level) =>
-    set(state => ({
+    editDraft(state => ({
       draft: {
         ...state.draft,
         level: Math.max(1, Math.min(20, level)),
@@ -204,10 +261,10 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     })),
 
   setHpMethod: (method) =>
-    set(state => ({ draft: { ...state.draft, hpMethod: method, hpRolls: [] } })),
+    editDraft(state => ({ draft: { ...state.draft, hpMethod: method, hpRolls: [] } })),
 
   rollHpForLevel: (charLevel) =>
-    set(state => {
+    editDraft(state => {
       const cls = state.draft.class ? getClass(state.draft.class) : undefined
       const hitDie = cls?.hitDie ?? 8
       const roll = Math.floor(Math.random() * hitDie) + 1
@@ -217,24 +274,24 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     }),
 
   setHpRoll: (charLevel, value) =>
-    set(state => {
+    editDraft(state => {
       const rolls = [...state.draft.hpRolls]
       rolls[charLevel - 2] = value
       return { draft: { ...state.draft, hpRolls: rolls } }
     }),
 
   setRace: (raceId) =>
-    set(state => ({
+    editDraft(state => ({
       draft: { ...state.draft, race: raceId, subrace: null, raceChoices: {} },
     })),
 
   setSubrace: (subraceId) =>
-    set(state => ({
+    editDraft(state => ({
       draft: { ...state.draft, subrace: subraceId, raceChoices: {} },
     })),
 
   updateRaceChoices: (choices) =>
-    set(state => ({
+    editDraft(state => ({
       draft: {
         ...state.draft,
         raceChoices: { ...state.draft.raceChoices, ...choices },
@@ -242,7 +299,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     })),
 
   setClass: (classId) =>
-    set(state => ({
+    editDraft(state => ({
       draft: {
         ...state.draft,
         class: classId,
@@ -256,7 +313,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     })),
 
   updateClassChoices: (choices) =>
-    set(state => ({
+    editDraft(state => ({
       draft: {
         ...state.draft,
         classChoices: { ...state.draft.classChoices, ...choices },
@@ -265,7 +322,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     })),
 
   updateFeatSelections: (featId, selections) =>
-    set(state => ({
+    editDraft(state => ({
       draft: {
         ...state.draft,
         featSelections: {
@@ -276,7 +333,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     })),
 
   updateSpellChoices: (choices) =>
-    set(state => ({
+    editDraft(state => ({
       draft: {
         ...state.draft,
         spellChoices: { ...state.draft.spellChoices, ...choices },
@@ -284,7 +341,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     })),
 
   setMulticlass: (enabled) =>
-    set(state => ({
+    editDraft(state => ({
       draft: {
         ...state.draft,
         multiclass: enabled,
@@ -294,7 +351,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     })),
 
   addClass: (classId) =>
-    set(state => {
+    editDraft(state => {
       const { draft } = state
       if (classId === draft.class) return {} // não duplica a primária
       if (draft.additionalClasses.some(c => c.classId === classId)) return {} // já presente
@@ -311,7 +368,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     }),
 
   removeClass: (classId) =>
-    set(state => ({
+    editDraft(state => ({
       draft: {
         ...state.draft,
         additionalClasses: state.draft.additionalClasses.filter(c => c.classId !== classId),
@@ -319,7 +376,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     })),
 
   setAdditionalClassLevel: (classId, level) =>
-    set(state => {
+    editDraft(state => {
       const { draft } = state
       const others = draft.additionalClasses
         .filter(c => c.classId !== classId)
@@ -340,7 +397,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     }),
 
   updateAdditionalClassChoices: (classId, choices) =>
-    set(state => ({
+    editDraft(state => ({
       draft: {
         ...state.draft,
         additionalClasses: state.draft.additionalClasses.map(c =>
@@ -356,7 +413,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     })),
 
   setAdditionalAsiChoice: (classId, index, choice) =>
-    set(state => ({
+    editDraft(state => ({
       draft: {
         ...state.draft,
         additionalClasses: state.draft.additionalClasses.map(c => {
@@ -370,7 +427,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     })),
 
   updateAdditionalSpellChoices: (classId, choices) =>
-    set(state => ({
+    editDraft(state => ({
       draft: {
         ...state.draft,
         additionalClasses: state.draft.additionalClasses.map(c =>
@@ -380,7 +437,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     })),
 
   setAbilityMethod: (method) =>
-    set(state => ({
+    editDraft(state => ({
       draft: {
         ...state.draft,
         abilityMethod: method,
@@ -394,7 +451,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     })),
 
   setAbilityScore: (ability, score) =>
-    set(state => ({
+    editDraft(state => ({
       draft: {
         ...state.draft,
         abilityScores: { ...state.draft.abilityScores, [ability]: score },
@@ -402,7 +459,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     })),
 
   setRolledValues: (values) =>
-    set(state => ({
+    editDraft(state => ({
       draft: {
         ...state.draft,
         rolledValues: values,
@@ -411,7 +468,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     })),
 
   setAsiChoice: (index, choice) =>
-    set(state => {
+    editDraft(state => {
       const asiChoices = [...(state.draft.asiChoices ?? [])]
       if (choice === null) {
         asiChoices.splice(index, 1)
@@ -422,12 +479,12 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     }),
 
   setBackground: (backgroundId) =>
-    set(state => ({
+    editDraft(state => ({
       draft: { ...state.draft, background: backgroundId, backgroundChoices: {} },
     })),
 
   updateBackgroundChoices: (choices) =>
-    set(state => ({
+    editDraft(state => ({
       draft: {
         ...state.draft,
         backgroundChoices: { ...state.draft.backgroundChoices, ...choices },
@@ -435,7 +492,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     })),
 
   setEquipmentMethod: (method) =>
-    set(state => ({
+    editDraft(state => ({
       draft: {
         ...state.draft,
         equipment: { ...state.draft.equipment, method },
@@ -443,7 +500,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     })),
 
   resolveEquipmentChoice: (choiceIndex, resolution) =>
-    set(state => {
+    editDraft(state => {
       const resolutions = [...state.draft.equipment.classResolutions]
       resolutions[choiceIndex] = resolution
       return {
@@ -455,7 +512,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     }),
 
   setRolledGold: (gold) =>
-    set(state => ({
+    editDraft(state => ({
       draft: {
         ...state.draft,
         equipment: { ...state.draft.equipment, rolledGold: gold },
@@ -463,7 +520,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     })),
 
   addPurchasedItem: (itemId) =>
-    set(state => {
+    editDraft(state => {
       const items = [...state.draft.equipment.purchasedItems]
       const existing = items.find(i => i.itemId === itemId)
       if (existing) {
@@ -475,7 +532,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     }),
 
   removePurchasedItem: (itemId) =>
-    set(state => {
+    editDraft(state => {
       const items = state.draft.equipment.purchasedItems
         .map(i => (i.itemId === itemId ? { ...i, quantity: i.quantity - 1 } : i))
         .filter(i => i.quantity > 0)
@@ -489,6 +546,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     const idx = WIZARD_STEPS.indexOf(currentStep)
     if (idx < WIZARD_STEPS.length - 1) {
       const next = WIZARD_STEPS[idx + 1]
+      cancelAutosave() // a navegação já grava o draft inteiro
       const { id, library } = persistCurrent(currentId, draft, next)
       set({ currentStep: next, currentId: id, library })
     }
@@ -499,6 +557,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     const idx = WIZARD_STEPS.indexOf(currentStep)
     if (idx > 0) {
       const prev = WIZARD_STEPS[idx - 1]
+      cancelAutosave()
       const { id, library } = persistCurrent(currentId, draft, prev)
       set({ currentStep: prev, currentId: id, library })
     }
@@ -510,12 +569,14 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     const { currentStep, draft, currentId } = get()
     const targetIdx = WIZARD_STEPS.indexOf(step)
     if (targetIdx < 0 || step === currentStep) return
+    cancelAutosave()
     const { id, library } = persistCurrent(currentId, draft, step)
     set({ currentStep: step, currentId: id, library })
   },
 
   // "Concluir/Recomeçar" na Revisão: mantém a ficha salva e volta para a galeria global
   reset: () => {
+    flushAutosave()
     const { currentId, draft, currentStep } = get()
     const library = draft.name.trim()
       ? persistCurrent(currentId, draft, currentStep).library
@@ -525,6 +586,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
   },
 
   importDraft: (draft) => {
+    flushAutosave()
     // Ficha importada vira uma nova ficha da biblioteca, retomada no 1º passo pendente
     const step = getFirstIncompleteStep(draft)
     const { id, library } = persistCurrent(newId(), draft, step)
@@ -537,4 +599,12 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
 if (resumedPlay) {
   usePlayStore.getState().open(resumedPlay.id, resumedPlay.draft)
   useAppStore.getState().setActiveSystem('dnd5e')
+}
+
+// Fechar a aba (ou sair dela, no celular) durante a espera não perde o último clique.
+if (typeof window !== 'undefined') {
+  window.addEventListener('pagehide', flushAutosave)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushAutosave()
+  })
 }

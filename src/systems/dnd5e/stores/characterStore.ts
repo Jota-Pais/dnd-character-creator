@@ -114,6 +114,33 @@ type CharacterStore = {
   importDraft: (draft: CharacterDraft) => void
 }
 
+/** JSON com as chaves em ordem: dois drafts iguais dão o mesmo texto, qualquer que seja a ordem. */
+function canonicalJson(value: unknown): string {
+  return JSON.stringify(value, (_key, v: unknown) =>
+    v && typeof v === 'object' && !Array.isArray(v)
+      ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))
+      : v)
+}
+
+const BLANK_DRAFT = canonicalJson(EMPTY_DRAFT)
+
+/**
+ * A ficha tem o que guardar: um nome ou alguma escolha fora da etapa Nome (raça, classe,
+ * atributos…). O nível sozinho não conta — é o campo ao lado do nome. Ficha nova sem isso não
+ * entra na biblioteca, nem navegando: o wizard percorrido em branco não deixa "(sem nome)" na
+ * galeria. A que já está lá é sempre atualizada — apagar o nome não descarta as escolhas.
+ */
+function hasDraftContent(draft: CharacterDraft): boolean {
+  if (draft.name.trim()) return true
+  return canonicalJson({ ...draft, name: EMPTY_DRAFT.name, level: EMPTY_DRAFT.level }) !== BLANK_DRAFT
+}
+
+/** Gravar a ficha aberta: a que já está na biblioteca, sempre; a nova, só com o que guardar. */
+function shouldPersist(state: { currentId: string | null; library: SavedCharacter[]; draft: CharacterDraft }): boolean {
+  const inLibrary = state.currentId !== null && state.library.some(c => c.id === state.currentId)
+  return inLibrary || hasDraftContent(state.draft)
+}
+
 /** Persiste a ficha atual na biblioteca e devolve a lista atualizada. */
 function persistCurrent(currentId: string | null, draft: CharacterDraft, step: WizardStep): { id: string; library: SavedCharacter[] } {
   const id = currentId ?? newId()
@@ -141,16 +168,15 @@ function cancelAutosave(): void {
 }
 
 /**
- * Grava agora a alteração pendente, se houver. A regra de quando uma ficha passa a existir na
- * biblioteca é a de sempre: a que já está lá é sempre atualizada; a nova só entra com nome (como
- * ao voltar para a galeria) ou ao navegar entre etapas — abrir o wizard em branco não cria entrada.
+ * Grava agora a alteração pendente, se houver, pela regra de existência de `shouldPersist`: a
+ * ficha que já está na biblioteca é sempre atualizada; a nova só entra com nome ou alguma escolha.
  */
 export function flushAutosave(): void {
   if (autosaveTimer === null) return
   cancelAutosave()
-  const { currentId, draft, currentStep, library } = useCharacterStore.getState()
-  const inLibrary = currentId !== null && library.some(c => c.id === currentId)
-  if (!inLibrary && !draft.name.trim()) return
+  const state = useCharacterStore.getState()
+  if (!shouldPersist(state)) return
+  const { currentId, draft, currentStep } = state
   const saved = persistCurrent(currentId, draft, currentStep)
   useCharacterStore.setState({ currentId: saved.id, library: saved.library })
 }
@@ -220,8 +246,8 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
   goToGallery: () => {
     flushAutosave()
     set(state => {
-      // salva a ficha atual antes de sair (se tem nome, vale a pena guardar)
-      if (state.draft.name.trim()) {
+      // salva a ficha atual antes de sair (se tem o que guardar)
+      if (shouldPersist(state)) {
         const { library } = persistCurrent(state.currentId, state.draft, state.currentStep)
         return { view: 'gallery', library }
       }
@@ -555,6 +581,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     if (idx < WIZARD_STEPS.length - 1) {
       const next = WIZARD_STEPS[idx + 1]
       cancelAutosave() // a navegação já grava o draft inteiro
+      if (!shouldPersist(get())) return set({ currentStep: next })
       const { id, library } = persistCurrent(currentId, draft, next)
       set({ currentStep: next, currentId: id, library })
     }
@@ -566,6 +593,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     if (idx > 0) {
       const prev = WIZARD_STEPS[idx - 1]
       cancelAutosave()
+      if (!shouldPersist(get())) return set({ currentStep: prev })
       const { id, library } = persistCurrent(currentId, draft, prev)
       set({ currentStep: prev, currentId: id, library })
     }
@@ -578,6 +606,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     const targetIdx = WIZARD_STEPS.indexOf(step)
     if (targetIdx < 0 || step === currentStep) return
     cancelAutosave()
+    if (!shouldPersist(get())) return set({ currentStep: step })
     const { id, library } = persistCurrent(currentId, draft, step)
     set({ currentStep: step, currentId: id, library })
   },
@@ -586,7 +615,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
   reset: () => {
     flushAutosave()
     const { currentId, draft, currentStep } = get()
-    const library = draft.name.trim()
+    const library = shouldPersist(get())
       ? persistCurrent(currentId, draft, currentStep).library
       : get().library
     set({ view: 'gallery', library, currentId: null })

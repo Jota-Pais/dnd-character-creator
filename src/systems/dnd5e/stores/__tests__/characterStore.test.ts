@@ -405,6 +405,29 @@ describe('salvamento automático a cada alteração (decisão de 2026-10-26)', (
     expect(stored(id)?.step).toBe('name')
   })
 
+  it('percorrer o wizard em branco não deixa "(sem nome)" na galeria', () => {
+    const { nextStep, goToStep, prevStep, goToGallery } = useCharacterStore.getState()
+    nextStep()
+    goToStep('background')
+    prevStep()
+    expect(useCharacterStore.getState().currentStep).toBe('spells')
+    goToGallery()
+    expect(loadLibrary()).toEqual([])
+    expect(useCharacterStore.getState().library).toEqual([])
+  })
+
+  it('ficha nova sem nome, mas com uma escolha, é guardada', () => {
+    useCharacterStore.getState().setRace('half-orc')
+    vi.advanceTimersByTime(AUTOSAVE_DELAY_MS)
+    const id = useCharacterStore.getState().currentId!
+    expect(stored(id)?.draft).toMatchObject({ name: '', race: 'half-orc' })
+
+    useCharacterStore.getState().newCharacter()
+    useCharacterStore.getState().setRace('elf')
+    useCharacterStore.getState().nextStep() // a navegação também grava
+    expect(loadLibrary().map(c => c.draft.race).sort()).toEqual(['elf', 'half-orc'])
+  })
+
   it('trocar de ficha grava a pendente na ficha certa — o timer não escreve na outra', () => {
     const idA = openSaved('Alda')
     const idB = openSaved('Bento')

@@ -37,3 +37,29 @@ describe('RaceStep: perícia repetida por outra fonte', () => {
     expect(container.textContent).not.toContain('já vem')
   })
 })
+
+// Decisão de 2026-10-26: escolha de 1 é rádio — outra opção troca a marcada direto; a de N para
+// no limite.
+describe('RaceStep: escolha de 1 troca direto', () => {
+  it('Humano Variante: outra perícia e outro idioma trocam os marcados', () => {
+    useCharacterStore.setState({
+      draft: {
+        ...structuredClone(EMPTY_DRAFT),
+        race: 'human', subrace: 'variant-human',
+        raceChoices: { abilityBonuses: ['STR', 'DEX'], skills: ['stealth'], languages: ['dwarvish'] },
+      },
+    })
+    const { getByRole } = render(<RaceStep />)
+    const choices = () => useCharacterStore.getState().draft.raceChoices
+
+    expect((getByRole('button', { name: 'Acrobacia' }) as HTMLButtonElement).disabled).toBe(false)
+    fireEvent.click(getByRole('button', { name: 'Acrobacia' }))
+    expect(choices().skills).toEqual(['acrobatics'])
+
+    fireEvent.click(getByRole('button', { name: 'Élfico' }))
+    expect(choices().languages).toEqual(['elvish'])
+
+    // Os dois atributos (+1 cada) são escolha de 2: cheia, o terceiro trava.
+    expect((getByRole('button', { name: 'CON' }) as HTMLButtonElement).disabled).toBe(true)
+  })
+})

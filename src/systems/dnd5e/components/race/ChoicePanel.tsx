@@ -9,6 +9,7 @@ import { FeatChoiceSlots } from '../common/FeatChoiceSlots'
 import { LanguagePicker } from '../common/LanguagePicker'
 import { RepeatedProficiencyNotes } from '../common/RepeatedProficiencyNotes'
 import { REPEATED_OPTION_STYLE } from '../common/repeatedChipStyle'
+import { isChoiceFull, toggleChoice } from '../../utils/choiceToggle'
 
 type Props = {
   choices: RaceChoice[]
@@ -124,11 +125,8 @@ function AbilityChoiceField({ count, from, accent, selected, onSelect }: Ability
         : from
 
   function toggle(ability: AbilityScore) {
-    if (selected.includes(ability)) {
-      onSelect(selected.filter(a => a !== ability))
-    } else if (selected.length < count) {
-      onSelect([...selected, ability])
-    }
+    const next = toggleChoice(selected, ability, count)
+    if (next) onSelect(next)
   }
 
   return (
@@ -140,7 +138,7 @@ function AbilityChoiceField({ count, from, accent, selected, onSelect }: Ability
       <div className="flex flex-wrap gap-2">
         {available.map(ability => {
           const isSelected = selected.includes(ability)
-          const isDisabled = !isSelected && selected.length >= count
+          const isDisabled = !isSelected && isChoiceFull(selected.length, count)
           return (
             <button
               key={ability}
@@ -176,12 +174,10 @@ type SkillChoiceFieldProps = {
 function SkillChoiceField({ count, from, accent, selected, excluded, repeated, onSelect }: SkillChoiceFieldProps) {
   const available = from === 'any' ? SKILLS : SKILLS.filter(s => (from as string[]).includes(s.id))
 
+  // Escolha de 1 (Humano Variante) é rádio: outra perícia troca a marcada (decisão de 2026-10-26).
   function toggle(skillId: string) {
-    if (selected.includes(skillId)) {
-      onSelect(selected.filter(s => s !== skillId))
-    } else if (selected.length < count) {
-      onSelect([...selected, skillId])
-    }
+    const next = toggleChoice(selected, skillId, count)
+    if (next) onSelect(next)
   }
 
   return (
@@ -197,7 +193,7 @@ function SkillChoiceField({ count, from, accent, selected, excluded, repeated, o
           // vista com o aviso, para desmarcar e trocar — nunca travada nem apagada.
           const repeatedNote = isSelected ? repeated[skill.id] : undefined
           const isExcluded = !isSelected && (excluded?.includes(skill.id) ?? false)
-          const isDisabled = isExcluded || (!isSelected && selected.length >= count)
+          const isDisabled = isExcluded || (!isSelected && isChoiceFull(selected.length, count))
           return (
             <button
               key={skill.id}

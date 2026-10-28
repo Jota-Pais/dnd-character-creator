@@ -20,6 +20,7 @@ import { LanguagePicker } from './LanguagePicker'
 import { RepeatedProficiencyNotes } from './RepeatedProficiencyNotes'
 import { REPEATED_CHIP_STYLE } from './repeatedChipStyle'
 import { ALL_WEAPONS } from '../../utils/equipmentUtils'
+import { isChoiceFull, toggleChoice } from '../../utils/choiceToggle'
 import toolsData from '../../data/tools.json'
 
 type Tool = { id: string; name: string }
@@ -153,9 +154,9 @@ function SlotBody({
           options={ALL_WEAPONS.map(w => ({ id: w.id, name: w.name }))}
           selected={selected}
           excluded={new Set(getExcludedWeaponsForFeat(draft, feat.id))}
-          full={selected.length >= choices.weaponChoice.count}
+          full={isChoiceFull(selected.length, choices.weaponChoice.count)}
           accent={accent}
-          onToggle={id => onChange({ weapons: toggle(selected, id) })}
+          onToggle={id => pick(selected, id, choices.weaponChoice!.count, weapons => onChange({ weapons }))}
         />
       </>
     )
@@ -190,11 +191,8 @@ function SlotBody({
               accent={accent}
               picked={selected.includes(opt.id)}
               pickedEarlier={false}
-              slotFull={selected.length >= max}
-              onToggle={() => {
-                if (!selected.includes(opt.id) && selected.length >= max) return
-                onChange({ maneuvers: toggle(selected, opt.id) })
-              }}
+              slotFull={isChoiceFull(selected.length, max)}
+              onToggle={() => pick(selected, opt.id, max, maneuvers => onChange({ maneuvers }))}
             />
           ))}
         </div>
@@ -254,9 +252,9 @@ function SpellChoiceBody({
             options={getFeatSpellOptions(spellClass, 0)}
             selected={picks.cantrips}
             excluded={new Set()}
-            full={picks.cantrips.length >= choice.cantrips}
+            full={isChoiceFull(picks.cantrips.length, choice.cantrips)}
             accent={accent}
-            onToggle={id => onChange({ cantrips: toggle(picks.cantrips, id) })}
+            onToggle={id => pick(picks.cantrips, id, choice.cantrips, cantrips => onChange({ cantrips }))}
           />
           <Header label={`Magia de ${choice.spellLevel}º nível (${picks.spells.length}/${choice.spells})`} />
           <p className="text-[11px] text-parchment-600 mb-2">{FEAT_SPELL_USAGE}.</p>
@@ -264,9 +262,9 @@ function SpellChoiceBody({
             options={getFeatSpellOptions(spellClass, choice.spellLevel)}
             selected={picks.spells}
             excluded={new Set()}
-            full={picks.spells.length >= choice.spells}
+            full={isChoiceFull(picks.spells.length, choice.spells)}
             accent={accent}
-            onToggle={id => onChange({ spells: toggle(picks.spells, id) })}
+            onToggle={id => pick(picks.spells, id, choice.spells, spells => onChange({ spells }))}
           />
           {/* Mesmo aviso da etapa Magias e da Revisão: a regra deixa repetir, a ficha só avisa. */}
           {repeated.map(r => (
@@ -278,8 +276,18 @@ function SpellChoiceBody({
   )
 }
 
+/** Perito: um limite só para perícias e ferramentas, então o teto é conferido pelo `full` do grupo. */
 function toggle(list: string[], id: string): string[] {
   return list.includes(id) ? list.filter(x => x !== id) : [...list, id]
+}
+
+/**
+ * Escolha com limite próprio: a de 1 é rádio (a magia de 1º do Iniciado em Magia — outra troca a
+ * marcada), a de N para no limite (decisão de 2026-10-26, `toggleChoice`).
+ */
+function pick(list: string[], id: string, max: number, apply: (next: string[]) => void) {
+  const next = toggleChoice(list, id, max)
+  if (next) apply(next)
 }
 
 function Header({ label }: { label: string }) {

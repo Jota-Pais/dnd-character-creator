@@ -40,6 +40,12 @@ describe('FeatChoiceSlots — Iniciado em Magia', () => {
     fireEvent.click(getByText('Mãos Mágicas'))
     expect(selections()?.cantrips).toEqual(['fire-bolt', 'light'])
 
+    // A magia de 1º é escolha de 1: outra troca direto, sem desmarcar antes (decisão de 2026-10-26).
+    expect((getByText('Mísseis Mágicos').closest('button') as HTMLButtonElement).disabled).toBe(false)
+    fireEvent.click(getByText('Mísseis Mágicos'))
+    expect(selections()?.spells).toEqual(['magic-missile'])
+    expect(selections()?.cantrips).toEqual(['fire-bolt', 'light'])
+
     fireEvent.click(getByText('Clérigo · SAB'))
     expect(selections()).toMatchObject({ spellClass: 'cleric', cantrips: [], spells: [] })
     expect(queryByText('Raio de Fogo')).toBeNull()

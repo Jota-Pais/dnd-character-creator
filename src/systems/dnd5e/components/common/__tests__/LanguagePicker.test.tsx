@@ -27,10 +27,21 @@ describe('LanguagePicker', () => {
 
   it('trava o que já vem de outra fonte e o que passa do limite', () => {
     const { getByText } = render(
-      <LanguagePicker count={1} selected={['elvish']} excluded={['common']} accent="#fff" onChange={() => {}} />,
+      <LanguagePicker count={2} selected={['elvish', 'dwarvish']} excluded={['common']} accent="#fff" onChange={() => {}} />,
     )
     expect(getByText(/Comum/).closest('button')!.disabled).toBe(true)
     expect(getByText('Dracônico').closest('button')!.disabled).toBe(true)
     expect(getByText('Élfico').closest('button')!.disabled).toBe(false)
+  })
+
+  it('escolha de 1 idioma é rádio: outro troca o marcado; o de outra fonte segue travado', () => {
+    const onChange = vi.fn()
+    const { getByText } = render(
+      <LanguagePicker count={1} selected={['elvish']} excluded={['common']} accent="#fff" onChange={onChange} />,
+    )
+    expect(getByText('Dracônico').closest('button')!.disabled).toBe(false)
+    expect(getByText(/Comum/).closest('button')!.disabled).toBe(true)
+    fireEvent.click(getByText('Dracônico'))
+    expect(onChange).toHaveBeenCalledWith(['draconic'])
   })
 })

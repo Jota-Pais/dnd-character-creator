@@ -1,4 +1,5 @@
 import { LANGUAGES, type Language } from '../../utils/raceUtils'
+import { isChoiceFull, toggleChoice } from '../../utils/choiceToggle'
 
 type Props = {
   /** Quantos idiomas esta concessão deixa escolher. */
@@ -20,11 +21,13 @@ const EXOTIC = LANGUAGES.filter(l => l.exotic)
  */
 export function LanguagePicker({ count, selected, excluded, accent, onChange }: Props) {
   const excludedSet = new Set(excluded)
-  const full = selected.length >= count
+  // Escolha de 1 idioma (raça, antecedente) é rádio: outro troca o marcado. A de N para no limite
+  // (decisão de 2026-10-26).
+  const full = isChoiceFull(selected.length, count)
 
   function toggle(id: string) {
-    if (selected.includes(id)) onChange(selected.filter(l => l !== id))
-    else if (!full) onChange([...selected, id])
+    const next = toggleChoice(selected, id, count)
+    if (next) onChange(next)
   }
 
   const group = (title: string, languages: readonly Language[]) => (

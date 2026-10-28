@@ -8,6 +8,7 @@ import { getStepPendingReasons } from '../pendingReasons'
 import { allClassEntries, formatClassLevelLabel } from '../multiclassUtils'
 import { getSheetClassFeatures } from '../asiUtils'
 import { getEffectiveTraits, getRace, getSubrace } from '../raceUtils'
+import { DRAGON_ANCESTORS } from '../dragonAncestors'
 
 // Ancestral Dracônico do feiticeiro da Linhagem Dracônica (1º nível, p. 80).
 
@@ -85,6 +86,22 @@ describe('Ancestral Dracônico na ficha (Revisão e PDF)', () => {
   it('a característica Ancestral Dracônico mostra o dragão com o tipo de dano', () => {
     const entry = allClassEntries(sorcerer(1, { [SLOT]: ['red'] }))[0]
     expect(feature(entry, 'Ancestral Dracônico')).toMatchObject({ chosen: 'Vermelho (dano de fogo)', chosenLabel: 'Escolha' })
+  })
+
+  it('o dano sai na forma do livro: "dano elétrico", não "dano de elétrico"', () => {
+    const chosen = (id: string) => feature(allClassEntries(sorcerer(1, { [SLOT]: [id] }))[0], 'Ancestral Dracônico')?.chosen
+    expect(chosen('blue')).toBe('Azul (dano elétrico)')
+    expect(chosen('bronze')).toBe('Bronze (dano elétrico)')
+    expect(chosen('white')).toBe('Branco (dano de frio)')
+    expect(chosen('black')).toBe('Negro (dano de ácido)')
+    expect(chosen('green')).toBe('Verde (dano de veneno)')
+  })
+
+  it('cada linha da tabela guarda o dano por extenso, coerente com o tipo', () => {
+    const LABEL_BY_TYPE: Record<string, string> = {
+      Ácido: 'dano de ácido', Elétrico: 'dano elétrico', Fogo: 'dano de fogo', Frio: 'dano de frio', Veneno: 'dano de veneno',
+    }
+    for (const a of DRAGON_ANCESTORS) expect(a.damageLabel, a.id).toBe(LABEL_BY_TYPE[a.damageType])
   })
 
   it('a Afinidade Elemental (6º) mostra o tipo de dano do ancestral', () => {

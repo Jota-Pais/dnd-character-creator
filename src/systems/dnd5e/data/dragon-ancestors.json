@@ -1,12 +1,12 @@
 [
-  { "id": "blue",   "name": "Azul",     "damageType": "Elétrico", "breath": "Linha de 1,5 m por 9 m. Teste de resistência de Destreza." },
-  { "id": "white",  "name": "Branco",   "damageType": "Frio",     "breath": "Cone de 4,5 m. Teste de resistência de Constituição." },
-  { "id": "bronze", "name": "Bronze",   "damageType": "Elétrico", "breath": "Linha de 1,5 m por 9 m. Teste de resistência de Destreza." },
-  { "id": "copper", "name": "Cobre",    "damageType": "Ácido",    "breath": "Linha de 1,5 m por 9 m. Teste de resistência de Destreza." },
-  { "id": "brass",  "name": "Latão",    "damageType": "Fogo",     "breath": "Linha de 1,5 m por 9 m. Teste de resistência de Destreza." },
-  { "id": "black",  "name": "Negro",    "damageType": "Ácido",    "breath": "Linha de 1,5 m por 9 m. Teste de resistência de Destreza." },
-  { "id": "gold",   "name": "Ouro",     "damageType": "Fogo",     "breath": "Cone de 4,5 m. Teste de resistência de Destreza." },
-  { "id": "silver", "name": "Prata",    "damageType": "Frio",     "breath": "Cone de 4,5 m. Teste de resistência de Constituição." },
-  { "id": "green",  "name": "Verde",    "damageType": "Veneno",   "breath": "Cone de 4,5 m. Teste de resistência de Constituição." },
-  { "id": "red",    "name": "Vermelho", "damageType": "Fogo",     "breath": "Cone de 4,5 m. Teste de resistência de Destreza." }
+  { "id": "blue",   "name": "Azul",     "damageType": "Elétrico", "damageLabel": "dano elétrico",  "breath": "Linha de 1,5 m por 9 m. Teste de resistência de Destreza." },
+  { "id": "white",  "name": "Branco",   "damageType": "Frio",     "damageLabel": "dano de frio",   "breath": "Cone de 4,5 m. Teste de resistência de Constituição." },
+  { "id": "bronze", "name": "Bronze",   "damageType": "Elétrico", "damageLabel": "dano elétrico",  "breath": "Linha de 1,5 m por 9 m. Teste de resistência de Destreza." },
+  { "id": "copper", "name": "Cobre",    "damageType": "Ácido",    "damageLabel": "dano de ácido",  "breath": "Linha de 1,5 m por 9 m. Teste de resistência de Destreza." },
+  { "id": "brass",  "name": "Latão",    "damageType": "Fogo",     "damageLabel": "dano de fogo",   "breath": "Linha de 1,5 m por 9 m. Teste de resistência de Destreza." },
+  { "id": "black",  "name": "Negro",    "damageType": "Ácido",    "damageLabel": "dano de ácido",  "breath": "Linha de 1,5 m por 9 m. Teste de resistência de Destreza." },
+  { "id": "gold",   "name": "Ouro",     "damageType": "Fogo",     "damageLabel": "dano de fogo",   "breath": "Cone de 4,5 m. Teste de resistência de Destreza." },
+  { "id": "silver", "name": "Prata",    "damageType": "Frio",     "damageLabel": "dano de frio",   "breath": "Cone de 4,5 m. Teste de resistência de Constituição." },
+  { "id": "green",  "name": "Verde",    "damageType": "Veneno",   "damageLabel": "dano de veneno", "breath": "Cone de 4,5 m. Teste de resistência de Constituição." },
+  { "id": "red",    "name": "Vermelho", "damageType": "Fogo",     "damageLabel": "dano de fogo",   "breath": "Cone de 4,5 m. Teste de resistência de Destreza." }
 ]

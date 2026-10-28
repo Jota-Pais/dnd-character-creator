@@ -44,6 +44,8 @@ export type ProgressionOption = {
   grantsSpells?: string[]
   /** Tipo de dano da opção (Ancestral Dracônico: "Fogo"), que a Afinidade Elemental mostra (p. 80). */
   damageType?: string
+  /** O dano por extenso, da tabela ("dano de fogo", "dano elétrico"); nunca montado do tipo. */
+  damageLabel?: string
 }
 
 export function getProgressionOptions(optionsListId: string): ProgressionOption[] {
@@ -69,6 +71,7 @@ export function getProgressionOptions(optionsListId: string): ProgressionOption[
         name: a.name,
         description: `Tipo de dano: ${a.damageType.toLowerCase()}.`,
         damageType: a.damageType,
+        damageLabel: a.damageLabel,
       }))
     case SPELL_OPTIONS_LIST_ID:
       // Todas as magias do jogo; o seletor corta pelo nível com getSecretSpellOptions.
@@ -264,9 +267,9 @@ function getPickedOption(entry: ClassEntry, slotId: string): ProgressionOption |
   return getProgressionOptions(slot.optionsListId).find(o => o.id === picked) ?? null
 }
 
-/** "Vermelho (dano de fogo)" — a opção com o tipo de dano, quando tem. */
+/** "Vermelho (dano de fogo)", "Azul (dano elétrico)" — a opção com o dano, quando tem. */
 function describeShortPick(option: ProgressionOption): string {
-  return option.damageType ? `${option.name} (dano de ${option.damageType.toLowerCase()})` : option.name
+  return option.damageLabel ? `${option.name} (${option.damageLabel})` : option.name
 }
 
 /**

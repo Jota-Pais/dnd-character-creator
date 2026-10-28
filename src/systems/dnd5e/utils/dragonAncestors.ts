@@ -13,6 +13,11 @@ export type DragonAncestor = {
   name: string
   /** O tipo de dano associado, como na tabela: "Fogo", "Elétrico". */
   damageType: string
+  /**
+   * O dano por extenso, na forma do livro: "dano de fogo", mas "dano elétrico" — o adjetivo
+   * dispensa o "de". Guardado no dado para ninguém montar "dano de ${tipo}" ("dano de elétrico").
+   */
+  damageLabel: string
   /** Área e teste da arma de sopro do draconato (p. 34). */
   breath: string
 }

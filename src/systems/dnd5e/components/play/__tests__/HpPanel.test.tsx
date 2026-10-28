@@ -15,12 +15,82 @@ function act(label: 'Dano' | 'Cura' | 'PV temporários', field: string, value: s
 }
 
 describe('HpPanel', () => {
-  it('dano digitado baixa o PV e fecha o formulário', () => {
+  it('dano digitado baixa o PV e limpa o campo e o botão', () => {
     openKrusk()
     render(<PlayScreen />)
     act('Dano', 'Quanto de dano', '5')
     expect(screen.getByTestId('hp-current')).toHaveTextContent('9')
     expect(screen.queryByLabelText('Quanto de dano')).toBeNull()
+    expect(screen.getByLabelText(/^Dano ou cura/)).toHaveValue('')
+    expect(screen.getByRole('button', { name: 'Dano' })).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('"−7" e "+5" sem escolher o botão: o sinal manda', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    const field = () => screen.getByLabelText(/^(Dano ou cura|Quanto de)/)
+    fireEvent.change(field(), { target: { value: '-7' } })
+    expect(screen.getByRole('button', { name: 'Dano' })).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('7')
+
+    fireEvent.change(field(), { target: { value: '+5' } })
+    expect(screen.getByRole('button', { name: 'Cura' })).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('12')
+
+    // O menos tipográfico também vale, e Enter aplica.
+    fireEvent.change(field(), { target: { value: '−2' } })
+    fireEvent.submit(field())
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('10')
+  })
+
+  it('o sinal vence o botão escolhido; sem sinal, vale o botão', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
+    fireEvent.change(screen.getByLabelText('Quanto de dano'), { target: { value: '6' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('8')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
+    fireEvent.change(screen.getByLabelText('Quanto de dano'), { target: { value: '+3' } })
+    expect(screen.getByLabelText('Quanto de cura')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('11')
+  })
+
+  it('número sem sinal e sem botão não aplica; o botão tocado depois fica com o número', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    fireEvent.change(screen.getByLabelText(/^Dano ou cura/), { target: { value: '4' } })
+    expect(screen.getByRole('button', { name: 'Aplicar' })).toBeDisabled()
+    expect(screen.getByText(/Escolha Dano ou Cura, ou digite com o sinal/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
+    expect(screen.getByLabelText('Quanto de dano')).toHaveValue('4')
+    expect(screen.getByLabelText('Quanto de dano')).toHaveFocus()
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('10')
+  })
+
+  it('tocar no botão tira o sinal digitado: o número segue o botão', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    act('Dano', 'Quanto de dano', '9')
+    fireEvent.change(screen.getByLabelText(/^Dano ou cura/), { target: { value: '-4' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Cura' }))
+    expect(screen.getByLabelText('Quanto de cura')).toHaveValue('4')
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('9')
+  })
+
+  it('texto que não é número apaga o "Aplicar" e diz o que digitar', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
+    fireEvent.change(screen.getByLabelText('Quanto de dano'), { target: { value: '2,5' } })
+    expect(screen.getByRole('button', { name: 'Aplicar' })).toBeDisabled()
+    expect(screen.getByText('Digite só o número, com − na frente para dano ou + para cura.')).toBeInTheDocument()
   })
 
   it('resistência marca a metade (para baixo)', () => {

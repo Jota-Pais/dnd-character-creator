@@ -1,21 +1,21 @@
-import { useState, type FormEvent } from 'react'
+import { useId, useRef, useState, type FormEvent } from 'react'
 import type { ImmuneDamageType } from '../../types/condition'
 import type { PlayResult } from '../../types/playState'
 import {
   adjustMaxHp, applyDamage, applyHealing, formatHpAdjustment, getPlayConditionEffects, grantTempHp, isAtZeroHp,
   suggestTempHpChoice,
 } from '../../utils/playState'
+import { parseHpEntry, resolveHpAction, stripHpSign, type HpAction } from './hpEntry'
 import type { PlayView } from './usePlayView'
 
-type HpAction = 'damage' | 'heal' | 'temp'
-
-const ACTIONS: { id: HpAction; label: string; field: string; help: string }[] = [
+/** `sign`: o sinal que faz a mesma coisa no campo ("−7", "+5"), mostrado no botão para ensinar o atalho. */
+const ACTIONS: { id: HpAction; label: string; sign?: string; field: string; help: string }[] = [
   {
-    id: 'damage', label: 'Dano', field: 'Quanto de dano',
+    id: 'damage', label: 'Dano', sign: '−', field: 'Quanto de dano',
     help: 'O dano total que você sofreu (quem atacou diz o valor). Os PV temporários são gastos primeiro.',
   },
   {
-    id: 'heal', label: 'Cura', field: 'Quanto de cura',
+    id: 'heal', label: 'Cura', sign: '+', field: 'Quanto de cura',
     help: 'Quanto você recuperou. Não passa do seu máximo; o que sobrar se perde.',
   },
   {
@@ -34,12 +34,18 @@ function parseAmount(text: string): number | null {
 
 /**
  * Ações de PV: dano, cura e PV temporários, com o número digitado pelo jogador (o dano vem do
- * inimigo: nada de rolar aqui, mesmo com os dados do app). As regras ficam nas funções puras de
- * `utils/playState.ts`; os avisos (resistência, concentração, queda a 0 PV) saem pelo playStore.
+ * inimigo: nada de rolar aqui, mesmo com os dados do app). O campo fica sempre à mão e aceita o
+ * atalho "−7" / "+5" sem escolher o botão antes (`hpEntry.ts`); o teclado do celular é o numérico,
+ * que no iPhone não tem sinal, e por isso os botões Dano e Cura levam o "−" e o "+".
+ * As regras ficam nas funções puras de `utils/playState.ts`; os avisos (resistência,
+ * concentração, queda a 0 PV) saem pelo playStore.
  */
 export function HpPanel({ view }: { view: PlayView }) {
   const { state, run } = view
-  const [action, setAction] = useState<HpAction | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const hintId = useId()
+  // O botão escolhido; o que vale é `action`, em que o sinal digitado manda.
+  const [selected, setSelected] = useState<HpAction | null>(null)
   const [text, setText] = useState('')
   const [resisted, setResisted] = useState(false)
   const [critical, setCritical] = useState(false)
@@ -50,24 +56,37 @@ export function HpPanel({ view }: { view: PlayView }) {
   const canBeKnockedOut = state.lifeState === 'conscious'
   // Imunidades das condições em vigor (Petrificado: veneno): o jogador marca quando o dano é desse tipo.
   const immunities = getPlayConditionEffects(state).damageImmunities
-  const amount = parseAmount(text)
+  const entry = parseHpEntry(text)
+  const action = resolveHpAction(entry, selected)
+  const amount = entry?.amount ?? null
   const current = ACTIONS.find(a => a.id === action)
   // PV temporários já presentes: o jogador escolhe manter ou trocar (pág. 200).
   const askTempChoice = action === 'temp' && state.tempHp > 0 && amount !== null && amount > 0
+  const hint = !entry
+    ? 'Digite só o número, com − na frente para dano ou + para cura.'
+    : current?.help ?? 'Escolha Dano ou Cura, ou digite com o sinal: −7 é dano, +5 é cura.'
 
-  function reset() {
-    setAction(null)
-    setText('')
+  function clearOptions() {
     setResisted(false)
     setCritical(false)
     setImmuneTo(null)
     setKnockout(false)
   }
 
+  function reset() {
+    setSelected(null)
+    setText('')
+    clearOptions()
+  }
+
   function choose(next: HpAction) {
-    if (next === action) return reset()
-    reset()
-    setAction(next)
+    // Tocar de novo no botão que já vale (sem sinal digitado) desliga a escolha e limpa o campo.
+    if (next === selected && next === action && !entry?.sign) return reset()
+    if (next !== action) clearOptions()
+    setSelected(next)
+    // O botão vence o sinal digitado: o número fica e segue o botão.
+    setText(t => stripHpSign(t))
+    inputRef.current?.focus()
   }
 
   function apply(choice?: 'keep' | 'replace') {
@@ -109,99 +128,99 @@ export function HpPanel({ view }: { view: PlayView }) {
                 : 'border-parchment-800 text-parchment-300 hover:border-parchment-600',
             ].join(' ')}
           >
+            {a.sign && <span aria-hidden="true" className="mr-1 font-bold">{a.sign}</span>}
             {a.label}
           </button>
         ))}
       </div>
 
-      <MaxHpAdjustment view={view} />
+      {/* O campo fica sempre à mão: "−7" e "+5" valem sem tocar no botão antes. Texto, não
+          number: o type number recusa o sinal digitado; o inputMode mantém o teclado numérico. */}
+      <form onSubmit={handleSubmit} className="mt-2 space-y-2">
+        <div className="flex gap-2">
+          <input
+            ref={inputRef}
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            value={text}
+            onChange={e => setText(e.target.value)}
+            aria-label={current?.field ?? 'Dano ou cura (−7 é dano, +5 é cura)'}
+            aria-describedby={hintId}
+            placeholder={current ? '0' : '−7 ou +5'}
+            className="min-h-10 w-full min-w-0 rounded-lg border border-parchment-800 bg-surface-base px-3 text-lg text-parchment-100 outline-none focus:border-gold-600"
+          />
+          {!askTempChoice && (
+            <button
+              type="submit"
+              disabled={amount === null || action === null}
+              className="min-h-10 shrink-0 rounded-lg bg-gold-500 px-4 font-fantasy font-bold text-sm text-on-accent disabled:opacity-40 hover:bg-gold-400 transition-colors"
+            >
+              Aplicar
+            </button>
+          )}
+        </div>
+        <p id={hintId} className={`text-xs leading-snug ${entry ? 'text-parchment-500' : 'text-amber-300'}`}>{hint}</p>
 
-      {current && (
-        <form onSubmit={handleSubmit} className="mt-3 space-y-2">
-          <p className="text-xs text-parchment-500 leading-snug">{current.help}</p>
-          <div className="flex gap-2">
-            <input
-              type="number"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              min={0}
-              step={1}
-              autoFocus
-              value={text}
-              onChange={e => setText(e.target.value)}
-              aria-label={current.field}
-              placeholder="0"
-              className="min-h-10 w-full min-w-0 rounded-lg border border-parchment-800 bg-surface-base px-3 text-lg text-parchment-100 outline-none focus:border-gold-600"
-            />
-            {!askTempChoice && (
-              <button
-                type="submit"
-                disabled={amount === null}
-                className="min-h-10 shrink-0 rounded-lg bg-gold-500 px-4 font-fantasy font-bold text-sm text-on-accent disabled:opacity-40 hover:bg-gold-400 transition-colors"
-              >
-                Aplicar
-              </button>
+        {action === 'damage' && (
+          <div className="space-y-1">
+            <label className="flex items-center gap-2 min-h-10 text-sm text-parchment-300 cursor-pointer">
+              <input type="checkbox" checked={resisted} onChange={e => setResisted(e.target.checked)} className="w-5 h-5 shrink-0 accent-gold-500" />
+              Tenho resistência a esse dano (sofro a metade)
+            </label>
+            {immunities.map(i => (
+              <label key={i.damageType} className="flex items-center gap-2 min-h-10 text-sm text-parchment-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={immuneTo === i.damageType}
+                  onChange={e => setImmuneTo(e.target.checked ? i.damageType : null)}
+                  className="w-5 h-5 shrink-0 accent-gold-500"
+                />
+                É {i.damageLabel} ({i.sources.map(s => s.label).join(', ')}: imune, não sofre nada)
+              </label>
+            ))}
+            {atZero && (
+              <label className="flex items-center gap-2 min-h-10 text-sm text-parchment-300 cursor-pointer">
+                <input type="checkbox" checked={critical} onChange={e => setCritical(e.target.checked)} className="w-5 h-5 shrink-0 accent-gold-500" />
+                Foi acerto crítico (conta 2 fracassos)
+              </label>
+            )}
+            {canBeKnockedOut && (
+              <label className="flex items-center gap-2 min-h-10 text-xs text-parchment-400 cursor-pointer">
+                <input type="checkbox" checked={knockout} onChange={e => setKnockout(e.target.checked)} className="w-5 h-5 shrink-0 accent-gold-500" />
+                Fui nocauteado (o atacante escolheu, corpo a corpo, pág. 200)
+              </label>
             )}
           </div>
+        )}
 
-          {action === 'damage' && (
-            <div className="space-y-1">
-              <label className="flex items-center gap-2 min-h-10 text-sm text-parchment-300 cursor-pointer">
-                <input type="checkbox" checked={resisted} onChange={e => setResisted(e.target.checked)} className="w-5 h-5 shrink-0 accent-gold-500" />
-                Tenho resistência a esse dano (sofro a metade)
-              </label>
-              {immunities.map(i => (
-                <label key={i.damageType} className="flex items-center gap-2 min-h-10 text-sm text-parchment-300 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={immuneTo === i.damageType}
-                    onChange={e => setImmuneTo(e.target.checked ? i.damageType : null)}
-                    className="w-5 h-5 shrink-0 accent-gold-500"
-                  />
-                  É {i.damageLabel} ({i.sources.map(s => s.label).join(', ')}: imune, não sofre nada)
-                </label>
-              ))}
-              {atZero && (
-                <label className="flex items-center gap-2 min-h-10 text-sm text-parchment-300 cursor-pointer">
-                  <input type="checkbox" checked={critical} onChange={e => setCritical(e.target.checked)} className="w-5 h-5 shrink-0 accent-gold-500" />
-                  Foi acerto crítico (conta 2 fracassos)
-                </label>
-              )}
-              {canBeKnockedOut && (
-                <label className="flex items-center gap-2 min-h-10 text-xs text-parchment-400 cursor-pointer">
-                  <input type="checkbox" checked={knockout} onChange={e => setKnockout(e.target.checked)} className="w-5 h-5 shrink-0 accent-gold-500" />
-                  Fui nocauteado (o atacante escolheu, corpo a corpo, pág. 200)
-                </label>
-              )}
+        {askTempChoice && suggested && (
+          <div className="space-y-1.5">
+            <p className="text-sm text-parchment-300">
+              Você já tem {state.tempHp} PV temporários. Eles não se somam: com quais fica?
+            </p>
+            {/* A sugestão (o maior) ganha a borda dourada; a escolha é do jogador. */}
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => apply('keep')}
+                className={`min-h-10 rounded-lg border px-3 text-sm text-parchment-200 hover:border-gold-600 ${suggested === 'keep' ? 'border-gold-700' : 'border-parchment-700'}`}
+              >
+                Manter {state.tempHp}{state.tempHp > amount ? ' (maior)' : ''}
+              </button>
+              <button
+                type="button"
+                onClick={() => apply('replace')}
+                className={`min-h-10 rounded-lg border px-3 text-sm text-parchment-200 hover:border-gold-600 ${suggested === 'replace' ? 'border-gold-700' : 'border-parchment-700'}`}
+              >
+                Ficar com {amount}{amount > state.tempHp ? ' (maior)' : ''}
+              </button>
             </div>
-          )}
+          </div>
+        )}
+      </form>
 
-          {askTempChoice && suggested && (
-            <div className="space-y-1.5">
-              <p className="text-sm text-parchment-300">
-                Você já tem {state.tempHp} PV temporários. Eles não se somam: com quais fica?
-              </p>
-              {/* A sugestão (o maior) ganha a borda dourada; a escolha é do jogador. */}
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => apply('keep')}
-                  className={`min-h-10 rounded-lg border px-3 text-sm text-parchment-200 hover:border-gold-600 ${suggested === 'keep' ? 'border-gold-700' : 'border-parchment-700'}`}
-                >
-                  Manter {state.tempHp}{state.tempHp > amount ? ' (maior)' : ''}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => apply('replace')}
-                  className={`min-h-10 rounded-lg border px-3 text-sm text-parchment-200 hover:border-gold-600 ${suggested === 'replace' ? 'border-gold-700' : 'border-parchment-700'}`}
-                >
-                  Ficar com {amount}{amount > state.tempHp ? ' (maior)' : ''}
-                </button>
-              </div>
-            </div>
-          )}
-        </form>
-      )}
+      <MaxHpAdjustment view={view} />
     </div>
   )
 }

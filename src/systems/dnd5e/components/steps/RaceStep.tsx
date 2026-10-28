@@ -11,6 +11,7 @@ import {
   getAllChoices,
   getEffectiveTraits,
   getRaceGrantedToolNames,
+  requiresSubrace,
   RACE_PRESENTATION,
   LANGUAGES,
 } from '../../utils/raceUtils'
@@ -190,9 +191,19 @@ export function RaceStep() {
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <SectionTitle>Escolha sua Subraça</SectionTitle>
-                    <span className="text-red-500 text-xs">obrigatório</span>
+                    {requiresSubrace(selectedRace)
+                      ? <span className="text-red-500 text-xs">obrigatório</span>
+                      : <span className="text-parchment-600 text-xs">opcional</span>}
                   </div>
                   <div className="space-y-2">
+                    {selectedRace.baseOption && (
+                      <SubraceCard
+                        subrace={baseOptionCard(selectedRace)}
+                        accent={accent}
+                        selected={!draft.subrace}
+                        onSelect={() => setSubrace(null)}
+                      />
+                    )}
                     {selectedRace.subraces.map(sub => (
                       <SubraceCard
                         key={sub.id}
@@ -243,6 +254,20 @@ export function RaceStep() {
       />
     </div>
   )
+}
+
+/** O card da raça sem sub-raça (Humano Padrão), com os bônus e os traços da própria raça. */
+function baseOptionCard(race: Race): Subrace {
+  return {
+    id: '',
+    name: race.baseOption?.name ?? race.name,
+    description: race.baseOption?.description ?? '',
+    abilityBonuses: race.abilityBonuses,
+    choices: race.choices,
+    grantedProficiencies: race.grantedProficiencies,
+    traits: race.traits,
+    overrides: {},
+  }
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {

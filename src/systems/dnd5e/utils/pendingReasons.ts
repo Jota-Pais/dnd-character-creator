@@ -3,7 +3,7 @@ import { STEP_LABELS } from '../types/character'
 import type { GameClass, ToolChoiceSource } from '../types/class'
 import type { AbilityScore } from '../types/race'
 import type { BackgroundChoice } from '../types/background'
-import { getRace, getSubrace, getAllChoices } from './raceUtils'
+import { getRace, getSubrace, getAllChoices, requiresSubrace } from './raceUtils'
 import {
   getClass,
   getClassFightingStyleOptions,
@@ -133,7 +133,7 @@ function raceReasons(draft: CharacterDraft): string[] {
   const race = draft.race ? (getRace(draft.race) ?? null) : null
   if (!race) return ['Escolha uma raça']
   const subrace = draft.subrace ? (getSubrace(race, draft.subrace) ?? null) : null
-  if (race.subraces.length > 0 && !subrace) return [`Escolha a sub-raça de ${race.name}`]
+  if (requiresSubrace(race) && !subrace) return [`Escolha a sub-raça de ${race.name}`]
 
   const name = subrace?.name ?? race.name
   const choices = draft.raceChoices

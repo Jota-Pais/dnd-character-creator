@@ -183,6 +183,12 @@ describe('isRaceStepComplete', () => {
       }),
     ).toBe(true))
 
+  // p. 31: o Humano Variante é regra opcional — o humano do livro fecha sem sub-raça.
+  it('humano padrão (sem sub-raça) fecha com o idioma adicional', () => {
+    expect(isRaceStepComplete(human, null, {})).toBe(false) // falta o idioma
+    expect(isRaceStepComplete(human, null, { languages: ['elvish'] })).toBe(true)
+  })
+
   it('humano variante exige o talento escolhido', () => {
     const base: RaceChoiceSelections = { abilityBonuses: ['STR', 'DEX'], skills: ['athletics'], languages: ['elvish'] }
     expect(isRaceStepComplete(human, variantHuman, base)).toBe(false) // falta o talento

@@ -279,6 +279,10 @@
     "darkvision": 0,
     "grantedLanguages": ["common"],
     "grantedProficiencies": [],
+    "baseOption": {
+      "name": "Humano (Padrão)",
+      "description": "O humano do livro: +1 em todos os valores de habilidade e um idioma adicional."
+    },
     "traits": [
       {
         "name": "Versatilidade",

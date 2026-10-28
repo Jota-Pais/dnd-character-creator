@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { render, cleanup, fireEvent } from '@testing-library/react'
 import { RaceStep } from '../RaceStep'
 import { useCharacterStore } from '../../../stores/characterStore'
-import { EMPTY_DRAFT, type CharacterDraft } from '../../../types/character'
+import { EMPTY_DRAFT, type CharacterDraft, type RaceChoiceSelections } from '../../../types/character'
 
 // Mesmo padrão da etapa Classe: a perícia escolhida na raça que o antecedente trocado depois já dá
 // não some ao abrir a etapa — fica marcada, com o aviso, até o jogador trocar (p. 125).
@@ -78,5 +78,52 @@ describe('RaceStep: ferramenta concedida pela raça', () => {
     useCharacterStore.setState({ draft: { ...structuredClone(EMPTY_DRAFT), race: 'gnome', subrace: 'forest-gnome' } })
     const text = render(<RaceStep />).container.textContent ?? ''
     expect(text).not.toContain('🛠️ Ferramentas')
+  })
+})
+
+// p. 31: o Humano Variante é regra opcional. O Humano Padrão é uma opção da etapa, marcada quando
+// nenhuma sub-raça está escolhida, e a sub-raça deixa de ser obrigatória.
+describe('RaceStep: Humano Padrão ou Variante', () => {
+  const draft = () => useCharacterStore.getState().draft
+
+  it('sem sub-raça, o Padrão vem marcado e a seção diz "opcional"', () => {
+    useCharacterStore.setState({ draft: { ...structuredClone(EMPTY_DRAFT), race: 'human' } })
+    const { container, getByRole } = render(<RaceStep />)
+    expect(getByRole('button', { name: /Humano \(Padrão\)/ }).textContent).toContain('✦')
+    expect(container.textContent).toContain('opcional')
+    expect(container.textContent).not.toContain('obrigatório')
+  })
+
+  it('a Variante troca para o Padrão e volta, limpando as escolhas da outra', () => {
+    useCharacterStore.setState({
+      draft: {
+        ...structuredClone(EMPTY_DRAFT),
+        race: 'human', subrace: 'variant-human',
+        raceChoices: { abilityBonuses: ['STR', 'DEX'], skills: ['stealth'], languages: ['dwarvish'] },
+      },
+    })
+    const { getByRole } = render(<RaceStep />)
+    fireEvent.click(getByRole('button', { name: /Humano \(Padrão\)/ }))
+    expect(draft().subrace).toBeNull()
+    expect(draft().raceChoices).toEqual({})
+    fireEvent.click(getByRole('button', { name: /Humano \(Variante\)/ }))
+    expect(draft().subrace).toBe('variant-human')
+  })
+
+  it('clicar na sub-raça já marcada não apaga as escolhas dela', () => {
+    const raceChoices: RaceChoiceSelections = { abilityBonuses: ['STR', 'DEX'], skills: ['stealth'], languages: ['dwarvish'] }
+    useCharacterStore.setState({
+      draft: { ...structuredClone(EMPTY_DRAFT), race: 'human', subrace: 'variant-human', raceChoices: structuredClone(raceChoices) },
+    })
+    const { getByRole } = render(<RaceStep />)
+    fireEvent.click(getByRole('button', { name: /Humano \(Variante\)/ }))
+    expect(draft().raceChoices).toEqual(raceChoices)
+  })
+
+  it('raça com sub-raça obrigatória não ganha a opção sem sub-raça', () => {
+    useCharacterStore.setState({ draft: { ...structuredClone(EMPTY_DRAFT), race: 'elf' } })
+    const { container, queryByRole } = render(<RaceStep />)
+    expect(container.textContent).toContain('obrigatório')
+    expect(queryByRole('button', { name: /Padrão/ })).toBeNull()
   })
 })

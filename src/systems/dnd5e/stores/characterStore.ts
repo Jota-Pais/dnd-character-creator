@@ -81,7 +81,8 @@ type CharacterStore = {
   rollHpForLevel: (charLevel: number) => void
   setHpRoll: (charLevel: number, value: number) => void
   setRace: (raceId: string) => void
-  setSubrace: (subraceId: string) => void
+  /** null volta à raça sem sub-raça (o Humano Padrão, quando a raça tem `baseOption`). */
+  setSubrace: (subraceId: string | null) => void
   updateRaceChoices: (choices: Partial<RaceChoiceSelections>) => void
   setClass: (classId: string) => void
   updateClassChoices: (choices: Partial<ClassChoiceSelections>) => void
@@ -293,7 +294,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     })),
 
   setSubrace: (subraceId) =>
-    editDraft(state => ({
+    editDraft(state => (state.draft.subrace === subraceId ? {} : {
       draft: { ...state.draft, subrace: subraceId, raceChoices: {} },
     })),
 

@@ -119,6 +119,8 @@ describe('getStepPendingReasons — demais regras', () => {
 
   it('sub-raça e escolhas raciais', () => {
     expect(getStepPendingReasons(draft({ race: 'elf' }), 'race')).toEqual(['Escolha a sub-raça de Elfo'])
+    // Humano Padrão: sem sub-raça, só o idioma adicional (a Variante é opcional, p. 31).
+    expect(getStepPendingReasons(draft({ race: 'human' }), 'race')).toEqual(['Humano: escolha mais 1 idioma'])
     expect(getStepPendingReasons(draft({ race: 'human', subrace: 'variant-human' }), 'race')).toEqual(expect.arrayContaining([
       'Humano (Variante): escolha o talento racial',
     ]))

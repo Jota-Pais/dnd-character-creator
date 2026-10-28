@@ -330,13 +330,18 @@ export function getEffectiveAbilityBonuses(
   return [...fixed, ...chosen]
 }
 
+/** A raça só fecha com uma sub-raça escolhida — salvo a que vale sozinha (`baseOption`: o humano). */
+export function requiresSubrace(race: Race): boolean {
+  return race.subraces.length > 0 && !race.baseOption
+}
+
 export function isRaceStepComplete(
   race: Race | null,
   subrace: Subrace | null,
   choices: RaceChoiceSelections,
 ): boolean {
   if (!race) return false
-  if (race.subraces.length > 0 && !subrace) return false
+  if (requiresSubrace(race) && !subrace) return false
 
   const allChoices = getAllChoices(race, subrace)
   for (const choice of allChoices) {

@@ -88,7 +88,7 @@ export function RaceCard({ race, selected, onSelect }: Props) {
           {race.darkvision > 0 && <span>· 👁️ {formatMeters(race.darkvision)}</span>}
           {race.subraces.length > 0 && (
             <span className="ml-auto text-parchment-800">
-              {race.subraces.length} subraças
+              {race.subraces.length} {race.subraces.length === 1 ? 'subraça' : 'subraças'}
             </span>
           )}
         </div>

@@ -153,4 +153,10 @@ export type Race = {
   innateSpells?: InnateSpell[]
   traits: RacialTrait[]
   subraces: Subrace[]
+  /**
+   * A raça vale sem sub-raça: o humano do livro é completo, e o Humano Variante é regra opcional
+   * (p. 31). A etapa Raça mostra esta opção (nome e descrição) ao lado das sub-raças, marcada
+   * quando nenhuma está escolhida, e a sub-raça deixa de ser obrigatória.
+   */
+  baseOption?: { name: string; description: string }
 }

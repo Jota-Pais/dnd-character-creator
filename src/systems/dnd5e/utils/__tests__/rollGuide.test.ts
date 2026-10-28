@@ -12,7 +12,7 @@ import { getPassiveScore, getSavingThrowChecks, getSkillChecks } from '../profic
 import { getFeatSpellBlocks } from '../spellUtils'
 import {
   describeRollGuide, findRollGuideEntry, formatGuideFormula, getConcentrationGuide, getRollGuide, parseDamageText,
-  withInspirationSpent, type RollGuide, type RollGuideEntry,
+  withInspirationSpent, withTableMode, type RollGuide, type RollGuideEntry,
 } from '../rollGuide'
 
 function draft(overrides: Partial<CharacterDraft>): CharacterDraft {
@@ -528,6 +528,101 @@ describe('getRollGuide — condições e modo', () => {
     const stunned = getRollGuide(caster, withConditions('stunned'))
     expect(stunned.notes).toEqual(['Incapacitado (por Atordoado): não pode realizar ações nem reações (pág. 292).'])
     expect(getRollGuide(caster, play()).notes).toEqual([])
+  })
+})
+
+// Pág. 175: várias situações do mesmo lado dão um d20 a mais só; vantagem e desvantagem juntas se
+// anulam, "da mesma maneira se várias circunstâncias impõem desvantagem e apenas uma concede
+// vantagem"; o Mestre também pode conceder vantagem ou impor desvantagem.
+describe('withTableMode — a circunstância da mesa (pág. 175)', () => {
+  const MESA = 'Circunstância da mesa'
+
+  it('Normal e jogada que não é d20 voltam iguais', () => {
+    const guide = getRollGuide(fighter('longsword'), play())
+    expect(withTableMode(guide.saves.STR, 'normal')).toBe(guide.saves.STR)
+    const damage = guide.attacks[0].damage!
+    expect(withTableMode(damage, 'advantage')).toBe(damage)
+  })
+
+  it('na jogada normal, a escolha vira o modo, com o motivo e a notação de dois d20; o número não muda', () => {
+    const guide = getRollGuide(fighter('longsword'), play())
+    const attack = withTableMode(guide.attacks[0].attack, 'advantage')
+    expect(attack.mode).toBe('advantage')
+    expect(labelsOf(attack.advantage)).toEqual([MESA])
+    expect(attack.notation).toBe('2d20kh1+5')
+    expect(attack.formula).toBe(guide.attacks[0].attack.formula)
+    expect(attack.notes).toEqual(guide.attacks[0].attack.notes)
+    expect(describeRollGuide(attack)).toBe(`1d20 + 5, com vantagem (${MESA})`)
+    const save = withTableMode(guide.saves.STR, 'disadvantage')
+    expect(save.mode).toBe('disadvantage')
+    expect(labelsOf(save.disadvantage)).toEqual([MESA])
+    expect(save.notation).toBe('2d20kl1+5')
+    expect(save.modifier).toBe(guide.saves.STR.modifier)
+  })
+
+  it('várias desvantagens e uma vantagem da mesa: jogada normal, um d20 só', () => {
+    const guide = getRollGuide(fighter('chain-mail'), withConditions('poisoned'))
+    const stealth = withTableMode(guide.skills.stealth, 'advantage')
+    expect(stealth.mode).toBe('normal')
+    expect(stealth.notation).toBe('1d20+2')
+    expect(labelsOf(stealth.disadvantage)).toEqual(['Envenenado', 'Cota de Malha'])
+    expect(stealth.notes[0]).toBe('Vantagem da mesa: anula a desvantagem: role um d20 só (pág. 175).')
+    expect(describeRollGuide(stealth))
+      .toBe(`1d20 + 2, normal: vantagem (${MESA}) e desvantagem (Envenenado, Cota de Malha) se anulam`)
+  })
+
+  it('do mesmo lado não soma: continua um d20 a mais, e a nota diz por quê', () => {
+    const guide = getRollGuide(fighter('longsword'), withConditions('invisible'))
+    const attack = withTableMode(guide.attacks[0].attack, 'advantage')
+    expect(attack.mode).toBe('advantage')
+    expect(attack.notation).toBe('2d20kh1+5')
+    expect(labelsOf(attack.advantage)).toEqual(['Invisível', MESA])
+    expect(attack.notes[0]).toBe('Vantagem da mesa: a jogada já tinha vantagem; não muda nada (vantagens não se somam, pág. 175).')
+    const poisoned = getRollGuide(fighter('longsword'), withConditions('poisoned'))
+    const check = withTableMode(poisoned.checks.STR, 'disadvantage')
+    expect(check.notation).toBe('2d20kl1+3')
+    expect(check.notes[0]).toBe('Desvantagem da mesa: a jogada já tinha desvantagem; não muda nada (desvantagens não se somam, pág. 175).')
+  })
+
+  it('já anuladas: a escolha da mesa não desempata', () => {
+    const guide = getRollGuide(fighter('longsword'), withConditions('invisible', 'poisoned'))
+    const attack = withTableMode(guide.attacks[0].attack, 'disadvantage')
+    expect(attack.mode).toBe('normal')
+    expect(attack.notation).toBe('1d20+5')
+    expect(labelsOf(attack.disadvantage)).toEqual(['Envenenado', MESA])
+    expect(attack.notes[0]).toBe('Desvantagem da mesa: não muda nada — vantagem e desvantagem já se anulavam, qualquer que seja a quantidade (pág. 175).')
+  })
+
+  it('falha automática: avisa e mantém a falha', () => {
+    const guide = getRollGuide(fighter(), withConditions('paralyzed'))
+    const dex = withTableMode(guide.saves.DEX, 'advantage')
+    expect(labelsOf(dex.autoFail)).toEqual(['Paralisado'])
+    expect(dex.notes[0]).toBe('Vantagem da mesa: não muda nada — a jogada falha automaticamente.')
+  })
+
+  it('a nota da Inspiração ainda não gasta acompanha o modo da mesa', () => {
+    const guide = getRollGuide(fighter(), play({ inspiration: true }))
+    const save = withTableMode(guide.saves.STR, 'disadvantage')
+    expect(save.notes).toContain('Inspiração: gastá-la anula a desvantagem e a jogada sai normal (pág. 175).')
+    expect(save.notes.filter(n => n.startsWith('Inspiração'))).toHaveLength(1)
+    const adv = withTableMode(guide.saves.STR, 'advantage')
+    expect(adv.notes).toContain('Inspiração: a jogada já tem vantagem; gastá-la não muda nada (vantagens não se somam, pág. 175).')
+  })
+
+  it('com a Inspiração gasta por cima, as fontes se combinam pela mesma regra', () => {
+    const guide = getRollGuide(fighter(), play())
+    const save = withInspirationSpent(withTableMode(guide.saves.STR, 'disadvantage'))
+    expect(save.mode).toBe('normal')
+    expect(save.notation).toBe('1d20+5')
+    expect(save.notes[0]).toBe('Inspiração gasta: anula a desvantagem: role um d20 só (pág. 175).')
+    const adv = withInspirationSpent(withTableMode(guide.saves.STR, 'advantage'))
+    expect(adv.mode).toBe('advantage')
+    expect(adv.notes[0]).toContain('já tinha vantagem')
+  })
+
+  it('aplicar duas vezes não empilha a fonte', () => {
+    const save = withTableMode(getRollGuide(fighter(), play()).saves.STR, 'advantage')
+    expect(withTableMode(save, 'advantage')).toBe(save)
   })
 })
 

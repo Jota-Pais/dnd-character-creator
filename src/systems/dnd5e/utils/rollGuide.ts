@@ -33,7 +33,9 @@ import { getCasterEntries, getFeatSpellBlocks, getSpellAttackBonus, getSpellSave
  * Fontes do modo: as condições e a exaustão do estado de jogo (`getPlayConditionEffects`) somadas
  * às da ficha — desvantagem de Furtividade da armadura, armadura sem proficiência (pág. 144) e arma
  * pesada nas mãos de criatura Pequena (pág. 149) —,
- * resolvidas por `resolveRollMode` (uma de cada lado anula, pág. 175).
+ * resolvidas por `resolveRollMode` (uma de cada lado anula, pág. 175). O que só a folha aberta sabe
+ * entra por cima, com a mesma regra: a circunstância da mesa (`withTableMode`) e a Inspiração gasta
+ * (`withInspirationSpent`).
  */
 
 /** Origem de uma vantagem, desvantagem ou falha automática: `condition:poisoned` / "Envenenado". */
@@ -308,11 +310,15 @@ function linesFor(lines: ConditionalLine[], roll: RollCategory, ability?: Abilit
     .map(l => l.text)
 }
 
+type ModeSources = Pick<RollGuideEntry, 'mode' | 'advantage' | 'disadvantage' | 'autoFail'>
+
 /**
- * A nota da Inspiração (pág. 127) conforme o modo: gastá-la dá vantagem; com vantagem não muda nada
- * (não acumula) e com desvantagem anula (pág. 175).
+ * A nota da Inspiração ainda não gasta (pág. 127), conforme o modo: gastá-la dá vantagem; com
+ * vantagem não muda nada (não acumula) e com desvantagem anula (pág. 175). Com falha automática, a
+ * vantagem não muda o resultado: gastá-la seria desperdício.
  */
-function inspirationNote(mode: RollMode, advantage: GuideReason[], disadvantage: GuideReason[]): string {
+function inspirationNote({ mode, advantage, disadvantage, autoFail }: ModeSources): string {
+  if (autoFail.length > 0) return 'Inspiração: não adianta aqui — a jogada falha automaticamente.'
   if (mode === 'advantage') return 'Inspiração: a jogada já tem vantagem; gastá-la não muda nada (vantagens não se somam, pág. 175).'
   if (mode === 'disadvantage') return 'Inspiração: gastá-la anula a desvantagem e a jogada sai normal (pág. 175).'
   if (advantage.length > 0 && disadvantage.length > 0) {
@@ -348,12 +354,7 @@ function d20Entry(input: D20Input, inspiration: boolean): RollGuideEntry {
   const disadvantage = [...input.condition.disadvantage, ...(input.extraDisadvantage ?? [])]
   const mode = resolveRollMode(advantage, disadvantage)
   const notes = [...(input.notes ?? [])]
-  if (inspiration) {
-    // Com falha automática, a vantagem não muda o resultado: gastar a Inspiração seria desperdício.
-    notes.push(input.condition.autoFail.length > 0
-      ? 'Inspiração: não adianta aqui — a jogada falha automaticamente.'
-      : inspirationNote(mode, advantage, disadvantage))
-  }
+  if (inspiration) notes.push(inspirationNote({ mode, advantage, disadvantage, autoFail: input.condition.autoFail }))
   return {
     id: input.id,
     kind: 'd20',
@@ -405,6 +406,51 @@ export function withInspirationSpent(entry: RollGuideEntry): RollGuideEntry {
     notation: d20Notation(mode, entry.modifier),
     notes: [`Inspiração gasta: ${effect}`, ...entry.notes],
   }
+}
+
+/**
+ * A vantagem ou desvantagem que a mesa dá e a ficha não conhece: a circunstância que o Mestre
+ * decide (pág. 175), o Ataque Descuidado, a ação Ajudar. Escolhida à mão na folha da receita.
+ */
+export const TABLE_MODE_REASONS: Record<Exclude<RollMode, 'normal'>, GuideReason> = {
+  advantage: { source: 'table:advantage', label: 'Circunstância da mesa' },
+  disadvantage: { source: 'table:disadvantage', label: 'Circunstância da mesa' },
+}
+
+/**
+ * A jogada com o Normal / Vantagem / Desvantagem escolhido na folha: a circunstância da mesa entra
+ * como mais uma fonte e o modo é recalculado pela regra da pág. 175 — várias do mesmo lado valem
+ * uma; uma de cada lado anula, qualquer que seja a quantidade —, com a notação que os dados do app
+ * rolam. Quando a escolha não muda o modo (já havia o mesmo, já se anulavam, falha automática) ou
+ * anula o outro lado, a primeira nota diz por quê; a nota da Inspiração ainda não gasta acompanha o
+ * modo novo. `normal` e as jogadas que não são d20 voltam iguais.
+ */
+export function withTableMode(entry: RollGuideEntry, choice: RollMode): RollGuideEntry {
+  if (entry.kind !== 'd20' || choice === 'normal') return entry
+  const reason = TABLE_MODE_REASONS[choice]
+  const sameSide = choice === 'advantage' ? entry.advantage : entry.disadvantage
+  if (sameSide.some(r => r.source === reason.source)) return entry
+  const advantage = choice === 'advantage' ? [...entry.advantage, reason] : entry.advantage
+  const disadvantage = choice === 'disadvantage' ? [...entry.disadvantage, reason] : entry.disadvantage
+  const mode = resolveRollMode(advantage, disadvantage)
+  const [chosen, chosenPlural, opposite] = choice === 'advantage'
+    ? ['vantagem', 'vantagens', 'desvantagem']
+    : ['desvantagem', 'desvantagens', 'vantagem']
+  const canceled = entry.advantage.length > 0 && entry.disadvantage.length > 0
+  const effect = entry.autoFail.length > 0
+    ? 'não muda nada — a jogada falha automaticamente.'
+    : entry.mode === choice
+      ? `a jogada já tinha ${chosen}; não muda nada (${chosenPlural} não se somam, pág. 175).`
+      : entry.mode !== 'normal'
+        ? `anula a ${opposite}: role um d20 só (pág. 175).`
+        : canceled
+          ? 'não muda nada — vantagem e desvantagem já se anulavam, qualquer que seja a quantidade (pág. 175).'
+          : null
+  const next = { ...entry, advantage, disadvantage, mode, notation: d20Notation(mode, entry.modifier) }
+  const available = inspirationNote(entry)
+  const notes = entry.notes.map(n => (n === available ? inspirationNote(next) : n))
+  const label = choice === 'advantage' ? 'Vantagem da mesa' : 'Desvantagem da mesa'
+  return { ...next, notes: effect ? [`${label}: ${effect}`, ...notes] : notes }
 }
 
 type DamageInput = {

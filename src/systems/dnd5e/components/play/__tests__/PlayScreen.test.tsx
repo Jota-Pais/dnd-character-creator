@@ -4,6 +4,9 @@ import { PlayScreen } from '../PlayScreen'
 import { useAppStore } from '../../../../../core/stores/appStore'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { usePlayStore } from '../../../stores/playStore'
+import { formatPlaySubtitle } from '../usePlayView'
+import { EMPTY_DRAFT, type CharacterDraft } from '../../../types/character'
+import { COMPLETE_DRAFT } from '../../../../../test/fixtures'
 import { openKrusk, resetPlay } from './openPlay'
 
 beforeEach(resetPlay)
@@ -20,6 +23,22 @@ describe('PlayScreen — casca', () => {
     }
     fireEvent.click(screen.getByRole('tab', { name: 'Notas' }))
     expect(screen.getByRole('tab', { name: 'Notas' })).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('a linha de classe traz o detalhe da subclasse, como o cabeçalho da Revisão', () => {
+    const sorcerer: CharacterDraft = {
+      ...structuredClone(COMPLETE_DRAFT),
+      class: 'sorcerer',
+      level: 6,
+      classChoices: {
+        ...structuredClone(EMPTY_DRAFT.classChoices),
+        subclass: 'draconic-bloodline',
+        progressionChoices: { 'draconic-ancestor-1': ['blue'] },
+      },
+    }
+    expect(formatPlaySubtitle(sorcerer)).toBe('Meio-Orc · Feiticeiro (Linhagem Dracônica, ancestral Azul) · nível 6')
+    expect(formatPlaySubtitle({ ...sorcerer, classChoices: { ...sorcerer.classChoices, progressionChoices: {} } }))
+      .toBe('Meio-Orc · Feiticeiro (Linhagem Dracônica) · nível 6')
   })
 
   it('"← Personagens" sai do modo de jogo para a galeria', () => {

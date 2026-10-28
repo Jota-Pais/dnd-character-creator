@@ -6,7 +6,8 @@ import type { PlayResult, PlaySheet, PlayState } from '../../types/playState'
 import type { ArmorClassResult } from '../../utils/armorClassUtils'
 import { getFinalAbilityScores } from '../../utils/asiUtils'
 import { getClass, getSubclass } from '../../utils/classUtils'
-import { formatClassLevelLabel } from '../../utils/multiclassUtils'
+import { allClassEntries, formatClassLevelLabel } from '../../utils/multiclassUtils'
+import { getSubclassDetails } from '../../utils/progressionOptions'
 import { getRace, getSubrace } from '../../utils/raceUtils'
 import { getRollGuide, type RollGuide, type RollGuideEntry } from '../../utils/rollGuide'
 import { getSheetArmorClass } from '../../utils/sheetEffects'
@@ -68,7 +69,10 @@ export function formatPlaySubtitle(draft: CharacterDraft): string {
   } else {
     const cls = draft.class ? getClass(draft.class) : undefined
     const sub = cls && draft.classChoices.subclass ? getSubclass(cls, draft.classChoices.subclass) : undefined
-    classLabel = cls ? `${cls.name}${sub ? ` (${sub.name})` : ''} · nível ${level}` : `Nível ${level}`
+    // O detalhe da subclasse (ancestral Azul) como no cabeçalho da Revisão.
+    const entry = allClassEntries(draft)[0]
+    const subLabel = sub ? [sub.name, ...(entry ? getSubclassDetails(entry) : [])].join(', ') : ''
+    classLabel = cls ? `${cls.name}${subLabel ? ` (${subLabel})` : ''} · nível ${level}` : `Nível ${level}`
   }
   return [raceName, classLabel].filter(Boolean).join(' · ')
 }

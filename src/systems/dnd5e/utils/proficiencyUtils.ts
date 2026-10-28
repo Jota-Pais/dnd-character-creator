@@ -89,7 +89,12 @@ export type ProficiencyOwner =
   | { kind: 'feat'; featId: string }
   | { kind: 'background' }
 
-type ProficiencyKind = 'skill' | 'tool'
+/**
+ * Idioma não é proficiência no sentido da p. 125 (não há "escolha outro do mesmo tipo" para o fixo
+ * repetido), mas o idioma ESCOLHIDO que outra fonte já dá segue a mesma regra da ficha: fica
+ * marcado, com o aviso, até o jogador trocar (decisão do usuário, 2026-10-28).
+ */
+type ProficiencyKind = 'skill' | 'tool' | 'language'
 
 /** Uma perícia ou ferramenta concedida, com o dono e o jeito como chegou. */
 type ProficiencyGrant = {
@@ -113,6 +118,9 @@ function raceGrants(draft: CharacterDraft, kind: ProficiencyKind): ProficiencyGr
   if (!race) return []
   const subrace = draft.subrace ? (getSubrace(race, draft.subrace) ?? null) : null
   const owner: ProficiencyOwner = { kind: 'race' }
+  if (kind === 'language') {
+    return [...grantsOf(race.grantedLanguages, owner, false), ...grantsOf(draft.raceChoices.languages ?? [], owner, true)]
+  }
   return kind === 'skill'
     ? [...grantsOf(getRaceGrantedSkills(race, subrace), owner, false), ...grantsOf(draft.raceChoices.skills ?? [], owner, true)]
     : [...grantsOf(getRaceGrantedTools(race, subrace), owner, false), ...grantsOf(draft.raceChoices.tools ?? [], owner, true)]
@@ -124,6 +132,14 @@ function classGrants(draft: CharacterDraft, kind: ProficiencyKind): ProficiencyG
     const base: ProficiencyOwner = { kind: 'class', slot: { classId, part: 'base' } }
     const subclass: ProficiencyOwner = { kind: 'class', slot: { classId, part: 'subclass' } }
     const extras = subclassExtrasOf(classId, choices)
+    if (kind === 'language') {
+      // Idioma de classe só vem da subclasse: fixo (Dracônico da Linhagem Dracônica) ou à escolha
+      // (os dois do Domínio do Conhecimento).
+      return [
+        ...grantsOf(extras?.grantedLanguages ?? [], subclass, false),
+        ...grantsOf(choices.subclassExtras.languages ?? [], subclass, true),
+      ]
+    }
     if (kind === 'skill') {
       const doubled = extras?.expertiseSkills?.from ?? []
       return [
@@ -144,14 +160,15 @@ function backgroundGrants(draft: CharacterDraft, kind: ProficiencyKind): Profici
   const bg = draft.background ? getBackground(draft.background) : undefined
   if (!bg) return []
   const owner: ProficiencyOwner = { kind: 'background' }
+  if (kind === 'language') return grantsOf(draft.backgroundChoices.languages ?? [], owner, true)
   return kind === 'skill'
     ? grantsOf(bg.skillProficiencies, owner, false)
     : [...grantsOf(bg.toolProficiencies, owner, false), ...grantsOf(draft.backgroundChoices.tools ?? [], owner, true)]
 }
 
-/** As escolhidas em talento (Perito), cada uma com o talento dono. */
+/** As escolhidas em talento (Perito, Poliglota), cada uma com o talento dono. */
 function featGrants(draft: CharacterDraft, kind: ProficiencyKind): ProficiencyGrant[] {
-  return getFeatSelectionsByFeat(draft, kind === 'skill' ? 'skills' : 'tools')
+  return getFeatSelectionsByFeat(draft, kind === 'skill' ? 'skills' : kind === 'tool' ? 'tools' : 'languages')
     .flatMap(({ featId, ids }) => grantsOf(ids, { kind: 'feat', featId }, true))
 }
 
@@ -293,12 +310,12 @@ function findRepeated(draft: CharacterDraft, kind: ProficiencyKind): RepeatedPro
 }
 
 /**
- * Perícias e ferramentas escolhidas que outra fonte já dá — fixa, ou escolhida num passo anterior.
- * As etapas donas (Raça, Classe, Aprimoramentos, Antecedente) reprovam enquanto houver uma delas
- * (draftValidation), com o motivo de `formatRepeatedProficiency` (pendingReasons).
+ * Perícias, ferramentas e idiomas escolhidos que outra fonte já dá — fixa, ou escolhida num passo
+ * anterior. As etapas donas (Raça, Classe, Aprimoramentos, Antecedente) reprovam enquanto houver
+ * uma delas (draftValidation), com o motivo de `formatRepeatedProficiency` (pendingReasons).
  */
 export function getRepeatedProficiencies(draft: CharacterDraft): RepeatedProficiency[] {
-  return [...findRepeated(draft, 'skill'), ...findRepeated(draft, 'tool')]
+  return [...findRepeated(draft, 'skill'), ...findRepeated(draft, 'tool'), ...findRepeated(draft, 'language')]
 }
 
 /** As repetidas que alguma das classes do personagem escolheu (lista da classe ou subclasse). */
@@ -307,25 +324,26 @@ export function getClassRepeatedProficiencies(draft: CharacterDraft, classId?: s
     .filter(r => r.owner.kind === 'class' && (classId === undefined || r.owner.slot.classId === classId))
 }
 
-/** As repetidas que a raça escolheu (meio-elfo, Humano Variante, ferramenta do anão). */
+/** As repetidas que a raça escolheu (meio-elfo, Humano Variante, ferramenta do anão, idioma). */
 export function getRaceRepeatedProficiencies(draft: CharacterDraft): RepeatedProficiency[] {
   return getRepeatedProficiencies(draft).filter(r => r.owner.kind === 'race')
 }
 
-/** As repetidas que o antecedente escolheu (a ferramenta à escolha). */
+/** As repetidas que o antecedente escolheu (a ferramenta e os idiomas à escolha). */
 export function getBackgroundRepeatedProficiencies(draft: CharacterDraft): RepeatedProficiency[] {
   return getRepeatedProficiencies(draft).filter(r => r.owner.kind === 'background')
 }
 
-/** As repetidas que um dos talentos informados escolheu (Perito). */
+/** As repetidas que um dos talentos informados escolheu (Perito, Poliglota). */
 export function getFeatRepeatedProficiencies(draft: CharacterDraft, featIds: string[]): RepeatedProficiency[] {
   return getRepeatedProficiencies(draft).filter(r => r.owner.kind === 'feat' && featIds.includes(r.owner.featId))
 }
 
 /** "Atletismo já vem do antecedente Marinheiro — troque por outra perícia": o aviso do seletor e o motivo da pendência. */
 export function formatRepeatedProficiency(r: RepeatedProficiency): string {
-  const name = r.kind === 'skill' ? getSkillName(r.id) : getToolName(r.id)
-  const instead = r.owner.kind === 'feat' ? 'outra perícia ou ferramenta'
+  const name = r.kind === 'skill' ? getSkillName(r.id) : r.kind === 'language' ? getLanguageName(r.id) : getToolName(r.id)
+  const instead = r.kind === 'language' ? 'outro idioma'
+    : r.owner.kind === 'feat' ? 'outra perícia ou ferramenta'
     : r.kind === 'skill' ? 'outra perícia'
       : getToolById(r.id)?.category === 'musical-instrument' ? 'outro instrumento' : 'outra ferramenta'
   // "Ferramentas de Ferreiro", "Suprimentos de Alquimista", "Veículos Terrestres": nome no plural.
@@ -336,7 +354,7 @@ export function formatRepeatedProficiency(r: RepeatedProficiency): string {
 /**
  * As repetidas de UM seletor (a raça, um slot de classe, o antecedente, um talento), por id, com o
  * aviso pronto: a escolha continua marcada no seletor, com o aviso, até o jogador trocar. Ids de
- * perícia e de ferramenta não colidem, então um mapa só serve aos dois.
+ * perícia, de ferramenta e de idioma não colidem, então um mapa só serve aos três.
  */
 export function getRepeatedProficiencyNotes(draft: CharacterDraft, owner: ProficiencyOwner): Record<string, string> {
   return Object.fromEntries(getRepeatedProficiencies(draft)

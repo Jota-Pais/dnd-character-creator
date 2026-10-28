@@ -65,6 +65,7 @@ export function ChoicePanel({ choices, selections, accent, onChange, excludedLan
                 accent={accent}
                 selected={selections.languages ?? []}
                 excluded={excludedLanguages}
+                repeated={repeated}
                 onSelect={languages => onChange({ languages })}
               />
             )
@@ -224,17 +225,18 @@ type LanguageChoiceFieldProps = {
   accent: string
   selected: string[]
   excluded?: string[]
+  repeated: Record<string, string>
   onSelect: (languages: string[]) => void
 }
 
-function LanguageChoiceField({ count, accent, selected, excluded, onSelect }: LanguageChoiceFieldProps) {
+function LanguageChoiceField({ count, accent, selected, excluded, repeated, onSelect }: LanguageChoiceFieldProps) {
   return (
     <div>
       <p className="text-sm font-semibold text-parchment-300 mb-2 font-fantasy">
         Escolha {count} idioma{count > 1 ? 's' : ''}{' '}
         <span className="text-parchment-600 font-normal">({selected.length}/{count})</span>
       </p>
-      <LanguagePicker count={count} selected={selected} excluded={excluded} accent={accent} onChange={onSelect} />
+      <LanguagePicker count={count} selected={selected} excluded={excluded} repeated={repeated} accent={accent} onChange={onSelect} />
     </div>
   )
 }

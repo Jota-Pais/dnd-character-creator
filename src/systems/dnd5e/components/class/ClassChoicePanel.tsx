@@ -465,6 +465,7 @@ function SubclassExtrasPanel({
             count={extras.languages.count}
             selected={subclassExtras.languages ?? []}
             excluded={excludedLanguages}
+            repeated={repeated}
             accent={accent}
             onChange={languages => onChangeExtras({ languages })}
           />

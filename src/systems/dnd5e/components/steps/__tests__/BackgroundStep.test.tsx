@@ -53,3 +53,28 @@ describe('BackgroundStep: ferramenta repetida por outra fonte', () => {
     expect(container.textContent).not.toContain('Alaúde já vem')
   })
 })
+
+// Decisão de 2026-10-28: o idioma escolhido no antecedente que a raça trocada passou a dar não some
+// ao abrir a etapa (antes um filtro o apagava em silêncio) — fica marcado, com o aviso.
+describe('BackgroundStep: idioma repetido por outra fonte', () => {
+  it('Acólito com Élfico num Alto Elfo: o Élfico fica, com o aviso, e outro idioma troca', () => {
+    useCharacterStore.setState({
+      draft: {
+        ...structuredClone(EMPTY_DRAFT),
+        race: 'elf', subrace: 'high-elf',
+        background: 'acolyte',
+        backgroundChoices: { languages: ['elvish', 'dwarvish'] },
+      },
+    })
+    const { container, getByRole } = render(<BackgroundStep />)
+    const languages = () => useCharacterStore.getState().draft.backgroundChoices.languages
+    expect(languages()).toEqual(['elvish', 'dwarvish'])
+    expect(container.textContent).toContain('⚠ Élfico já vem da raça Alto Elfo — troque por outro idioma')
+
+    // Escolha de 2 cheia: desmarca o repetido e marca outro.
+    fireEvent.click(getByRole('button', { name: '⚠ Élfico' }))
+    fireEvent.click(getByRole('button', { name: 'Gigante' }))
+    expect(languages()).toEqual(['dwarvish', 'giant'])
+    expect(container.textContent).not.toContain('Élfico já vem')
+  })
+})

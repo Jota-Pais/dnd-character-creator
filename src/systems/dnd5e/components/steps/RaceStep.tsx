@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import type { Race, Subrace } from '../../types/race'
 import { useCharacterStore } from '../../stores/characterStore'
 import {
@@ -56,16 +56,11 @@ export function RaceStep() {
   const excludedTools = getExcludedTools(draft, 'race')
   const repeated = getRepeatedProficiencyNotes(draft, { kind: 'race' })
   // Idiomas: os fixos da própria raça (não dá pra escolher Comum de novo) mais os de outras fontes.
+  // O escolhido que outra fonte passou a dar fica marcado, com o aviso (`repeated`), como a perícia.
   const excludedLanguages = [
     ...(selectedRace?.grantedLanguages ?? []),
     ...getExcludedLanguages(draft, 'race'),
   ]
-
-  useEffect(() => {
-    const languages = draft.raceChoices.languages ?? []
-    const filtered = languages.filter(id => !excludedLanguages.includes(id))
-    if (filtered.length !== languages.length) updateRaceChoices({ languages: filtered })
-  }, [excludedLanguages.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleRaceSelect(raceId: string) {
     setRace(raceId)

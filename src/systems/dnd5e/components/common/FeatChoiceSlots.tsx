@@ -138,6 +138,7 @@ function SlotBody({
           count={choices.languageChoice.count}
           selected={selected}
           excluded={getExcludedLanguagesForFeat(draft, feat.id)}
+          repeated={getRepeatedProficiencyNotes(draft, { kind: 'feat', featId: feat.id })}
           accent={accent}
           onChange={languages => onChange({ languages })}
         />

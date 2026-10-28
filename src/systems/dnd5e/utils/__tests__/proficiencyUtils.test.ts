@@ -999,6 +999,39 @@ describe('proficiência repetida (p. 125)', () => {
       .toEqual(['Ferramentas de Ferreiro já vêm da raça Anão da Colina — troque por outra ferramenta'])
   })
 
+  // Decisão de 2026-10-28: o idioma escolhido que outra fonte passou a dar segue a mesma regra —
+  // fica no draft, com o aviso, e a etapa dona dele fica pendente (antes era apagado em silêncio).
+  it('idioma do antecedente que a raça trocada passou a dar troca no antecedente', () => {
+    const d = draft({ race: 'elf', subrace: 'high-elf', background: 'acolyte', backgroundChoices: { languages: ['elvish', 'dwarvish'] } })
+    const repeated = getBackgroundRepeatedProficiencies(d)
+    expect(repeated.map(r => [r.kind, r.id])).toEqual([['language', 'elvish']])
+    expect(formatRepeatedProficiency(repeated[0])).toBe('Élfico já vem da raça Alto Elfo — troque por outro idioma')
+    expect(getAllGrantedLanguages(d).filter(id => id === 'elvish')).toEqual(['elvish'])
+  })
+
+  it('idioma escolhido na raça que a subclasse dá fixo troca na raça; fixo × fixo não pendura', () => {
+    const sorcerer = (over: Partial<CharacterDraft>) => draft({
+      class: 'sorcerer', level: 1,
+      classChoices: { ...EMPTY_DRAFT.classChoices, skills: ['arcana', 'insight'], subclass: 'draconic-bloodline' },
+      ...over,
+    })
+    expect(getRaceRepeatedProficiencies(sorcerer({ race: 'human', raceChoices: { languages: ['draconic'] } })).map(formatRepeatedProficiency))
+      .toEqual(['Dracônico já vem da classe Feiticeiro (Linhagem Dracônica) — troque por outro idioma'])
+    // Draconato (Dracônico fixo) com a Linhagem Dracônica (Dracônico fixo): nada a trocar.
+    expect(getRepeatedProficiencies(sorcerer({ race: 'dragonborn', subrace: null }))
+      .filter(r => r.kind === 'language')).toEqual([])
+  })
+
+  it('idioma do Poliglota repetido troca no talento', () => {
+    const d = draft({
+      race: 'human', subrace: 'variant-human',
+      raceChoices: { abilityBonuses: ['STR', 'DEX'], skills: ['insight'], languages: ['elvish'], feat: 'poliglota' },
+      featSelections: { poliglota: { languages: ['elvish', 'dwarvish', 'giant'] } },
+    })
+    expect(getFeatRepeatedProficiencies(d, ['poliglota']).map(formatRepeatedProficiency))
+      .toEqual(['Élfico já vem da raça Humano (Variante) — troque por outro idioma'])
+  })
+
   it('a escolha da raça repete a fixa do antecedente: troca na raça', () => {
     const d = draft({ race: 'half-elf', raceChoices: { skills: ['insight', 'stealth'] }, background: 'acolyte' })
     expect(getRaceRepeatedProficiencies(d).map(formatRepeatedProficiency))

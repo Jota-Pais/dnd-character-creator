@@ -100,13 +100,11 @@ export function ClassChoicePanel({ cls, choices, accent, level, onChange, profic
   // Desmarcar não mexe na Especialização: ela vale para a perícia que o personagem tem de qualquer
   // fonte, e quem a tira quando a perícia some de todas é o efeito acima. Assim, trocar a perícia
   // repetida pelo antecedente (p. 125) não apaga a Especialização que continua valendo.
+  // Escolha de 1 (a perícia da multiclasse, a ferramenta do monge) é rádio; a de N para no limite
+  // (toggleChoice, decisão de 2026-10-26).
   function handleSkillToggle(skillId: string) {
-    if (choices.skills.includes(skillId)) {
-      onChange({ skills: choices.skills.filter(s => s !== skillId) })
-    } else {
-      if (choices.skills.length >= skillLimit) return
-      onChange({ skills: [...choices.skills, skillId] })
-    }
+    const next = toggleChoice(choices.skills, skillId, skillLimit)
+    if (next) onChange({ skills: next })
   }
 
   function handleSubclassSelect(subclassId: string) {
@@ -114,21 +112,13 @@ export function ClassChoicePanel({ cls, choices, accent, level, onChange, profic
   }
 
   function handleExpertiseToggle(itemId: string) {
-    if (choices.expertiseItems.includes(itemId)) {
-      onChange({ expertiseItems: choices.expertiseItems.filter(e => e !== itemId) })
-    } else {
-      if (choices.expertiseItems.length >= expertiseCount) return
-      onChange({ expertiseItems: [...choices.expertiseItems, itemId] })
-    }
+    const next = toggleChoice(choices.expertiseItems, itemId, expertiseCount)
+    if (next) onChange({ expertiseItems: next })
   }
 
   function handleToolToggle(toolId: string, maxCount: number) {
-    if (choices.tools.includes(toolId)) {
-      onChange({ tools: choices.tools.filter(t => t !== toolId) })
-    } else {
-      if (choices.tools.length >= maxCount) return
-      onChange({ tools: [...choices.tools, toolId] })
-    }
+    const next = toggleChoice(choices.tools, toolId, maxCount)
+    if (next) onChange({ tools: next })
   }
 
   const selectedSubclass = cls.subclasses.find(s => s.id === choices.subclass)
@@ -151,7 +141,7 @@ export function ClassChoicePanel({ cls, choices, accent, level, onChange, profic
             // trocados depois, ficha antiga), fica à vista com o aviso, para desmarcar e trocar.
             const repeated = selected ? repeatedBase[skill.id] : undefined
             const excluded = !selected && excludedSkillSet.has(skill.id)
-            const disabled = excluded || (!selected && choices.skills.length >= skillLimit)
+            const disabled = excluded || (!selected && isChoiceFull(choices.skills.length, skillLimit))
             return (
               <button
                 key={skill.id}
@@ -191,7 +181,7 @@ export function ClassChoicePanel({ cls, choices, accent, level, onChange, profic
                 const selected = choices.tools.includes(tool.id)
                 const repeated = selected ? repeatedBase[tool.id] : undefined
                 const excluded = !selected && excludedToolSet.has(tool.id)
-                const disabled = excluded || (!selected && choices.tools.length >= toolChoice.count)
+                const disabled = excluded || (!selected && isChoiceFull(choices.tools.length, toolChoice.count))
                 return (
                   <button
                     key={tool.id}
@@ -324,7 +314,7 @@ export function ClassChoicePanel({ cls, choices, accent, level, onChange, profic
               excludedExpertise,
             ).map(opt => {
               const selected = choices.expertiseItems.includes(opt.id)
-              const disabled = !selected && choices.expertiseItems.length >= expertiseCount
+              const disabled = !selected && isChoiceFull(choices.expertiseItems.length, expertiseCount)
               return (
                 <button
                   key={opt.id}
@@ -439,16 +429,14 @@ function SubclassExtrasPanel({
               const skill = SKILLS.find(s => s.id === skillId)
               if (!skill) return null
               const selected = (subclassExtras.skills ?? []).includes(skillId)
-              const disabled = !selected && (subclassExtras.skills ?? []).length >= extras.expertiseSkills!.count
+              const disabled = !selected && isChoiceFull((subclassExtras.skills ?? []).length, extras.expertiseSkills!.count)
               return (
                 <button
                   key={skillId}
                   disabled={disabled}
                   onClick={() => {
-                    const current = subclassExtras.skills ?? []
-                    onChangeExtras({
-                      skills: selected ? current.filter(s => s !== skillId) : [...current, skillId],
-                    })
+                    const next = toggleChoice(subclassExtras.skills ?? [], skillId, extras.expertiseSkills!.count)
+                    if (next) onChangeExtras({ skills: next })
                   }}
                   className="px-2.5 py-1 rounded-lg text-xs font-semibold transition-all"
                   style={{
@@ -494,7 +482,7 @@ function SubclassExtrasPanel({
               const isRepeated = selected ? repeated[skill.id] : undefined
               const excluded = !selected && excludedSkillSet.has(skill.id)
               const disabled = excluded
-                || (!selected && (subclassExtras.skills ?? []).length >= extras.skillChoice!.count)
+                || (!selected && isChoiceFull((subclassExtras.skills ?? []).length, extras.skillChoice!.count))
               return (
                 <button
                   key={skill.id}
@@ -502,10 +490,8 @@ function SubclassExtrasPanel({
                   title={isRepeated ?? (excluded ? 'Você já possui esta perícia de outra fonte' : undefined)}
                   onClick={() => {
                     if (disabled) return
-                    const current = subclassExtras.skills ?? []
-                    onChangeExtras({
-                      skills: selected ? current.filter(s => s !== skill.id) : [...current, skill.id],
-                    })
+                    const next = toggleChoice(subclassExtras.skills ?? [], skill.id, extras.skillChoice!.count)
+                    if (next) onChangeExtras({ skills: next })
                   }}
                   className="px-2.5 py-1 rounded-lg text-xs font-semibold transition-all"
                   style={{
@@ -537,7 +523,7 @@ function SubclassExtrasPanel({
               const isRepeated = selected ? repeated[tool.id] : undefined
               const excluded = !selected && excludedToolSet.has(tool.id)
               const disabled = excluded
-                || (!selected && (subclassExtras.tools ?? []).length >= extras.toolChoice!.count)
+                || (!selected && isChoiceFull((subclassExtras.tools ?? []).length, extras.toolChoice!.count))
               return (
                 <button
                   key={tool.id}
@@ -545,10 +531,8 @@ function SubclassExtrasPanel({
                   title={isRepeated ?? (excluded ? 'Você já possui esta ferramenta de outra fonte' : undefined)}
                   onClick={() => {
                     if (disabled) return
-                    const current = subclassExtras.tools ?? []
-                    onChangeExtras({
-                      tools: selected ? current.filter(t => t !== tool.id) : [...current, tool.id],
-                    })
+                    const next = toggleChoice(subclassExtras.tools ?? [], tool.id, extras.toolChoice!.count)
+                    if (next) onChangeExtras({ tools: next })
                   }}
                   className="px-2.5 py-1 rounded-lg text-xs font-semibold transition-all"
                   style={{
@@ -670,8 +654,8 @@ function ProgressionChoicesPanel({
     }
   }
 
-  // Slot de 1 escolha (Dádiva do Pacto, Ancestral Dracônico, totens) é rádio: outra opção troca a
-  // marcada. O de N, e o cumulativo, mantém o limite (decisão de 2026-10-26).
+  // Slot de 1 escolha (Dádiva do Pacto, Ancestral Dracônico, totens, a invocação do 5º nível) é
+  // rádio: outra opção troca a marcada. O de N mantém o limite (decisão de 2026-10-26).
   function handleOptionToggle(slot: ProgressionSlot, optionId: string) {
     const next = toggleChoice(choices.progressionChoices[slot.id] ?? [], optionId, slot.count, isSingleChoiceSlot(slot))
     if (next) onChange({ [slot.id]: next })

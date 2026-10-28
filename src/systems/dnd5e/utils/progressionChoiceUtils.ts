@@ -94,12 +94,13 @@ export function isSpellChoiceSlot(slot: ProgressionSlot): boolean {
 }
 
 /**
- * Slot de 1 escolha não cumulativo (Dádiva do Pacto, Ancestral Dracônico, os totens, o terreno do
- * Círculo da Terra, as táticas do Caçador): na etapa Classe é rádio — outra opção troca a marcada
- * direto (`toggleChoice`, decisão de 2026-10-26). O de N escolhas e o cumulativo mantêm o limite.
+ * Slot de 1 escolha (Dádiva do Pacto, Ancestral Dracônico, os totens, o terreno do Círculo da
+ * Terra, as táticas do Caçador, e também o cumulativo de 1: a invocação do 5º nível, o Estilo de
+ * Luta Adicional): na etapa Classe é rádio — outra opção troca a marcada direto (`toggleChoice`,
+ * decisão de 2026-10-26; o cumulativo entrou em 2026-10-28). O de N escolhas mantém o limite.
  */
 export function isSingleChoiceSlot(slot: ProgressionSlot): boolean {
-  return slot.count === 1 && !slot.cumulative
+  return slot.count === 1
 }
 
 /**

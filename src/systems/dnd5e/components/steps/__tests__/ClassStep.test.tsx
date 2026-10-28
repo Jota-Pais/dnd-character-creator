@@ -143,6 +143,50 @@ describe('ClassStep: slot de 1 escolha troca direto', () => {
     expect(picks('totem-warrior-totem-3')).toEqual(['wolf'])
   })
 
+  it('a invocação do 5º nível (cumulativa, de 1) também troca direto', () => {
+    useCharacterStore.setState({
+      draft: withClass('warlock', 5, 'the-fiend', {
+        'warlock-invocations-2': ['explosao-agonizante', 'armadura-de-sombras'],
+        'warlock-invocations-5': ['idioma-bestial'],
+      }),
+    })
+    const { getAllByText } = render(<ClassStep />)
+    const cards = (name: string) => getAllByText(name)
+      .map(el => el.closest('button'))
+      .filter((b): b is HTMLButtonElement => !!b?.hasAttribute('aria-pressed'))
+    // O card aparece nos dois slots; o do 5º é o último. O do 2º já marcado fica travado no 5º.
+    const fifth = (name: string) => cards(name).at(-1)!
+    expect(fifth('Explosão Agonizante').disabled).toBe(true)
+    fireEvent.click(fifth('Visão Diabólica'))
+    expect(picks('warlock-invocations-5')).toEqual(['visao-diabolica'])
+    expect(picks('warlock-invocations-2')).toEqual(['explosao-agonizante', 'armadura-de-sombras'])
+  })
+
+  it('perícia, ferramenta e escolha de subclasse de 1 trocam direto', () => {
+    const extras = () => useCharacterStore.getState().draft.classChoices.subclassExtras
+
+    useCharacterStore.setState({
+      draft: { ...withClass('monk', 1, null), classChoices: { ...withClass('monk', 1, null).classChoices, tools: ['carpenters-tools'] } },
+    })
+    const monk = render(<ClassStep />)
+    fireEvent.click(monk.getByRole('button', { name: 'Ferramentas de Cartógrafo' }))
+    expect(useCharacterStore.getState().draft.classChoices.tools).toEqual(['cartographers-tools'])
+    monk.unmount()
+
+    useCharacterStore.setState({ draft: withClass('fighter', 3, 'battle-master') })
+    useCharacterStore.getState().updateClassChoices({ subclassExtras: { tools: ['carpenters-tools'] } })
+    const fighter = render(<ClassStep />)
+    fireEvent.click(fighter.getByRole('button', { name: 'Ferramentas de Cartógrafo' }))
+    expect(extras().tools).toEqual(['cartographers-tools'])
+    fighter.unmount()
+
+    useCharacterStore.setState({ draft: withClass('cleric', 1, 'nature-domain') })
+    useCharacterStore.getState().updateClassChoices({ subclassExtras: { skills: ['nature'] } })
+    const cleric = render(<ClassStep />)
+    fireEvent.click(cleric.getByRole('button', { name: 'Sobrevivência' }))
+    expect(extras().skills).toEqual(['survival'])
+  })
+
   it('slot de N escolhas mantém o limite: cheio, a opção nova trava e o clique não muda nada', () => {
     useCharacterStore.setState({
       draft: withClass('warlock', 3, 'the-fiend', { 'warlock-invocations-2': ['explosao-agonizante', 'armadura-de-sombras'] }),

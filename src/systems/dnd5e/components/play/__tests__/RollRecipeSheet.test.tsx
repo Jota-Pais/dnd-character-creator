@@ -169,3 +169,45 @@ describe('RollRecipeSheet — resultado dos dados do app', () => {
     expect(await screen.findByText('Copiado.')).toBeInTheDocument()
   })
 })
+
+describe('RollRecipeSheet — o resultado à vista', () => {
+  const scrollIntoView = vi.fn()
+  beforeEach(() => {
+    scrollIntoView.mockClear()
+    Element.prototype.scrollIntoView = scrollIntoView
+  })
+  afterEach(() => {
+    Reflect.deleteProperty(Element.prototype, 'scrollIntoView')
+    Reflect.deleteProperty(window, 'matchMedia')
+  })
+
+  it('cada rolagem leva a folha até o fim dela (o resultado e o dano), e abrir não rola', () => {
+    usePlayStore.getState().setAppDice(true)
+    openKrusk()
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Ataques' }))
+    fireEvent.click(screen.getByRole('button', { name: /^Golpe desarmado — ataque:/ }))
+    expect(scrollIntoView).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Rolar' }))
+    expect(scrollIntoView).toHaveBeenCalledTimes(1)
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest', behavior: 'smooth' })
+    // A folha rola até o último elemento dela: depois do resultado e do dano (quando não errou).
+    expect(scrollIntoView.mock.contexts[0]).toBe(screen.getByRole('dialog').lastElementChild)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Rolar' }))
+    expect(scrollIntoView).toHaveBeenCalledTimes(2)
+  })
+
+  it('com prefers-reduced-motion, a folha pula sem animar', () => {
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: (query: string) => ({ matches: query === '(prefers-reduced-motion: reduce)' }),
+    })
+    usePlayStore.getState().setAppDice(true)
+    openKrusk()
+    openAthletics()
+    fireEvent.click(screen.getByRole('button', { name: 'Rolar' }))
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest', behavior: 'auto' })
+  })
+})

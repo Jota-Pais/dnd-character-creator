@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { usePlayStore } from '../../stores/playStore'
 import type { RollMode } from '../../types/condition'
 import { formatModifier } from '../../utils/abilityScoreUtils'
@@ -92,6 +92,17 @@ export function RollRecipeSheet({ entry: baseEntry, appDice, onClose, crit = fal
   const [tableMode, setTableMode] = useState<RollMode>('normal')
   const atTable = withTableMode(baseEntry, tableMode)
   const entry = usingInspiration ? withInspirationSpent(atTable) : atTable
+
+  // O resultado sai abaixo do "Rolar", e num ataque o dano vem depois dele: no celular, os dois
+  // podiam ficar abaixo da borda da folha, e o toque parecia não dar em nada. A cada rolagem, a
+  // folha rola até o fim dela (o mínimo, se já está à vista).
+  const sheetEndRef = useRef<HTMLDivElement>(null)
+  const rolledId = result?.record.id
+  useEffect(() => {
+    if (rolledId === undefined) return
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    sheetEndRef.current?.scrollIntoView?.({ block: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' })
+  }, [rolledId])
 
   function rollIt(asCrit: boolean) {
     const rolled = rollGuideEntry(entry, { crit: asCrit })
@@ -307,6 +318,9 @@ export function RollRecipeSheet({ entry: baseEntry, appDice, onClose, crit = fal
           </ul>
         </div>
       )}
+      {/* A margem é o recuo de baixo da folha: rola até o fim de verdade, e o que crescer depois
+          (a fonte do total que termina de carregar) ainda cabe. */}
+      <div ref={sheetEndRef} className="scroll-mb-6" />
     </PlayDialog>
   )
 }

@@ -24,7 +24,7 @@
 
 ## Propriedades de arma
 
-- `ammunition` (munição) — usa munição, com alcance específico
+- `ammunition` (munição) — usa munição, com alcance específico; gasto e recuperação em jogo na seção 6.1
 - `finesse` (acuidade) — pode usar STR ou DEX no ataque
 - `heavy` (pesada) — desvantagem se usuário Pequeno
 - `light` (leve) — pode ser usada em ataque com duas armas
@@ -2190,3 +2190,35 @@
 - ref: vestments | quantidade: 1
 - ref: rations | quantidade: 2
 - ref: waterskin | quantidade: 1
+
+---
+
+# 6. Munição e carga em jogo
+
+> **Fonte:** Livro do Jogador pt-BR, Cap. 5, propriedade Munição (pág. 149, linhas 13412-13421 do extrato `docs/_book-extracts/dnd-phb.txt`); Cap. 7, "Erguendo e Carregando" e "Variação: Sobrecarga" (pág. 178, linhas 15813-15850). Regras do inventário de sessão da Fase 2 do modo de jogo (`docs/estudo-dnd-beyond-modulo-jogo.md`, seção 9; decisão 10.2.11). As decisões do dono de 2026-10-29 citam as págs. 146 e 176 do original em inglês; aqui a página é a impressa no pt-BR.
+
+## 6.1 Munição (pág. 149, linhas 13412-13421)
+
+- A arma com a propriedade munição só faz o ataque à distância **se houver munição** para disparar.
+- **Cada ataque gasta uma peça de munição.** Sacar a munição da aljava, bolsa ou outro recipiente faz parte do ataque. Recarregar uma arma de uma mão exige uma mão livre.
+- **Recuperar:** no fim da batalha, você pode recuperar **metade da munição gasta**, se tiver **um minuto** para procurar pelo campo de batalha. A metade arredonda para baixo (regra geral da pág. 7, "Arredonde para Baixo").
+- **Decidido (2026-10-29):** a munição recupera metade após a batalha, como o livro diz.
+- Sem divergência entre o pt-BR e o original nesta propriedade.
+
+## 6.2 Carga (pág. 178, linhas 15813-15833)
+
+- **Capacidade de carga** = **7,5 × o valor de Força**, em kg: é o peso que você pode carregar, "alto o suficiente para que a maioria dos personagens geralmente não tenha que se preocupar com isso". O original diz Força × 15 em libras; o pt-BR converte a 0,5 kg por libra, a mesma conversão dos pesos do catálogo acima. É a mesma regra.
+- **Empurrar, arrastar e levantar:** até **duas vezes a capacidade de carga** (15 × Força, em kg; 30 × Força em libras no original). Ao empurrar ou arrastar peso acima da capacidade de carga, o **deslocamento cai para 1,5 metro**.
+- **Tamanho:** para cada categoria acima de Médio, a capacidade e o peso que se empurra, puxa ou levanta **dobram**; para uma criatura Miúda, caem **pela metade**. As raças do livro são Médias ou Pequenas: a regra não muda a conta de nenhuma.
+- **Variação: Sobrecarga** (linhas 15834-15850): regra **opcional** do livro. Ignora a coluna Força da tabela de armaduras e tira 3 metros do deslocamento acima de 2,5 × Força (kg) e 6 metros mais desvantagem em testes de habilidade, jogadas de ataque e testes de resistência de Força, Destreza e Constituição acima de 5 × Força, até a capacidade. **Não adotada (decisão de 2026-10-29):** a carga segue só a regra padrão, e a coluna Força das armaduras continua valendo (os −3 metros da pág. 146, já no deslocamento da ficha).
+
+## 6.3 Notas de implementação (mapeamento pro app)
+
+Não faz parte da regra do livro.
+
+- **Munição no inventário de sessão:** as munições do catálogo vêm em pacotes ("Flechas (20)", "Agulhas de Zarabatana (50)"); a sessão conta **peças**. O "−1" é o tiro; "Recuperar munição" devolve `floor(gastas na batalha / 2)` e zera o contador da batalha. Fica no estado de jogo, com desfazer, nunca no draft.
+- **Carga:** a capacidade sai dos atributos finais (`getFinalAbilityScores`), 7,5 × Força em kg, comparada à soma dos pesos do inventário. Passar da capacidade é aviso: a regra padrão não tem penalidade escalonada (só a de empurrar e arrastar, que é situação da mesa).
+
+## 6.4 Pontos em aberto (decidir com o dono)
+
+1. **Tradução, "Puxar, Arrastar e Levantar"** (linhas 15822-15824). O título e a primeira frase do pt-BR trocam "empurrar" por "puxar" ("Você pode arrastar, puxar ou erguer"); o original diz *push, drag, or lift*. A frase seguinte ("Ao empurrar ou arrastar") e o parágrafo do tamanho ("empurrar, puxar ou levantar") têm o empurrar. Não muda conta nenhuma da ficha (o limite é o mesmo para as três ações). Sem decisão. Segue a proposta (empurrar, arrastar e levantar, como o original) até decisão em contrário.

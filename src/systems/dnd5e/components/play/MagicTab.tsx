@@ -72,7 +72,7 @@ function ResourceRow({ resource, view }: { resource: SheetResource; view: PlayTa
 
 /**
  * Aba "Magia": por classe conjuradora e por talento que ensina magias (Iniciado em Magia) a CD e
- * o ataque de magia (tocável); os espaços
+ * o ataque de magia (tocável), com a restrição de conjuração da ficha (Fúria) numa linha; os espaços
  * do pool e os de Magia de Pacto, à parte, como bolinhas que gastam e recuperam com um toque;
  * e os recursos da ficha (`sheet.resources`) com os usos e a recarga. Os Dados de Vida ficam nos
  * vitais fixos, junto do "Descanso".
@@ -127,6 +127,11 @@ export function MagicTab(view: PlayTabProps) {
               </li>
             ))}
           </ul>
+          {/* Condicional (em fúria, pág. 48): vale para toda conjuração, e a ficha não sabe se você
+              está em fúria — por isso não vai à caixa vermelha, que é só o que está em vigor. */}
+          {guide.castingRestrictions.map((r, i) => (
+            <p key={i} className="mt-1.5 text-xs text-amber-200 leading-snug">{r}</p>
+          ))}
           <p className="mt-1.5 text-[11px] text-parchment-500">
             Suas magias, com o texto de cada uma, estão na aba Regras.
           </p>

@@ -41,6 +41,21 @@ const FIGHTER_INITIATE: CharacterDraft = {
   featSelections: { [MAGIC_INITIATE]: { spellClass: 'cleric', cantrips: ['sacred-flame', 'guidance'], spells: ['cure-wounds'] } },
 }
 
+/** Krusk bárbaro 2 / mago 1: conjura como mago, e a Fúria proíbe conjurar em fúria (p. 48). */
+const BARBARIAN_WIZARD: CharacterDraft = {
+  ...structuredClone(COMPLETE_DRAFT),
+  level: 3,
+  abilityScores: { STR: 15, DEX: 14, CON: 13, INT: 13, WIS: 10, CHA: 8 },
+  additionalClasses: [{
+    classId: 'wizard', level: 1, classChoices: structuredClone(EMPTY_DRAFT.classChoices),
+    spellChoices: { cantrips: ['fire-bolt', 'light', 'mage-hand'], spells: ['shield', 'magic-missile'] },
+    asiChoices: [], hpRolls: [],
+  }],
+  multiclass: true,
+}
+
+const RAGE = 'Fúria: em fúria, você não pode conjurar magias nem se concentrar nelas (pág. 48).'
+
 function openMagic(draft: CharacterDraft) {
   openDraft(draft)
   render(<PlayScreen />)
@@ -106,6 +121,28 @@ describe('MagicTab', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Gastar: Curar Ferimentos' }))
       act(() => { usePlayStore.getState().run((st, sh) => completeLongRest(st, sh)) })
       expect(screen.getByRole('group', { name: 'Curar Ferimentos: 1 de 1' })).toBeInTheDocument()
+    })
+  })
+
+  describe('em fúria não se conjura (p. 48)', () => {
+    it('bárbaro / mago: uma linha na Conjuração, fora da caixa do que está em vigor; o ataque de magia a repete', () => {
+      openMagic(BARBARIAN_WIZARD)
+      const casting = screen.getByText('Conjuração').closest('section')!
+      expect(within(casting).getByText(RAGE)).toBeInTheDocument()
+      // Uma só vez na aba: a caixa vermelha (guide.notes) não a recebe.
+      expect(screen.getAllByText(RAGE)).toHaveLength(1)
+
+      fireEvent.click(screen.getByRole('button', { name: /^Ataque de magia — Mago/ }))
+      expect(screen.getByRole('dialog', { name: 'Ataque de magia — Mago' })).toHaveTextContent(RAGE)
+    })
+
+    it('sem Fúria, nada novo: bruxo / mago e o guerreiro com Iniciado em Magia', () => {
+      openMagic(WARLOCK_WIZARD)
+      expect(screen.queryByText(/em fúria/)).not.toBeInTheDocument()
+      cleanup()
+      resetPlay()
+      openMagic(FIGHTER_INITIATE)
+      expect(screen.queryByText(/em fúria/)).not.toBeInTheDocument()
     })
   })
 

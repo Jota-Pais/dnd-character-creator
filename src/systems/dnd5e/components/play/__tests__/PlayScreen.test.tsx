@@ -168,6 +168,54 @@ describe('PlayScreen — deslizar entre as abas', () => {
   })
 })
 
+describe('PlayScreen — teclado na barra de abas', () => {
+  const tab = (name: string) => screen.getByRole('tab', { name })
+
+  it('só a aba aberta entra no Tab', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    expect(tab('Testes')).toHaveAttribute('tabindex', '0')
+    for (const name of ['Ataques', 'Magia', 'Regras', 'Estado', 'Notas']) expect(tab(name)).toHaveAttribute('tabindex', '-1')
+    fireEvent.click(tab('Regras'))
+    expect(tab('Regras')).toHaveAttribute('tabindex', '0')
+    expect(tab('Testes')).toHaveAttribute('tabindex', '-1')
+  })
+
+  it('as setas abrem a aba vizinha com o foco nela, dando a volta nas pontas', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    tab('Testes').focus()
+    fireEvent.keyDown(tab('Testes'), { key: 'ArrowRight' })
+    expect(selectedTab()).toHaveTextContent('Ataques')
+    expect(tab('Ataques')).toHaveFocus()
+    expect(screen.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', 'play-tab-attacks')
+
+    fireEvent.keyDown(tab('Ataques'), { key: 'ArrowLeft' })
+    fireEvent.keyDown(tab('Testes'), { key: 'ArrowLeft' })
+    expect(selectedTab()).toHaveTextContent('Notas')
+    expect(tab('Notas')).toHaveFocus()
+    fireEvent.keyDown(tab('Notas'), { key: 'ArrowRight' })
+    expect(selectedTab()).toHaveTextContent('Testes')
+    expect(tab('Testes')).toHaveFocus()
+  })
+
+  it('Home e End vão à primeira e à última aba; outras teclas não trocam', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    fireEvent.click(tab('Magia'))
+    fireEvent.keyDown(tab('Magia'), { key: 'End' })
+    expect(selectedTab()).toHaveTextContent('Notas')
+    expect(tab('Notas')).toHaveFocus()
+    fireEvent.keyDown(tab('Notas'), { key: 'Home' })
+    expect(selectedTab()).toHaveTextContent('Testes')
+    expect(tab('Testes')).toHaveFocus()
+    // Para cima e para baixo são da rolagem da página, não da barra (que é horizontal).
+    fireEvent.keyDown(tab('Testes'), { key: 'ArrowDown' })
+    fireEvent.keyDown(tab('Testes'), { key: 'a' })
+    expect(selectedTab()).toHaveTextContent('Testes')
+  })
+})
+
 describe('PlayScreen — vitais e receita', () => {
   it('mostra PV, CA, deslocamento e Percepção passiva da ficha', () => {
     openKrusk()

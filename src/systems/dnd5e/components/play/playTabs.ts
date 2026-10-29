@@ -45,3 +45,19 @@ export function adjacentPlayTab(id: PlayTabId, direction: SwipeDirection): PlayT
   if (index < 0) return null
   return PLAY_TABS[index + (direction === 'next' ? 1 : -1)]?.id ?? null
 }
+
+/**
+ * A aba que a tecla abre a partir de `id`, no padrão de abas da WAI-ARIA (barra horizontal): as
+ * setas de lado andam em círculo — ao contrário do deslizar, da última vai à primeira —, Home e End
+ * vão às pontas. null para as outras teclas (para cima e para baixo ficam com a rolagem da página).
+ */
+export function keyboardPlayTab(id: PlayTabId, key: string): PlayTabId | null {
+  const index = PLAY_TABS.findIndex(t => t.id === id)
+  const count = PLAY_TABS.length
+  const target = key === 'ArrowRight' ? (index + 1) % count
+    : key === 'ArrowLeft' ? (index - 1 + count) % count
+      : key === 'Home' ? 0
+        : key === 'End' ? count - 1
+          : null
+  return target === null ? null : PLAY_TABS[target].id
+}

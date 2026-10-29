@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { flushSync } from 'react-dom'
 import { useCharacterStore } from '../../stores/characterStore'
-import { adjacentPlayTab, PLAY_TABS, type PlayTabId } from './playTabs'
+import { adjacentPlayTab, keyboardPlayTab, PLAY_TABS, type PlayTabId } from './playTabs'
 import { useTabSwipe } from './tabSwipe'
 import { PlaySettings } from './PlaySettings'
 import { formatPlaySubtitle, usePlayView, type PlayTabProps } from './usePlayView'
@@ -82,6 +82,16 @@ export function PlayScreen() {
     tabButton?.focus({ preventScroll: true })
     if (tabButton) scrollBelowVitals(tabButton, { onlyIfCovered: true })
   })
+
+  // Teclado na barra (padrão de abas da WAI-ARIA, com ativação automática): só a aba aberta entra
+  // no Tab, e a aba a que as setas, o Home ou o End levam já abre, com o foco nela.
+  function handleTabKey(e: KeyboardEvent<HTMLButtonElement>) {
+    const next = keyboardPlayTab(tab, e.key)
+    if (!next) return
+    e.preventDefault()
+    flushSync(() => setTab(next))
+    document.getElementById(`play-tab-${next}`)?.focus()
+  }
 
   // No celular, trocar de app pode descartar a aba sem aviso: o que está sendo digitado (nota da
   // sessão, nota de duração) grava assim que a página some.
@@ -195,8 +205,10 @@ export function PlayScreen() {
                 id={`play-tab-${t.id}`}
                 aria-selected={t.id === current.id}
                 aria-controls="play-tab-panel"
+                tabIndex={t.id === current.id ? 0 : -1}
                 title={t.hint}
                 onClick={() => setTab(t.id)}
+                onKeyDown={handleTabKey}
                 className={[
                   'min-h-10 min-w-0 px-0 sm:px-3 text-[0.66rem] sm:text-sm font-fantasy border-b-2 -mb-px transition-colors',
                   t.id === current.id

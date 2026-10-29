@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type ReactNode } from 'react'
+import { useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
 import { usePlayStore } from '../../stores/playStore'
 import { describeHpMaxImmunity, endConcentration, setExhaustion, startConcentration } from '../../utils/playState'
 import { EXHAUSTION } from '../../utils/sheetEffects'
@@ -8,6 +8,12 @@ import { ShortRestPanel } from './ShortRestPanel'
 import type { PlayTabProps } from './usePlayView'
 
 const EXHAUSTION_LEVELS = [0, 1, 2, 3, 4, 5, 6] as const
+
+/**
+ * As setas no grupo da exaustão (padrão de radiogroup da WAI-ARIA): direita e baixo sobem um nível,
+ * esquerda e cima descem, marcando. Sem dar a volta: do 0, uma seta para a esquerda seria a morte.
+ */
+const EXHAUSTION_KEY_STEP: Partial<Record<string, 1 | -1>> = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }
 
 /** A seção dos descansos: o "Descanso" dos vitais rola até ela. */
 export const REST_SECTION_ID = 'play-rests'
@@ -26,16 +32,33 @@ function ExhaustionSection({ state, sheet, run }: PlayTabProps) {
   const level = state.exhaustionLevel
   const rows = EXHAUSTION.levels.filter(l => l.level <= level)
   const hpMaxImmunity = describeHpMaxImmunity(state, sheet)
+  const buttons = useRef<(HTMLButtonElement | null)[]>([])
+
+  // Cada seta é um passo do desfazer, como o toque. O foco vai ao nível que ficou valendo: se a
+  // mudança foi recusada (o aviso diz por quê), fica onde estava.
+  function handleKey(e: KeyboardEvent<HTMLButtonElement>, from: number) {
+    const step = EXHAUSTION_KEY_STEP[e.key]
+    if (!step) return
+    e.preventDefault()
+    const target = from + step
+    if (target < 0 || target > 6) return
+    const result = run((st, sh) => setExhaustion(st, sh, target))
+    if (result) buttons.current[result.state.exhaustionLevel]?.focus()
+  }
+
   return (
     <div>
       <div role="radiogroup" aria-label="Nível de exaustão" className="grid grid-cols-7 gap-1">
         {EXHAUSTION_LEVELS.map(n => (
           <button
             key={n}
+            ref={el => { buttons.current[n] = el }}
             role="radio"
             aria-checked={level === n}
             aria-label={n === 6 ? 'Exaustão 6 (morte)' : `Exaustão ${n}`}
+            tabIndex={level === n ? 0 : -1}
             onClick={() => run((st, sh) => setExhaustion(st, sh, n))}
+            onKeyDown={e => handleKey(e, n)}
             className={[
               'min-h-10 rounded-lg border text-sm font-fantasy transition-colors',
               level === n

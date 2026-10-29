@@ -117,6 +117,47 @@ describe('StatusTab — exaustão e concentração', () => {
     expect(screen.getByTestId('hp-current')).toHaveTextContent('14')
   })
 
+  it('teclado na exaustão: só o nível marcado entra no Tab, e as setas sobem e descem marcando', () => {
+    openStatus()
+    const radio = (n: number) => screen.getByRole('radio', { name: n === 6 ? 'Exaustão 6 (morte)' : `Exaustão ${n}` })
+    expect(radio(0)).toHaveAttribute('tabindex', '0')
+    for (const n of [1, 2, 3, 4, 5, 6]) expect(radio(n)).toHaveAttribute('tabindex', '-1')
+
+    radio(0).focus()
+    fireEvent.keyDown(radio(0), { key: 'ArrowRight' })
+    expect(playState().exhaustionLevel).toBe(1)
+    expect(radio(1)).toHaveAttribute('aria-checked', 'true')
+    expect(radio(1)).toHaveAttribute('tabindex', '0')
+    expect(radio(1)).toHaveFocus()
+    fireEvent.keyDown(radio(1), { key: 'ArrowDown' })
+    expect(playState().exhaustionLevel).toBe(2)
+    expect(radio(2)).toHaveFocus()
+    fireEvent.keyDown(radio(2), { key: 'ArrowUp' })
+    fireEvent.keyDown(radio(1), { key: 'ArrowLeft' })
+    expect(playState().exhaustionLevel).toBe(0)
+    expect(radio(0)).toHaveFocus()
+
+    // Cada seta é um passo do desfazer, como o toque.
+    fireEvent.click(screen.getByRole('button', { name: 'Desfazer a última mudança' }))
+    expect(playState().exhaustionLevel).toBe(1)
+  })
+
+  it('teclado na exaustão: as setas não dão a volta (do 0 não se vai à morte)', () => {
+    openStatus()
+    const none = screen.getByRole('radio', { name: 'Exaustão 0' })
+    none.focus()
+    fireEvent.keyDown(none, { key: 'ArrowLeft' })
+    fireEvent.keyDown(none, { key: 'ArrowUp' })
+    expect(playState().exhaustionLevel).toBe(0)
+    expect(playState().lifeState).toBe('conscious')
+    expect(none).toHaveFocus()
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Exaustão 6 (morte)' }))
+    const death = screen.getByRole('radio', { name: 'Exaustão 6 (morte)' })
+    fireEvent.keyDown(death, { key: 'ArrowRight' })
+    expect(playState().exhaustionLevel).toBe(6)
+  })
+
   it('concentração começa com nome livre e encerra', () => {
     openStatus()
     fireEvent.change(screen.getByLabelText('Magia em que vai se concentrar'), { target: { value: 'Bênção' } })

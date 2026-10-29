@@ -72,7 +72,7 @@ Ao adicionar uma característica nova, prefira declará-la como efeito nos dados
 - **Atributo de conjuração é sempre o final** (`getFinalAbilityScores`: raça + aprimoramentos), na etapa Magias, na Revisão e no PDF — nunca `draft.abilityScores`. Magias escolhidas acima do teto (atributo baixado depois) não são apagadas: `getSpellChoiceOverflow` vira aviso nas três telas.
 - **Segredos Mágicos** (bardo 10/14/18, Colégio do Conhecimento 6) são escolhas de progressão (`SPELL_OPTIONS_LIST_ID`), mas são magias da classe: saem em `bonusSpells` de `getCasterEntries` e aparecem com as magias do bardo. As **Escolhas de Progressão** da Revisão e do PDF vêm de `getProgressionChoiceBlocks` (`progressionOptions.ts`), que deixa esses slots de fora.
 
-### Modo de jogo (ficha viva do D&D 5e, Fase 1 em 2026-10-27)
+### Modo de jogo (ficha viva do D&D 5e, Fase 1 fechada em 2026-10-29)
 
 A ficha usada durante a sessão: botão "Jogar" na galeria (só ficha sem etapa pendente; recarregar a página no jogo segue a mesma regra — `findResumablePlay` limpa a marca de ficha com pendência, decisão de 2026-10-28) → view `play` do `characterStore` (`playCharacter` / `exitPlay`) → `components/play/PlayScreen.tsx`, com abas Testes, Ataques, Magia, Regras, Estado e Notas. Plano, fases e o que fica para depois em `docs/estudo-dnd-beyond-modulo-jogo.md`; as regras digitalizadas e as decisões do usuário em `docs/regras-{descanso,dano-e-morte,condicoes,rolagens-e-concentracao}.md` (itens "Decidido"). Campanha, mestre e multiplayer ficam fora até haver backend.
 

@@ -536,6 +536,11 @@ Mais específicas da ficha: concentração ausente, buffs fora das rolagens, pre
 - **Contrato de "jogar"** como capacidade **opcional** do sistema no `IRpgSystem`; o Ordem pode não implementar ainda (decisão 10.2.17). Remover a `AppState` morta.
 
 ### Fase 1: MVP "ficha viva + dados"
+
+**Fechada em 2026-10-29.** Ficaram de fora, de propósito:
+- tela acesa, som e vibração, que esperam a decisão 10.2.22;
+- a trava de "um descanso longo a cada 24 h", porque é tempo de jogo, não de relógio. Fica só o aviso.
+
 - **Entrada**: botão "Jogar" na galeria, que abre uma view de jogo própria e responsiva. No celular em retrato, uma coluna com seções por swipe. No tablet e no desktop, mais densidade.
 - **Bloco de vitais fixo**: CA, Iniciativa, PV com barra, PV temporário, Dados de Vida, Descanso e Inspiração como liga/desliga.
 - **PV**:

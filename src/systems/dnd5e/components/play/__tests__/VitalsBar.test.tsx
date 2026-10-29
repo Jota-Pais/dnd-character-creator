@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { act, render, screen, cleanup, fireEvent } from '@testing-library/react'
+import { act, render, screen, cleanup, fireEvent, within } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { usePlayStore } from '../../../stores/playStore'
-import { applyDamage, applyHealing, completeLongRest, grantTempHp } from '../../../utils/playState'
+import { applyDamage, applyHealing, completeLongRest, grantTempHp, startConcentration } from '../../../utils/playState'
 import { EMPTY_DRAFT } from '../../../types/character'
 import { COMPLETE_DRAFT } from '../../../../../test/fixtures'
 import { HP_FLASH_MS } from '../hpVitals'
@@ -106,6 +106,21 @@ describe('VitalsBar — Dados de Vida e Descanso', () => {
     fireEvent.click(restButton())
     expect(screen.getByRole('tab', { name: 'Estado' })).toHaveAttribute('aria-selected', 'true')
     expect(screen.getByRole('button', { name: 'Descanso curto' })).toHaveFocus()
+  })
+})
+
+describe('VitalsBar — concentração', () => {
+  it('o "encerrar" some com a concentração, e o foco vai à inspiração, na mesma faixa', () => {
+    openKrusk()
+    act(() => { usePlayStore.getState().run(st => startConcentration(st, { label: 'Bênção' }, 0)) })
+    render(<PlayScreen />)
+    const chips = screen.getByTestId('vitals-chips')
+    const end = within(chips).getByRole('button', { name: 'encerrar' })
+    end.focus()
+    fireEvent.click(end)
+    expect(usePlayStore.getState().state?.concentration).toBeNull()
+    expect(within(chips).queryByRole('button', { name: 'encerrar' })).toBeNull()
+    expect(within(chips).getByRole('button', { name: /Sem inspiração/ })).toHaveFocus()
   })
 })
 

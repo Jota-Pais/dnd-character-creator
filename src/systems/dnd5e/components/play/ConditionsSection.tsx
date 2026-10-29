@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
+import { flushSync } from 'react-dom'
 import { registerPendingEdit } from '../../stores/playStore'
 import type { ConditionId } from '../../types/condition'
 import { CONDITION_NOTE_MAX_LENGTH } from '../../types/playState'
@@ -105,6 +106,24 @@ export function ConditionsSection({ state, run }: PlayTabProps) {
   const [openRule, setOpenRule] = useState<ConditionId | null>(null)
   const effective = getPlayConditionEffects(state).conditions
   const atZero = isAtZeroHp(state)
+  // O switch e o "regra" de cada linha: recebem o foco quando o controle em que ele estava some
+  // com a própria ação. Síncrono (flushSync): a tela já sem ele.
+  const switches = useRef(new Map<ConditionId, HTMLButtonElement | null>())
+  const ruleButtons = useRef(new Map<ConditionId, HTMLButtonElement | null>())
+
+  // Desligar a condição que outra também dá (o Incapacitado com o Paralisado ligado) a deixa só
+  // derivada, sem switch: o foco vai ao "regra" da mesma linha.
+  function toggle(id: ConditionId, recorded: boolean) {
+    flushSync(() => run(st => (recorded ? removeCondition(st, id) : addCondition(st, id))))
+    if (!switches.current.get(id)) ruleButtons.current.get(id)?.focus()
+  }
+
+  // O "Levantar" some com o Caído: o foco vai ao switch dele (ou, só derivado, ao "regra").
+  // Recusado (o aviso diz por quê), o foco fica.
+  function standUpFrom(id: ConditionId) {
+    const result = flushSync(() => run((st, sh) => standUp(st, sh)))
+    if (result && !result.state.conditions.includes(id)) (switches.current.get(id) ?? ruleButtons.current.get(id))?.focus()
+  }
 
   // Do md para cima, duas colunas lidas de cima para baixo. Em grade (não `columns`): abrir a
   // regra de uma condição só estica a linha dela, sem mandar condições de uma coluna para a outra.
@@ -133,9 +152,10 @@ export function ConditionsSection({ state, run }: PlayTabProps) {
                 </div>
               ) : (
                 <button
+                  ref={el => { switches.current.set(cond.id, el) }}
                   role="switch"
                   aria-checked={recorded}
-                  onClick={() => run(st => (recorded ? removeCondition(st, cond.id) : addCondition(st, cond.id)))}
+                  onClick={() => toggle(cond.id, recorded)}
                   className="flex-1 min-w-0 flex items-center gap-3 min-h-10 text-left"
                 >
                   <SwitchTrack on={recorded} />
@@ -143,6 +163,7 @@ export function ConditionsSection({ state, run }: PlayTabProps) {
                 </button>
               )}
               <button
+                ref={el => { ruleButtons.current.set(cond.id, el) }}
                 onClick={() => setOpenRule(ruleOpen ? null : cond.id)}
                 aria-expanded={ruleOpen}
                 aria-label={`Regra de ${cond.name}`}
@@ -172,7 +193,7 @@ export function ConditionsSection({ state, run }: PlayTabProps) {
             {recorded && cond.id === 'prone' && (
               <div className="pl-12">
                 <button
-                  onClick={() => run((st, sh) => standUp(st, sh))}
+                  onClick={() => standUpFrom(cond.id)}
                   className="mt-1 min-h-10 rounded-lg border border-parchment-700 px-3 text-sm text-parchment-200 hover:border-gold-600"
                 >
                   Levantar

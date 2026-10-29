@@ -1,4 +1,5 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { flushSync } from 'react-dom'
 import { formatMeters, formatModifier } from '../../utils/abilityScoreUtils'
 import {
   endConcentration, formatHpAdjustment, getBaseMaxHp, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable,
@@ -121,6 +122,14 @@ export function VitalsBar({ view, onOpenRecipe, onOpenSource, onOpenRests }: {
   const band = getHpBand(current, effMax)
   const hitDice = getHitDiceAvailable(state, sheet)
   const flash = useHpFlash({ current, tempHp: state.tempHp, longRestAt: state.lastLongRestAt })
+  const inspirationRef = useRef<HTMLButtonElement>(null)
+
+  // O "encerrar" some com a concentração: síncrono (flushSync), o foco vai à inspiração, a vizinha
+  // que fica na mesma faixa.
+  function endConcentrationHere() {
+    const result = flushSync(() => run(st => endConcentration(st)))
+    if (result && !result.state.concentration) inspirationRef.current?.focus()
+  }
 
   return (
     <div className="space-y-2">
@@ -227,6 +236,7 @@ export function VitalsBar({ view, onOpenRecipe, onOpenSource, onOpenRests }: {
       {/* Uma faixa só, que rola de lado: com várias condições os vitais fixos não comem a tela. */}
       <div className="flex flex-nowrap items-center gap-1.5 overflow-x-auto -mx-4 px-4 [scrollbar-width:none]" data-testid="vitals-chips">
         <button
+          ref={inspirationRef}
           onClick={() => run(st => setInspiration(st, !st.inspiration))}
           aria-pressed={state.inspiration}
           className={[
@@ -244,7 +254,7 @@ export function VitalsBar({ view, onOpenRecipe, onOpenSource, onOpenRests }: {
           <span className="shrink-0 whitespace-nowrap inline-flex items-center min-h-10 rounded-full border border-violet-800 bg-violet-950/40 pl-3 text-xs text-violet-200">
             <span className="max-w-[11rem] truncate" title={state.concentration.label}>Concentrado: {state.concentration.label}</span>
             <button
-              onClick={() => run(st => endConcentration(st))}
+              onClick={endConcentrationHere}
               className="min-h-10 px-3 text-violet-300 underline hover:text-violet-100"
             >
               encerrar

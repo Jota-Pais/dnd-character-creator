@@ -96,6 +96,30 @@ describe('StatusTab — condições', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Levantar' }))
     expect(playState().conditions).toEqual([])
   })
+
+  it('o "Levantar" some com o Caído, e o foco vai ao switch dele', () => {
+    openStatus()
+    const prone = screen.getByRole('switch', { name: 'Caído' })
+    fireEvent.click(prone)
+    const stand = screen.getByRole('button', { name: 'Levantar' })
+    stand.focus()
+    fireEvent.click(stand)
+    expect(screen.queryByRole('button', { name: 'Levantar' })).toBeNull()
+    expect(prone).toHaveFocus()
+  })
+
+  it('desligada a condição que outra também dá, o switch some, e o foco vai ao "regra" da linha', () => {
+    openStatus()
+    fireEvent.click(screen.getByRole('switch', { name: 'Incapacitado' }))
+    fireEvent.click(screen.getByRole('switch', { name: 'Paralisado' }))
+    const incapacitated = screen.getByRole('switch', { name: 'Incapacitado' })
+    incapacitated.focus()
+    fireEvent.click(incapacitated)
+    // Continua valendo, por causa do Paralisado, sem switch próprio.
+    expect(playState().conditions).toEqual(['paralyzed'])
+    expect(within(screen.getByTestId('condition-incapacitated')).queryByRole('switch')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Regra de Incapacitado' })).toHaveFocus()
+  })
 })
 
 describe('StatusTab — exaustão e concentração', () => {

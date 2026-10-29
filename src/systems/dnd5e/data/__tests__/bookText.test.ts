@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { CLASSES } from '../../utils/classUtils'
 import { stripInlineBold } from '../../utils/ruleText'
+import { getSheetAttacks } from '../../utils/attackUtils'
+import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
 import weaponsData from '../weapons.json'
 import spellsData from '../spells.json'
 import progressionFeatures from '../class-progression-features.json'
@@ -122,6 +124,14 @@ describe('divergências pt-BR × inglês que seguem o inglês', () => {
     const invocation = (invocationsData as { id: string; prerequisite?: string }[]).find(i => i.id === 'correntes-de-carceri')
     expect(invocation?.prerequisite).toContain('Pacto da Corrente')
     expect(invocation?.prerequisite).not.toContain('Corrente de Cárceri')
+  })
+  // Nenhum texto dos dados carrega a frase da p. 196: a decisão fica presa pelo comportamento.
+  it('golpe desarmado é ataque corpo a corpo com arma sem ser arma: o Dano de Fúria vale nele (o pt-BR o opõe ao "ataque corpo-a-corpo armado")', () => {
+    const barbarian: CharacterDraft = { ...structuredClone(EMPTY_DRAFT), race: 'human', class: 'barbarian', level: 1 }
+    const scores = { STR: 16, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 }
+    const unarmed = getSheetAttacks(barbarian, scores).find(a => a.key === 'unarmed')
+    expect(unarmed?.weapon).toBeNull()
+    expect(unarmed?.notes).toContain('+2 de dano em fúria, sem armadura pesada (Dano de Fúria)')
   })
 })
 

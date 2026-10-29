@@ -99,6 +99,7 @@ export function isWeaponInScope(weapon: Weapon, scope: AttackScope): boolean {
     case 'melee-light': return melee && hasProperty(weapon, 'light')
     // Toda arma corpo a corpo pode atacar com Força; o que a linha não cumpre vai na nota.
     case 'melee-strength': return melee
+    case 'weapon-attack': return true
     case 'unarmed': return false
   }
 }
@@ -107,12 +108,14 @@ export function isWeaponInScope(weapon: Weapon, scope: AttackScope): boolean {
  * O golpe desarmado está no alcance do efeito? Ele não é arma (p. 196), então os escopos de arma
  * (Arquearia, Duelismo, Armas Grandes, duas armas) não o pegam; mas é ataque corpo a corpo com
  * arma — "melee weapon attack" no inglês, que os dados seguem (decisão do dono de 2026-10-29) —,
- * e o escopo que fala do ataque, não da arma (`melee-strength`, o Dano de Fúria), o alcança.
+ * e os escopos que falam do ataque, não da arma (`melee-strength`, o Dano de Fúria;
+ * `weapon-attack`, a margem do Campeão), o alcançam.
  */
 export function isUnarmedStrikeInScope(scope: AttackScope): boolean {
   switch (scope) {
     case 'unarmed':
-    case 'melee-strength': return true
+    case 'melee-strength':
+    case 'weapon-attack': return true
     case 'ranged':
     case 'melee-one-handed':
     case 'melee-two-handed':

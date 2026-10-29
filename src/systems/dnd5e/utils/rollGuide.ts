@@ -4,7 +4,7 @@ import type { PlayState } from '../types/playState'
 import type { AbilityScore } from '../types/race'
 import { ABILITY_LABELS, ALL_ABILITY_SCORES, calculateModifier, getProficiencyBonus } from './abilityScoreUtils'
 import { getFinalAbilityScores } from './asiUtils'
-import { getSheetAttacks, type SheetAttack } from './attackUtils'
+import { getSheetAttacks, isSheetAttackInScope, type SheetAttack } from './attackUtils'
 import { SKILLS } from './backgroundUtils'
 import { getHitDicePool } from './multiclassUtils'
 import { getPlayConditionEffects } from './playState'
@@ -15,7 +15,7 @@ import {
   getCastingRestrictions, getCondition, getConditionalRollNotes,
   getHalfProficiencySources, getMeleeCritExtraWeaponDice,
   getInitiativeAdvantageSources, getInitiativeBonuses, getOwnedFeats, getSheetArmorClass, getWeaponCritThreshold, resolveRollMode,
-  type ActiveConditionEffects, type ConditionRoll, type SheetEffect,
+  type ActiveConditionEffects, type ConditionRoll, type ScopedSheetEffect, type SheetEffect,
 } from './sheetEffects'
 import { getCasterEntries, getFeatSpellBlocks, getSpellAttackBonus, getSpellSaveDC } from './spellUtils'
 
@@ -98,8 +98,8 @@ export type AttackGuide = {
   properties: string
   attacksPerAction: number
   /**
-   * A partir de que d20 natural o ataque é crítico (se acertar): 20, ou a margem das armas do
-   * Campeão (`getWeaponCritThreshold`: 19 no 3º, 18 no 15º). O golpe desarmado fica no 20.
+   * A partir de que d20 natural o ataque é crítico (se acertar): 20, ou a margem dos ataques com
+   * arma do Campeão (`getWeaponCritThreshold`: 19 no 3º, 18 no 15º), golpe desarmado incluído.
    */
   critThreshold: number
   /** As notas da linha de ataque da ficha (Duelismo, Artes Marciais, recarga…), menos as já no `breakdown`. */
@@ -530,8 +530,8 @@ type AttackGuideContext = {
   cannotAct: string[]
   /** Quem dá os ataques a mais da ação de Atacar (Ataque Extra), para a nota da linha. */
   attacksPerActionSource: string | null
-  /** Margem de crítico das armas (Crítico Aprimorado/Superior); null = só o 20. */
-  weaponCrit: SheetEffect<number> | null
+  /** Margem de crítico dos ataques com arma (Crítico Aprimorado/Superior), com o alcance; null = só o 20. */
+  weaponCrit: ScopedSheetEffect | null
   /** A raça é de tamanho Pequeno (halfling, gnomo): desvantagem com arma pesada (pág. 149). */
   small: boolean
   /** Dados de arma a mais no crítico corpo a corpo, por fonte (Crítico Brutal, Ataques Selvagens). */
@@ -573,9 +573,9 @@ function attackGuide(attack: SheetAttack, ctx: AttackGuideContext): AttackGuide 
     if (m) breakdown.push({ label: m[2], value: Number(m[1]) })
     else notes.push(n)
   }
-  // A margem do Campeão vale nas armas; o golpe desarmado fica no 20 (decisão 20 de
-  // regras-dano-e-morte.md, em aberto desde que ele é ataque corpo a corpo com arma, decisão 27).
-  const weaponCrit = attack.weapon ? ctx.weaponCrit : null
+  // A margem do Campeão vale na linha que está no alcance dela: as armas e o golpe desarmado (decisão
+  // 20 de regras-dano-e-morte.md, revista em 2026-10-29).
+  const weaponCrit = ctx.weaponCrit && isSheetAttackInScope(attack, ctx.weaponCrit.weapons) ? ctx.weaponCrit : null
   const critThreshold = weaponCrit?.value ?? 20
   // Pesada: "criaturas pequenas têm desvantagem nas jogadas de ataque com estas armas" (pág. 149).
   const heavySmall: GuideReason[] = attack.weapon?.heavy && ctx.small

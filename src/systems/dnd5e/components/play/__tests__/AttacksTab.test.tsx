@@ -81,6 +81,22 @@ describe('AttacksTab', () => {
     expect(screen.getByText(/20 natural: crítico, os dados de dano dobram\./)).toBeInTheDocument()
   })
 
+  // A margem do Campeão vale nas armas e no golpe desarmado (decisão de 2026-10-29): o rodapé não
+  // diz mais "nas armas".
+  it('o rodapé do Campeão 3: 19 ou 20 em todos os ataques da aba', () => {
+    const draft = structuredClone(COMPLETE_DRAFT)
+    draft.class = 'fighter'
+    draft.level = 3
+    draft.classChoices.subclass = 'champion'
+    openDraft(draft)
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Ataques' }))
+    expect(screen.getByText(/^Toque no ataque.*19 ou 20 natural é crítico se acertar \(só o 20 acerta sempre\)/)).toBeInTheDocument()
+    expect(screen.queryByText(/Nas armas/)).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: /^Golpe desarmado — ataque/ }))
+    expect(within(screen.getByRole('dialog')).getByText(/19 ou 20 natural: crítico se acertar \(Crítico Aprimorado\)/)).toBeInTheDocument()
+  })
+
   it('com os dados do app, 20 natural no ataque abre o dano já dobrado', () => {
     usePlayStore.getState().setAppDice(true)
     openWithGreataxe()

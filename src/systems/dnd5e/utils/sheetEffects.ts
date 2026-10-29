@@ -3,8 +3,8 @@ import type { Feat } from '../types/feat'
 import type { ArmorProficiency, LevelFeature } from '../types/class'
 import type { AbilityScore, RacialTrait } from '../types/race'
 import type {
-  CastingRestriction, ConditionalAcBonus, ConditionalRollNote, EquipmentRequirement, FeatureEffects, LevelStep,
-  LoadingOverride, ResourceEffect,
+  AttackScope, CastingRestriction, ConditionalAcBonus, ConditionalRollNote, EquipmentRequirement, FeatureEffects,
+  LevelStep, LoadingOverride, ResourceEffect,
 } from '../types/effects'
 import { getFeat } from './featUtils'
 import { getOwnedFeats } from './ownedFeats'
@@ -706,18 +706,25 @@ export function getAttacksPerAction(draft: CharacterDraft): SheetAttacksPerActio
 // ── Acerto crítico ─────────────────────────────────────────────────────────────
 
 /**
+ * Um efeito de crítico com o alcance dele: a linha de ataque o recebe quando está no escopo
+ * (`isSheetAttackInScope`, em attackUtils, que pergunta à arma ou ao golpe desarmado).
+ */
+export type ScopedSheetEffect = SheetEffect<number> & { weapons: AttackScope }
+
+/**
  * A margem de crítico dos ataques com arma (`weaponCritThreshold`: Crítico Aprimorado 19, Crítico
  * Superior 18 do campeão), de cada feature no nível NA classe dona. Não soma: vale a menor margem.
- * `null` sem nenhuma — o crítico fica no 20 natural (p. 196). Quem aplica só nas armas é o guia de
- * rolagens; o golpe desarmado fica no 20 (decisão 20 de `regras-dano-e-morte.md`, em aberto).
+ * `null` sem nenhuma — o crítico fica no 20 natural (p. 196). O alcance é "seus ataques com armas"
+ * (`weapon-attack`): as armas e o golpe desarmado, que é ataque com arma sem ser arma (decisão 20
+ * de `regras-dano-e-morte.md`, revista em 2026-10-29).
  */
-export function getWeaponCritThreshold(draft: CharacterDraft): SheetEffect<number> | null {
-  let best: SheetEffect<number> | null = null
+export function getWeaponCritThreshold(draft: CharacterDraft): ScopedSheetEffect | null {
+  let best: ScopedSheetEffect | null = null
   for (const { entry, features } of getOwnedClassFeaturesByEntry(draft)) {
     for (const feature of features) {
       const steps = feature.effects?.weaponCritThreshold
       const value = steps ? stepValue(steps, entry.level) : undefined
-      if (value !== undefined && value < (best?.value ?? 20)) best = { source: feature.name, value }
+      if (value !== undefined && value < (best?.value ?? 20)) best = { source: feature.name, value, weapons: 'weapon-attack' }
     }
   }
   return best

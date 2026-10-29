@@ -953,10 +953,11 @@ describe('getWeaponCritThreshold (Crítico Aprimorado / Superior)', () => {
     draft({ level, class: 'fighter', classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), subclass: 'champion' } })
 
   // p. 85-86: 19 a 20 a partir do 3º; 18 a 20 a partir do 15º.
+  // O alcance é todo ataque com arma, golpe desarmado incluído (decisão 20, revista em 2026-10-29).
   it('campeão 3 e 14: 19; campeão 15: 18; sem subclasse, nada', () => {
-    expect(getWeaponCritThreshold(champion(3))).toEqual({ source: 'Crítico Aprimorado', value: 19 })
-    expect(getWeaponCritThreshold(champion(14))).toEqual({ source: 'Crítico Aprimorado', value: 19 })
-    expect(getWeaponCritThreshold(champion(15))).toEqual({ source: 'Crítico Superior', value: 18 })
+    expect(getWeaponCritThreshold(champion(3))).toEqual({ source: 'Crítico Aprimorado', value: 19, weapons: 'weapon-attack' })
+    expect(getWeaponCritThreshold(champion(14))).toEqual({ source: 'Crítico Aprimorado', value: 19, weapons: 'weapon-attack' })
+    expect(getWeaponCritThreshold(champion(15))).toEqual({ source: 'Crítico Superior', value: 18, weapons: 'weapon-attack' })
     expect(getWeaponCritThreshold(draft({ level: 15, class: 'fighter' }))).toBeNull()
   })
 

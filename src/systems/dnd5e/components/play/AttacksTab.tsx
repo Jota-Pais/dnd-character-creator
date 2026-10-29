@@ -93,10 +93,13 @@ export function AttacksTab({ guide, openRecipe }: PlayTabProps) {
   )
 }
 
-/** O rodapé do crítico, pela margem do guia: "20 natural" ou a do Campeão nas armas. */
+/**
+ * O rodapé do crítico, pela margem do guia: "20 natural" ou a do Campeão, que vale nas armas e no
+ * golpe desarmado, os ataques com arma desta aba.
+ */
 function critFooter(attacks: AttackGuide[]): string {
   const threshold = Math.min(...attacks.map(a => a.critThreshold))
   if (threshold >= 20) return '20 natural: crítico, os dados de dano dobram.'
   const range = threshold === 19 ? '19 ou 20' : `${threshold} a 20`
-  return `Nas armas, ${range} natural é crítico se acertar (só o 20 acerta sempre): os dados de dano dobram.`
+  return `${range} natural é crítico se acertar (só o 20 acerta sempre): os dados de dano dobram.`
 }

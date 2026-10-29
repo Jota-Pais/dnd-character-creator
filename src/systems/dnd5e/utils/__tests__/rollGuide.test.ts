@@ -240,7 +240,9 @@ describe('getRollGuide — ataques', () => {
     expect(bow.notes.some(n => n.includes('Arquearia'))).toBe(false)
   })
 
-  it('Campeão 3: crítico com 19 ou 20 nas armas; golpe desarmado e ataque de magia ficam no 20', () => {
+  // A margem é dos "ataques com armas" (p. 85), e o golpe desarmado é ataque com arma sem ser arma
+  // (decisões 20 e 27 de regras-dano-e-morte.md, 2026-10-29). O ataque de magia não é.
+  it('Campeão 3: crítico com 19 ou 20 nas armas e no golpe desarmado; o ataque de magia fica no 20', () => {
     const d = draft({
       class: 'fighter', level: 4, abilityScores: SCORES, classChoices: choices({ subclass: 'champion' }),
       additionalClasses: [extraClass('wizard', 1)], ...carrying('longsword'),
@@ -249,13 +251,24 @@ describe('getRollGuide — ataques', () => {
     const guide = getRollGuide(d, play())
     const sword = guide.attacks.find(a => a.key === 'longsword')!
     const unarmed = guide.attacks.find(a => a.key === 'unarmed')!
+    const note = '19 ou 20 natural: crítico se acertar (Crítico Aprimorado) — role os dados de dano duas vezes; só o 20 acerta automaticamente. 1 natural: erra (pág. 196).'
     expect(sword.critThreshold).toBe(19)
-    expect(sword.attack.notes).toContain(
-      '19 ou 20 natural: crítico se acertar (Crítico Aprimorado) — role os dados de dano duas vezes; só o 20 acerta automaticamente. 1 natural: erra (pág. 196).',
-    )
-    expect(unarmed.critThreshold).toBe(20)
-    expect(unarmed.attack.notes.some(n => n.startsWith('20 natural: acerta e é crítico'))).toBe(true)
+    expect(sword.attack.notes).toContain(note)
+    expect(unarmed.critThreshold).toBe(19)
+    expect(unarmed.attack.notes).toContain(note)
     expect(guide.spellcasting[0].attack.notes.some(n => n.startsWith('20 natural: acerta e é crítico'))).toBe(true)
+  })
+
+  it('Campeão 3 / monge 2: a margem no golpe desarmado de Artes Marciais, que dobra o dado do monge no crítico', () => {
+    // Sem armadura nem escudo: Artes Marciais (d4) em vigor; FOR +3 > DES +2.
+    const d = draft({
+      class: 'fighter', level: 5, abilityScores: SCORES, classChoices: choices({ subclass: 'champion' }),
+      additionalClasses: [extraClass('monk', 2)], ...carrying(),
+    })
+    const unarmed = getRollGuide(d, play()).attacks.find(a => a.key === 'unarmed')!
+    expect(unarmed.critThreshold).toBe(19)
+    expect(unarmed.attack.notes.some(n => n.startsWith('19 ou 20 natural: crítico se acertar (Crítico Aprimorado)'))).toBe(true)
+    expect(unarmed.damage).toMatchObject({ formula: '1d4 + 3 concussão', crit: { formula: '2d4 + 3 concussão' } })
   })
 
   it('só as jogadas de ataque (arma, golpe desarmado, magia) levam attackRoll: o 1 natural erra', () => {
@@ -268,15 +281,14 @@ describe('getRollGuide — ataques', () => {
     expect(attackIds).toEqual(['attack:longsword', 'attack:unarmed', 'spell-attack:wizard'])
   })
 
-  it('Campeão 15: Crítico Superior, 18 a 20 nas armas; o golpe desarmado fica no 20 (decisão de 2026-10-25)', () => {
-    const d = draft({ class: 'fighter', level: 15, abilityScores: SCORES, classChoices: choices({ subclass: 'champion' }), ...carrying('longsword') })
+  it('Campeão 15: Crítico Superior, 18 a 20 nas armas e no golpe desarmado (decisão de 2026-10-29)', () => {
+    const d = draft({ class: 'fighter', level: 15, abilityScores: SCORES, classChoices: choices({ subclass: 'champion' }), ...carrying('longsword', 'longbow') })
     const guide = getRollGuide(d, play())
-    const sword = guide.attacks.find(a => a.key === 'longsword')!
-    expect(sword.critThreshold).toBe(18)
-    expect(sword.attack.notes.some(n => n.startsWith('18 a 20 natural: crítico se acertar (Crítico Superior)'))).toBe(true)
-    const unarmed = guide.attacks.find(a => a.key === 'unarmed')!
-    expect(unarmed.critThreshold).toBe(20)
-    expect(unarmed.attack.notes.some(n => n.includes('Crítico Superior') || n.includes('Crítico Aprimorado'))).toBe(false)
+    for (const key of ['longsword', 'longbow', 'unarmed']) {
+      const attack = guide.attacks.find(a => a.key === key)!
+      expect(attack.critThreshold, key).toBe(18)
+      expect(attack.attack.notes.some(n => n.startsWith('18 a 20 natural: crítico se acertar (Crítico Superior)')), key).toBe(true)
+    }
   })
 
   it('arma pesada nas mãos de criatura Pequena: desvantagem no ataque, com o motivo (pág. 149)', () => {

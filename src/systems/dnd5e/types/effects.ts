@@ -142,10 +142,14 @@ export type EquipmentSpeedBonus = {
  *   linha usa Destreza vale atacando com Força; a de arremesso, só sem arremessar — arremessar é
  *   ataque à distância (p. 149 e 196);
  * - `unarmed`: só o golpe desarmado (Golpes de Chi). Ele não é arma (p. 196): os escopos de arma
- *   acima não o alcançam, salvo `melee-strength`, que fala do ataque e não da arma.
+ *   acima não o alcançam, salvo `melee-strength`, que fala do ataque e não da arma;
+ * - `weapon-attack`: todo ataque com arma, "seus ataques com armas" do Crítico Aprimorado e do
+ *   Crítico Superior (p. 85-86) — toda arma, corpo a corpo ou à distância, e o golpe desarmado, que
+ *   é ataque com arma sem ser arma (decisão 20 de `regras-dano-e-morte.md`, revista em 2026-10-29).
  */
 export type AttackScope =
   | 'ranged' | 'melee-one-handed' | 'melee-two-handed' | 'melee-light' | 'melee-strength' | 'unarmed'
+  | 'weapon-attack'
 
 /**
  * Bônus nas jogadas de dano que só vale numa situação, com o valor de um recurso calculado da
@@ -366,9 +370,9 @@ export type FeatureEffects = {
   /**
    * Margem de acerto crítico dos ataques COM ARMA, em degraus pelo nível NA classe dona: Crítico
    * Aprimorado do campeão, 19 a partir do 3º (p. 85); Crítico Superior, 18 a partir do 15º (p. 86).
-   * Só lido em features de classe e subclasse. Fontes não somam: vale a menor margem. O golpe
-   * desarmado fica no 20 pela decisão 20 de `regras-dano-e-morte.md`, em aberto desde que ele passou
-   * a ser ataque corpo a corpo com arma (decisão 27). Incondicional: entra no `critThreshold` do guia.
+   * Só lido em features de classe e subclasse. Fontes não somam: vale a menor margem. O alcance é o
+   * escopo `weapon-attack` (`getWeaponCritThreshold`): as armas e o golpe desarmado. Incondicional:
+   * entra no `critThreshold` do guia.
    */
   weaponCritThreshold?: LevelStep[]
   /**

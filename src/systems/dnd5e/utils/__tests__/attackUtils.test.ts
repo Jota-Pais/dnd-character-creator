@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getEquippedWeapons, getSheetAttacks } from '../attackUtils'
+import { getEquippedWeapons, getSheetAttacks, isSheetAttackInScope } from '../attackUtils'
 import {
   getMartialArts, getOwnedFightingStyleIds, getSheetArmorClass, getUnarmedDamageDie,
   getWeaponAttackEffects, getSheetFightingStyles, getTakenFightingStyles, hasRepeatedFightingStyle,
@@ -372,5 +372,23 @@ describe('o mesmo Estilo de Luta não se escolhe duas vezes (p. 85, 110 e 117)',
     })
     expect(getTakenFightingStyles(d, 'fighter').class).toEqual([])
     expect(hasRepeatedFightingStyle(d)).toBe(false)
+  })
+})
+
+// O golpe desarmado não é arma, mas é ataque com arma (decisão 27 de regras-dano-e-morte.md): o
+// escopo do ataque com arma o alcança, os escopos da arma não.
+describe('isSheetAttackInScope', () => {
+  const attacks = getSheetAttacks(draft({ class: 'fighter', ...carrying('longsword', 'longbow') }), scores({}))
+  const row = (key: string) => attacks.find(a => a.key === key)!
+
+  it('weapon-attack: toda arma e o golpe desarmado', () => {
+    expect(['longsword', 'longbow', 'unarmed'].map(k => isSheetAttackInScope(row(k), 'weapon-attack'))).toEqual([true, true, true])
+  })
+
+  it('escopos de arma: a arma responde pela dela; o golpe desarmado fica de fora', () => {
+    expect(isSheetAttackInScope(row('longbow'), 'ranged')).toBe(true)
+    expect(isSheetAttackInScope(row('longsword'), 'ranged')).toBe(false)
+    expect(isSheetAttackInScope(row('longsword'), 'melee-two-handed')).toBe(true)
+    expect(isSheetAttackInScope(row('unarmed'), 'melee-one-handed')).toBe(false)
   })
 })

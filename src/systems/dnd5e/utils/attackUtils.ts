@@ -1,4 +1,5 @@
 import type { CharacterDraft } from '../types/character'
+import type { AttackScope } from '../types/effects'
 import type { Weapon } from '../types/equipment'
 import { getClass } from './classUtils'
 import { getBackground, resolveBackgroundItems } from './backgroundUtils'
@@ -9,7 +10,9 @@ import {
   getWeaponAttackEffects, getMartialArts, getUnarmedDamageDie, getAttacksPerAction, getLoadingOverrides,
 } from './sheetEffects'
 import type { FinalScores } from './classResourceUtils'
-import { getUnarmedStrike, getWeaponAttack, hasProperty, isWeaponInScope, type WeaponAttack } from './weaponFormat'
+import {
+  getUnarmedStrike, getWeaponAttack, hasProperty, isUnarmedStrikeInScope, isWeaponInScope, type WeaponAttack,
+} from './weaponFormat'
 
 /**
  * Itens que o personagem carrega, com a quantidade — do equipamento inicial da classe (itens fixos
@@ -78,6 +81,17 @@ export type SheetAttackWeapon = { id: string; melee: boolean; heavy: boolean }
  * desarmado, que não é arma (p. 196).
  */
 export type SheetAttack = WeaponAttack & { key: string; weapon: SheetAttackWeapon | null }
+
+/**
+ * A linha está no alcance do efeito (a margem de crítico do Campeão)? A arma responde pelo escopo
+ * das armas (`isWeaponInScope`); o golpe desarmado, que não é arma, pelo dele
+ * (`isUnarmedStrikeInScope`).
+ */
+export function isSheetAttackInScope(attack: SheetAttack, scope: AttackScope): boolean {
+  if (attack.weapon === null) return isUnarmedStrikeInScope(scope)
+  const weapon = getWeaponById(attack.weapon.id)
+  return weapon !== undefined && isWeaponInScope(weapon, scope)
+}
 
 /**
  * A tabela de ataques da ficha — a Revisão e o PDF chamam só isto: uma linha por arma carregada e,

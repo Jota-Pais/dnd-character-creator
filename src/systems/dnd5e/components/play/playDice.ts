@@ -1,5 +1,6 @@
 import { keptFaces, roll, type DieRoller, type RollRecord } from '../../../../core/dice'
 import { formatGuideFormula, formatGuideNotation, type RollGuideEntry } from '../../utils/rollGuide'
+import { normalizeMinus } from './hpEntry'
 
 /** Uma rolagem dos dados do app para uma jogada do guia. `natural` só no d20: o dado que valeu. */
 export type GuideRoll = { record: RollRecord; natural: number | null }
@@ -38,11 +39,11 @@ export const FREE_ROLL_MAX_MODIFIER = 99
 export type FreeRoll = { count: number; sides: number; modifier: number }
 
 /**
- * Lê um inteiro digitado no rolador livre ("3", "-2", "+1", com o "−" tipográfico também), preso
- * entre `min` e `max`. Vazio ou texto que não é número dá `fallback`.
+ * Lê um inteiro digitado no rolador livre ("3", "-2", "+1"; o menos é o do campo de PV,
+ * `normalizeMinus`), preso entre `min` e `max`. Vazio ou texto que não é número dá `fallback`.
  */
 export function readFreeRollNumber(text: string, min: number, max: number, fallback: number): number {
-  const trimmed = text.trim().replace('−', '-')
+  const trimmed = normalizeMinus(text.trim())
   if (!/^[+-]?\d+$/.test(trimmed)) return fallback
   return Math.min(max, Math.max(min, Number(trimmed)))
 }

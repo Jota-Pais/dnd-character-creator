@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest'
-import { parseHpEntry, resolveHpAction, stripHpSign } from '../hpEntry'
+import { normalizeMinus, parseHpEntry, resolveHpAction, stripHpSign } from '../hpEntry'
+
+describe('normalizeMinus', () => {
+  it('o tipográfico e a meia-risca viram o menos do teclado', () => {
+    expect(normalizeMinus('−7')).toBe('-7')
+    expect(normalizeMinus('–3')).toBe('-3')
+    expect(normalizeMinus('-2')).toBe('-2')
+    expect(normalizeMinus('+5')).toBe('+5')
+  })
+})
 
 describe('parseHpEntry', () => {
   it('lê o número com ou sem sinal', () => {

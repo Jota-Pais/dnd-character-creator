@@ -121,6 +121,8 @@ describe('rolador livre', () => {
     expect(readFreeRollNumber('3', 1, 100, 1)).toBe(3)
     expect(readFreeRollNumber(' -2 ', -99, 99, 0)).toBe(-2)
     expect(readFreeRollNumber('−4', -99, 99, 0)).toBe(-4)
+    // A meia-risca que o teclado do celular oferece no lugar do hífen, como no campo de PV.
+    expect(readFreeRollNumber('–2', -99, 99, 0)).toBe(-2)
     expect(readFreeRollNumber('+1', -99, 99, 0)).toBe(1)
     expect(readFreeRollNumber('0', 1, 100, 1)).toBe(1)
     expect(readFreeRollNumber('500', 1, 100, 1)).toBe(100)

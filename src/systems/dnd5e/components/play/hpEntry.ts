@@ -5,14 +5,20 @@ export type HpAction = 'damage' | 'heal' | 'temp'
 export type HpEntry = { sign: 'plus' | 'minus' | null; amount: number | null }
 
 /**
- * Sinal opcional e dígitos. O menos vale do teclado ("-"), o tipográfico ("−") e a meia-risca
- * ("–"), que o teclado do celular oferece no lugar do hífen.
+ * O menos dos campos de número do jogo (PV, rolador livre): vale o do teclado ("-"), o tipográfico
+ * ("−") e a meia-risca ("–"), que o teclado do celular oferece no lugar do hífen. Os dois últimos
+ * viram o primeiro.
  */
-const HP_ENTRY = /^\s*([+\-−–]?)\s*(\d*)\s*$/
+export function normalizeMinus(text: string): string {
+  return text.replace(/[−–]/g, '-')
+}
+
+/** Sinal opcional e dígitos, com o menos já normalizado. */
+const HP_ENTRY = /^\s*([+-]?)\s*(\d*)\s*$/
 
 /** Lê o campo de PV: "−7", "+5", "7", "-" (ainda digitando). Texto que não é isso dá null. */
 export function parseHpEntry(text: string): HpEntry | null {
-  const match = HP_ENTRY.exec(text)
+  const match = HP_ENTRY.exec(normalizeMinus(text))
   if (!match) return null
   const [, sign, digits] = match
   return {
@@ -34,5 +40,5 @@ export function resolveHpAction(entry: HpEntry | null, selected: HpAction | null
 
 /** O texto sem o sinal: ao tocar Dano, Cura ou PV temporários, o botão vence o sinal digitado. */
 export function stripHpSign(text: string): string {
-  return text.replace(/^\s*[+\-−–]\s*/, '')
+  return normalizeMinus(text).replace(/^\s*[+-]\s*/, '')
 }

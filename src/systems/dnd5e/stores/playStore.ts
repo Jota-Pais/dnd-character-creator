@@ -81,6 +81,8 @@ type PlayStoreState = {
   dismissNotices: () => void
   /** Liga/desliga os dados do app (preferência do aparelho, não da ficha). */
   setAppDice: (on: boolean) => void
+  /** Liga/desliga a tela acesa durante o jogo (preferência do aparelho, não da ficha). */
+  setKeepScreenOn: (on: boolean) => void
   /** Abre um painel de descanso (null fecha). Abrir, fechar ou trocar descarta o rascunho do curto. */
   setRestPanel: (panel: RestPanel | null) => void
   setShortRestDraft: (spends: ShortRestSpend[]) => void
@@ -203,6 +205,8 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
   dismissNotices: () => set({ notices: [] }),
 
   setAppDice: (on) => set(s => ({ prefs: savePlayPreferences({ ...s.prefs, appDice: on }) })),
+
+  setKeepScreenOn: (on) => set(s => ({ prefs: savePlayPreferences({ ...s.prefs, keepScreenOn: on }) })),
 
   setRestPanel: (panel) => set({ restPanel: panel, shortRestDraft: [] }),
 

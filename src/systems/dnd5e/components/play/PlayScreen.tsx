@@ -15,6 +15,7 @@ import { VitalsBar } from './VitalsBar'
 import { NumberSourceSheet } from './NumberSourceSheet'
 import type { NumberSource } from './numberSources'
 import { REST_SECTION_ID } from './StatusTab'
+import { useWakeLock } from './wakeLock'
 
 /** Folga de fundo sem aviso aberto (px): o fim da página não encosta na borda. */
 const MIN_BOTTOM_GAP = 128
@@ -38,6 +39,9 @@ export function PlayScreen() {
   const exitPlay = useCharacterStore(s => s.exitPlay)
   const undo = usePlayStore(s => s.undo)
   const undoCount = usePlayStore(s => s.undoStack.length)
+  const keepScreenOn = usePlayStore(s => s.prefs.keepScreenOn)
+  // A tela não apaga sozinha enquanto a ficha está na mesa (preferência ligada por padrão).
+  useWakeLock(keepScreenOn && view !== null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [tab, setTab] = useState<PlayTabId>(PLAY_TABS[0].id)
   // Altura do aviso preso ao pé da tela: vira folga de fundo, para ele não cobrir o fim da página.

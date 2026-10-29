@@ -106,11 +106,17 @@ export const PLAY_PREFERENCES_KEY = 'dnd-play-preferences'
 /**
  * Preferências do modo de jogo, do aparelho e não da ficha. `appDice`: usar os dados do app (o
  * motor de `src/core/dice`) — desligado por padrão, porque o jogador rola os próprios dados
- * (decisão de 2026-10-25).
+ * (decisão de 2026-10-25). `keepScreenOn`: manter a tela acesa enquanto o jogo está aberto
+ * (Screen Wake Lock) — ligado por padrão (decisão 10.2.22).
  */
-export type PlayPreferences = { appDice: boolean }
+export type PlayPreferences = { appDice: boolean; keepScreenOn: boolean }
 
-export const DEFAULT_PLAY_PREFERENCES: PlayPreferences = { appDice: false }
+export const DEFAULT_PLAY_PREFERENCES: PlayPreferences = { appDice: false, keepScreenOn: true }
+
+/** Cada campo pelo seu padrão: só o valor contrário ao padrão, exatamente, o muda. */
+function toPreferences(raw: Partial<Record<keyof PlayPreferences, unknown>> | null | undefined): PlayPreferences {
+  return { appDice: raw?.appDice === true, keepScreenOn: raw?.keepScreenOn !== false }
+}
 
 /** As preferências salvas, campo a campo; JSON quebrado ou campo estranho cai no padrão. */
 export function loadPlayPreferences(): PlayPreferences {
@@ -118,7 +124,7 @@ export function loadPlayPreferences(): PlayPreferences {
   if (!raw) return { ...DEFAULT_PLAY_PREFERENCES }
   try {
     const parsed = JSON.parse(raw) as Partial<Record<keyof PlayPreferences, unknown>> | null
-    return { appDice: parsed?.appDice === true }
+    return toPreferences(parsed)
   } catch {
     return { ...DEFAULT_PLAY_PREFERENCES }
   }
@@ -126,7 +132,7 @@ export function loadPlayPreferences(): PlayPreferences {
 
 /** Grava as preferências; devolve o que foi gravado. */
 export function savePlayPreferences(prefs: PlayPreferences): PlayPreferences {
-  const saved: PlayPreferences = { appDice: prefs.appDice === true }
+  const saved = toPreferences(prefs)
   localStorage.setItem(PLAY_PREFERENCES_KEY, JSON.stringify(saved))
   return saved
 }

@@ -144,23 +144,28 @@ describe('playStorage', () => {
 })
 
 describe('preferências do modo de jogo', () => {
-  it('padrão: dados do app desligados, sem gravar nada', () => {
-    expect(loadPlayPreferences()).toEqual({ appDice: false })
+  it('padrão: dados do app desligados e tela acesa ligada, sem gravar nada', () => {
+    expect(loadPlayPreferences()).toEqual({ appDice: false, keepScreenOn: true })
     expect(localStorage.getItem(PLAY_PREFERENCES_KEY)).toBeNull()
   })
 
   it('salva e carrega, numa chave própria', () => {
-    expect(savePlayPreferences({ appDice: true })).toEqual({ appDice: true })
-    expect(loadPlayPreferences()).toEqual({ appDice: true })
+    expect(savePlayPreferences({ appDice: true, keepScreenOn: false })).toEqual({ appDice: true, keepScreenOn: false })
+    expect(loadPlayPreferences()).toEqual({ appDice: true, keepScreenOn: false })
     expect(localStorage.getItem(PLAY_STATES_KEY)).toBeNull()
-    savePlayPreferences({ appDice: false })
-    expect(loadPlayPreferences()).toEqual({ appDice: false })
+    savePlayPreferences({ appDice: false, keepScreenOn: true })
+    expect(loadPlayPreferences()).toEqual({ appDice: false, keepScreenOn: true })
+  })
+
+  it('preferência gravada antes da tela acesa existir fica com ela ligada', () => {
+    localStorage.setItem(PLAY_PREFERENCES_KEY, '{"appDice":true}')
+    expect(loadPlayPreferences()).toEqual({ appDice: true, keepScreenOn: true })
   })
 
   it('tolera JSON inválido e campo estranho', () => {
-    for (const raw of ['{quebrado', 'null', '42', '{"appDice":"sim"}', '[]']) {
+    for (const raw of ['{quebrado', 'null', '42', '{"appDice":"sim","keepScreenOn":"não"}', '[]']) {
       localStorage.setItem(PLAY_PREFERENCES_KEY, raw)
-      expect(loadPlayPreferences(), raw).toEqual({ appDice: false })
+      expect(loadPlayPreferences(), raw).toEqual({ appDice: false, keepScreenOn: true })
     }
   })
 })

@@ -1,9 +1,15 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
   saveSession, loadSession, clearSession, importCharacter, SESSION_VERSION,
   loadLibrary, saveCharacterEntry, deleteCharacterEntry, newId, type SavedCharacter,
+  buildCharacterFile, parseCharacterFile, exportCharacter, CHARACTER_FILE_FORMAT, CHARACTER_FILE_VERSION,
 } from '../storage'
 import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
+import { PLAY_STATE_VERSION } from '../../types/playState'
+import { sanitizeImportedDraft } from '../draftValidation'
+import { createPlayState } from '../playState'
+import { savePlayState } from '../playStorage'
+import { COMPLETE_DRAFT } from '../../../../test/fixtures'
 
 const SESSION_KEY = 'dnd-character-session'
 
@@ -121,15 +127,25 @@ describe('importCharacter', () => {
   }
 
   it('aceita um arquivo de ficha válida e devolve o draft sanitizado', async () => {
-    const draft = await importCharacter(
+    const imported = await importCharacter(
       makeFile(JSON.stringify({ name: 'Krusk', abilityScores: { STR: 15 } })),
     )
+    const draft = imported?.draft
     expect(draft?.name).toBe('Krusk')
     expect(draft?.abilityScores.STR).toBe(15)
     // estruturas aninhadas obrigatórias existem mesmo sem constar no arquivo
     expect(draft?.classChoices.subclassExtras).toEqual({})
     expect(draft?.equipment.method).toBeNull()
     expect(draft?.hpRolls).toEqual([])
+    // arquivo antigo (o draft solto): sem estado de jogo
+    expect(imported?.playState).toBeNull()
+  })
+
+  it('lê o arquivo atual, com o estado de jogo', async () => {
+    const file = buildCharacterFile(structuredClone(COMPLETE_DRAFT), { ...createPlayState('c1'), damageTaken: 3 })
+    const imported = await importCharacter(makeFile(JSON.stringify(file)))
+    expect(imported?.draft.name).toBe('Krusk')
+    expect(imported?.playState?.damageTaken).toBe(3)
   })
 
   it('rejeita JSON sintaticamente inválido', async () => {
@@ -141,3 +157,68 @@ describe('importCharacter', () => {
     expect(await importCharacter(makeFile(JSON.stringify({ foo: 'bar' })))).toBeNull()
   })
 })
+
+describe('arquivo de ficha com o estado de jogo (decisão 10.2.3)', () => {
+  it('o envelope leva a ficha, o estado de jogo e as versões', () => {
+    const state = { ...createPlayState('c1', 5), damageTaken: 4, inspiration: true }
+    const file = buildCharacterFile(structuredClone(COMPLETE_DRAFT), state)
+    expect(file).toMatchObject({ format: CHARACTER_FILE_FORMAT, version: CHARACTER_FILE_VERSION, playState: state })
+    expect(file.playState?.version).toBe(PLAY_STATE_VERSION)
+    // ida e volta pelo texto: a mesma ficha, o mesmo estado (o id da ficha de origem não vale aqui)
+    const back = parseCharacterFile(JSON.parse(JSON.stringify(file)))
+    expect(back?.draft).toEqual(sanitizeImportedDraft(COMPLETE_DRAFT))
+    expect(back?.playState).toEqual({ ...state, characterId: '' })
+  })
+
+  it('ficha que nunca jogou vai sem estado de jogo', () => {
+    const back = parseCharacterFile(JSON.parse(JSON.stringify(buildCharacterFile(structuredClone(COMPLETE_DRAFT), null))))
+    expect(back?.draft.name).toBe('Krusk')
+    expect(back?.playState).toBeNull()
+  })
+
+  it('o estado de jogo passa pelo sanitizador; estragado, não recusa a ficha', () => {
+    const file = {
+      ...buildCharacterFile(structuredClone(COMPLETE_DRAFT), null),
+      playState: { damageTaken: -5, tempHp: 2.7, conditions: ['poisoned', 'inventada'], rolls: 'x' },
+    }
+    const back = parseCharacterFile(file)
+    expect(back?.playState).toMatchObject({ damageTaken: 0, tempHp: 2, conditions: ['poisoned'], rolls: [] })
+    expect(parseCharacterFile({ ...file, playState: 'lixo' })?.playState).toBeNull()
+  })
+
+  it('envelope sem ficha válida é recusado', () => {
+    expect(parseCharacterFile({ format: CHARACTER_FILE_FORMAT, version: 2, draft: { foo: 1 }, playState: null })).toBeNull()
+    expect(parseCharacterFile({ format: CHARACTER_FILE_FORMAT, version: 2 })).toBeNull()
+  })
+
+  it('exportar leva o estado de jogo salvo da ficha', async () => {
+    savePlayState({ ...createPlayState('c1'), damageTaken: 6, note: 'Pistas' })
+    const blobs: Blob[] = []
+    const url = URL as unknown as Record<'createObjectURL' | 'revokeObjectURL', unknown>
+    const original = { create: url.createObjectURL, revoke: url.revokeObjectURL }
+    url.createObjectURL = vi.fn((blob: Blob) => { blobs.push(blob); return 'blob:ficha' })
+    url.revokeObjectURL = vi.fn()
+    // O clique do download navegaria (o jsdom não navega e reclama).
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    try {
+      exportCharacter(structuredClone(COMPLETE_DRAFT), 'c1')
+      exportCharacter(structuredClone(COMPLETE_DRAFT), null)
+      expect(click).toHaveBeenCalledTimes(2)
+    } finally {
+      url.createObjectURL = original.create
+      url.revokeObjectURL = original.revoke
+      click.mockRestore()
+    }
+    const [withState, fresh] = await Promise.all(blobs.map(readBlob))
+    expect(JSON.parse(withState).playState).toMatchObject({ damageTaken: 6, note: 'Pistas' })
+    expect(JSON.parse(fresh).playState).toBeNull()
+  })
+})
+
+function readBlob(blob: Blob): Promise<string> {
+  return new Promise(resolve => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.readAsText(blob)
+  })
+}

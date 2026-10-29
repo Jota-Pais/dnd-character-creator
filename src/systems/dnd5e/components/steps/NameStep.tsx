@@ -27,9 +27,9 @@ export function NameStep() {
     if (!file) return
     e.target.value = ''
     setImportError(false)
-    const draft = await importCharacter(file)
-    if (draft) {
-      importDraft(draft)
+    const imported = await importCharacter(file)
+    if (imported) {
+      importDraft(imported.draft, imported.playState)
     } else {
       setImportError(true)
     }

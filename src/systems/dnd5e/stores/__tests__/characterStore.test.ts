@@ -73,6 +73,25 @@ describe('importDraft', () => {
     useCharacterStore.getState().importDraft({ ...structuredClone(COMPLETE_DRAFT), background: null })
     expect(useCharacterStore.getState().currentStep).toBe('background')
   })
+
+  it('o estado de jogo do arquivo vai para a ficha nova, e só para ela', () => {
+    // A mesma personagem já está aqui, com o estado dela.
+    useCharacterStore.getState().importDraft(structuredClone(COMPLETE_DRAFT))
+    const existing = useCharacterStore.getState().currentId!
+    savePlayState({ ...createPlayState(existing), damageTaken: 2 })
+
+    const fromFile = { ...createPlayState('id-de-outro-navegador'), damageTaken: 5, inspiration: true }
+    useCharacterStore.getState().importDraft(structuredClone(COMPLETE_DRAFT), fromFile)
+    const imported = useCharacterStore.getState().currentId!
+    expect(imported).not.toBe(existing)
+    expect(loadPlayState(imported)).toMatchObject({ characterId: imported, damageTaken: 5, inspiration: true })
+    expect(loadPlayState(existing)).toMatchObject({ damageTaken: 2, inspiration: false })
+    expect(loadPlayState('id-de-outro-navegador')).toBeNull()
+
+    // Arquivo sem estado de jogo: a ficha nova começa sem estado.
+    useCharacterStore.getState().importDraft(structuredClone(COMPLETE_DRAFT), null)
+    expect(loadPlayState(useCharacterStore.getState().currentId!)).toBeNull()
+  })
 })
 
 describe('biblioteca', () => {

@@ -1,7 +1,10 @@
 import type { CharacterDraft, WizardStep } from '../types/character'
 import { EMPTY_DRAFT } from '../types/character'
+import type { PlayState } from '../types/playState'
 import { createId } from '../../../core/utils/id'
 import { sanitizeImportedDraft } from './draftValidation'
+import { sanitizePlayState } from './playState'
+import { loadPlayState } from './playStorage'
 
 const SESSION_KEY = 'dnd-character-session'
 const LIBRARY_KEY = 'dnd-character-library'
@@ -132,8 +135,57 @@ export function newId(): string {
   return createId('char')
 }
 
-export function exportCharacter(character: CharacterDraft): void {
-  const json = JSON.stringify(character, null, 2)
+// ── Arquivo exportado ────────────────────────────────────────────────────────
+
+/**
+ * O arquivo de ficha exportado (decisão 10.2.3 do modo de jogo: leva o estado de jogo junto). A
+ * ficha e o estado ficam lado a lado, como no navegador (cada um na sua chave), e o estado leva a
+ * versão dele (`PlayState.version`). A versão 1 era o draft solto, sem envelope e sem estado de
+ * jogo: `parseCharacterFile` continua aceitando.
+ */
+export const CHARACTER_FILE_FORMAT = 'dnd5e-character'
+export const CHARACTER_FILE_VERSION = 2
+
+export type CharacterFile = {
+  format: typeof CHARACTER_FILE_FORMAT
+  version: number
+  draft: CharacterDraft
+  /** O estado de jogo da ficha; null se ela nunca foi jogada. */
+  playState: PlayState | null
+}
+
+/**
+ * A ficha lida de um arquivo: o draft e o estado de jogo, os dois sanitizados. O `characterId` do
+ * estado sai vazio: o id da ficha no outro navegador não vale aqui, e quem grava (`importDraft`)
+ * usa o da ficha nova.
+ */
+export type ImportedCharacter = { draft: CharacterDraft; playState: PlayState | null }
+
+export function buildCharacterFile(draft: CharacterDraft, playState: PlayState | null): CharacterFile {
+  return { format: CHARACTER_FILE_FORMAT, version: CHARACTER_FILE_VERSION, draft, playState }
+}
+
+const isRecord = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x)
+
+/**
+ * Lê o JSON de um arquivo de ficha: o envelope atual ou o draft solto dos arquivos antigos (sem
+ * estado de jogo). Null se o draft não parece uma ficha; estado de jogo estragado vira o que o
+ * sanitizador consegue salvar dele, sem recusar a ficha.
+ */
+export function parseCharacterFile(raw: unknown): ImportedCharacter | null {
+  if (!isRecord(raw) || raw.format !== CHARACTER_FILE_FORMAT) {
+    const draft = sanitizeImportedDraft(raw)
+    return draft ? { draft, playState: null } : null
+  }
+  const draft = sanitizeImportedDraft(raw.draft)
+  if (!draft) return null
+  return { draft, playState: isRecord(raw.playState) ? sanitizePlayState(raw.playState, '') : null }
+}
+
+/** Baixa a ficha como JSON, com o estado de jogo salvo dela (`characterId`; null numa ficha nova). */
+export function exportCharacter(character: CharacterDraft, characterId: string | null): void {
+  const file = buildCharacterFile(character, characterId ? loadPlayState(characterId) : null)
+  const json = JSON.stringify(file, null, 2)
   const blob = new Blob([json], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
@@ -145,13 +197,13 @@ export function exportCharacter(character: CharacterDraft): void {
   URL.revokeObjectURL(url)
 }
 
-export function importCharacter(file: File): Promise<CharacterDraft | null> {
+export function importCharacter(file: File): Promise<ImportedCharacter | null> {
   return new Promise(resolve => {
     const reader = new FileReader()
     reader.onload = e => {
       try {
         const parsed: unknown = JSON.parse(e.target?.result as string)
-        resolve(sanitizeImportedDraft(parsed))
+        resolve(parseCharacterFile(parsed))
       } catch {
         resolve(null)
       }

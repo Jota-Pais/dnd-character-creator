@@ -11,7 +11,8 @@ import { loadLibrary, saveCharacterEntry, deleteCharacterEntry, newId, type Save
 import { canPlayDraft, getFirstIncompleteStep } from '../utils/draftValidation'
 import { useAppStore } from '../../../core/stores/appStore'
 import { cryptoRoller, type DieRoller } from '../../../core/dice'
-import { deletePlayState, loadOpenPlayId, saveOpenPlayId } from '../utils/playStorage'
+import type { PlayState } from '../types/playState'
+import { deletePlayState, loadOpenPlayId, saveOpenPlayId, savePlayState } from '../utils/playStorage'
 import { usePlayStore } from './playStore'
 
 const initialLibrary = loadLibrary()
@@ -113,7 +114,8 @@ type CharacterStore = {
   prevStep: () => void
   goToStep: (step: WizardStep) => void
   reset: () => void
-  importDraft: (draft: CharacterDraft) => void
+  /** Ficha lida de um arquivo: entra como ficha nova, com o estado de jogo que veio nele (se veio). */
+  importDraft: (draft: CharacterDraft, playState?: PlayState | null) => void
 }
 
 /** JSON com as chaves em ordem: dois drafts iguais dão o mesmo texto, qualquer que seja a ordem. */
@@ -624,11 +626,15 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     useAppStore.getState().setActiveSystem(null)
   },
 
-  importDraft: (draft) => {
+  importDraft: (draft, playState = null) => {
     flushAutosave()
     // Ficha importada vira uma nova ficha da biblioteca, retomada no 1º passo pendente
     const step = getFirstIncompleteStep(draft)
     const { id, library } = persistCurrent(newId(), draft, step)
+    // O estado de jogo do arquivo vai só para a ficha nova: importar de novo a mesma personagem
+    // nunca toca a ficha (nem o estado) que já está aqui, então não há dois estados a misturar. Os
+    // máximos dele se encaixam na ficha importada ao abrir o jogo (`reconcileLoadedPlayState`).
+    if (playState) savePlayState({ ...playState, characterId: id })
     set({ view: 'wizard', draft, currentStep: step, currentId: id, library })
   },
 }))

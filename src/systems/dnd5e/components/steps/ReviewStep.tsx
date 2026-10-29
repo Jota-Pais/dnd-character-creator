@@ -71,6 +71,7 @@ import type { HpMethod } from '../../types/character'
 
 export function ReviewStep() {
   const draft = useCharacterStore(state => state.draft)
+  const currentId = useCharacterStore(state => state.currentId)
   const prevStep = useCharacterStore(state => state.prevStep)
   const goToStep = useCharacterStore(state => state.goToStep)
   const reset = useCharacterStore(state => state.reset)
@@ -163,7 +164,7 @@ export function ReviewStep() {
   const darkvisionStr = darkvision > 0 ? formatMeters(darkvision) : null
 
   function handleExport() {
-    exportCharacter(draft)
+    exportCharacter(draft, currentId)
   }
 
   function handleReset() {

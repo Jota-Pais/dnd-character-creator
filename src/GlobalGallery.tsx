@@ -115,9 +115,9 @@ export function GlobalGallery() {
     e.target.value = ''
     setImportError(false)
 
-    const dndDraft = await importDnd(file)
-    if (dndDraft) {
-      dndImport(dndDraft)
+    const dnd = await importDnd(file)
+    if (dnd) {
+      dndImport(dnd.draft, dnd.playState)
       setActiveSystem('dnd5e')
       return
     }
@@ -156,7 +156,7 @@ export function GlobalGallery() {
   }
 
   function handleExport(char: UnifiedCharacter) {
-    if (char.system === 'dnd5e') exportDnd(char.draft)
+    if (char.system === 'dnd5e') exportDnd(char.draft, char.id)
     else exportOrdem(char.draft)
   }
 

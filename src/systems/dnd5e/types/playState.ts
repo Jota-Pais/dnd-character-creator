@@ -96,7 +96,32 @@ export type PlayState = {
   rolls: RollRecord[]
   /** Data real do último descanso longo, só para histórico (o app não conta o tempo do jogo). */
   lastLongRestAt?: number
+  /**
+   * Os números da ficha na última abertura do jogo (`syncSheetSnapshot`): é por ele que o app
+   * percebe quando uma correção dele mudou a ficha salva, e avisa (decisão 10.2.23).
+   */
+  sheetSnapshot?: SheetSnapshot
 }
+
+/**
+ * Retrato dos números da ficha que mais pesam na mesa (`utils/sheetSnapshot.ts`), com o que diz
+ * se a ficha mudou desde então: a data da gravação e a impressão digital do draft.
+ */
+export type SheetSnapshot = {
+  /** `SavedCharacter.updatedAt` da ficha no momento do retrato. */
+  sheetUpdatedAt: number
+  /** `jsonFingerprint` do draft no momento do retrato. */
+  draftFingerprint: string
+  maxHp: number
+  armorClass: number
+  /** A CD e o ataque de cada conjuração, pela chave do guia (`class:<id>`, `feat:<id>`). */
+  spellcasting: SheetSnapshotSpellcasting[]
+  /** Espaços do pool combinado por nível (9 posições). */
+  spellSlots: number[]
+  pactSlots: { slots: number; slotLevel: number } | null
+}
+
+export type SheetSnapshotSpellcasting = { key: string; label: string; saveDc: number; attackBonus: number }
 
 /**
  * Os números da ficha que o jogo usa, derivados do `CharacterDraft` pelas funções que já existem
@@ -183,6 +208,8 @@ export type PlayNoticeKind =
   | 'regainedConsciousness'
   | 'died'
   | 'recovered'
+  /** Uma correção do app mudou números da ficha salva desde a última sessão (decisão 10.2.23). */
+  | 'sheetCorrected'
 
 /**
  * Aviso para a UI. `dc` acompanha o `concentrationCheck`; `damage`, o `dropToOneHp` (o mesmo dano,

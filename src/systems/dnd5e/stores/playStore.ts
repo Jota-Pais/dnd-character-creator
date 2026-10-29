@@ -1,9 +1,11 @@
 import { create } from 'zustand'
 import type { RollRecord } from '../../../core/dice'
+import { canonicalJson } from '../../../core/utils/canonicalJson'
 import type { CharacterDraft } from '../types/character'
 import type { PlayNotice, PlayResult, PlaySheet, PlayState } from '../types/playState'
 import { buildPlaySheet } from '../utils/playSheet'
 import { recordRoll } from '../utils/playState'
+import { syncSheetSnapshot, takeSheetSnapshot } from '../utils/sheetSnapshot'
 import {
   loadPlayPreferences, loadPlayState, loadPlayStateFor, savePlayPreferences, savePlayState, type PlayPreferences,
 } from '../utils/playStorage'
@@ -50,8 +52,12 @@ type PlayStoreState = {
   restPanel: RestPanel | null
   shortRestDraft: ShortRestSpend[]
 
-  /** Abre a ficha salva `id` no modo de jogo: monta o `PlaySheet` e carrega (ou cria) o estado. */
-  open: (id: string, draft: CharacterDraft) => void
+  /**
+   * Abre a ficha salva `id` no modo de jogo: monta o `PlaySheet`, carrega (ou cria) o estado e
+   * compara os números com o retrato da última abertura (`sheetUpdatedAt`: o `updatedAt` da ficha
+   * na biblioteca, que diz se foi o jogador quem a mudou).
+   */
+  open: (id: string, draft: CharacterDraft, sheetUpdatedAt: number) => void
   /**
    * Roda uma operação no estado aberto. Se o estado mudou, empilha o anterior para o desfazer e
    * grava pelo `playStorage`; os avisos ficam em `notices`. Devolve o resultado, ou null sem ficha aberta.
@@ -123,16 +129,19 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
   ...CLOSED,
   prefs: loadPlayPreferences(),
 
-  open: (id, draft) => {
+  open: (id, draft, sheetUpdatedAt) => {
     const sheet = buildPlaySheet(draft)
     const loaded = loadPlayStateFor(id, sheet)
-    const { notices } = loaded
-    // A ficha mudou desde a última sessão: grava o estado já reconciliado, para o aviso da
-    // reconciliação aparecer uma vez só (e não em toda abertura até a primeira ação).
+    // O aviso de correção do app vem antes: ele explica um PV que a reconciliação ajustou.
+    const synced = syncSheetSnapshot(loaded.state, takeSheetSnapshot(draft, sheet, sheetUpdatedAt))
+    const notices = [...synced.notices, ...loaded.notices]
+    // A abertura mudou o estado (reconciliado com a ficha mudada, ou com o retrato novo da ficha):
+    // grava, para cada aviso aparecer uma vez só (e não em toda abertura até a primeira ação). A
+    // primeira abertura grava o retrato, para a próxima ter com o que comparar.
     const saved = loadPlayState(id)
-    const state = saved && JSON.stringify(saved) !== JSON.stringify(loaded.state)
-      ? savePlayState(loaded.state)
-      : loaded.state
+    const state = !saved || canonicalJson(saved) !== canonicalJson(synced.state)
+      ? savePlayState(synced.state)
+      : synced.state
     set({
       ...CLOSED,
       characterId: id,

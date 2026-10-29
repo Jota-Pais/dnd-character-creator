@@ -3,7 +3,7 @@ import type { ConditionId, ExhaustionLevel } from '../types/condition'
 import {
   CONDITION_NOTE_MAX_LENGTH, HIT_DIE_SIZES, PLAY_STATE_VERSION, ROLL_HISTORY_LIMIT,
   type Concentration, type DamageInput, type DeathSaveCount, type LifeState, type PlayNotice, type PlayNoticeKind,
-  type PlayResult, type PlaySheet, type PlayState,
+  type PlayResult, type PlaySheet, type PlayState, type SheetSnapshot, type SheetSnapshotSpellcasting,
 } from '../types/playState'
 import {
   getActiveConditionEffects, getCondition, getEffectiveConditions, getEffectiveHpMax,
@@ -1249,6 +1249,32 @@ function sanitizeConcentration(x: unknown): Concentration | null {
 }
 
 /**
+ * O retrato da ficha só vale inteiro: torto em qualquer parte, sai (a próxima abertura tira outro,
+ * sem aviso — melhor calar uma correção do que inventar uma).
+ */
+function sanitizeSheetSnapshot(x: unknown): SheetSnapshot | null {
+  if (!isRecord(x)) return null
+  const { sheetUpdatedAt, draftFingerprint, maxHp, armorClass, spellcasting, spellSlots, pactSlots } = x
+  if (typeof sheetUpdatedAt !== 'number' || !Number.isFinite(sheetUpdatedAt)) return null
+  if (typeof draftFingerprint !== 'string' || !isInt(maxHp) || !isInt(armorClass)) return null
+  if (!Array.isArray(spellcasting) || !Array.isArray(spellSlots) || spellSlots.length !== SPELL_LEVELS) return null
+  if (!spellSlots.every(n => isInt(n) && n >= 0)) return null
+  const casting = spellcasting.filter((c): c is SheetSnapshotSpellcasting =>
+    isRecord(c) && typeof c.key === 'string' && typeof c.label === 'string' && isInt(c.saveDc) && isInt(c.attackBonus))
+  if (casting.length !== spellcasting.length) return null
+  if (pactSlots !== null && !(isRecord(pactSlots) && isInt(pactSlots.slots) && isInt(pactSlots.slotLevel))) return null
+  return {
+    sheetUpdatedAt,
+    draftFingerprint,
+    maxHp,
+    armorClass,
+    spellcasting: casting.map(({ key, label, saveDc, attackBonus }) => ({ key, label, saveDc, attackBonus })),
+    spellSlots: [...spellSlots],
+    pactSlots: pactSlots === null ? null : { slots: pactSlots.slots as number, slotLevel: pactSlots.slotLevel as number },
+  }
+}
+
+/**
  * Transforma qualquer coisa (o JSON do localStorage, um import) num `PlayState` válido: campos
  * ausentes viram o padrão, números saem inteiros e não negativos, contadores entre 0 e 3,
  * condições e tipos de dado desconhecidos são descartados e a versão vira a atual. O
@@ -1291,6 +1317,8 @@ export function sanitizePlayState(raw: unknown, characterId: string): PlayState 
     }
   }
 
+  const sheetSnapshot = sanitizeSheetSnapshot(raw.sheetSnapshot)
+
   const conditions = Array.isArray(raw.conditions)
     ? [...new Set(raw.conditions.filter((c): c is ConditionId => typeof c === 'string' && getCondition(c as ConditionId) !== undefined))]
     : []
@@ -1328,5 +1356,6 @@ export function sanitizePlayState(raw: unknown, characterId: string): PlayState 
     ...(typeof raw.lastLongRestAt === 'number' && Number.isFinite(raw.lastLongRestAt)
       ? { lastLongRestAt: raw.lastLongRestAt }
       : {}),
+    ...(sheetSnapshot ? { sheetSnapshot } : {}),
   }
 }

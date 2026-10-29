@@ -15,46 +15,82 @@ beforeEach(() => {
 })
 
 describe('usePlayStore', () => {
-  it('open monta a ficha e começa um estado novo, sem gravar', () => {
-    usePlayStore.getState().open('c1', draft())
+  it('open monta a ficha e começa um estado novo, gravando só o retrato da ficha', () => {
+    usePlayStore.getState().open('c1', draft(), 1)
     const s = usePlayStore.getState()
     expect(s.characterId).toBe('c1')
     expect(s.characterName).toBe('Krusk')
     expect(s.sheet?.maxHp).toBeGreaterThan(0)
     expect(s.state?.characterId).toBe('c1')
     expect(s.undoStack).toEqual([])
-    expect(loadPlayState('c1')).toBeNull()
+    expect(s.notices).toEqual([])
+    // A primeira abertura grava o retrato: a próxima tem com o que comparar.
+    expect(loadPlayState('c1')).toEqual({ ...createPlayState('c1', s.state!.updatedAt), sheetSnapshot: s.state!.sheetSnapshot })
+    expect(s.state?.sheetSnapshot).toMatchObject({ sheetUpdatedAt: 1, maxHp: 14 })
   })
 
   it('open carrega o estado salvo da ficha', () => {
     savePlayState({ ...createPlayState('c1'), damageTaken: 3, inspiration: true })
-    usePlayStore.getState().open('c1', draft())
+    usePlayStore.getState().open('c1', draft(), 1)
     expect(usePlayStore.getState().state).toMatchObject({ damageTaken: 3, inspiration: true })
   })
 
   it('open grava o estado reconciliado com a ficha mudada: o aviso aparece uma vez só', () => {
     // O máximo da ficha (14) ficou abaixo do dano salvo: a reconciliação deixa com 1 PV.
     savePlayState({ ...createPlayState('c1'), damageTaken: 20 })
-    usePlayStore.getState().open('c1', draft())
+    usePlayStore.getState().open('c1', draft(), 1)
     expect(usePlayStore.getState().notices.map(n => n.kind)).toEqual(['info'])
     expect(getCurrentHp(usePlayStore.getState().state!, usePlayStore.getState().sheet!)).toBe(1)
     expect(loadPlayState('c1')?.damageTaken).toBe(13)
     expect(usePlayStore.getState().undoStack).toEqual([])
 
     usePlayStore.getState().close()
-    usePlayStore.getState().open('c1', draft())
+    usePlayStore.getState().open('c1', draft(), 1)
     expect(usePlayStore.getState().notices).toEqual([])
     expect(getCurrentHp(usePlayStore.getState().state!, usePlayStore.getState().sheet!)).toBe(1)
   })
 
   it('open sem mudança na ficha não regrava o estado salvo', () => {
-    const saved = savePlayState({ ...createPlayState('c1'), damageTaken: 3 }, 123)
-    usePlayStore.getState().open('c1', draft())
-    expect(loadPlayState('c1')?.updatedAt).toBe(saved.updatedAt)
+    savePlayState({ ...createPlayState('c1'), damageTaken: 3 }, 123)
+    usePlayStore.getState().open('c1', draft(), 1)
+    const saved = loadPlayState('c1')!
+    usePlayStore.getState().close()
+    usePlayStore.getState().open('c1', draft(), 1)
+    expect(loadPlayState('c1')).toEqual(saved)
+  })
+
+  it('a ficha igual com números novos (correção do app) avisa uma vez e atualiza o retrato', () => {
+    usePlayStore.getState().open('c1', draft(), 1)
+    const snapshot = usePlayStore.getState().state!.sheetSnapshot!
+    usePlayStore.getState().close()
+    // O retrato da última sessão tinha os números de antes da correção.
+    savePlayState({ ...loadPlayState('c1')!, damageTaken: 3, sheetSnapshot: { ...snapshot, maxHp: 12, armorClass: 13 } })
+    usePlayStore.getState().open('c1', draft(), 1)
+    expect(usePlayStore.getState().notices).toEqual([
+      { kind: 'sheetCorrected', text: 'O app corrigiu sua ficha: PV máximo 12 → 14; CA 13 → 14.' },
+    ])
+    expect(usePlayStore.getState().lastActionChanged).toBe(false)
+    // O gasto fica: o PV atual sobe junto com o máximo.
+    expect(getCurrentHp(usePlayStore.getState().state!, usePlayStore.getState().sheet!)).toBe(11)
+    expect(loadPlayState('c1')?.sheetSnapshot).toEqual(snapshot)
+
+    usePlayStore.getState().close()
+    usePlayStore.getState().open('c1', draft(), 1)
+    expect(usePlayStore.getState().notices).toEqual([])
+  })
+
+  it('a ficha mudada pelo criador só atualiza o retrato, sem aviso', () => {
+    usePlayStore.getState().open('c1', draft(), 1)
+    const snapshot = usePlayStore.getState().state!.sheetSnapshot!
+    usePlayStore.getState().close()
+    savePlayState({ ...loadPlayState('c1')!, sheetSnapshot: { ...snapshot, draftFingerprint: 'outra', maxHp: 12 } })
+    usePlayStore.getState().open('c1', draft(), 2)
+    expect(usePlayStore.getState().notices).toEqual([])
+    expect(loadPlayState('c1')?.sheetSnapshot).toEqual({ ...snapshot, sheetUpdatedAt: 2 })
   })
 
   it('run aplica, grava pelo playStorage, empilha o anterior e guarda os avisos', () => {
-    usePlayStore.getState().open('c1', draft())
+    usePlayStore.getState().open('c1', draft(), 1)
     const before = usePlayStore.getState().state!
     const result = usePlayStore.getState().run((st, sh) => applyDamage(st, sh, { amount: 5 }))
     const s = usePlayStore.getState()
@@ -66,17 +102,18 @@ describe('usePlayStore', () => {
   })
 
   it('operação recusada ou sem efeito não empilha nem grava, mas mostra os avisos', () => {
-    usePlayStore.getState().open('c1', draft())
+    usePlayStore.getState().open('c1', draft(), 1)
+    const opened = loadPlayState('c1')
     usePlayStore.getState().run((st, sh) => applyHealing(st, sh, Number.NaN))
     expect(usePlayStore.getState().undoStack).toEqual([])
     expect(usePlayStore.getState().notices.map(n => n.kind)).toEqual(['refused'])
     usePlayStore.getState().run(st => setNote(st, ''))
     expect(usePlayStore.getState().undoStack).toEqual([])
-    expect(loadPlayState('c1')).toBeNull()
+    expect(loadPlayState('c1')).toEqual(opened)
   })
 
   it('undo volta um passo e grava', () => {
-    usePlayStore.getState().open('c1', draft())
+    usePlayStore.getState().open('c1', draft(), 1)
     usePlayStore.getState().run((st, sh) => applyDamage(st, sh, { amount: 4 }))
     usePlayStore.getState().run(st => setInspiration(st, true))
     usePlayStore.getState().undo()
@@ -90,7 +127,7 @@ describe('usePlayStore', () => {
   })
 
   it(`a pilha do desfazer guarda no máximo ${UNDO_LIMIT} estados`, () => {
-    usePlayStore.getState().open('c1', draft())
+    usePlayStore.getState().open('c1', draft(), 1)
     for (let i = 1; i <= UNDO_LIMIT + 5; i++) usePlayStore.getState().run(st => setNote(st, `nota ${i}`))
     const s = usePlayStore.getState()
     expect(s.undoStack).toHaveLength(UNDO_LIMIT)
@@ -99,7 +136,7 @@ describe('usePlayStore', () => {
   })
 
   it('lastActionChanged diz se a última ação mudou o estado (o que o undo desfaria)', () => {
-    usePlayStore.getState().open('c1', draft())
+    usePlayStore.getState().open('c1', draft(), 1)
     expect(usePlayStore.getState().lastActionChanged).toBe(false)
     usePlayStore.getState().run((st, sh) => applyDamage(st, sh, { amount: 4 }))
     expect(usePlayStore.getState().lastActionChanged).toBe(true)
@@ -111,7 +148,7 @@ describe('usePlayStore', () => {
   })
 
   it('logRoll grava no histórico fora do desfazer, sem mexer nos avisos', () => {
-    usePlayStore.getState().open('c1', draft())
+    usePlayStore.getState().open('c1', draft(), 1)
     usePlayStore.getState().run((st, sh) => applyDamage(st, sh, { amount: 4 }))
     usePlayStore.getState().run((st, sh) => applyHealing(st, sh, Number.NaN))
     const { notices, undoStack } = usePlayStore.getState()
@@ -125,7 +162,7 @@ describe('usePlayStore', () => {
   })
 
   it('logRoll não apaga o "Desfazer" da última ação, e o undo preserva o histórico', () => {
-    usePlayStore.getState().open('c1', draft())
+    usePlayStore.getState().open('c1', draft(), 1)
     usePlayStore.getState().run((st, sh) => applyDamage(st, sh, { amount: 4 }))
     usePlayStore.getState().logRoll(roll('1d20', { roller: sequenceRoller([12]), at: 1 }))
     expect(usePlayStore.getState().lastActionChanged).toBe(true)
@@ -136,7 +173,7 @@ describe('usePlayStore', () => {
   })
 
   it('run em segundo plano grava e entra no desfazer, mas mantém os avisos', () => {
-    usePlayStore.getState().open('c1', draft())
+    usePlayStore.getState().open('c1', draft(), 1)
     usePlayStore.getState().run((st, sh) => applyDamage(st, sh, { amount: 4 }))
     const notices = usePlayStore.getState().notices
     usePlayStore.getState().run(st => setNote(st, 'O ferreiro mentiu'), { background: true })
@@ -152,7 +189,7 @@ describe('usePlayStore', () => {
   })
 
   it('dismissNotices limpa os avisos', () => {
-    usePlayStore.getState().open('c1', draft())
+    usePlayStore.getState().open('c1', draft(), 1)
     usePlayStore.getState().run((st, sh) => applyHealing(st, sh, Number.NaN))
     usePlayStore.getState().dismissNotices()
     expect(usePlayStore.getState().notices).toEqual([])
@@ -166,7 +203,7 @@ describe('usePlayStore', () => {
   })
 
   it('close grava antes as edições pendentes registradas; o desregistro tira da lista', () => {
-    usePlayStore.getState().open('c1', draft())
+    usePlayStore.getState().open('c1', draft(), 1)
     const flushNote = () => { usePlayStore.getState().run(st => setNote(st, 'pendente'), { background: true }) }
     const flushOther = vi.fn()
     const unregisterNote = registerPendingEdit(flushNote)
@@ -179,7 +216,7 @@ describe('usePlayStore', () => {
   })
 
   it('close esvazia a tela e run vira no-op', () => {
-    usePlayStore.getState().open('c1', draft())
+    usePlayStore.getState().open('c1', draft(), 1)
     usePlayStore.getState().close()
     const s = usePlayStore.getState()
     expect(s.characterId).toBeNull()

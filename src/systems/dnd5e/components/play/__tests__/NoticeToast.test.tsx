@@ -3,7 +3,8 @@ import { act, render, screen, fireEvent, cleanup, waitFor, within } from '@testi
 import { PlayScreen } from '../PlayScreen'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { usePlayStore } from '../../../stores/playStore'
-import { savePlayState } from '../../../utils/playStorage'
+import type { SheetSnapshot } from '../../../types/playState'
+import { loadPlayState, savePlayState } from '../../../utils/playStorage'
 import { createPlayState, grantTempHp, stabilize, startConcentration } from '../../../utils/playState'
 import { openKrusk, resetPlay } from './openPlay'
 
@@ -220,6 +221,40 @@ describe('foco nos botões do aviso', () => {
     fireEvent.click(within(screen.getByRole('status')).getByRole('button', { name: 'OK' }))
     expect(screen.getByRole('status')).toBeEmptyDOMElement()
     expect(screen.getByRole('tab', { name: 'Testes' })).toHaveFocus()
+  })
+})
+
+describe('aviso de correção da ficha (decisão 10.2.23)', () => {
+  /** Joga a ficha, sai e volta com o retrato da última sessão alterado por `patch`. */
+  function reopenWithSnapshot(id: string, patch: Partial<SheetSnapshot>) {
+    useCharacterStore.getState().exitPlay()
+    const stored = loadPlayState(id)!
+    savePlayState({ ...stored, sheetSnapshot: { ...stored.sheetSnapshot!, ...patch } })
+    useCharacterStore.getState().playCharacter(id)
+  }
+
+  it('a correção do app aparece ao abrir o jogo, numa região viva que já existia vazia, e uma vez só', async () => {
+    const id = openKrusk()
+    reopenWithSnapshot(id, { maxHp: 12 })
+    render(<PlayScreen />)
+    const live = screen.getByRole('status')
+    expect(live).toBeEmptyDOMElement()
+    await waitFor(() => expect(live).toHaveTextContent('O app corrigiu sua ficha: PV máximo 12 → 14.'))
+    // Não há o que desfazer: só o "OK".
+    expect(within(live).queryByRole('button', { name: '↶ Desfazer' })).toBeNull()
+    fireEvent.click(within(live).getByRole('button', { name: 'OK' }))
+    expect(live).toBeEmptyDOMElement()
+
+    cleanup()
+    useCharacterStore.getState().exitPlay()
+    useCharacterStore.getState().playCharacter(id)
+    expect(usePlayStore.getState().notices).toEqual([])
+  })
+
+  it('a ficha mudada no criador desde a última sessão não avisa', () => {
+    const id = openKrusk()
+    reopenWithSnapshot(id, { maxHp: 12, sheetUpdatedAt: 0, draftFingerprint: 'antes' })
+    expect(usePlayStore.getState().notices).toEqual([])
   })
 })
 

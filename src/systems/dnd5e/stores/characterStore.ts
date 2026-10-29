@@ -263,7 +263,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     const char = get().library.find(c => c.id === id)
     if (!char) return
     set({ view: 'play', currentId: id, currentStep: char.step, draft: char.draft })
-    usePlayStore.getState().open(id, char.draft)
+    usePlayStore.getState().open(id, char.draft, char.updatedAt)
     saveOpenPlayId(id)
   },
 
@@ -635,7 +635,7 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
 // Recarregou no meio do jogo: reabre o modo de jogo da mesma ficha (o estado está salvo; o
 // desfazer da sessão anterior não volta) e ativa o sistema, para não cair na galeria global.
 if (resumedPlay) {
-  usePlayStore.getState().open(resumedPlay.id, resumedPlay.draft)
+  usePlayStore.getState().open(resumedPlay.id, resumedPlay.draft, resumedPlay.updatedAt)
   useAppStore.getState().setActiveSystem('dnd5e')
 }
 

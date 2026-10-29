@@ -10,6 +10,14 @@ export function isWakeLockSupported(): boolean {
 }
 
 /**
+ * Fora de contexto seguro (o app aberto pelo IP da rede, em http), a API não existe nem no
+ * navegador que a tem: a culpa é do endereço, e o mesmo navegador funciona por https.
+ */
+export function isInsecureContext(): boolean {
+  return typeof window !== 'undefined' && window.isSecureContext === false
+}
+
+/**
  * Mantém a tela acesa enquanto `enabled` e a página estiver visível. O navegador solta a trava
  * sozinho quando a página some (troca de aba ou de app, tela bloqueada): ao voltar a ficar
  * visível, ela é pedida de novo. Pedido recusado (economia de bateria, permissão) fica sem trava,

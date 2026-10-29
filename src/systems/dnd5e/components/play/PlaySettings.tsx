@@ -1,11 +1,12 @@
 import { usePlayStore } from '../../stores/playStore'
-import { isWakeLockSupported } from './wakeLock'
+import { isInsecureContext, isWakeLockSupported } from './wakeLock'
 
 /**
  * Configurações do modo de jogo (preferência do aparelho, não da ficha). Os dados do app ficam
  * desligados por padrão e sem destaque: a mesa rola os próprios dados (decisão de 2026-10-25). A
- * tela acesa fica ligada por padrão (decisão 10.2.22); no navegador sem a Screen Wake Lock, a
- * opção dá lugar à explicação.
+ * tela acesa fica ligada por padrão (decisão 10.2.22); sem a Screen Wake Lock, a opção dá lugar à
+ * explicação, que separa o endereço em http (o mesmo navegador funciona por https) do navegador
+ * que não a tem.
  */
 export function PlaySettings() {
   const appDice = usePlayStore(s => s.prefs.appDice)
@@ -49,8 +50,11 @@ export function PlaySettings() {
         <div className="min-h-10">
           <p className="text-sm text-parchment-200">Manter a tela acesa</p>
           <p className="text-xs text-parchment-600 leading-snug">
-            Este navegador não deixa o app manter a tela acesa. Para ela não apagar no meio do jogo,
-            aumente o tempo de bloqueio da tela nas configurações do aparelho.
+            {isInsecureContext()
+              ? 'Aberto pelo endereço da rede (sem https), o app não consegue manter a tela acesa.'
+              : 'Este navegador não deixa o app manter a tela acesa.'}
+            {' '}Para ela não apagar no meio do jogo, aumente o tempo de bloqueio da tela nas
+            configurações do aparelho.
           </p>
         </div>
       )}

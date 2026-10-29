@@ -126,4 +126,20 @@ describe('tela acesa durante o jogo (decisão 10.2.22)', () => {
     expect(screen.queryByLabelText(/Manter a tela acesa/)).toBeNull()
     expect(screen.getByText(/Este navegador não deixa o app manter a tela acesa/)).toBeInTheDocument()
   })
+
+  it('aberto em http pelo endereço da rede: a explicação culpa o endereço, não o navegador', async () => {
+    Object.defineProperty(window, 'isSecureContext', { value: false, configurable: true })
+    try {
+      openKrusk()
+      render(<PlayScreen />)
+      await settle()
+      openSettings()
+      expect(screen.queryByLabelText(/Manter a tela acesa/)).toBeNull()
+      expect(screen.getByText(/Aberto pelo endereço da rede \(sem https\), o app não consegue manter a tela acesa/))
+        .toHaveTextContent(/aumente o tempo de bloqueio da tela/)
+      expect(screen.queryByText(/Este navegador não deixa/)).toBeNull()
+    } finally {
+      Reflect.deleteProperty(window, 'isSecureContext')
+    }
+  })
 })

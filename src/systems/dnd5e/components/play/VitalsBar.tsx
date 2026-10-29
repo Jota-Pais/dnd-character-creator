@@ -41,7 +41,7 @@ const FLASH_CLASS: Record<HpFlash, string> = {
 function useHpFlash(reading: HpReading): { kind: HpFlash; id: number } | null {
   const [seen, setSeen] = useState({ ...reading, flashes: 0 })
   const [flash, setFlash] = useState<{ kind: HpFlash; id: number } | null>(null)
-  if (seen.current !== reading.current || seen.tempHp !== reading.tempHp) {
+  if (seen.current !== reading.current || seen.tempHp !== reading.tempHp || seen.longRestAt !== reading.longRestAt) {
     const kind = getHpFlash(seen, reading)
     setSeen({ ...reading, flashes: seen.flashes + (kind ? 1 : 0) })
     if (kind) setFlash({ kind, id: seen.flashes + 1 })
@@ -120,7 +120,7 @@ export function VitalsBar({ view, onOpenRecipe, onOpenSource, onOpenRests }: {
   const life = state.lifeState === 'conscious' ? null : LIFE_LABEL[state.lifeState]
   const band = getHpBand(current, effMax)
   const hitDice = getHitDiceAvailable(state, sheet)
-  const flash = useHpFlash({ current, tempHp: state.tempHp })
+  const flash = useHpFlash({ current, tempHp: state.tempHp, longRestAt: state.lastLongRestAt })
 
   return (
     <div className="space-y-2">

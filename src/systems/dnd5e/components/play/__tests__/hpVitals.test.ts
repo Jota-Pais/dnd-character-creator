@@ -21,6 +21,16 @@ describe('getHpFlash', () => {
     expect(getHpFlash({ current: 14, tempHp: 5 }, { current: 14, tempHp: 2 })).toBe('damage')
   })
 
+  it('o descanso longo só pisca verde: os temporários e o ajuste do máximo que acabam não são dano', () => {
+    // Krusk a 14/14 com 5 temporários: o descanso longo zera os temporários.
+    expect(getHpFlash({ current: 14, tempHp: 5 }, { current: 14, tempHp: 0, longRestAt: 1 })).toBeNull()
+    // Com a Ajuda (+5 no máximo) a 19/19: o ajuste acaba e o PV volta a 14.
+    expect(getHpFlash({ current: 19, tempHp: 0, longRestAt: 1 }, { current: 14, tempHp: 0, longRestAt: 2 })).toBeNull()
+    expect(getHpFlash({ current: 5, tempHp: 0 }, { current: 14, tempHp: 0, longRestAt: 1 })).toBe('heal')
+    // O desfazer do descanso também não é dano.
+    expect(getHpFlash({ current: 14, tempHp: 0, longRestAt: 1 }, { current: 5, tempHp: 3 })).toBeNull()
+  })
+
   it('ganhar PV temporários, ou nada mudar, não pisca', () => {
     expect(getHpFlash({ current: 14, tempHp: 0 }, { current: 14, tempHp: 5 })).toBeNull()
     expect(getHpFlash({ current: 9, tempHp: 0 }, { current: 9, tempHp: 0 })).toBeNull()

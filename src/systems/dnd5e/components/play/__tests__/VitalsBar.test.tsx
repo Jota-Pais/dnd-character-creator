@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { act, render, screen, cleanup, fireEvent } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { usePlayStore } from '../../../stores/playStore'
-import { applyDamage, applyHealing, grantTempHp } from '../../../utils/playState'
+import { applyDamage, applyHealing, completeLongRest, grantTempHp } from '../../../utils/playState'
 import { EMPTY_DRAFT } from '../../../types/character'
 import { COMPLETE_DRAFT } from '../../../../../test/fixtures'
 import { HP_FLASH_MS } from '../hpVitals'
@@ -149,6 +149,19 @@ describe('VitalsBar — retorno do dano e da cura', () => {
     expect(flash()).toBeNull()
     damage(3)
     expect(screen.getByTestId('hp-current')).toHaveTextContent('14')
+    expect(flash()).toBe('damage')
+  })
+
+  it('o descanso longo com PV cheio e temporários não pisca; o dano seguinte, sim', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    act(() => { usePlayStore.getState().run(st => grantTempHp(st, 5)) })
+    act(() => { usePlayStore.getState().run((st, sh) => completeLongRest(st, sh, { now: 1 })) })
+    expect(screen.getByTestId('vitals-hp')).not.toHaveTextContent('temp.')
+    expect(flash()).toBeNull()
+    // Um descanso que não mexeu no PV (nada a zerar) também é visto: o golpe depois dele pisca.
+    act(() => { usePlayStore.getState().run((st, sh) => completeLongRest(st, sh, { now: 2 })) })
+    damage(3)
     expect(flash()).toBe('damage')
   })
 })

@@ -33,16 +33,22 @@ export const HP_FLASH_MS = 900
 /** O retorno visual de uma mudança de PV: vermelho no dano, verde na cura. */
 export type HpFlash = 'damage' | 'heal'
 
-/** O que o retorno compara entre um desenho e o seguinte. */
-export type HpReading = { current: number; tempHp: number }
+/**
+ * O que o retorno compara entre um desenho e o seguinte. `longRestAt` é o `lastLongRestAt` do
+ * estado: muda no descanso longo e no desfazer dele.
+ */
+export type HpReading = { current: number; tempHp: number; longRestAt?: number }
 
 /**
  * Vermelho quando o PV cai, ou quando os PV temporários absorvem o golpe inteiro (o PV fica, mas o
- * dano veio); verde quando o PV sobe. Ganhar PV temporários não é cura: sem cor.
+ * dano veio); verde quando o PV sobe. Ganhar PV temporários não é cura: sem cor. O descanso longo
+ * (ou o desfazer dele) só pisca verde: o que ele tira — os temporários, o ajuste do PV máximo — não
+ * é dano.
  */
 export function getHpFlash(before: HpReading, after: HpReading): HpFlash | null {
-  if (after.current < before.current) return 'damage'
   if (after.current > before.current) return 'heal'
+  if (after.longRestAt !== before.longRestAt) return null
+  if (after.current < before.current) return 'damage'
   if (after.tempHp < before.tempHp) return 'damage'
   return null
 }

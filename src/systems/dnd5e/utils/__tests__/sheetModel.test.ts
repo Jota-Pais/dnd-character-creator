@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getStartingInventory } from '../sheetModel'
+import { getKnownSpells, getStartingInventory, listKnownSpells } from '../sheetModel'
 import { formatInventoryItem } from '../equipmentUtils'
 import { getEquippedWeapons } from '../attackUtils'
 import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
@@ -79,5 +79,87 @@ describe('getStartingInventory (o inventário da Revisão, da ficha imprimível 
     expect(getEquippedWeapons(bardAcolyte({})).map(w => w.id)).toEqual(['dagger', 'mace'])
     const outlander = draft({ class: 'fighter', background: 'outlander', equipment: equipment({ method: 'wealth' }) })
     expect(getEquippedWeapons(outlander).map(w => w.id)).toEqual(['quarterstaff'])
+  })
+})
+
+const choices = (c: Partial<CharacterDraft['classChoices']>) => ({ ...structuredClone(EMPTY_DRAFT.classChoices), ...c })
+const ids = (spells: { id: string }[]) => spells.map(s => s.id)
+
+describe('getKnownSpells (as magias da Revisão, da ficha imprimível e da aba Regras)', () => {
+  it('a classe conjuradora: truques, magias e as de slot com o grupo, cada uma uma vez', () => {
+    const warlock = draft({
+      class: 'warlock',
+      level: 3,
+      classChoices: choices({
+        subclass: 'fiend',
+        progressionChoices: {
+          'warlock-pact-boon-3': ['pact-of-the-tome'],
+          'warlock-pact-tome-cantrips-3': ['guidance', 'eldritch-blast', 'sacred-flame'],
+        },
+      }),
+      spellChoices: { cantrips: ['eldritch-blast', 'chill-touch'], spells: ['hex'] },
+    })
+    const [cls] = getKnownSpells(warlock).classes
+    expect(cls.caster.entry.classId).toBe('warlock')
+    // A rajada mística também é Truque do Livro das Sombras: fica a origem da escolha da classe.
+    expect(cls.spells.map(s => [s.spell.id, s.group])).toEqual([
+      ['eldritch-blast', null],
+      ['chill-touch', null],
+      ['hex', null],
+      ['guidance', 'Truques do Livro das Sombras'],
+      ['sacred-flame', 'Truques do Livro das Sombras'],
+    ])
+  })
+
+  it('o talento: o bloco do Iniciado em Magia, mesmo sem classe conjuradora', () => {
+    const fighter = draft({
+      class: 'fighter',
+      level: 4,
+      asiChoices: [{ kind: 'feat', featId: 'iniciado-em-magia' }],
+      featSelections: { 'iniciado-em-magia': { spellClass: 'cleric', cantrips: ['sacred-flame', 'guidance'], spells: ['cure-wounds'] } },
+    })
+    const known = getKnownSpells(fighter)
+    expect(known.classes).toEqual([])
+    expect(known.feats.map(b => [b.label, ids(b.cantrips), ids(b.spells)])).toEqual([
+      ['Iniciado em Magia (Clérigo)', ['sacred-flame', 'guidance'], ['cure-wounds']],
+    ])
+    // Chama Sagrada, Orientação, Curar Ferimentos: o grimório da ficha imprimível as tem.
+    expect(ids(listKnownSpells(known))).toEqual(['sacred-flame', 'guidance', 'cure-wounds'])
+  })
+
+  it('a raça e a subclasse: o truque escolhido em cada uma, com o nome da subclasse', () => {
+    const cleric = draft({
+      race: 'elf',
+      subrace: 'high-elf',
+      raceChoices: { cantrip: 'prestidigitation' },
+      class: 'cleric',
+      classChoices: choices({ subclass: 'nature-domain', subclassExtras: { cantrip: 'shillelagh' } }),
+    })
+    const known = getKnownSpells(cleric)
+    expect(known.raceCantrip?.id).toBe('prestidigitation')
+    expect(known.subclassCantrips.map(s => [s.classId, s.subclassName, s.spell.id]))
+      .toEqual([['cleric', 'Domínio da Natureza', 'shillelagh']])
+  })
+
+  it('as inatas da raça entram no nível em que o traço as libera', () => {
+    const tiefling = (level: number) => getKnownSpells(draft({ race: 'tiefling', class: 'barbarian', level }))
+    expect(tiefling(1).innate.map(s => s.spell.id)).toEqual(['thaumaturgy'])
+    expect(tiefling(3).innate.map(s => [s.spell.id, s.innate.ability])).toEqual([
+      ['thaumaturgy', 'CHA'],
+      ['hellish-rebuke', 'CHA'],
+    ])
+  })
+
+  it('listKnownSpells: todas as vias, cada magia uma vez, truques primeiro e por nível', () => {
+    const wizard = draft({
+      race: 'elf',
+      subrace: 'high-elf',
+      raceChoices: { cantrip: 'light' },
+      class: 'wizard',
+      level: 5,
+      spellChoices: { cantrips: ['light', 'fire-bolt', 'mage-hand'], spells: ['fireball', 'shield', 'magic-missile'] },
+    })
+    expect(ids(listKnownSpells(getKnownSpells(wizard))))
+      .toEqual(['light', 'mage-hand', 'fire-bolt', 'shield', 'magic-missile', 'fireball'])
   })
 })

@@ -1,18 +1,17 @@
 import type { CharacterDraft } from '../../types/character'
 import type { Spell } from '../../types/spell'
 import { ABILITY_LABELS, formatMeters } from '../../utils/abilityScoreUtils'
-import { getCharacterFeats, getFinalAbilityScores, getSheetClassFeatures } from '../../utils/asiUtils'
-import { getClass, getSubclass } from '../../utils/classUtils'
+import { getCharacterFeats, getSheetClassFeatures } from '../../utils/asiUtils'
+import { getClass } from '../../utils/classUtils'
 import { allClassEntries } from '../../utils/multiclassUtils'
 import { getProgressionChoiceBlocks } from '../../utils/progressionOptions'
 import {
-  describeDarkvision, describeInnateSpellUsage, getAvailableInnateSpells, getEffectiveDarkvision,
+  describeDarkvision, describeInnateSpellUsage, getEffectiveDarkvision,
   getEffectiveTraitsWithChoices, getRace, getSubrace,
 } from '../../utils/raceUtils'
 import { formatCastingRestriction, getCastingRestrictions, getSheetFightingStyles } from '../../utils/sheetEffects'
-import {
-  FEAT_SPELL_USAGE, getCasterEntries, getFeatSpellBlocks, getSecretSpellGroups, getSpell,
-} from '../../utils/spellUtils'
+import { getKnownSpells } from '../../utils/sheetModel'
+import { FEAT_SPELL_USAGE } from '../../utils/spellUtils'
 import { ordinal } from './playFormat'
 
 /**
@@ -78,42 +77,30 @@ function groupByLevel(items: { spell: Spell; source: string | null }[], keyPrefi
 }
 
 /**
- * Magias: as de cada classe conjuradora (`getCasterEntries`, as mesmas da Revisão e da ficha
- * imprimível: truques com os dados pela característica, magias conhecidas ou preparadas e as de
- * slot de progressão, com o rótulo do grupo de `getSecretSpellGroups`), as de cada talento que
- * ensina magias (`getFeatSpellBlocks`), e depois as que vêm de fora da conjuração da classe — o
- * truque da raça, o da subclasse e as magias inatas — com o jeito de usar de
- * `describeInnateSpellUsage`. A restrição de conjuração (em fúria, `getCastingRestrictions`) vale
- * para toda magia, de qualquer fonte: sai sob o título da seção e na folha de cada uma.
+ * Magias: as que o personagem conhece por qualquer via (`getKnownSpells`, as mesmas da Revisão e
+ * da ficha imprimível) — um bloco por classe conjuradora, com a origem das de slot de progressão
+ * (o grupo da Revisão e do PDF: Segredos Mágicos, Truques do Livro das Sombras, Pacto da
+ * Corrente…, nunca um rótulo fixo), um por talento que ensina magias, e depois as que vêm de fora
+ * da conjuração da classe — o truque da raça, o da subclasse e as magias inatas — com o jeito de
+ * usar de `describeInnateSpellUsage`. A restrição de conjuração (em fúria,
+ * `getCastingRestrictions`) vale para toda magia, de qualquer fonte: sai sob o título da seção e na
+ * folha de cada uma.
  */
 function spellSection(draft: CharacterDraft): RuleSection | null {
-  const casters = getCasterEntries(draft)
+  const known = getKnownSpells(draft)
   const isMc = allClassEntries(draft).length > 1
   const notes = getCastingRestrictions(draft).map(formatCastingRestriction)
-  const blocks: RuleBlock[] = casters.map(caster => {
-    const seen = new Set<string>()
-    const items: { spell: Spell; source: string | null }[] = []
-    const add = (id: string, source: string | null) => {
-      const spell = getSpell(id)
-      if (!spell || seen.has(id)) return
-      seen.add(id)
-      items.push({ spell, source })
-    }
-    caster.cantrips.forEach(id => add(id, null))
-    caster.spells.forEach(id => add(id, null))
-    // A origem de cada magia de slot é o grupo da Revisão e do PDF (Segredos Mágicos, Truques do
-    // Livro das Sombras, Pacto da Corrente…), nunca um rótulo fixo.
-    const groupLabel = new Map(getSecretSpellGroups(caster).flatMap(g => g.spells.map(s => [s.id, g.label] as const)))
-    caster.bonusSpells.forEach(id => add(id, groupLabel.get(id) ?? null))
+  const blocks: RuleBlock[] = known.classes.map(({ caster, spells }) => {
     // Conjuração de subclasse (Cavaleiro/Trapaceiro Arcano) se identifica mesmo sem multiclasse.
     const showLabel = isMc || caster.casting.casterId !== caster.cls.id
+    const items = spells.map(({ spell, group }) => ({ spell, source: group }))
     return { label: showLabel ? caster.casting.label : null, groups: groupByLevel(items, caster.cls.id, notes) }
   })
 
   // Talento que ensina magias (Iniciado em Magia, p. 170): um bloco por talento, como na Revisão e
   // no PDF. A magia de 1º nível sai sob o título com o uso (`spellsTitle`), e a folha dela o repete:
   // é lá que a mesa lê antes de conjurar.
-  for (const feat of getFeatSpellBlocks(draft, getFinalAbilityScores(draft))) {
+  for (const feat of known.feats) {
     const groups: RuleGroup[] = []
     const entries = (spells: Spell[], source: string) =>
       [...spells].sort(byName).map(s => spellEntry(`feat:${feat.featId}:${s.id}`, s, source, notes, null))
@@ -124,25 +111,15 @@ function spellSection(draft: CharacterDraft): RuleSection | null {
     blocks.push({ label: feat.label, groups })
   }
 
-  const race = draft.race ? getRace(draft.race) : undefined
-  const subrace = race && draft.subrace ? getSubrace(race, draft.subrace) : undefined
-  const others: { spell: Spell; source: string | null }[] = []
-  const racialCantrip = draft.raceChoices.cantrip ? getSpell(draft.raceChoices.cantrip) : undefined
-  if (racialCantrip) others.push({ spell: racialCantrip, source: 'da raça' })
-  for (const entry of allClassEntries(draft)) {
-    const cantrip = entry.classChoices.subclassExtras.cantrip ? getSpell(entry.classChoices.subclassExtras.cantrip) : undefined
-    const cls = getClass(entry.classId)
-    const sub = cls && entry.classChoices.subclass ? getSubclass(cls, entry.classChoices.subclass) : undefined
-    if (cantrip) others.push({ spell: cantrip, source: sub ? `de ${sub.name}` : 'da subclasse' })
-  }
-  if (race) {
-    for (const innate of getAvailableInnateSpells(race, subrace ?? null, draft.level ?? 1)) {
-      const spell = getSpell(innate.spellId)
-      if (!spell) continue
-      const usage = describeInnateSpellUsage(innate, spell.level)
-      others.push({ spell, source: `${usage.text} · ${ABILITY_LABELS[innate.ability].short}` })
-    }
-  }
+  const others: { spell: Spell; source: string | null }[] = [
+    ...(known.raceCantrip ? [{ spell: known.raceCantrip, source: 'da raça' }] : []),
+    ...known.subclassCantrips.map(({ spell, subclassName }) => ({
+      spell, source: subclassName ? `de ${subclassName}` : 'da subclasse',
+    })),
+    ...known.innate.map(({ spell, innate }) => ({
+      spell, source: `${describeInnateSpellUsage(innate, spell.level).text} · ${ABILITY_LABELS[innate.ability].short}`,
+    })),
+  ]
   if (others.length > 0) {
     blocks.push({ label: 'Outras magias', groups: groupByLevel(others, 'other', notes) })
   }

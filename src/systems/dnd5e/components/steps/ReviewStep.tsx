@@ -1,7 +1,7 @@
 import { useCharacterStore } from '../../stores/characterStore'
 import {
   getRace, getSubrace,
-  getEffectiveDarkvision, RACE_PRESENTATION, getAvailableInnateSpells, getEffectiveTraitsWithChoices,
+  getEffectiveDarkvision, RACE_PRESENTATION, getEffectiveTraitsWithChoices,
   describeInnateSpellUsage,
 } from '../../utils/raceUtils'
 import { getFinalAbilityScores, getCharacterFeats, getSheetClassFeatures } from '../../utils/asiUtils'
@@ -24,7 +24,9 @@ import {
   getProficiencyBonus, formatXpProgress, formatMeters,
 } from '../../utils/abilityScoreUtils'
 import { getStartingMoney, describeStartingMoneySource, formatCoins } from '../../utils/equipmentUtils'
-import { getStartingInventory, type InventoryEntry, type InventorySource } from '../../utils/sheetModel'
+import {
+  getKnownSpells, getStartingInventory, type InventoryEntry, type InventorySource,
+} from '../../utils/sheetModel'
 import { formatArmorClassBreakdown } from '../../utils/armorClassUtils'
 import {
   getAllGrantedTools, getLanguageLabels, EXOTIC_LANGUAGE_NOTE, getExpertiseTools, getSkillChecks,
@@ -56,7 +58,6 @@ import {
   getCasterColumnHeadings,
   getRepeatedSpells,
   formatRepeatedSpell,
-  getFeatSpellBlocks,
 } from '../../utils/spellUtils'
 import { exportCharacter } from '../../utils/storage'
 import { getPendingSteps, getStepPendingReasons } from '../../utils/pendingReasons'
@@ -123,6 +124,8 @@ export function ReviewStep() {
   // O inventário da ficha imprimível, aqui separado pela origem de cada item.
   const inventory = getStartingInventory(draft)
   const inventoryFrom = (source: InventorySource) => inventory.filter(item => item.source === source)
+  // As magias da ficha imprimível e do jogo: aqui, as raciais e as dos talentos.
+  const knownSpells = getKnownSpells(draft, finalScores)
   const acResult = getSheetArmorClass(draft, finalScores)
   const ac = acResult.value
   const acNote = acResult.stealthDisadvantage ? '*' : ''
@@ -644,8 +647,7 @@ export function ReviewStep() {
 
       {/* Racial Spells */}
       {race && (() => {
-        const innate = getAvailableInnateSpells(race, subrace ?? null, level)
-        const racialCantrip = draft.raceChoices.cantrip ? getSpell(draft.raceChoices.cantrip) : undefined
+        const { innate, raceCantrip: racialCantrip } = knownSpells
         if (innate.length === 0 && !racialCantrip) return null
         return (
           <Section title="Magias Raciais">
@@ -658,9 +660,7 @@ export function ReviewStep() {
                   <span className="text-sm text-parchment-500"> — truque (escolhido da raça)</span>
                 </div>
               )}
-              {innate.map(entry => {
-                const spell = getSpell(entry.spellId)
-                if (!spell) return null
+              {innate.map(({ innate: entry, spell }) => {
                 // Mesmo texto da ficha imprimível (describeInnateSpellUsage).
                 const usage = describeInnateSpellUsage(entry, spell.level)
                 return (
@@ -866,7 +866,7 @@ export function ReviewStep() {
       {(() => {
         const casters = getCasterEntries(draft)
         // Magias de talento (Iniciado em Magia): entram aqui mesmo sem classe conjuradora.
-        const featSpellBlocks = getFeatSpellBlocks(draft, finalScores)
+        const featSpellBlocks = knownSpells.feats
         if (casters.length === 0 && featSpellBlocks.length === 0) return null
         const combined = getCombinedSpellSlots(draft).map((count, i) => ({ spellLevel: i + 1, count })).filter(s => s.count > 0)
         const pact = getPactSlots(draft)

@@ -3,7 +3,7 @@ import { useCharacterStore } from '../stores/characterStore'
 import type { AbilityScore } from '../types/race'
 import {
   getRace, getSubrace, getEffectiveDarkvision, SKILLS,
-  getAvailableInnateSpells, getEffectiveTraitsWithChoices, describeInnateSpellUsage,
+  getEffectiveTraitsWithChoices, describeInnateSpellUsage,
 } from '../utils/raceUtils'
 import {
   getClass,
@@ -26,7 +26,7 @@ import {
 } from '../utils/proficiencyUtils'
 import { formatArmorClassBreakdown } from '../utils/armorClassUtils'
 import { getStartingMoney, describeStartingMoneySource, formatCoins } from '../utils/equipmentUtils'
-import { getStartingInventory } from '../utils/sheetModel'
+import { getKnownSpells, getStartingInventory, listKnownSpells } from '../utils/sheetModel'
 import {
   formatResourceLine, formatTrackCircles, groupResourcesBySource, resourceGroupsNeedLabels,
   resourceSourceLabel,
@@ -36,7 +36,7 @@ import {
   getSpell, getSpellSaveDC, formatSpellAttackBonus, getCombinedSpellSlots, getPactSlots,
   getMaxPreparedSpells, describeCastingAids, getCasterEntries, getSpellChoiceOverflows,
   getSecretSpellGroups, formatSecretGroupSpellName, getCasterColumnHeadings,
-  getRepeatedSpells, formatRepeatedSpell, getFeatSpellBlocks,
+  getRepeatedSpells, formatRepeatedSpell,
 } from '../utils/spellUtils'
 import { RuleText } from './common/RuleText'
 import { formatAttackDamage } from '../utils/weaponFormat'
@@ -149,13 +149,13 @@ export function PrintableSheet() {
   // aplicados (attackUtils). O número de ataques por ação vem do motor de efeitos.
   const attacks = getSheetAttacks(draft, finalScores)
   const attackLines = describeAttacksPerAction(draft)
-  const innateSpells = race ? getAvailableInnateSpells(race, subrace, level) : []
-  const racialCantrip = draft.raceChoices.cantrip ? getSpell(draft.raceChoices.cantrip) : undefined
+  // Toda magia que o personagem conhece, por qualquer via: a mesma conta da Revisão e do jogo.
+  const known = getKnownSpells(draft, finalScores)
 
   const casters = getCasterEntries(draft)
   const isCaster = casters.length > 0
   // Magias de talento (Iniciado em Magia): têm seção mesmo sem classe conjuradora.
-  const featSpellBlocks = getFeatSpellBlocks(draft, finalScores)
+  const featSpellBlocks = known.feats
 
   const fightingStyles = getSheetFightingStyles(draft)
 
@@ -164,27 +164,8 @@ export function PrintableSheet() {
   const progressionBlocks = getProgressionChoiceBlocks(entries)
   const maneuverDc = getClassManeuverSaveDc(draft, finalScores)
 
-  /**
-   * Toda magia que o personagem conhece, por QUALQUER via:
-   * - truques e magias das classes conjuradoras, com as de Segredos Mágicos (bonusSpells);
-   * - o truque racial, o da subclasse e as magias inatas da raça;
-   * - os truques e a magia de talento (Iniciado em Magia).
-   *
-   * Sem repetir e na ordem da mesa: truques primeiro, depois por nível, alfabético dentro de cada.
-   */
-  const knownSpells = (() => {
-    const ids = [
-      ...casters.flatMap(c => [...c.cantrips, ...c.spells, ...c.bonusSpells]),
-      ...(draft.raceChoices.cantrip ? [draft.raceChoices.cantrip] : []),
-      ...entries.flatMap(e => e.classChoices.subclassExtras.cantrip ? [e.classChoices.subclassExtras.cantrip] : []),
-      ...innateSpells.map(s => s.spellId),
-      ...featSpellBlocks.flatMap(b => [...b.cantrips, ...b.spells].map(s => s.id)),
-    ]
-    return [...new Set(ids)]
-      .map(getSpell)
-      .filter((s): s is NonNullable<typeof s> => s !== undefined)
-      .sort((a, b) => a.level - b.level || a.name.localeCompare(b.name, 'pt-BR'))
-  })()
+  // O grimório do fim da ficha: cada magia conhecida uma vez, truques primeiro, por nível.
+  const knownSpells = listKnownSpells(known)
 
   return (
     <div className="print-sheet mx-auto w-[794px] shrink-0 bg-white text-gray-900 p-8 rounded-lg shadow-lg" style={{ fontFamily: 'Georgia, serif' }}>
@@ -472,16 +453,14 @@ export function PrintableSheet() {
       </Box>
 
       {/* Magias raciais */}
-      {(innateSpells.length > 0 || racialCantrip) && (
+      {(known.innate.length > 0 || known.raceCantrip) && (
         <Box title="Magias Raciais" className="mb-4">
-          {racialCantrip && <p className="text-xs">{racialCantrip.name} (truque)</p>}
-          {innateSpells.map(s => {
-            const spell = getSpell(s.spellId)
-            if (!spell) return null
-            const usage = describeInnateSpellUsage(s, spell.level)
+          {known.raceCantrip && <p className="text-xs">{known.raceCantrip.name} (truque)</p>}
+          {known.innate.map(({ innate, spell }) => {
+            const usage = describeInnateSpellUsage(innate, spell.level)
             return (
-              <p key={s.spellId} className="text-xs">
-                {spell.name} — {usage.text}{usage.limited && ` ${formatTrackCircles(1)}`} ({ABILITY_LABELS[s.ability].short})
+              <p key={innate.spellId} className="text-xs">
+                {spell.name} — {usage.text}{usage.limited && ` ${formatTrackCircles(1)}`} ({ABILITY_LABELS[innate.ability].short})
               </p>
             )
           })}

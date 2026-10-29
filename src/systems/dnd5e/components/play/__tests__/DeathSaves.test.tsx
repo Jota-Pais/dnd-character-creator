@@ -203,6 +203,23 @@ describe('DeathSaves — a queda rola o d20 para cima do aviso', () => {
     // O "Registrar" termina acima do aviso, com a folga.
     expect(FORM.top + FORM.height - top!).toBe(window.innerHeight - inset - TOAST_GAP)
   })
+
+  it('anima a rolagem; com prefers-reduced-motion, pula sem animar', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    hit(14)
+    act(() => frames.splice(0).forEach(frame => frame(0)))
+    expect(scrollBy()).toHaveBeenLastCalledWith(expect.objectContaining({ behavior: 'smooth' }))
+
+    cleanup()
+    resetPlay()
+    vi.stubGlobal('matchMedia', (query: string) => ({ matches: query === '(prefers-reduced-motion: reduce)' }))
+    openKrusk()
+    render(<PlayScreen />)
+    hit(14)
+    act(() => frames.splice(0).forEach(frame => frame(0)))
+    expect(scrollBy()).toHaveBeenLastCalledWith(expect.objectContaining({ behavior: 'auto' }))
+  })
 })
 
 /** Faz o próximo d20 dos dados do app (Web Crypto) sair com a face dada. */

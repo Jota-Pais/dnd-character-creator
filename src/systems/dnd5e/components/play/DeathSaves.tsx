@@ -53,7 +53,9 @@ export function DeathSaves({ view, bottomInset = 0 }: {
       const delta = getDeathSaveScrollDelta({
         panel, form, viewportHeight: window.innerHeight, bottomInset: insetRef.current,
       })
-      if (Math.abs(delta) >= 1) window.scrollBy({ top: delta, behavior: 'smooth' })
+      if (Math.abs(delta) < 1) return
+      const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+      window.scrollBy({ top: delta, behavior: reduceMotion ? 'auto' : 'smooth' })
     })
     return () => cancelAnimationFrame(frame)
   }, [state.lifeState])

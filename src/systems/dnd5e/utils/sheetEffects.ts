@@ -734,13 +734,15 @@ export function getWeaponCritThreshold(draft: CharacterDraft): ScopedSheetEffect
  * Dados de dano da arma a mais no crítico corpo a corpo (`meleeCritExtraWeaponDice`), um por fonte:
  * Crítico Brutal pelo nível NA classe de bárbaro (p. 49), Ataques Selvagens do meio-orc e talentos
  * pelo nível de personagem (p. 41). Cada fonte fica na sua linha — o guia mostra como nota no dano
- * crítico, sem mexer na fórmula.
+ * crítico, sem mexer na fórmula. O alcance é todo ataque corpo a corpo com arma
+ * (`melee-weapon-attack`): as armas corpo a corpo e o golpe desarmado, que só ganha o dado a mais
+ * quando tem dado (decisão 21 de `regras-dano-e-morte.md`, revista em 2026-10-29).
  */
-export function getMeleeCritExtraWeaponDice(draft: CharacterDraft): SheetEffect<number>[] {
-  const out: SheetEffect<number>[] = []
+export function getMeleeCritExtraWeaponDice(draft: CharacterDraft): ScopedSheetEffect[] {
+  const out: ScopedSheetEffect[] = []
   const add = (source: string, steps: LevelStep[] | undefined, level: number) => {
     const value = steps ? stepValue(steps, level) : undefined
-    if (value && value > 0 && !out.some(o => o.source === source)) out.push({ source, value })
+    if (value && value > 0 && !out.some(o => o.source === source)) out.push({ source, value, weapons: 'melee-weapon-attack' })
   }
   for (const { entry, features } of getOwnedClassFeaturesByEntry(draft)) {
     for (const feature of features) add(feature.name, feature.effects?.meleeCritExtraWeaponDice, entry.level)

@@ -385,6 +385,10 @@ describe('isSheetAttackInScope', () => {
     expect(['longsword', 'longbow', 'unarmed'].map(k => isSheetAttackInScope(row(k), 'weapon-attack'))).toEqual([true, true, true])
   })
 
+  it('melee-weapon-attack: as armas corpo a corpo e o golpe desarmado, sem as de ataque à distância', () => {
+    expect(['longsword', 'longbow', 'unarmed'].map(k => isSheetAttackInScope(row(k), 'melee-weapon-attack'))).toEqual([true, false, true])
+  })
+
   it('escopos de arma: a arma responde pela dela; o golpe desarmado fica de fora', () => {
     expect(isSheetAttackInScope(row('longbow'), 'ranged')).toBe(true)
     expect(isSheetAttackInScope(row('longsword'), 'ranged')).toBe(false)

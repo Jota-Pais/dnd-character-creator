@@ -472,6 +472,8 @@ type DamageInput = {
   notes?: string[]
   /** Dados de arma a mais só no crítico (Crítico Brutal, Ataques Selvagens): viram nota, fora da fórmula. */
   critExtraDice?: SheetEffect<number>[]
+  /** O dano é do golpe desarmado, que não é arma: a nota do dado a mais fala do golpe. */
+  unarmedStrike?: boolean
 }
 
 /** O que a ficha diz do dano fixo que dá 0 (golpe desarmado com Força baixa). */
@@ -485,7 +487,8 @@ function damageEntry(input: DamageInput): RollGuideEntry {
   const floor = modifier - input.parsed.modifier
   const dice = count > 0 ? `${count}d${sides}` : ''
   const critDice = count > 0 ? `${count * 2}d${sides}` : ''
-  const critNotes = count > 0 ? (input.critExtraDice ?? []).map(e => critExtraDiceNote(e, sides)) : []
+  // Sem dado (o golpe desarmado de dano fixo), não há dado a rolar a mais (decisão 21).
+  const critNotes = count > 0 ? (input.critExtraDice ?? []).map(e => critExtraDiceNote(e, sides, input.unarmedStrike)) : []
   const notes = [...(input.notes ?? [])]
   if (count === 0 && modifier === 0) notes.push(NO_DAMAGE_NOTE)
   else if (count === 0) notes.push('Dano fixo, sem dado: o acerto crítico não muda o valor (só os dados dobram, pág. 196).')
@@ -534,17 +537,20 @@ type AttackGuideContext = {
   weaponCrit: ScopedSheetEffect | null
   /** A raça é de tamanho Pequeno (halfling, gnomo): desvantagem com arma pesada (pág. 149). */
   small: boolean
-  /** Dados de arma a mais no crítico corpo a corpo, por fonte (Crítico Brutal, Ataques Selvagens). */
-  meleeCritExtraDice: SheetEffect<number>[]
+  /** Dados de arma a mais no crítico corpo a corpo, por fonte (Crítico Brutal, Ataques Selvagens), com o alcance. */
+  meleeCritExtraDice: ScopedSheetEffect[]
 }
 
 /**
  * "Crítico Brutal: no acerto crítico com esta arma corpo a corpo, role mais 2d12…". O dado é o que
  * a arma usa NAQUELE ataque (decisão de 2026-10-25): o versátil a duas mãos, o de Artes Marciais
  * quando ele substitui o da arma — por isso a nota sai de cada entrada de dano, com os lados dela.
+ * No golpe desarmado, o dado é o dele: o de Artes Marciais ou o d4 do Especialista em Briga.
  */
-function critExtraDiceNote({ source, value }: SheetEffect<number>, sides: number): string {
-  return `${source}: no acerto crítico com esta arma corpo a corpo, role mais ${value}d${sides} (o dado da arma neste ataque) e some ao dano.`
+function critExtraDiceNote({ source, value }: SheetEffect<number>, sides: number, unarmedStrike = false): string {
+  return unarmedStrike
+    ? `${source}: no acerto crítico com o golpe desarmado, role mais ${value}d${sides} (o dado do golpe neste ataque) e some ao dano.`
+    : `${source}: no acerto crítico com esta arma corpo a corpo, role mais ${value}d${sides} (o dado da arma neste ataque) e some ao dano.`
 }
 
 /**
@@ -581,8 +587,8 @@ function attackGuide(attack: SheetAttack, ctx: AttackGuideContext): AttackGuide 
   const heavySmall: GuideReason[] = attack.weapon?.heavy && ctx.small
     ? [{ source: 'weapon:heavy-small', label: `${attack.name} pesada para criatura Pequena` }]
     : []
-  // Só arma corpo a corpo: o golpe desarmado fica de fora (decisão 21, em aberto pela 27).
-  const critExtraDice = attack.weapon?.melee ? ctx.meleeCritExtraDice : []
+  // Todo ataque corpo a corpo com arma, golpe desarmado incluído (decisão 21, revista em 2026-10-29).
+  const critExtraDice = ctx.meleeCritExtraDice.filter(e => isSheetAttackInScope(attack, e.weapons))
   const extraAttacks = attack.attacksPerAction > 1
     ? [`${ctx.attacksPerActionSource ?? 'Ataque Extra'}: você faz ${attack.attacksPerAction} ataques ao usar a ação de Atacar — role cada um.`]
     : []
@@ -626,6 +632,7 @@ function attackGuide(attack: SheetAttack, ctx: AttackGuideContext): AttackGuide 
       breakdown: damageBreakdown(parsed),
       notes,
       critExtraDice,
+      unarmedStrike: attack.weapon === null,
     })
     : null
 

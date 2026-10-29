@@ -145,11 +145,14 @@ export type EquipmentSpeedBonus = {
  *   acima não o alcançam, salvo `melee-strength`, que fala do ataque e não da arma;
  * - `weapon-attack`: todo ataque com arma, "seus ataques com armas" do Crítico Aprimorado e do
  *   Crítico Superior (p. 85-86) — toda arma, corpo a corpo ou à distância, e o golpe desarmado, que
- *   é ataque com arma sem ser arma (decisão 20 de `regras-dano-e-morte.md`, revista em 2026-10-29).
+ *   é ataque com arma sem ser arma (decisão 20 de `regras-dano-e-morte.md`, revista em 2026-10-29);
+ * - `melee-weapon-attack`: todo ataque corpo a corpo com arma, o crítico do Crítico Brutal e dos
+ *   Ataques Selvagens (p. 41 e 49) — toda arma corpo a corpo e o golpe desarmado (decisão 21,
+ *   revista em 2026-10-29).
  */
 export type AttackScope =
   | 'ranged' | 'melee-one-handed' | 'melee-two-handed' | 'melee-light' | 'melee-strength' | 'unarmed'
-  | 'weapon-attack'
+  | 'weapon-attack' | 'melee-weapon-attack'
 
 /**
  * Bônus nas jogadas de dano que só vale numa situação, com o valor de um recurso calculado da
@@ -379,7 +382,9 @@ export type FeatureEffects = {
    * Dados de dano da arma a mais no acerto crítico com arma corpo a corpo: Crítico Brutal do
    * bárbaro, 1/2/3 no 9º/13º/17º pelo nível NA classe (p. 49); Ataques Selvagens do meio-orc, 1
    * (p. 41, nível de personagem). Por ora só NOTA na receita do dano crítico — a fórmula não muda.
-   * Só nas armas: o golpe desarmado fica de fora até o dono decidir (decisão 21, em aberto).
+   * O alcance é o escopo `melee-weapon-attack` (`getMeleeCritExtraWeaponDice`): as armas corpo a
+   * corpo e o golpe desarmado, este só quando tem dado (Artes Marciais, Especialista em Briga) —
+   * com o dano fixo não há dado a rolar a mais (decisão 21, revista em 2026-10-29).
    */
   meleeCritExtraWeaponDice?: LevelStep[]
   /** Artes Marciais do monge — só lido em features de classe, no nível NA classe dona. */

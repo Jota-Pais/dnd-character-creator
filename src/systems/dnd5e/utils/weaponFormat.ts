@@ -100,6 +100,7 @@ export function isWeaponInScope(weapon: Weapon, scope: AttackScope): boolean {
     // Toda arma corpo a corpo pode atacar com Força; o que a linha não cumpre vai na nota.
     case 'melee-strength': return melee
     case 'weapon-attack': return true
+    case 'melee-weapon-attack': return melee
     case 'unarmed': return false
   }
 }
@@ -109,13 +110,14 @@ export function isWeaponInScope(weapon: Weapon, scope: AttackScope): boolean {
  * (Arquearia, Duelismo, Armas Grandes, duas armas) não o pegam; mas é ataque corpo a corpo com
  * arma — "melee weapon attack" no inglês, que os dados seguem (decisão do dono de 2026-10-29) —,
  * e os escopos que falam do ataque, não da arma (`melee-strength`, o Dano de Fúria;
- * `weapon-attack`, a margem do Campeão), o alcançam.
+ * `weapon-attack`, a margem do Campeão; `melee-weapon-attack`, o Crítico Brutal), o alcançam.
  */
 export function isUnarmedStrikeInScope(scope: AttackScope): boolean {
   switch (scope) {
     case 'unarmed':
     case 'melee-strength':
-    case 'weapon-attack': return true
+    case 'weapon-attack':
+    case 'melee-weapon-attack': return true
     case 'ranged':
     case 'melee-one-handed':
     case 'melee-two-handed':

@@ -83,8 +83,8 @@ export type SheetAttackWeapon = { id: string; melee: boolean; heavy: boolean }
 export type SheetAttack = WeaponAttack & { key: string; weapon: SheetAttackWeapon | null }
 
 /**
- * A linha está no alcance do efeito (a margem de crítico do Campeão)? A arma responde pelo escopo
- * das armas (`isWeaponInScope`); o golpe desarmado, que não é arma, pelo dele
+ * A linha está no alcance do efeito (a margem do Campeão, o Crítico Brutal)? A arma responde pelo
+ * escopo das armas (`isWeaponInScope`); o golpe desarmado, que não é arma, pelo dele
  * (`isUnarmedStrikeInScope`).
  */
 export function isSheetAttackInScope(attack: SheetAttack, scope: AttackScope): boolean {

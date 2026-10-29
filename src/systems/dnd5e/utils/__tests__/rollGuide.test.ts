@@ -321,12 +321,37 @@ describe('getRollGuide — ataques', () => {
       'Ataques Selvagens: no acerto crítico com esta arma corpo a corpo, role mais 1d12 (o dado da arma neste ataque) e some ao dano.',
     ])
     expect(axe.damage!.notes.some(n => n.includes('Crítico Brutal'))).toBe(false)
-    // Arco (à distância) e golpe desarmado (decisão 21, em aberto): nada.
+    // Arco (à distância) e golpe desarmado de dano fixo, sem dado a rolar a mais (decisão 21): nada.
     expect(guide.attacks.find(a => a.key === 'longbow')!.damage!.crit!.notes).toBeUndefined()
     expect(guide.attacks.find(a => a.key === 'unarmed')!.damage!.crit!.notes).toBeUndefined()
     // Bárbaro 8 humano: sem nenhuma das duas.
     const human = getRollGuide({ ...halfOrc, level: 8, race: 'human' }, play())
     expect(human.attacks.find(a => a.key === 'greataxe')!.damage!.crit!.notes).toBeUndefined()
+  })
+
+  // Decisão 21 de regras-dano-e-morte.md, revista em 2026-10-29: o golpe desarmado é ataque corpo a
+  // corpo com arma, e os dois valem nele só quando ele tem dado — o dele.
+  it('Crítico Brutal e Ataques Selvagens no golpe desarmado com dado: o de Artes Marciais ou o do Especialista em Briga', () => {
+    // Meio-orc bárbaro 9 / monge 2, sem armadura: Artes Marciais (d4).
+    const monk = draft({
+      class: 'barbarian', level: 11, race: 'half-orc', abilityScores: SCORES, additionalClasses: [extraClass('monk', 2)], ...carrying(),
+    })
+    const unarmed = getRollGuide(monk, play()).attacks.find(a => a.key === 'unarmed')!
+    expect(unarmed.damage!.dice).toBe('1d4')
+    expect(unarmed.damage!.crit!.notes).toEqual([
+      'Crítico Brutal: no acerto crítico com o golpe desarmado, role mais 1d4 (o dado do golpe neste ataque) e some ao dano.',
+      'Ataques Selvagens: no acerto crítico com o golpe desarmado, role mais 1d4 (o dado do golpe neste ataque) e some ao dano.',
+    ])
+    // Bárbaro 9 humano com Especialista em Briga: o d4 do talento.
+    const brawler = draft({
+      class: 'barbarian', level: 9, race: 'human', abilityScores: SCORES,
+      asiChoices: [{ kind: 'feat', featId: 'especialista-em-briga' }], ...carrying(),
+    })
+    const brawlerUnarmed = getRollGuide(brawler, play()).attacks.find(a => a.key === 'unarmed')!
+    expect(brawlerUnarmed.damage!.dice).toBe('1d4')
+    expect(brawlerUnarmed.damage!.crit!.notes).toEqual([
+      'Crítico Brutal: no acerto crítico com o golpe desarmado, role mais 1d4 (o dado do golpe neste ataque) e some ao dano.',
+    ])
   })
 
   it('o dado extra do crítico é o da arma naquele ataque: o versátil a duas mãos, o de Artes Marciais no monge', () => {

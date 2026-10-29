@@ -465,7 +465,7 @@ describe('weaponFormat', () => {
     // Não é arma (p. 196), mas é ataque corpo a corpo com arma pelo inglês (2026-10-29): só o
     // escopo que fala do ataque, não da arma, o alcança.
     it.each([
-      ['unarmed', true], ['melee-strength', true], ['weapon-attack', true],
+      ['unarmed', true], ['melee-strength', true], ['weapon-attack', true], ['melee-weapon-attack', true],
       ['ranged', false], ['melee-one-handed', false], ['melee-two-handed', false], ['melee-light', false],
     ] as const)('escopo %s alcança o golpe desarmado: %s', (scope, expected) => {
       expect(isUnarmedStrikeInScope(scope)).toBe(expected)

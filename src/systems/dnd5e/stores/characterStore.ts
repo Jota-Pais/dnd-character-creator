@@ -11,6 +11,7 @@ import { loadLibrary, saveCharacterEntry, deleteCharacterEntry, newId, type Save
 import { canPlayDraft, getFirstIncompleteStep } from '../utils/draftValidation'
 import { useAppStore } from '../../../core/stores/appStore'
 import { cryptoRoller, type DieRoller } from '../../../core/dice'
+import { canonicalJson } from '../../../core/utils/canonicalJson'
 import type { PlayState } from '../types/playState'
 import { deletePlayState, loadOpenPlayId, saveOpenPlayId, savePlayState } from '../utils/playStorage'
 import { usePlayStore } from './playStore'
@@ -116,14 +117,6 @@ type CharacterStore = {
   reset: () => void
   /** Ficha lida de um arquivo: entra como ficha nova, com o estado de jogo que veio nele (se veio). */
   importDraft: (draft: CharacterDraft, playState?: PlayState | null) => void
-}
-
-/** JSON com as chaves em ordem: dois drafts iguais dão o mesmo texto, qualquer que seja a ordem. */
-function canonicalJson(value: unknown): string {
-  return JSON.stringify(value, (_key, v: unknown) =>
-    v && typeof v === 'object' && !Array.isArray(v)
-      ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))
-      : v)
 }
 
 const BLANK_DRAFT = canonicalJson(EMPTY_DRAFT)

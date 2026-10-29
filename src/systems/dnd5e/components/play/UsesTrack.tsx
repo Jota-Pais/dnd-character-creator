@@ -42,7 +42,9 @@ export function UsesTrack({ label, total, available, onSpend, onRecover }: {
 
 /**
  * Poço grande (Chi do monge alto, Cura pelas Mãos em PV): "restam X de Y", com −1/+1 e, quando o
- * gasto vem em quantidades (`amountInput`), um campo para gastar várias de uma vez.
+ * gasto vem em quantidades (`amountInput`), um campo para gastar várias de uma vez. Os botões são
+ * aria-disabled, não disabled: o −1 que zera, o +1 que enche e o "Gastar" que esvazia o campo
+ * apagariam o botão com o foco nele, que cairia no body. Apagados, não fazem nada.
  */
 export function RemainingTrack({ label, unitLabel, total, available, amountInput, onSpend, onRecover }: {
   label: string
@@ -72,18 +74,18 @@ export function RemainingTrack({ label, unitLabel, total, available, amountInput
         </span>
         <ChangeAnnouncer text={`${label}: restam ${available} de ${total} ${unitLabel}`} />
         <button
-          onClick={() => onSpend(1)}
-          disabled={available <= 0}
+          onClick={() => { if (available > 0) onSpend(1) }}
+          aria-disabled={available <= 0}
           aria-label={`Gastar 1: ${label}`}
-          className="w-10 h-10 rounded-lg border border-parchment-800 text-parchment-300 disabled:opacity-30 hover:border-parchment-600"
+          className="w-10 h-10 rounded-lg border border-parchment-800 text-parchment-300 aria-disabled:opacity-30 hover:border-parchment-600"
         >
           −1
         </button>
         <button
-          onClick={() => onRecover(1)}
-          disabled={available >= total}
+          onClick={() => { if (available < total) onRecover(1) }}
+          aria-disabled={available >= total}
           aria-label={`Recuperar 1: ${label}`}
-          className="w-10 h-10 rounded-lg border border-parchment-800 text-parchment-300 disabled:opacity-30 hover:border-parchment-600"
+          className="w-10 h-10 rounded-lg border border-parchment-800 text-parchment-300 aria-disabled:opacity-30 hover:border-parchment-600"
         >
           +1
         </button>
@@ -103,8 +105,8 @@ export function RemainingTrack({ label, unitLabel, total, available, amountInput
           />
           <button
             type="submit"
-            disabled={amount === null || amount < 1}
-            className="min-h-10 rounded-lg border border-parchment-700 px-3 text-sm text-parchment-200 disabled:opacity-40 hover:border-gold-600"
+            aria-disabled={amount === null || amount < 1}
+            className="min-h-10 rounded-lg border border-parchment-700 px-3 text-sm text-parchment-200 aria-disabled:opacity-40 hover:border-gold-600"
           >
             Gastar
           </button>

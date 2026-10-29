@@ -25,12 +25,20 @@ describe('desfazer e avisos', () => {
     openKrusk()
     render(<PlayScreen />)
     const undo = screen.getByRole('button', { name: 'Desfazer a última mudança' })
-    expect(undo).toBeDisabled()
+    expect(undo).toHaveAttribute('aria-disabled', 'true')
     damage('5')
     expect(screen.getByTestId('hp-current')).toHaveTextContent('9')
+    expect(undo).toHaveAttribute('aria-disabled', 'false')
+    // O desfazer que esvazia a pilha apaga o botão, e o foco fica nele.
+    undo.focus()
     fireEvent.click(undo)
     expect(screen.getByTestId('hp-current')).toHaveTextContent('14')
-    expect(undo).toBeDisabled()
+    expect(undo).not.toBeDisabled()
+    expect(undo).toHaveAttribute('aria-disabled', 'true')
+    expect(undo).toHaveFocus()
+    // Apagado, não faz nada.
+    fireEvent.click(undo)
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('14')
   })
 
   it('os avisos da ação aparecem com "Desfazer", que volta o estado', () => {

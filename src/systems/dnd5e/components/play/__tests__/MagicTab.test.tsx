@@ -156,6 +156,42 @@ describe('MagicTab', () => {
     expect(screen.getByRole('group', { name: 'Fúria: 1 de 2' })).toBeInTheDocument()
   })
 
+  it('poço de PV (Cura pelas Mãos): o "Gastar", o −1 e o +1 que chegam ao limite ficam apagados com o foco neles', () => {
+    openMagic({
+      ...structuredClone(COMPLETE_DRAFT),
+      class: 'paladin',
+      classChoices: { ...structuredClone(COMPLETE_DRAFT.classChoices), skills: ['insight', 'medicine'] },
+    })
+    const name = 'Cura pelas Mãos'
+    const remaining = () => screen.getByTestId(`remaining-${name}`)
+    fireEvent.change(screen.getByLabelText(`Quanto gastar: ${name}`), { target: { value: '4' } })
+    const spend = screen.getByRole('button', { name: 'Gastar' })
+    spend.focus()
+    fireEvent.click(spend)
+    expect(remaining()).toHaveTextContent('restam 1 de 5 PV')
+    expect(spend).toHaveAttribute('aria-disabled', 'true')
+    expect(spend).toHaveFocus()
+
+    const lower = screen.getByRole('button', { name: `Gastar 1: ${name}` })
+    lower.focus()
+    fireEvent.click(lower)
+    expect(remaining()).toHaveTextContent('restam 0 de 5 PV')
+    expect(lower).toHaveAttribute('aria-disabled', 'true')
+    expect(lower).toHaveFocus()
+    // Apagado, não faz nada: nem um passo do desfazer, nem um aviso de recusa.
+    const steps = usePlayStore.getState().undoStack.length
+    fireEvent.click(lower)
+    expect(usePlayStore.getState().undoStack).toHaveLength(steps)
+    expect(usePlayStore.getState().notices.some(n => n.kind === 'refused')).toBe(false)
+
+    const raise = screen.getByRole('button', { name: `Recuperar 1: ${name}` })
+    raise.focus()
+    for (let i = 0; i < 5; i++) fireEvent.click(raise)
+    expect(remaining()).toHaveTextContent('restam 5 de 5 PV')
+    expect(raise).toHaveAttribute('aria-disabled', 'true')
+    expect(raise).toHaveFocus()
+  })
+
   it('o leitor de tela ouve a contagem quando um uso é gasto (abrir a aba não anuncia)', () => {
     openKrusk()
     render(<PlayScreen />)

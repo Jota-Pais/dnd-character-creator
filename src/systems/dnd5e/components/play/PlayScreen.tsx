@@ -179,12 +179,14 @@ export function PlayScreen() {
               ← Personagens
             </button>
             <div className="flex items-center gap-1">
+              {/* aria-disabled, não disabled: o desfazer que esvazia a pilha apagaria o botão com o
+                  foco nele, que cairia no body. Sem passo a desfazer, o `undo` não faz nada. */}
               <button
                 onClick={undo}
-                disabled={undoCount === 0}
+                aria-disabled={undoCount === 0}
                 aria-label="Desfazer a última mudança"
                 title="Desfazer a última mudança"
-                className="w-10 h-10 flex items-center justify-center rounded-lg text-parchment-500 hover:text-parchment-200 disabled:opacity-30 disabled:hover:text-parchment-500 transition-colors"
+                className="w-10 h-10 flex items-center justify-center rounded-lg text-parchment-500 hover:text-parchment-200 aria-disabled:opacity-30 aria-disabled:hover:text-parchment-500 transition-colors"
               >
                 ↶
               </button>

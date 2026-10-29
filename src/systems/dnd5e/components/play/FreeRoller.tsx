@@ -9,7 +9,9 @@ import { RollOutcome } from './RollOutcome'
 
 /**
  * Um número do rolador livre: o campo de texto (o type number recusa o sinal digitado; o inputMode
- * mantém o teclado numérico) entre o "−" e o "+", que dão conta do sinal no celular.
+ * mantém o teclado numérico) entre o "−" e o "+", que dão conta do sinal no celular. No limite, o
+ * botão é aria-disabled, não disabled (o toque que chega a ele apagaria o botão com o foco, que
+ * cairia no body), e não faz nada.
  */
 function Stepper({ id, label, text, value, min, max, onText }: {
   id: string
@@ -21,12 +23,17 @@ function Stepper({ id, label, text, value, min, max, onText }: {
   max: number
   onText: (text: string) => void
 }) {
-  const button = 'w-10 min-h-10 shrink-0 rounded-lg border border-parchment-800 text-parchment-300 hover:border-parchment-600 disabled:opacity-30'
+  const button = 'w-10 min-h-10 shrink-0 rounded-lg border border-parchment-800 text-parchment-300 hover:border-parchment-600 aria-disabled:opacity-30'
   return (
     <div className="min-w-0">
       <label htmlFor={id} className="block text-[11px] text-parchment-500">{label}</label>
       <div className="mt-0.5 flex gap-1">
-        <button onClick={() => onText(String(value - 1))} disabled={value <= min} aria-label={`Diminuir ${label.toLowerCase()}`} className={button}>
+        <button
+          onClick={() => { if (value > min) onText(String(value - 1)) }}
+          aria-disabled={value <= min}
+          aria-label={`Diminuir ${label.toLowerCase()}`}
+          className={button}
+        >
           −
         </button>
         <input
@@ -37,7 +44,12 @@ function Stepper({ id, label, text, value, min, max, onText }: {
           onChange={e => onText(e.target.value)}
           className="w-full min-w-0 min-h-10 rounded-lg border border-parchment-800 bg-surface-base px-2 text-center text-sm text-parchment-100 outline-none focus:border-gold-600"
         />
-        <button onClick={() => onText(String(value + 1))} disabled={value >= max} aria-label={`Aumentar ${label.toLowerCase()}`} className={button}>
+        <button
+          onClick={() => { if (value < max) onText(String(value + 1)) }}
+          aria-disabled={value >= max}
+          aria-label={`Aumentar ${label.toLowerCase()}`}
+          className={button}
+        >
           +
         </button>
       </div>

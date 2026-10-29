@@ -531,14 +531,14 @@ Mais específicas da ficha: concentração ausente, buffs fora das rolagens, pre
 - **Definir o estado de jogo** como campo irmão do draft:
   - em "gasto", com extras temporários e ajuste temporário de máximo;
   - com ids estáveis e versão;
-  - incluído no mapper, no export/import (a decidir) e num sanitizador.
+  - incluído no mapper, no export/import (decisão 10.2.3: o export leva o estado de jogo) e num sanitizador.
 - **Motor de rolagem puro no núcleo**: RNG confiável, notação mínima, V/D, crítico e resultado como registro serializável, com cobertura obrigatória de testes. Os `Math.random` espalhados, inclusive nos storages, passam a usar uma fonte comum.
-- **Contrato de "jogar"** como capacidade **opcional** do sistema no `IRpgSystem`; o Ordem pode não implementar ainda (decisão 10.2.17). Remover a `AppState` morta.
+- **Contrato de "jogar"** como capacidade **opcional** do sistema no `IRpgSystem`; o contrato entra agora (decisão 10.2.12), e o Ordem fica para a Fase 3 (decisão 10.2.17). Remover a `AppState` morta.
 
 ### Fase 1: MVP "ficha viva + dados"
 
 **Fechada em 2026-10-29.** Ficaram de fora, de propósito:
-- tela acesa, som e vibração, que esperam a decisão 10.2.22;
+- tela acesa, que a decisão 10.2.22 já definiu (ligada por padrão e desligável) e ainda não foi feita; som e vibração ficam fora pela mesma decisão;
 - a trava de "um descanso longo a cada 24 h", porque é tempo de jogo, não de relógio. Fica só o aviso.
 
 - **Entrada**: botão "Jogar" na galeria, que abre uma view de jogo própria e responsiva. No celular em retrato, uma coluna com seções por swipe. No tablet e no desktop, mais densidade.
@@ -582,37 +582,38 @@ Mais específicas da ficha: concentração ausente, buffs fora das rolagens, pre
 - **Gamificação barata**: feedback visual de dano e cura, aviso de PV baixo (inspirado nas extensões) e celebração do 20 natural.
 
 ### Fase 2: o turno completo
-- **"O que posso fazer no meu turno?"**: ações agrupadas em Ação / Ação Bônus / Reação / Outras, com as ações padrão do PHB, custo visível e botão "Usar" que gasta o recurso. Exige o bloco declarativo novo nas features, nos talentos e nos traços raciais (ex.: Arma de Sopro, Sortudo).
-- **Efeitos ativos com liga/desliga** (Fúria, Bênção, Escudo Arcano, Armadura Arcana) como linhas condicionais. Fúria e Bênção são candidatas a ir antes, conforme a decisão 10.2.16, que também define se um efeito ativo incondicional muda a CA.
-- **Recursos completos** (a lista da seção 8.2), talentos com uso, magias inatas com contador e custos das escolhas de progressão. Entram também a **Conjuração Flexível** como extras temporários, condicionada à decisão 10.2.4.
-- **Grimório jogável**:
+- **"O que posso fazer no meu turno?"**: ações agrupadas em Ação / Ação Bônus / Reação / Outras, com as ações padrão do PHB, custo visível e botão "Usar" que gasta o recurso. Exige o bloco declarativo novo nas features, nos talentos e nos traços raciais (ex.: Arma de Sopro, Sortudo). As regras do turno e das ações estão em `docs/regras-acoes-em-combate.md`.
+- **Efeitos ativos com liga/desliga** (Fúria, Bênção, Escudo Arcano, Armadura Arcana). Ligado, o efeito muda os números da ficha em jogo (dano, CA, ataque, testes); desligado, nada muda (decisão 10.2.16). Entrar em fúria encerra a concentração (`docs/regras-rolagens-e-concentracao.md`, seção 10.2). Fúria e Bênção são candidatas a ir antes.
+- **Recursos completos** (a lista da seção 8.2), talentos com uso, magias inatas com contador e custos das escolhas de progressão. Entra também a **Conjuração Flexível** como extras temporários, feita pela tela do jogo e com desfazer (decisão 10.2.4).
+- **Grimório jogável** (regras em `docs/regras-conjuracao.md`):
   - Conjurar gastando espaço, com upcast mostrando o ganho;
   - ritual sem gastar, com a regra por classe;
-  - restrição da magia de ação bônus;
+  - restrição da magia de ação bônus: no mesmo turno, só um truque de 1 ação;
   - truques escalando pelo nível do personagem;
   - concentração marcada automaticamente ao conjurar e aviso de troca.
 
-  **Preparar magias após o descanso longo** é condicionado à decisão 10.2.4. Para clérigo, druida e paladino, trocar as preparadas hoje reescreve `spellChoices.spells` do draft, ou seja, mexe na ficha.
-- **Dano estruturado de magias**, com dados extraídos semiautomaticamente da descrição e **revisados contra o livro**. O dano extra no crítico usa Crítico Aprimorado, Superior e Brutal e o traço do meio-orc, uma vez estruturados.
-- **Checklist leve do turno** (ação, bônus, movimento, reação), se aprovado.
-- **Inventário de sessão**:
+  **Preparar magias após o descanso longo** é feito pela tela do jogo, com desfazer (decisão 10.2.4). Hoje, para clérigo, druida e paladino, as preparadas moram em `spellChoices.spells` do draft; em jogo, a troca é sessão e não reescreve o draft ("a ficha não muda em jogo", CLAUDE.md).
+- **Dano estruturado de magias**, com dados extraídos semiautomaticamente da descrição, em lotes por nível de magia, cada lote **revisado contra o livro** (decisão 10.2.6). O dano extra no crítico usa Crítico Aprimorado, Superior e Brutal e o traço do meio-orc, uma vez estruturados.
+- **Checklist leve do turno** (ação, bônus, movimento, reação), pela decisão 10.2.10.
+- **Inventário de sessão** (decisão 10.2.11):
   - moedas +/−;
-  - munição −1, com a recuperação de metade após o combate;
+  - munição −1, com a recuperação de metade após a batalha (`docs/regras-equipamentos.md`, seção 6.1);
   - consumíveis (ex.: Poção de Cura);
-  - equipar/desequipar com a CA ao vivo, se aprovado e condicionado à decisão 10.2.4.
+  - vestir e tirar armadura com a CA ao vivo, pela tela do jogo e com desfazer (decisão 10.2.4);
+  - carga só pela regra padrão, sem a variante Sobrecarga (`docs/regras-equipamentos.md`, seção 6.2).
 - **Defesas** (resistências e imunidades) como bloco informativo, com seleção opcional de tipo de dano aplicando a resistência.
-- **PWA** (instalável e offline com service worker).
+- **PWA** (instalável e offline com service worker), pela decisão 10.2.14.
 
 ### Fase 3: refinamentos
 - **Dados 3D opcionais**, carregados sob demanda.
   - Medir o peso real no build antes de escolher a biblioteca, e evitar GPL/AGPL.
   - A animação sempre forçada ao resultado do motor (seção 4.3).
   - Hoje a rota preferível é three com física própria ou dice-box-threejs (MIT, aceita resultado predeterminado), lembrando que o cannon-es está parado. Rapier e dice-box só servem se for possível forçar a face.
-- **Temas de dado** como recompensa local por marcos, com licenças próprias ou verificadas.
+- **Temas de dado** como recompensa local por marcos, com licenças próprias ou verificadas (decisão 10.2.13).
 - **Modo forma** (Forma Selvagem/Polimorfia), com dano excedente.
-- **Diário de sessão** estruturado, além da nota livre do MVP, e um eventual "Nova sessão" (decisão 10.2.20). Personagem de exemplo e mini-guias "?" (decisão 10.2.21).
+- **Diário de sessão** estruturado, além da nota livre do MVP, e o "Nova sessão", que limpa o histórico de rolagens (decisão 10.2.20). Personagem de exemplo (decisão 10.2.21) e mini-guias "?".
 - **PDF** refletindo o estado de jogo e só as magias preparadas.
-- **Ordem** implementado sobre o mesmo contrato, se não for antecipado (10.2.17).
+- **Ordem** implementado sobre o mesmo contrato (decisão 10.2.17).
 
 ### Fica de fora (e por quê)
 | Fora | Por quê |
@@ -623,7 +624,7 @@ Mais específicas da ficha: concentração ausente, buffs fora das rolagens, pre
 | Subir de nível e XP em sessão | O CLAUDE.md põe "evolução de personagem em sessão" fora da V1. Subir de nível só pelo criador (a confirmar, 10.2.2) |
 | Regras 2024 (Inspiração Heroica, exaustão −2, todos os DV no longo) | O projeto é PHB 2014. Usar a confusão do DDB como argumento ("sua ficha 2014 nunca muda sozinha") |
 | Edição estrutural no modo jogo (nível, classe, atributos) | Restrição de ficha imutável; volta ao fluxo de criação |
-| Efeito **condicional** aplicado sozinho nos números (Bênção, vantagens de condição) | Regra de ouro do projeto: o condicional vira linha e aviso. O incondicional entra no número, conforme as decisões 10.2.15 e 10.2.16 |
+| Efeito **condicional** aplicado sozinho nos números (Bênção, vantagens de condição) | Regra de ouro do projeto: o condicional vira linha e aviso. O incondicional entra no número (decisão 10.2.15), e o efeito ativo só muda os números quando o jogador o liga (decisão 10.2.16) |
 | Overrides livres estilo Dicecloud e homebrew | Contra o foco no iniciante; homebrew está fora do escopo da V1 |
 | Itens mágicos e sintonização | Não há itens mágicos nos dados |
 
@@ -661,36 +662,36 @@ Mais específicas da ficha: concentração ausente, buffs fora das rolagens, pre
 9. **Recuperação Arcana e Natural**: limite e restrições.
 10. **Inspiração 2014**: binária, concedida pelo mestre, dá vantagem.
 11. **Recursos que recuperam diferente no curto e no longo**, e a recuperação exata de cada recurso e talento da seção 8.2.
-12. **Truques escalam pelo nível do personagem** na multiclasse, não pelo nível da classe.
-13. **Magias**: a restrição da magia de ação bônus e as regras de ritual por classe (mago, clérigo, druida, bardo).
+12. **Truques escalam pelo nível do personagem** na multiclasse, não pelo nível da classe. **Resolvido (2026-10-29):** pelo nível do personagem (decisão do dono); digitalizado em `docs/regras-conjuracao.md`, seção 2.
+13. **Magias**: a restrição da magia de ação bônus e as regras de ritual por classe (mago, clérigo, druida, bardo). **Resolvido (2026-10-29):** a magia de ação bônus só deixa conjurar, no mesmo turno, um truque de 1 ação (decisão do dono); digitalizado em `docs/regras-conjuracao.md`, seções 3 (tempo de conjuração: ação bônus e reação) e 4 (ritual, a regra geral e a de cada classe). As ações do turno que a Fase 2 usa estão em `docs/regras-acoes-em-combate.md`.
 14. **Condições** (linhas 28440–28563): os efeitos mecânicos exatos de cada uma das 14 mais a Exaustão. Em especial Inconsciente (larga o que segura, crítico a 1,5 m), Incapacitado, Agarrado e Impedido.
-15. **Munição**: recuperar metade após o combate (seção de armas do PHB).
-16. **Carga** (p. 176), se o inventário entrar.
+15. **Munição**: recuperar metade após o combate (seção de armas do PHB). **Resolvido (2026-10-29):** cada ataque gasta uma peça, e no fim da batalha, com um minuto procurando, recupera-se metade da gasta; digitalizado em `docs/regras-equipamentos.md`, seção 6.1.
+16. **Carga** (p. 176), se o inventário entrar. **Resolvido (2026-10-29):** só a regra padrão (capacidade de carga = Força × 7,5 kg no pt-BR, Força × 15 libras no original), sem a variante Sobrecarga; digitalizado em `docs/regras-equipamentos.md`, seção 6.2.
 
 ### 10.2 Decisões de produto
 1. **Fichas incompletas** (`missingCount > 0`) podem ser jogadas ou ficam bloqueadas?
 2. **O que acontece com o estado de jogo** quando o jogador volta ao criador e muda nível, classe ou atributos? Com o estado em "gasto" ele sobrevive, mas o que fazer com recursos que deixam de existir? Confirmar também que **subir de nível só acontece pelo criador** ("evolução de personagem em sessão" está fora da V1 no CLAUDE.md).
-3. **O export/import JSON leva o estado da sessão** ou só a ficha?
-4. **"Ficha imutável" versus sessão**: preparar magias após o descanso longo (para clérigo, druida e paladino isso hoje reescreve `spellChoices.spells`), equipar/desequipar, trocar armadura e a Conjuração Flexível do feiticeiro contam como sessão ou como edição da ficha?
+3. **O export/import JSON leva o estado da sessão** ou só a ficha? **Decidido (2026-10-29):** leva o estado de jogo junto.
+4. **"Ficha imutável" versus sessão**: preparar magias após o descanso longo (para clérigo, druida e paladino isso hoje reescreve `spellChoices.spells`), equipar/desequipar, trocar armadura e a Conjuração Flexível do feiticeiro contam como sessão ou como edição da ficha? **Decidido (2026-10-29):** preparar magias após o descanso longo, vestir e tirar armadura e a Conjuração Flexível do feiticeiro são feitos pela tela do jogo, com desfazer (Fase 2).
 5. **Bugs de base**: corrigir na Fase 0 (recomendado) ou junto com o módulo?
-6. **Profundidade das magias** no MVP: só concentração, ritual e tempo (já dá para um grimório) ou também dano estruturado (trabalho grande de dados)?
+6. **Profundidade das magias** no MVP: só concentração, ritual e tempo (já dá para um grimório) ou também dano estruturado (trabalho grande de dados)? **Decidido (2026-10-29):** o dano das magias é estruturado na Fase 2, em lotes por nível de magia, cada lote revisado contra o livro.
 7. **Crítico automático** no 20 natural (o DDB recebeu reclamação por não deixar desmarcar) ou só um botão "rolar dano crítico"? **Precisa vir antes da Fase 1**, porque o dano de arma entra no MVP.
 8. **Entrada manual de dado físico** ao lado do botão de rolar (recomendado: sim)?
 9. **3D**: fora do MVP (recomendado) ou já na V1?
-10. **Checklist de turno** (ação, bônus, movimento, reação): no MVP ou na Fase 2?
-11. **Inventário e moedas** no MVP ou na Fase 2?
-12. **Contrato "play" no `IRpgSystem` já agora**, com a galeria passando a usar o contrato em vez dos stores diretos?
-13. **Temas de dado como recompensa** (gamificação local)?
-14. **PWA** entra no MVP ou na Fase 2?
+10. **Checklist de turno** (ação, bônus, movimento, reação): no MVP ou na Fase 2? **Decidido (2026-10-29):** um checklist leve do turno entra na Fase 2.
+11. **Inventário e moedas** no MVP ou na Fase 2? **Decidido (2026-10-29):** o inventário de sessão (moedas, munição, consumíveis) entra na Fase 2.
+12. **Contrato "play" no `IRpgSystem` já agora**, com a galeria passando a usar o contrato em vez dos stores diretos? **Decidido (2026-10-29):** o contrato "play", opcional no `IRpgSystem`, entra agora (Fase 0).
+13. **Temas de dado como recompensa** (gamificação local)? **Decidido (2026-10-29):** Fase 3.
+14. **PWA** entra no MVP ou na Fase 2? **Decidido (2026-10-29):** Fase 2 (instalável e offline).
 15. **Condições e exaustão com efeito incondicional** (PV máximo na exaustão 4, deslocamento 0 ou pela metade) mudam o número, como manda a regra de ouro (recomendado), ou ficam só como aviso?
-16. **Efeitos ativos** (Fúria, Bênção, Armadura Arcana, Escudo Arcano) entram no MVP como liga/desliga ou na Fase 2? E um efeito ativo incondicional (Armadura Arcana: CA 13 + DES) muda a CA durante a sessão?
-17. **O Ordem Paranormal precisa ser atendido já no MVP?** O pedido fala das fichas produzidas pelo app, o que inclui as do Ordem. A pergunta 10.2.12 só trata do contrato.
+16. **Efeitos ativos** (Fúria, Bênção, Armadura Arcana, Escudo Arcano) entram no MVP como liga/desliga ou na Fase 2? E um efeito ativo incondicional (Armadura Arcana: CA 13 + DES) muda a CA durante a sessão? **Decidido (2026-10-29):** liga/desliga no jogo, na Fase 2. Ligado, o efeito muda os números (dano, CA, ataque, testes): nas palavras do dono, "essa é justamente a utilidade de usar o app".
+17. **O Ordem Paranormal precisa ser atendido já no MVP?** O pedido fala das fichas produzidas pelo app, o que inclui as do Ordem. A pergunta 10.2.12 só trata do contrato. **Decidido (2026-10-29):** o Ordem no modo de jogo fica para a Fase 3.
 18. **A rolagem digital vem ligada por padrão**, ou o padrão é "só contabilidade" com dados físicos? Dá para desligar por ficha? **Decidido (2026-10-25):** desligada por padrão. O jogador rola na mesa e a tela mostra o que rolar e quanto somar. Os dados do app são uma configuração, sem destaque no MVP.
 19. **Mínimo 1 no descanso longo e mínimo 0 no dado de vida + CON** (seção 10.1, itens 3 e 4): o que vale?
-20. **Quanto histórico de rolagens guardar?** Existe um "Nova sessão" (padrão Shard) que limpa o log e reseta marcadores? A cota do localStorage (~5 MB) é compartilhada entre as fichas dos dois sistemas.
-21. **Personagens de exemplo e tutorial jogável** (padrão 5e Character Sheet e PrismScroll): entram, e em qual fase?
-22. **Notas de sessão** no MVP (recomendado: nota livre) ou só na Fase 3? Acessibilidade mínima e tela acesa contam como requisito do MVP?
-23. **Migração**: os bugs da Fase 0 mudam números de fichas já salvas. Avisar o jogador e migrar automaticamente?
+20. **Quanto histórico de rolagens guardar?** Existe um "Nova sessão" (padrão Shard) que limpa o log e reseta marcadores? A cota do localStorage (~5 MB) é compartilhada entre as fichas dos dois sistemas. **Decidido (2026-10-29):** o "Nova sessão" limpa o histórico de rolagens.
+21. **Personagens de exemplo e tutorial jogável** (padrão 5e Character Sheet e PrismScroll): entram, e em qual fase? **Decidido (2026-10-29):** o personagem de exemplo entra na Fase 3.
+22. **Notas de sessão** no MVP (recomendado: nota livre) ou só na Fase 3? Acessibilidade mínima e tela acesa contam como requisito do MVP? **Decidido (2026-10-29):** a tela fica acesa durante o jogo (Screen Wake Lock), ligada por padrão e desligável; sem som e sem vibração.
+23. **Migração**: os bugs da Fase 0 mudam números de fichas já salvas. Avisar o jogador e migrar automaticamente? **Decidido (2026-10-29):** avisar o jogador quando uma correção do app muda números de ficha salva.
 
 ### 10.3 Riscos
 - **Janela competitiva**: o app presencial do DDB (previsto para 2027) e o Quickbuilder (2026, para iniciante; o "sem conta" é [não verificável]) miram o mesmo público. A data do Character Builder novo diverge entre as fontes. Nossa defesa é PHB 2014 estrito, offline, sem conta e em português.

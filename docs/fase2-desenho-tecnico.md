@@ -374,10 +374,10 @@ Para não duplicar a fonte:
 
 O trecho 'Tabela Ancestral Dracônico' do CLAUDE.md passa a apontar para damage-types.json.
 
-- **Arquivos:** `src/systems/dnd5e/types/damage.ts`, `src/systems/dnd5e/data/damage-types.json`, `src/systems/dnd5e/utils/damageTypes.ts`, `src/systems/dnd5e/utils/weaponFormat.ts`, `src/systems/dnd5e/types/equipment.ts`, `src/systems/dnd5e/types/condition.ts`, `src/systems/dnd5e/data/conditions.json`, `src/systems/dnd5e/data/dragon-ancestors.json`, `src/systems/dnd5e/utils/dragonAncestors.ts`, `src/systems/dnd5e/utils/raceUtils.ts`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/types/damage.ts`, `packages/rules/src/systems/dnd5e/data/damage-types.json`, `packages/rules/src/systems/dnd5e/utils/damageTypes.ts`, `packages/rules/src/systems/dnd5e/utils/weaponFormat.ts`, `packages/rules/src/systems/dnd5e/types/equipment.ts`, `packages/rules/src/systems/dnd5e/types/condition.ts`, `packages/rules/src/systems/dnd5e/data/conditions.json`, `packages/rules/src/systems/dnd5e/data/dragon-ancestors.json`, `packages/rules/src/systems/dnd5e/utils/dragonAncestors.ts`, `packages/rules/src/systems/dnd5e/utils/raceUtils.ts`
 - **Testes:** - damageTypes.test.ts: os 13 ids, nomes e rótulos conferidos com a tabela §5 de regras-dano-e-morte.md.
 - dragonAncestors.test.ts: todo ancestral tem um damageType válido, e o traço 'Tipo de Dano' sai com o texto de hoje.
-- Varredura: falha se src/systems/dnd5e montar 'dano de ${'.
+- Varredura: falha se o código do dnd5e (packages/rules/src/systems/dnd5e e apps/web/src/systems/dnd5e) montar 'dano de ${'.
 - **Aceite:** Nenhum rótulo de tipo de dano existe fora de damage-types.json. A suíte passa sem mudar texto de ficha (etapa Raça, Revisão, PDF).
 
 #### 2. Efeito damageDefenses e getDamageDefenses
@@ -401,7 +401,7 @@ Em sheetEffects:
 
 Defesa condicional nunca entra no automático.
 
-- **Arquivos:** `src/systems/dnd5e/types/effects.ts`, `src/systems/dnd5e/types/race.ts`, `src/systems/dnd5e/data/races.json`, `src/systems/dnd5e/data/class-progression-features.json`, `src/systems/dnd5e/data/feats.json`, `src/systems/dnd5e/data/hunter-superior-defense.json`, `src/systems/dnd5e/utils/sheetEffects.ts`, `src/systems/dnd5e/data/__tests__/damageDefenses.test.ts`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/types/effects.ts`, `packages/rules/src/systems/dnd5e/types/race.ts`, `packages/rules/src/systems/dnd5e/data/races.json`, `packages/rules/src/systems/dnd5e/data/class-progression-features.json`, `packages/rules/src/systems/dnd5e/data/feats.json`, `packages/rules/src/systems/dnd5e/data/hunter-superior-defense.json`, `packages/rules/src/systems/dnd5e/utils/sheetEffects.ts`, `packages/rules/src/systems/dnd5e/data/__tests__/damageDefenses.test.ts`
 - **Testes:** sheetEffects.test.ts:
 - Tiefling: fogo.
 - Anão da colina: veneno.
@@ -436,7 +436,7 @@ O damagePipeline faz, por parcela:
 
 Arredonda por tipo e depois soma, pela proposta do item 12 até a decisão. O aviso traz a origem: 'Resistência a fogo (Resistência Infernal): 13 → 6'. Sem tipo informado, nada é automático, como hoje.
 
-- **Arquivos:** `src/systems/dnd5e/types/playState.ts`, `src/systems/dnd5e/utils/playSheet.ts`, `src/systems/dnd5e/utils/playState.ts`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/types/playState.ts`, `packages/rules/src/systems/dnd5e/utils/playSheet.ts`, `packages/rules/src/systems/dnd5e/utils/playState.ts`
 - **Testes:** playState.test.ts:
 - Tiefling, 13 de fogo: 6.
 - Anão, 9 de veneno: 4.
@@ -460,7 +460,7 @@ No HpPanel (modo Dano), a fila de chips de tipo aparece quando o personagem tem 
 
 Seguir as regras de foco, região viva montada vazia e alvos de 45 px do CLAUDE.md.
 
-- **Arquivos:** `src/systems/dnd5e/components/play/HpPanel.tsx`, `src/systems/dnd5e/components/play/hpEntry.ts`
+- **Arquivos:** `apps/web/src/systems/dnd5e/components/play/HpPanel.tsx`, `apps/web/src/systems/dnd5e/components/play/hpEntry.ts`
 - **Testes:** HpPanel.test.tsx:
 - O tiefling vê os chips; o humano sem defesa não.
 - Fogo + 13: 6, com o aviso.
@@ -476,7 +476,7 @@ A StatusTab ganha 'Defesas', o bloco informativo da seção 9 do plano. Ele usa 
 
 Revisão e PDF ganham a mesma linha só se o dono aprovar (dúvida de produto), pela mesma função.
 
-- **Arquivos:** `src/systems/dnd5e/components/play/StatusTab.tsx`
+- **Arquivos:** `apps/web/src/systems/dnd5e/components/play/StatusTab.tsx`
 - **Testes:** StatusTab.test.tsx: o tiefling mostra 'Resistência a fogo (Resistência Infernal)'; a ficha sem defesa não ganha o bloco.
 - **Aceite:** A linha de defesa sai da mesma função em toda tela que a mostra.
 
@@ -503,24 +503,24 @@ Vem cedo de propósito:
 
 #### 1. Manifesto e ícones
 
-- public/manifest.webmanifest: 'Forja de Heróis', pt-BR, standalone, cores do tema.
-- Ícones 192, 512 e maskable, gerados de public/favicon.svg por script e versionados.
-- index.html liga o manifesto e o apple-touch-icon.
+- apps/web/public/manifest.webmanifest: 'Forja de Heróis', pt-BR, standalone, cores do tema.
+- Ícones 192, 512 e maskable, gerados de apps/web/public/favicon.svg por script e versionados.
+- apps/web/index.html liga o manifesto e o apple-touch-icon.
 
-- **Arquivos:** `public/manifest.webmanifest`, `scripts/make-icons.mjs`, `index.html`
-- **Testes:** Teste de unidade do manifesto: campos obrigatórios presentes e os ícones existem em public/.
+- **Arquivos:** `apps/web/public/manifest.webmanifest`, `scripts/make-icons.mjs`, `apps/web/index.html`
+- **Testes:** Teste de unidade do manifesto: campos obrigatórios presentes e os ícones existem em apps/web/public/.
 - **Aceite:** O Lighthouse marca o app como instalável.
 
 #### 2. Service worker e fontes offline
 
-Avaliar vite-plugin-pwa (MIT) com Vite 8 e rolldown. Se não servir, usar um SW próprio, com a lista de precache gerada por um plugin pequeno no vite.config.ts.
+Avaliar vite-plugin-pwa (MIT) com Vite 8 e rolldown. Se não servir, usar um SW próprio, com a lista de precache gerada por um plugin pequeno no apps/web/vite.config.ts.
 
 - Precache do shell, do JS e dos JSON.
 - As fontes Cinzel e Lora, hoje importadas do Google no index.css, passam a ser servidas pelo próprio app (são OFL) ou entram em cache de runtime.
-- Registro só em produção, no src/main.tsx. O núcleo continua sem regra de sistema.
-- vercel.json só se os cabeçalhos padrão não servirem. A Vercel já serve arquivo sem hash com max-age=0, must-revalidate; conferir sw.js e o manifesto com curl -I depois da publicação.
+- Registro só em produção, no apps/web/src/main.tsx. O núcleo continua sem regra de sistema.
+- Cabeçalhos no vercel.json (ele já existe na raiz, para o build do workspace) só se os padrão não servirem. A Vercel já serve arquivo sem hash com max-age=0, must-revalidate; conferir sw.js e o manifesto com curl -I depois da publicação.
 
-- **Arquivos:** `vite.config.ts`, `src/main.tsx`, `src/index.css`, `package.json`
+- **Arquivos:** `apps/web/vite.config.ts`, `apps/web/src/main.tsx`, `apps/web/src/index.css`, `apps/web/package.json`
 - **Testes:** - Teste de unidade: o registro só acontece em PROD.
 - Roteiro manual offline: abrir, jogar, recarregar e criar ficha sem rede.
 - **Aceite:** Depois da primeira visita, o jogo e o criador abrem e funcionam offline, com as fontes certas.
@@ -531,7 +531,7 @@ Avaliar vite-plugin-pwa (MIT) com Vite 8 e rolldown. Se não servir, usar um SW 
 - Ao instalar, chamar navigator.storage.persist().
 - Registrar no CLAUDE.md (Arquitetura).
 
-- **Arquivos:** `src/main.tsx`, `src/GlobalGallery.tsx`, `CLAUDE.md`
+- **Arquivos:** `apps/web/src/main.tsx`, `apps/web/src/GlobalGallery.tsx`, `CLAUDE.md`
 - **Testes:** Teste do fluxo de atualização com o SW simulado: 'waiting' não troca a página aberta.
 - **Aceite:** O app nunca recarrega sozinho com o jogo aberto.
 
@@ -568,7 +568,7 @@ types/session.ts: SheetSession, ResolvedToggle, WornArmor e NO_SESSION.
 
 types/playState.ts: ActiveToggle e PlayState.activeEffects. O default é [] no sanitizePlayState, sem subir a versão.
 
-- **Arquivos:** `src/systems/dnd5e/types/effects.ts`, `src/systems/dnd5e/types/condition.ts`, `src/systems/dnd5e/types/actions.ts`, `src/systems/dnd5e/types/session.ts`, `src/systems/dnd5e/types/playState.ts`, `src/systems/dnd5e/utils/playState.ts`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/types/effects.ts`, `packages/rules/src/systems/dnd5e/types/condition.ts`, `packages/rules/src/systems/dnd5e/types/actions.ts`, `packages/rules/src/systems/dnd5e/types/session.ts`, `packages/rules/src/systems/dnd5e/types/playState.ts`, `packages/rules/src/systems/dnd5e/utils/playState.ts`
 - **Testes:** playState.test.ts (sanitize):
 - Estado salvo sem o campo carrega com [].
 - Entrada sem id ou com tipo errado sai.
@@ -595,7 +595,7 @@ Modificadores:
   - Águia, 14º nível (3890-3894): flySpeed 'walking';
   - Lobo e Urso, 14º nível: notice.
 
-- **Arquivos:** `src/systems/dnd5e/data/class-progression-features.json`, `src/systems/dnd5e/data/totem-warrior-totems.json`, `src/systems/dnd5e/utils/progressionOptions.ts`, `src/systems/dnd5e/data/__tests__/toggles.test.ts`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/data/class-progression-features.json`, `packages/rules/src/systems/dnd5e/data/totem-warrior-totems.json`, `packages/rules/src/systems/dnd5e/utils/progressionOptions.ts`, `packages/rules/src/systems/dnd5e/data/__tests__/toggles.test.ts`
 - **Testes:** toggles.test.ts:
 - Todo toggle citado em conditionalDamage, castingRestriction, actions ou toggleModifiers existe.
 - Ids únicos.
@@ -619,8 +619,8 @@ buildPlaySheet ganha toggles e defenses. getPlaySpeed(state, sheet) aplica o des
 
 usePlayView: armorClass = getSheetArmorClass(draft, scores, getSheetSession(draft, state)).
 
-- **Arquivos:** `src/systems/dnd5e/utils/sheetEffects.ts`, `src/systems/dnd5e/utils/activeEffects.ts`, `src/systems/dnd5e/utils/attackUtils.ts`, `src/systems/dnd5e/utils/proficiencyUtils.ts`, `src/systems/dnd5e/utils/rollGuide.ts`, `src/systems/dnd5e/utils/playSheet.ts`, `src/systems/dnd5e/utils/playState.ts`, `src/systems/dnd5e/components/play/usePlayView.ts`
-- **Testes:** - Para cada ficha de src/test/fixtures.ts, 'sem sessão', NO_SESSION e 'antes' dão o mesmo resultado em: CA, deslocamento, linhas de ataque, restrições e guia inteiro.
+- **Arquivos:** `packages/rules/src/systems/dnd5e/utils/sheetEffects.ts`, `packages/rules/src/systems/dnd5e/utils/activeEffects.ts`, `packages/rules/src/systems/dnd5e/utils/attackUtils.ts`, `packages/rules/src/systems/dnd5e/utils/proficiencyUtils.ts`, `packages/rules/src/systems/dnd5e/utils/rollGuide.ts`, `packages/rules/src/systems/dnd5e/utils/playSheet.ts`, `packages/rules/src/systems/dnd5e/utils/playState.ts`, `apps/web/src/systems/dnd5e/components/play/usePlayView.ts`
+- **Testes:** - Para cada ficha de packages/rules/src/test/fixtures.ts, 'sem sessão', NO_SESSION e 'antes' dão o mesmo resultado em: CA, deslocamento, linhas de ataque, restrições e guia inteiro.
 - activeEffects.test.ts: Fúria de Placas fica com blockedBy; Urso de Placas, sem.
 - **Aceite:** ReviewStep.test e PrintableSheet sem diferença. Revisão e PDF nunca recebem sessão.
 
@@ -634,7 +634,7 @@ ConditionState ganha toggles?: ResolvedToggle[]. getActiveConditionEffects soma 
 
 getPlayConditionEffects(state) vira getPlayEffects(state, sheet). O rollGuide passa pela sessão, e o damagePipeline lê as defesas ligadas.
 
-- **Arquivos:** `src/systems/dnd5e/utils/sheetEffects.ts`, `src/systems/dnd5e/utils/rollGuide.ts`, `src/systems/dnd5e/utils/playState.ts`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/utils/sheetEffects.ts`, `packages/rules/src/systems/dnd5e/utils/rollGuide.ts`, `packages/rules/src/systems/dnd5e/utils/playState.ts`
 - **Testes:** conditionEffects.test.ts:
 - Fúria: vantagem em check:STR, skill:athletics e save:STR; nada no ataque.
 - De Placas: sem os benefícios, mas com cannotCast e endsConcentration.
@@ -659,7 +659,7 @@ Encerramentos automáticos:
 
 Na reconciliação, efeito que a ficha não tem mais sai, com aviso.
 
-- **Arquivos:** `src/systems/dnd5e/utils/playState.ts`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/utils/playState.ts`
 - **Testes:** playState.test.ts:
 - Entrar em fúria gasta 1 uso e encerra a concentração.
 - Sem usos: recusa.
@@ -681,7 +681,7 @@ O Dano de Fúria entra no número quando o toggle está ligado, sem bloqueio, na
 
 Com o toggle ligado, a restrição sai de castingRestrictions e entra em notes (a caixa vermelha) e no texto das magias da aba Regras.
 
-- **Arquivos:** `src/systems/dnd5e/utils/weaponFormat.ts`, `src/systems/dnd5e/utils/sheetEffects.ts`, `src/systems/dnd5e/utils/rollGuide.ts`, `src/systems/dnd5e/components/play/ruleReference.ts`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/utils/weaponFormat.ts`, `packages/rules/src/systems/dnd5e/utils/sheetEffects.ts`, `packages/rules/src/systems/dnd5e/utils/rollGuide.ts`, `apps/web/src/systems/dnd5e/components/play/ruleReference.ts`
 - **Testes:** weaponFormat.test.ts e rollGuide.test.ts:
 - Bárbaro 3 em fúria: machado grande 1d12+5, com a parcela Dano de Fúria +2.
 - Rapieira com DES maior: continua nota.
@@ -705,7 +705,7 @@ Foco:
 
 O que muda só no número é anunciado pelo ChangeAnnouncer.
 
-- **Arquivos:** `src/systems/dnd5e/components/play/ActiveEffectsSection.tsx`, `src/systems/dnd5e/components/play/StatusTab.tsx`, `src/systems/dnd5e/components/play/VitalsBar.tsx`
+- **Arquivos:** `apps/web/src/systems/dnd5e/components/play/ActiveEffectsSection.tsx`, `apps/web/src/systems/dnd5e/components/play/StatusTab.tsx`, `apps/web/src/systems/dnd5e/components/play/VitalsBar.tsx`
 - **Testes:** ActiveEffectsSection.test.tsx e VitalsBar.test.tsx:
 - Ligar mostra o chip e o dano novo na aba Ataques.
 - Foco conforme a regra.
@@ -746,7 +746,7 @@ data/active-effects.json traz ToggleDeclaration[] com spellId. Texto, duração 
 
 A mesma magia não liga duas vezes: um id, um efeito (p. 207). Magias diferentes somam.
 
-- **Arquivos:** `src/systems/dnd5e/data/active-effects.json`, `src/systems/dnd5e/utils/activeEffects.ts`, `src/systems/dnd5e/data/__tests__/toggles.test.ts`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/data/active-effects.json`, `packages/rules/src/systems/dnd5e/utils/activeEffects.ts`, `packages/rules/src/systems/dnd5e/data/__tests__/toggles.test.ts`
 - **Testes:** toggles.test.ts:
 - spellId existe.
 - Página e linhas presentes.
@@ -774,7 +774,7 @@ Dano:
 - RollGuideEntry ganha parts: '1d8 + 3 cortante + 1d4 radiante'.
 - O crítico dobra todos os dados (p. 196, linhas 17752-17764), com o desmarcar do item 6 de regras-dano-e-morte.md.
 
-- **Arquivos:** `src/systems/dnd5e/utils/rollGuide.ts`, `src/systems/dnd5e/utils/armorClassUtils.ts`, `src/systems/dnd5e/utils/sheetEffects.ts`, `src/systems/dnd5e/utils/playState.ts`, `src/systems/dnd5e/components/play/RollRecipeSheet.tsx`, `src/systems/dnd5e/components/play/playDice.ts`, `src/systems/dnd5e/components/play/numberSources.ts`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/utils/rollGuide.ts`, `packages/rules/src/systems/dnd5e/utils/armorClassUtils.ts`, `packages/rules/src/systems/dnd5e/utils/sheetEffects.ts`, `packages/rules/src/systems/dnd5e/utils/playState.ts`, `apps/web/src/systems/dnd5e/components/play/RollRecipeSheet.tsx`, `apps/web/src/systems/dnd5e/components/play/playDice.ts`, `apps/web/src/systems/dnd5e/components/play/numberSources.ts`
 - **Testes:** rollGuide.test.ts:
 - Bênção no ataque, no TR e no teste contra a morte.
 - Perdição.
@@ -803,7 +803,7 @@ A Destruição Divina Aprimorada (9984-9991) ganha WeaponAttackEffect { weapons:
 
 O texto de ficha salva de paladino 11+ muda, e isso entra no aviso de migração (decisão 10.2.23).
 
-- **Arquivos:** `src/systems/dnd5e/types/effects.ts`, `src/systems/dnd5e/utils/weaponFormat.ts`, `src/systems/dnd5e/utils/attackUtils.ts`, `src/systems/dnd5e/data/class-progression-features.json`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/types/effects.ts`, `packages/rules/src/systems/dnd5e/utils/weaponFormat.ts`, `packages/rules/src/systems/dnd5e/utils/attackUtils.ts`, `packages/rules/src/systems/dnd5e/data/class-progression-features.json`
 - **Testes:** weaponFormat.test.ts e rollGuide.test.ts, no paladino 11:
 - Espada longa: +1d8 radiante.
 - Golpe desarmado: sem.
@@ -821,7 +821,7 @@ O botão 'Recebeu uma magia?' abre o catálogo, com busca:
 
 O efeito que você mesmo conjurou e sustenta (sustainedByConcentration) acaba junto com a sua concentração, seja por fim voluntário, dano ou incapacitação, com aviso. O recebido de aliado só sai à mão.
 
-- **Arquivos:** `src/systems/dnd5e/components/play/ActiveEffectsSection.tsx`, `src/systems/dnd5e/components/play/ReceivedEffectSheet.tsx`, `src/systems/dnd5e/utils/playState.ts`
+- **Arquivos:** `apps/web/src/systems/dnd5e/components/play/ActiveEffectsSection.tsx`, `apps/web/src/systems/dnd5e/components/play/ReceivedEffectSheet.tsx`, `packages/rules/src/systems/dnd5e/utils/playState.ts`
 - **Testes:** - playState.test.ts: perder a concentração desliga a Bênção própria e mantém a de aliado.
 - ReceivedEffectSheet.test.tsx: busca, escolha e foco.
 - **Aceite:** Em dois toques, o aviso do aliado ('você está abençoado') vira o número certo.
@@ -861,7 +861,7 @@ utils/actionUtils.ts:
 
 O resultado vai para PlaySheet.actions.
 
-- **Arquivos:** `src/systems/dnd5e/types/actions.ts`, `src/systems/dnd5e/types/effects.ts`, `src/systems/dnd5e/types/race.ts`, `src/systems/dnd5e/utils/actionUtils.ts`, `src/systems/dnd5e/utils/playSheet.ts`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/types/actions.ts`, `packages/rules/src/systems/dnd5e/types/effects.ts`, `packages/rules/src/systems/dnd5e/types/race.ts`, `packages/rules/src/systems/dnd5e/utils/actionUtils.ts`, `packages/rules/src/systems/dnd5e/utils/playSheet.ts`
 - **Testes:** actionUtils.test.ts:
 - Guerreiro 3 / mago 2: a Fúria não aparece; as ações de guerreiro aparecem no nível da classe.
 - CD e dados resolvidos.
@@ -885,7 +885,7 @@ data/combat-actions.json, a partir de regras-acoes-em-combate.md (seções 6 a 8
 - Levantar-se: movimento, requires prone, chama standUp.
 - Interagir com um objeto: livre.
 
-- **Arquivos:** `src/systems/dnd5e/data/combat-actions.json`, `src/systems/dnd5e/data/__tests__/combatActions.test.ts`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/data/combat-actions.json`, `packages/rules/src/systems/dnd5e/data/__tests__/combatActions.test.ts`
 - **Testes:** combatActions.test.ts:
 - Ids únicos.
 - Toda ação tem página.
@@ -910,7 +910,7 @@ Operações:
 
 O damagePipeline marca tookDamage, e 'Atacar' marca attacked.
 
-- **Arquivos:** `src/systems/dnd5e/types/playState.ts`, `src/systems/dnd5e/utils/playState.ts`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/types/playState.ts`, `packages/rules/src/systems/dnd5e/utils/playState.ts`
 - **Testes:** playState.test.ts:
 - Surto de Ação dá extraActions e gasta o uso.
 - Novo turno encerra o Escudo Arcano e o Esquivar.
@@ -934,7 +934,7 @@ TurnChecklist: Ação, Bônus, Movimento (com getPlaySpeed) e Reação, mais o b
 
 Foco: o Usar que some leva ao título do grupo. Os saldos são anunciados pelo ChangeAnnouncer.
 
-- **Arquivos:** `src/systems/dnd5e/components/play/ActionsTab.tsx`, `src/systems/dnd5e/components/play/TurnChecklist.tsx`, `src/systems/dnd5e/components/play/playTabs.ts`, `src/systems/dnd5e/components/play/AttacksTab.tsx`
+- **Arquivos:** `apps/web/src/systems/dnd5e/components/play/ActionsTab.tsx`, `apps/web/src/systems/dnd5e/components/play/TurnChecklist.tsx`, `apps/web/src/systems/dnd5e/components/play/playTabs.ts`, `apps/web/src/systems/dnd5e/components/play/AttacksTab.tsx`
 - **Testes:** - ActionsTab.test.tsx: Usar gasta; recusa mantém o foco.
 - TurnChecklist.test.tsx: Novo turno limpa e anuncia.
 - PlayScreen.test.tsx: swipe e teclado com a aba nova.
@@ -963,7 +963,7 @@ A onda vale sozinha, sem esperar o grimório.
 - types/spellMechanics.ts e data/spell-mechanics.json, fora do parse-spells. Além de dano e cura, o esquema já traz tempHp, maxHpIncrease, targets e a escolha de tipo.
 - utils/spellMechanics.ts expõe getSpellMechanics(id).
 
-- **Arquivos:** `src/systems/dnd5e/types/spellMechanics.ts`, `src/systems/dnd5e/data/spell-mechanics.json`, `src/systems/dnd5e/utils/spellMechanics.ts`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/types/spellMechanics.ts`, `packages/rules/src/systems/dnd5e/data/spell-mechanics.json`, `packages/rules/src/systems/dnd5e/utils/spellMechanics.ts`
 - **Testes:** Coberto pelos testes de consistência.
 - **Aceite:** O parse-spells não toca o arquivo.
 
@@ -980,7 +980,7 @@ scripts/draft-spell-mechanics.mjs lê spells.json e o extrato e propõe um rascu
 - 'pontos de vida temporários';
 - 'esfera de N metros'.
 
-Escreve no scratch, nunca em src/.
+Escreve no scratch, nunca no código (packages/ ou apps/).
 
 - **Arquivos:** `scripts/draft-spell-mechanics.mjs`
 - **Testes:** O rascunho do lote T é conferido na revisão.
@@ -997,7 +997,7 @@ Cada entrada é conferida contra o texto da magia:
 - targetEffect existe no catálogo;
 - lote fechado cobre 100% do nível, com reviewed ou textOnly com motivo.
 
-- **Arquivos:** `src/systems/dnd5e/data/__tests__/spellMechanics.test.ts`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/data/__tests__/spellMechanics.test.ts`
 - **Testes:** O próprio arquivo.
 - **Aceite:** Erro de digitação de dado ou de tipo falha no CI.
 
@@ -1015,7 +1015,7 @@ utils/spellGuide.ts: getSpellGuide(draft, state, { casterKey, spellId, castLevel
 
 Nas abas Magia e Regras, a magia com mecânica ganha 'Dano' e 'Ataque', que abrem o RollRecipeSheet.
 
-- **Arquivos:** `src/systems/dnd5e/utils/guideEntries.ts`, `src/systems/dnd5e/utils/spellGuide.ts`, `src/systems/dnd5e/utils/rollGuide.ts`, `src/systems/dnd5e/components/play/MagicTab.tsx`, `src/systems/dnd5e/components/play/RulesTab.tsx`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/utils/guideEntries.ts`, `packages/rules/src/systems/dnd5e/utils/spellGuide.ts`, `packages/rules/src/systems/dnd5e/utils/rollGuide.ts`, `apps/web/src/systems/dnd5e/components/play/MagicTab.tsx`, `apps/web/src/systems/dnd5e/components/play/RulesTab.tsx`
 - **Testes:** spellGuide.test.ts:
 - Raio de Fogo para guerreiro 4 / mago 1: 2d10; crítico 4d10.
 - Chama Sagrada: TR, sem crítico.
@@ -1029,7 +1029,7 @@ Revisar cada truque contra o extrato (capítulo 11), gravando bookLines. Dano qu
 
 Criar docs/magias/mecanica-magias.md, com o processo, a lista do lote e os pontos em aberto.
 
-- **Arquivos:** `src/systems/dnd5e/data/spell-mechanics.json`, `docs/magias/mecanica-magias.md`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/data/spell-mechanics.json`, `docs/magias/mecanica-magias.md`
 - **Testes:** spellMechanics.test.ts com o lote T fechado.
 - **Aceite:** Os 27 truques têm entrada, e as dúvidas encontradas foram ao dono.
 
@@ -1058,7 +1058,7 @@ Outras funções:
 - canCastAsRitual(caster, spell): predicado puro sobre a regra de describeCastingAids (p. 203-204, linhas 18174-18191), sem segunda cópia;
 - castingTimeKind(spell): cobre os 13 valores de castingTime.
 
-- **Arquivos:** `src/systems/dnd5e/utils/spellbook.ts`, `src/systems/dnd5e/utils/spellUtils.ts`, `src/systems/dnd5e/utils/playSheet.ts`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/utils/spellbook.ts`, `packages/rules/src/systems/dnd5e/utils/spellUtils.ts`, `packages/rules/src/systems/dnd5e/utils/playSheet.ts`
 - **Testes:** spellbook.test.ts:
 - Mago faz ritual do grimório sem preparar.
 - Clérigo faz ritual só das preparadas.
@@ -1078,7 +1078,7 @@ castSpell(state, sheet, { casterKey, spellId, castLevel, pay: slot | pact | crea
 - com o alvo sendo você: liga o targetEffect (sustainedByConcentration), aplica a cura (applyHealing), os PV temporários (grantTempHp) ou o PV máximo da Ajuda (adjustMaxHp);
 - grava turn.spellsCast.
 
-- **Arquivos:** `src/systems/dnd5e/utils/playState.ts`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/utils/playState.ts`
 - **Testes:** playState.test.ts:
 - Gasta o espaço certo: pool, Pacto e criado.
 - Ritual não gasta.
@@ -1106,7 +1106,7 @@ O botão Conjurar abre o SpellCastSheet, com:
 
 A aba Regras continua só leitura.
 
-- **Arquivos:** `src/systems/dnd5e/components/play/MagicTab.tsx`, `src/systems/dnd5e/components/play/SpellCastSheet.tsx`, `src/systems/dnd5e/components/play/ruleReference.ts`
+- **Arquivos:** `apps/web/src/systems/dnd5e/components/play/MagicTab.tsx`, `apps/web/src/systems/dnd5e/components/play/SpellCastSheet.tsx`, `apps/web/src/systems/dnd5e/components/play/ruleReference.ts`
 - **Testes:** MagicTab.test.tsx e SpellCastSheet.test.tsx:
 - Conjurar apaga a bolinha certa.
 - Ritual não aparece para quem não pode.
@@ -1139,7 +1139,7 @@ O efeito mediumArmorMaxDex 3 (com Destreza 16 ou mais) e mediumArmorNoStealthDis
 
 Isso muda a CA de ficha salva, então entra no aviso de migração (decisão 10.2.23).
 
-- **Arquivos:** `src/systems/dnd5e/types/effects.ts`, `src/systems/dnd5e/data/feats.json`, `src/systems/dnd5e/utils/armorClassUtils.ts`, `src/systems/dnd5e/utils/sheetEffects.ts`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/types/effects.ts`, `packages/rules/src/systems/dnd5e/data/feats.json`, `packages/rules/src/systems/dnd5e/utils/armorClassUtils.ts`, `packages/rules/src/systems/dnd5e/utils/sheetEffects.ts`
 - **Testes:** armorClassUtils.test.ts:
 - Meia-armadura, DES 16, com o talento: 15 + 3.
 - Sem o talento: 15 + 2.
@@ -1161,7 +1161,7 @@ Passam por ela:
 
 buildPlaySheet(draft, worn). O playStore remonta o sheet quando state.wornArmor muda, seja por operação, desfazer ou reconciliação.
 
-- **Arquivos:** `src/systems/dnd5e/utils/sheetEffects.ts`, `src/systems/dnd5e/utils/equipmentUtils.ts`, `src/systems/dnd5e/utils/proficiencyUtils.ts`, `src/systems/dnd5e/utils/rollGuide.ts`, `src/systems/dnd5e/utils/playSheet.ts`, `src/systems/dnd5e/stores/playStore.ts`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/utils/sheetEffects.ts`, `packages/rules/src/systems/dnd5e/utils/equipmentUtils.ts`, `packages/rules/src/systems/dnd5e/utils/proficiencyUtils.ts`, `packages/rules/src/systems/dnd5e/utils/rollGuide.ts`, `packages/rules/src/systems/dnd5e/utils/playSheet.ts`, `apps/web/src/systems/dnd5e/stores/playStore.ts`
 - **Testes:** sheetEffects.test.ts, rollGuide.test.ts e playStore.test.ts:
 - Monge que tira a armadura ganha a Defesa sem Armadura e o deslocamento.
 - Bárbaro que veste Placas perde os benefícios da Fúria.
@@ -1180,7 +1180,7 @@ Na reconciliação:
 - base diferente do equipado no draft: a sobreposição cai, com o aviso 'você mudou o equipamento no criador';
 - armadura que saiu do inventário: sai também, com aviso.
 
-- **Arquivos:** `src/systems/dnd5e/utils/playState.ts`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/utils/playState.ts`
 - **Testes:** playState.test.ts:
 - Vestir encerra a Armadura Arcana.
 - Item fora do inventário: recusa.
@@ -1192,7 +1192,7 @@ Na reconciliação:
 
 Seção 'Equipamento vestido', na aba decidida pelo dono. A CA ganha o 'era N', como o deslocamento já tem.
 
-- **Arquivos:** `src/systems/dnd5e/components/play/WornEquipmentSection.tsx`, `src/systems/dnd5e/components/play/VitalsBar.tsx`
+- **Arquivos:** `apps/web/src/systems/dnd5e/components/play/WornEquipmentSection.tsx`, `apps/web/src/systems/dnd5e/components/play/VitalsBar.tsx`
 - **Testes:** WornEquipmentSection.test.tsx: troca, CA visível e foco.
 - **Aceite:** A CA muda no mesmo toque.
 
@@ -1229,7 +1229,7 @@ weapons.json ganha ammunition: arcos → flechas, bestas → virotes, funda → 
 
 Aspecto da Besta Urso (3873-3876) ganha carryingCapacityMultiplier 2.
 
-- **Arquivos:** `src/systems/dnd5e/data/general-items.json`, `src/systems/dnd5e/data/weapons.json`, `src/systems/dnd5e/types/equipment.ts`, `src/systems/dnd5e/data/totem-warrior-totems.json`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/data/general-items.json`, `packages/rules/src/systems/dnd5e/data/weapons.json`, `packages/rules/src/systems/dnd5e/types/equipment.ts`, `packages/rules/src/systems/dnd5e/data/totem-warrior-totems.json`
 - **Testes:** items.test.ts:
 - Toda arma de munição aponta para um item de categoria ammunition.
 - Todo use tem página.
@@ -1248,7 +1248,7 @@ Operações:
 
 Carga, só com aviso: 7,5 × Força final em kg (15817-15819), ×2 com o Urso; 100 moedas pesam 1 kg (13110-13111).
 
-- **Arquivos:** `src/systems/dnd5e/types/playState.ts`, `src/systems/dnd5e/utils/playState.ts`, `src/systems/dnd5e/utils/inventoryPlay.ts`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/types/playState.ts`, `packages/rules/src/systems/dnd5e/utils/playState.ts`, `packages/rules/src/systems/dnd5e/utils/inventoryPlay.ts`
 - **Testes:** playState.test.ts:
 - Gastar 5 flechas e recuperar 2.
 - Gastar sem munição: recusa.
@@ -1264,7 +1264,7 @@ Seção Bolsa, na aba decidida pelo dono: moedas, munição e consumíveis com U
 
 O cartão de ataque de arma de munição mostra 'Flechas: 18', o botão '−1' e 'Recuperar metade (N)'.
 
-- **Arquivos:** `src/systems/dnd5e/components/play/BagSection.tsx`, `src/systems/dnd5e/components/play/AttacksTab.tsx`
+- **Arquivos:** `apps/web/src/systems/dnd5e/components/play/BagSection.tsx`, `apps/web/src/systems/dnd5e/components/play/AttacksTab.tsx`
 - **Testes:** BagSection.test.tsx e AttacksTab.test.tsx: −1, recuperar, Usar e foco.
 - **Aceite:** Na mesa, gastar uma flecha é um toque.
 
@@ -1305,7 +1305,7 @@ No HpPanel, as reações do tipo damageReaction:
 
 Entram antes da resistência (p. 199, linhas 17816-17823) e marcam a reação.
 
-- **Arquivos:** `src/systems/dnd5e/components/play/RollRecipeSheet.tsx`, `src/systems/dnd5e/utils/rollGuide.ts`, `src/systems/dnd5e/utils/weaponFormat.ts`, `src/systems/dnd5e/utils/playState.ts`, `src/systems/dnd5e/components/play/HpPanel.tsx`, `src/systems/dnd5e/types/effects.ts`
+- **Arquivos:** `apps/web/src/systems/dnd5e/components/play/RollRecipeSheet.tsx`, `packages/rules/src/systems/dnd5e/utils/rollGuide.ts`, `packages/rules/src/systems/dnd5e/utils/weaponFormat.ts`, `packages/rules/src/systems/dnd5e/utils/playState.ts`, `apps/web/src/systems/dnd5e/components/play/HpPanel.tsx`, `packages/rules/src/systems/dnd5e/types/effects.ts`
 - **Testes:** rollGuide.test.ts:
 - Ataque Furtivo soma 3d6 e dobra no crítico.
 - −5/+10 só em arma pesada com proficiência.
@@ -1363,7 +1363,7 @@ Patrulheiro:
 - Inimigo Favorito: rider +2.
 - As opções do Caçador.
 
-- **Arquivos:** `src/systems/dnd5e/data/class-progression-features.json`, `src/systems/dnd5e/data/battle-master-maneuvers.json`, `src/systems/dnd5e/data/four-elements-disciplines.json`, `src/systems/dnd5e/data/totem-warrior-totems.json`, `src/systems/dnd5e/data/hunters-prey.json`, `src/systems/dnd5e/data/hunter-defensive-tactics.json`, `src/systems/dnd5e/data/hunter-multiattack.json`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/data/class-progression-features.json`, `packages/rules/src/systems/dnd5e/data/battle-master-maneuvers.json`, `packages/rules/src/systems/dnd5e/data/four-elements-disciplines.json`, `packages/rules/src/systems/dnd5e/data/totem-warrior-totems.json`, `packages/rules/src/systems/dnd5e/data/hunters-prey.json`, `packages/rules/src/systems/dnd5e/data/hunter-defensive-tactics.json`, `packages/rules/src/systems/dnd5e/data/hunter-multiattack.json`
 - **Testes:** actionUtils.test.ts: um personagem de cada classe, com as ações e os custos esperados.
 - **Aceite:** Nenhuma ação sem página. Os custos batem com os recursos existentes.
 
@@ -1371,7 +1371,7 @@ Patrulheiro:
 
 Toda característica, opção ou manobra do lote cujo texto diz 'ação bônus', 'reação' ou 'com uma ação' tem actions ou está numa lista explícita de exceções com motivo.
 
-- **Arquivos:** `src/systems/dnd5e/data/__tests__/featureActions.test.ts`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/data/__tests__/featureActions.test.ts`
 - **Testes:** O próprio arquivo.
 - **Aceite:** Nada fica esquecido em silêncio.
 
@@ -1396,7 +1396,7 @@ FeatureEffects.grantedSpells, aceito também em ProgressionOption (terrenos, inv
 - Invocações: à vontade (Armadura de Sombras) ou 1 vez por descanso longo com espaço de bruxo.
 - Magia do Rastreador Subterrâneo: conhecidas, fora do limite.
 
-- **Arquivos:** `src/systems/dnd5e/types/effects.ts`, `src/systems/dnd5e/utils/progressionOptions.ts`, `src/systems/dnd5e/data/class-progression-features.json`, `src/systems/dnd5e/data/land-circle-terrains.json`, `src/systems/dnd5e/data/eldritch-invocations.json`, `src/systems/dnd5e/data/four-elements-disciplines.json`, `src/systems/dnd5e/data/totem-warrior-totems.json`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/types/effects.ts`, `packages/rules/src/systems/dnd5e/utils/progressionOptions.ts`, `packages/rules/src/systems/dnd5e/data/class-progression-features.json`, `packages/rules/src/systems/dnd5e/data/land-circle-terrains.json`, `packages/rules/src/systems/dnd5e/data/eldritch-invocations.json`, `packages/rules/src/systems/dnd5e/data/four-elements-disciplines.json`, `packages/rules/src/systems/dnd5e/data/totem-warrior-totems.json`
 - **Testes:** grantedSpells.test.ts:
 - Todo id existe.
 - O nível da magia é conjurável no nível da característica.
@@ -1412,7 +1412,7 @@ getCasterEntries ganha alwaysPrepared e granted. getSpellSources passa a incluí
 - A Revisão e o PDF as listam sob a classe.
 - getPlaySpellbook usa os mesmos dados.
 
-- **Arquivos:** `src/systems/dnd5e/utils/spellUtils.ts`, `src/systems/dnd5e/utils/spellbook.ts`, `src/systems/dnd5e/components/steps/ReviewStep.tsx`, `src/systems/dnd5e/components/PrintableSheet.tsx`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/utils/spellUtils.ts`, `packages/rules/src/systems/dnd5e/utils/spellbook.ts`, `apps/web/src/systems/dnd5e/components/steps/ReviewStep.tsx`, `apps/web/src/systems/dnd5e/components/PrintableSheet.tsx`
 - **Testes:** - spellUtils.test.ts e repeatedSpells.test.ts.
 - ReviewStep.test.tsx: clérigo da Vida mostra Bênção e Curar Ferimentos como de domínio.
 - **Aceite:** A magia de domínio não conta nas preparadas, e a repetida avisa sem bloquear.
@@ -1444,7 +1444,7 @@ Na reconciliação:
 - basis diferente da lista atual do draft: a sobreposição cai, com aviso;
 - senão, corta só o que deixou de valer (o máximo baixou), com aviso.
 
-- **Arquivos:** `src/systems/dnd5e/types/playState.ts`, `src/systems/dnd5e/utils/playState.ts`, `src/systems/dnd5e/utils/spellbook.ts`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/types/playState.ts`, `packages/rules/src/systems/dnd5e/utils/playState.ts`, `packages/rules/src/systems/dnd5e/utils/spellbook.ts`
 - **Testes:** playState.test.ts:
 - Acima do máximo: recusa.
 - Mago fora do grimório: recusa.
@@ -1461,7 +1461,7 @@ Na reconciliação:
 - O grimório ganha 'Trocar preparadas', com o aviso da regra.
 - O mago que nunca preparou vê 'Prepare suas magias do dia (N)'.
 
-- **Arquivos:** `src/systems/dnd5e/components/play/LongRestPanel.tsx`, `src/systems/dnd5e/components/play/PrepareSpellsSheet.tsx`, `src/systems/dnd5e/components/play/MagicTab.tsx`
+- **Arquivos:** `apps/web/src/systems/dnd5e/components/play/LongRestPanel.tsx`, `apps/web/src/systems/dnd5e/components/play/PrepareSpellsSheet.tsx`, `apps/web/src/systems/dnd5e/components/play/MagicTab.tsx`
 - **Testes:** PrepareSpellsSheet.test.tsx e RestPanels.test.tsx: contador, travadas e foco.
 - **Aceite:** O clérigo troca a lista em um minuto depois do descanso.
 
@@ -1489,7 +1489,7 @@ O feiticeiro, pela tela do jogo:
 - metamagic-options.json ganha metamagic: cost (número, ou spellLevel com mínimo 1 no truque) e changesCastingTime na Acelerada.
 - Restauração Mística (6807-6809): shortRestRecovery 4, sem passar do teto da tabela (6710-6712).
 
-- **Arquivos:** `src/systems/dnd5e/data/class-progression-features.json`, `src/systems/dnd5e/data/metamagic-options.json`, `src/systems/dnd5e/types/effects.ts`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/data/class-progression-features.json`, `packages/rules/src/systems/dnd5e/data/metamagic-options.json`, `packages/rules/src/systems/dnd5e/types/effects.ts`
 - **Testes:** data/__tests__: custos conferidos com a tabela.
 - **Aceite:** Nenhum custo de metamágica ou de espaço fixo no código.
 
@@ -1503,7 +1503,7 @@ PlayState.createdSpellSlots: zera no descanso longo; getSpellSlotsAvailable os i
 
 Na reconciliação, o que foi criado some se a ficha não tem mais pontos de feitiçaria.
 
-- **Arquivos:** `src/systems/dnd5e/types/playState.ts`, `src/systems/dnd5e/utils/playState.ts`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/types/playState.ts`, `packages/rules/src/systems/dnd5e/utils/playState.ts`
 - **Testes:** playState.test.ts:
 - Criar um espaço de 3º gasta 5 pontos.
 - Converter Pacto de 3º dá 3.
@@ -1517,7 +1517,7 @@ Na reconciliação, o que foi criado some se a ficha não tem mais pontos de fei
 - No SpellCastSheet, a metamágica conhecida aparece com o custo: uma por magia, salvo o texto dizer outra coisa (6745-6748). A Acelerada entra na regra da magia de ação bônus.
 - Na aba Magia, o bloco Pontos de feitiçaria ganha 'Criar espaço' e 'Converter espaço', com prévia e saldo.
 
-- **Arquivos:** `src/systems/dnd5e/components/play/SpellCastSheet.tsx`, `src/systems/dnd5e/components/play/MagicTab.tsx`, `src/systems/dnd5e/components/play/SorceryPointsSheet.tsx`
+- **Arquivos:** `apps/web/src/systems/dnd5e/components/play/SpellCastSheet.tsx`, `apps/web/src/systems/dnd5e/components/play/MagicTab.tsx`, `apps/web/src/systems/dnd5e/components/play/SorceryPointsSheet.tsx`
 - **Testes:** - SpellCastSheet.test.tsx: Magia Gêmea numa magia de 3º gasta 3 pontos.
 - SorceryPointsSheet.test.tsx.
 - **Aceite:** O feiticeiro joga sem contar pontos de cabeça.
@@ -1542,7 +1542,7 @@ Rider no escopo existente melee-weapon-attack (linhas 9911-9919; vale no golpe d
 - os dados dobram no crítico;
 - com a Aprimorada, soma o 1d8 que já está no número.
 
-- **Arquivos:** `src/systems/dnd5e/data/class-progression-features.json`, `src/systems/dnd5e/utils/rollGuide.ts`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/data/class-progression-features.json`, `packages/rules/src/systems/dnd5e/utils/rollGuide.ts`
 - **Testes:** rollGuide.test.ts:
 - Espaço de 3º: 4d8.
 - Espaço de 5º: 5d8.
@@ -1573,7 +1573,7 @@ Arcanos:
 - Prodígio, Presença Feérica, Névoa de Fuga, Sorte do Próprio Obscuro, Lançar no Inferno e outras de subclasse.
 - Forma Selvagem fica como nota (o modo forma é da Fase 3).
 
-- **Arquivos:** `src/systems/dnd5e/data/class-progression-features.json`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/data/class-progression-features.json`
 - **Testes:** - actionUtils.test.ts: um personagem por classe.
 - featureActions.test.ts: cobertura estendida a estas classes.
 - **Aceite:** Nenhuma característica de ação fica sem declaração ou sem exceção com motivo.
@@ -1597,7 +1597,7 @@ Talentos:
 
 Cada um com página e linha.
 
-- **Arquivos:** `src/systems/dnd5e/data/races.json`, `src/systems/dnd5e/data/feats.json`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/data/races.json`, `packages/rules/src/systems/dnd5e/data/feats.json`
 - **Testes:** - actionUtils.test.ts: draconato vermelho 6 com cone, TR de DES, CD e 3d6 de fogo.
 - featureActions.test.ts estendido a talentos e traços.
 - **Aceite:** Nenhum talento com ação fica sem declaração ou sem exceção com motivo.
@@ -1621,7 +1621,7 @@ InnateSpell ganha uses nos dados (Legado Infernal, Magia Drow). getSheetResource
 
 describeInnateSpellUsage e o PDF passam a ler o dado, sem o '1×/descanso longo' fixo. O grimório gasta esse recurso no nível fixo (castLevel).
 
-- **Arquivos:** `src/systems/dnd5e/types/race.ts`, `src/systems/dnd5e/data/races.json`, `src/systems/dnd5e/utils/sheetEffects.ts`, `src/systems/dnd5e/utils/raceUtils.ts`, `src/systems/dnd5e/components/PrintableSheet.tsx`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/types/race.ts`, `packages/rules/src/systems/dnd5e/data/races.json`, `packages/rules/src/systems/dnd5e/utils/sheetEffects.ts`, `packages/rules/src/systems/dnd5e/utils/raceUtils.ts`, `apps/web/src/systems/dnd5e/components/PrintableSheet.tsx`
 - **Testes:** - sheetEffects.test.ts: tiefling 3 tem repreensão infernal 1 vez, no 2º nível.
 - spellbook.test.ts.
 - **Aceite:** PDF e jogo dizem o mesmo uso.
@@ -1638,7 +1638,7 @@ Sobrecarga (8776-8789):
 - opção do jogador no SpellCastSheet;
 - a partir do 2º uso, aplica (usos)d12 × nível de dano necrótico com ignoreDefenses.
 
-- **Arquivos:** `src/systems/dnd5e/types/effects.ts`, `src/systems/dnd5e/utils/playState.ts`, `src/systems/dnd5e/data/class-progression-features.json`, `src/systems/dnd5e/components/play/HpPanel.tsx`, `src/systems/dnd5e/components/play/SpellCastSheet.tsx`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/types/effects.ts`, `packages/rules/src/systems/dnd5e/utils/playState.ts`, `packages/rules/src/systems/dnd5e/data/class-progression-features.json`, `apps/web/src/systems/dnd5e/components/play/HpPanel.tsx`, `apps/web/src/systems/dnd5e/components/play/SpellCastSheet.tsx`
 - **Testes:** playState.test.ts:
 - Fúria Implacável: CD 10, depois 15; o descanso curto volta a 10.
 - Sobrecarga: o 2º uso causa 2d12 por nível, ignorando a resistência.
@@ -1660,7 +1660,7 @@ Sobrecarga (8776-8789):
   - Inspiração Superior (4232), 1 uso;
   - Implacável (7531), 1 dado.
 
-- **Arquivos:** `src/systems/dnd5e/data/feats.json`, `src/systems/dnd5e/data/class-progression-features.json`, `src/systems/dnd5e/utils/playState.ts`, `src/systems/dnd5e/types/playState.ts`, `src/systems/dnd5e/components/play/HpPanel.tsx`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/data/feats.json`, `packages/rules/src/systems/dnd5e/data/class-progression-features.json`, `packages/rules/src/systems/dnd5e/utils/playState.ts`, `packages/rules/src/systems/dnd5e/types/playState.ts`, `apps/web/src/systems/dnd5e/components/play/HpPanel.tsx`
 - **Testes:** - playState.test.ts: cada item do detalhe.
 - HpPanel.test.tsx: a Proteção Arcana absorve na ordem decidida.
 - **Aceite:** A lista de recursos da seção 8.2 fica fechada.
@@ -1682,7 +1682,7 @@ Mesmo processo do lote T:
 
 Bênção e Perdição ganham targetEffect quando o catálogo já tiver o id. Vitalidade Falsa usa tempHp.
 
-- **Arquivos:** `src/systems/dnd5e/data/spell-mechanics.json`, `docs/magias/mecanica-magias.md`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/data/spell-mechanics.json`, `docs/magias/mecanica-magias.md`
 - **Testes:** - spellMechanics.test.ts com o lote 1 fechado.
 - spellGuide.test.ts:
   - Mísseis Mágicos no 3º nível: 5 dardos de 1d4 + 1;
@@ -1701,7 +1701,7 @@ As magias de 2º nível jogáveis, como Raio Ardente, Arma Espiritual (+1d8 a ca
 
 Mesmo processo. perSlotAbove.every cobre 'a cada dois níveis', e maxHpIncrease cobre a Ajuda.
 
-- **Arquivos:** `src/systems/dnd5e/data/spell-mechanics.json`, `docs/magias/mecanica-magias.md`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/data/spell-mechanics.json`, `docs/magias/mecanica-magias.md`
 - **Testes:** - spellMechanics.test.ts com o lote 2 fechado.
 - spellGuide.test.ts: Arma Espiritual no 4º nível dá 2d8 + mod; Ajuda no 3º, +10.
 - **Aceite:** O lote está 100% coberto.
@@ -1717,7 +1717,7 @@ Bola de Fogo, Relâmpago, Toque Vampírico e as outras de 3º nível jogáveis.
 
 Mesmo processo, com a área estruturada.
 
-- **Arquivos:** `src/systems/dnd5e/data/spell-mechanics.json`, `docs/magias/mecanica-magias.md`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/data/spell-mechanics.json`, `docs/magias/mecanica-magias.md`
 - **Testes:** - spellMechanics.test.ts com o lote 3 fechado.
 - spellGuide.test.ts: Bola de Fogo no 5º nível dá 10d6, TR de DES, metade no sucesso.
 - **Aceite:** O lote está 100% coberto.
@@ -1733,7 +1733,7 @@ As magias de 4º e 5º nível jogáveis.
 
 Mesmo processo.
 
-- **Arquivos:** `src/systems/dnd5e/data/spell-mechanics.json`, `docs/magias/mecanica-magias.md`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/data/spell-mechanics.json`, `docs/magias/mecanica-magias.md`
 - **Testes:** spellMechanics.test.ts com o lote fechado.
 - **Aceite:** O lote está 100% coberto.
 
@@ -1748,7 +1748,7 @@ Fechar as 361 magias.
 
 Mesmo processo. Ao fechar, spellMechanics.test passa a exigir 100% das 361 magias.
 
-- **Arquivos:** `src/systems/dnd5e/data/spell-mechanics.json`, `docs/magias/mecanica-magias.md`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/data/spell-mechanics.json`, `docs/magias/mecanica-magias.md`
 - **Testes:** spellMechanics.test.ts global.
 - **Aceite:** 361 de 361, entre reviewed e textOnly com motivo.
 
@@ -1770,7 +1770,7 @@ Efeitos nas características e invocações, com as linhas do extrato:
 
 O spellGuide aplica cada um como parcela nomeada.
 
-- **Arquivos:** `src/systems/dnd5e/types/effects.ts`, `src/systems/dnd5e/data/class-progression-features.json`, `src/systems/dnd5e/data/eldritch-invocations.json`, `src/systems/dnd5e/utils/spellGuide.ts`
+- **Arquivos:** `packages/rules/src/systems/dnd5e/types/effects.ts`, `packages/rules/src/systems/dnd5e/data/class-progression-features.json`, `packages/rules/src/systems/dnd5e/data/eldritch-invocations.json`, `packages/rules/src/systems/dnd5e/utils/spellGuide.ts`
 - **Testes:** spellGuide.test.ts:
 - Rajada Mística com Agonizante no 5º nível: 2 feixes de 1d10 + CAR.
 - Curar Ferimentos no 1º com Discípulo da Vida: 1d8 + mod + 3.

@@ -27,7 +27,7 @@ Texto do livro (linhas 14713-14722): você **adiciona os Dados de Vida de todas 
 | Classes com tipos **diferentes** | "monitore-os separadamente" | paladino 5/clérigo 5 → **5d10 + 5d8** |
 
 - O livro **não diz** como escolher quais tipos voltam no descanso longo (ver Pontos em aberto).
-- *(Já existe no app: `getHitDicePool` em `src/systems/dnd5e/utils/multiclassUtils.ts` devolve o poço agrupado por tipo. Ver também `docs/regras-multiclasse.md`, seção 3.)*
+- *(Já existe no app: `getHitDicePool` em `packages/rules/src/systems/dnd5e/utils/multiclassUtils.ts` devolve o poço agrupado por tipo. Ver também `docs/regras-multiclasse.md`, seção 3.)*
 
 ## 3. Descanso curto (pág. 188)
 
@@ -140,7 +140,7 @@ Tudo acontece num **rascunho de descanso** que fica em memória. Nada é gravado
    - com `lifeState === 'dead'`, a prévia **bloqueia** a cura (o morto não recupera PV, linhas 17846-17848) e avisa por quê.
 2. **Gastar Dados de Vida, um a um** (só no descanso curto):
    - o jogador escolhe o **tipo** quando o poço tem mais de um (multiclasse);
-   - **valor manual** do dado físico (validar de 1 ao número de lados), que é o padrão, ou **rolagem digital** pelo motor puro de `src/core/dice` quando o jogador liga os dados do app (decisão de 2026-10-25);
+   - **valor manual** do dado físico (validar de 1 ao número de lados), que é o padrão, ou **rolagem digital** pelo motor puro de `packages/rules/src/core/dice` quando o jogador liga os dados do app (decisão de 2026-10-25);
    - soma o mod. de CON (de `getFinalAbilityScores`) e mostra a conta aberta, ex.: "d8: 5 + 2 = 7"; com CON negativa, a cura tem **piso 0** e nunca vira dano (decisão 3), ex.: "d6: 1 − 2 = 0";
    - mostra o PV parcial, já com o teto do máximo efetivo (seção 3.1 e seção 6.1), e decide-se **após cada rolagem** se gasta o próximo;
    - um "desfazer último dado" dentro do rascunho ajuda quem digitou o valor manual errado.
@@ -153,7 +153,7 @@ Tudo acontece num **rascunho de descanso** que fica em memória. Nada é gravado
 
 ### 6.3 O caso do bruxo (Magia de Pacto)
 - Descanso curto recupera **só** `pactSlotsSpent`. O pool combinado (`spellSlotsSpent`) **só** volta no longo (seção 5.1; `docs/regras-multiclasse.md`, seção 7).
-- Os dois conjuntos já são separados no código: `getPactSlots` e `getCombinedSpellSlots` (`src/systems/dnd5e/utils/spellUtils.ts`). O estado de jogo deve espelhar essa separação.
+- Os dois conjuntos já são separados no código: `getPactSlots` e `getCombinedSpellSlots` (`packages/rules/src/systems/dnd5e/utils/spellUtils.ts`). O estado de jogo deve espelhar essa separação.
 - **Teste obrigatório:** bruxo/mago faz um descanso curto e recupera os espaços de Pacto, mas **não** os de mago.
 
 ### 6.4 Testes

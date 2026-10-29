@@ -8,7 +8,7 @@ description: >
   o módulo Ordem Paranormal reteama gold/parchment via .theme-ordem (ver Colors).
 
 colors:
-  # Escala completa extraída de src/index.css (@theme) — tema padrão (D&D 5e)
+  # Escala completa extraída de apps/web/src/index.css (@theme) — tema padrão (D&D 5e)
   gold-300: "#fcd67a"
   gold-400: "#f0b429"
   gold-500: "#d4900a"
@@ -111,9 +111,9 @@ components:
 
 ## Overview
 
-Este projeto é uma SPA React (Vite + Tailwind v4) com uma arquitetura multi-sistema: um núcleo agnóstico (`src/core`) e módulos de regras isolados (`src/systems/dnd5e`, `src/systems/ordem`). O design, porém, **não segue essa mesma separação em camadas** — não há uma pasta de design system central com componentes de UI genéricos; existem apenas dois componentes verdadeiramente compartilhados (`Tooltip`, `StepIndicator`) e uma pasta `src/components` quase vazia. Tudo mais (cards, botões, painéis, badges, callouts) é reimplementado por componente, com classes Tailwind copiadas e ligeiramente ajustadas a cada vez.
+Este projeto é uma SPA React (Vite + Tailwind v4) com uma arquitetura multi-sistema: um núcleo agnóstico (`core/`) e módulos de sistema isolados (`systems/dnd5e`, `systems/ordem`), com as regras no motor (`packages/rules`) e as telas no site (`apps/web`). O design, porém, **não segue essa mesma separação em camadas** — não há uma pasta de design system central com componentes de UI genéricos; existem apenas dois componentes verdadeiramente compartilhados (`Tooltip`, `StepIndicator`) e uma pasta `apps/web/src/components` quase vazia. Tudo mais (cards, botões, painéis, badges, callouts) é reimplementado por componente, com classes Tailwind copiadas e ligeiramente ajustadas a cada vez.
 
-A identidade visual é clara e consistente na intenção: **estética "grimório/pergaminho de fantasia"** — fundo quase preto com gradientes radiais marrons, fonte serifada ornamental (Cinzel) para títulos e rótulos, fonte serifada de leitura (Lora) para corpo, acabamento dourado (`gold-*`) para destaque, e uma escala neutra quente (`parchment-*`) fazendo o papel de "cinza" do sistema. Essa base foi implementada como **design tokens reais** em `src/index.css` via `@theme` do Tailwind v4 — é a parte mais madura do sistema, e é o que está representado no front matter acima.
+A identidade visual é clara e consistente na intenção: **estética "grimório/pergaminho de fantasia"** — fundo quase preto com gradientes radiais marrons, fonte serifada ornamental (Cinzel) para títulos e rótulos, fonte serifada de leitura (Lora) para corpo, acabamento dourado (`gold-*`) para destaque, e uma escala neutra quente (`parchment-*`) fazendo o papel de "cinza" do sistema. Essa base foi implementada como **design tokens reais** em `apps/web/src/index.css` via `@theme` do Tailwind v4 — é a parte mais madura do sistema, e é o que está representado no front matter acima.
 
 A partir daí, a maturidade cai: tipografia (tamanhos/papéis), border-radius e espaçamento **não têm token nenhum no código-fonte** — os valores no front matter acima foram *reconstruídos* a partir do uso mais comum observado, não extraídos de uma escala que o projeto já declara. E o trabalho mais recente (a tela de galeria `GlobalGallery.tsx` e o novo shell do Ordem `OrdemApp.tsx`, do handoff "Redesign Ordem" registrado no histórico do projeto) abandonou os tokens de cor inteiramente em favor de hex inline via `style={{}}`, criando uma segunda paleta paralela que se parece com a primeira mas não é ela.
 
@@ -178,8 +178,8 @@ Os componentes abaixo estão modelados no front matter (`components.*`) com as p
 
 - **`button-primary` / `button-primary-hover`**: `bg-gold-500`/texto `parchment-950`, `font-fantasy font-bold`, hover `bg-gold-400` + sombra dourada. Presente em `NameStep`, `Dnd5eApp`/`OrdemApp` (imprimir), `GlobalGallery` (novo personagem) — mas cada instância real usa um `rounded` (`lg` ou `xl`) e um padding levemente diferentes; o token representa a versão mais comum.
 - **`choice-card` / `choice-card-selected`**: botão-cartão com borda de 2px (não modelável neste schema — ver nota acima), fundo translúcido escuro e uma cor de destaque (`accent`) por entidade que ilumina borda/faixa/badges quando selecionado. É o componente mais repetido do app — e também o mais claramente copiado-e-colado em vez de compartilhado: `ClassCard`/`RaceCard` e `BackgroundCard` resolvem a mesma ideia com radius, sombra e paleta de fundo levemente diferentes (ver Inconsistências).
-- **`tooltip-popover`**: `src/components/common/Tooltip.tsx` — ícone "?" que abre um popover sob clique (não hover, para funcionar em mobile). Único componente genuinamente genérico além do StepIndicator.
-- **`step-indicator-node`**: `src/components/wizard/StepIndicator.tsx` — nó circular numerado, estado done/active/upcoming via token de cor, linha conectora fina. Único componente de navegação compartilhado entre os dois sistemas.
+- **`tooltip-popover`**: `apps/web/src/components/common/Tooltip.tsx` — ícone "?" que abre um popover sob clique (não hover, para funcionar em mobile). Único componente genuinamente genérico além do StepIndicator.
+- **`step-indicator-node`**: `apps/web/src/components/wizard/StepIndicator.tsx` — nó circular numerado, estado done/active/upcoming via token de cor, linha conectora fina. Único componente de navegação compartilhado entre os dois sistemas.
 - **Sidebar do Ordem** (`OrdemApp.tsx`, fora do front matter): navegação vertical fixa exclusiva desse sistema, construída inteiramente com hex inline via `style`, não com as classes de token — ver Inconsistências.
 - **Character row / galeria** (`GlobalGallery.tsx`, fora do front matter): avatar em losango (quadrado rotate 45°), nome, subtítulo, nível/NEX, ações (abrir, duplicar, exportar, excluir com confirmação inline). Também 100% hex inline, com paleta própria por sistema (`SYSTEM_UI`).
 - **Callout de status** (fora do front matter): caixa `bg`+`border`+`text` da mesma família de cor Tailwind stock (ex. `red-950`/`red-900`/`red-300`). Reimplementada a cada Step que precisa, sem componente compartilhado.

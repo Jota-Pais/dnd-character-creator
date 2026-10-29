@@ -156,14 +156,14 @@ Não fazem parte do Apêndice A, mas o módulo de jogo precisa delas para aplica
 
 ## 6. Notas de implementação (mapeamento pro app)
 
-Não faz parte da regra do livro: orienta a fase `/src/data` → código do módulo de jogo.
+Não faz parte da regra do livro: orienta a fase `packages/rules/src/systems/dnd5e/data` → código do módulo de jogo.
 
 ### 6.1 Onde mora cada coisa
 
-- **`src/systems/dnd5e/data/conditions.json`**: catálogo estático (as 14 condições + exaustão), com texto do livro e efeitos estruturados. Nenhuma regra de condição espalhada em `if` na UI (mesma regra de ouro de `sheetEffects.ts`).
+- **`packages/rules/src/systems/dnd5e/data/conditions.json`**: catálogo estático (as 14 condições + exaustão), com texto do livro e efeitos estruturados. Nenhuma regra de condição espalhada em `if` na UI (mesma regra de ouro de `sheetEffects.ts`).
 - **Estado de jogo** (separado da ficha, que nunca é reescrita): guarda **quais condições estão ativas** e o **nível de exaustão**, e nada mais. Os números com condição aplicada são **derivados** na hora (ficha + estado de jogo → ficha efetiva), do mesmo jeito que `getSkillChecks` deriva perícias.
   - Proposta: `conditions: { id: ConditionId; instances: { source?: string; duration?: string }[] }[]` e `exhaustionLevel: 0 | 1 | 2 | 3 | 4 | 5 | 6` (mesmo nome de campo de `regras-descanso.md`, seção 6.1). As `instances` existem para honrar "cada aplicação tem sua própria duração" (seção 1); a condição está ativa enquanto tiver **pelo menos uma** instância, e os efeitos **nunca** se multiplicam por instância. (Pontos em aberto, item 7, decidido: no MVP, lista de ids com uma nota de duração opcional por condição.)
-- **Motor de rolagem** (`src/core/dice`, puro e agnóstico de sistema): não conhece condições. O contrato é o de `regras-rolagens-e-concentracao.md`, seção 11.2: `modifiers: { value, source, label }[]` e as duas listas `advantageSources[]` / `disadvantageSources[]`, das quais uma função pura resolve o `mode` pela regra da pág. 175 (adv + desv = normal; várias do mesmo lado = uma). As fontes ficam guardadas para a UI explicar "por que essa jogada é normal (Envenenado × Invisível)".
+- **Motor de rolagem** (`packages/rules/src/core/dice`, puro e agnóstico de sistema): não conhece condições. O contrato é o de `regras-rolagens-e-concentracao.md`, seção 11.2: `modifiers: { value, source, label }[]` e as duas listas `advantageSources[]` / `disadvantageSources[]`, das quais uma função pura resolve o `mode` pela regra da pág. 175 (adv + desv = normal; várias do mesmo lado = uma). As fontes ficam guardadas para a UI explicar "por que essa jogada é normal (Envenenado × Invisível)".
   - O lado **dnd5e** traduz os efeitos ativos de condição e exaustão em entradas dessas listas, com `source` estável, por exemplo `condition:poisoned`, `condition:invisible`, `exhaustion:3`, e em `modifiers[]` quando houver número. **Decidido (item 13):** isso mora no **mesmo agregador** `utils/sheetEffects.ts` (vocabulário em `types/effects.ts`), com o estado de jogo como mais uma fonte. Nada de agregador paralelo.
   - A **falha automática** é conceito do D&D e **não** é flag do core: o dnd5e a decide **antes** de chamar o motor e grava a jogada com `outcome` forçado de falha no registro (`forcedOutcome` do 11.2, item 7), com a origem ("Falha automática (Paralisado)"). **Decidido (item 9):** o app mostra como falha, com um "rolar mesmo assim" discreto que não bloqueia.
 

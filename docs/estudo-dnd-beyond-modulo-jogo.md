@@ -257,10 +257,10 @@ O aviso de "Low HP" com limite configurável não foi achado. O vídeo da extens
 
 ### 4.4 O que isso significa para nós (sem código)
 - **Separar cálculo de apresentação**, como pede a restrição do projeto.
-  - Um **motor de rolagem puro em TypeScript no núcleo** (`src/core`, agnóstico de sistema) decide o resultado com RNG confiável (`crypto.getRandomValues`) e é testado no vitest.
+  - Um **motor de rolagem puro em TypeScript no núcleo** (`packages/rules/src/core/dice`, agnóstico de sistema) decide o resultado com RNG confiável (`crypto.getRandomValues`) e é testado no vitest.
   - A notação necessária é pequena: NdX+M, 2d20 com o maior ou o menor, e o crítico dobrando dados.
-  - O motor deve servir ao D&D e à reserva de d20 do Ordem, já modelada em `src/systems/ordem/utils/ordemWeaponUtils.ts` como `rollDice`/`rollMode`. [confirmado]
-  - Hoje a main usa `Math.random` espalhado e não tem motor central: em `characterStore`, `abilityScoreUtils` e `EquipmentStep`, e também nos dois storages (`src/systems/dnd5e/utils/storage.ts` e `src/systems/ordem/utils/storage.ts`, provavelmente para gerar ids).
+  - O motor deve servir ao D&D e à reserva de d20 do Ordem, já modelada em `packages/rules/src/systems/ordem/utils/ordemWeaponUtils.ts` como `rollDice`/`rollMode`. [confirmado]
+  - Hoje a main usa `Math.random` espalhado e não tem motor central: em `characterStore`, `abilityScoreUtils` e `EquipmentStep`, e também nos dois storages (`apps/web/src/systems/dnd5e/utils/storage.ts` e `apps/web/src/systems/ordem/utils/storage.ts`, provavelmente para gerar ids).
 - **A animação só apresenta** o número já sorteado:
   - 2D/CSS leve por padrão;
   - 3D opcional, carregado sob demanda, nunca no bundle da criação e sempre forçado ao resultado do motor;
@@ -309,7 +309,7 @@ O aviso de "Low HP" com limite configurável não foi achado. O vídeo da extens
 ### 5.2 Registro técnico para quando chegar a hora (não proposto agora)
 A pesquisa mapeou alternativas sem backend próprio. Elas ficam como **registro**, já que a decisão é esperar um backend real:
 - **BroadcastChannel**: mesma origem e mesmo navegador, Baseline desde mar/2022, entrega **assíncrona**. [corrigido]
-- **QR/link com o estado**: a fixture `COMPLETE_DRAFT` (`src/test/fixtures.ts`) tem 675 B em JSON, 376 B com deflate-raw e 502 caracteres em base64url. O QR v40-L comporta 2.953 B. Ficha de nível 20 não foi medida. [confirmado]
+- **QR/link com o estado**: a fixture `COMPLETE_DRAFT` (`packages/rules/src/test/fixtures.ts`) tem 675 B em JSON, 376 B com deflate-raw e 502 caracteres em base64url. O QR v40-L comporta 2.953 B. Ficha de nível 20 não foi medida. [confirmado]
 - **P2P**:
   - Trystero (MIT, Nostr por padrão, pacotes `@trystero-p2p/*`);
   - PeerJS Cloud, no ar em 23/10/2026;
@@ -335,7 +335,7 @@ Tudo abaixo serve à ficha individual hoje e mantém a porta aberta:
 5. **Rolagem como dado, não como animação.** Cada rolagem vira um registro autocontido: id, timestamp, o que foi rolado, dados individuais, modificadores, total, modo V/D e origem ("app" ou "manual"). O log local só de acréscimo de hoje vira, amanhã, um evento transmissível.
 6. **Mudanças de estado como operações nomeadas** (dano, cura, gastar espaço, descanso…), passando por funções puras. Isso dá desfazer agora e eventos/deltas no futuro.
 7. **Nenhum segredo no conteúdo exportável.** Se um dia houver webhook ou credencial, ela fica fora da ficha.
-8. **Núcleo agnóstico**: o contrato de "jogar" e o motor de dados ficam no `src/core`, para que um protocolo futuro sirva ao D&D e ao Ordem.
+8. **Núcleo agnóstico**: o contrato de "jogar" (`apps/web/src/core/types/system.ts`) e o motor de dados (`packages/rules/src/core/dice`) ficam no núcleo, para que um protocolo futuro sirva ao D&D e ao Ordem.
 9. **Funcionar 100% sem rede**: a rede, quando vier, é bônus.
 
 ---
@@ -407,7 +407,7 @@ Mais específicas da ficha: concentração ausente, buffs fora das rolagens, pre
   - `getSpellSaveDC`, `getSpellAttackBonus`, `getMaxPreparedSpells`;
   - `getClassResources`, `getUnproficientArmor`.
 
-  Os arquivos são `src/systems/dnd5e/utils/proficiencyUtils.ts`, `armorClassUtils.ts`, `sheetEffects.ts`, `multiclassUtils.ts` e `spellUtils.ts`. **A camada "máximos e bônus" do modo de jogo está pronta**: no modo de jogo, atual = máximo − gasto, mais os extras temporários da seção 5.3. As parcelas da CA e a fonte única das perícias já permitem mostrar "de onde vem este número" quase de graça.
+  Os arquivos são `packages/rules/src/systems/dnd5e/utils/proficiencyUtils.ts`, `armorClassUtils.ts`, `sheetEffects.ts`, `multiclassUtils.ts` e `spellUtils.ts`. **A camada "máximos e bônus" do modo de jogo está pronta**: no modo de jogo, atual = máximo − gasto, mais os extras temporários da seção 5.3. As parcelas da CA e a fonte única das perícias já permitem mostrar "de onde vem este número" quase de graça.
 - **Padrão de efeitos declarados** (`types/effects.ts` + `sheetEffects.ts`), com o condicional como linha própria. O `getOwnedClassFeatures` já percorre cada classe da multiclasse no nível dela. É o modelo certo para um tipo irmão de ações e recursos.
 - **Armas bem estruturadas** (`types/equipment.ts`): dano com dados, lados e valor fixo (`DamageRoll`), tipo de dano e propriedades tipadas (acuidade, versátil, alcance, munição). O dano de arma já pode ser rolado. Os bugs de base da seção 8.3 afetam o bônus somado.
 - **Magias** (`spells.json`, 361 entradas): concentração (154) e ritual (31) em booleanos. O `castingTime` tem só 13 valores e dá para classificar. Isso já sustenta um grimório jogável: filtros, marcador de concentração, gastar espaço e ritual.
@@ -418,7 +418,7 @@ Mais específicas da ficha: concentração ausente, buffs fora das rolagens, pre
   - PV temporários: 17942–17970;
   - Concentração: 18295 em diante;
   - Apêndice A (condições): 28440–28563, com a Exaustão na 28533.
-- **Persistência abstraída**: os componentes não tocam o localStorage. Mas a camada é **por sistema**: `src/systems/dnd5e/utils/storage.ts` e `src/systems/ordem/utils/storage.ts`. A pasta `src/utils/` nem existe, ao contrário do que diz o CLAUDE.md. **O CLAUDE.md precisa ser corrigido para descrever o storage por sistema.**
+- **Persistência abstraída**: os componentes não tocam o localStorage. Mas a camada é **por sistema**: `apps/web/src/systems/dnd5e/utils/storage.ts` e `apps/web/src/systems/ordem/utils/storage.ts`. A pasta `src/utils/` nem existe, ao contrário do que diz o CLAUDE.md. **O CLAUDE.md precisa ser corrigido para descrever o storage por sistema.**
 
 ### 8.2 Lacunas para uma ficha jogável
 - **Nenhum estado de sessão.** O `CharacterDraft` (`types/character.ts:78-143`) guarda só a criação. Faltam:
@@ -435,7 +435,7 @@ Mais específicas da ficha: concentração ausente, buffs fora das rolagens, pre
   A ficha imprimível deixa tudo isso "a lápis" (`PrintableSheet.tsx:370-377`).
 - **Persistência**: o `loadLibrary` reconstrói cada ficha campo a campo, então descarta campos novos. O `exportCharacter` só leva o draft, e o `sanitizeImportedDraft` usa whitelist (`storage.ts:92-146`, `draftValidation.ts:256-296`). Um estado de jogo precisa entrar no mapper, no export/import e num sanitizador próprio.
 - **Navegação e contrato**:
-  - o `IRpgSystem` (`src/core/types/system.ts`) só conhece criação, impressão e galeria;
+  - o `IRpgSystem` (`apps/web/src/core/types/system.ts`) só conhece criação, impressão e galeria;
   - a `AppState` de `system.ts` é código morto;
   - a `GlobalGallery` chama os stores de cada sistema direto, e o único botão principal é "Abrir";
   - o store do D&D só tem as views `'gallery' | 'wizard' | 'print'`;
@@ -524,17 +524,17 @@ Mais específicas da ficha: concentração ausente, buffs fora das rolagens, pre
 - **Registrar o módulo no CLAUDE.md**, em commit `docs:`.
   - Hoje a V1 não lista modo de jogo e põe "evolução de personagem em sessão" fora do escopo.
   - O commit deve incluir a ficha jogável no escopo, manter subir de nível e XP fora e proibir explicitamente multiplayer, mestre e backend.
-  - Também deve corrigir a descrição do storage: a camada é por sistema, em `src/systems/<sistema>/utils/storage.ts`.
+  - Também deve corrigir a descrição do storage: a camada é por sistema, em `apps/web/src/systems/<sistema>/utils/storage.ts`.
 - **Corrigir os bugs de base** da seção 8.3, de preferência declarando como efeito nos dados (ex.: PV e CA sem armadura como efeitos de raça e de feature) em vez de espalhar `if`. Incluir a **migração** das fichas salvas e o aviso ao jogador. **Aviso feito em 2026-10-29** (decisão 10.2.23): a cada abertura do jogo, `utils/sheetSnapshot.ts` compara um retrato dos números (PV máximo, CA, CD e ataque de magia, espaços) com o da abertura anterior, guardado no estado de jogo; número diferente com a mesma ficha (mesma gravação ou mesmo draft) avisa "O app corrigiu sua ficha: PV máximo 12 → 14", e o aviso fica até o OK: o retrato novo só entra no estado aí, então fechar o jogo ou recarregar a página antes o traz de volta. Com o estado em "gasto", o PV atual sobe junto com o máximo, sem migrar nada. **Limites do aviso** (pendentes do dono): ele só cobre as correções feitas depois da primeira abertura com retrato, e as da seção 8.3, publicadas antes, ficam sem aviso (ver a atualização em 8.3); e ele só existe no modo de jogo — quem joga com a Revisão ou com o PDF impresso, sem abrir o jogo, nunca é avisado, e a folha de papel fica com o número antigo. Guardar o retrato junto da ficha na biblioteca (ao salvar e ao imprimir) e avisar na galeria ou na Revisão é a saída, se o dono quiser.
 - **Extrair o modelo de ficha puro** (armas equipadas, magias conhecidas, ataques por ação, inventário inicial resolvido), para Revisão, PDF e Jogo lerem a mesma conta. **Feito em 2026-10-29:** `utils/sheetModel.ts` tem o inventário inicial (`getStartingInventory`, de onde saem também as armas dos ataques) e as magias conhecidas por via (`getKnownSpells`, com o grimório do PDF em `listKnownSpells`); os ataques por ação já eram `getAttacksPerAction`.
-- **Digitalizar em `/docs`** as regras do modo de jogo a partir das linhas já localizadas no extrato (seção 8.1): descanso, morte (com estável e dano massivo), PV temporário, concentração, condições e exaustão, dano e crítico, ações padrão e carga. Isso segue o fluxo livro → `/docs` → `src/data`. Os pontos em que a tradução diverge do inglês vão ao dono (10.1).
+- **Digitalizar em `/docs`** as regras do modo de jogo a partir das linhas já localizadas no extrato (seção 8.1): descanso, morte (com estável e dano massivo), PV temporário, concentração, condições e exaustão, dano e crítico, ações padrão e carga. Isso segue o fluxo livro → `/docs` → `packages/rules/src/systems/dnd5e/data`. Os pontos em que a tradução diverge do inglês vão ao dono (10.1).
 - **Dados de condições**: 14 condições mais a Exaustão, com o texto e os efeitos que mexem no estado de jogo.
 - **Declarar a recuperação dos 5 pools existentes** e criar os usos da Inspiração de Bardo.
 - **Definir o estado de jogo** como campo irmão do draft:
   - em "gasto", com extras temporários e ajuste temporário de máximo;
   - com ids estáveis e versão;
   - incluído no mapper, no export/import (decisão 10.2.3: o export leva o estado de jogo) e num sanitizador. **Export/import feito em 2026-10-29:** o arquivo é um envelope versionado (`format: "dnd5e-character"`, `version: 2`) com o draft e o estado de jogo lado a lado; o draft solto dos arquivos antigos continua entrando. Importar sempre cria ficha nova, e o estado do arquivo vai só para ela.
-- **Motor de rolagem puro no núcleo**: RNG confiável, notação mínima, V/D, crítico e resultado como registro serializável, com cobertura obrigatória de testes. Os `Math.random` espalhados, inclusive nos storages, passam a usar uma fonte comum. **Feito em 2026-10-29:** os dados do criador (4d6, PV por rolagem, ouro inicial) sorteiam pelo motor, e os ids saem de `createId` (`src/core/utils/id.ts`); só o `cryptoRng` chama o `Math.random`, como último recurso.
+- **Motor de rolagem puro no núcleo**: RNG confiável, notação mínima, V/D, crítico e resultado como registro serializável, com cobertura obrigatória de testes. Os `Math.random` espalhados, inclusive nos storages, passam a usar uma fonte comum. **Feito em 2026-10-29:** os dados do criador (4d6, PV por rolagem, ouro inicial) sorteiam pelo motor, e os ids saem de `createId` (`packages/rules/src/core/utils/id.ts`); só o `cryptoRng` chama o `Math.random`, como último recurso.
 - **Contrato de "jogar"** como capacidade **opcional** do sistema no `IRpgSystem`; o contrato entra agora (decisão 10.2.12), e o Ordem fica para a Fase 3 (decisão 10.2.17). Remover a `AppState` morta. **Feito em 2026-10-29:** `IRpgSystem.play` (`canPlay`, `startPlay`); a galeria pergunta ao sistema da ficha.
 
 ### Fase 1: MVP "ficha viva + dados"
@@ -716,13 +716,13 @@ O desenho técnico, com as ondas na ordem, está em `docs/fase2-desenho-tecnico.
 
 **Código e documentos do projeto**
 - `CLAUDE.md` (escopo da V1, regra de ouro do `sheetEffects`, persistência)
-- `src/core/types/system.ts`, `src/core/systems/registry.ts`, `src/core/stores/appStore.ts`, `src/App.tsx`, `src/GlobalGallery.tsx`
-- `src/systems/dnd5e/stores/characterStore.ts`, `src/systems/dnd5e/Dnd5eApp.tsx`, `src/components/wizard/WizardShell.tsx`
-- `src/systems/dnd5e/utils/storage.ts`, `draftValidation.ts`, `proficiencyUtils.ts`, `armorClassUtils.ts`, `sheetEffects.ts`, `multiclassUtils.ts`, `spellUtils.ts`, `classResourceUtils.ts`, `weaponFormat.ts`, `classUtils.ts`, `equipmentUtils.ts`, `glossary.ts`, `abilityScoreUtils.ts`; `src/systems/dnd5e/utils/__tests__/` (19 arquivos)
-- `src/systems/dnd5e/types/character.ts`, `effects.ts`, `class.ts`, `spell.ts`, `race.ts`, `equipment.ts`
-- `src/systems/dnd5e/data/classes.json`, `class-progression-features.json`, `progression.json`, `progression-choices.json`, `spells.json`, `races.json` (linha 541), `feats.json`, `general-items.json`, `battle-master-maneuvers.json`, `metamagic-options.json`, `four-elements-disciplines.json`
-- `src/systems/dnd5e/components/PrintableSheet.tsx`, `components/steps/ReviewStep.tsx`, `components/steps/SpellStep.tsx`, `components/steps/EquipmentStep.tsx`
-- `src/systems/ordem/utils/ordemWeaponUtils.ts`, `src/systems/ordem/utils/storage.ts`, `src/test/fixtures.ts`
+- `apps/web/src/core/types/system.ts`, `apps/web/src/core/systems/registry.ts`, `apps/web/src/core/stores/appStore.ts`, `apps/web/src/App.tsx`, `apps/web/src/GlobalGallery.tsx`
+- `apps/web/src/systems/dnd5e/stores/characterStore.ts`, `apps/web/src/systems/dnd5e/Dnd5eApp.tsx`, `apps/web/src/components/wizard/WizardShell.tsx`
+- `apps/web/src/systems/dnd5e/utils/storage.ts`; em `packages/rules/src/systems/dnd5e/utils/`: `draftValidation.ts`, `proficiencyUtils.ts`, `armorClassUtils.ts`, `sheetEffects.ts`, `multiclassUtils.ts`, `spellUtils.ts`, `classResourceUtils.ts`, `weaponFormat.ts`, `classUtils.ts`, `equipmentUtils.ts`, `glossary.ts`, `abilityScoreUtils.ts`; `packages/rules/src/systems/dnd5e/utils/__tests__/` (19 arquivos na época)
+- `packages/rules/src/systems/dnd5e/types/character.ts`, `effects.ts`, `class.ts`, `spell.ts`, `race.ts`, `equipment.ts`
+- `packages/rules/src/systems/dnd5e/data/classes.json`, `class-progression-features.json`, `progression.json`, `progression-choices.json`, `spells.json`, `races.json` (linha 541), `feats.json`, `general-items.json`, `battle-master-maneuvers.json`, `metamagic-options.json`, `four-elements-disciplines.json`
+- `apps/web/src/systems/dnd5e/components/PrintableSheet.tsx`, `components/steps/ReviewStep.tsx`, `components/steps/SpellStep.tsx`, `components/steps/EquipmentStep.tsx`
+- `packages/rules/src/systems/ordem/utils/ordemWeaponUtils.ts`, `apps/web/src/systems/ordem/utils/storage.ts`, `packages/rules/src/test/fixtures.ts`
 - `docs/_book-extracts/dnd-phb.txt`: linha 88; 16796–16831 (descansos); 17752–17764 (crítico); 17849–17941 (0 PV e morte); 17942–17970 (PV temporários); 18295 em diante (concentração); 28440–28563 (Apêndice A, Exaustão na 28533)
 - `docs/regras-classes.md`, `docs/magias/regras-magias.md`, `docs/regras-multiclasse.md`
 

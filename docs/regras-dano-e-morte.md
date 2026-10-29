@@ -314,7 +314,7 @@ Segue a regra de ouro dos efeitos:
 
 A cobertura (seção 1) é um **toggle condicional** ("estou atrás de meia-cobertura / três-quartos"), não um número fixo da ficha. Ligado, mostra a CA e o TR de Destreza com o bônus como linha própria. Um seletor único de grau já respeita a regra de que os graus não se somam.
 
-### O que o motor de rolagem (`src/core/dice`) precisa para o crítico
+### O que o motor de rolagem (`packages/rules/src/core/dice`) precisa para o crítico
 
 O motor é puro e agnóstico de sistema; o D&D monta a expressão.
 
@@ -335,7 +335,7 @@ O motor é puro e agnóstico de sistema; o D&D monta a expressão.
   - **Desfecho:** o **10 é comparado ao total** (d20 + bônus); o **1 e o 20 são do d20 natural** (o dado mantido, depois de vantagem/desvantagem) (decisão 8).
   - Não há falha automática: a do Inconsciente vale só para TR de Força e Destreza, e o teste contra a morte não é vinculado a habilidade.
 - **Estável → 1 PV em 1d4 horas:** o motor rola 1d4 e a UI mostra "recupera 1 PV em N horas". O app não conta tempo real; o jogador confirma.
-- **Tipos de dano:** `DamageType` em `src/systems/dnd5e/types/equipment.ts` hoje só tem `bludgeoning | piercing | slashing` (armas). Para resistências e magias, ampliar para os 13 `id` da seção 5 (e `DAMAGE_TYPE_PT` em `utils/weaponFormat.ts`).
+- **Tipos de dano:** `DamageType` em `packages/rules/src/systems/dnd5e/types/equipment.ts` hoje só tem `bludgeoning | piercing | slashing` (armas). Para resistências e magias, ampliar para os 13 `id` da seção 5 (e `DAMAGE_TYPE_PT` em `utils/weaponFormat.ts`).
 
 ## Pontos em aberto (decidir com o dono)
 

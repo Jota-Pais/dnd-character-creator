@@ -167,7 +167,7 @@ function RollHistoryHeader({ count }: { count: number }) {
   return (
     <>
       <div className="flex items-center justify-between gap-2 mb-1.5">
-        <h2 ref={titleRef} tabIndex={-1} className="text-[11px] uppercase tracking-wider text-parchment-600 font-fantasy outline-none">
+        <h2 ref={titleRef} tabIndex={-1} className="text-[11px] uppercase tracking-wider text-parchment-600 font-fantasy">
           Rolagens recentes
         </h2>
         {count > 0 && !asking && (

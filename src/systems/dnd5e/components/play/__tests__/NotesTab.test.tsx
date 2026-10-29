@@ -127,7 +127,10 @@ describe('NotesTab', () => {
     expect(screen.queryByTestId('roll-history')).toBeNull()
     expect(screen.getByText(/Nenhuma rolagem ainda/)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Nova sessão' })).toBeNull()
-    expect(screen.getByRole('heading', { name: 'Rolagens recentes' })).toHaveFocus()
+    const title = screen.getByRole('heading', { name: 'Rolagens recentes' })
+    expect(title).toHaveFocus()
+    // Com o anel do foco à vista (o *:focus-visible do tema), como os títulos da aba Estado.
+    expect(title).not.toHaveClass('outline-none')
     expect(usePlayStore.getState().undoStack).toHaveLength(1)
   })
 

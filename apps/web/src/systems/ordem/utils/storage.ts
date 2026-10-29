@@ -2,6 +2,7 @@ import type { OrdemCharacterDraft, WizardStep } from '@rpg/rules/systems/ordem/t
 import { EMPTY_DRAFT } from '@rpg/rules/systems/ordem/types/character'
 import { createId } from '@rpg/rules/core/utils/id'
 import { sanitizeImportedDraft } from '@rpg/rules/systems/ordem/utils/draftValidation'
+import { requestPersistentStorage } from '../../../core/pwa/persistentStorage'
 
 const LIBRARY_KEY = 'ordem-character-library'
 export const LIBRARY_VERSION = 1
@@ -21,6 +22,8 @@ function withDraftDefaults(partial: Partial<OrdemCharacterDraft> | undefined): O
 
 function writeLibrary(characters: SavedCharacter[]): void {
   localStorage.setItem(LIBRARY_KEY, JSON.stringify({ version: LIBRARY_VERSION, characters } satisfies Library))
+  // A primeira gravação de ficha da sessão pede ao navegador para não apagar o que o site guarda.
+  requestPersistentStorage()
 }
 
 export function loadLibrary(): SavedCharacter[] {

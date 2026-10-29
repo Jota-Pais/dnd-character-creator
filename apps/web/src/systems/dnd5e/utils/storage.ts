@@ -5,6 +5,7 @@ import { createId } from '@rpg/rules/core/utils/id'
 import { sanitizeImportedDraft } from '@rpg/rules/systems/dnd5e/utils/draftValidation'
 import { sanitizePlayState } from '@rpg/rules/systems/dnd5e/utils/playState'
 import { loadPlayState } from './playStorage'
+import { requestPersistentStorage } from '../../../core/pwa/persistentStorage'
 
 const SESSION_KEY = 'dnd-character-session'
 const LIBRARY_KEY = 'dnd-character-library'
@@ -69,6 +70,8 @@ export function clearSession(): void {
 
 function writeLibrary(characters: SavedCharacter[]): void {
   localStorage.setItem(LIBRARY_KEY, JSON.stringify({ version: LIBRARY_VERSION, characters } satisfies Library))
+  // A primeira gravação de ficha da sessão pede ao navegador para não apagar o que o site guarda.
+  requestPersistentStorage()
 }
 
 /**

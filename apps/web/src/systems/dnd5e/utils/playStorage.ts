@@ -1,5 +1,6 @@
 import type { PlayResult, PlaySheet, PlayState } from '@rpg/rules/systems/dnd5e/types/playState'
 import { createPlayState, reconcileLoadedPlayState, sanitizePlayState } from '@rpg/rules/systems/dnd5e/utils/playState'
+import { requestPersistentStorage } from '../../../core/pwa/persistentStorage'
 
 /**
  * Persistência do estado de jogo — a camada que componentes e stores usam (nunca o localStorage
@@ -34,6 +35,8 @@ function readStore(): Record<string, unknown> {
 
 function writeStore(states: Record<string, unknown>): void {
   localStorage.setItem(PLAY_STATES_KEY, JSON.stringify({ version: PLAY_STORAGE_VERSION, states } satisfies PlayStore))
+  // Quem só joga fichas de antes também pede (a primeira gravação da sessão; ver storage.ts).
+  requestPersistentStorage()
 }
 
 /** Estado de jogo salvo de uma ficha, já sanitizado; null se ela nunca jogou. */

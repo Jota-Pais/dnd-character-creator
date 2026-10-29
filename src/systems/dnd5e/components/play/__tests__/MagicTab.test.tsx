@@ -5,7 +5,7 @@ import { usePlayStore } from '../../../stores/playStore'
 import { completeLongRest } from '../../../utils/playState'
 import { EMPTY_DRAFT, type CharacterDraft } from '../../../types/character'
 import { COMPLETE_DRAFT } from '../../../../../test/fixtures'
-import { openDraft, openKrusk, resetPlay } from './openPlay'
+import { liveRegions, openDraft, openKrusk, resetPlay } from './openPlay'
 
 beforeEach(resetPlay)
 afterEach(() => cleanup())
@@ -117,5 +117,15 @@ describe('MagicTab', () => {
     expect(screen.getAllByText('Recupera em descanso longo.').length).toBeGreaterThan(0)
     fireEvent.click(screen.getAllByRole('button', { name: 'Gastar: Fúria' })[0])
     expect(screen.getByRole('group', { name: 'Fúria: 1 de 2' })).toBeInTheDocument()
+  })
+
+  it('o leitor de tela ouve a contagem quando um uso é gasto (abrir a aba não anuncia)', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Magia' }))
+    const regions = liveRegions()
+    expect(regions.some(r => r.textContent?.includes('Fúria'))).toBe(false)
+    fireEvent.click(screen.getAllByRole('button', { name: 'Gastar: Fúria' })[0])
+    expect(regions.some(r => r.textContent === 'Fúria: 1 de 2')).toBe(true)
   })
 })

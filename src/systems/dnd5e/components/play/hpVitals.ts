@@ -1,4 +1,5 @@
 import type { HitDiceAvailability } from '../../utils/playState'
+import { countLabel } from '../../utils/textUtils'
 
 /**
  * PV baixo: PV atual acima de 0 e até esta fração do máximo efetivo. Decisão de produto do ciclo
@@ -44,6 +45,15 @@ export function getHpFlash(before: HpReading, after: HpReading): HpFlash | null 
   if (after.current > before.current) return 'heal'
   if (after.tempHp < before.tempHp) return 'damage'
   return null
+}
+
+/**
+ * O PV por extenso que o leitor de tela ouve quando ele muda (a região viva dos vitais): "PV 9 de
+ * 14", "PV 14 de 14, mais 5 temporários".
+ */
+export function describeHpForAnnouncement(current: number, max: number, tempHp: number): string {
+  const temp = tempHp > 0 ? `, mais ${countLabel(tempHp, 'temporário', 'temporários')}` : ''
+  return `PV ${current} de ${max}${temp}`
 }
 
 /** Os Dados de Vida que ainda dá para gastar, um por tipo, como a ficha escreve: "1d12", "2d8". */

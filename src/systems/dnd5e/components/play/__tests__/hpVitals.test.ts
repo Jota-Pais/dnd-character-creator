@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import { getHpBand, getHpBarPercent, getHpFlash, LOW_HP_FRACTION } from '../hpVitals'
+import { describeHpForAnnouncement, getHpBand, getHpBarPercent, getHpFlash, LOW_HP_FRACTION } from '../hpVitals'
+
+describe('describeHpForAnnouncement', () => {
+  it('o PV sobre o máximo efetivo, com os temporários quando há', () => {
+    expect(describeHpForAnnouncement(9, 14, 0)).toBe('PV 9 de 14')
+    expect(describeHpForAnnouncement(14, 14, 1)).toBe('PV 14 de 14, mais 1 temporário')
+    expect(describeHpForAnnouncement(0, 7, 5)).toBe('PV 0 de 7, mais 5 temporários')
+  })
+})
 
 describe('getHpFlash', () => {
   it('PV que cai é dano; PV que sobe é cura', () => {

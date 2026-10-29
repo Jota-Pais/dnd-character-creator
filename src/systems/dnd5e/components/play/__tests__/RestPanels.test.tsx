@@ -55,6 +55,14 @@ describe('Descanso curto', () => {
     expect(screen.getByTestId('hp-current')).toHaveTextContent('6')
   })
 
+  it('o leitor de tela ouve a conta do dado gasto e o PV parcial do rascunho', () => {
+    openHurtKrusk()
+    fireEvent.click(screen.getByRole('button', { name: 'Descanso curto' }))
+    const regions = liveRegions()
+    spendDie('3')
+    expect(regions.some(r => r.textContent === 'd12: 3 + 2 = 5. PV: 6 → 11 de 14.')).toBe(true)
+  })
+
   it('face fora do dado apaga o botão e explica o que digitar', () => {
     openHurtKrusk()
     fireEvent.click(screen.getByRole('button', { name: 'Descanso curto' }))

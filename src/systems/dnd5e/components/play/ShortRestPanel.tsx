@@ -8,6 +8,7 @@ import {
 } from '../../utils/playState'
 import type { RollGuideEntry } from '../../utils/rollGuide'
 import { countLabel, pluralize } from '../../utils/textUtils'
+import { ChangeAnnouncer } from './ChangeAnnouncer'
 import { rollGuideEntry } from './playDice'
 import type { PlayTabProps } from './usePlayView'
 
@@ -226,6 +227,10 @@ export function ShortRestPanel({ view, onClose }: { view: PlayTabProps; onClose:
         <p className="text-sm text-red-300" role="alert">{error ?? sim.refused}</p>
       )}
 
+      {/* O rascunho não grava nada (nem aviso): a conta do último dado e o PV parcial são anunciados. */}
+      <ChangeAnnouncer
+        text={spends.length > 0 ? `${sim.lines.at(-1) ?? ''} PV: ${hpBefore} → ${hpAfter} de ${getEffectiveMaxHp(sim.state, sheet)}.` : ''}
+      />
       {spends.length > 0 && (
         <div className="rounded-lg border border-parchment-900 p-2.5" data-testid="short-rest-draft">
           <ul className="space-y-0.5">

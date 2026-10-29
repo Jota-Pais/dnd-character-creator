@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { ChangeAnnouncer } from './ChangeAnnouncer'
 
 /**
  * Bolinhas de usos: cheia = disponível, vazia = gasta. Tocar numa cheia gasta uma; numa vazia,
@@ -33,6 +34,8 @@ export function UsesTrack({ label, total, available, onSpend, onRecover }: {
         )
       })}
       <span className="ml-1 text-xs text-parchment-500" aria-hidden="true">{available}/{total}</span>
+      {/* A bolinha tocada nem sempre muda de nome (gasta-se a última cheia): a contagem é anunciada. */}
+      <ChangeAnnouncer text={`${label}: ${available} de ${total}`} />
     </div>
   )
 }
@@ -67,6 +70,7 @@ export function RemainingTrack({ label, unitLabel, total, available, amountInput
         <span className="text-sm text-parchment-200" data-testid={`remaining-${label}`}>
           restam <span className="font-fantasy font-bold">{available}</span> de {total} {unitLabel}
         </span>
+        <ChangeAnnouncer text={`${label}: restam ${available} de ${total} ${unitLabel}`} />
         <button
           onClick={() => onSpend(1)}
           disabled={available <= 0}

@@ -6,13 +6,29 @@ import { applyDamage, applyHealing, grantTempHp } from '../../../utils/playState
 import { EMPTY_DRAFT } from '../../../types/character'
 import { COMPLETE_DRAFT } from '../../../../../test/fixtures'
 import { HP_FLASH_MS } from '../hpVitals'
-import { openDraft, openKrusk, resetPlay } from './openPlay'
+import { liveRegions, openDraft, openKrusk, resetPlay } from './openPlay'
 
 beforeEach(resetPlay)
 afterEach(() => cleanup())
 
 const damage = (amount: number) =>
   act(() => { usePlayStore.getState().run((st, sh) => applyDamage(st, sh, { amount })) })
+
+describe('VitalsBar — leitor de tela', () => {
+  const heard = (text: string) => liveRegions().some(r => r.textContent === text)
+
+  it('anuncia o PV quando ele muda, venha de onde vier; abrir a ficha não anuncia', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    expect(liveRegions().some(r => r.textContent?.includes('PV 14 de 14'))).toBe(false)
+    damage(5)
+    expect(heard('PV 9 de 14')).toBe(true)
+    act(() => { usePlayStore.getState().run(st => grantTempHp(st, 4)) })
+    expect(heard('PV 9 de 14, mais 4 temporários')).toBe(true)
+    fireEvent.click(screen.getByRole('button', { name: 'Desfazer a última mudança' }))
+    expect(heard('PV 9 de 14')).toBe(true)
+  })
+})
 
 describe('VitalsBar — barra de PV', () => {
   it('a barra acompanha o PV atual sobre o máximo e muda de cor por faixa', () => {

@@ -6,9 +6,10 @@ import {
 } from '../../utils/playState'
 import type { RollGuideEntry } from '../../utils/rollGuide'
 import { getConditionalAcBonuses } from '../../utils/sheetEffects'
+import { ChangeAnnouncer } from './ChangeAnnouncer'
 import {
-  describeHitDiceAvailable, formatHitDiceAvailable, getHpBand, getHpBarPercent, getHpFlash, HP_FLASH_MS,
-  type HpBand, type HpFlash, type HpReading,
+  describeHitDiceAvailable, describeHpForAnnouncement, formatHitDiceAvailable, getHpBand, getHpBarPercent, getHpFlash,
+  HP_FLASH_MS, type HpBand, type HpFlash, type HpReading,
 } from './hpVitals'
 import { armorClassSource, passiveSource, type NumberSource } from './numberSources'
 import { ModeMark } from './RollMarks'
@@ -123,6 +124,9 @@ export function VitalsBar({ view, onOpenRecipe, onOpenSource, onOpenRests }: {
 
   return (
     <div className="space-y-2">
+      {/* O dano e a cura só aparecem no número (o aviso da ação, quando há, fala do resto). Primeiro
+          filho: no fim, o space-y daria margem à faixa de chips. */}
+      <ChangeAnnouncer text={describeHpForAnnouncement(current, effMax, state.tempHp)} />
       {/* No celular, duas linhas: PV e Descanso (largo o bastante para "Dados de Vida" em 360 px),
           depois os outros quatro. Do sm para cima, as linhas somem (`contents`) e é uma fila só. */}
       <div className="space-y-1.5 sm:space-y-0 sm:grid sm:grid-cols-[minmax(0,2fr)_repeat(5,minmax(0,1fr))] sm:gap-1.5">

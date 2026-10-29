@@ -15,6 +15,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      # Tudo pela raiz do workspace: os testes do motor (node) e do site (jsdom), o lint dos dois e
+      # o build da Vercel (tsc -b com as referências + vite build do site).
       - run: npm ci
       - run: npm run lint
-      - run: npx vitest run
+      - run: npm test -- --run
+      - run: npm run build

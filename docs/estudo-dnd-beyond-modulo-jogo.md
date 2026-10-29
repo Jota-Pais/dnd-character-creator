@@ -524,7 +524,7 @@ Mais específicas da ficha: concentração ausente, buffs fora das rolagens, pre
   - O commit deve incluir a ficha jogável no escopo, manter subir de nível e XP fora e proibir explicitamente multiplayer, mestre e backend.
   - Também deve corrigir a descrição do storage: a camada é por sistema, em `src/systems/<sistema>/utils/storage.ts`.
 - **Corrigir os bugs de base** da seção 8.3, de preferência declarando como efeito nos dados (ex.: PV e CA sem armadura como efeitos de raça e de feature) em vez de espalhar `if`. Incluir a **migração** das fichas salvas e o aviso ao jogador.
-- **Extrair o modelo de ficha puro** (armas equipadas, magias conhecidas, ataques por ação, inventário inicial resolvido), para Revisão, PDF e Jogo lerem a mesma conta.
+- **Extrair o modelo de ficha puro** (armas equipadas, magias conhecidas, ataques por ação, inventário inicial resolvido), para Revisão, PDF e Jogo lerem a mesma conta. **Feito em 2026-10-29:** `utils/sheetModel.ts` tem o inventário inicial (`getStartingInventory`, de onde saem também as armas dos ataques) e as magias conhecidas por via (`getKnownSpells`, com o grimório do PDF em `listKnownSpells`); os ataques por ação já eram `getAttacksPerAction`.
 - **Digitalizar em `/docs`** as regras do modo de jogo a partir das linhas já localizadas no extrato (seção 8.1): descanso, morte (com estável e dano massivo), PV temporário, concentração, condições e exaustão, dano e crítico, ações padrão e carga. Isso segue o fluxo livro → `/docs` → `src/data`. Os pontos em que a tradução diverge do inglês vão ao dono (10.1).
 - **Dados de condições**: 14 condições mais a Exaustão, com o texto e os efeitos que mexem no estado de jogo.
 - **Declarar a recuperação dos 5 pools existentes** e criar os usos da Inspiração de Bardo.
@@ -532,8 +532,8 @@ Mais específicas da ficha: concentração ausente, buffs fora das rolagens, pre
   - em "gasto", com extras temporários e ajuste temporário de máximo;
   - com ids estáveis e versão;
   - incluído no mapper, no export/import (decisão 10.2.3: o export leva o estado de jogo) e num sanitizador.
-- **Motor de rolagem puro no núcleo**: RNG confiável, notação mínima, V/D, crítico e resultado como registro serializável, com cobertura obrigatória de testes. Os `Math.random` espalhados, inclusive nos storages, passam a usar uma fonte comum.
-- **Contrato de "jogar"** como capacidade **opcional** do sistema no `IRpgSystem`; o contrato entra agora (decisão 10.2.12), e o Ordem fica para a Fase 3 (decisão 10.2.17). Remover a `AppState` morta.
+- **Motor de rolagem puro no núcleo**: RNG confiável, notação mínima, V/D, crítico e resultado como registro serializável, com cobertura obrigatória de testes. Os `Math.random` espalhados, inclusive nos storages, passam a usar uma fonte comum. **Feito em 2026-10-29:** os dados do criador (4d6, PV por rolagem, ouro inicial) sorteiam pelo motor, e os ids saem de `createId` (`src/core/utils/id.ts`); só o `cryptoRng` chama o `Math.random`, como último recurso.
+- **Contrato de "jogar"** como capacidade **opcional** do sistema no `IRpgSystem`; o contrato entra agora (decisão 10.2.12), e o Ordem fica para a Fase 3 (decisão 10.2.17). Remover a `AppState` morta. **Feito em 2026-10-29:** `IRpgSystem.play` (`canPlay`, `startPlay`); a galeria pergunta ao sistema da ficha.
 
 ### Fase 1: MVP "ficha viva + dados"
 

@@ -55,6 +55,20 @@ export type ConditionalRollNote = {
   text: string
 }
 
+/**
+ * O que uma característica proíbe na conjuração numa situação que a ficha não conhece — a Fúria
+ * (p. 48): "Se você for capaz de conjurar magias, você não poderá conjurá-las ou se concentrar
+ * nelas enquanto estiver em fúria". O modo de jogo não tem o estado "em fúria" (efeitos ativos são
+ * da Fase 2): nunca bloqueia nem muda número — vira nota onde se conjura (a CD e o ataque de
+ * magia, a concentração, as magias da aba Regras), inclusive nas magias inatas da raça.
+ */
+export type CastingRestriction = {
+  /** A situação, em português, que abre a nota ("em fúria"). */
+  when: string
+  /** A regra, em português, com a página — exibida depois da situação. */
+  text: string
+}
+
 /** Bônus de CA que só vale numa situação (ex.: Ambidestro, "empunhando duas armas"). */
 export type ConditionalAcBonus = {
   value: number
@@ -261,6 +275,11 @@ export type FeatureEffects = {
    * Bravura e Sortudo). Lidas de features de classe (no nível NA classe dona), talentos e traços.
    */
   conditionalRolls?: ConditionalRollNote[]
+  /**
+   * Restrição de conjuração numa situação (Fúria). Só lida em features de classe e subclasse, no
+   * nível NA classe dona; vale para toda magia da ficha, de qualquer fonte.
+   */
+  castingRestriction?: CastingRestriction
   /** Bônus de deslocamento, em PÉS, a unidade em que a raça guarda (Mobilidade: +10 pés = +3 m). */
   speedBonus?: number
   /**

@@ -12,7 +12,8 @@
           ],
           "weaponAttacks": [
             { "weapons": "melee-strength", "conditionalDamage": { "resource": "rage-damage", "condition": "em fúria, sem armadura pesada", "requires": "noHeavyArmor" } }
-          ]
+          ],
+          "castingRestriction": { "when": "em fúria", "text": "você não pode conjurar magias nem se concentrar nelas (pág. 48)." }
         }
       },
       {

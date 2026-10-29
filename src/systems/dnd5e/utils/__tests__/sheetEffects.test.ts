@@ -32,6 +32,8 @@ import {
   getInitiativeAdvantageSources,
   getConditionalRollNotes,
   getMeleeCritExtraWeaponDice,
+  getCastingRestrictions,
+  formatCastingRestriction,
 } from '../sheetEffects'
 import {
   getArmorProficiencies, hasArmorProficiency, hasWeaponProficiency,
@@ -1004,5 +1006,58 @@ describe('getConditionalRollNotes', () => {
 
   it('sem raça nem classe, nada', () => {
     expect(getConditionalRollNotes(draft({}))).toEqual([])
+  })
+})
+
+// p. 48: "Se você for capaz de conjurar magias, você não poderá conjurá-las ou se concentrar nelas
+// enquanto estiver em fúria."
+describe('getCastingRestrictions (Fúria)', () => {
+  const rage = {
+    source: 'Fúria', when: 'em fúria', text: 'você não pode conjurar magias nem se concentrar nelas (pág. 48).',
+  }
+  const MAGIC_INITIATE = 'iniciado-em-magia'
+
+  it('bárbaro / mago: a restrição da Fúria, com a origem, e a linha pronta', () => {
+    const d = draft({ level: 2, multiclass: true, class: 'barbarian', additionalClasses: [extraClass('wizard', 1)] })
+    expect(getCastingRestrictions(d)).toEqual([rage])
+    expect(getCastingRestrictions(d).map(formatCastingRestriction)).toEqual([
+      'Fúria: em fúria, você não pode conjurar magias nem se concentrar nelas (pág. 48).',
+    ])
+  })
+
+  it('vale em qualquer classe da multiclasse: mago 3 / bárbaro 1', () => {
+    const d = draft({ level: 4, multiclass: true, class: 'wizard', additionalClasses: [extraClass('barbarian', 1)] })
+    expect(getCastingRestrictions(d)).toEqual([rage])
+  })
+
+  it('só a magia inata da raça já conta: tiefling bárbaro 1 (Taumaturgia)', () => {
+    expect(getCastingRestrictions(draft({ level: 1, race: 'tiefling', class: 'barbarian' }))).toEqual([rage])
+  })
+
+  it('a magia do talento também: bárbaro 4 com Iniciado em Magia', () => {
+    const d = draft({
+      level: 4, class: 'barbarian',
+      asiChoices: [{ kind: 'feat', featId: MAGIC_INITIATE }],
+      featSelections: { [MAGIC_INITIATE]: { spellClass: 'cleric', cantrips: ['sacred-flame', 'guidance'], spells: ['cure-wounds'] } },
+    })
+    expect(getCastingRestrictions(d)).toEqual([rage])
+  })
+
+  it('bárbaro que não conjura nada não tem o que restringir', () => {
+    expect(getCastingRestrictions(draft({ level: 20, race: 'half-orc', class: 'barbarian' }))).toEqual([])
+    // Paladino só conjura a partir do 2º nível (p. 110): bárbaro 3 / paladino 1 ainda não.
+    const d = draft({ level: 4, multiclass: true, class: 'barbarian', additionalClasses: [extraClass('paladin', 1)] })
+    expect(getCastingRestrictions(d)).toEqual([])
+  })
+
+  it('sem a Fúria, nada: mago e tiefling feiticeiro', () => {
+    expect(getCastingRestrictions(draft({ level: 5, class: 'wizard' }))).toEqual([])
+    expect(getCastingRestrictions(draft({ level: 5, race: 'tiefling', class: 'sorcerer' }))).toEqual([])
+  })
+
+  it('integridade dos dados: a Fúria declara o efeito', () => {
+    const fury = progressionFeatures.classes.barbarian.find(f => f.name === 'Fúria') as
+      { effects?: { castingRestriction?: unknown } } | undefined
+    expect(fury?.effects?.castingRestriction).toEqual({ when: rage.when, text: rage.text })
   })
 })

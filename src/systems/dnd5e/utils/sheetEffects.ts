@@ -3,8 +3,8 @@ import type { Feat } from '../types/feat'
 import type { ArmorProficiency, LevelFeature } from '../types/class'
 import type { AbilityScore, RacialTrait } from '../types/race'
 import type {
-  ConditionalAcBonus, ConditionalRollNote, EquipmentRequirement, FeatureEffects, LevelStep, LoadingOverride,
-  ResourceEffect,
+  CastingRestriction, ConditionalAcBonus, ConditionalRollNote, EquipmentRequirement, FeatureEffects, LevelStep,
+  LoadingOverride, ResourceEffect,
 } from '../types/effects'
 import { getFeat } from './featUtils'
 import { getOwnedFeats } from './ownedFeats'
@@ -25,7 +25,7 @@ import {
 import { getActivePicks, getProgressionSlotsUpToLevel } from './progressionChoiceUtils'
 import { getProgressionOptions, getUnmetRequirement, type ProgressionOption } from './progressionOptions'
 import { formatManeuverSaveDc, getClassManeuvers, getManeuver, getManeuverSaveDc } from './maneuverUtils'
-import { getFeatChosenSpell, getFeatSpellPicks } from './spellUtils'
+import { getFeatChosenSpell, getFeatSpellPicks, getSpellSources } from './spellUtils'
 import type { SourcedAttackEffect } from './weaponFormat'
 import {
   allClassEntries, getAllAsiChoices, getTotalHpAverage, getTotalHpRolled,
@@ -220,6 +220,34 @@ export function getConditionalRollNotes(draft: CharacterDraft): SheetConditional
   for (const feat of getOwnedFeats(draft)) add(feat.name, feat.effects?.conditionalRolls)
   for (const trait of getOwnedRacialTraits(draft)?.traits ?? []) add(trait.name, trait.effects?.conditionalRolls)
   return out
+}
+
+// ── Restrições de conjuração ───────────────────────────────────────────────────
+
+/** Uma restrição de conjuração condicional, com quem a dá (o nome da feature). */
+export type SheetCastingRestriction = CastingRestriction & { source: string }
+
+/**
+ * O que proíbe conjurar numa situação que a ficha não conhece (`castingRestriction`: em fúria,
+ * p. 48) — features de classe e subclasse no nível NA classe dona, pela origem, sem repetir. A
+ * regra é para quem "for capaz de conjurar magias": sem nenhuma fonte de magia (`getSpellSources`:
+ * classe, talento, truque e magia inata da raça — toda raça que dá magia inata dá um truque no 1º
+ * nível), vazio. Nunca bloqueia nem muda número; quem a põe onde se conjura é o modo de jogo.
+ */
+export function getCastingRestrictions(draft: CharacterDraft): SheetCastingRestriction[] {
+  const out: SheetCastingRestriction[] = []
+  for (const feature of getOwnedClassFeatures(draft)) {
+    const restriction = feature.effects?.castingRestriction
+    if (restriction && !out.some(o => o.source === feature.name && o.text === restriction.text)) {
+      out.push({ ...restriction, source: feature.name })
+    }
+  }
+  return out.length > 0 && getSpellSources(draft).length > 0 ? out : []
+}
+
+/** "Fúria: em fúria, você não pode conjurar magias nem se concentrar nelas (pág. 48)." */
+export function formatCastingRestriction(restriction: SheetCastingRestriction): string {
+  return `${restriction.source}: ${restriction.when}, ${restriction.text}`
 }
 
 // ── Deslocamento ───────────────────────────────────────────────────────────────

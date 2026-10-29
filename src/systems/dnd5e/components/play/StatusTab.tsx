@@ -91,9 +91,15 @@ function ExhaustionSection({ state, sheet, run }: PlayTabProps) {
   )
 }
 
-/** Concentração: iniciar com o nome da magia (texto livre) e encerrar. Uma por vez (pág. 205). */
-function ConcentrationSection({ state, run }: PlayTabProps) {
+/**
+ * Concentração: iniciar com o nome da magia (texto livre) e encerrar. Uma por vez (pág. 205). A
+ * restrição de conjuração (em fúria não se concentra, pág. 48) fica embaixo, nos dois estados.
+ */
+function ConcentrationSection({ state, guide, run }: PlayTabProps) {
   const [label, setLabel] = useState('')
+  const restrictions = guide.castingRestrictions.map((r, i) => (
+    <p key={i} className="text-xs text-amber-200 leading-snug">{r}</p>
+  ))
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -103,14 +109,17 @@ function ConcentrationSection({ state, run }: PlayTabProps) {
 
   if (state.concentration) {
     return (
-      <div className="flex flex-wrap items-center gap-2">
-        <p className="text-sm text-violet-200">Concentrado em <span className="font-bold">{state.concentration.label}</span></p>
-        <button
-          onClick={() => run(st => endConcentration(st))}
-          className="min-h-10 rounded-lg border border-violet-800 px-3 text-sm text-violet-200 hover:border-violet-500"
-        >
-          Encerrar concentração
-        </button>
+      <div className="space-y-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-sm text-violet-200">Concentrado em <span className="font-bold">{state.concentration.label}</span></p>
+          <button
+            onClick={() => run(st => endConcentration(st))}
+            className="min-h-10 rounded-lg border border-violet-800 px-3 text-sm text-violet-200 hover:border-violet-500"
+          >
+            Encerrar concentração
+          </button>
+        </div>
+        {restrictions}
       </div>
     )
   }
@@ -137,6 +146,7 @@ function ConcentrationSection({ state, run }: PlayTabProps) {
       <p className="text-[11px] text-parchment-600 leading-snug">
         Ao sofrer dano, o app lembra do teste de Constituição para manter a concentração.
       </p>
+      {restrictions}
     </form>
   )
 }

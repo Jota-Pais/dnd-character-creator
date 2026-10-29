@@ -3,7 +3,9 @@ import { render, screen, fireEvent, cleanup, within } from '@testing-library/rea
 import { PlayScreen } from '../PlayScreen'
 import { usePlayStore } from '../../../stores/playStore'
 import { loadPlayState } from '../../../utils/playStorage'
-import { openKrusk, resetPlay } from './openPlay'
+import type { CharacterDraft } from '../../../types/character'
+import { COMPLETE_DRAFT } from '../../../../../test/fixtures'
+import { openDraft, openKrusk, resetPlay } from './openPlay'
 
 beforeEach(resetPlay)
 afterEach(() => cleanup())
@@ -177,5 +179,34 @@ describe('StatusTab — exaustão e concentração', () => {
     expect(playState().concentration?.label).toBe('Bênção')
     fireEvent.click(screen.getByRole('button', { name: 'Encerrar concentração' }))
     expect(playState().concentration).toBeNull()
+  })
+})
+
+describe('StatusTab — em fúria não se concentra (p. 48)', () => {
+  const RAGE = 'Fúria: em fúria, você não pode conjurar magias nem se concentrar nelas (pág. 48).'
+  /** Krusk tiefling bárbaro 3: conjura só a magia inata da raça (Taumaturgia, Repreensão Infernal). */
+  const TIEFLING_BARBARIAN: CharacterDraft = { ...structuredClone(COMPLETE_DRAFT), race: 'tiefling', level: 3 }
+  const concentration = () => screen.getByText('Concentração').closest('section')!
+
+  it('na seção Concentração, antes e durante; o TR depois do dano também lembra', () => {
+    openDraft(TIEFLING_BARBARIAN)
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Estado' }))
+    expect(within(concentration()).getByText(RAGE)).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('Magia em que vai se concentrar'), { target: { value: 'Escuridão' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Concentrar' }))
+    expect(within(concentration()).getByText(RAGE)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
+    fireEvent.change(screen.getByLabelText('Quanto de dano'), { target: { value: '4' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
+    fireEvent.click(within(screen.getByRole('status')).getByRole('button', { name: 'Ver o que rolar' }))
+    expect(screen.getByRole('dialog')).toHaveTextContent(RAGE)
+  })
+
+  it('o bárbaro que não conjura nada não vê a linha', () => {
+    openStatus()
+    expect(concentration()).not.toHaveTextContent('em fúria')
   })
 })

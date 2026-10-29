@@ -694,7 +694,7 @@
 **Traços raciais:**
 
 - **Resistência Implacável:** Quando você é reduzido a 0 pontos de vida mas não é morto, você pode voltar para 1 ponto de vida (uma vez por descanso longo).
-- **Ataques Selvagens:** Em um acerto crítico com arma corpo-a-corpo, você pode rolar um dos dados de dano da arma mais uma vez e adicioná-lo ao dano extra.
+- **Ataques Selvagens:** Em um acerto crítico com um ataque corpo-a-corpo com arma, você pode rolar um dos dados de dano da arma mais uma vez e adicioná-lo ao dano extra. *(Segue o inglês, "a critical hit with a melee weapon attack": o pt-BR diz "com uma arma corpo-a-corpo", o que deixaria de fora o golpe desarmado com dado. Ver "pt-BR × inglês" no CLAUDE.md.)*
 
 **Subraças:** Nenhuma
 

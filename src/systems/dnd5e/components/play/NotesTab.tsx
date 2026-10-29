@@ -110,7 +110,7 @@ export function NotesTab({ state, appDice, run }: PlayTabProps) {
           onBlur={flush}
           rows={8}
           placeholder="Nomes, pistas, o que o Mestre disse, o ouro que sobrou…"
-          className="w-full rounded-xl border border-parchment-800 bg-surface-raised p-3 text-sm text-parchment-100 placeholder:text-parchment-700 outline-none focus:border-gold-600"
+          className="w-full rounded-xl border border-parchment-800 bg-surface-raised p-3 text-sm text-parchment-100 placeholder:text-parchment-600 outline-none focus:border-gold-600"
         />
         <p className="text-[11px] text-parchment-600">Grava sozinha enquanto você escreve.</p>
       </section>

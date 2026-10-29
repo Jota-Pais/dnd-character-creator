@@ -226,7 +226,7 @@ export function PlayScreen() {
               <div className="rounded-xl border border-dashed border-parchment-800 p-6 text-center">
                 <p className="font-fantasy text-parchment-300">{current.label}</p>
                 <p className="mt-1 text-xs text-parchment-600">{current.hint}</p>
-                <p className="mt-2 text-xs text-parchment-700">Em breve.</p>
+                <p className="mt-2 text-xs text-parchment-600">Em breve.</p>
               </div>
             )}
           </section>

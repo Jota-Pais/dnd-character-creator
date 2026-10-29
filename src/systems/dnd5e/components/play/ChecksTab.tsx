@@ -11,7 +11,7 @@ import { RollMarks } from './RollMarks'
 import type { PlayTabProps } from './usePlayView'
 
 const PROFICIENCY_MARK: Record<CheckProficiency | 'half', { mark: string; title: string; className: string }> = {
-  none: { mark: '○', title: 'Sem proficiência', className: 'text-parchment-700' },
+  none: { mark: '○', title: 'Sem proficiência', className: 'text-parchment-600' },
   half: { mark: '½', title: 'Meia proficiência', className: 'text-parchment-400' },
   proficient: { mark: '●', title: 'Proficiente', className: 'text-gold-400' },
   expertise: { mark: '◆', title: 'Especialização (proficiência dobrada)', className: 'text-gold-300' },

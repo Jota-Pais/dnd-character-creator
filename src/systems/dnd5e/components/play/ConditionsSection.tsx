@@ -89,7 +89,7 @@ function ConditionNote({ id, name, stored, run }: {
         onBlur={commit}
         aria-label={`Duração de ${name} (opcional)`}
         placeholder="Duração (opcional): até o fim do próximo turno…"
-        className="min-h-10 w-full rounded-lg border border-parchment-900 bg-surface-base px-3 text-sm text-parchment-200 placeholder:text-parchment-700 outline-none focus:border-gold-700"
+        className="min-h-10 w-full rounded-lg border border-parchment-900 bg-surface-base px-3 text-sm text-parchment-200 placeholder:text-parchment-600 outline-none focus:border-gold-700"
       />
     </form>
   )

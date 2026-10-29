@@ -2,7 +2,8 @@ import { useMemo, useRef, useState } from 'react'
 import { exportCharacter as exportDnd, importCharacter as importDnd, type SavedCharacter as DndSaved } from './systems/dnd5e/utils/storage'
 import { exportCharacter as exportOrdem, importCharacter as importOrdem, type SavedCharacter as OrdemSaved } from './systems/ordem/utils/storage'
 import { loadPlayState } from './systems/dnd5e/utils/playStorage'
-import { exportAllCharacters, formatRestoreResult, isBackupFile, parseBackupFile, planRestore, type RestorePlan } from './libraryBackup'
+import { exportAllCharacters, formatRestoreResult, getLatestChangeAt, isBackupFile, parseBackupFile, planRestore, type RestorePlan } from './libraryBackup'
+import { GalleryNotices } from './GalleryNotices'
 import { readJsonFile } from './core/utils/download'
 import { useAppStore } from './core/stores/appStore'
 import {
@@ -104,6 +105,8 @@ export function GlobalGallery() {
     [dndLibrary],
   )
   const total = ordemRows.length + dndRows.length
+  // O lembrete de cópia: a última mudança nas fichas e nos estados de jogo.
+  const latestChangeAt = useMemo(() => getLatestChangeAt(dndLibrary, ordemLibrary), [dndLibrary, ordemLibrary])
 
   const ordemGroups = useMemo(
     () => groupGalleryCharacters(filterByName(ordemRows, query, readEntry), readEntry, groupBy, sortBy),
@@ -256,6 +259,8 @@ export function GlobalGallery() {
         <div role="status" aria-live="polite">
           {restored && <p className="text-sm mb-4" style={{ color: '#cbbfae' }}>{formatRestoreResult(restored)}</p>}
         </div>
+
+        <GalleryNotices latestChangeAt={latestChangeAt} onExportAll={() => exportAllCharacters()} />
 
         {total === 0 && (
           <div className="rounded-xl p-10 text-center" style={{ border: '2px dashed #3a332b' }}>

@@ -13,7 +13,7 @@ import {
 import { listPlayStateIds, loadPlayState } from './systems/dnd5e/utils/playStorage'
 import { loadLibrary as loadOrdemLibrary, type SavedCharacter as OrdemSaved } from './systems/ordem/utils/storage'
 import { downloadJsonFile } from './core/utils/download'
-import { updateDeviceState } from './core/utils/deviceStorage'
+import { useDeviceStore } from './core/stores/deviceStore'
 
 /**
  * A cópia de segurança de todas as fichas (docs/app-instalavel.md): um arquivo só, com as fichas
@@ -142,14 +142,14 @@ export function formatRestoreResult(plan: RestorePlan): string {
   return parts.join(' ')
 }
 
-/** A última mudança nas fichas ou nos estados de jogo deste navegador (ms); null sem ficha. */
-export function getLatestChangeAt(): number | null {
-  const times = [
-    ...loadDndLibrary().map(c => c.updatedAt),
-    ...loadOrdemLibrary().map(c => c.updatedAt),
+/** A última mudança nas fichas (as das bibliotecas dadas) ou nos estados de jogo deste navegador (ms); null sem ficha. */
+export function getLatestChangeAt(dnd: DndSaved[], ordem: OrdemSaved[]): number | null {
+  if (dnd.length + ordem.length === 0) return null
+  return Math.max(
+    ...dnd.map(c => c.updatedAt),
+    ...ordem.map(c => c.updatedAt),
     ...listPlayStateIds().map(id => loadPlayState(id)?.updatedAt ?? 0),
-  ]
-  return times.length > 0 ? Math.max(...times) : null
+  )
 }
 
 /** "2026-10-29", no fuso do aparelho. */
@@ -162,5 +162,5 @@ function localDate(ms: number): string {
 export function exportAllCharacters(now = Date.now()): void {
   const file = buildBackupFile(loadDndLibrary(), loadOrdemLibrary(), loadPlayState, now)
   downloadJsonFile(`forja-de-herois-fichas-${localDate(now)}.json`, file)
-  updateDeviceState({ lastBackupAt: now })
+  useDeviceStore.getState().update({ lastBackupAt: now })
 }

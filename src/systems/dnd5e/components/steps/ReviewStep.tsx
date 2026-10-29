@@ -16,17 +16,15 @@ import {
   describeResource, groupResourcesBySource, resourceGroupsNeedLabels, resourceSourceLabel,
 } from '../../utils/classResourceUtils'
 import {
-  getBackground, BACKGROUND_PRESENTATION, getToolName, SKILLS, resolveBackgroundItems,
+  getBackground, BACKGROUND_PRESENTATION, getToolName, SKILLS,
   getBackgroundDetailPrompt, ROLEPLAY_FIELDS,
 } from '../../utils/backgroundUtils'
 import {
   calculateModifier, formatModifier, ALL_ABILITY_SCORES, ABILITY_LABELS,
   getProficiencyBonus, formatXpProgress, formatMeters,
 } from '../../utils/abilityScoreUtils'
-import {
-  formatInventoryItem, describeResolvedOption, getActivePurchases,
-  getStartingMoney, describeStartingMoneySource, formatCoins,
-} from '../../utils/equipmentUtils'
+import { getStartingMoney, describeStartingMoneySource, formatCoins } from '../../utils/equipmentUtils'
+import { getStartingInventory, type InventoryEntry, type InventorySource } from '../../utils/sheetModel'
 import { formatArmorClassBreakdown } from '../../utils/armorClassUtils'
 import {
   getAllGrantedTools, getLanguageLabels, EXOTIC_LANGUAGE_NOTE, getExpertiseTools, getSkillChecks,
@@ -68,7 +66,6 @@ import { formatMissingCount } from '../../../../components/wizard/pendingSteps'
 import { StepNav } from '../../../../components/wizard/StepNav'
 import type { TermId } from '../../utils/glossary'
 import type { AbilityScore } from '../../types/race'
-import type { Background, BackgroundChoiceSelections } from '../../types/background'
 import type { HpMethod } from '../../types/character'
 
 export function ReviewStep() {
@@ -123,6 +120,9 @@ export function ReviewStep() {
   const sheetAttacks = getSheetAttacks(draft, finalScores)
   const darkvision = race ? getEffectiveDarkvision(race, subrace ?? null) : 0
   const classEquipment = cls?.startingEquipment
+  // O inventário da ficha imprimível, aqui separado pela origem de cada item.
+  const inventory = getStartingInventory(draft)
+  const inventoryFrom = (source: InventorySource) => inventory.filter(item => item.source === source)
   const acResult = getSheetArmorClass(draft, finalScores)
   const ac = acResult.value
   const acNote = acResult.stealthDisadvantage ? '*' : ''
@@ -531,7 +531,7 @@ export function ReviewStep() {
         )}
 
         {draft.equipment.method === 'wealth' && (() => {
-          const purchased = getActivePurchases(draft.equipment)
+          const purchased = inventoryFrom('purchased')
           return (
             <div className="space-y-4">
               {purchased.length > 0 && (
@@ -539,14 +539,7 @@ export function ReviewStep() {
                   <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">
                     Comprado
                   </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {purchased.map(item => (
-                      <Chip
-                        key={item.itemId}
-                        label={formatInventoryItem(item.itemId, item.quantity)}
-                      />
-                    ))}
-                  </div>
+                  <InventoryChips items={purchased} />
                 </div>
               )}
               {bg && (
@@ -554,7 +547,7 @@ export function ReviewStep() {
                   <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">
                     Do Antecedente
                   </p>
-                  <BgEquipmentChips bg={bg} choices={draft.backgroundChoices} />
+                  <InventoryChips items={inventoryFrom('background')} />
                 </div>
               )}
             </div>
@@ -568,7 +561,7 @@ export function ReviewStep() {
                 <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">
                   Do Antecedente
                 </p>
-                <BgEquipmentChips bg={bg} choices={draft.backgroundChoices} />
+                <InventoryChips items={inventoryFrom('background')} />
               </div>
             )}
 
@@ -577,14 +570,7 @@ export function ReviewStep() {
                 <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">
                   Itens Fixos da Classe
                 </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {classEquipment.fixed.map((item, i) => (
-                    <Chip
-                      key={i}
-                      label={formatInventoryItem(item.id, item.quantity)}
-                    />
-                  ))}
-                </div>
+                <InventoryChips items={inventoryFrom('class-fixed')} />
               </div>
             )}
 
@@ -593,16 +579,7 @@ export function ReviewStep() {
                 <p className="text-xs text-parchment-600 uppercase tracking-widest font-fantasy mb-2">
                   Escolhas de Equipamento
                 </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {classEquipment.choices.map((choice, idx) => {
-                    const res = draft.equipment.classResolutions[idx]
-                    if (!res || res.optionIndex < 0) return null
-                    const option = choice.options[res.optionIndex]
-                    if (!option) return null
-                    const items = describeResolvedOption(option, res.pickedIds)
-                    return items.map((label, i) => <Chip key={`${idx}-${i}`} label={label} />)
-                  })}
-                </div>
+                <InventoryChips items={inventoryFrom('class-choice')} />
               </div>
             )}
           </div>
@@ -1148,11 +1125,11 @@ function SpellChip({
   )
 }
 
-/** Itens do antecedente (o dinheiro vai na linha "Dinheiro" do topo da seção). */
-function BgEquipmentChips({ bg, choices }: { bg: Background; choices: BackgroundChoiceSelections }) {
+/** Itens de uma origem do inventário (o dinheiro vai na linha "Dinheiro" do topo da seção). */
+function InventoryChips({ items }: { items: InventoryEntry[] }) {
   return (
     <div className="flex flex-wrap gap-1.5">
-      {resolveBackgroundItems(bg, choices).map((item, i) => <Chip key={i} label={item.label} />)}
+      {items.map((item, i) => <Chip key={i} label={item.label} />)}
     </div>
   )
 }

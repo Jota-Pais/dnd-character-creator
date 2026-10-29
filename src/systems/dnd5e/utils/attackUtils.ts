@@ -1,9 +1,8 @@
 import type { CharacterDraft } from '../types/character'
 import type { AttackScope } from '../types/effects'
 import type { Weapon } from '../types/equipment'
-import { getClass } from './classUtils'
-import { getBackground, resolveBackgroundItems } from './backgroundUtils'
-import { getActivePurchases, getWeaponById } from './equipmentUtils'
+import { getWeaponById } from './equipmentUtils'
+import { getStartingInventory } from './sheetModel'
 import { calculateModifier, getProficiencyBonus } from './abilityScoreUtils'
 import { hasWeaponProficiency } from './proficiencyUtils'
 import {
@@ -15,41 +14,12 @@ import {
 } from './weaponFormat'
 
 /**
- * Itens que o personagem carrega, com a quantidade — do equipamento inicial da classe (itens fixos
- * e opções escolhidas, inclusive as de um filtro, uma unidade por escolha), das compras do método
- * riqueza e do antecedente. Pode repetir id (duas fontes da mesma arma).
+ * Itens que o personagem carrega, com a quantidade: o inventário inicial (`getStartingInventory`,
+ * o mesmo da Revisão e da ficha imprimível) sem o item do antecedente ainda a escolher. Pode
+ * repetir id (duas fontes da mesma arma).
  */
 function getCarriedItems(draft: CharacterDraft): { id: string; quantity: number }[] {
-  const items: { id: string; quantity: number }[] = []
-  const cls = draft.class ? getClass(draft.class) : undefined
-  const bg = draft.background ? getBackground(draft.background) : undefined
-  const eq = draft.equipment
-
-  if (eq.method === 'standard' && cls) {
-    for (const item of cls.startingEquipment.fixed) items.push({ id: item.id, quantity: item.quantity })
-    cls.startingEquipment.choices.forEach((choice, i) => {
-      const res = eq.classResolutions[i]
-      if (!res || res.optionIndex < 0) return
-      const option = choice.options[res.optionIndex]
-      if (!option) return
-      let pickIdx = 0
-      for (const item of option) {
-        if (item.kind === 'specific') {
-          items.push({ id: item.id, quantity: item.quantity })
-        } else if (item.kind === 'weapon-filter' || item.kind === 'tool-filter' || item.kind === 'focus-group') {
-          for (const id of res.pickedIds.slice(pickIdx, pickIdx + item.picks)) items.push({ id, quantity: 1 })
-          pickIdx += item.picks
-        }
-      }
-    })
-  }
-  for (const p of getActivePurchases(eq)) items.push({ id: p.itemId, quantity: p.quantity })
-  if (bg) {
-    for (const item of resolveBackgroundItems(bg, draft.backgroundChoices)) {
-      if (item.id) items.push({ id: item.id, quantity: item.quantity })
-    }
-  }
-  return items
+  return getStartingInventory(draft).flatMap(item => (item.id ? [{ id: item.id, quantity: item.quantity }] : []))
 }
 
 /** Armas que o personagem carrega (`getCarriedItems`), sem repetir. */

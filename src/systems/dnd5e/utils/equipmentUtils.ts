@@ -96,16 +96,7 @@ export function getCarriedToolIds(
       if (!res || res.optionIndex < 0) continue
       const option = classEquipment.choices[i]?.options[res.optionIndex]
       if (!option) continue
-      // Mesmo fatiamento de `describeResolvedOption`: cada filtro consome os seus `picks`.
-      let pickIdx = 0
-      for (const item of option) {
-        if (item.kind === 'specific') {
-          addItem(item.id)
-        } else {
-          res.pickedIds.slice(pickIdx, pickIdx + item.picks).forEach(addItem)
-          pickIdx += item.picks
-        }
-      }
+      for (const item of resolveOptionItems(option, res.pickedIds)) addItem(item.id)
     }
   }
 
@@ -211,21 +202,22 @@ export function formatInventoryItem(id: string, quantity = 1): string {
 }
 
 /**
- * Itens de uma opção de equipamento já escolhida, como rótulos de inventário: os específicos com
- * a quantidade, e os escolhidos em filtros (arma/ferramenta/foco) na ordem dos `pickedIds`.
+ * Itens de uma opção de equipamento já escolhida: os específicos com a quantidade, e os escolhidos
+ * em filtros (arma/ferramenta/foco), um de cada, na ordem dos `pickedIds` — cada filtro consome
+ * os seus `picks`.
  */
-export function describeResolvedOption(option: EquipmentOption, pickedIds: string[]): string[] {
-  const result: string[] = []
+export function resolveOptionItems(option: EquipmentOption, pickedIds: string[]): { id: string; quantity: number }[] {
+  const items: { id: string; quantity: number }[] = []
   let pickIdx = 0
   for (const item of option) {
     if (item.kind === 'specific') {
-      result.push(formatInventoryItem(item.id, item.quantity))
+      items.push({ id: item.id, quantity: item.quantity })
     } else {
-      result.push(...pickedIds.slice(pickIdx, pickIdx + item.picks).map(id => formatInventoryItem(id)))
+      for (const id of pickedIds.slice(pickIdx, pickIdx + item.picks)) items.push({ id, quantity: 1 })
       pickIdx += item.picks
     }
   }
-  return result
+  return items
 }
 
 export function getItemName(id: string): string {

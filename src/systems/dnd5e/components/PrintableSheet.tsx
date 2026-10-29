@@ -12,7 +12,7 @@ import {
   allClassEntries, getHitDicePool, formatClassLevelLabel,
 } from '../utils/multiclassUtils'
 import {
-  getBackground, getToolName, resolveBackgroundItems, getBackgroundDetailPrompt, ROLEPLAY_FIELDS,
+  getBackground, getToolName, getBackgroundDetailPrompt, ROLEPLAY_FIELDS,
 } from '../utils/backgroundUtils'
 import {
   calculateModifier, formatModifier, getProficiencyBonus, formatXpProgress, formatMeters,
@@ -25,10 +25,8 @@ import {
   getUnproficientTools, formatUnproficientTool, describeHalfProficiencyOnChecks,
 } from '../utils/proficiencyUtils'
 import { formatArmorClassBreakdown } from '../utils/armorClassUtils'
-import {
-  formatInventoryItem, describeResolvedOption, getActivePurchases,
-  getStartingMoney, describeStartingMoneySource, formatCoins,
-} from '../utils/equipmentUtils'
+import { getStartingMoney, describeStartingMoneySource, formatCoins } from '../utils/equipmentUtils'
+import { getStartingInventory } from '../utils/sheetModel'
 import {
   formatResourceLine, formatTrackCircles, groupResourcesBySource, resourceGroupsNeedLabels,
   resourceSourceLabel,
@@ -49,33 +47,7 @@ import {
   getConditionalAcBonuses, getSheetResources, getSheetArmorClass,
   describeAttacksPerAction, getSheetFightingStyles, describeConditionalSaveBonuses, getFeatManeuverBlock,
 } from '../utils/sheetEffects'
-import type { CharacterDraft } from '../types/character'
 import type { ClassSpellcasting } from '../types/class'
-
-function gatherInventory(draft: CharacterDraft): string[] {
-  const items: string[] = []
-  const cls = draft.class ? getClass(draft.class) : undefined
-  const bg = draft.background ? getBackground(draft.background) : undefined
-  const eq = draft.equipment
-
-  if (eq.method === 'standard' && cls) {
-    for (const item of cls.startingEquipment.fixed) {
-      items.push(formatInventoryItem(item.id, item.quantity))
-    }
-    cls.startingEquipment.choices.forEach((choice, i) => {
-      const res = eq.classResolutions[i]
-      if (res && res.optionIndex >= 0) {
-        const option = choice.options[res.optionIndex]
-        if (option) items.push(...describeResolvedOption(option, res.pickedIds))
-      }
-    })
-  }
-  for (const p of getActivePurchases(eq)) {
-    items.push(formatInventoryItem(p.itemId, p.quantity))
-  }
-  if (bg) items.push(...resolveBackgroundItems(bg, draft.backgroundChoices).map(item => item.label))
-  return items
-}
 
 /**
  * Quantas magias a classe tem a cada descanso, na linguagem da mesa. As três formas do livro:
@@ -168,7 +140,7 @@ export function PrintableSheet() {
   const feats = getCharacterFeats(draft)
   const resourceBlocks = groupResourcesBySource(getSheetResources(draft, finalScores))
   const labelResourceBlocks = resourceGroupsNeedLabels(resourceBlocks)
-  const inventory = gatherInventory(draft)
+  const inventory = getStartingInventory(draft).map(item => item.label)
   const money = getStartingMoney(draft.equipment, bg?.equipment.goldPo ?? 0)
   const moneySource = describeStartingMoneySource(money)
   const bgDetail = getBackgroundDetailPrompt(bg)

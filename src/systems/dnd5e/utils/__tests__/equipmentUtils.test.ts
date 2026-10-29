@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatCurrency, resolvePackContents, validatePackRefs, FOCUS_GROUP_IDS, getEquippedArmor, getShopCatalog, getPurchasesTotalCopper, getItemCostCopper, formatInventoryItem, describeResolvedOption, formatCoins, getStartingMoney, describeStartingMoneySource, getCarriedToolIds, getToolById, getToolEquivalent, getActivePurchases } from '../equipmentUtils'
+import { formatCurrency, resolvePackContents, validatePackRefs, FOCUS_GROUP_IDS, getEquippedArmor, getShopCatalog, getPurchasesTotalCopper, getItemCostCopper, formatInventoryItem, resolveOptionItems, formatCoins, getStartingMoney, describeStartingMoneySource, getCarriedToolIds, getToolById, getToolEquivalent, getActivePurchases } from '../equipmentUtils'
 import generalItemsData from '../../data/general-items.json'
 import type { InventoryItem } from '../../types/equipment'
 import { getClass } from '../classUtils'
@@ -191,7 +191,7 @@ describe('FOCUS_GROUP_IDS', () => {
   })
 })
 
-describe('formatInventoryItem / describeResolvedOption (inventário da ficha e da Revisão)', () => {
+describe('formatInventoryItem / resolveOptionItems (inventário da ficha e da Revisão)', () => {
   it('item comum sai com a quantidade; pacote sai com o conteúdo (p. 153)', () => {
     expect(formatInventoryItem('dagger')).toBe('Adaga')
     expect(formatInventoryItem('dagger', 2)).toBe('2× Adaga')
@@ -201,23 +201,23 @@ describe('formatInventoryItem / describeResolvedOption (inventário da ficha e d
     )
   })
 
-  it('bardo: itens específicos e escolhidos em filtro, com o pacote aberto', () => {
+  it('bardo: itens específicos e escolhidos em filtro', () => {
     const bard = getClass('bard')!
     const [weaponChoice, packChoice, instrumentChoice] = bard.startingEquipment.choices
     // (c) qualquer arma simples → a escolhida vem dos pickedIds
-    expect(describeResolvedOption(weaponChoice.options[2], ['mace'])).toEqual(['Maça'])
-    expect(describeResolvedOption(packChoice.options[1], [])[0]).toMatch(/^Pacote de Artista \(Mochila, .*Kit de Disfarce\)$/)
-    expect(describeResolvedOption(instrumentChoice.options[0], [])).toEqual(['Alaúde'])
+    expect(resolveOptionItems(weaponChoice.options[2], ['mace'])).toEqual([{ id: 'mace', quantity: 1 }])
+    expect(resolveOptionItems(packChoice.options[1], [])).toEqual([{ id: 'entertainers-pack', quantity: 1 }])
+    expect(resolveOptionItems(instrumentChoice.options[0], [])).toEqual([{ id: 'lute', quantity: 1 }])
   })
 
   it('opção com item específico + escolha em filtro consome os pickedIds na ordem', () => {
     const fighter = getClass('fighter')!
     // (a) uma arma marcial e um escudo
-    expect(describeResolvedOption(fighter.startingEquipment.choices[1].options[0], ['longsword']))
-      .toEqual(['Espada Longa', 'Escudo'])
+    expect(resolveOptionItems(fighter.startingEquipment.choices[1].options[0], ['longsword']).map(i => i.id))
+      .toEqual(['longsword', 'shield'])
     // (b) duas armas marciais
-    expect(describeResolvedOption(fighter.startingEquipment.choices[1].options[1], ['longsword', 'rapier']))
-      .toEqual(['Espada Longa', 'Rapieira'])
+    expect(resolveOptionItems(fighter.startingEquipment.choices[1].options[1], ['longsword', 'rapier']).map(i => i.id))
+      .toEqual(['longsword', 'rapier'])
   })
 })
 

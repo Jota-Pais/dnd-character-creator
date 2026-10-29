@@ -155,6 +155,7 @@ O total é chamado de **valor**. Exemplo do livro: personagem de 1º nível com 
 
 - **Metade do dano:** pela regra geral da pág. 7, a metade é arredondada para baixo. Exemplo: 21 de dano → metade 10 → CD 10. 25 de dano → metade 12 → CD 12.
 - **Extrato:** na pág. 205, a lista acima aparece intercalada com o quadro "As escolas de magia" (linhas 18305-18354). A lista continua na linha 18355 e não parece haver texto faltando.
+- **Fúria (bárbaro, pág. 48, linhas 3659-3661):** "Se você for capaz de conjurar magias, você não poderá conjurá-las ou se concentrar nelas enquanto estiver em fúria." A regra fica fora da lista da pág. 205. **Decidido (2026-10-29):** entrar em fúria **encerra a concentração** (Pontos em aberto, item 14).
 
 ### 10.3 Condições que incapacitam (Apêndice A, págs. 291-293)
 
@@ -173,6 +174,7 @@ Pela regra acima ("se ficar incapacitado ou se morrer", linhas 18370-18372), tod
 
 - **Tempos de conjuração maiores (pág. 204):** algumas magias, **incluindo as conjuradas como ritual**, levam minutos ou horas para conjurar. Se o tempo de conjuração passa de uma ação ou uma reação, você **gasta sua ação em cada turno** de conjuração e **precisa manter a concentração** enquanto conjura. Se a concentração for quebrada, **a magia falha, mas o espaço de magia não é gasto**. Para tentar de novo, é preciso começar do início.
 - **Rituais (págs. 203-204):** uma magia marcada como ritual pode ser conjurada normalmente ou como ritual. O ritual leva **10 minutos a mais** e **não gasta espaço de magia**, por isso não pode ser conjurado em nível superior. Para conjurar como ritual, é preciso ter uma característica que permita, como a do clérigo e a do druida, e ter a magia preparada ou conhecida, a menos que a característica diga o contrário, como no caso do mago. Na seção de rituais, o extrato não fala de concentração além da regra de tempo de conjuração maior acima.
+- A magia de ação bônus, a de reação e o ritual de cada classe estão em `docs/regras-conjuracao.md` (seções 3 e 4).
 
 ### 10.5 Modificadores citados do teste de concentração
 
@@ -218,6 +220,7 @@ Não faz parte da regra do livro. Orienta a execução das próximas fases. Já 
 - **Fracasso no TR:** a concentração termina, com desfazer. **Sucesso:** nada muda.
 - **Conjurador de Guerra:** na jogada de concentração, a vantagem já vem marcada como fonte do talento, porque ali o efeito está sempre ligado. Fora dessa jogada, vira linha condicional na ficha ("vantagem no TR de CON para manter concentração"), seguindo a regra de ouro do `sheetEffects`. **Matador de Conjuradores** é do atacante: a UI só oferece um seletor manual de "desvantagem imposta".
 - **Quebra automática** (assumido (F), a confirmar): aplicar uma condição que incapacita (`incapacitated`, `paralyzed`, `petrified`, `stunned`, `unconscious`; seção 10.3), cair a 0 PV (Inconsciente, inclusive no nocaute) ou **qualquer transição `lifeState → 'dead'`** de `regras-dano-e-morte.md` (morte instantânea, terceiro fracasso no teste contra a morte, Exaustão 6 = morte) encerra a concentração sozinho, no mesmo evento desfazível que causou a mudança. É efeito incondicional e entra no estado.
+- **Fúria** (decisão de 2026-10-29): entrar em fúria encerra a concentração. O modo de jogo ainda não tem o estado "em fúria" (os efeitos ativos chegam na Fase 2, decisão 10.2.16 de `docs/estudo-dnd-beyond-modulo-jogo.md`); até lá, a regra é nota na concentração (`getConcentrationGuide` e a seção Concentração da aba Estado), pelo texto do `castingRestriction` da Fúria. Com o liga/desliga da Fase 2, ligar a Fúria encerra a concentração no mesmo evento desfazível, como a quebra automática acima.
 - **Fenômeno ambiental:** um botão manual "Mestre pediu TR de concentração" rola com CD 10.
 - **Encerrar voluntariamente:** um botão simples, sem custo, porque não gasta ação.
 - **Tempo de conjuração maior (pág. 204):** fora do MVP, salvo decisão em contrário. Ver Pontos em aberto.
@@ -260,3 +263,4 @@ Não faz parte da regra do livro. Orienta a execução das próximas fases. Já 
     - **1d2 (linha 433, pág. 7):** o extrato diz "atribua 1 ou 2 ao resultado par ou ímpar". Lido ao pé da letra, o 1 vai para o par e o 2 para o ímpar. A regra em inglês que conheço diz "odd or even", o que põe o 1 no ímpar. A ordem parece invertida na tradução. A seção 1 mantém o texto do extrato. Para o motor é indiferente, porque o d2 digital sai uniforme e as duas atribuições dão 50%. Só importaria num texto de ajuda para dado físico: qual ordem exibir?
     - Fora isso, não achei outra divergência evidente entre o pt-BR e a regra de 2014. A tensão interna do item 1 é do próprio livro, não da tradução.
 13. **Golpe com vários tipos de dano e a concentração** (linhas 18366-18369: "para cada origem do dano"). Um ataque com parcelas de tipos diferentes é uma origem ou várias? **Assumido (2026-10-24), a confirmar (E):** um teste por evento de dano, com a CD pelo total do evento.
+14. **Entrar em fúria com concentração ativa** (pág. 48, linhas 3659-3661). O texto proíbe se concentrar "enquanto estiver em fúria", sem dizer o que acontece com a concentração que já existia. **Decidido (2026-10-29):** entrar em fúria encerra a concentração (seção 10.2; nota de implementação em 11.4).

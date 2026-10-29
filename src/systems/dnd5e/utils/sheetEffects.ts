@@ -868,7 +868,8 @@ export function getSheetFightingStyles(draft: CharacterDraft): SheetFightingStyl
 /**
  * O que as características fazem nas linhas de ataque (`effects.weaponAttacks`): o Estilo de Luta
  * escolhido, features de classe (Golpes de Chi, Fúria) e talentos. Cada fonte entra uma vez só.
- * Quem aplica numa arma é `getWeaponAttack` — o bônus incondicional no número, o resto como nota.
+ * Quem aplica é `getWeaponAttack` numa arma e `getUnarmedStrike` no golpe desarmado — o bônus
+ * incondicional no número, o resto como nota.
  *
  * O bônus de dano condicional (`conditionalDamage`) sai daqui calculado: o `amount` do recurso que
  * a MESMA característica declara, no nível NA classe dona (bárbaro 9 / guerreiro 3 tem o Dano de

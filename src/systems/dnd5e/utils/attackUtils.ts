@@ -84,12 +84,12 @@ export type SheetAttack = WeaponAttack & { key: string; weapon: SheetAttackWeapo
  * no fim, o golpe desarmado, que todo personagem tem (p. 196) e é o ataque principal do monge.
  *
  * Cada linha já vem com o que as características fazem nela (`getWeaponAttackEffects`): Arquearia
- * no número; Duelismo, Armas Grandes, o ataque da outra mão e o Dano de Fúria como nota — este só
- * nas armas corpo a corpo: no pt-BR o golpe desarmado "não conta como arma" (p. 196), e a
- * divergência com o inglês, que o trata como ataque com arma, espera decisão. Artes Marciais
- * entra no número das armas de monge e do golpe desarmado quando o equipamento deixa (sem armadura
- * nem escudo); quando não deixa, a linha do golpe desarmado diz o que a impede. O "2×" do Ataque Extra
- * vem em cada linha (`attacksPerAction`): arma de recarga fica em 1 (p. 149), salvo Especialista em Besta.
+ * no número; Duelismo, Armas Grandes, o ataque da outra mão e o Dano de Fúria como nota — este nas
+ * armas corpo a corpo e no golpe desarmado, que não é arma mas é ataque corpo a corpo com arma
+ * (p. 196, pelo inglês; decisão do dono de 2026-10-29). Artes Marciais entra no número das armas
+ * de monge e do golpe desarmado quando o equipamento deixa (sem armadura nem escudo); quando não
+ * deixa, a linha do golpe desarmado diz o que a impede. O "2×" do Ataque Extra vem em cada linha
+ * (`attacksPerAction`): arma de recarga fica em 1 (p. 149), salvo Especialista em Besta.
  */
 export function getSheetAttacks(draft: CharacterDraft, finalScores: FinalScores): SheetAttack[] {
   const base = {

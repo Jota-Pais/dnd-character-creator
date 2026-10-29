@@ -86,7 +86,10 @@ export function isMonkWeapon(weapon: Weapon): boolean {
   )
 }
 
-/** A arma está no alcance do efeito? O golpe desarmado não é arma (p. 196): só `unarmed` o pega. */
+/**
+ * A arma está no alcance do efeito? O golpe desarmado não é arma (p. 196) e tem a pergunta dele,
+ * `isUnarmedStrikeInScope`.
+ */
 export function isWeaponInScope(weapon: Weapon, scope: AttackScope): boolean {
   const melee = weapon.weaponType === 'melee'
   switch (scope) {
@@ -101,14 +104,31 @@ export function isWeaponInScope(weapon: Weapon, scope: AttackScope): boolean {
 }
 
 /**
- * O que a linha não cumpre do escopo `melee-strength` ("ataque com arma corpo a corpo usando
- * Força", p. 48), dito depois da condição: a linha que usa Destreza (acuidade, Artes Marciais) vale
- * atacando com Força, e a arma de arremesso só sem arremessar — arremessar é ataque à distância
- * (p. 149 e 196). Vazio fora desse escopo e quando a linha já cumpre.
+ * O golpe desarmado está no alcance do efeito? Ele não é arma (p. 196), então os escopos de arma
+ * (Arquearia, Duelismo, Armas Grandes, duas armas) não o pegam; mas é ataque corpo a corpo com
+ * arma — "melee weapon attack" no inglês, que os dados seguem (decisão do dono de 2026-10-29) —,
+ * e o escopo que fala do ataque, não da arma (`melee-strength`, o Dano de Fúria), o alcança.
  */
-function scopeCaveat(weapon: Weapon, scope: AttackScope, useDex: boolean): string {
+export function isUnarmedStrikeInScope(scope: AttackScope): boolean {
+  switch (scope) {
+    case 'unarmed':
+    case 'melee-strength': return true
+    case 'ranged':
+    case 'melee-one-handed':
+    case 'melee-two-handed':
+    case 'melee-light': return false
+  }
+}
+
+/**
+ * O que a linha não cumpre do escopo `melee-strength` ("ataque com arma corpo a corpo usando
+ * Força", p. 48), dito depois da condição: a linha que usa Destreza (acuidade, Artes Marciais na
+ * arma de monge e no golpe desarmado) vale atacando com Força, e a arma de arremesso só sem
+ * arremessar — arremessar é ataque à distância (p. 149 e 196). Vazio fora desse escopo e quando a
+ * linha já cumpre.
+ */
+function scopeCaveat(scope: AttackScope, useDex: boolean, thrown: boolean): string {
   if (scope !== 'melee-strength') return ''
-  const thrown = hasProperty(weapon, 'thrown')
   if (!useDex && !thrown) return ''
   const how = [thrown ? 'corpo a corpo' : '', useDex ? 'com Força em vez de Destreza' : ''].filter(Boolean).join(' ')
   return `, atacando ${how}${thrown ? ', sem arremessar' : ''}`
@@ -163,6 +183,18 @@ export type SourcedAttackEffect = {
 function formatConditionalDamage(bonus: ResolvedConditionalDamage, caveat: string): string {
   const text = `${signed(bonus.value)} de dano ${bonus.condition}${caveat} (${bonus.name})`
   return bonus.blockedBy ? `${text} — não vale agora: você está de ${bonus.blockedBy}` : text
+}
+
+/**
+ * As notas dos efeitos que alcançam a linha, da arma ou do golpe desarmado: a `note` e o bônus de
+ * dano condicional, com a ressalva do que a linha não cumpre do escopo (`scopeCaveat`).
+ */
+function pushEffectNotes(notes: string[], effects: SourcedAttackEffect[], useDex: boolean, thrown: boolean) {
+  for (const { source, value, conditionalDamage } of effects) {
+    const caveat = scopeCaveat(value.weapons, useDex, thrown)
+    if (value.note) notes.push(`${value.note}${caveat} (${source})`)
+    if (conditionalDamage) notes.push(formatConditionalDamage(conditionalDamage, caveat))
+  }
 }
 
 /** Artes Marciais em vigor — quem chama já conferiu o equipamento. */
@@ -285,11 +317,7 @@ export function getWeaponAttack(weapon: Weapon, ctx: AttackContext): WeaponAttac
     notes.push(`inclui ${martialArts.source} (${martialArts.condition})`)
   }
 
-  for (const { source, value, conditionalDamage } of effects) {
-    const caveat = scopeCaveat(weapon, value.weapons, useDex)
-    if (value.note) notes.push(`${value.note}${caveat} (${source})`)
-    if (conditionalDamage) notes.push(formatConditionalDamage(conditionalDamage, caveat))
-  }
+  pushEffectNotes(notes, effects, useDex, hasProperty(weapon, 'thrown'))
 
   const attacksPerAction = getWeaponAttacksPerAction(weapon, ctx, notes)
 
@@ -352,10 +380,12 @@ export type UnarmedStrikeContext = Omit<AttackContext, 'proficient'> & {
  *
  * Com Artes Marciais (p. 104), pode usar Destreza e rolar o dado dela; com o Especialista em
  * Briga (p. 169), rola 1d4. Os dois juntos: fica o maior dado. Não é arma, então nenhum efeito
- * de arma (Arquearia, Duelismo) o alcança — só os de escopo `unarmed` (Golpes de Chi).
+ * de arma (Arquearia, Duelismo) o alcança; é ataque corpo a corpo com arma (p. 196, pelo inglês),
+ * então o de `melee-strength` (Dano de Fúria) sim, além dos de `unarmed` (Golpes de Chi).
  */
 export function getUnarmedStrike(ctx: UnarmedStrikeContext): WeaponAttack {
   const { strMod, dexMod, proficiencyBonus, martialArts, unarmedDie } = ctx
+  const effects = (ctx.effects ?? []).filter(e => isUnarmedStrikeInScope(e.value.weapons))
   const useDex = martialArts !== undefined && dexMod >= strMod
   const mod = useDex ? dexMod : strMod
   const die = Math.max(martialArts?.die ?? 0, unarmedDie?.value ?? 0)
@@ -365,14 +395,12 @@ export function getUnarmedStrike(ctx: UnarmedStrikeContext): WeaponAttack {
 
   if (martialArts) notes.push(`inclui ${martialArts.source} (${martialArts.condition})`)
   else if (unarmedDie) notes.push(`inclui o d${unarmedDie.value} de ${unarmedDie.source}`)
-  for (const { source, value } of ctx.effects ?? []) {
-    if (value.weapons !== 'unarmed') continue
-    if (value.attackBonus) {
-      attackBonus += value.attackBonus
-      notes.push(`inclui ${signed(value.attackBonus)} no ataque (${source})`)
-    }
-    if (value.note) notes.push(`${value.note} (${source})`)
+  for (const { source, value } of effects) {
+    if (!value.attackBonus) continue
+    attackBonus += value.attackBonus
+    notes.push(`inclui ${signed(value.attackBonus)} no ataque (${source})`)
   }
+  pushEffectNotes(notes, effects, useDex, false)
   if (martialArts) {
     notes.push(`depois de atacar com golpe desarmado ou arma de monge na ação de Atacar, um golpe desarmado como ação bônus (${martialArts.source})`)
   }

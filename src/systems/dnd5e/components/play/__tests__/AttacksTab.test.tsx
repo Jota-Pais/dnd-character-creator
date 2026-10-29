@@ -50,17 +50,29 @@ describe('AttacksTab', () => {
     expect(screen.queryByTestId('crit-note')).toBeNull()
   })
 
-  it('Dano de Fúria: nota no cartão do machado e na receita do dano, fora da fórmula; nada no golpe desarmado', () => {
+  it('Dano de Fúria: nota no cartão do machado e na receita do dano, fora da fórmula', () => {
     openWithGreataxe()
     const rage = '• +2 de dano em fúria, sem armadura pesada (Dano de Fúria)'
     const axeCard = screen.getByRole('heading', { name: 'Machado Grande' }).closest('li')!
     expect(within(axeCard).getByText(rage)).toBeInTheDocument()
-    const unarmedCard = screen.getByRole('heading', { name: 'Golpe desarmado' }).closest('li')!
-    expect(within(unarmedCard).queryByText(/Dano de Fúria/)).toBeNull()
 
     fireEvent.click(screen.getByRole('button', { name: /^Machado Grande — dano: 1d12 \+ 3 cortante$/ }))
     const sheet = screen.getByRole('dialog')
     expect(within(sheet).getByTestId('recipe-formula')).toHaveTextContent('1d12 + 3 cortante')
+    expect(within(sheet).getByText(rage)).toBeInTheDocument()
+  })
+
+  // p. 196 pelo inglês (decisão do dono, 2026-10-29): o golpe desarmado não é arma, mas é ataque
+  // corpo a corpo com arma — o Dano de Fúria vale nele.
+  it('Dano de Fúria também no cartão do golpe desarmado e na receita do dano dele', () => {
+    openWithGreataxe()
+    const rage = '• +2 de dano em fúria, sem armadura pesada (Dano de Fúria)'
+    const unarmedCard = screen.getByRole('heading', { name: 'Golpe desarmado' }).closest('li')!
+    expect(within(unarmedCard).getByText(rage)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /^Golpe desarmado — dano: 4 concussão$/ }))
+    const sheet = screen.getByRole('dialog')
+    expect(within(sheet).getByTestId('recipe-formula')).toHaveTextContent('4 concussão')
     expect(within(sheet).getByText(rage)).toBeInTheDocument()
   })
 

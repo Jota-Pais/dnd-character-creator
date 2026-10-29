@@ -9,6 +9,7 @@ import {
   getUnarmedStrike,
   formatAttackDamage,
   isMonkWeapon,
+  isUnarmedStrikeInScope,
   type AttackContext,
 } from '../weaponFormat'
 import { getWeaponById, getArmorById, getPackById, formatPackContents } from '../equipmentUtils'
@@ -250,8 +251,30 @@ describe('weaponFormat', () => {
       expect(notes('greataxe', 3, 1, declared)).toEqual([])
     })
 
-    it('o golpe desarmado não leva a nota', () => {
-      expect(getUnarmedStrike({ strMod: 3, dexMod: 1, proficiencyBonus: 2, ...rage(2) }).notes).toEqual([])
+    // p. 196 pelo inglês (decisão do dono, 2026-10-29): o golpe desarmado não é arma, mas é
+    // "melee weapon attack" — o Dano de Fúria vale nele.
+    describe('golpe desarmado', () => {
+      const MONK = { source: 'Artes Marciais', die: 4, condition: 'sem armadura nem escudo' }
+
+      it('com Força: a mesma nota das armas, e o dano sem o bônus', () => {
+        const atk = getUnarmedStrike({ strMod: 3, dexMod: 1, proficiencyBonus: 2, ...rage(2) })
+        expect(atk.damage).toBe('4 concussão')
+        expect(atk.notes).toEqual(['+2 de dano em fúria, sem armadura pesada (Dano de Fúria)'])
+      })
+
+      it('monge com Destreza pelas Artes Marciais: vale atacando com Força', () => {
+        const notes = getUnarmedStrike({ strMod: 1, dexMod: 3, proficiencyBonus: 2, martialArts: MONK, ...rage(2) }).notes
+        expect(notes).toContain('+2 de dano em fúria, sem armadura pesada, atacando com Força em vez de Destreza (Dano de Fúria)')
+        // Com a Força melhor, as Artes Marciais ficam na Força: sem ressalva.
+        expect(getUnarmedStrike({ strMod: 3, dexMod: 1, proficiencyBonus: 2, martialArts: MONK, ...rage(2) }).notes)
+          .toContain('+2 de dano em fúria, sem armadura pesada (Dano de Fúria)')
+      })
+
+      it('de armadura pesada: a nota diz que não vale agora', () => {
+        expect(getUnarmedStrike({ strMod: 3, dexMod: 1, proficiencyBonus: 2, ...rage(3, 'Placas') }).notes).toEqual([
+          '+3 de dano em fúria, sem armadura pesada (Dano de Fúria) — não vale agora: você está de Placas',
+        ])
+      })
     })
   })
 
@@ -413,11 +436,21 @@ describe('weaponFormat', () => {
         strMod: 0, dexMod: 0, proficiencyBonus: 2,
         effects: [
           { source: 'Arquearia', value: { weapons: 'ranged', attackBonus: 2 } },
+          { source: 'Duelismo', value: { weapons: 'melee-one-handed', note: '+2 de dano sem outra arma' } },
           { source: 'Golpes de Chi', value: { weapons: 'unarmed', note: 'conta como arma mágica' } },
         ],
       })
       expect(atk.attackBonus).toBe('+2')
       expect(atk.notes).toEqual(['conta como arma mágica (Golpes de Chi)'])
+    })
+
+    // Não é arma (p. 196), mas é ataque corpo a corpo com arma pelo inglês (2026-10-29): só o
+    // escopo que fala do ataque, não da arma, o alcança.
+    it.each([
+      ['unarmed', true], ['melee-strength', true],
+      ['ranged', false], ['melee-one-handed', false], ['melee-two-handed', false], ['melee-light', false],
+    ] as const)('escopo %s alcança o golpe desarmado: %s', (scope, expected) => {
+      expect(isUnarmedStrikeInScope(scope)).toBe(expected)
     })
   })
 })

@@ -157,14 +157,25 @@ describe('Dano de Fúria nas linhas de ataque', () => {
   const rageNotes = (d: CharacterDraft) =>
     Object.fromEntries(getSheetAttacks(d, scores({ STR: 16, DEX: 14 })).map(a => [a.key, a.notes.filter(isRage)]))
 
-  it('bárbaro 1: nota nas armas corpo a corpo, não no arco nem no golpe desarmado', () => {
+  it('bárbaro 1: nota nas armas corpo a corpo e no golpe desarmado, não no arco', () => {
     const notes = rageNotes(barbarian(1, 'greataxe', 'javelin', 'longbow'))
     expect(notes.greataxe).toEqual([RAGE(2)])
     expect(notes.javelin).toEqual(['+2 de dano em fúria, sem armadura pesada, atacando corpo a corpo, sem arremessar (Dano de Fúria)'])
     expect(notes.longbow).toEqual([])
-    expect(notes.unarmed).toEqual([])
-    // O número não muda: 1d12 + FOR 3.
-    expect(getSheetAttacks(barbarian(1, 'greataxe'), scores({ STR: 16 }))[0].damage).toBe('1d12+3 cortante')
+    // p. 196 pelo inglês (decisão do dono, 2026-10-29): não é arma, mas é ataque corpo a corpo com arma.
+    expect(notes.unarmed).toEqual([RAGE(2)])
+    // O número não muda: 1d12 + FOR 3; 1 + FOR 3.
+    const [axe, unarmed] = getSheetAttacks(barbarian(1, 'greataxe'), scores({ STR: 16 }))
+    expect(axe.damage).toBe('1d12+3 cortante')
+    expect(unarmed.damage).toBe('4 concussão')
+  })
+
+  it('monge 2 / bárbaro 1 com Destreza nas Artes Marciais: o golpe desarmado vale atacando com Força', () => {
+    const d = draft({ level: 3, class: 'monk', multiclass: true, additionalClasses: [extraClass('barbarian', 1)] })
+    const unarmed = getSheetAttacks(d, scores({ STR: 14, DEX: 16 })).at(-1)!
+    expect(unarmed).toMatchObject({ ability: 'Destreza', damage: '1d4+3 concussão' })
+    expect(unarmed.notes.filter(isRage))
+      .toEqual(['+2 de dano em fúria, sem armadura pesada, atacando com Força em vez de Destreza (Dano de Fúria)'])
   })
 
   it('o valor segue o nível de bárbaro: +3 no 9º, +4 no 16º (o mesmo de Recursos)', () => {
@@ -183,14 +194,17 @@ describe('Dano de Fúria nas linhas de ataque', () => {
   })
 
   it('de armadura pesada vestida, a nota diz que não vale agora', () => {
-    expect(rageNotes(barbarian(1, 'greataxe', 'chain-mail')).greataxe)
-      .toEqual([`${RAGE(2)} — não vale agora: você está de Cota de Malha`])
+    const notes = rageNotes(barbarian(1, 'greataxe', 'chain-mail'))
+    expect(notes.greataxe).toEqual([`${RAGE(2)} — não vale agora: você está de Cota de Malha`])
+    expect(notes.unarmed).toEqual([`${RAGE(2)} — não vale agora: você está de Cota de Malha`])
     // Armadura média não impede.
     expect(rageNotes(barbarian(1, 'greataxe', 'scale-mail')).greataxe).toEqual([RAGE(2)])
   })
 
   it('quem não é bárbaro não tem a nota', () => {
-    expect(rageNotes(draft({ level: 5, class: 'fighter', ...carrying('greataxe') })).greataxe).toEqual([])
+    const notes = rageNotes(draft({ level: 5, class: 'fighter', ...carrying('greataxe') }))
+    expect(notes.greataxe).toEqual([])
+    expect(notes.unarmed).toEqual([])
   })
 })
 

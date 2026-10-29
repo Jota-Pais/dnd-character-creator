@@ -122,10 +122,13 @@ export type EquipmentSpeedBonus = {
  * - `melee-two-handed`: arma corpo a corpo com duas mãos ou versátil (Combate com Armas Grandes);
  * - `melee-light`: arma corpo a corpo leve, a do combate com duas armas (p. 196);
  * - `melee-strength`: ataque com arma corpo a corpo usando Força (Fúria, p. 48). Toda arma corpo a
- *   corpo entra, e a nota diz o que a linha não cumpre: a de acuidade (ou de monge com Artes
- *   Marciais) cuja linha usa Destreza vale atacando com Força; a de arremesso, só sem arremessar —
- *   arremessar é ataque à distância (p. 149 e 196);
- * - `unarmed`: o golpe desarmado, que não é arma (p. 196) — nenhum dos escopos de arma o alcança.
+ *   corpo entra, e o golpe desarmado também: não é arma, mas é ataque corpo a corpo com arma
+ *   (p. 196 pelo inglês, "melee weapon attack" — decisão do dono de 2026-10-29). A nota diz o que
+ *   a linha não cumpre: a de acuidade ou de Artes Marciais (arma de monge, golpe desarmado) cuja
+ *   linha usa Destreza vale atacando com Força; a de arremesso, só sem arremessar — arremessar é
+ *   ataque à distância (p. 149 e 196);
+ * - `unarmed`: só o golpe desarmado (Golpes de Chi). Ele não é arma (p. 196): os escopos de arma
+ *   acima não o alcançam, salvo `melee-strength`, que fala do ataque e não da arma.
  */
 export type AttackScope =
   | 'ranged' | 'melee-one-handed' | 'melee-two-handed' | 'melee-light' | 'melee-strength' | 'unarmed'
@@ -133,8 +136,8 @@ export type AttackScope =
 /**
  * Bônus nas jogadas de dano que só vale numa situação, com o valor de um recurso calculado da
  * MESMA característica — o Dano de Fúria (p. 48): +2, +3 no 9º e +4 no 16º nível de bárbaro, em
- * fúria e sem armadura pesada. A ficha não sabe se você está em fúria: é sempre nota na linha da
- * arma, nunca o número. Um valor só, nos dados: o da caixa de Recursos é o mesmo da nota.
+ * fúria e sem armadura pesada. A ficha não sabe se você está em fúria: é sempre nota na linha de
+ * ataque, nunca o número. Um valor só, nos dados: o da caixa de Recursos é o mesmo da nota.
  */
 export type ConditionalDamageBonus = {
   /** Id do recurso, declarado na mesma característica, cujo `amount` é o bônus (no nível NA classe dona). */
@@ -327,9 +330,9 @@ export type FeatureEffects = {
   conditionalAttacksPerAction?: ConditionalAttacks
   /**
    * Efeitos nas linhas de ataque: Estilos de Luta (Arquearia no número; Duelismo, Armas Grandes e
-   * Duas Armas como nota), o Dano de Fúria (nota nas armas corpo a corpo) e notas do golpe
-   * desarmado (Golpes de Chi). Lidos de features de classe, talentos e do Estilo de Luta escolhido
-   * (inclusive o Adicional do campeão).
+   * Duas Armas como nota), o Dano de Fúria (nota nas armas corpo a corpo e no golpe desarmado) e
+   * notas do golpe desarmado (Golpes de Chi). Lidos de features de classe, talentos e do Estilo de
+   * Luta escolhido (inclusive o Adicional do campeão).
    */
   weaponAttacks?: WeaponAttackEffect[]
   /**

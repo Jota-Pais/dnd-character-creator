@@ -82,7 +82,8 @@ export function AttacksTab({ guide, openRecipe }: PlayTabProps) {
   }
   return (
     <div>
-      <ul className="space-y-2">
+      {/* Do md para cima, os cartões em duas colunas, da mesma altura em cada linha. */}
+      <ul className="space-y-2 md:space-y-0 md:grid md:grid-cols-2 md:gap-2">
         {guide.attacks.map(a => <AttackCard key={a.key} attack={a} openRecipe={openRecipe} />)}
       </ul>
       <p className="mt-3 text-[11px] text-parchment-600 leading-snug">

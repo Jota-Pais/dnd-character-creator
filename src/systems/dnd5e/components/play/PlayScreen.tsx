@@ -24,8 +24,9 @@ const STICKY_GAP = 8
 
 /**
  * Modo de jogo do D&D 5e: a ficha de UM personagem durante a sessão. Pensada para o celular
- * (360–430 px), numa coluna central no desktop. A ficha nunca muda aqui; tudo que a tela altera
- * passa pelo `run(op)` do playStore, que grava só o estado de jogo.
+ * (360–430 px), numa coluna central; do tablet (md) para cima a coluna alarga e as abas Testes,
+ * Ataques, Magia e Regras abrem em mais colunas — abaixo do md, nada muda. A ficha nunca muda
+ * aqui; tudo que a tela altera passa pelo `run(op)` do playStore, que grava só o estado de jogo.
  *
  * Estrutura: cabeçalho → vitais fixos no topo → abas (`PLAY_TABS`, plugadas por componente).
  */
@@ -123,7 +124,7 @@ export function PlayScreen() {
 
   return (
     <div className="min-h-screen bg-surface-base text-parchment-200">
-      <div className="max-w-2xl mx-auto px-4">
+      <div className="max-w-2xl md:max-w-3xl lg:max-w-5xl mx-auto px-4">
         <header className="pt-3 pb-2">
           <div className="flex items-center justify-between gap-2">
             <button

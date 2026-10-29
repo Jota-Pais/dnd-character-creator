@@ -98,7 +98,8 @@ export function ChecksTab({ draft, state, sheet, guide, openRecipe }: PlayTabPro
 
       <section>
         <SectionTitle>Testes de resistência</SectionTitle>
-        <div className="grid sm:grid-cols-2 gap-x-3">
+        {/* Do md para cima, três colunas: os físicos numa linha, os mentais na outra. */}
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-x-3">
           {ALL_ABILITY_SCORES.map(ab => (
             <RollRow
               key={ab}
@@ -112,7 +113,8 @@ export function ChecksTab({ draft, state, sheet, guide, openRecipe }: PlayTabPro
 
       <section>
         <SectionTitle>Perícias</SectionTitle>
-        <div className="grid sm:grid-cols-2 gap-x-3">
+        {/* Do md para cima, três colunas de seis lidas de cima para baixo, como a lista da ficha. */}
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 md:grid-rows-6 md:grid-flow-col gap-x-3">
           {SKILLS.map(skill => {
             const entry = guide.skills[skill.id]
             const check = skillChecks[skill.id]

@@ -78,9 +78,11 @@ export function RulesTab({ draft }: PlayTabProps) {
                 {block.groups.map((group, gi) => (
                   <div key={`${gi}:${group.title ?? ''}`} className="mt-1">
                     {group.title && <h3 className="mt-2 text-xs text-parchment-500">{group.title}</h3>}
-                    <ul className="divide-y divide-parchment-900">
+                    {/* Do md para cima, duas colunas (três no lg) lidas de cima para baixo, na ordem da
+                        lista; cada nome com o traço embaixo, para as colunas ficarem iguais. */}
+                    <ul className="divide-y divide-parchment-900 md:columns-2 lg:columns-3 md:gap-x-6">
                       {group.entries.map(entry => (
-                        <li key={entry.key}>
+                        <li key={entry.key} className="md:break-inside-avoid md:border-b md:border-parchment-900">
                           <button
                             onClick={() => setOpen(entry)}
                             aria-haspopup="dialog"

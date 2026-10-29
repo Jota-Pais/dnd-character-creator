@@ -19,9 +19,9 @@ const UNIT_LABEL: Record<ResourceUnit, string> = { uses: 'usos', points: 'pontos
 /** Os textos de `describeResource` são pedaços de linha ("recupera em descanso longo"): aqui viram frase. */
 const sentence = (text: string) => `${text[0].toUpperCase()}${text.slice(1)}${/[.!?]$/.test(text) ? '' : '.'}`
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+function Section({ title, className, children }: { title: string; className?: string; children: ReactNode }) {
   return (
-    <section>
+    <section className={className}>
       <h2 className="text-[11px] uppercase tracking-wider text-parchment-600 font-fantasy mb-1.5">{title}</h2>
       {children}
     </section>
@@ -85,10 +85,12 @@ export function MagicTab(view: PlayTabProps) {
   const groups = groupResourcesBySource(sheet.resources)
   const labelGroups = resourceGroupsNeedLabels(groups)
 
+  // Do md para cima, duas colunas: a conjuração ao lado dos espaços (os do pool e os de Pacto),
+  // e os recursos embaixo, na largura toda, com uma origem (classe, raça, talento) por coluna.
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 md:space-y-0 md:grid md:grid-cols-2 md:items-start md:gap-x-6 md:gap-y-5">
       {guide.notes.length > 0 && (
-        <div className="rounded-xl border border-red-900 bg-red-950/30 p-3 space-y-1">
+        <div className="rounded-xl border border-red-900 bg-red-950/30 p-3 space-y-1 md:col-span-2">
           {guide.notes.map((n, i) => <p key={i} className="text-sm text-red-200 leading-snug">{n}</p>)}
         </div>
       )}
@@ -131,45 +133,49 @@ export function MagicTab(view: PlayTabProps) {
         </Section>
       )}
 
-      {slotLevels.length > 0 && (
-        <Section title="Espaços de magia">
-          <ul className="space-y-1">
-            {slotLevels.map(({ level, max }) => (
-              <li key={level} className="flex flex-wrap items-center gap-2">
-                <span className="w-16 shrink-0 text-sm text-parchment-300">{ordinal(level)} nível</span>
-                <UsesTrack
-                  label={`Espaço de ${ordinal(level)} nível`}
-                  total={max}
-                  available={slotsAvailable[level - 1]}
-                  onSpend={() => run((st, sh) => spendSpellSlot(st, sh, level))}
-                  onRecover={() => run((st, sh) => recoverSpellSlot(st, sh, level))}
-                />
-              </li>
-            ))}
-          </ul>
-          <p className="mt-1 text-[11px] text-parchment-500">Voltam no descanso longo.</p>
-        </Section>
-      )}
+      {(slotLevels.length > 0 || (pact && pact.slots > 0)) && (
+        <div className="space-y-5">
+          {slotLevels.length > 0 && (
+            <Section title="Espaços de magia">
+              <ul className="space-y-1">
+                {slotLevels.map(({ level, max }) => (
+                  <li key={level} className="flex flex-wrap items-center gap-2">
+                    <span className="w-16 shrink-0 text-sm text-parchment-300">{ordinal(level)} nível</span>
+                    <UsesTrack
+                      label={`Espaço de ${ordinal(level)} nível`}
+                      total={max}
+                      available={slotsAvailable[level - 1]}
+                      onSpend={() => run((st, sh) => spendSpellSlot(st, sh, level))}
+                      onRecover={() => run((st, sh) => recoverSpellSlot(st, sh, level))}
+                    />
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-1 text-[11px] text-parchment-500">Voltam no descanso longo.</p>
+            </Section>
+          )}
 
-      {pact && pact.slots > 0 && (
-        <Section title="Magia de Pacto">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="w-16 shrink-0 text-sm text-parchment-300">{ordinal(pact.slotLevel)} nível</span>
-            <UsesTrack
-              label={`Espaço de Pacto (${ordinal(pact.slotLevel)} nível)`}
-              total={pact.slots}
-              available={getPactSlotsAvailable(state, sheet)}
-              onSpend={() => run((st, sh) => spendPactSlot(st, sh))}
-              onRecover={() => run((st, sh) => recoverPactSlot(st, sh))}
-            />
-          </div>
-          <p className="mt-1 text-[11px] text-parchment-500">Voltam no descanso curto ou longo.</p>
-        </Section>
+          {pact && pact.slots > 0 && (
+            <Section title="Magia de Pacto">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="w-16 shrink-0 text-sm text-parchment-300">{ordinal(pact.slotLevel)} nível</span>
+                <UsesTrack
+                  label={`Espaço de Pacto (${ordinal(pact.slotLevel)} nível)`}
+                  total={pact.slots}
+                  available={getPactSlotsAvailable(state, sheet)}
+                  onSpend={() => run((st, sh) => spendPactSlot(st, sh))}
+                  onRecover={() => run((st, sh) => recoverPactSlot(st, sh))}
+                />
+              </div>
+              <p className="mt-1 text-[11px] text-parchment-500">Voltam no descanso curto ou longo.</p>
+            </Section>
+          )}
+        </div>
       )}
 
       {groups.length > 0 && (
-        <Section title="Recursos">
-          <div className="space-y-3">
+        <Section title="Recursos" className="md:col-span-2">
+          <div className="space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:items-start md:gap-x-6 md:gap-y-3">
             {groups.map(g => (
               <div key={`${g.source.kind}:${g.source.id}`}>
                 {labelGroups && <p className="font-fantasy text-sm text-gold-400">{resourceSourceLabel(g.source)}</p>}
@@ -183,7 +189,7 @@ export function MagicTab(view: PlayTabProps) {
       )}
 
       {guide.spellcasting.length === 0 && slotLevels.length === 0 && !pact && groups.length === 0 && (
-        <p className="text-sm text-parchment-500">Sem magias nem recursos com usos nesta ficha.</p>
+        <p className="text-sm text-parchment-500 md:col-span-2">Sem magias nem recursos com usos nesta ficha.</p>
       )}
     </div>
   )

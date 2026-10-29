@@ -106,8 +106,13 @@ export function ConditionsSection({ state, run }: PlayTabProps) {
   const effective = getPlayConditionEffects(state).conditions
   const atZero = isAtZeroHp(state)
 
+  // Do md para cima, duas colunas lidas de cima para baixo. Em grade (não `columns`): abrir a
+  // regra de uma condição só estica a linha dela, sem mandar condições de uma coluna para a outra.
   return (
-    <ul className="divide-y divide-parchment-900">
+    <ul
+      className="divide-y divide-parchment-900 md:grid md:grid-cols-2 md:grid-flow-col md:gap-x-6"
+      style={{ gridTemplateRows: `repeat(${Math.ceil(CONDITIONS.length / 2)}, auto)` }}
+    >
       {CONDITIONS.map(cond => {
         const recorded = state.conditions.includes(cond.id)
         const eff = effective.find(c => c.id === cond.id)
@@ -119,7 +124,7 @@ export function ConditionsSection({ state, run }: PlayTabProps) {
         const ruleOpen = openRule === cond.id
 
         return (
-          <li key={cond.id} className="py-1.5" data-testid={`condition-${cond.id}`}>
+          <li key={cond.id} className="py-1.5 md:border-b md:border-parchment-900" data-testid={`condition-${cond.id}`}>
             <div className="flex items-center gap-2">
               {derivedOnly ? (
                 <div className="flex-1 min-w-0 flex items-center gap-3 min-h-10">

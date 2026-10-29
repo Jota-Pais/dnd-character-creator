@@ -126,6 +126,8 @@ describe('NotesTab — rolador livre', () => {
     openNotes()
     expect(within(screen.getByRole('group', { name: 'Dado' })).getAllByRole('button').map(b => b.textContent))
       .toEqual(['d4', 'd6', 'd8', 'd10', 'd12', 'd20', 'd100'])
+    // No celular, quatro por linha: sete numa linha dentro do cartão dão 38 px, abaixo dos 45 px de toque.
+    expect(screen.getByRole('group', { name: 'Dado' })).toHaveClass('grid-cols-4', 'sm:grid-cols-7')
     expect(dieButton('d20')).toHaveAttribute('aria-pressed', 'true')
     fireEvent.click(dieButton('d6'))
     expect(dieButton('d6')).toHaveAttribute('aria-pressed', 'true')

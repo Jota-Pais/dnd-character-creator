@@ -75,7 +75,9 @@ export function FreeRoller() {
 
   return (
     <div className="rounded-xl border border-parchment-900 bg-surface-raised p-3">
-      <div className="grid grid-cols-7 gap-1" role="group" aria-label="Dado">
+      {/* No celular, duas linhas (4 + 3): os sete numa só dentro do cartão ficavam com 38 px de
+          largura, abaixo do alvo de toque de 45 px. */}
+      <div className="grid grid-cols-4 sm:grid-cols-7 gap-1" role="group" aria-label="Dado">
         {FREE_ROLL_DICE.map(d => (
           <button
             key={d}

@@ -92,7 +92,7 @@ describe('weaponFormat', () => {
       expect(atk.damage).toBe('1d8+2 perfurante')
     })
 
-    it('acuidade vale também na arma à distância: dardo com Força melhor usa Força (p. 148, p. 195)', () => {
+    it('acuidade vale também na arma à distância: dardo com Força melhor usa Força (p. 148, p. 196)', () => {
       const dart = getWeaponAttack(getWeaponById('dart')!, ctx(3, 2, 2, true))
       expect(dart.ability).toBe('Força')
       expect(dart.attackBonus).toBe('+5')
@@ -188,7 +188,7 @@ describe('weaponFormat', () => {
       expect(getWeaponAttack(getWeaponById('greatsword')!, ctx(3, 0, 2, true, gwf)).damage).toBe('2d6+3 cortante')
     })
 
-    it('arma leve: a regra-base do ataque da outra mão (p. 196), trocada pelo Combate com Duas Armas', () => {
+    it('arma leve: a regra-base do ataque da outra mão (p. 197), trocada pelo Combate com Duas Armas', () => {
       const pair = { twoLightMeleeWeapons: true }
       expect(getWeaponAttack(getWeaponById('shortsword')!, ctx(0, 3, 2, true, pair)).notes).toEqual([TWF_BASE])
       // uma arma leve só: a regra-base não tem o que dizer
@@ -206,7 +206,7 @@ describe('weaponFormat', () => {
 
   // p. 48: em fúria, sem armadura pesada, o Dano de Fúria entra "quando você desferir um ataque
   // com arma corpo-a-corpo usando Força" — condicional, então nota, nunca o número. Arremessar é
-  // ataque à distância (p. 149 e 196).
+  // ataque à distância (p. 149 e 197).
   describe('Dano de Fúria na linha de ataque', () => {
     const rage = (value: number, blockedBy?: string): Partial<AttackContext> => ({
       effects: [{
@@ -251,7 +251,7 @@ describe('weaponFormat', () => {
       expect(notes('greataxe', 3, 1, declared)).toEqual([])
     })
 
-    // p. 196 pelo inglês (decisão do dono, 2026-10-29): o golpe desarmado não é arma, mas é
+    // p. 197 pelo inglês (decisão do dono, 2026-10-29): o golpe desarmado não é arma, mas é
     // "melee weapon attack" — o Dano de Fúria vale nele.
     describe('golpe desarmado', () => {
       const MONK = { source: 'Artes Marciais', die: 4, condition: 'sem armadura nem escudo' }
@@ -405,7 +405,7 @@ describe('weaponFormat', () => {
     })
   })
 
-  // p. 196: "1 + seu modificador de Força. Você é proficiente com seus ataques desarmados".
+  // p. 197: "1 + seu modificador de Força. Você é proficiente com seus ataques desarmados".
   describe('getUnarmedStrike', () => {
     it('qualquer personagem: 1 + Força, concussão, proficiente', () => {
       const atk = getUnarmedStrike({ strMod: 3, dexMod: 1, proficiencyBonus: 2 })
@@ -462,7 +462,7 @@ describe('weaponFormat', () => {
       expect(atk.notes).toEqual(['conta como arma mágica (Golpes de Chi)'])
     })
 
-    // Não é arma (p. 196), mas é ataque corpo a corpo com arma pelo inglês (2026-10-29): só o
+    // Não é arma (p. 197), mas é ataque corpo a corpo com arma pelo inglês (2026-10-29): só o
     // escopo que fala do ataque, não da arma, o alcança.
     it.each([
       ['unarmed', true], ['melee-strength', true], ['weapon-attack', true], ['melee-weapon-attack', true],

@@ -63,7 +63,7 @@ export type RecipeLink = { label: string; entry: RollGuideEntry }
  * O 20 e o 1 naturais só ganham destaque: num teste comum eles não decidem nada (pág. 174). No
  * ataque, a folha leva ao dano (`links`); com os dados do app, um natural a partir de
  * `critThreshold` abre o dano já como crítico. A folha de dano aberta com `crit` mostra e rola os
- * dados dobrados (pág. 196), com o "não foi crítico" para voltar ao normal.
+ * dados dobrados (pág. 198), com o "não foi crítico" para voltar ao normal.
  */
 export function RollRecipeSheet({
   entry: baseEntry, appDice, onClose, onFocusAway, crit = false, links = [], critThreshold = 20, onOpenLink,
@@ -185,7 +185,7 @@ export function RollRecipeSheet({
 
       {critMode && (
         <div className="mt-2 rounded-lg border border-gold-800 bg-gold-900/30 px-3 py-2 text-sm text-gold-300">
-          <p>Acerto crítico: os dados de dano dobram, o modificador não (pág. 196).</p>
+          <p>Acerto crítico: os dados de dano dobram, o modificador não (pág. 198).</p>
           {entry.crit?.notes?.map((n, i) => (
             <p key={i} className="mt-1 text-xs text-parchment-100" data-testid="crit-note">• {n}</p>
           ))}

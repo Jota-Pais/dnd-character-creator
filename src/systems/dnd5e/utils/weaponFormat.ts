@@ -87,7 +87,7 @@ export function isMonkWeapon(weapon: Weapon): boolean {
 }
 
 /**
- * A arma está no alcance do efeito? O golpe desarmado não é arma (p. 196) e tem a pergunta dele,
+ * A arma está no alcance do efeito? O golpe desarmado não é arma (p. 197) e tem a pergunta dele,
  * `isUnarmedStrikeInScope`.
  */
 export function isWeaponInScope(weapon: Weapon, scope: AttackScope): boolean {
@@ -106,7 +106,7 @@ export function isWeaponInScope(weapon: Weapon, scope: AttackScope): boolean {
 }
 
 /**
- * O golpe desarmado está no alcance do efeito? Ele não é arma (p. 196), então os escopos de arma
+ * O golpe desarmado está no alcance do efeito? Ele não é arma (p. 197), então os escopos de arma
  * (Arquearia, Duelismo, Armas Grandes, duas armas) não o pegam; mas é ataque corpo a corpo com
  * arma — "melee weapon attack" no inglês, que os dados seguem (decisão do dono de 2026-10-29) —,
  * e os escopos que falam do ataque, não da arma (`melee-strength`, o Dano de Fúria;
@@ -129,7 +129,7 @@ export function isUnarmedStrikeInScope(scope: AttackScope): boolean {
  * O que a linha não cumpre do escopo `melee-strength` ("ataque com arma corpo a corpo usando
  * Força", p. 48), dito depois da condição: a linha que usa Destreza (acuidade, Artes Marciais na
  * arma de monge e no golpe desarmado) vale atacando com Força, e a arma de arremesso só sem
- * arremessar — arremessar é ataque à distância (p. 149 e 196). No `melee-weapon-attack` (o
+ * arremessar — arremessar é ataque à distância (p. 149 e 197). No `melee-weapon-attack` (o
  * crítico do Crítico Brutal e dos Ataques Selvagens) só o arremesso fica de fora: a acuidade com
  * Destreza continua corpo a corpo. Vazio nos outros escopos e quando a linha já cumpre.
  */
@@ -248,7 +248,7 @@ export type AttackContext = {
   loadingOverrides?: { source: string; value: LoadingOverride }[]
   /**
    * Se o personagem carrega duas armas leves corpo a corpo (`carriesTwoLightMeleeWeapons`). Sem
-   * isso, a regra-base do ataque da outra mão (p. 196) fica fora da linha — só o Estilo de Luta
+   * isso, a regra-base do ataque da outra mão (p. 197) fica fora da linha — só o Estilo de Luta
    * Combate com Duas Armas a mostra mesmo assim.
    */
   twoLightMeleeWeapons?: boolean
@@ -298,7 +298,7 @@ export function formatAttackDamage(attack: WeaponAttack): string {
 /**
  * Ataque de uma arma. Escolhe o atributo — o melhor dos dois para arma de acuidade (p. 148), mesmo
  * à distância como o dardo, e, com Artes Marciais, para arma de monge; fora disso Destreza para
- * arma à distância e Força para corpo a corpo, inclusive as de arremesso (p. 195: "Acuidade ou
+ * arma à distância e Força para corpo a corpo, inclusive as de arremesso (p. 196: "Acuidade ou
  * Arremesso quebram essa regra") — e soma o modificador no ataque e no dano.
  *
  * Aplica a regra de ouro dos efeitos: o que vale SEMPRE com aquela arma entra no número
@@ -349,7 +349,7 @@ export function getWeaponAttack(weapon: Weapon, ctx: AttackContext): WeaponAttac
 
   const attacksPerAction = getWeaponAttacksPerAction(weapon, ctx, notes)
 
-  // Combater com duas armas (p. 196): o ataque da outra mão é de ação bônus e não soma o
+  // Combater com duas armas (p. 197): o ataque da outra mão é de ação bônus e não soma o
   // modificador no dano, a menos que seja negativo — salvo com o Estilo de Luta (p. 85). A
   // regra-base só aparece pra quem carrega duas armas leves; o Estilo, sempre.
   if (isWeaponInScope(weapon, 'melee-light')) {
@@ -404,11 +404,11 @@ export type UnarmedStrikeContext = Omit<AttackContext, 'proficient'> & {
 
 /**
  * O golpe desarmado — soco, chute, cabeçada — que todo personagem tem: "causa dano de concussão
- * igual a 1 + seu modificador de Força. Você é proficiente com seus ataques desarmados" (p. 196).
+ * igual a 1 + seu modificador de Força. Você é proficiente com seus ataques desarmados" (p. 197).
  *
  * Com Artes Marciais (p. 104), pode usar Destreza e rolar o dado dela; com o Especialista em
  * Briga (p. 169), rola 1d4. Os dois juntos: fica o maior dado. Não é arma, então nenhum efeito
- * de arma (Arquearia, Duelismo) o alcança; é ataque corpo a corpo com arma (p. 196, pelo inglês),
+ * de arma (Arquearia, Duelismo) o alcança; é ataque corpo a corpo com arma (p. 197, pelo inglês),
  * então o de `melee-strength` (Dano de Fúria) sim, além dos de `unarmed` (Golpes de Chi).
  */
 export function getUnarmedStrike(ctx: UnarmedStrikeContext): WeaponAttack {

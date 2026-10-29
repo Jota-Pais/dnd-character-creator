@@ -12,7 +12,7 @@ export function canRollEntry(entry: RollGuideEntry): boolean {
 
 /**
  * Rola a jogada pelo motor de `src/core/dice`, com a notação do guia (vantagem já vira `2d20kh1`).
- * `crit` usa os dados dobrados do acerto crítico (pág. 196), quando a jogada é de dano.
+ * `crit` usa os dados dobrados do acerto crítico (pág. 198), quando a jogada é de dano.
  */
 export function rollGuideEntry(
   entry: RollGuideEntry,

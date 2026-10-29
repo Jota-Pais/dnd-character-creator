@@ -193,7 +193,8 @@ describe('getRollGuide — ataques', () => {
       crit: { dice: '', formula: '4 concussão', notation: '4' },
       breakdown: [{ label: 'Golpe desarmado', value: 1 }, { label: 'Força', value: 3 }],
     })
-    expect(unarmed.damage!.notes.some(n => n.includes('Dano fixo'))).toBe(true)
+    // Acertos Críticos é a pág. 198 do livro (o marcador PAGINA 196 do extract).
+    expect(unarmed.damage!.notes).toContain('Dano fixo, sem dado: o acerto crítico não muda o valor (só os dados dobram, pág. 198).')
     expect(unarmed.versatile).toBeNull()
   })
 
@@ -374,7 +375,7 @@ describe('getRollGuide — ataques', () => {
     ])
   })
 
-  it('arma de arremesso: o dado extra do crítico só sem arremessar (arremessar é ataque à distância, pág. 149 e 196)', () => {
+  it('arma de arremesso: o dado extra do crítico só sem arremessar (arremessar é ataque à distância, pág. 149 e 197)', () => {
     const barbarian = draft({
       class: 'barbarian', level: 9, race: 'half-orc', abilityScores: SCORES, ...carrying('handaxe', 'dagger', 'greataxe'),
     })
@@ -411,7 +412,7 @@ describe('getRollGuide — ataques', () => {
     expect(axe.notes).toContain(rage)
     const hasRage = (key: string) => guide.attacks.find(a => a.key === key)!.damage!.notes.some(n => n.includes('Dano de Fúria'))
     expect(hasRage('longbow')).toBe(false)
-    // p. 196 pelo inglês (decisão do dono, 2026-10-29): o golpe desarmado é ataque corpo a corpo com arma.
+    // p. 197 pelo inglês (decisão do dono, 2026-10-29): o golpe desarmado é ataque corpo a corpo com arma.
     const unarmed = guide.attacks.find(a => a.key === 'unarmed')!
     expect(unarmed.damage!.notes).toContain(rage)
     expect(unarmed.damage).toMatchObject({

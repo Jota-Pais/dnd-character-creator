@@ -31,7 +31,7 @@ export function getEquippedWeapons(draft: CharacterDraft): Weapon[] {
 
 /**
  * Se o personagem carrega ao menos duas armas leves corpo a corpo (contando a quantidade: duas
- * adagas valem) — o que combater com duas armas pede (p. 196). Sem isso, a nota do ataque da
+ * adagas valem) — o que combater com duas armas pede (p. 197). Sem isso, a nota do ataque da
  * outra mão não tem o que dizer.
  */
 export function carriesTwoLightMeleeWeapons(draft: CharacterDraft): boolean {
@@ -48,7 +48,7 @@ export type SheetAttackWeapon = { id: string; melee: boolean; heavy: boolean; th
 
 /**
  * Uma linha da tabela de ataques, com a chave estável pra lista e a arma — `null` no golpe
- * desarmado, que não é arma (p. 196).
+ * desarmado, que não é arma (p. 197).
  */
 export type SheetAttack = WeaponAttack & { key: string; weapon: SheetAttackWeapon | null }
 
@@ -65,12 +65,12 @@ export function isSheetAttackInScope(attack: SheetAttack, scope: AttackScope): b
 
 /**
  * A tabela de ataques da ficha — a Revisão e o PDF chamam só isto: uma linha por arma carregada e,
- * no fim, o golpe desarmado, que todo personagem tem (p. 196) e é o ataque principal do monge.
+ * no fim, o golpe desarmado, que todo personagem tem (p. 197) e é o ataque principal do monge.
  *
  * Cada linha já vem com o que as características fazem nela (`getWeaponAttackEffects`): Arquearia
  * no número; Duelismo, Armas Grandes, o ataque da outra mão e o Dano de Fúria como nota — este nas
  * armas corpo a corpo e no golpe desarmado, que não é arma mas é ataque corpo a corpo com arma
- * (p. 196, pelo inglês; decisão do dono de 2026-10-29). Artes Marciais entra no número das armas
+ * (p. 197, pelo inglês; decisão do dono de 2026-10-29). Artes Marciais entra no número das armas
  * de monge e do golpe desarmado quando o equipamento deixa (sem armadura nem escudo); quando não
  * deixa, a linha do golpe desarmado diz o que a impede. O "2×" do Ataque Extra vem em cada linha
  * (`attacksPerAction`): arma de recarga fica em 1 (p. 149), salvo Especialista em Besta.

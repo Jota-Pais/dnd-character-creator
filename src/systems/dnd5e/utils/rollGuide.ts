@@ -79,7 +79,7 @@ export type RollGuideEntry = {
   /** Jogada de ataque (arma, golpe desarmado, magia): o 1 natural erra sempre (pág. 196). */
   attackRoll?: true
   /**
-   * Só dano: os dados dobrados do acerto crítico, o modificador igual (pág. 196). `notes`: o que
+   * Só dano: os dados dobrados do acerto crítico, o modificador igual (pág. 198). `notes`: o que
    * vale só no crítico e fica fora da fórmula (Ataques Selvagens, Crítico Brutal).
    */
   crit?: { dice: string; formula: string; notation: string; notes?: string[] }
@@ -492,7 +492,7 @@ function damageEntry(input: DamageInput): RollGuideEntry {
   const critNotes = count > 0 ? (input.critExtraDice ?? []).map(e => critExtraDiceNote(e, sides, input.unarmedStrike)) : []
   const notes = [...(input.notes ?? [])]
   if (count === 0 && modifier === 0) notes.push(NO_DAMAGE_NOTE)
-  else if (count === 0) notes.push('Dano fixo, sem dado: o acerto crítico não muda o valor (só os dados dobram, pág. 196).')
+  else if (count === 0) notes.push('Dano fixo, sem dado: o acerto crítico não muda o valor (só os dados dobram, pág. 198).')
   const breakdown = floor > 0 ? [...input.breakdown, { label: 'Mínimo 0', value: floor }] : input.breakdown
   return {
     id: input.id,
@@ -550,7 +550,7 @@ type CritExtraDice = SheetEffect<number> & { caveat: string }
  * a arma usa NAQUELE ataque (decisão de 2026-10-25): o versátil a duas mãos, o de Artes Marciais
  * quando ele substitui o da arma — por isso a nota sai de cada entrada de dano, com os lados dela.
  * No golpe desarmado, o dado é o dele: o de Artes Marciais ou o d4 do Especialista em Briga. Na
- * arma de arremesso, a ressalva: arremessada, o ataque é à distância (p. 149 e 196).
+ * arma de arremesso, a ressalva: arremessada, o ataque é à distância (p. 149 e 197).
  */
 function critExtraDiceNote({ source, value, caveat }: CritExtraDice, sides: number, unarmedStrike = false): string {
   return unarmedStrike

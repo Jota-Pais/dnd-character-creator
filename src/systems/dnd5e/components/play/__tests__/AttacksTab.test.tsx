@@ -66,7 +66,7 @@ describe('AttacksTab', () => {
     expect(within(sheet).getByText(rage)).toBeInTheDocument()
   })
 
-  // p. 196 pelo inglês (decisão do dono, 2026-10-29): o golpe desarmado não é arma, mas é ataque
+  // p. 197 pelo inglês (decisão do dono, 2026-10-29): o golpe desarmado não é arma, mas é ataque
   // corpo a corpo com arma — o Dano de Fúria vale nele.
   it('Dano de Fúria também no cartão do golpe desarmado e na receita do dano dele', () => {
     openWithGreataxe()

@@ -135,14 +135,14 @@ export type EquipmentSpeedBonus = {
  * - `melee-one-handed`: arma corpo a corpo sem a propriedade duas mãos — a versátil entra, pelo
  *   uso numa mão (Duelismo);
  * - `melee-two-handed`: arma corpo a corpo com duas mãos ou versátil (Combate com Armas Grandes);
- * - `melee-light`: arma corpo a corpo leve, a do combate com duas armas (p. 196);
+ * - `melee-light`: arma corpo a corpo leve, a do combate com duas armas (p. 197);
  * - `melee-strength`: ataque com arma corpo a corpo usando Força (Fúria, p. 48). Toda arma corpo a
  *   corpo entra, e o golpe desarmado também: não é arma, mas é ataque corpo a corpo com arma
- *   (p. 196 pelo inglês, "melee weapon attack" — decisão do dono de 2026-10-29). A nota diz o que
+ *   (p. 197 pelo inglês, "melee weapon attack" — decisão do dono de 2026-10-29). A nota diz o que
  *   a linha não cumpre: a de acuidade ou de Artes Marciais (arma de monge, golpe desarmado) cuja
  *   linha usa Destreza vale atacando com Força; a de arremesso, só sem arremessar — arremessar é
- *   ataque à distância (p. 149 e 196);
- * - `unarmed`: só o golpe desarmado (Golpes de Chi). Ele não é arma (p. 196): os escopos de arma
+ *   ataque à distância (p. 149 e 197);
+ * - `unarmed`: só o golpe desarmado (Golpes de Chi). Ele não é arma (p. 197): os escopos de arma
  *   acima não o alcançam, salvo `melee-strength`, que fala do ataque e não da arma;
  * - `weapon-attack`: todo ataque com arma, "seus ataques com armas" do Crítico Aprimorado e do
  *   Crítico Superior (p. 85-86) — toda arma, corpo a corpo ou à distância, e o golpe desarmado, que
@@ -176,7 +176,7 @@ export type ConditionalDamageBonus = {
  * - `note` depende da situação (Duelismo: "sem outra arma"; Armas Grandes: "com as duas mãos")
  *   ou não cabe num número (rerrolar) — vira nota na linha da arma, com a condição;
  * - `offHandAddsModifier`: o ataque da outra mão soma o modificador no dano (Combate com Duas
- *   Armas, p. 85), trocando a regra-base da p. 196, que o deixa de fora;
+ *   Armas, p. 85), trocando a regra-base da p. 197, que o deixa de fora;
  * - `conditionalDamage`: bônus de dano condicional cujo valor é um recurso (Dano de Fúria) — nota
  *   com o valor do nível, calculado por `getWeaponAttackEffects`.
  */

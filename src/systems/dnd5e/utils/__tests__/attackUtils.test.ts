@@ -44,7 +44,7 @@ describe('getEquippedWeapons', () => {
 })
 
 describe('getSheetAttacks', () => {
-  it('todo personagem tem o golpe desarmado no fim: 1 + Força, proficiente (p. 196)', () => {
+  it('todo personagem tem o golpe desarmado no fim: 1 + Força, proficiente (p. 197)', () => {
     const attacks = getSheetAttacks(draft({ level: 1, class: 'wizard', ...carrying('dagger') }), scores({ STR: 14 }))
     expect(attacks.map(a => a.key)).toEqual(['dagger', 'unarmed'])
     expect(attacks[1]).toMatchObject({ name: 'Golpe desarmado', attackBonus: '+4', damage: '3 concussão', proficient: true })
@@ -110,7 +110,7 @@ describe('getSheetAttacks', () => {
     expect(crossbow.notes).toContain('inclui Especialista em Besta (ignora a recarga)')
   })
 
-  describe('nota do ataque da outra mão (p. 196): só com duas armas leves corpo a corpo', () => {
+  describe('nota do ataque da outra mão (p. 197): só com duas armas leves corpo a corpo', () => {
     const TWF_BASE = 'com outra arma leve na outra mão: ataque extra como ação bônus, sem somar o modificador no dano (a menos que seja negativo)'
     const daggerNotes = (d: CharacterDraft) => getSheetAttacks(d, scores({ DEX: 14 })).find(a => a.key === 'dagger')!.notes
 
@@ -162,7 +162,7 @@ describe('Dano de Fúria nas linhas de ataque', () => {
     expect(notes.greataxe).toEqual([RAGE(2)])
     expect(notes.javelin).toEqual(['+2 de dano em fúria, sem armadura pesada, atacando corpo a corpo, sem arremessar (Dano de Fúria)'])
     expect(notes.longbow).toEqual([])
-    // p. 196 pelo inglês (decisão do dono, 2026-10-29): não é arma, mas é ataque corpo a corpo com arma.
+    // p. 197 pelo inglês (decisão do dono, 2026-10-29): não é arma, mas é ataque corpo a corpo com arma.
     expect(notes.unarmed).toEqual([RAGE(2)])
     // O número não muda: 1d12 + FOR 3; 1 + FOR 3.
     const [axe, unarmed] = getSheetAttacks(barbarian(1, 'greataxe'), scores({ STR: 16 }))

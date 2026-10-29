@@ -74,7 +74,7 @@ function AttackCard({ attack, openRecipe }: { attack: AttackGuide; openRecipe: P
 /**
  * Aba "Ataques": uma linha por ataque da ficha (`getSheetAttacks`, pelo guia de rolagens), com o
  * bônus já com o modo das condições. No crítico (20 natural, ou a margem do `critThreshold`), os
- * dados de dano dobram (pág. 196): a folha do ataque leva ao dano normal ou ao do crítico.
+ * dados de dano dobram (pág. 198): a folha do ataque leva ao dano normal ou ao do crítico.
  */
 export function AttacksTab({ guide, openRecipe }: PlayTabProps) {
   if (guide.attacks.length === 0) {

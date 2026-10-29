@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { useAppStore } from '../../../../../core/stores/appStore'
@@ -183,6 +183,23 @@ describe('PlayScreen — deslizar entre as abas', () => {
     // Fora do jogo (galeria, wizard), a página volta ao normal.
     unmount()
     expect(document.documentElement).not.toHaveClass('overscroll-x-none')
+  })
+})
+
+describe('PlayScreen — o foco não fica atrás dos vitais fixos', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('o scroll-padding do <html> é a altura dos vitais, com a folga; fora do jogo, sai', () => {
+    // Layout falso (o jsdom não tem): os vitais fixos medem 180 px.
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      const height = this.classList.contains('sticky') ? 180 : 0
+      return { top: 0, bottom: height, height, left: 0, right: 0, width: 0, x: 0, y: 0, toJSON: () => ({}) } as DOMRect
+    })
+    openKrusk()
+    const { unmount } = render(<PlayScreen />)
+    expect(document.documentElement.style.scrollPaddingTop).toBe('188px')
+    unmount()
+    expect(document.documentElement.style.scrollPaddingTop).toBe('')
   })
 })
 

@@ -132,6 +132,25 @@ export function PlayScreen() {
     return () => root.classList.remove(NO_OVERSCROLL_X)
   }, [])
 
+  // Os vitais fixos cobrem o topo da tela: o que recebe o foco (o Tab, ou o título para onde vai o
+  // foco de um controle que sumiu) e está acima da vista para logo abaixo deles, nunca atrás. O
+  // scroll-padding do `<html>` acompanha a altura dos vitais; o navegador o respeita ao rolar até
+  // o foco.
+  const hasView = view !== null
+  useEffect(() => {
+    const sticky = stickyRef.current
+    if (!sticky) return
+    const root = document.documentElement
+    const update = () => { root.style.scrollPaddingTop = `${Math.ceil(sticky.getBoundingClientRect().height) + STICKY_GAP}px` }
+    update()
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(update)
+    observer?.observe(sticky)
+    return () => {
+      observer?.disconnect()
+      root.style.scrollPaddingTop = ''
+    }
+  }, [hasView])
+
   if (!view) {
     return (
       <div className="min-h-screen bg-surface-base px-4 py-10 text-center">

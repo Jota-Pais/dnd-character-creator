@@ -7,6 +7,7 @@ import weaponsData from '../weapons.json'
 import spellsData from '../spells.json'
 import progressionFeatures from '../class-progression-features.json'
 import invocationsData from '../eldritch-invocations.json'
+import racesData from '../races.json'
 
 /**
  * A digitalização do PHB vem de um PDF que usa Wingdings para os marcadores de lista: o extrator
@@ -125,13 +126,21 @@ describe('divergências pt-BR × inglês que seguem o inglês', () => {
     expect(invocation?.prerequisite).toContain('Pacto da Corrente')
     expect(invocation?.prerequisite).not.toContain('Corrente de Cárceri')
   })
-  // Nenhum texto dos dados carrega a frase da p. 196: a decisão fica presa pelo comportamento.
+  // A frase da p. 197 não está nos dados: a decisão fica presa pelo comportamento.
   it('golpe desarmado é ataque corpo a corpo com arma sem ser arma: o Dano de Fúria vale nele (o pt-BR o opõe ao "ataque corpo-a-corpo armado")', () => {
     const barbarian: CharacterDraft = { ...structuredClone(EMPTY_DRAFT), race: 'human', class: 'barbarian', level: 1 }
     const scores = { STR: 16, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 }
     const unarmed = getSheetAttacks(barbarian, scores).find(a => a.key === 'unarmed')
     expect(unarmed?.weapon).toBeNull()
     expect(unarmed?.notes).toContain('+2 de dano em fúria, sem armadura pesada (Dano de Fúria)')
+  })
+  // Inglês: "When you score a critical hit with a melee weapon attack". O pt-BR ("com uma arma
+  // corpo-a-corpo") deixaria de fora o golpe desarmado com dado, onde o traço vale (decisão 21).
+  it('Ataques Selvagens valem no ATAQUE corpo a corpo com arma (pt-BR: "com uma arma corpo-a-corpo")', () => {
+    const halfOrc = (racesData as { id: string; traits: { name: string; description: string }[] }[]).find(r => r.id === 'half-orc')
+    const text = halfOrc?.traits.find(t => t.name === 'Ataques Selvagens')?.description
+    expect(text).toContain('Em um acerto crítico com um ataque corpo-a-corpo com arma')
+    expect(text).not.toMatch(/crítico com (?:uma )?arma corpo-a-corpo/)
   })
 })
 

@@ -603,7 +603,7 @@
       },
       {
         "name": "Ataques Selvagens",
-        "description": "Em um acerto crítico com arma corpo-a-corpo, role um dos dados de dano da arma mais uma vez e adicione ao dano extra.",
+        "description": "Em um acerto crítico com um ataque corpo-a-corpo com arma, role um dos dados de dano da arma mais uma vez e adicione ao dano extra.",
         "effects": { "meleeCritExtraWeaponDice": [{ "from": 1, "value": 1 }] }
       }
     ],

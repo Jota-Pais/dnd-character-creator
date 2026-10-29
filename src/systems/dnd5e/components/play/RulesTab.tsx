@@ -8,9 +8,12 @@ import type { PlayTabProps } from './usePlayView'
 
 const HEADING = 'font-fantasy uppercase tracking-wider text-[11px] text-gold-500 mt-3 first:mt-0'
 
-/** A folha de uma magia: o que se lê antes de conjurar e o texto inteiro. Sem conjurar (Fase 2). */
+/**
+ * A folha de uma magia: o que se lê antes de conjurar — com o que proíbe conjurá-la numa situação
+ * (em fúria) — e o texto inteiro. Sem conjurar (Fase 2).
+ */
 function SpellBody({ detail }: { detail: Extract<RuleDetail, { kind: 'spell' }> }) {
-  const { spell, source } = detail
+  const { spell, source, notes } = detail
   const rows: [string, string][] = [
     ['Tempo de conjuração', spell.castingTime],
     ['Alcance', spell.range],
@@ -31,6 +34,7 @@ function SpellBody({ detail }: { detail: Extract<RuleDetail, { kind: 'spell' }> 
           </div>
         ))}
       </dl>
+      {notes.map((n, i) => <p key={i} className="mt-3 text-xs text-amber-200 leading-snug">{n}</p>)}
       <RuleText text={spell.description} className="mt-3 text-sm text-parchment-300 leading-relaxed" headingClassName={HEADING} />
     </>
   )
@@ -71,6 +75,7 @@ export function RulesTab({ draft }: PlayTabProps) {
           <h2 id={`rules-${section.id}`} className="text-[11px] uppercase tracking-wider text-parchment-600 font-fantasy mb-1.5">
             {section.title}
           </h2>
+          {section.notes?.map((n, i) => <p key={i} className="mb-2 text-xs text-amber-200 leading-snug">{n}</p>)}
           <div className="space-y-3">
             {section.blocks.map((block, bi) => (
               <div key={block.label ?? bi}>

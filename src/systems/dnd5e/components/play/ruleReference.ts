@@ -9,7 +9,7 @@ import {
   describeDarkvision, describeInnateSpellUsage, getAvailableInnateSpells, getEffectiveDarkvision,
   getEffectiveTraitsWithChoices, getRace, getSubrace,
 } from '../../utils/raceUtils'
-import { getSheetFightingStyles } from '../../utils/sheetEffects'
+import { formatCastingRestriction, getCastingRestrictions, getSheetFightingStyles } from '../../utils/sheetEffects'
 import {
   FEAT_SPELL_USAGE, getCasterEntries, getFeatSpellBlocks, getSecretSpellGroups, getSpell,
 } from '../../utils/spellUtils'
@@ -19,10 +19,10 @@ import { ordinal } from './playFormat'
  * O que a folha de uma linha mostra: a magia inteira (tempo, alcance, componentes, duração e o
  * texto) ou o texto de uma característica, traço ou talento, com a escolha feita nele.
  * `chosenLabel` é o rótulo da escolha, como na Revisão e no PDF ("Tipo de dano" na Afinidade
- * Elemental); null = "Escolha".
+ * Elemental); null = "Escolha". `notes` da magia: o que proíbe conjurá-la numa situação (em fúria).
  */
 export type RuleDetail =
-  | { kind: 'spell'; spell: Spell; source: string | null }
+  | { kind: 'spell'; spell: Spell; source: string | null; notes: string[] }
   | { kind: 'text'; kicker: string | null; text: string; chosen: string | null; chosenLabel: string | null }
 
 /** Uma linha tocável: o nome, uma pista curta ao lado e a regra completa na folha. */
@@ -34,7 +34,8 @@ export type RuleGroup = { title: string | null; entries: RuleEntry[] }
 /** Um bloco por classe (ou pelo talento, pela raça); `label` null quando não há o que distinguir. */
 export type RuleBlock = { label: string | null; groups: RuleGroup[] }
 
-export type RuleSection = { id: 'spells' | 'class' | 'race' | 'feats'; title: string; blocks: RuleBlock[] }
+/** `notes`: linhas que valem para a seção inteira (nas Magias, a restrição da Fúria). */
+export type RuleSection = { id: 'spells' | 'class' | 'race' | 'feats'; title: string; notes?: string[]; blocks: RuleBlock[] }
 
 const byName = (a: Spell, b: Spell) => a.name.localeCompare(b.name, 'pt-BR')
 
@@ -60,19 +61,19 @@ function spellMeta(spell: Spell, extra: string | null): string {
 }
 
 /** `metaExtra`: a pista ao lado do nome, quando difere da origem que a folha mostra. */
-function spellEntry(key: string, spell: Spell, source: string | null, metaExtra = source): RuleEntry {
-  return { key, name: spell.name, meta: spellMeta(spell, metaExtra), detail: { kind: 'spell', spell, source } }
+function spellEntry(key: string, spell: Spell, source: string | null, notes: string[], metaExtra = source): RuleEntry {
+  return { key, name: spell.name, meta: spellMeta(spell, metaExtra), detail: { kind: 'spell', spell, source, notes } }
 }
 
 /** Agrupa por nível de magia, truques primeiro, alfabético dentro de cada nível. */
-function groupByLevel(items: { spell: Spell; source: string | null }[], keyPrefix: string): RuleGroup[] {
+function groupByLevel(items: { spell: Spell; source: string | null }[], keyPrefix: string, notes: string[]): RuleGroup[] {
   const levels = [...new Set(items.map(i => i.spell.level))].sort((a, b) => a - b)
   return levels.map(level => ({
     title: level === 0 ? 'Truques' : `${ordinal(level)} nível`,
     entries: items
       .filter(i => i.spell.level === level)
       .sort((a, b) => byName(a.spell, b.spell))
-      .map(i => spellEntry(`${keyPrefix}:${i.spell.id}`, i.spell, i.source)),
+      .map(i => spellEntry(`${keyPrefix}:${i.spell.id}`, i.spell, i.source, notes)),
   }))
 }
 
@@ -82,11 +83,13 @@ function groupByLevel(items: { spell: Spell; source: string | null }[], keyPrefi
  * slot de progressão, com o rótulo do grupo de `getSecretSpellGroups`), as de cada talento que
  * ensina magias (`getFeatSpellBlocks`), e depois as que vêm de fora da conjuração da classe — o
  * truque da raça, o da subclasse e as magias inatas — com o jeito de usar de
- * `describeInnateSpellUsage`.
+ * `describeInnateSpellUsage`. A restrição de conjuração (em fúria, `getCastingRestrictions`) vale
+ * para toda magia, de qualquer fonte: sai sob o título da seção e na folha de cada uma.
  */
 function spellSection(draft: CharacterDraft): RuleSection | null {
   const casters = getCasterEntries(draft)
   const isMc = allClassEntries(draft).length > 1
+  const notes = getCastingRestrictions(draft).map(formatCastingRestriction)
   const blocks: RuleBlock[] = casters.map(caster => {
     const seen = new Set<string>()
     const items: { spell: Spell; source: string | null }[] = []
@@ -104,7 +107,7 @@ function spellSection(draft: CharacterDraft): RuleSection | null {
     caster.bonusSpells.forEach(id => add(id, groupLabel.get(id) ?? null))
     // Conjuração de subclasse (Cavaleiro/Trapaceiro Arcano) se identifica mesmo sem multiclasse.
     const showLabel = isMc || caster.casting.casterId !== caster.cls.id
-    return { label: showLabel ? caster.casting.label : null, groups: groupByLevel(items, caster.cls.id) }
+    return { label: showLabel ? caster.casting.label : null, groups: groupByLevel(items, caster.cls.id, notes) }
   })
 
   // Talento que ensina magias (Iniciado em Magia, p. 170): um bloco por talento, como na Revisão e
@@ -113,7 +116,7 @@ function spellSection(draft: CharacterDraft): RuleSection | null {
   for (const feat of getFeatSpellBlocks(draft, getFinalAbilityScores(draft))) {
     const groups: RuleGroup[] = []
     const entries = (spells: Spell[], source: string) =>
-      [...spells].sort(byName).map(s => spellEntry(`feat:${feat.featId}:${s.id}`, s, source, null))
+      [...spells].sort(byName).map(s => spellEntry(`feat:${feat.featId}:${s.id}`, s, source, notes, null))
     if (feat.cantrips.length > 0) groups.push({ title: 'Truques', entries: entries(feat.cantrips, feat.label) })
     if (feat.spells.length > 0) {
       groups.push({ title: feat.spellsTitle, entries: entries(feat.spells, `${feat.label} · ${FEAT_SPELL_USAGE}`) })
@@ -141,11 +144,11 @@ function spellSection(draft: CharacterDraft): RuleSection | null {
     }
   }
   if (others.length > 0) {
-    blocks.push({ label: 'Outras magias', groups: groupByLevel(others, 'other') })
+    blocks.push({ label: 'Outras magias', groups: groupByLevel(others, 'other', notes) })
   }
 
   const filled = blocks.filter(b => b.groups.length > 0)
-  return filled.length > 0 ? { id: 'spells', title: 'Magias', blocks: filled } : null
+  return filled.length > 0 ? { id: 'spells', title: 'Magias', notes, blocks: filled } : null
 }
 
 /**

@@ -60,6 +60,11 @@ const FIGHTER_INITIATE: CharacterDraft = {
   featSelections: { [MAGIC_INITIATE]: CLERIC_PICKS },
 }
 
+const RAGE = 'Fúria: em fúria, você não pode conjurar magias nem se concentrar nelas (pág. 48).'
+
+/** Krusk tiefling bárbaro 3: Taumaturgia e Repreensão Infernal, as magias inatas da raça. */
+const TIEFLING_BARBARIAN: CharacterDraft = { ...structuredClone(COMPLETE_DRAFT), race: 'tiefling', level: 3 }
+
 function openRules(draft?: CharacterDraft) {
   if (draft) openDraft(draft)
   else openKrusk()
@@ -173,6 +178,28 @@ describe('RulesTab', () => {
     expect(screen.getByRole('dialog', { name: 'Ancestral Dracônico' })).toHaveTextContent('Escolha: Azul (dano elétrico)')
   })
 
+  describe('em fúria não se conjura (p. 48): a regra vale para toda magia', () => {
+    it('tiefling bárbaro: sob o título das Magias e na folha da magia inata', () => {
+      const spells = within(openRules(TIEFLING_BARBARIAN)).getByRole('region', { name: 'Magias' })
+      expect(within(spells).getByText(RAGE)).toBeInTheDocument()
+
+      fireEvent.click(within(spells).getByRole('button', { name: /^Repreensão Infernal/ }))
+      const sheet = screen.getByRole('dialog', { name: 'Repreensão Infernal' })
+      expect(sheet).toHaveTextContent(RAGE)
+      fireEvent.click(screen.getByRole('button', { name: 'Fechar' }))
+
+      fireEvent.click(within(spells).getByRole('button', { name: /^Taumaturgia/ }))
+      expect(screen.getByRole('dialog', { name: 'Taumaturgia' })).toHaveTextContent(RAGE)
+    })
+
+    it('sem a Fúria, nada novo: o mago não vê a linha nem na seção nem na folha', () => {
+      const spells = within(openRules(WIZARD_3)).getByRole('region', { name: 'Magias' })
+      expect(spells).not.toHaveTextContent('em fúria')
+      fireEvent.click(within(spells).getByRole('button', { name: /^Mísseis Mágicos/ }))
+      expect(screen.getByRole('dialog', { name: 'Mísseis Mágicos' })).not.toHaveTextContent('em fúria')
+    })
+  })
+
   it('bruxo 5: as Invocações do 2º e do 5º nível são grupos distintos, com o nível no título', () => {
     const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
     const warlock5 = { ...warlock3({ 'warlock-pact-boon-3': ['pact-of-the-tome'], 'warlock-invocations-5': ['idioma-bestial'] }), level: 5 }
@@ -225,6 +252,39 @@ describe('getRuleReference', () => {
       expect.stringContaining('truque, à vontade'),
       expect.stringContaining('1 uso por descanso longo, como magia de 2º nível'),
     ])
+  })
+
+  it('a restrição da Fúria em toda magia: da classe, do talento, inata da raça e o truque da subclasse', () => {
+    // Tiefling bárbaro 4 (Iniciado em Magia de mago) / clérigo 1 do Domínio da Natureza (truque de druida).
+    const d: CharacterDraft = {
+      ...structuredClone(COMPLETE_DRAFT),
+      race: 'tiefling',
+      level: 5,
+      multiclass: true,
+      asiChoices: [{ kind: 'feat', featId: MAGIC_INITIATE }],
+      featSelections: { [MAGIC_INITIATE]: { spellClass: 'wizard', cantrips: ['fire-bolt', 'mage-hand'], spells: ['shield'] } },
+      additionalClasses: [{
+        classId: 'cleric', level: 1,
+        classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), subclass: 'nature-domain', subclassExtras: { cantrip: 'druidcraft' } },
+        spellChoices: { cantrips: ['sacred-flame', 'light', 'guidance'], spells: [] },
+        asiChoices: [], hpRolls: [],
+      }],
+    }
+    const section = getRuleReference(d).find(s => s.id === 'spells')!
+    expect(section.notes).toEqual([RAGE])
+    expect(section.blocks.map(b => b.label)).toEqual(['Clérigo', 'Iniciado em Magia (Mago)', 'Outras magias'])
+    const entries = section.blocks.flatMap(b => b.groups.flatMap(g => g.entries))
+    expect(entries.map(e => e.name)).toEqual(expect.arrayContaining(['Chama Sagrada', 'Escudo Arcano', 'Taumaturgia', 'Druidismo']))
+    for (const e of entries) expect(e.detail).toMatchObject({ kind: 'spell', notes: [RAGE] })
+  })
+
+  it('sem a Fúria, as magias não levam nota', () => {
+    const tiefling: CharacterDraft = { ...structuredClone(COMPLETE_DRAFT), race: 'tiefling', class: 'sorcerer', level: 3 }
+    const section = getRuleReference(tiefling).find(s => s.id === 'spells')!
+    expect(section.notes).toEqual([])
+    for (const e of section.blocks.flatMap(b => b.groups.flatMap(g => g.entries))) {
+      expect(e.detail).toMatchObject({ kind: 'spell', notes: [] })
+    }
   })
 
   it('Iniciado em Magia: um bloco por talento (getFeatSpellBlocks), depois o da classe, mesmo sendo da mesma lista', () => {

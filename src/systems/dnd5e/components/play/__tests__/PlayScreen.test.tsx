@@ -166,6 +166,24 @@ describe('PlayScreen — deslizar entre as abas', () => {
     swipe(screen.getByTestId('vitals-hp'), -120)
     expect(selectedTab()).toHaveTextContent('Testes')
   })
+
+  it('na tela inteira o arrasto de lado nunca é "voltar página"', () => {
+    openKrusk()
+    const { unmount } = render(<PlayScreen />)
+    // Quem rola (chips, lista do aviso) recomeça o touch-action: a página fica sem overscroll de lado.
+    expect(document.documentElement).toHaveClass('overscroll-x-none')
+    // touch-action se combina com o dos ancestrais: basta a raiz da tela declarar.
+    const panY = (el: Element) => el.closest('.touch-pan-y.touch-pinch-zoom') !== null
+    expect(panY(screen.getByRole('button', { name: '← Personagens' }))).toBe(true)
+    expect(panY(screen.getByTestId('vitals-hp'))).toBe(true)
+    expect(panY(screen.getByTestId('vitals-chips'))).toBe(true)
+    expect(panY(screen.getByRole('group', { name: 'Pontos de vida' }))).toBe(true)
+    expect(panY(screen.getByRole('status'))).toBe(true)
+    expect(panY(screen.getByRole('tabpanel'))).toBe(true)
+    // Fora do jogo (galeria, wizard), a página volta ao normal.
+    unmount()
+    expect(document.documentElement).not.toHaveClass('overscroll-x-none')
+  })
 })
 
 describe('PlayScreen — teclado na barra de abas', () => {

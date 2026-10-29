@@ -22,6 +22,9 @@ const MIN_BOTTOM_GAP = 128
 /** Folga (px) entre os vitais fixos e o título da seção para a qual a tela rola. */
 const STICKY_GAP = 8
 
+/** A classe (Tailwind) que o `<html>` leva enquanto o jogo está aberto: sem overscroll de lado. */
+const NO_OVERSCROLL_X = 'overscroll-x-none'
+
 /**
  * Modo de jogo do D&D 5e: a ficha de UM personagem durante a sessão. Pensada para o celular
  * (360–430 px), numa coluna central; do tablet (md) para cima a coluna alarga e as abas Testes,
@@ -108,6 +111,16 @@ export function PlayScreen() {
     }
   }, [])
 
+  // O arrasto de lado nunca vira o "voltar página" do Chrome no celular, que tirava da mesa (e da
+  // pilha do desfazer, que é só da sessão). O touch-action da raiz não basta: quem rola (a faixa de
+  // chips, a lista do aviso, as folhas) volta a aceitar o arrasto de lado, e o excesso dele chega à
+  // página. Por isso, enquanto o jogo está aberto, a página não tem overscroll horizontal.
+  useEffect(() => {
+    const root = document.documentElement
+    root.classList.add(NO_OVERSCROLL_X)
+    return () => root.classList.remove(NO_OVERSCROLL_X)
+  }, [])
+
   if (!view) {
     return (
       <div className="min-h-screen bg-surface-base px-4 py-10 text-center">
@@ -132,8 +145,11 @@ export function PlayScreen() {
     ]
     : []
 
+  // A tela inteira (cabeçalho, vitais, painel de PV, aviso do pé, folhas) deixa ao navegador só a
+  // rolagem vertical e a pinça, não só a área das abas. A faixa de chips, que rola de lado, continua
+  // rolando: o touch-action recomeça em cada contêiner que rola.
   return (
-    <div className="min-h-screen bg-surface-base text-parchment-200">
+    <div className="min-h-screen bg-surface-base text-parchment-200 touch-pan-y touch-pinch-zoom">
       <div className="max-w-2xl md:max-w-3xl lg:max-w-5xl mx-auto px-4">
         <header className="pt-3 pb-2">
           <div className="flex items-center justify-between gap-2">
@@ -182,14 +198,9 @@ export function PlayScreen() {
         </div>
 
         {/* A área do gesto de trocar de aba: a barra, o conteúdo e a folga de fundo (deslizar no
-            vazio abaixo de uma aba curta também troca). O navegador fica só com a rolagem vertical
-            e a pinça: o arrasto de lado é da troca de aba, não o "voltar página" do Chrome no
-            celular (que tirava da mesa ao deslizar para a direita). */}
-        <div
-          {...swipe}
-          className="touch-pan-y touch-pinch-zoom"
-          style={{ paddingBottom: Math.max(MIN_BOTTOM_GAP, Math.ceil(toastHeight) + 16) }}
-        >
+            vazio abaixo de uma aba curta também troca). O arrasto de lado aqui é da troca de aba;
+            o "voltar página" do navegador já está fora da tela toda (raiz e `NO_OVERSCROLL_X`). */}
+        <div {...swipe} style={{ paddingBottom: Math.max(MIN_BOTTOM_GAP, Math.ceil(toastHeight) + 16) }}>
           {/* No celular as abas dividem a largura em partes iguais, sem recuo lateral: as seis cabem
               em 360 px ("Ataques", a mais larga, ocupa ~51 dos 54 px), sem rolagem escondida. */}
           <nav

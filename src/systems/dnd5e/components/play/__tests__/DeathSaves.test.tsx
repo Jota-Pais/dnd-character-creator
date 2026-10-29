@@ -336,6 +336,38 @@ describe('DeathSaves — a queda rola o d20 para cima do aviso', () => {
     act(() => frames.splice(0).forEach(frame => frame(0)))
     expect(scrollBy()).toHaveBeenLastCalledWith(expect.objectContaining({ behavior: 'auto' }))
   })
+
+  it('o foco que sai do d20 logo depois da queda interrompe a rolagem suave antes de mover', () => {
+    const order: string[] = []
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => { order.push('parar a rolagem') })
+    openKrusk()
+    render(<PlayScreen />)
+    hit(14)
+    act(() => frames.splice(0).forEach(frame => frame(0)))
+    expect(scrollBy()).toHaveBeenLastCalledWith(expect.objectContaining({ behavior: 'smooth' }))
+    const onFocus = (e: FocusEvent) => order.push(`foco: ${(e.target as HTMLElement).textContent}`)
+    document.addEventListener('focusin', onFocus)
+
+    // O 20 natural tira os testes da tela: a rolagem para, e só então o foco vai ao painel de PV.
+    registerNatural('20')
+    document.removeEventListener('focusin', onFocus)
+    expect(usePlayStore.getState().state?.lifeState).toBe('conscious')
+    expect(order[0]).toBe('parar a rolagem')
+    expect(order[1]).toMatch(/^foco: /)
+    expect(window.scrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: window.scrollY, behavior: 'instant' }))
+  })
+
+  it('com prefers-reduced-motion a rolagem já pulou: nada a interromper', () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({ matches: query === '(prefers-reduced-motion: reduce)' }))
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
+    openKrusk()
+    render(<PlayScreen />)
+    hit(14)
+    act(() => frames.splice(0).forEach(frame => frame(0)))
+    registerNatural('20')
+    expect(usePlayStore.getState().state?.lifeState).toBe('conscious')
+    expect(scrollTo).not.toHaveBeenCalled()
+  })
 })
 
 /** Faz o próximo d20 dos dados do app (Web Crypto) sair com a face dada. */

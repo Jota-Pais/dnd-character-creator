@@ -45,6 +45,8 @@ export function DeathSaves({ view, bottomInset = 0, onLeave }: {
   // O título do painel de estável ou de morto (tabIndex -1, fora do Tab).
   const titleRef = useRef<HTMLParagraphElement>(null)
   const insetRef = useRef(bottomInset)
+  // Rolou suave até o teste contra a morte (a queda a 0 PV): talvez ainda em curso.
+  const smoothScrollRef = useRef(false)
   const [text, setText] = useState('')
 
   useLayoutEffect(() => {
@@ -65,9 +67,19 @@ export function DeathSaves({ view, bottomInset = 0, onLeave }: {
       if (Math.abs(delta) < 1) return
       const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
       window.scrollBy({ top: delta, behavior: reduceMotion ? 'auto' : 'smooth' })
+      smoothScrollRef.current = !reduceMotion
     })
     return () => cancelAnimationFrame(frame)
   }, [state.lifeState])
+
+  // O foco que sai do d20 logo depois da queda (o 20 natural, o "Estabilizar") para a rolagem suave
+  // ainda em curso: terminando depois do focus(), ela levaria o alvo para trás dos vitais fixos.
+  // Rolar até onde a página já está interrompe a animação (e, terminada, não muda nada).
+  function stopFallScroll() {
+    if (!smoothScrollRef.current) return
+    smoothScrollRef.current = false
+    window.scrollTo({ left: window.scrollX, top: window.scrollY, behavior: 'instant' })
+  }
   // A rolagem do app que preencheu o campo: vai para o histórico junto com o teste.
   const [rolled, setRolled] = useState<GuideRoll | null>(null)
   // Já jogou de novo pelo Sortudo: o novo resultado é o que vale, sem terceira chance (pág. 28).
@@ -90,6 +102,7 @@ export function DeathSaves({ view, bottomInset = 0, onLeave }: {
     const result = flushSync(() => run(op))
     const after = result?.state.lifeState
     if (after && after !== before) {
+      stopFallScroll()
       if (after === 'conscious') onLeave?.()
       else titleRef.current?.focus()
     }

@@ -18,9 +18,9 @@ Toda decisão de produto e design serve a esse objetivo: guiar o iniciante sem t
 
 - **SPA front-end pura**, sem backend
 - Persistência local no navegador (localStorage na V1, possivelmente IndexedDB no futuro)
-- **Sistemas Multi-RPG (Arquitetura Modular):** O núcleo da aplicação (`src/core`) é completamente agnóstico de regras de negócio. Todos os dados, regras e telas específicas ficam isolados nos seus respectivos módulos de sistema (ex: `src/systems/dnd5e`).
-- Deploy estático (Vercel/Netlify) quando chegar a hora
-- Não sugerir API routes, server actions ou qualquer arquitetura com servidor próprio
+- **Sistemas Multi-RPG (Arquitetura Modular):** O núcleo da aplicação (`core/`) é completamente agnóstico de regras de negócio. Todos os dados, regras e telas específicas ficam isolados nos seus respectivos módulos de sistema (ex: `systems/dnd5e`) — as regras no motor (`packages/rules`), as telas no site (`apps/web`).
+- Deploy estático na Vercel (`vercel.json` na raiz), com CI de lint, testes e build no GitHub Actions
+- Sem servidor por enquanto: não sugerir API routes, server actions ou arquitetura com servidor próprio. O servidor (conta e sincronização) é plano do dono para depois, e o motor de regras já fica pronto para ele
 
 ## Versão de D&D
 
@@ -51,13 +51,20 @@ Toda decisão de produto e design serve a esse objetivo: guiar o iniciante sem t
 
 ## Estrutura de Pastas
 
-src/
- ├─ core/       # Motor agnóstico, tipos base, gerenciamento de estado global (AppStore)
- ├─ components/ # Design System / UI Genérica (Componentes sem regras de negócios)
- └─ systems/    # Módulos de RPG (Plugins)
-     ├─ dnd5e/  # Todo o universo do D&D (data, utils, types, stores e components específicos)
-     └─ ordem/  # (Futuro) Arquivos do Ordem Paranormal
- docs/          # Regras digitalizadas em markdown
+Workspaces npm; todo comando roda da raiz (`npm run dev`, `build`, `test`, `lint`, `typecheck`).
+
+packages/rules/src/   # @rpg/rules: o motor, puro (sem React, zustand nem API do navegador; testes em node)
+ ├─ core/             # dice (motor de dados), utils (id, canonicalJson)
+ ├─ systems/          # data, types e utils de cada sistema (dnd5e, ordem), com os testes
+ └─ test/fixtures.ts
+apps/web/src/         # @rpg/web: o site (importa o motor como @rpg/rules/<caminho>)
+ ├─ core/             # tipos do IRpgSystem, registro dos sistemas, AppStore, galleryGrouping
+ ├─ components/       # Design System / UI Genérica (Componentes sem regras de negócios)
+ └─ systems/          # components, stores e storage.ts / playStorage.ts (localStorage) de cada sistema
+docs/                 # Regras digitalizadas em markdown
+scripts/              # gravam nos dados do motor (packages/rules/src/systems/<sistema>/data)
+
+Arquivo novo vai ao motor quando é regra e não precisa de tela; o que importa React ou zustand, toca API do navegador ou tem classe do Tailwind fica no site. O site importa o motor, nunca o contrário (o ESLint e o tsconfig do pacote, sem a lib DOM, cobram).
 
 ## Convenções de Código
 
@@ -77,7 +84,7 @@ src/
 
 ## Persistência
 
-- Toda leitura/escrita de ficha deve passar por uma camada abstraída em `/src/utils/storage.ts`
+- Toda leitura/escrita de ficha deve passar pela camada de storage do próprio sistema: `apps/web/src/systems/<sistema>/utils/storage.ts` (no site; o motor não conhece o navegador)
 - A V1 implementa essa camada usando localStorage
 - Componentes e stores **nunca** acessam localStorage diretamente
 - Isso permite migrar para IndexedDB no futuro sem refatorar a aplicação
@@ -86,7 +93,7 @@ src/
 
 - **Conceitual:** o livro PHB 2014 (referência humana, fora do projeto)
 - **Documental:** arquivos em `/docs` (regras digitalizadas em markdown, referência intermediária)
-- **Operacional:** JSONs em `/src/data` (consumidos pela aplicação em runtime)
+- **Operacional:** JSONs em `packages/rules/src/systems/<sistema>/data` (consumidos pela aplicação em runtime)
 
 Em caso de divergência, voltar à fonte conceitual (o livro).
 

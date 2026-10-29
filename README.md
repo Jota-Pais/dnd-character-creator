@@ -21,7 +21,7 @@ Aplicativo web pra criar fichas de RPG de mesa em poucos minutos, mesmo sem conh
 
 React 19 + TypeScript estrito · Vite · Tailwind CSS v4 · Zustand · Vitest.
 
-SPA 100% front-end, sem backend. A arquitetura é modular: o núcleo (`src/core`) é agnóstico de regras, e cada sistema é um plugin em `src/systems/` — pronto pra receber outros RPGs.
+SPA 100% front-end, sem backend, num repositório com workspaces npm: o motor de regras (`packages/rules`, TypeScript puro, sem tela, que roda no navegador e no Node) e o site (`apps/web`). A arquitetura é modular: o núcleo (`core/`) é agnóstico de regras, e cada sistema é um plugin em `systems/` — pronto pra receber outros RPGs.
 
 ## 🚀 Como Executar
 
@@ -34,7 +34,7 @@ npm install
 npm run dev
 ```
 
-O app abre em `http://localhost:5173/`. Outros scripts: `npm run build`, `npm run test`, `npm run lint`.
+O app abre em `http://localhost:5173/`. Outros scripts, todos da raiz: `npm run build` (saída em `apps/web/dist`), `npm run test`, `npm run lint`, `npm run typecheck`.
 
 ## 📜 Notas Legais
 

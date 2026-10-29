@@ -374,6 +374,23 @@ describe('getRollGuide — ataques', () => {
     ])
   })
 
+  it('arma de arremesso: o dado extra do crítico só sem arremessar (arremessar é ataque à distância, pág. 149 e 196)', () => {
+    const barbarian = draft({
+      class: 'barbarian', level: 9, race: 'half-orc', abilityScores: SCORES, ...carrying('handaxe', 'dagger', 'greataxe'),
+    })
+    const guide = getRollGuide(barbarian, play())
+    expect(guide.attacks.find(a => a.key === 'handaxe')!.damage!.crit!.notes).toEqual([
+      'Crítico Brutal: no acerto crítico com esta arma corpo a corpo, sem arremessar, role mais 1d6 (o dado da arma neste ataque) e some ao dano.',
+      'Ataques Selvagens: no acerto crítico com esta arma corpo a corpo, sem arremessar, role mais 1d6 (o dado da arma neste ataque) e some ao dano.',
+    ])
+    // A adaga (acuidade e arremesso) com Destreza continua corpo a corpo: a ressalva é só o arremesso.
+    expect(guide.attacks.find(a => a.key === 'dagger')!.damage!.crit!.notes![0])
+      .toBe('Crítico Brutal: no acerto crítico com esta arma corpo a corpo, sem arremessar, role mais 1d4 (o dado da arma neste ataque) e some ao dano.')
+    // Sem arremesso, sem ressalva.
+    expect(guide.attacks.find(a => a.key === 'greataxe')!.damage!.crit!.notes![0])
+      .toBe('Crítico Brutal: no acerto crítico com esta arma corpo a corpo, role mais 1d12 (o dado da arma neste ataque) e some ao dano.')
+  })
+
   it('notas da arma (Duelismo) também no ataque, no dano e no dano a duas mãos', () => {
     const d = draft({ class: 'fighter', level: 1, abilityScores: SCORES, classChoices: choices({ fightingStyle: 'dueling' }), ...carrying('longsword') })
     const sword = getRollGuide(d, play()).attacks.find(a => a.key === 'longsword')!

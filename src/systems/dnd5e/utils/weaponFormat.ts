@@ -129,10 +129,12 @@ export function isUnarmedStrikeInScope(scope: AttackScope): boolean {
  * O que a linha não cumpre do escopo `melee-strength` ("ataque com arma corpo a corpo usando
  * Força", p. 48), dito depois da condição: a linha que usa Destreza (acuidade, Artes Marciais na
  * arma de monge e no golpe desarmado) vale atacando com Força, e a arma de arremesso só sem
- * arremessar — arremessar é ataque à distância (p. 149 e 196). Vazio fora desse escopo e quando a
- * linha já cumpre.
+ * arremessar — arremessar é ataque à distância (p. 149 e 196). No `melee-weapon-attack` (o
+ * crítico do Crítico Brutal e dos Ataques Selvagens) só o arremesso fica de fora: a acuidade com
+ * Destreza continua corpo a corpo. Vazio nos outros escopos e quando a linha já cumpre.
  */
-function scopeCaveat(scope: AttackScope, useDex: boolean, thrown: boolean): string {
+export function scopeCaveat(scope: AttackScope, useDex: boolean, thrown: boolean): string {
+  if (scope === 'melee-weapon-attack') return thrown ? ', sem arremessar' : ''
   if (scope !== 'melee-strength') return ''
   if (!useDex && !thrown) return ''
   const how = [thrown ? 'corpo a corpo' : '', useDex ? 'com Força em vez de Destreza' : ''].filter(Boolean).join(' ')

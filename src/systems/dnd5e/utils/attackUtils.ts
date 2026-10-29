@@ -43,8 +43,8 @@ export function carriesTwoLightMeleeWeapons(draft: CharacterDraft): boolean {
   return count >= 2
 }
 
-/** A arma de uma linha de ataque, para as regras que dependem dela (crítico, Pesada). */
-export type SheetAttackWeapon = { id: string; melee: boolean; heavy: boolean }
+/** A arma de uma linha de ataque, para as regras que dependem dela (crítico, Pesada, arremesso). */
+export type SheetAttackWeapon = { id: string; melee: boolean; heavy: boolean; thrown: boolean }
 
 /**
  * Uma linha da tabela de ataques, com a chave estável pra lista e a arma — `null` no golpe
@@ -91,7 +91,9 @@ export function getSheetAttacks(draft: CharacterDraft, finalScores: FinalScores)
   const weapons = getEquippedWeapons(draft).map((weapon): SheetAttack => ({
     key: weapon.id,
     ...getWeaponAttack(weapon, { ...base, martialArts, proficient: hasWeaponProficiency(draft, weapon) }),
-    weapon: { id: weapon.id, melee: weapon.weaponType === 'melee', heavy: hasProperty(weapon, 'heavy') },
+    weapon: {
+      id: weapon.id, melee: weapon.weaponType === 'melee', heavy: hasProperty(weapon, 'heavy'), thrown: hasProperty(weapon, 'thrown'),
+    },
   }))
 
   const unarmed = getUnarmedStrike({ ...base, martialArts, unarmedDie: getUnarmedDamageDie(draft) ?? undefined })

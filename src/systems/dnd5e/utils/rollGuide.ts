@@ -18,6 +18,7 @@ import {
   type ActiveConditionEffects, type ConditionRoll, type ScopedSheetEffect, type SheetEffect,
 } from './sheetEffects'
 import { getCasterEntries, getFeatSpellBlocks, getSpellAttackBonus, getSpellSaveDC } from './spellUtils'
+import { scopeCaveat } from './weaponFormat'
 
 /**
  * Guia de rolagens do modo de jogo: a "receita" de cada jogada da ficha — o que rolar, quanto
@@ -471,7 +472,7 @@ type DamageInput = {
   breakdown: GuideBreakdownItem[]
   notes?: string[]
   /** Dados de arma a mais só no crítico (Crítico Brutal, Ataques Selvagens): viram nota, fora da fórmula. */
-  critExtraDice?: SheetEffect<number>[]
+  critExtraDice?: CritExtraDice[]
   /** O dano é do golpe desarmado, que não é arma: a nota do dado a mais fala do golpe. */
   unarmedStrike?: boolean
 }
@@ -541,16 +542,20 @@ type AttackGuideContext = {
   meleeCritExtraDice: ScopedSheetEffect[]
 }
 
+/** Um dado a mais no crítico, com a ressalva do que a linha não cumpre do escopo (`scopeCaveat`). */
+type CritExtraDice = SheetEffect<number> & { caveat: string }
+
 /**
  * "Crítico Brutal: no acerto crítico com esta arma corpo a corpo, role mais 2d12…". O dado é o que
  * a arma usa NAQUELE ataque (decisão de 2026-10-25): o versátil a duas mãos, o de Artes Marciais
  * quando ele substitui o da arma — por isso a nota sai de cada entrada de dano, com os lados dela.
- * No golpe desarmado, o dado é o dele: o de Artes Marciais ou o d4 do Especialista em Briga.
+ * No golpe desarmado, o dado é o dele: o de Artes Marciais ou o d4 do Especialista em Briga. Na
+ * arma de arremesso, a ressalva: arremessada, o ataque é à distância (p. 149 e 196).
  */
-function critExtraDiceNote({ source, value }: SheetEffect<number>, sides: number, unarmedStrike = false): string {
+function critExtraDiceNote({ source, value, caveat }: CritExtraDice, sides: number, unarmedStrike = false): string {
   return unarmedStrike
-    ? `${source}: no acerto crítico com o golpe desarmado, role mais ${value}d${sides} (o dado do golpe neste ataque) e some ao dano.`
-    : `${source}: no acerto crítico com esta arma corpo a corpo, role mais ${value}d${sides} (o dado da arma neste ataque) e some ao dano.`
+    ? `${source}: no acerto crítico com o golpe desarmado${caveat}, role mais ${value}d${sides} (o dado do golpe neste ataque) e some ao dano.`
+    : `${source}: no acerto crítico com esta arma corpo a corpo${caveat}, role mais ${value}d${sides} (o dado da arma neste ataque) e some ao dano.`
 }
 
 /**
@@ -588,7 +593,9 @@ function attackGuide(attack: SheetAttack, ctx: AttackGuideContext): AttackGuide 
     ? [{ source: 'weapon:heavy-small', label: `${attack.name} pesada para criatura Pequena` }]
     : []
   // Todo ataque corpo a corpo com arma, golpe desarmado incluído (decisão 21, revista em 2026-10-29).
-  const critExtraDice = ctx.meleeCritExtraDice.filter(e => isSheetAttackInScope(attack, e.weapons))
+  const critExtraDice = ctx.meleeCritExtraDice
+    .filter(e => isSheetAttackInScope(attack, e.weapons))
+    .map(e => ({ source: e.source, value: e.value, caveat: scopeCaveat(e.weapons, ability === 'DEX', attack.weapon?.thrown ?? false) }))
   const extraAttacks = attack.attacksPerAction > 1
     ? [`${ctx.attacksPerActionSource ?? 'Ataque Extra'}: você faz ${attack.attacksPerAction} ataques ao usar a ação de Atacar — role cada um.`]
     : []

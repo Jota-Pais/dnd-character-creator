@@ -5,7 +5,7 @@ import { usePlayStore } from '../../../stores/playStore'
 import { applyDamage, spendResource } from '../../../utils/playState'
 import { EMPTY_DRAFT } from '../../../types/character'
 import { COMPLETE_DRAFT } from '../../../../../test/fixtures'
-import { openDraft, openKrusk, resetPlay } from './openPlay'
+import { liveRegions, openDraft, openKrusk, resetPlay } from './openPlay'
 
 beforeEach(resetPlay)
 afterEach(() => cleanup())
@@ -58,9 +58,11 @@ describe('Descanso curto', () => {
   it('face fora do dado apaga o botão e explica o que digitar', () => {
     openHurtKrusk()
     fireEvent.click(screen.getByRole('button', { name: 'Descanso curto' }))
+    const regions = liveRegions()
     fireEvent.change(screen.getByLabelText('Quanto tirou no d12'), { target: { value: '14' } })
     expect(screen.getByRole('button', { name: 'Gastar d12' })).toBeDisabled()
-    expect(screen.getByText(/Digite só o que saiu no d12 \(1 a 12\)/)).toBeInTheDocument()
+    // O aviso sai numa região viva que já existia antes dele.
+    expect(regions.some(r => r.contains(screen.getByText(/Digite só o que saiu no d12 \(1 a 12\)/)))).toBe(true)
   })
 
   it('"desfazer o último dado" e cancelar descartam o rascunho', () => {

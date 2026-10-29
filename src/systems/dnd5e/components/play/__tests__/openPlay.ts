@@ -19,6 +19,14 @@ export function openDraft(draft: CharacterDraft): string {
   return id
 }
 
+/**
+ * As regiões vivas (aria-live) na tela agora. Para conferir que um aviso aparece dentro de uma
+ * região que já existia antes dele: inserida já com o texto, o leitor de tela pode não anunciar.
+ */
+export function liveRegions(): Element[] {
+  return [...document.querySelectorAll('[aria-live]')]
+}
+
 /** Salva a ficha completa (Krusk, meio-orc bárbaro 1, 14 PV) e abre no modo de jogo. */
 export function openKrusk(): string {
   return openDraft(COMPLETE_DRAFT)

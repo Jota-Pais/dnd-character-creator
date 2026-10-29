@@ -44,13 +44,10 @@ export function NoticeToast({ view, onOpenRecipe, onHeightChange }: {
   const boxRef = useRef<HTMLDivElement>(null)
   const open = notices.length > 0
 
+  // A caixa existe sempre (sem aviso, com altura 0): o ResizeObserver acompanha abrir e fechar.
   useLayoutEffect(() => {
     const el = boxRef.current
-    if (!onHeightChange) return
-    if (!el) {
-      onHeightChange(0)
-      return
-    }
+    if (!el || !onHeightChange) return
     const report = () => onHeightChange(el.getBoundingClientRect().height)
     report()
     const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(report)
@@ -61,41 +58,41 @@ export function NoticeToast({ view, onOpenRecipe, onHeightChange }: {
     }
   }, [open, onHeightChange])
 
-  if (!open) return null
-
+  // A região viva fica montada mesmo sem aviso, vazia: inserida já com o texto, o leitor de tela
+  // pode não anunciar.
   return (
     <div ref={boxRef} className="fixed inset-x-0 bottom-0 z-30 pointer-events-none">
-      <div className="max-w-2xl mx-auto px-4 pb-4">
-        <div
-          role="status"
-          aria-live="polite"
-          className="pointer-events-auto rounded-xl border border-parchment-800 bg-surface-raised p-3 shadow-xl shadow-black/50"
-        >
-          {/* Muitos avisos (um descanso com vários recursos) rolam dentro do cartão: ele nunca passa da
-              metade da tela e, em celular baixo, deixa espaço para os vitais fixos e o d20 do teste
-              contra a morte entre os dois. */}
-          <ul className="space-y-1.5 max-h-[min(50vh,calc(100vh_-_24rem))] overflow-y-auto">
-            {sortByAction(notices).map((n, i) => (
-              <NoticeLine key={i} notice={n} view={view} onOpenRecipe={onOpenRecipe} canUndo={canUndo} />
-            ))}
-          </ul>
-          <div className="mt-2 flex justify-end gap-2">
-            {canUndo && (
-              <button
-                onClick={undo}
-                className="min-h-10 rounded-lg border border-parchment-700 px-3 text-sm text-parchment-200 hover:border-gold-600"
-              >
-                ↶ Desfazer
-              </button>
-            )}
-            <button
-              onClick={dismiss}
-              className="min-h-10 rounded-lg px-3 text-sm text-parchment-500 hover:text-parchment-200"
-            >
-              OK
-            </button>
+      <div role="status" aria-live="polite" className="max-w-2xl mx-auto px-4">
+        {open && (
+          <div className="pb-4">
+            <div className="pointer-events-auto rounded-xl border border-parchment-800 bg-surface-raised p-3 shadow-xl shadow-black/50">
+              {/* Muitos avisos (um descanso com vários recursos) rolam dentro do cartão: ele nunca passa
+                  da metade da tela e, em celular baixo, deixa espaço para os vitais fixos e o d20 do
+                  teste contra a morte entre os dois. */}
+              <ul className="space-y-1.5 max-h-[min(50vh,calc(100vh_-_24rem))] overflow-y-auto">
+                {sortByAction(notices).map((n, i) => (
+                  <NoticeLine key={i} notice={n} view={view} onOpenRecipe={onOpenRecipe} canUndo={canUndo} />
+                ))}
+              </ul>
+              <div className="mt-2 flex justify-end gap-2">
+                {canUndo && (
+                  <button
+                    onClick={undo}
+                    className="min-h-10 rounded-lg border border-parchment-700 px-3 text-sm text-parchment-200 hover:border-gold-600"
+                  >
+                    ↶ Desfazer
+                  </button>
+                )}
+                <button
+                  onClick={dismiss}
+                  className="min-h-10 rounded-lg px-3 text-sm text-parchment-500 hover:text-parchment-200"
+                >
+                  OK
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )

@@ -4,7 +4,7 @@ import { PlayScreen } from '../PlayScreen'
 import { usePlayStore } from '../../../stores/playStore'
 import { applyDamage, stabilize } from '../../../utils/playState'
 import { COMPLETE_DRAFT } from '../../../../../test/fixtures'
-import { openDraft, openKrusk, resetPlay } from './openPlay'
+import { liveRegions, openDraft, openKrusk, resetPlay } from './openPlay'
 
 beforeEach(resetPlay)
 afterEach(() => {
@@ -45,10 +45,12 @@ describe('DeathSaves', () => {
     dropToZero()
     render(<PlayScreen />)
     expect(screen.queryByText(/Digite o d20 que saiu/)).toBeNull()
+    const regions = liveRegions()
     fireEvent.change(screen.getByLabelText(/d20 que você tirou/), { target: { value: '21' } })
     expect(screen.getByRole('button', { name: 'Registrar' })).toBeDisabled()
-    // O botão apagado diz por quê.
-    expect(screen.getByText('Digite o d20 que saiu (1 a 20); o app soma o resto.')).toBeInTheDocument()
+    // O botão apagado diz por quê, numa região viva que já existia antes do aviso.
+    const hint = screen.getByText('Digite o d20 que saiu (1 a 20); o app soma o resto.')
+    expect(regions.some(r => r.contains(hint))).toBe(true)
   })
 
   it('"Estabilizar" para os testes contra a morte', () => {
@@ -79,8 +81,9 @@ describe('DeathSaves', () => {
     dropToZero()
     usePlayStore.getState().run(st => stabilize(st))
     render(<PlayScreen />)
+    const regions = liveRegions()
     fireEvent.click(screen.getByRole('button', { name: 'rolar 1d4' }))
-    expect(screen.getByText(/^Recupera 1 PV em [1-4] horas?\.$/)).toBeInTheDocument()
+    expect(regions.some(r => r.contains(screen.getByText(/^Recupera 1 PV em [1-4] horas?\.$/)))).toBe(true)
     const st = usePlayStore.getState().state!
     expect(st.rolls.at(-1)?.label).toBe('Estável: horas até recuperar 1 PV')
     expect(st.lifeState).toBe('stable')

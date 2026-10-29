@@ -174,11 +174,14 @@ export function DeathSaves({ view, bottomInset = 0 }: {
           Registrar
         </button>
       </form>
-      {text.trim() !== '' && !valid && (
-        <p className="mt-1 text-[11px] text-red-300 leading-snug" aria-live="polite">
-          Digite o d20 que saiu (1 a 20); o app soma o resto.
-        </p>
-      )}
+      {/* A região viva existe antes do aviso: inserida já com o texto, pode não ser anunciada. */}
+      <div aria-live="polite">
+        {text.trim() !== '' && !valid && (
+          <p className="mt-1 text-[11px] text-red-300 leading-snug">
+            Digite o d20 que saiu (1 a 20); o app soma o resto.
+          </p>
+        )}
+      </div>
 
       <button
         onClick={() => run(st => stabilize(st))}
@@ -226,11 +229,9 @@ function StablePanel({ view }: { view: PlayView }) {
           >
             rolar 1d4
           </button>
-          {hours !== null && (
-            <span className="text-sm text-parchment-200" aria-live="polite">
-              {hours === 1 ? 'Recupera 1 PV em 1 hora.' : `Recupera 1 PV em ${hours} horas.`}
-            </span>
-          )}
+          <span className="text-sm text-parchment-200" aria-live="polite">
+            {hours === null ? null : hours === 1 ? 'Recupera 1 PV em 1 hora.' : `Recupera 1 PV em ${hours} horas.`}
+          </span>
         </div>
       )}
       <button

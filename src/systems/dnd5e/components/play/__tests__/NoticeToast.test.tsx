@@ -40,7 +40,18 @@ describe('desfazer e avisos', () => {
     expect(screen.getByTestId('hp-current')).toHaveTextContent('12')
     fireEvent.click(within(toast).getByRole('button', { name: '↶ Desfazer' }))
     expect(usePlayStore.getState().state).toMatchObject({ tempHp: 3, damageTaken: 0 })
-    expect(screen.queryByRole('status')).toBeNull()
+    expect(screen.getByRole('status')).toBeEmptyDOMElement()
+  })
+
+  it('o aviso sai numa região viva que já existia, vazia, antes dele', () => {
+    openKrusk()
+    usePlayStore.getState().run(st => grantTempHp(st, 3))
+    render(<PlayScreen />)
+    const live = screen.getByRole('status')
+    expect(live).toHaveAttribute('aria-live', 'polite')
+    expect(live).toBeEmptyDOMElement()
+    damage('5')
+    expect(live).toHaveTextContent('Os PV temporários absorveram 3.')
   })
 
   it('recusa aparece em destaque e sem "Desfazer" (não mudou nada)', () => {
@@ -52,7 +63,7 @@ describe('desfazer e avisos', () => {
     expect(toast).toHaveTextContent('Não foi feito: Só quem está morrendo pode ser estabilizado.')
     expect(within(toast).queryByRole('button', { name: '↶ Desfazer' })).toBeNull()
     fireEvent.click(within(toast).getByRole('button', { name: 'OK' }))
-    expect(screen.queryByRole('status')).toBeNull()
+    expect(screen.getByRole('status')).toBeEmptyDOMElement()
   })
 
   it('meio-orc cai a 0 PV: "Usar Resistência Implacável" desfaz e reaplica o dano terminando em 1 PV', () => {

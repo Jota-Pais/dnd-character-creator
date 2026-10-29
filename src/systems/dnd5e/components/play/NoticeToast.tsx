@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef } from 'react'
+import { flushSync } from 'react-dom'
 import { usePlayStore } from '../../stores/playStore'
 import type { DamageInput, PlayNotice, PlayNoticeKind } from '../../types/playState'
 import { applyDamageDroppingToOneHp, endConcentration, standUp } from '../../utils/playState'
@@ -28,7 +29,7 @@ const sortByAction = (notices: PlayNotice[]) => [
  * tela, com o "Desfazer" quando a ação mudou algo. O aviso de concentração traz a CD e a receita
  * do TR de Constituição (`getConcentrationGuide`), com atalho para a folha e para encerrar.
  */
-export function NoticeToast({ view, onOpenRecipe, onHeightChange }: {
+export function NoticeToast({ view, onOpenRecipe, onHeightChange, onFocusAway }: {
   view: PlayView
   onOpenRecipe: (entry: RollGuideEntry) => void
   /**
@@ -36,13 +37,27 @@ export function NoticeToast({ view, onOpenRecipe, onHeightChange }: {
    * nunca cobrir o último controle, e o teste contra a morte rola o d20 para cima dele.
    */
   onHeightChange?: (height: number) => void
+  /** O aviso fechou pelo botão que tinha o foco: a tela diz para onde ele vai (a aba aberta). */
+  onFocusAway?: () => void
 }) {
   const notices = usePlayStore(s => s.notices)
   const canUndo = usePlayStore(s => s.lastActionChanged && s.undoStack.length > 0)
   const undo = usePlayStore(s => s.undo)
   const dismiss = usePlayStore(s => s.dismissNotices)
   const boxRef = useRef<HTMLDivElement>(null)
+  const undoRef = useRef<HTMLButtonElement>(null)
+  const okRef = useRef<HTMLButtonElement>(null)
   const open = notices.length > 0
+
+  // Todo botão do aviso some com a própria ação ("Falhei: encerrar", "Levantar", e o "Desfazer" e o
+  // "OK", que fecham o aviso): síncrono (flushSync), o foco vai ao "Desfazer" ou ao "OK" do aviso
+  // que ficou e, com o aviso fechado, a `onFocusAway` — nunca cai no body.
+  function act(action: () => void) {
+    flushSync(action)
+    const target = undoRef.current ?? okRef.current
+    if (target) target.focus()
+    else onFocusAway?.()
+  }
 
   // A caixa existe sempre (sem aviso, com altura 0): o ResizeObserver acompanha abrir e fechar.
   useLayoutEffect(() => {
@@ -78,20 +93,22 @@ export function NoticeToast({ view, onOpenRecipe, onHeightChange }: {
                   teste contra a morte entre os dois. */}
               <ul className="space-y-1.5 max-h-[min(50vh,calc(100vh_-_24rem))] overflow-y-auto">
                 {sortByAction(notices).map((n, i) => (
-                  <NoticeLine key={i} notice={n} view={view} onOpenRecipe={onOpenRecipe} canUndo={canUndo} />
+                  <NoticeLine key={i} notice={n} view={view} onOpenRecipe={onOpenRecipe} canUndo={canUndo} act={act} />
                 ))}
               </ul>
               <div className="mt-2 flex justify-end gap-2">
                 {canUndo && (
                   <button
-                    onClick={undo}
+                    ref={undoRef}
+                    onClick={() => act(undo)}
                     className="min-h-10 rounded-lg border border-parchment-700 px-3 text-sm text-parchment-200 hover:border-gold-600"
                   >
                     ↶ Desfazer
                   </button>
                 )}
                 <button
-                  onClick={dismiss}
+                  ref={okRef}
+                  onClick={() => act(dismiss)}
                   className="min-h-10 rounded-lg px-3 text-sm text-parchment-500 hover:text-parchment-200"
                 >
                   OK
@@ -105,12 +122,14 @@ export function NoticeToast({ view, onOpenRecipe, onHeightChange }: {
   )
 }
 
-function NoticeLine({ notice, view, onOpenRecipe, canUndo }: {
+function NoticeLine({ notice, view, onOpenRecipe, canUndo, act }: {
   notice: PlayNotice
   view: PlayView
   onOpenRecipe: (entry: RollGuideEntry) => void
   /** A última ação (o dano que derrubou) ainda pode ser desfeita. */
   canUndo: boolean
+  /** Roda a ação do botão da linha, que some com ela, e passa o foco adiante (ver `NoticeToast`). */
+  act: (action: () => void) => void
 }) {
   const undo = usePlayStore(s => s.undo)
   const style = KIND_STYLE[notice.kind] ?? DEFAULT_STYLE
@@ -135,7 +154,7 @@ function NoticeLine({ notice, view, onOpenRecipe, canUndo }: {
       {canStandUp && (
         <div className="mt-1.5">
           <button
-            onClick={() => view.run((st, sh) => standUp(st, sh))}
+            onClick={() => act(() => view.run((st, sh) => standUp(st, sh)))}
             className="min-h-10 rounded-lg border border-parchment-700 px-3 text-xs text-parchment-200 hover:border-gold-600"
           >
             Levantar
@@ -145,7 +164,7 @@ function NoticeLine({ notice, view, onOpenRecipe, canUndo }: {
       {dropDamage && (
         <div className="mt-1.5">
           <button
-            onClick={() => dropToOneHp(dropDamage)}
+            onClick={() => act(() => dropToOneHp(dropDamage))}
             className="min-h-10 rounded-lg border border-emerald-700 px-3 text-xs text-emerald-200 hover:border-emerald-400"
           >
             Usar {view.sheet.dropToOneHp?.source ?? 'Resistência Implacável'} (fica com 1 PV)
@@ -165,7 +184,7 @@ function NoticeLine({ notice, view, onOpenRecipe, canUndo }: {
               Ver o que rolar
             </button>
             <button
-              onClick={() => view.run(st => endConcentration(st))}
+              onClick={() => act(() => view.run(st => endConcentration(st)))}
               className="min-h-10 rounded-lg border border-violet-700 px-3 text-xs hover:border-violet-400"
             >
               Falhei: encerrar

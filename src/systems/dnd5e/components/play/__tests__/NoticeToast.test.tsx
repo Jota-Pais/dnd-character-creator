@@ -171,6 +171,44 @@ describe('desfazer e avisos', () => {
   })
 })
 
+// O botão do aviso some com a própria ação: o foco vai ao "Desfazer" do aviso que ficou ou, com o
+// aviso fechado, à aba aberta — nunca ao body.
+describe('foco nos botões do aviso', () => {
+  it('"Falhei: encerrar" passa o foco ao "Desfazer" do aviso, que fecha o aviso e o passa à aba aberta', () => {
+    openKrusk()
+    usePlayStore.getState().run(st => startConcentration(st, { label: 'Bênção' }, 0))
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Estado' }))
+    damage('3')
+    const end = within(screen.getByRole('status')).getByRole('button', { name: 'Falhei: encerrar' })
+    end.focus()
+    fireEvent.click(end)
+    expect(usePlayStore.getState().state?.concentration).toBeNull()
+    const undo = within(screen.getByRole('status')).getByRole('button', { name: '↶ Desfazer' })
+    expect(undo).toHaveFocus()
+
+    fireEvent.click(undo)
+    expect(usePlayStore.getState().state?.concentration?.label).toBe('Bênção')
+    expect(screen.getByRole('status')).toBeEmptyDOMElement()
+    expect(screen.getByRole('tab', { name: 'Estado' })).toHaveFocus()
+  })
+
+  it('"Levantar" passa o foco ao "Desfazer"; o "OK" fecha o aviso e o passa à aba aberta', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    damage('14')
+    fireEvent.click(screen.getByRole('button', { name: 'Cura' }))
+    fireEvent.change(screen.getByLabelText('Quanto de cura'), { target: { value: '3' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
+    fireEvent.click(within(screen.getByRole('status')).getByRole('button', { name: 'Levantar' }))
+    expect(within(screen.getByRole('status')).getByRole('button', { name: '↶ Desfazer' })).toHaveFocus()
+
+    fireEvent.click(within(screen.getByRole('status')).getByRole('button', { name: 'OK' }))
+    expect(screen.getByRole('status')).toBeEmptyDOMElement()
+    expect(screen.getByRole('tab', { name: 'Testes' })).toHaveFocus()
+  })
+})
+
 /** Faz o próximo d20 dos dados do app (Web Crypto) sair com a face dada. */
 function forceD20(face: number) {
   vi.spyOn(globalThis.crypto, 'getRandomValues').mockImplementation(<T extends ArrayBufferView | null>(array: T): T => {

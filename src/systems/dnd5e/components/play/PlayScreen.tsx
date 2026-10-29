@@ -244,7 +244,14 @@ export function PlayScreen() {
         </div>
       </div>
 
-      <NoticeToast view={view} onOpenRecipe={openRecipe} onHeightChange={setToastHeight} />
+      {/* O aviso fechado pelo próprio botão ("Desfazer", "OK") devolve o foco à aba aberta, que dá
+          nome ao painel: sem rolar a tela, o Tab seguinte entra no conteúdo dela. */}
+      <NoticeToast
+        view={view}
+        onOpenRecipe={openRecipe}
+        onHeightChange={setToastHeight}
+        onFocusAway={() => document.getElementById(`play-tab-${current.id}`)?.focus({ preventScroll: true })}
+      />
 
       {liveRecipe && recipe && (
         <RollRecipeSheet

@@ -228,11 +228,24 @@ export function getConditionalRollNotes(draft: CharacterDraft): SheetConditional
 export type SheetCastingRestriction = CastingRestriction & { source: string }
 
 /**
+ * O personagem "for capaz de conjurar magias" (Fúria, p. 48)? Com alguma fonte de magia da ficha
+ * (`getSpellSources`: classe, talento, truque e magia inata da raça — toda raça que dá magia inata
+ * dá um truque no 1º nível) ou com característica que conjura sem ser fonte (`castsSpells`: o
+ * Conselheiro Espiritual do Guerreiro Totêmico, as Artes Sombrias, a disciplina elemental que
+ * conjura, o Conjurador de Ritual).
+ */
+export function canCastSpells(draft: CharacterDraft): boolean {
+  return getSpellSources(draft).length > 0
+    || getOwnedClassFeatures(draft).some(f => f.effects?.castsSpells)
+    || getOwnedProgressionOptions(draft).some(({ option }) => option.effects?.castsSpells)
+    || getOwnedFeats(draft).some(f => f.effects?.castsSpells)
+}
+
+/**
  * O que proíbe conjurar numa situação que a ficha não conhece (`castingRestriction`: em fúria,
  * p. 48) — features de classe e subclasse no nível NA classe dona, pela origem, sem repetir. A
- * regra é para quem "for capaz de conjurar magias": sem nenhuma fonte de magia (`getSpellSources`:
- * classe, talento, truque e magia inata da raça — toda raça que dá magia inata dá um truque no 1º
- * nível), vazio. Nunca bloqueia nem muda número; quem a põe onde se conjura é o modo de jogo.
+ * regra é para quem "for capaz de conjurar magias" (`canCastSpells`); quem não conjura nada fica
+ * com a lista vazia. Nunca bloqueia nem muda número; quem a põe onde se conjura é o modo de jogo.
  */
 export function getCastingRestrictions(draft: CharacterDraft): SheetCastingRestriction[] {
   const out: SheetCastingRestriction[] = []
@@ -242,7 +255,7 @@ export function getCastingRestrictions(draft: CharacterDraft): SheetCastingRestr
       out.push({ ...restriction, source: feature.name })
     }
   }
-  return out.length > 0 && getSpellSources(draft).length > 0 ? out : []
+  return out.length > 0 && canCastSpells(draft) ? out : []
 }
 
 /** "Fúria: em fúria, você não pode conjurar magias nem se concentrar nelas (pág. 48)." */

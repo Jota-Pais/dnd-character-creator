@@ -43,6 +43,8 @@ import {
 } from '../proficiencyUtils'
 import { getArmor, getWeaponById } from '../equipmentUtils'
 import { getFinalAbilityScores } from '../asiUtils'
+import { getFeat } from '../featUtils'
+import { getProgressionOptions } from '../progressionOptions'
 import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
 import progressionFeatures from '../../data/class-progression-features.json'
 
@@ -1043,6 +1045,44 @@ describe('getCastingRestrictions (Fúria)', () => {
     expect(getCastingRestrictions(d)).toEqual([rage])
   })
 
+  // Conjura por característica, sem ser fonte de magia da ficha (`castsSpells`).
+  it('o Guerreiro Totêmico conjura pelo Conselheiro Espiritual (p. 50): bárbaro 3', () => {
+    const totem = (level: number) => draft({
+      level, race: 'half-orc', class: 'barbarian',
+      classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), subclass: 'totem-warrior' },
+    })
+    expect(getCastingRestrictions(totem(3))).toEqual([rage])
+    // Antes do caminho, nada a conjurar.
+    expect(getCastingRestrictions(totem(2))).toEqual([])
+  })
+
+  it('o monge das Sombras conjura pelas Artes Sombrias (p. 106): monge 3 / bárbaro 1', () => {
+    const d = draft({
+      level: 4, multiclass: true, class: 'monk',
+      classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), subclass: 'shadow' },
+      additionalClasses: [extraClass('barbarian', 1)],
+    })
+    expect(getCastingRestrictions(d)).toEqual([rage])
+  })
+
+  it('os Quatro Elementos, só com disciplina que conjura magia (p. 106): monge 3 / bárbaro 1', () => {
+    const withDisciplines = (picks: string[]) => draft({
+      level: 4, multiclass: true, class: 'monk',
+      classChoices: {
+        ...structuredClone(EMPTY_DRAFT.classChoices), subclass: 'four-elements',
+        progressionChoices: { 'four-elements-disciplines-3': picks },
+      },
+      additionalClasses: [extraClass('barbarian', 1)],
+    })
+    expect(getCastingRestrictions(withDisciplines(['elemental-attunement', 'water-whip']))).toEqual([])
+    expect(getCastingRestrictions(withDisciplines(['elemental-attunement', 'sweeping-cinder-strike']))).toEqual([rage])
+  })
+
+  it('o talento Conjurador de Ritual (p. 169): bárbaro 4', () => {
+    const d = draft({ level: 4, class: 'barbarian', asiChoices: [{ kind: 'feat', featId: 'conjurador-de-ritual' }] })
+    expect(getCastingRestrictions(d)).toEqual([rage])
+  })
+
   it('bárbaro que não conjura nada não tem o que restringir', () => {
     expect(getCastingRestrictions(draft({ level: 20, race: 'half-orc', class: 'barbarian' }))).toEqual([])
     // Paladino só conjura a partir do 2º nível (p. 110): bárbaro 3 / paladino 1 ainda não.
@@ -1059,5 +1099,19 @@ describe('getCastingRestrictions (Fúria)', () => {
     const fury = progressionFeatures.classes.barbarian.find(f => f.name === 'Fúria') as
       { effects?: { castingRestriction?: unknown } } | undefined
     expect(fury?.effects?.castingRestriction).toEqual({ when: rage.when, text: rage.text })
+  })
+
+  it('integridade dos dados: quem conjura sem ser fonte de magia declara castsSpells', () => {
+    type Declaring = { name: string; description?: string; effects?: { castsSpells?: boolean } }
+    const declared = (list: Declaring[]) => list.filter(f => f.effects?.castsSpells).map(f => f.name)
+    expect(declared(progressionFeatures.classes.monk as Declaring[])).toEqual(['Corpo Vazio'])
+    expect(declared(progressionFeatures.subclasses['totem-warrior'] as Declaring[]))
+      .toEqual(['Conselheiro Espiritual', 'Andarilho Espiritual'])
+    expect(declared(progressionFeatures.subclasses.shadow as Declaring[])).toEqual(['Artes Sombrias'])
+    // Disciplina elemental: declara quem "pode gastar N pontos de chi para conjurar" uma magia.
+    for (const option of getProgressionOptions('four-elements-disciplines')) {
+      expect(Boolean(option.effects?.castsSpells), option.name).toBe(/para conjurar/.test(option.description ?? ''))
+    }
+    expect(getFeat('conjurador-de-ritual')?.effects?.castsSpells).toBe(true)
   })
 })

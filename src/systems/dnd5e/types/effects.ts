@@ -280,6 +280,15 @@ export type FeatureEffects = {
    * nível NA classe dona; vale para toda magia da ficha, de qualquer fonte.
    */
   castingRestriction?: CastingRestriction
+  /**
+   * A característica deixa conjurar magias sem ser fonte de magia da ficha (`getSpellSources`): o
+   * Conselheiro Espiritual e o Andarilho Espiritual do Guerreiro Totêmico (p. 50), o Corpo Vazio
+   * (p. 105), as Artes Sombrias e as disciplinas elementais que conjuram magia (p. 106) e o
+   * Conjurador de Ritual (p. 169). Responde se o personagem "for capaz de conjurar magias" (a
+   * Fúria, p. 48; `canCastSpells`). Lido em features de classe e subclasse (no nível NA classe
+   * dona), nas opções escolhidas em slot de progressão e nos talentos.
+   */
+  castsSpells?: boolean
   /** Bônus de deslocamento, em PÉS, a unidade em que a raça guarda (Mobilidade: +10 pés = +3 m). */
   speedBonus?: number
   /**

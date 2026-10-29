@@ -303,7 +303,8 @@
       {
         "level": 18,
         "name": "Corpo Vazio",
-        "description": "Com uma ação, gaste 4 pontos de chi para ficar invisível por 1 minuto, com resistência a todo dano exceto de energia durante esse tempo. Ou gaste 8 pontos de chi para conjurar projeção astral sem componentes materiais; você não pode levar nenhuma outra criatura."
+        "description": "Com uma ação, gaste 4 pontos de chi para ficar invisível por 1 minuto, com resistência a todo dano exceto de energia durante esse tempo. Ou gaste 8 pontos de chi para conjurar projeção astral sem componentes materiais; você não pode levar nenhuma outra criatura.",
+        "effects": { "castsSpells": true }
       },
       {
         "level": 20,
@@ -706,7 +707,8 @@
       {
         "level": 3,
         "name": "Conselheiro Espiritual",
-        "description": "Você pode conjurar sentido bestial e falar com animais, mas apenas como rituais."
+        "description": "Você pode conjurar sentido bestial e falar com animais, mas apenas como rituais.",
+        "effects": { "castsSpells": true }
       },
       {
         "level": 3,
@@ -721,7 +723,8 @@
       {
         "level": 10,
         "name": "Andarilho Espiritual",
-        "description": "Você pode conjurar comunhão com a natureza como ritual."
+        "description": "Você pode conjurar comunhão com a natureza como ritual.",
+        "effects": { "castsSpells": true }
       },
       {
         "level": 14,
@@ -1167,7 +1170,8 @@
       {
         "level": 3,
         "name": "Artes Sombrias",
-        "description": "Com uma ação, gaste 2 pontos de chi para conjurar escuridão, visão no escuro, passos sem pegadas ou silêncio, sem componentes materiais. Você também ganha o truque ilusão menor, se ainda não o conhecia."
+        "description": "Com uma ação, gaste 2 pontos de chi para conjurar escuridão, visão no escuro, passos sem pegadas ou silêncio, sem componentes materiais. Você também ganha o truque ilusão menor, se ainda não o conhecia.",
+        "effects": { "castsSpells": true }
       },
       {
         "level": 6,

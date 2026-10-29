@@ -234,6 +234,20 @@ describe('StatusTab — em fúria não se concentra (p. 48)', () => {
     expect(screen.getByRole('dialog')).toHaveTextContent(RAGE)
   })
 
+  it('o Guerreiro Totêmico, que conjura Sentido Bestial pelo Conselheiro Espiritual (p. 50), vê a linha', () => {
+    const totem = structuredClone(COMPLETE_DRAFT)
+    openDraft({
+      ...totem, level: 3,
+      classChoices: {
+        ...totem.classChoices, subclass: 'totem-warrior',
+        progressionChoices: { 'totem-warrior-totem-3': ['bear'] },
+      },
+    })
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Estado' }))
+    expect(within(concentration()).getByText(RAGE)).toBeInTheDocument()
+  })
+
   it('o bárbaro que não conjura nada não vê a linha', () => {
     openStatus()
     expect(concentration()).not.toHaveTextContent('em fúria')

@@ -7,12 +7,14 @@
   {
     "id": "ride-the-wind",
     "name": "Cavalgar o Vento",
-    "description": "(11° nível Requerido). Você pode gastar 4 pontos de chi para conjurar voo em si mesmo."
+    "description": "(11° nível Requerido). Você pode gastar 4 pontos de chi para conjurar voo em si mesmo.",
+    "effects": { "castsSpells": true }
   },
   {
     "id": "flames-of-the-phoenix",
     "name": "Chamas da Fênix",
-    "description": "(11° nível Requerido). Você pode gastar 4 pontos de chi para conjurar bola de fogo."
+    "description": "(11° nível Requerido). Você pode gastar 4 pontos de chi para conjurar bola de fogo.",
+    "effects": { "castsSpells": true }
   },
   {
     "id": "water-whip",
@@ -22,22 +24,26 @@
   {
     "id": "eternal-mountain-defense",
     "name": "Defesa Eterna da Montanha",
-    "description": "(17° nível Requerido). Você pode gastar 5 pontos de chi para conjurar pele de pedra em si mesmo."
+    "description": "(17° nível Requerido). Você pode gastar 5 pontos de chi para conjurar pele de pedra em si mesmo.",
+    "effects": { "castsSpells": true }
   },
   {
     "id": "sweeping-cinder-strike",
     "name": "Golpe de Varredura Cauterizante",
-    "description": "Você pode gastar 2 pontos de chi para conjurar mãos flamejantes."
+    "description": "Você pode gastar 2 pontos de chi para conjurar mãos flamejantes.",
+    "effects": { "castsSpells": true }
   },
   {
     "id": "gong-of-the-summit",
     "name": "Gongo do Pico",
-    "description": "(6° nível Requerido). Você pode gastar 3 pontos de chi para conjurar despedaçar."
+    "description": "(6° nível Requerido). Você pode gastar 3 pontos de chi para conjurar despedaçar.",
+    "effects": { "castsSpells": true }
   },
   {
     "id": "rush-of-the-gale-spirits",
     "name": "Investida dos Espíritos da Ventania",
-    "description": "Você pode gastar 2 pontos de chi para conjurar lufada de vento."
+    "description": "Você pode gastar 2 pontos de chi para conjurar lufada de vento.",
+    "effects": { "castsSpells": true }
   },
   {
     "id": "shape-the-flowing-river",
@@ -47,12 +53,14 @@
   {
     "id": "wave-of-rolling-earth",
     "name": "Onda de Pedras Rolantes",
-    "description": "(17° nível Requerido). Você pode gastar 6 pontos de chi para conjurar muralha de pedra."
+    "description": "(17° nível Requerido). Você pode gastar 6 pontos de chi para conjurar muralha de pedra.",
+    "effects": { "castsSpells": true }
   },
   {
     "id": "mist-stance",
     "name": "Postura da Neblina",
-    "description": "(11° nível Requerido). Você pode gastar 4 pontos de chi para conjurar forma gasosa."
+    "description": "(11° nível Requerido). Você pode gastar 4 pontos de chi para conjurar forma gasosa.",
+    "effects": { "castsSpells": true }
   },
   {
     "id": "fangs-of-the-fire-snake",
@@ -67,21 +75,25 @@
   {
     "id": "fist-of-four-thunders",
     "name": "Punho dos Quatro Trovões",
-    "description": "Você pode gastar 2 pontos de chi para conjurar onda trovejante."
+    "description": "Você pode gastar 2 pontos de chi para conjurar onda trovejante.",
+    "effects": { "castsSpells": true }
   },
   {
     "id": "river-of-hungry-flame",
     "name": "Rio de Chamas Famintas",
-    "description": "(17° nível Requerido). Você pode gastar 5 pontos de chi para conjurar muralha de fogo."
+    "description": "(17° nível Requerido). Você pode gastar 5 pontos de chi para conjurar muralha de fogo.",
+    "effects": { "castsSpells": true }
   },
   {
     "id": "clench-of-the-north-wind",
     "name": "Serragem do Vento do Norte",
-    "description": "(6° nível Requerido). Você pode gastar 3 pontos de chi para conjurar imobilizar pessoa."
+    "description": "(6° nível Requerido). Você pode gastar 3 pontos de chi para conjurar imobilizar pessoa.",
+    "effects": { "castsSpells": true }
   },
   {
     "id": "breath-of-winter",
     "name": "Sopro do Inverno",
-    "description": "(17° nível Requerido). Você pode gastar 6 pontos de chi para conjurar cone de frio."
+    "description": "(17° nível Requerido). Você pode gastar 6 pontos de chi para conjurar cone de frio.",
+    "effects": { "castsSpells": true }
   }
 ]

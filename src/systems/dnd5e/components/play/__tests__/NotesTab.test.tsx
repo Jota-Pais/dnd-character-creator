@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { render, screen, fireEvent, cleanup, act, within } from '@testing-library/react'
+import { render, screen, fireEvent, cleanup, act, waitFor, within } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { usePlayStore } from '../../../stores/playStore'
 import { roll, sequenceRoller } from '../../../../../core/dice'
@@ -68,11 +68,13 @@ describe('NotesTab', () => {
     expect(playState().note).toBe('Pista: o selo do conde')
   })
 
-  it('o autosave da nota não apaga o aviso da última ação', () => {
+  it('o autosave da nota não apaga o aviso da última ação', async () => {
     openKrusk()
     usePlayStore.getState().run(st => startConcentration(st, { label: 'Bênção' }, 0))
     usePlayStore.getState().run((st, sh) => applyDamage(st, sh, { amount: 10 }))
     openNotes()
+    // O aviso que já estava na fila quando a tela montou aparece no quadro seguinte (NoticeToast).
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('CD 10'))
     const field = screen.getByLabelText('Anotações da sessão')
     fireEvent.change(field, { target: { value: 'Ogro na ponte' } })
     fireEvent.blur(field)

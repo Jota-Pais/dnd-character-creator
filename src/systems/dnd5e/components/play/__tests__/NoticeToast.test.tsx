@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { act, render, screen, fireEvent, cleanup, within } from '@testing-library/react'
+import { act, render, screen, fireEvent, cleanup, waitFor, within } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
+import { useCharacterStore } from '../../../stores/characterStore'
 import { usePlayStore } from '../../../stores/playStore'
-import { grantTempHp, stabilize, startConcentration } from '../../../utils/playState'
+import { savePlayState } from '../../../utils/playStorage'
+import { createPlayState, grantTempHp, stabilize, startConcentration } from '../../../utils/playState'
 import { openKrusk, resetPlay } from './openPlay'
 
 beforeEach(resetPlay)
@@ -52,6 +54,18 @@ describe('desfazer e avisos', () => {
     expect(live).toBeEmptyDOMElement()
     damage('5')
     expect(live).toHaveTextContent('Os PV temporários absorveram 3.')
+  })
+
+  it('o aviso da abertura do jogo também espera a região viva existir vazia', async () => {
+    const id = openKrusk()
+    useCharacterStore.getState().exitPlay()
+    // O dano salvo passou do máximo da ficha: a abertura reconcilia e avisa.
+    savePlayState({ ...createPlayState(id), damageTaken: 20 })
+    useCharacterStore.getState().playCharacter(id)
+    render(<PlayScreen />)
+    const live = screen.getByRole('status')
+    expect(live).toBeEmptyDOMElement()
+    await waitFor(() => expect(live).toHaveTextContent('A ficha mudou'))
   })
 
   it('recusa aparece em destaque e sem "Desfazer" (não mudou nada)', () => {

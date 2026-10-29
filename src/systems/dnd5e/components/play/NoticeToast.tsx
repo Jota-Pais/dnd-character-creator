@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { usePlayStore } from '../../stores/playStore'
 import type { DamageInput, PlayNotice, PlayNoticeKind } from '../../types/playState'
@@ -16,6 +16,8 @@ const KIND_STYLE: Partial<Record<PlayNoticeKind, { prefix: string; className: st
   dropToOneHp: { prefix: '', className: 'border-emerald-800 bg-emerald-950/30 text-emerald-100' },
 }
 const DEFAULT_STYLE = { prefix: '', className: 'border-parchment-800 bg-surface-base text-parchment-200' }
+
+const NO_NOTICES: PlayNotice[] = []
 
 /** Avisos que pedem uma escolha agora vêm primeiro: com a lista rolando, o botão nunca fica escondido. */
 const ACTION_KINDS: PlayNoticeKind[] = ['dropToOneHp', 'concentrationCheck']
@@ -40,13 +42,23 @@ export function NoticeToast({ view, onOpenRecipe, onHeightChange, onFocusAway }:
   /** O aviso fechou pelo botão que tinha o foco: a tela diz para onde ele vai (a aba aberta). */
   onFocusAway?: () => void
 }) {
-  const notices = usePlayStore(s => s.notices)
+  const storeNotices = usePlayStore(s => s.notices)
   const canUndo = usePlayStore(s => s.lastActionChanged && s.undoStack.length > 0)
   const undo = usePlayStore(s => s.undo)
   const dismiss = usePlayStore(s => s.dismissNotices)
   const boxRef = useRef<HTMLDivElement>(null)
   const undoRef = useRef<HTMLButtonElement>(null)
   const okRef = useRef<HTMLButtonElement>(null)
+  // Os avisos da abertura (a correção da ficha, a reconciliação) já estão na fila quando a tela
+  // monta: eles esperam o quadro seguinte, para a região viva existir vazia antes do texto. O que
+  // chega depois (qualquer ação) aparece na hora.
+  const [heldAtMount] = useState(() => usePlayStore.getState().notices)
+  const [released, setReleased] = useState(false)
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setReleased(true))
+    return () => cancelAnimationFrame(frame)
+  }, [])
+  const notices = !released && storeNotices === heldAtMount ? NO_NOTICES : storeNotices
   const open = notices.length > 0
 
   // Todo botão do aviso some com a própria ação ("Falhei: encerrar", "Levantar", e o "Desfazer" e o

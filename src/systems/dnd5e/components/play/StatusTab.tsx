@@ -35,11 +35,13 @@ function ExhaustionSection({ state, sheet, run }: PlayTabProps) {
   const buttons = useRef<(HTMLButtonElement | null)[]>([])
 
   // Cada seta é um passo do desfazer, como o toque. O foco vai ao nível que ficou valendo: se a
-  // mudança foi recusada (o aviso diz por quê), fica onde estava.
+  // mudança foi recusada (o aviso diz por quê), fica onde estava. A tecla segurada não sobe: a
+  // repetição do sistema levaria do 1 ao 6, a morte, em menos de um segundo.
   function handleKey(e: KeyboardEvent<HTMLButtonElement>, from: number) {
     const step = EXHAUSTION_KEY_STEP[e.key]
     if (!step) return
     e.preventDefault()
+    if (e.repeat) return
     const target = from + step
     if (target < 0 || target > 6) return
     const result = run((st, sh) => setExhaustion(st, sh, target))

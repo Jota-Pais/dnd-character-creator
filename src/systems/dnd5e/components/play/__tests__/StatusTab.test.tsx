@@ -158,6 +158,18 @@ describe('StatusTab — exaustão e concentração', () => {
     expect(playState().exhaustionLevel).toBe(6)
   })
 
+  it('teclado na exaustão: a seta segurada (repetição do sistema) não sobe nível', () => {
+    openStatus()
+    const none = screen.getByRole('radio', { name: 'Exaustão 0' })
+    none.focus()
+    fireEvent.keyDown(none, { key: 'ArrowRight' })
+    expect(playState().exhaustionLevel).toBe(1)
+    const one = screen.getByRole('radio', { name: 'Exaustão 1' })
+    for (let i = 0; i < 5; i++) fireEvent.keyDown(document.activeElement ?? one, { key: 'ArrowRight', repeat: true })
+    expect(playState().exhaustionLevel).toBe(1)
+    expect(one).toHaveFocus()
+  })
+
   it('concentração começa com nome livre e encerra', () => {
     openStatus()
     fireEvent.change(screen.getByLabelText('Magia em que vai se concentrar'), { target: { value: 'Bênção' } })

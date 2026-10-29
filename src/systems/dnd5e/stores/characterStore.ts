@@ -8,7 +8,7 @@ import { getAdditionalLevelsUsed } from '../utils/multiclassUtils'
 import { EMPTY_EQUIPMENT_DRAFT } from '../types/equipment'
 import { EMPTY_SPELL_CHOICES } from '../types/spell'
 import { loadLibrary, saveCharacterEntry, deleteCharacterEntry, newId, type SavedCharacter } from '../utils/storage'
-import { getFirstIncompleteStep, getMissingSteps } from '../utils/draftValidation'
+import { canPlayDraft, getFirstIncompleteStep } from '../utils/draftValidation'
 import { useAppStore } from '../../../core/stores/appStore'
 import { deletePlayState, loadOpenPlayId, saveOpenPlayId } from '../utils/playStorage'
 import { usePlayStore } from './playStore'
@@ -25,7 +25,7 @@ function findResumablePlay(): SavedCharacter | undefined {
   const id = loadOpenPlayId()
   if (!id) return undefined
   const char = initialLibrary.find(c => c.id === id)
-  if (!char || getMissingSteps(char.draft).length > 0) {
+  if (!char || !canPlayDraft(char.draft)) {
     saveOpenPlayId(null)
     return undefined
   }

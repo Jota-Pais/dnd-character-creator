@@ -1,7 +1,8 @@
 import { EMPTY_DRAFT, WIZARD_STEPS, STEP_LABELS } from './types/character';
-import { isStepComplete, getMissingSteps } from './utils/draftValidation';
+import { isStepComplete, getMissingSteps, canPlayDraft } from './utils/draftValidation';
 import { PrintableSheet } from './components/PrintableSheet';
 import { Dnd5eApp } from './Dnd5eApp';
+import { useCharacterStore } from './stores/characterStore';
 import { getRace, getSubrace } from './utils/raceUtils';
 import { getClass } from './utils/classUtils';
 import type { IRpgSystem, StepConfig } from '../../core/types/system';
@@ -74,6 +75,11 @@ export const dnd5eSystem: IRpgSystem = {
       originValue: subrace?.name ?? race?.name ?? null,
       missingCount: getMissingSteps(d).length,
     };
+  },
+  // O modo de jogo (ficha viva): só ficha sem etapa pendente; o estado de jogo fica no playStore.
+  play: {
+    canPlay: (draft: unknown) => canPlayDraft(draft as CharacterDraft),
+    startPlay: (characterId: string) => useCharacterStore.getState().playCharacter(characterId),
   },
   Component: Dnd5eApp,
 };

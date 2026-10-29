@@ -13,21 +13,26 @@ import {
 } from './core/utils/galleryGrouping'
 import { useCharacterStore as useDndStore } from './systems/dnd5e/stores/characterStore'
 import { useOrdemStore } from './systems/ordem/stores/characterStore'
-import { dnd5eSystem } from './systems/dnd5e'
-import { ordemSystem } from './systems/ordem'
+import { SYSTEMS } from './core/systems/registry'
+import type { IRpgSystem } from './core/types/system'
 import simboloMaior from './systems/ordem/assets/simbolo-maior.webp'
 
 type UnifiedCharacter =
   | (DndSaved & { system: 'dnd5e' })
   | (OrdemSaved & { system: 'ordem' })
 
-/** Uma ficha já com as facetas resolvidas (agrupar/ordenar/buscar não recalculam nada). */
-type Row = { char: UnifiedCharacter; entry: GalleryEntry }
+/**
+ * Uma ficha já com as facetas resolvidas (agrupar/ordenar/buscar não recalculam nada). `playable`:
+ * o sistema tem modo de jogo e a ficha pode ir para ele (contrato `play`).
+ */
+type Row = { char: UnifiedCharacter; entry: GalleryEntry; playable: boolean }
 
 const readEntry = (row: Row) => row.entry
 
+const systemOf = (char: UnifiedCharacter): IRpgSystem => SYSTEMS[char.system]
+
 function toRow(char: UnifiedCharacter): Row {
-  const system = char.system === 'dnd5e' ? dnd5eSystem : ordemSystem
+  const system = systemOf(char)
   return {
     char,
     entry: {
@@ -35,6 +40,7 @@ function toRow(char: UnifiedCharacter): Row {
       updatedAt: char.updatedAt,
       facets: system.getGalleryFacets(char.draft),
     },
+    playable: system.play?.canPlay(char.draft) ?? false,
   }
 }
 
@@ -62,7 +68,6 @@ export function GlobalGallery() {
   const dndLibrary = useDndStore(s => s.library)
   const dndNew = useDndStore(s => s.newCharacter)
   const dndOpen = useDndStore(s => s.openCharacter)
-  const dndPlay = useDndStore(s => s.playCharacter)
   const dndDuplicate = useDndStore(s => s.duplicateCharacter)
   const dndDelete = useDndStore(s => s.deleteCharacter)
   const dndImport = useDndStore(s => s.importDraft)
@@ -133,9 +138,11 @@ export function GlobalGallery() {
     setActiveSystem(char.system)
   }
 
-  function handlePlay(id: string) {
-    dndPlay(id)
-    setActiveSystem('dnd5e')
+  function handlePlay(char: UnifiedCharacter) {
+    const play = systemOf(char).play
+    if (!play) return
+    play.startPlay(char.id)
+    setActiveSystem(char.system)
   }
 
   function handleDuplicate(char: UnifiedCharacter) {
@@ -265,12 +272,13 @@ export function GlobalGallery() {
           >
             {ordemGroups.map(group => (
               <GroupBlock key={group.key} title={group.title} count={group.items.length} ui={SYSTEM_UI.ordem}>
-                {group.items.map(({ char, entry }) => (
+                {group.items.map(({ char, entry, playable }) => (
                   <CharacterRow
                     key={`ordem-${char.id}`}
                     char={char}
                     entry={entry}
                     onOpen={() => handleOpen(char)}
+                    onPlay={playable ? () => handlePlay(char) : undefined}
                     onDuplicate={() => handleDuplicate(char)}
                     onExport={() => handleExport(char)}
                     onDelete={() => handleDelete(char)}
@@ -290,13 +298,13 @@ export function GlobalGallery() {
           >
             {dndGroups.map(group => (
               <GroupBlock key={group.key} title={group.title} count={group.items.length} ui={SYSTEM_UI.dnd5e}>
-                {group.items.map(({ char, entry }) => (
+                {group.items.map(({ char, entry, playable }) => (
                   <CharacterRow
                     key={`dnd-${char.id}`}
                     char={char}
                     entry={entry}
                     onOpen={() => handleOpen(char)}
-                    onPlay={() => handlePlay(char.id)}
+                    onPlay={playable ? () => handlePlay(char) : undefined}
                     onDuplicate={() => handleDuplicate(char)}
                     onExport={() => handleExport(char)}
                     onDelete={() => handleDelete(char)}
@@ -384,7 +392,7 @@ function CharacterRow({ char, entry, onOpen, onPlay, onDuplicate, onExport, onDe
   char: UnifiedCharacter
   entry: GalleryEntry
   onOpen: () => void
-  /** Modo de jogo (só D&D). O botão só aparece com a ficha sem etapa pendente. */
+  /** Modo de jogo: só quando o sistema o tem e a ficha pode ser jogada (contrato `play`). */
   onPlay?: () => void
   onDuplicate: () => void
   onExport: () => void
@@ -394,7 +402,7 @@ function CharacterRow({ char, entry, onOpen, onPlay, onDuplicate, onExport, onDe
   const [hover, setHover] = useState(false)
   const ui = SYSTEM_UI[char.system]
   const { name, facets } = entry
-  const subtitle = char.system === 'dnd5e' ? dnd5eSystem.formatDraftName(char.draft) : ordemSystem.formatDraftName(char.draft)
+  const subtitle = systemOf(char).formatDraftName(char.draft)
 
   return (
     <div
@@ -438,7 +446,7 @@ function CharacterRow({ char, entry, onOpen, onPlay, onDuplicate, onExport, onDe
         >
           Abrir
         </button>
-        {onPlay && facets.missingCount === 0 && (
+        {onPlay && (
           <button
             onClick={onPlay}
             className="px-4 py-2 rounded-lg font-fantasy font-bold text-[13px] transition-colors"

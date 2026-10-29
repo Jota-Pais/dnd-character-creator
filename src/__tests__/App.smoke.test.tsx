@@ -5,6 +5,7 @@ import { useAppStore } from '../core/stores/appStore'
 import { useCharacterStore } from '../systems/dnd5e/stores/characterStore'
 import { useOrdemStore } from '../systems/ordem/stores/characterStore'
 import { EMPTY_DRAFT as ORDEM_EMPTY } from '../systems/ordem/types/character'
+import { ordemSystem } from '../systems/ordem'
 import { RITUALS } from '../systems/ordem/utils/ritualUtils'
 import { COMPLETE_DRAFT } from '../test/fixtures'
 
@@ -54,6 +55,26 @@ describe('App (smoke) — galeria global', () => {
 
     render(<App />)
     expect(screen.getByText('Abrir')).toBeInTheDocument()
+    expect(screen.queryByText('Jogar')).toBeNull()
+  })
+
+  it('ficha do Ordem, mesmo sem pendência, não tem "Jogar": o sistema não tem modo de jogo', () => {
+    const agent = {
+      ...ORDEM_EMPTY,
+      name: 'Bianca',
+      attributes: { agility: 2, strength: 2, intellect: 2, presence: 2, vigor: 1 },
+      origin: 'academic',
+      class: 'combatant' as const,
+      classChoiceGroupPicks: ['fighting', 'fortitude'],
+      classFreeSkillChoices: ['medicine', 'technology', 'science'],
+    }
+    expect(ordemSystem.getGalleryFacets(agent).missingCount).toBe(0)
+    useCharacterStore.setState({ library: [] })
+    useOrdemStore.getState().importDraft(agent)
+    useOrdemStore.getState().goToGallery()
+
+    render(<App />)
+    expect(screen.getByText('Bianca')).toBeInTheDocument()
     expect(screen.queryByText('Jogar')).toBeNull()
   })
 

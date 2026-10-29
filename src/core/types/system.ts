@@ -1,13 +1,5 @@
 import type { ComponentType } from 'react';
 
-export interface AppState {
-  view: 'system-select' | 'wizard' | 'gallery' | 'print';
-  activeSystemId: string | null;
-  draft: Record<string, unknown>;
-  currentStepId: string;
-  currentId: string | null;
-}
-
 export interface StepConfig {
   id: string;
   title: string;
@@ -35,6 +27,17 @@ export interface GalleryFacets {
   missingCount: number;
 }
 
+/**
+ * Modo de jogo: a ficha usada durante a sessão. Capacidade opcional do sistema — sem ela, a galeria
+ * não mostra "Jogar". A regra de quando uma ficha pode ser jogada é do sistema, não da galeria.
+ */
+export interface PlayCapability {
+  /** Se a ficha pode ir para o jogo (no D&D: sem etapa pendente). */
+  canPlay: (draft: unknown) => boolean;
+  /** Abre no jogo a ficha salva na biblioteca do sistema. */
+  startPlay: (characterId: string) => void;
+}
+
 export interface IRpgSystem {
   id: string;
   name: string;
@@ -44,5 +47,6 @@ export interface IRpgSystem {
   PrintableSheet: ComponentType;
   formatDraftName: (draft: unknown) => string;
   getGalleryFacets: (draft: unknown) => GalleryFacets;
+  play?: PlayCapability;
   Component: ComponentType;
 }

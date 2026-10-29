@@ -458,3 +458,11 @@ export function getFirstIncompleteStep(draft: CharacterDraft): WizardStep {
 export function getMissingSteps(draft: CharacterDraft): WizardStep[] {
   return WIZARD_STEPS.filter(step => step !== 'review' && !isStepComplete(draft, step))
 }
+
+/**
+ * A ficha pode ir para o modo de jogo: nenhuma etapa pendente. Uma regra só para o "Jogar" da
+ * galeria (o contrato `play` do sistema) e para a volta ao jogo ao recarregar a página.
+ */
+export function canPlayDraft(draft: CharacterDraft): boolean {
+  return getMissingSteps(draft).length === 0
+}

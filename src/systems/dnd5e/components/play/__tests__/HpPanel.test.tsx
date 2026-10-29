@@ -67,7 +67,10 @@ describe('HpPanel', () => {
     expect(field).toHaveAccessibleDescription(/^Escolha Dano ou Cura, ou digite com o sinal/)
     const regions = liveRegions()
     fireEvent.change(field, { target: { value: '4' } })
-    expect(screen.getByRole('button', { name: 'Aplicar' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Aplicar' })).toHaveAttribute('aria-disabled', 'true')
+    // Desabilitado só para o leitor de tela: o envio não aplica nada.
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('14')
     // O que falta é dito na hora (o teclado numérico do iPhone não tem sinal: o caminho são os botões).
     const problem = screen.getByText('Para aplicar o 4, escolha Dano, Cura ou PV temporários.')
     expect(regions.some(r => r.contains(problem))).toBe(true)
@@ -100,7 +103,7 @@ describe('HpPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
     const regions = liveRegions()
     fireEvent.change(screen.getByLabelText('Quanto de dano'), { target: { value: '2,5' } })
-    expect(screen.getByRole('button', { name: 'Aplicar' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Aplicar' })).toHaveAttribute('aria-disabled', 'true')
     // Numa região viva que já existia antes do aviso: o leitor de tela ouve por que não aplica.
     const problem = screen.getByText('Digite só o número, com − na frente para dano ou + para cura.')
     expect(regions.some(r => r.contains(problem))).toBe(true)
@@ -210,6 +213,54 @@ describe('HpPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Desfazer a última mudança' }))
     expect(usePlayStore.getState().state!.maxHpAdjustment).toBe(5)
     expect(screen.getByTestId('hp-current')).toHaveTextContent('19')
+  })
+})
+
+// Controle que some (ou se desabilita) com a própria ação não larga o foco no body.
+describe('HpPanel — o foco depois de aplicar', () => {
+  it('"Aplicar": esvaziado o campo, o foco fica nele', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
+    fireEvent.change(screen.getByLabelText('Quanto de dano'), { target: { value: '3' } })
+    const apply = screen.getByRole('button', { name: 'Aplicar' })
+    apply.focus()
+    fireEvent.click(apply)
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('11')
+    expect(apply).toHaveAttribute('aria-disabled', 'true')
+    expect(apply).toHaveFocus()
+  })
+
+  it('"Ficar com" dos PV temporários: o foco passa ao "Aplicar", que volta no lugar', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    act('PV temporários', 'Quantos PV temporários', '3')
+    fireEvent.click(screen.getByRole('button', { name: 'PV temporários' }))
+    fireEvent.change(screen.getByLabelText('Quantos PV temporários'), { target: { value: '8' } })
+    const replace = screen.getByRole('button', { name: 'Ficar com 8 (maior)' })
+    replace.focus()
+    fireEvent.click(replace)
+    expect(usePlayStore.getState().state?.tempHp).toBe(8)
+    expect(screen.getByRole('button', { name: 'Aplicar' })).toHaveFocus()
+  })
+
+  it('± PV máximo: "+ Aumentar" fecha o campo e "encerrar" some, e o foco vai ao "± PV máximo"', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    const toggle = screen.getByRole('button', { name: '± PV máximo' })
+    fireEvent.click(toggle)
+    fireEvent.change(screen.getByLabelText('Quanto muda o PV máximo'), { target: { value: '5' } })
+    const raise = screen.getByRole('button', { name: '+ Aumentar' })
+    raise.focus()
+    fireEvent.click(raise)
+    expect(usePlayStore.getState().state!.maxHpAdjustment).toBe(5)
+    expect(toggle).toHaveFocus()
+
+    const end = screen.getByRole('button', { name: 'encerrar' })
+    end.focus()
+    fireEvent.click(end)
+    expect(usePlayStore.getState().state!.maxHpAdjustment).toBe(0)
+    expect(toggle).toHaveFocus()
   })
 })
 

@@ -1,4 +1,5 @@
 import { useId, useRef, useState, useSyncExternalStore, type FormEvent } from 'react'
+import { flushSync } from 'react-dom'
 import type { ImmuneDamageType } from '../../types/condition'
 import type { PlayResult } from '../../types/playState'
 import {
@@ -72,6 +73,7 @@ function parseAmount(text: string): number | null {
 export function HpPanel({ view }: { view: PlayView }) {
   const { state, run } = view
   const inputRef = useRef<HTMLInputElement>(null)
+  const submitRef = useRef<HTMLButtonElement>(null)
   const texts = useSyncExternalStore(subscribeCoarsePointer, isCoarsePointer) ? ENTRY_TEXT.coarse : ENTRY_TEXT.fine
   const hintId = useId()
   const problemId = useId()
@@ -143,6 +145,13 @@ export function HpPanel({ view }: { view: PlayView }) {
     if (!wasRefused(result)) reset()
   }
 
+  // "Manter" e "Ficar com" somem ao aplicar: síncrono (flushSync), o foco passa ao "Aplicar", que
+  // volta no lugar deles. Recusado, eles ficam, e o foco também.
+  function applyTempChoice(choice: 'keep' | 'replace') {
+    flushSync(() => apply(choice))
+    submitRef.current?.focus()
+  }
+
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
     if (!askTempChoice) apply()
@@ -187,11 +196,14 @@ export function HpPanel({ view }: { view: PlayView }) {
             placeholder={current ? '0' : texts.placeholder}
             className="min-h-10 w-full min-w-0 rounded-lg border border-parchment-800 bg-surface-base px-3 text-lg text-parchment-100 outline-none focus:border-gold-600"
           />
+          {/* aria-disabled, não disabled: aplicar esvazia o campo, e o botão desabilitado largaria o
+              foco de quem o acionou no body. Sem o que aplicar, o envio não faz nada (`apply`). */}
           {!askTempChoice && (
             <button
+              ref={submitRef}
               type="submit"
-              disabled={amount === null || action === null}
-              className="min-h-10 shrink-0 rounded-lg bg-gold-500 px-4 font-fantasy font-bold text-sm text-on-accent disabled:opacity-40 hover:bg-gold-400 transition-colors"
+              aria-disabled={amount === null || action === null}
+              className="min-h-10 shrink-0 rounded-lg bg-gold-500 px-4 font-fantasy font-bold text-sm text-on-accent aria-disabled:opacity-40 hover:bg-gold-400 transition-colors"
             >
               Aplicar
             </button>
@@ -247,14 +259,14 @@ export function HpPanel({ view }: { view: PlayView }) {
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => apply('keep')}
+                onClick={() => applyTempChoice('keep')}
                 className={`min-h-10 rounded-lg border px-3 text-sm text-parchment-200 hover:border-gold-600 ${suggested === 'keep' ? 'border-gold-700' : 'border-parchment-700'}`}
               >
                 Manter {state.tempHp}{state.tempHp > amount ? ' (maior)' : ''}
               </button>
               <button
                 type="button"
-                onClick={() => apply('replace')}
+                onClick={() => applyTempChoice('replace')}
                 className={`min-h-10 rounded-lg border px-3 text-sm text-parchment-200 hover:border-gold-600 ${suggested === 'replace' ? 'border-gold-700' : 'border-parchment-700'}`}
               >
                 Ficar com {amount}{amount > state.tempHp ? ' (maior)' : ''}
@@ -278,17 +290,27 @@ function MaxHpAdjustment({ view }: { view: PlayView }) {
   const { state, run } = view
   const [open, setOpen] = useState(false)
   const [text, setText] = useState('')
+  const toggleRef = useRef<HTMLButtonElement>(null)
   const amount = parseAmount(text)
   const adjustment = state.maxHpAdjustment
 
+  // Aplicar fecha o campo, e "encerrar" some com o ajuste: o foco, que estava num deles, vai ao
+  // "± PV máximo", que fica (flushSync: a tela já sem eles).
   function apply(sign: 1 | -1) {
     if (amount === null || amount === 0) return
-    const result = run((st, sh) => adjustMaxHp(st, sh, sign * amount))
-    // Recusado (o aviso diz por quê): o campo fica aberto com o valor.
-    if (result && result.state !== state) {
+    const result = flushSync(() => run((st, sh) => adjustMaxHp(st, sh, sign * amount)))
+    // Recusado (o aviso diz por quê): o campo fica aberto com o valor, e o foco onde estava.
+    if (!result || result.state === state) return
+    flushSync(() => {
       setText('')
       setOpen(false)
-    }
+    })
+    toggleRef.current?.focus()
+  }
+
+  function end() {
+    const result = flushSync(() => run((st, sh) => adjustMaxHp(st, sh, -st.maxHpAdjustment)))
+    if (result && result.state !== state) toggleRef.current?.focus()
   }
 
   return (
@@ -298,7 +320,7 @@ function MaxHpAdjustment({ view }: { view: PlayView }) {
           <span className="text-xs text-sky-300">
             Máximo {formatHpAdjustment(adjustment)} até o descanso longo
             <button
-              onClick={() => run((st, sh) => adjustMaxHp(st, sh, -st.maxHpAdjustment))}
+              onClick={end}
               className="min-h-10 px-2 text-xs text-parchment-400 underline hover:text-parchment-200"
             >
               encerrar
@@ -306,6 +328,7 @@ function MaxHpAdjustment({ view }: { view: PlayView }) {
           </span>
         )}
         <button
+          ref={toggleRef}
           onClick={() => setOpen(o => !o)}
           aria-expanded={open}
           className="min-h-10 text-xs text-parchment-500 underline hover:text-parchment-300"

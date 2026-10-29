@@ -14,5 +14,8 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     // Worktrees de sessões paralelas ficam em .claude/worktrees: têm a própria suíte.
     exclude: [...configDefaults.exclude, '.claude/**'],
+    // CSS lido como texto (?raw) chega inteiro: sem isso, o Vitest entrega todo CSS vazio. O resto
+    // do CSS continua de fora dos testes.
+    css: { include: [/\.css\?raw$/] },
   },
 })

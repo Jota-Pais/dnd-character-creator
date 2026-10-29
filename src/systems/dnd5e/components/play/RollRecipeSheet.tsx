@@ -159,10 +159,10 @@ export function RollRecipeSheet({ entry: baseEntry, appDice, onClose, crit = fal
       <p className="mt-2 font-fantasy font-bold text-3xl text-gold-300" data-testid="recipe-formula">{shown.formula}</p>
 
       {critMode && (
-        <div className="mt-2 rounded-lg border border-gold-800 bg-gold-900/30 px-3 py-2 text-sm text-gold-200">
+        <div className="mt-2 rounded-lg border border-gold-800 bg-gold-900/30 px-3 py-2 text-sm text-gold-300">
           <p>Acerto crítico: os dados de dano dobram, o modificador não (pág. 196).</p>
           {entry.crit?.notes?.map((n, i) => (
-            <p key={i} className="mt-1 text-xs text-gold-100" data-testid="crit-note">• {n}</p>
+            <p key={i} className="mt-1 text-xs text-parchment-100" data-testid="crit-note">• {n}</p>
           ))}
           <button onClick={leaveCrit} className="mt-1 min-h-10 text-xs text-parchment-400 underline hover:text-parchment-200">
             Não foi crítico
@@ -289,7 +289,7 @@ export function RollRecipeSheet({ entry: baseEntry, appDice, onClose, crit = fal
                   {critHit && canCrit ? (
                     <button
                       onClick={() => onOpenLink(link.entry, { crit: true })}
-                      className="min-h-10 px-3 rounded-lg border border-gold-600 bg-gold-900/40 text-sm text-gold-200 hover:border-gold-400"
+                      className="min-h-10 px-3 rounded-lg border border-gold-600 bg-gold-900/40 text-sm text-gold-300 hover:border-gold-400"
                     >
                       {link.label} do crítico: {link.entry.crit?.formula}
                     </button>

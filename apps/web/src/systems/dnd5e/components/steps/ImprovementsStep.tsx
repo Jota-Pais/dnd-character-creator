@@ -1,21 +1,21 @@
 import { useState } from 'react'
 import { useCharacterStore } from '../../stores/characterStore'
-import type { AbilityScore } from '../../types/race'
-import type { AsiChoice } from '../../types/character'
-import { ABILITY_LABELS, ALL_ABILITY_SCORES, calculateModifier, formatModifier } from '../../utils/abilityScoreUtils'
+import type { AbilityScore } from '@rpg/rules/systems/dnd5e/types/race'
+import type { AsiChoice } from '@rpg/rules/systems/dnd5e/types/character'
+import { ABILITY_LABELS, ALL_ABILITY_SCORES, calculateModifier, formatModifier } from '@rpg/rules/systems/dnd5e/utils/abilityScoreUtils'
 import {
   getReachedAsiLevels,
   getRacialBonuses,
   getAsiBonuses,
   getFinalAbilityScores,
   isAsiChoiceComplete,
-} from '../../utils/asiUtils'
-import { getClass } from '../../utils/classUtils'
-import { getPrimaryLevel } from '../../utils/multiclassUtils'
+} from '@rpg/rules/systems/dnd5e/utils/asiUtils'
+import { getClass } from '@rpg/rules/systems/dnd5e/utils/classUtils'
+import { getPrimaryLevel } from '@rpg/rules/systems/dnd5e/utils/multiclassUtils'
 import { StepNav } from '../../../../components/wizard/StepNav'
 import { FeatCatalog } from '../common/FeatCatalog'
 import { FeatChoiceSlots } from '../common/FeatChoiceSlots'
-import { formatPendingHint, getStepPendingReasons } from '../../utils/pendingReasons'
+import { formatPendingHint, getStepPendingReasons } from '@rpg/rules/systems/dnd5e/utils/pendingReasons'
 
 const ACCENT = '#c0961a'
 type Mode = 'plus2' | 'split' | 'feat'

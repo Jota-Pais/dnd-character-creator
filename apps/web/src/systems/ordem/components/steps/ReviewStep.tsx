@@ -1,50 +1,51 @@
 import { useOrdemStore } from '../../stores/characterStore'
-import { getOrigin } from '../../utils/originUtils'
-import { getOrdemClass } from '../../utils/classUtils'
-import { formatSkillWithAttribute, getSkillName, getSkillKitName } from '../../utils/skillUtils'
-import { getTrilha } from '../../utils/trilhaUtils'
-import { getPower } from '../../utils/powerUtils'
+import { getOrigin } from '@rpg/rules/systems/ordem/utils/originUtils'
+import { getOrdemClass } from '@rpg/rules/systems/ordem/utils/classUtils'
+import { formatSkillWithAttribute, getSkillName, getSkillKitName } from '@rpg/rules/systems/ordem/utils/skillUtils'
+import { getTrilha } from '@rpg/rules/systems/ordem/utils/trilhaUtils'
+import { getPower } from '@rpg/rules/systems/ordem/utils/powerUtils'
 import {
   getTrainedSkills, getSkillGrade, hasFavoredRitualPower, hasLaminaMaldita, getRitualCost, hasClassPower, getGrantedRituals, getEffectivePeLimit,
   getParanormalResistanceBonus, getMentalParanormalDamageResistance, getOriginMentalDamageResistance, getConditionalDamageResistances,
   getExpertSkills, getExpertDie,
-} from '../../utils/characterUtils'
+} from '@rpg/rules/systems/ordem/utils/characterUtils'
 import {
   getSkillBonusTotal, getSkillsWithUnconditionalBonus, getConditionalSkillBonuses,
   getConditionalDefenseBonuses, getExtraDamageDiceNotes, getSheetExplosives,
   getResolvedAbilityNotes, splitResolvedNotes, resolveDtInText,
   getDefenseReactions, isDodgeCondition, isBlockCondition, type DefenseReaction,
-} from '../../utils/sheetEffects'
-import { formatDicePool, ATTRIBUTE_ABBREV as ATTR_ABBREV } from '../../utils/attributeUtils'
-import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, ritualNeedsElementChoice, getSlotRitualElement, getGrantedRitualElement, grantedRitualElementKey, ELEMENT_NAMES, ELEMENT_COLORS } from '../../utils/ritualUtils'
+} from '@rpg/rules/systems/ordem/utils/sheetEffects'
+import { formatDicePool, ATTRIBUTE_ABBREV as ATTR_ABBREV } from '@rpg/rules/systems/ordem/utils/attributeUtils'
+import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, ritualNeedsElementChoice, getSlotRitualElement, getGrantedRitualElement, grantedRitualElementKey, ELEMENT_NAMES } from '@rpg/rules/systems/ordem/utils/ritualUtils'
+import { ELEMENT_COLORS } from '../common/elementColors'
 import {
   getAffinityState, getParanormalEffects, getParanormalInstances, getSanityBreakdown, getSourceLabel,
   isParanormalElement, OPPRESSOR_OF,
-} from '../../utils/paranormalPowerUtils'
+} from '@rpg/rules/systems/ordem/utils/paranormalPowerUtils'
 import {
   getEquipmentByInstance, getInstanceLabel, getModifiedDefenseBonus, getDraftInstanceCategory,
   getMissingRitualComponentElements, getEquipmentDamageResistances, formatAccessorySkills,
   getKitSkills, formatKitSkill,
   getLoadState, OVERLOAD_DEFENSE_PENALTY, OVERLOAD_SKILL_PENALTY, OVERLOAD_SPEED_PENALTY_METERS,
-} from '../../utils/equipmentUtils'
-import { getModification } from '../../utils/modificationUtils'
+} from '@rpg/rules/systems/ordem/utils/equipmentUtils'
+import { getModification } from '@rpg/rules/systems/ordem/utils/modificationUtils'
 import {
   getCurse, getCursedDerivedStats, getSheetAttributes, formatCurseElement, formatCurseChoiceDetail,
   getRitualDt, getRitualPeLimit, getCurseResistances, formatUnitCursePrice,
-} from '../../utils/curseUtils'
-import type { OrdemEquipment } from '../../types/equipment'
-import type { OrdemRitual } from '../../types/ritual'
-import { getSheetWeaponAttacks } from '../../utils/ordemWeaponUtils'
-import { getPatente } from '../../utils/patenteUtils'
-import type { OrdemWeapon } from '../../types/equipment'
+} from '@rpg/rules/systems/ordem/utils/curseUtils'
+import type { OrdemEquipment } from '@rpg/rules/systems/ordem/types/equipment'
+import type { OrdemRitual } from '@rpg/rules/systems/ordem/types/ritual'
+import { getSheetWeaponAttacks } from '@rpg/rules/systems/ordem/utils/ordemWeaponUtils'
+import { getPatente } from '@rpg/rules/systems/ordem/utils/patenteUtils'
+import type { OrdemWeapon } from '@rpg/rules/systems/ordem/types/equipment'
 
 const CAT_ROMAN = ['0', 'I', 'II', 'III', 'IV']
-import { getReachedTrilhaSlots } from '../../utils/progressionUtils'
+import { getReachedTrilhaSlots } from '@rpg/rules/systems/ordem/utils/progressionUtils'
 import { exportCharacter } from '../../utils/storage'
 import { StepNav } from '../../../../components/wizard/StepNav'
 import { PendingStepsPanel } from '../common/PendingStepsPanel'
 import { formatMissingCount } from '../../../../components/wizard/pendingSteps'
-import { getMissingSteps } from '../../utils/draftValidation'
+import { getMissingSteps } from '@rpg/rules/systems/ordem/utils/draftValidation'
 
 /** Sufixo com os bônus condicionais já somados no número da reação (ex.: ", já com +5 de Campo Protetor"). */
 function formatReactionSources(reaction: DefenseReaction): string {

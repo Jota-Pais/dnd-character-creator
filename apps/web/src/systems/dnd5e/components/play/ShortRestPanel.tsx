@@ -1,14 +1,14 @@
 import { useRef, useState, type FormEvent } from 'react'
 import { flushSync } from 'react-dom'
-import type { RollRecord } from '../../../../core/dice'
+import type { RollRecord } from '@rpg/rules/core/dice'
 import { usePlayStore, type ShortRestSpend } from '../../stores/playStore'
-import type { PlayNotice, PlaySheet, PlayState } from '../../types/playState'
+import type { PlayNotice, PlaySheet, PlayState } from '@rpg/rules/systems/dnd5e/types/playState'
 import {
   completeShortRest, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable, getShortRestSlotRecovery, isAtZeroHp,
   previewShortRest, recordRoll, spendHitDie,
-} from '../../utils/playState'
-import type { RollGuideEntry } from '../../utils/rollGuide'
-import { countLabel, pluralize } from '../../utils/textUtils'
+} from '@rpg/rules/systems/dnd5e/utils/playState'
+import type { RollGuideEntry } from '@rpg/rules/systems/dnd5e/utils/rollGuide'
+import { countLabel, pluralize } from '@rpg/rules/systems/dnd5e/utils/textUtils'
 import { ChangeAnnouncer } from './ChangeAnnouncer'
 import { rollGuideEntry } from './playDice'
 import type { PlayTabProps } from './usePlayView'

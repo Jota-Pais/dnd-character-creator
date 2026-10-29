@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Race, Subrace } from '../../types/race'
+import type { Race, Subrace } from '@rpg/rules/systems/dnd5e/types/race'
 import { useCharacterStore } from '../../stores/characterStore'
 import {
   RACES,
@@ -14,17 +14,17 @@ import {
   requiresSubrace,
   RACE_PRESENTATION,
   LANGUAGES,
-} from '../../utils/raceUtils'
+} from '@rpg/rules/systems/dnd5e/utils/raceUtils'
 import {
   getExcludedSkills, getExcludedTools, getExcludedLanguages, getRepeatedProficiencyNotes,
-} from '../../utils/proficiencyUtils'
-import { ABILITY_LABELS, formatBonus, formatMeters, formatSpeed } from '../../utils/abilityScoreUtils'
+} from '@rpg/rules/systems/dnd5e/utils/proficiencyUtils'
+import { ABILITY_LABELS, formatBonus, formatMeters, formatSpeed } from '@rpg/rules/systems/dnd5e/utils/abilityScoreUtils'
 import { RaceCard } from '../race/RaceCard'
 import { SubraceCard } from '../race/SubraceCard'
 import { ChoicePanel } from '../race/ChoicePanel'
 import { RepetitionsCausedNotes } from '../common/RepetitionsCausedNotes'
 import { StepNav } from '../../../../components/wizard/StepNav'
-import { formatPendingHint, getStepPendingReasons } from '../../utils/pendingReasons'
+import { formatPendingHint, getStepPendingReasons } from '@rpg/rules/systems/dnd5e/utils/pendingReasons'
 
 export function RaceStep() {
   const draft = useCharacterStore(state => state.draft)

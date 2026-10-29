@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useCharacterStore } from '../../stores/characterStore'
-import { getClass } from '../../utils/classUtils'
-import { getPrimaryLevel } from '../../utils/multiclassUtils'
+import { getClass } from '@rpg/rules/systems/dnd5e/utils/classUtils'
+import { getPrimaryLevel } from '@rpg/rules/systems/dnd5e/utils/multiclassUtils'
 import { InfoTooltip } from '../common/InfoTooltip'
 import { StepNav } from '../../../../components/wizard/StepNav'
 import { RuleText } from '../common/RuleText'
@@ -29,13 +29,13 @@ import {
   SCHOOL_COLORS,
   SCHOOL_EMOJI,
   type CasterEntry,
-} from '../../utils/spellUtils'
-import { calculateModifier } from '../../utils/abilityScoreUtils'
-import { getFinalAbilityScores } from '../../utils/asiUtils'
-import type { Spell } from '../../types/spell'
-import type { SpellChoices } from '../../types/character'
-import type { AbilityScore } from '../../types/race'
-import { formatPendingHint, getStepPendingReasons } from '../../utils/pendingReasons'
+} from '@rpg/rules/systems/dnd5e/utils/spellUtils'
+import { calculateModifier } from '@rpg/rules/systems/dnd5e/utils/abilityScoreUtils'
+import { getFinalAbilityScores } from '@rpg/rules/systems/dnd5e/utils/asiUtils'
+import type { Spell } from '@rpg/rules/systems/dnd5e/types/spell'
+import type { SpellChoices } from '@rpg/rules/systems/dnd5e/types/character'
+import type { AbilityScore } from '@rpg/rules/systems/dnd5e/types/race'
+import { formatPendingHint, getStepPendingReasons } from '@rpg/rules/systems/dnd5e/utils/pendingReasons'
 
 type Tab = 'cantrips' | number // number = spell level
 

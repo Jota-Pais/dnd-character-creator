@@ -25,10 +25,14 @@ describe('createId', () => {
 /**
  * O sorteio do app tem uma fonte só: o `cryptoRng` do motor de dados (Web Crypto, com o
  * `Math.random` só como último recurso). Dado e id que chamassem o `Math.random` direto voltariam a
- * espalhar a fonte que a Fase 0 juntou.
+ * espalhar a fonte que a Fase 0 juntou. O app é o motor e o site que o usa (apps/web): lê os dois.
  */
 const sources = import.meta.glob<string>(
-  ['../../../**/*.{ts,tsx}', '!../../../**/__tests__/**', '!../../../test/**'],
+  [
+    '../../../**/*.{ts,tsx}', '!../../../**/__tests__/**', '!../../../test/**',
+    '../../../../../../apps/web/src/**/*.{ts,tsx}', '!../../../../../../apps/web/src/**/__tests__/**',
+    '!../../../../../../apps/web/src/test/**',
+  ],
   { query: '?raw', import: 'default', eager: true },
 )
 
@@ -38,6 +42,9 @@ describe('fonte de aleatoriedade', () => {
     expect(paths).toContain('../../dice/rng.ts')
     expect(paths.some(p => p.includes('/systems/dnd5e/'))).toBe(true)
     expect(paths.some(p => p.includes('/systems/ordem/'))).toBe(true)
+    const site = paths.filter(p => p.includes('/apps/web/src/'))
+    expect(site.some(p => p.includes('/systems/dnd5e/components/'))).toBe(true)
+    expect(site.some(p => p.includes('/systems/ordem/components/'))).toBe(true)
   })
 
   it('só o cryptoRng chama o Math.random', () => {

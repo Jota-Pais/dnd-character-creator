@@ -20,4 +20,23 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    // O motor de regras não sabe de tela: roda também no servidor que virá. O site importa o motor,
+    // nunca o contrário. (API do navegador ele já não compila: o tsconfig do pacote não tem DOM.)
+    files: ['packages/rules/**/*.ts'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [
+          {
+            regex: '^(react|react-dom|zustand)(/|$)',
+            message: 'O motor de regras não depende de React nem de zustand: isso é do site (apps/web).',
+          },
+          {
+            regex: '^@rpg/web(/|$)|(^|/)apps/',
+            message: 'O motor de regras não importa o site: o site é que importa o motor (@rpg/rules).',
+          },
+        ],
+      }],
+    },
+  },
 ])

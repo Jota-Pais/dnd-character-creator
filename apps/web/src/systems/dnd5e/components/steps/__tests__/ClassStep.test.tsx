@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { render, cleanup, fireEvent } from '@testing-library/react'
 import { ClassStep } from '../ClassStep'
 import { useCharacterStore } from '../../../stores/characterStore'
-import { EMPTY_DRAFT, type CharacterDraft } from '../../../types/character'
+import { EMPTY_DRAFT, type CharacterDraft } from '@rpg/rules/systems/dnd5e/types/character'
 
 // Decisão de 2026-10-26: a perícia de classe que outra fonte já dá (o antecedente trocado depois)
 // não some ao abrir a etapa Classe — fica marcada, com o aviso, até o jogador trocar (p. 125).

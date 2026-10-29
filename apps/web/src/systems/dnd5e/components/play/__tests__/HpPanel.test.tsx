@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, cleanup } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { usePlayStore } from '../../../stores/playStore'
-import { addCondition } from '../../../utils/playState'
+import { addCondition } from '@rpg/rules/systems/dnd5e/utils/playState'
 import { liveRegions, openKrusk, resetPlay } from './openPlay'
 
 beforeEach(resetPlay)

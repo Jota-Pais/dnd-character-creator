@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
-import { keptFaces, type RollRecord } from '../../../../core/dice'
+import { keptFaces, type RollRecord } from '@rpg/rules/core/dice'
 import { registerPendingEdit, usePlayStore } from '../../stores/playStore'
-import { formatModifier } from '../../utils/abilityScoreUtils'
-import { setNote } from '../../utils/playState'
+import { formatModifier } from '@rpg/rules/systems/dnd5e/utils/abilityScoreUtils'
+import { setNote } from '@rpg/rules/systems/dnd5e/utils/playState'
 import { FreeRoller } from './FreeRoller'
 import type { PlayTabProps } from './usePlayView'
 

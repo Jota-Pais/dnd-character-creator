@@ -1,4 +1,4 @@
-import type { RollGuideEntry } from '../../utils/rollGuide'
+import type { RollGuideEntry } from '@rpg/rules/systems/dnd5e/utils/rollGuide'
 
 /** ▲ vantagem / ▼ desvantagem ao lado de um número que é rolagem, com o texto para leitor de tela. */
 export function ModeMark({ entry }: { entry: RollGuideEntry }) {

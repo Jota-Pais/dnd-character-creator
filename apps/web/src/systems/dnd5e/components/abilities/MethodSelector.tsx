@@ -1,4 +1,4 @@
-import type { AbilityMethod } from '../../types/character'
+import type { AbilityMethod } from '@rpg/rules/systems/dnd5e/types/character'
 
 type Props = {
   selected: AbilityMethod | null

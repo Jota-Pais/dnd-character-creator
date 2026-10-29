@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { render, cleanup, fireEvent } from '@testing-library/react'
 import { ProgressionOptionCard } from '../ProgressionOptionCard'
-import { getProgressionOptions } from '../../../utils/progressionOptions'
+import { getProgressionOptions } from '@rpg/rules/systems/dnd5e/utils/progressionOptions'
 
 afterEach(cleanup)
 

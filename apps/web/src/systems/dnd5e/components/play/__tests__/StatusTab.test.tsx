@@ -3,8 +3,8 @@ import { render, screen, fireEvent, cleanup, within } from '@testing-library/rea
 import { PlayScreen } from '../PlayScreen'
 import { usePlayStore } from '../../../stores/playStore'
 import { loadPlayState } from '../../../utils/playStorage'
-import type { CharacterDraft } from '../../../types/character'
-import { COMPLETE_DRAFT } from '../../../../../test/fixtures'
+import type { CharacterDraft } from '@rpg/rules/systems/dnd5e/types/character'
+import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
 import { openDraft, openKrusk, resetPlay } from './openPlay'
 
 beforeEach(resetPlay)

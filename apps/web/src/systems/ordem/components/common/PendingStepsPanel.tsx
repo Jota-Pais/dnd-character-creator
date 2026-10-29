@@ -1,6 +1,6 @@
 import { useOrdemStore } from '../../stores/characterStore'
-import { STEP_LABELS } from '../../types/character'
-import type { WizardStep } from '../../types/character'
+import { STEP_LABELS } from '@rpg/rules/systems/ordem/types/character'
+import type { WizardStep } from '@rpg/rules/systems/ordem/types/character'
 import { formatMissingCount } from '../../../../components/wizard/pendingSteps'
 
 /**

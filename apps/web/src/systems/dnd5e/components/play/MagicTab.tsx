@@ -1,13 +1,13 @@
 import type { ReactNode } from 'react'
-import type { ResourceUnit } from '../../types/effects'
-import { formatModifier } from '../../utils/abilityScoreUtils'
+import type { ResourceUnit } from '@rpg/rules/systems/dnd5e/types/effects'
+import { formatModifier } from '@rpg/rules/systems/dnd5e/utils/abilityScoreUtils'
 import {
   describeResource, groupResourcesBySource, resourceGroupsNeedLabels, resourceSourceLabel, type SheetResource,
-} from '../../utils/classResourceUtils'
+} from '@rpg/rules/systems/dnd5e/utils/classResourceUtils'
 import {
   getPactSlotsAvailable, getResourceAvailable, getSpellSlotsAvailable,
   recoverPactSlot, recoverResource, recoverSpellSlot, spendPactSlot, spendResource, spendSpellSlot,
-} from '../../utils/playState'
+} from '@rpg/rules/systems/dnd5e/utils/playState'
 import { spellSaveDcSource } from './numberSources'
 import { ordinal, rollButtonLabel } from './playFormat'
 import { RollMarks } from './RollMarks'

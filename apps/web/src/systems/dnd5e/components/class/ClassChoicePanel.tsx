@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import type { GameClass, ClassChoiceSelections, ToolChoiceSource } from '../../types/class'
+import type { GameClass, ClassChoiceSelections, ToolChoiceSource } from '@rpg/rules/systems/dnd5e/types/class'
 import {
   getSkillOptions,
   getExpertiseCount,
@@ -9,25 +9,25 @@ import {
   SUBCLASS_LABEL,
   getSubclassFeaturesUpToLevel,
   getClassToolChoices,
-} from '../../utils/classUtils'
+} from '@rpg/rules/systems/dnd5e/utils/classUtils'
 import { ClassSubclassCard } from './ClassSubclassCard'
 import { ProgressionOptionCard } from './ProgressionOptionCard'
 import { InfoTooltip } from '../common/InfoTooltip'
-import type { TermId } from '../../utils/glossary'
-import { SKILLS, getLanguageName } from '../../utils/raceUtils'
+import type { TermId } from '@rpg/rules/systems/dnd5e/utils/glossary'
+import { SKILLS, getLanguageName } from '@rpg/rules/systems/dnd5e/utils/raceUtils'
 import { LanguagePicker } from '../common/LanguagePicker'
-import toolsData from '../../data/tools.json'
+import toolsData from '@rpg/rules/systems/dnd5e/data/tools.json'
 import {
   getActivePicks, getProgressionSlotsUpToLevel, isSingleChoiceSlot, SPELL_OPTIONS_LIST_ID, type ProgressionSlot,
-} from '../../utils/progressionChoiceUtils'
-import { isChoiceFull, toggleChoice } from '../../utils/choiceToggle'
+} from '@rpg/rules/systems/dnd5e/utils/progressionChoiceUtils'
+import { isChoiceFull, toggleChoice } from '@rpg/rules/systems/dnd5e/utils/choiceToggle'
 import {
   describeRequiredPick, getProgressionOptions, getSecretSpellOptions, getUnmetRequirement, type ProgressionOption,
-} from '../../utils/progressionOptions'
-import { getMaxSpellLevel, getSecretCantripRoom, getSpell } from '../../utils/spellUtils'
-import type { ClassSlotProficiencies } from '../../utils/proficiencyUtils'
-import type { TakenFightingStyles } from '../../utils/sheetEffects'
-import { MANEUVER_LIST_ID } from '../../utils/maneuverUtils'
+} from '@rpg/rules/systems/dnd5e/utils/progressionOptions'
+import { getMaxSpellLevel, getSecretCantripRoom, getSpell } from '@rpg/rules/systems/dnd5e/utils/spellUtils'
+import type { ClassSlotProficiencies } from '@rpg/rules/systems/dnd5e/utils/proficiencyUtils'
+import type { TakenFightingStyles } from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
+import { MANEUVER_LIST_ID } from '@rpg/rules/systems/dnd5e/utils/maneuverUtils'
 import { RepeatedProficiencyNotes } from '../common/RepeatedProficiencyNotes'
 import { REPEATED_CHIP_STYLE } from '../common/repeatedChipStyle'
 
@@ -360,8 +360,8 @@ function describeExpertiseGrants(grants: { level: number; count: number }[], lev
 }
 
 type SubclassExtrasPanelProps = {
-  extras: NonNullable<import('../../types/class').ClassSubclass['extras']>
-  subclassExtras: import('../../types/class').SubclassChoiceSelections
+  extras: NonNullable<import('@rpg/rules/systems/dnd5e/types/class').ClassSubclass['extras']>
+  subclassExtras: import('@rpg/rules/systems/dnd5e/types/class').SubclassChoiceSelections
   accent: string
   /** Perícias já vindas de outra fonte — o livro manda escolher outra em vez de repetir. */
   excludedSkills: string[]
@@ -370,7 +370,7 @@ type SubclassExtrasPanelProps = {
   excludedLanguages: string[]
   /** Perícias e ferramentas escolhidas aqui que outra fonte já dá (id → aviso): marcadas, para trocar. */
   repeated: Record<string, string>
-  onChangeExtras: (patch: Partial<import('../../types/class').SubclassChoiceSelections>) => void
+  onChangeExtras: (patch: Partial<import('@rpg/rules/systems/dnd5e/types/class').SubclassChoiceSelections>) => void
 }
 
 const ARMOR_LABELS: Record<string, string> = {

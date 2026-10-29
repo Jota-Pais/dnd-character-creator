@@ -1,4 +1,4 @@
-import { parseInlineBold, stripInlineBold } from '../../utils/ruleText'
+import { parseInlineBold, stripInlineBold } from '@rpg/rules/systems/dnd5e/utils/ruleText'
 
 /**
  * Texto de regra vindo do livro (talentos, características, magias). Uma linha por parágrafo,

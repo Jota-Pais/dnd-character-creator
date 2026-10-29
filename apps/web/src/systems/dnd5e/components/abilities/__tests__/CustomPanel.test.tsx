@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, fireEvent, cleanup } from '@testing-library/react'
 import { CustomPanel } from '../CustomPanel'
-import type { AbilityScore } from '../../../types/race'
+import type { AbilityScore } from '@rpg/rules/systems/dnd5e/types/race'
 
 const scores = { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 }
 const noBonus = { STR: 0, DEX: 0, CON: 0, INT: 0, WIS: 0, CHA: 0 } as Record<AbilityScore, number>

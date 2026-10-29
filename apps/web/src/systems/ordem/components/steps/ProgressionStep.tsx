@@ -1,6 +1,6 @@
 import { useOrdemStore } from '../../stores/characterStore'
-import { getOrdemClass } from '../../utils/classUtils'
-import { formatSkillWithAttribute } from '../../utils/skillUtils'
+import { getOrdemClass } from '@rpg/rules/systems/ordem/utils/classUtils'
+import { formatSkillWithAttribute } from '@rpg/rules/systems/ordem/utils/skillUtils'
 import {
   getTrilhaOptions,
   getVersatilityTrilhaOptions,
@@ -13,19 +13,20 @@ import {
   getRequiredSkillGradeSlots,
   getSkillGrade,
   POWER_PARAM_SPECS,
-} from '../../utils/characterUtils'
-import { hasTrilha, hasVersatility, POWER_SLOT_NEX } from '../../utils/progressionUtils'
-import { getParanormalPower } from '../../utils/paranormalPowerUtils'
-import type { ParanormalSourceKey } from '../../types/character'
-import { SKILLS } from '../../utils/skillUtils'
-import { ELEMENT_NAMES, ELEMENT_COLORS } from '../../utils/ritualUtils'
-import type { OrdemElement } from '../../types/ritual'
-import { ATTRIBUTES, ATTRIBUTE_MAX } from '../../utils/attributeUtils'
-import { isStepComplete } from '../../utils/draftValidation'
+} from '@rpg/rules/systems/ordem/utils/characterUtils'
+import { hasTrilha, hasVersatility, POWER_SLOT_NEX } from '@rpg/rules/systems/ordem/utils/progressionUtils'
+import { getParanormalPower } from '@rpg/rules/systems/ordem/utils/paranormalPowerUtils'
+import type { ParanormalSourceKey } from '@rpg/rules/systems/ordem/types/character'
+import { SKILLS } from '@rpg/rules/systems/ordem/utils/skillUtils'
+import { ELEMENT_NAMES } from '@rpg/rules/systems/ordem/utils/ritualUtils'
+import { ELEMENT_COLORS } from '../common/elementColors'
+import type { OrdemElement } from '@rpg/rules/systems/ordem/types/ritual'
+import { ATTRIBUTES, ATTRIBUTE_MAX } from '@rpg/rules/systems/ordem/utils/attributeUtils'
+import { isStepComplete } from '@rpg/rules/systems/ordem/utils/draftValidation'
 import { StepNav } from '../../../../components/wizard/StepNav'
 import { StepPrerequisite } from '../common/StepPrerequisite'
 import { ClassPowerCard } from '../progression/ClassPowerCard'
-import type { OrdemAttributes } from '../../types/character'
+import type { OrdemAttributes } from '@rpg/rules/systems/ordem/types/character'
 
 const ATTRIBUTE_INCREASE_CAP = 5
 
@@ -136,7 +137,7 @@ function Chip({ label, active, disabled, onClick }: { label: string; active: boo
   )
 }
 
-function TrilhaSection({ draft, cls, onSelect }: { draft: import('../../types/character').OrdemCharacterDraft; cls: import('../../types/class').OrdemClass; onSelect: (id: string) => void }) {
+function TrilhaSection({ draft, cls, onSelect }: { draft: import('@rpg/rules/systems/ordem/types/character').OrdemCharacterDraft; cls: import('@rpg/rules/systems/ordem/types/class').OrdemClass; onSelect: (id: string) => void }) {
   // Trilha sem o treino exigido aparece desabilitada com o motivo, não escondida.
   const options = getTrilhaOptions(draft, cls)
 
@@ -186,8 +187,8 @@ function TrilhaSection({ draft, cls, onSelect }: { draft: import('../../types/ch
 }
 
 function PowerSection({ draft, cls, required, onPick, onRelease }: {
-  draft: import('../../types/character').OrdemCharacterDraft
-  cls: import('../../types/class').OrdemClass
+  draft: import('@rpg/rules/systems/ordem/types/character').OrdemCharacterDraft
+  cls: import('@rpg/rules/systems/ordem/types/class').OrdemClass
   required: number
   onPick: (slot: number, powerId: string) => void
   onRelease: (slot: number) => void
@@ -235,7 +236,7 @@ function PowerSection({ draft, cls, required, onPick, onRelease }: {
 
 /** Status do Transcender: o poder paranormal em si é escolhido na etapa Poderes Paranormais. */
 function TranscendHint({ draft, sourceKey }: {
-  draft: import('../../types/character').OrdemCharacterDraft
+  draft: import('@rpg/rules/systems/ordem/types/character').OrdemCharacterDraft
   sourceKey: ParanormalSourceKey
 }) {
   const chosen = draft.paranormalPowerChoices[sourceKey]
@@ -249,7 +250,7 @@ function TranscendHint({ draft, sourceKey }: {
 
 /** Escolhas embutidas de um poder (F27): 2 perícias (Treinamento) ou 1 elemento (Especialista/Mestre). */
 function PowerParamPicker({ draft, slotKey, powerId }: {
-  draft: import('../../types/character').OrdemCharacterDraft
+  draft: import('@rpg/rules/systems/ordem/types/character').OrdemCharacterDraft
   slotKey: string
   powerId: string
 }) {
@@ -317,7 +318,7 @@ function PowerParamPicker({ draft, slotKey, powerId }: {
 }
 
 function AttributeIncreaseSection({ draft, required, onPick }: {
-  draft: import('../../types/character').OrdemCharacterDraft
+  draft: import('@rpg/rules/systems/ordem/types/character').OrdemCharacterDraft
   required: number
   onPick: (slot: number, attribute: keyof OrdemAttributes) => void
 }) {
@@ -353,8 +354,8 @@ function AttributeIncreaseSection({ draft, required, onPick }: {
 }
 
 function SkillGradeSection({ draft, cls, required, onPick }: {
-  draft: import('../../types/character').OrdemCharacterDraft
-  cls: import('../../types/class').OrdemClass
+  draft: import('@rpg/rules/systems/ordem/types/character').OrdemCharacterDraft
+  cls: import('@rpg/rules/systems/ordem/types/class').OrdemClass
   required: number
   onPick: (slot: number, skillIds: string[]) => void
 }) {
@@ -394,10 +395,10 @@ function SkillGradeSection({ draft, cls, required, onPick }: {
 }
 
 function VersatilitySection({ draft, cls, onPick }: {
-  draft: import('../../types/character').OrdemCharacterDraft
-  cls: import('../../types/class').OrdemClass
+  draft: import('@rpg/rules/systems/ordem/types/character').OrdemCharacterDraft
+  cls: import('@rpg/rules/systems/ordem/types/class').OrdemClass
   /** null desfaz a escolha (o ✕ do card). */
-  onPick: (choice: import('../../types/character').OrdemCharacterDraft['versatilityChoice']) => void
+  onPick: (choice: import('@rpg/rules/systems/ordem/types/character').OrdemCharacterDraft['versatilityChoice']) => void
 }) {
   // Poder extra: a escolha vale no NEX 50% (slotIndex undefined), não no NEX de um slot.
   const powerOptions = getClassPowerOptions(draft, cls)

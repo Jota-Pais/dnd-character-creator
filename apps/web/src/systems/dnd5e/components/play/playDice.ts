@@ -1,5 +1,5 @@
-import { keptFaces, roll, type DieRoller, type RollRecord } from '../../../../core/dice'
-import { formatGuideFormula, formatGuideNotation, type RollGuideEntry } from '../../utils/rollGuide'
+import { keptFaces, roll, type DieRoller, type RollRecord } from '@rpg/rules/core/dice'
+import { formatGuideFormula, formatGuideNotation, type RollGuideEntry } from '@rpg/rules/systems/dnd5e/utils/rollGuide'
 import { normalizeMinus } from './hpEntry'
 
 /** Uma rolagem dos dados do app para uma jogada do guia. `natural` só no d20: o dado que valeu. */

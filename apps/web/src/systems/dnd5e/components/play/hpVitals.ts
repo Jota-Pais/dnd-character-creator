@@ -1,5 +1,5 @@
-import type { HitDiceAvailability } from '../../utils/playState'
-import { countLabel } from '../../utils/textUtils'
+import type { HitDiceAvailability } from '@rpg/rules/systems/dnd5e/utils/playState'
+import { countLabel } from '@rpg/rules/systems/dnd5e/utils/textUtils'
 
 /**
  * PV baixo: PV atual acima de 0 e até esta fração do máximo efetivo. Decisão de produto do ciclo

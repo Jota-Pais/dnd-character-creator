@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { flushSync } from 'react-dom'
-import { formatMeters, formatModifier } from '../../utils/abilityScoreUtils'
+import { formatMeters, formatModifier } from '@rpg/rules/systems/dnd5e/utils/abilityScoreUtils'
 import {
   endConcentration, formatHpAdjustment, getBaseMaxHp, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable,
   getPlayConditionEffects, getPlaySpeed, setInspiration,
-} from '../../utils/playState'
-import type { RollGuideEntry } from '../../utils/rollGuide'
-import { getConditionalAcBonuses } from '../../utils/sheetEffects'
+} from '@rpg/rules/systems/dnd5e/utils/playState'
+import type { RollGuideEntry } from '@rpg/rules/systems/dnd5e/utils/rollGuide'
+import { getConditionalAcBonuses } from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
 import { ChangeAnnouncer } from './ChangeAnnouncer'
 import {
   describeHitDiceAvailable, describeHpForAnnouncement, formatHitDiceAvailable, getHpBand, getHpBarPercent, getHpFlash,

@@ -4,10 +4,10 @@ import App from '../App'
 import { useAppStore } from '../core/stores/appStore'
 import { useCharacterStore } from '../systems/dnd5e/stores/characterStore'
 import { useOrdemStore } from '../systems/ordem/stores/characterStore'
-import { EMPTY_DRAFT as ORDEM_EMPTY } from '../systems/ordem/types/character'
+import { EMPTY_DRAFT as ORDEM_EMPTY } from '@rpg/rules/systems/ordem/types/character'
 import { ordemSystem } from '../systems/ordem'
-import { RITUALS } from '../systems/ordem/utils/ritualUtils'
-import { COMPLETE_DRAFT } from '../test/fixtures'
+import { RITUALS } from '@rpg/rules/systems/ordem/utils/ritualUtils'
+import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
 
 // Teste de fumaça: renderiza o App real e exercita galeria global <-> wizard <-> revisão <-> impressão.
 // Pega erros de renderização (hooks, acessos indefinidos) que build/tsc não pegam.

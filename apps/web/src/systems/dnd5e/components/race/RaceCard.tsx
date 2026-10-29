@@ -1,6 +1,6 @@
-import type { Race } from '../../types/race'
-import { ABILITY_LABELS, formatBonus, formatMeters, formatSpeed } from '../../utils/abilityScoreUtils'
-import { RACE_PRESENTATION } from '../../utils/raceUtils'
+import type { Race } from '@rpg/rules/systems/dnd5e/types/race'
+import { ABILITY_LABELS, formatBonus, formatMeters, formatSpeed } from '@rpg/rules/systems/dnd5e/utils/abilityScoreUtils'
+import { RACE_PRESENTATION } from '@rpg/rules/systems/dnd5e/utils/raceUtils'
 
 type Props = {
   race: Race

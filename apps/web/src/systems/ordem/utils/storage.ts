@@ -1,7 +1,7 @@
-import type { OrdemCharacterDraft, WizardStep } from '../types/character'
-import { EMPTY_DRAFT } from '../types/character'
-import { createId } from '../../../core/utils/id'
-import { sanitizeImportedDraft } from './draftValidation'
+import type { OrdemCharacterDraft, WizardStep } from '@rpg/rules/systems/ordem/types/character'
+import { EMPTY_DRAFT } from '@rpg/rules/systems/ordem/types/character'
+import { createId } from '@rpg/rules/core/utils/id'
+import { sanitizeImportedDraft } from '@rpg/rules/systems/ordem/utils/draftValidation'
 
 const LIBRARY_KEY = 'ordem-character-library'
 export const LIBRARY_VERSION = 1

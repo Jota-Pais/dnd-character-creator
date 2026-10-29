@@ -1,6 +1,6 @@
 import { useCharacterStore } from '../../stores/characterStore'
-import { STEP_LABELS } from '../../types/character'
-import type { PendingStep } from '../../utils/pendingReasons'
+import { STEP_LABELS } from '@rpg/rules/systems/dnd5e/types/character'
+import type { PendingStep } from '@rpg/rules/systems/dnd5e/utils/pendingReasons'
 import { formatMissingCount } from '../../../../components/wizard/pendingSteps'
 
 /**

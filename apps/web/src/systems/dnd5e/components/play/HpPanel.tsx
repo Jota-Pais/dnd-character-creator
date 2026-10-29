@@ -1,11 +1,11 @@
 import { useId, useRef, useState, useSyncExternalStore, type FormEvent } from 'react'
 import { flushSync } from 'react-dom'
-import type { ImmuneDamageType } from '../../types/condition'
-import type { PlayResult } from '../../types/playState'
+import type { ImmuneDamageType } from '@rpg/rules/systems/dnd5e/types/condition'
+import type { PlayResult } from '@rpg/rules/systems/dnd5e/types/playState'
 import {
   adjustMaxHp, applyDamage, applyHealing, formatHpAdjustment, getPlayConditionEffects, grantTempHp, isAtZeroHp,
   suggestTempHpChoice,
-} from '../../utils/playState'
+} from '@rpg/rules/systems/dnd5e/utils/playState'
 import { parseHpEntry, resolveHpAction, stripHpSign, type HpAction } from './hpEntry'
 import type { PlayView } from './usePlayView'
 

@@ -1,18 +1,18 @@
 import { useState } from 'react'
-import type { AbilityScore } from '../../types/race'
+import type { AbilityScore } from '@rpg/rules/systems/dnd5e/types/race'
 import { useCharacterStore } from '../../stores/characterStore'
-import { CLASSES, getClass, CLASS_PRESENTATION } from '../../utils/classUtils'
+import { CLASSES, getClass, CLASS_PRESENTATION } from '@rpg/rules/systems/dnd5e/utils/classUtils'
 import {
   getPrimaryLevel,
   getAdditionalLevelsUsed,
   canAddAnotherClass,
   meetsMulticlassPrereq,
   describeMulticlassPrereq as describePrereq,
-} from '../../utils/multiclassUtils'
-import { getFinalAbilityScores } from '../../utils/asiUtils'
-import { getClassSlotProficiencies } from '../../utils/proficiencyUtils'
-import { getFeatManeuvers, getTakenFightingStyles } from '../../utils/sheetEffects'
-import type { GameClass } from '../../types/class'
+} from '@rpg/rules/systems/dnd5e/utils/multiclassUtils'
+import { getFinalAbilityScores } from '@rpg/rules/systems/dnd5e/utils/asiUtils'
+import { getClassSlotProficiencies } from '@rpg/rules/systems/dnd5e/utils/proficiencyUtils'
+import { getFeatManeuvers, getTakenFightingStyles } from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
+import type { GameClass } from '@rpg/rules/systems/dnd5e/types/class'
 import { ClassChoicePanel } from './ClassChoicePanel'
 
 export function MulticlassPanel() {

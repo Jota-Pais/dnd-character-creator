@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { render, cleanup } from '@testing-library/react'
 import { EquipmentChoiceCard } from '../EquipmentChoiceCard'
-import { getClass } from '../../../utils/classUtils'
+import { getClass } from '@rpg/rules/systems/dnd5e/utils/classUtils'
 
 afterEach(cleanup)
 

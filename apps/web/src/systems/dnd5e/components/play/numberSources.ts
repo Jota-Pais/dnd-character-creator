@@ -1,7 +1,7 @@
-import type { ArmorClassResult } from '../../utils/armorClassUtils'
-import { formatArmorClassBreakdown } from '../../utils/armorClassUtils'
-import type { PassiveGuide, SpellcastingGuide } from '../../utils/rollGuide'
-import type { SheetConditionalAc } from '../../utils/sheetEffects'
+import type { ArmorClassResult } from '@rpg/rules/systems/dnd5e/utils/armorClassUtils'
+import { formatArmorClassBreakdown } from '@rpg/rules/systems/dnd5e/utils/armorClassUtils'
+import type { PassiveGuide, SpellcastingGuide } from '@rpg/rules/systems/dnd5e/utils/rollGuide'
+import type { SheetConditionalAc } from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
 
 /**
  * "De onde vem este número" para o que não se rola: CA, CD de magia, Percepção passiva. As

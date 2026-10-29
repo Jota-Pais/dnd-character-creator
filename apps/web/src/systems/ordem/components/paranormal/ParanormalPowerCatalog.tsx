@@ -1,13 +1,14 @@
-import type { OrdemCharacterDraft, ParanormalSourceKey } from '../../types/character'
-import type { ParanormalElement } from '../../types/ritual'
-import { PARANORMAL_ELEMENTS } from '../../types/ritual'
-import { ELEMENT_NAMES, ELEMENT_COLORS } from '../../utils/ritualUtils'
+import type { OrdemCharacterDraft, ParanormalSourceKey } from '@rpg/rules/systems/ordem/types/character'
+import type { ParanormalElement } from '@rpg/rules/systems/ordem/types/ritual'
+import { PARANORMAL_ELEMENTS } from '@rpg/rules/systems/ordem/types/ritual'
+import { ELEMENT_NAMES } from '@rpg/rules/systems/ordem/utils/ritualUtils'
+import { ELEMENT_COLORS } from '../common/elementColors'
 import {
   getAvailableParanormalPowers,
   getParanormalInstances,
   isParanormalElement,
   type ParanormalPowerOption,
-} from '../../utils/paranormalPowerUtils'
+} from '@rpg/rules/systems/ordem/utils/paranormalPowerUtils'
 
 type Props = {
   draft: OrdemCharacterDraft

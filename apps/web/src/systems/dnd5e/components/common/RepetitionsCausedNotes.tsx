@@ -1,8 +1,8 @@
 import { useCharacterStore } from '../../stores/characterStore'
-import { STEP_LABELS } from '../../types/character'
+import { STEP_LABELS } from '@rpg/rules/systems/dnd5e/types/character'
 import {
   formatRepetitionCaused, getOwnerStep, getRepetitionsCausedBy, type ProficiencyOwner,
-} from '../../utils/proficiencyUtils'
+} from '@rpg/rules/systems/dnd5e/utils/proficiencyUtils'
 
 /**
  * Na etapa de uma fonte (raça, antecedente), o aviso das repetições que ela causou na escolha de

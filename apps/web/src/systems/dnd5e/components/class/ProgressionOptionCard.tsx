@@ -1,4 +1,4 @@
-import type { ProgressionOption } from '../../utils/progressionOptions'
+import type { ProgressionOption } from '@rpg/rules/systems/dnd5e/utils/progressionOptions'
 
 type Props = {
   option: ProgressionOption

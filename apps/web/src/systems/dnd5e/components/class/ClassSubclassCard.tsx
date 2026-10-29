@@ -1,4 +1,4 @@
-import type { ClassSubclass, LevelFeature } from '../../types/class'
+import type { ClassSubclass, LevelFeature } from '@rpg/rules/systems/dnd5e/types/class'
 
 type Props = {
   subclass: ClassSubclass

@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { render, cleanup, fireEvent } from '@testing-library/react'
 import { BackgroundStep } from '../BackgroundStep'
 import { useCharacterStore } from '../../../stores/characterStore'
-import { EMPTY_DRAFT, type CharacterDraft } from '../../../types/character'
+import { EMPTY_DRAFT, type CharacterDraft } from '@rpg/rules/systems/dnd5e/types/character'
 
 // O item do antecedente sem a proficiência (p. 156) só aparecia na Revisão e no PDF, embora a
 // escolha que causa isso seja feita aqui.

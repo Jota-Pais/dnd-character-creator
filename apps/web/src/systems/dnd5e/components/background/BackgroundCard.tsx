@@ -1,5 +1,5 @@
-import type { Background } from '../../types/background'
-import { BACKGROUND_PRESENTATION, getSkillName, TOOL_CHOICE_LABEL } from '../../utils/backgroundUtils'
+import type { Background } from '@rpg/rules/systems/dnd5e/types/background'
+import { BACKGROUND_PRESENTATION, getSkillName, TOOL_CHOICE_LABEL } from '@rpg/rules/systems/dnd5e/utils/backgroundUtils'
 
 type Props = {
   background: Background

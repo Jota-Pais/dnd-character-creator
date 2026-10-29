@@ -2,9 +2,9 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { act, render, screen, fireEvent, cleanup } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { usePlayStore } from '../../../stores/playStore'
-import { applyDamage, spendResource } from '../../../utils/playState'
-import { EMPTY_DRAFT } from '../../../types/character'
-import { COMPLETE_DRAFT } from '../../../../../test/fixtures'
+import { applyDamage, spendResource } from '@rpg/rules/systems/dnd5e/utils/playState'
+import { EMPTY_DRAFT } from '@rpg/rules/systems/dnd5e/types/character'
+import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
 import { liveRegions, openDraft, openKrusk, resetPlay } from './openPlay'
 
 beforeEach(resetPlay)

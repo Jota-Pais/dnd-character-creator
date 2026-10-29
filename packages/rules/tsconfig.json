@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.tsbuildinfo",
+    "target": "es2023",
+    /* Sem a lib DOM: o motor roda no navegador e no Node (o servidor que virá), então window,
+       document e localStorage não compilam aqui. O que ele usa de fora do ECMAScript, comum aos
+       dois, está em src/runtime.d.ts. */
+    "lib": ["ES2023"],
+    "module": "esnext",
+    "strict": true,
+    /* Só pelo import.meta.glob dos testes (o Vitest roda sobre o Vite). */
+    "types": ["vite/client"],
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+
+    /* Linting */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src"]
+}

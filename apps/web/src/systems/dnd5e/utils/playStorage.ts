@@ -1,5 +1,5 @@
-import type { PlayResult, PlaySheet, PlayState } from '../types/playState'
-import { createPlayState, reconcileLoadedPlayState, sanitizePlayState } from './playState'
+import type { PlayResult, PlaySheet, PlayState } from '@rpg/rules/systems/dnd5e/types/playState'
+import { createPlayState, reconcileLoadedPlayState, sanitizePlayState } from '@rpg/rules/systems/dnd5e/utils/playState'
 
 /**
  * Persistência do estado de jogo — a camada que componentes e stores usam (nunca o localStorage

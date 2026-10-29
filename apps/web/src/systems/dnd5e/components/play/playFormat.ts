@@ -1,4 +1,4 @@
-import { describeRollGuide, type RollGuideEntry } from '../../utils/rollGuide'
+import { describeRollGuide, type RollGuideEntry } from '@rpg/rules/systems/dnd5e/utils/rollGuide'
 
 /**
  * O nome acessível de um número tocável: "Atletismo: 1d20 + 5, com desvantagem (Envenenado)".

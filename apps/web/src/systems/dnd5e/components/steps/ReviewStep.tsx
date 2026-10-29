@@ -3,46 +3,46 @@ import {
   getRace, getSubrace,
   getEffectiveDarkvision, RACE_PRESENTATION, getEffectiveTraitsWithChoices,
   describeInnateSpellUsage,
-} from '../../utils/raceUtils'
-import { getFinalAbilityScores, getCharacterFeats, getSheetClassFeatures } from '../../utils/asiUtils'
+} from '@rpg/rules/systems/dnd5e/utils/raceUtils'
+import { getFinalAbilityScores, getCharacterFeats, getSheetClassFeatures } from '@rpg/rules/systems/dnd5e/utils/asiUtils'
 import { RuleText } from '../common/RuleText'
 import {
   getClass, CLASS_PRESENTATION,
-} from '../../utils/classUtils'
+} from '@rpg/rules/systems/dnd5e/utils/classUtils'
 import {
   allClassEntries, formatClassLevelLabel,
-} from '../../utils/multiclassUtils'
+} from '@rpg/rules/systems/dnd5e/utils/multiclassUtils'
 import {
   describeResource, groupResourcesBySource, resourceGroupsNeedLabels, resourceSourceLabel,
-} from '../../utils/classResourceUtils'
+} from '@rpg/rules/systems/dnd5e/utils/classResourceUtils'
 import {
   getBackground, BACKGROUND_PRESENTATION, getToolName, SKILLS,
   getBackgroundDetailPrompt, ROLEPLAY_FIELDS,
-} from '../../utils/backgroundUtils'
+} from '@rpg/rules/systems/dnd5e/utils/backgroundUtils'
 import {
   calculateModifier, formatModifier, ALL_ABILITY_SCORES, ABILITY_LABELS,
   getProficiencyBonus, formatXpProgress, formatMeters,
-} from '../../utils/abilityScoreUtils'
-import { getStartingMoney, describeStartingMoneySource, formatCoins } from '../../utils/equipmentUtils'
+} from '@rpg/rules/systems/dnd5e/utils/abilityScoreUtils'
+import { getStartingMoney, describeStartingMoneySource, formatCoins } from '@rpg/rules/systems/dnd5e/utils/equipmentUtils'
 import {
   getKnownSpells, getStartingInventory, type InventoryEntry, type InventorySource,
-} from '../../utils/sheetModel'
-import { formatArmorClassBreakdown } from '../../utils/armorClassUtils'
+} from '@rpg/rules/systems/dnd5e/utils/sheetModel'
+import { formatArmorClassBreakdown } from '@rpg/rules/systems/dnd5e/utils/armorClassUtils'
 import {
   getAllGrantedTools, getLanguageLabels, EXOTIC_LANGUAGE_NOTE, getExpertiseTools, getSkillChecks,
   getSavingThrowChecks,
   getPassiveScore, getArmorProficiencyLabels, getWeaponProficiencyLabels, getUnproficientArmor,
   getUnproficientTools, formatUnproficientTool, describeHalfProficiencyOnChecks,
-} from '../../utils/proficiencyUtils'
+} from '@rpg/rules/systems/dnd5e/utils/proficiencyUtils'
 import {
   getTotalHp, getInitiativeBonusTotal, getSheetSpeed, describeSpeedBonuses,
   getConditionalAcBonuses, getSheetResources, getSheetArmorClass,
   describeAttacksPerAction, getSheetFightingStyles, describeConditionalSaveBonuses, getFeatManeuverBlock,
-} from '../../utils/sheetEffects'
-import { getSheetAttacks } from '../../utils/attackUtils'
-import { REPEATED_FEAT_MANEUVER_NOTE, getClassManeuverSaveDc, isManeuverSlot } from '../../utils/maneuverUtils'
-import { formatAttackDamage } from '../../utils/weaponFormat'
-import { formatUnmetPick, getProgressionChoiceBlocks } from '../../utils/progressionOptions'
+} from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
+import { getSheetAttacks } from '@rpg/rules/systems/dnd5e/utils/attackUtils'
+import { REPEATED_FEAT_MANEUVER_NOTE, getClassManeuverSaveDc, isManeuverSlot } from '@rpg/rules/systems/dnd5e/utils/maneuverUtils'
+import { formatAttackDamage } from '@rpg/rules/systems/dnd5e/utils/weaponFormat'
+import { formatUnmetPick, getProgressionChoiceBlocks } from '@rpg/rules/systems/dnd5e/utils/progressionOptions'
 import {
   getSpell,
   getSpellSaveDC,
@@ -58,16 +58,16 @@ import {
   getCasterColumnHeadings,
   getRepeatedSpells,
   formatRepeatedSpell,
-} from '../../utils/spellUtils'
+} from '@rpg/rules/systems/dnd5e/utils/spellUtils'
 import { exportCharacter } from '../../utils/storage'
-import { getPendingSteps, getStepPendingReasons } from '../../utils/pendingReasons'
+import { getPendingSteps, getStepPendingReasons } from '@rpg/rules/systems/dnd5e/utils/pendingReasons'
 import { InfoTooltip } from '../common/InfoTooltip'
 import { PendingStepsPanel } from '../common/PendingStepsPanel'
 import { formatMissingCount } from '../../../../components/wizard/pendingSteps'
 import { StepNav } from '../../../../components/wizard/StepNav'
-import type { TermId } from '../../utils/glossary'
-import type { AbilityScore } from '../../types/race'
-import type { HpMethod } from '../../types/character'
+import type { TermId } from '@rpg/rules/systems/dnd5e/utils/glossary'
+import type { AbilityScore } from '@rpg/rules/systems/dnd5e/types/race'
+import type { HpMethod } from '@rpg/rules/systems/dnd5e/types/character'
 
 export function ReviewStep() {
   const draft = useCharacterStore(state => state.draft)

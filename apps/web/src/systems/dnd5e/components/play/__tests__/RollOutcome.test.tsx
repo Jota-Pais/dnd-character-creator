@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { render, screen, cleanup, fireEvent } from '@testing-library/react'
-import { roll, sequenceRoller } from '../../../../../core/dice'
+import { roll, sequenceRoller } from '@rpg/rules/core/dice'
 import { RollOutcome } from '../RollOutcome'
 
 afterEach(() => {

@@ -7,7 +7,7 @@ import {
   getSkillName,
   getToolName,
   getBackgroundItemChoices,
-} from '../../utils/backgroundUtils'
+} from '@rpg/rules/systems/dnd5e/utils/backgroundUtils'
 import {
   getExcludedTools,
   getExcludedLanguages,
@@ -17,13 +17,13 @@ import {
   getBackgroundFixedOverlaps,
   getAllGrantedSkills,
   getAllGrantedTools,
-} from '../../utils/proficiencyUtils'
+} from '@rpg/rules/systems/dnd5e/utils/proficiencyUtils'
 import { BackgroundCard } from '../background/BackgroundCard'
 import { BackgroundChoicePanel } from '../background/BackgroundChoicePanel'
 import { SubstituteProficiencyPicker } from '../background/SubstituteProficiencyPicker'
 import { RepetitionsCausedNotes } from '../common/RepetitionsCausedNotes'
 import { StepNav } from '../../../../components/wizard/StepNav'
-import { formatPendingHint, getStepPendingReasons } from '../../utils/pendingReasons'
+import { formatPendingHint, getStepPendingReasons } from '@rpg/rules/systems/dnd5e/utils/pendingReasons'
 
 export function BackgroundStep() {
   const draft = useCharacterStore(state => state.draft)

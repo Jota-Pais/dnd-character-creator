@@ -1,17 +1,18 @@
 import { useState } from 'react'
-import type { OrdemCharacterDraft, ParanormalPowerChoice, ParanormalSourceKey } from '../../types/character'
-import type { ParanormalPower } from '../../types/paranormalPower'
-import type { OrdemElement, ParanormalElement } from '../../types/ritual'
-import { PARANORMAL_ELEMENTS } from '../../types/ritual'
+import type { OrdemCharacterDraft, ParanormalPowerChoice, ParanormalSourceKey } from '@rpg/rules/systems/ordem/types/character'
+import type { ParanormalPower } from '@rpg/rules/systems/ordem/types/paranormalPower'
+import type { OrdemElement, ParanormalElement } from '@rpg/rules/systems/ordem/types/ritual'
+import { PARANORMAL_ELEMENTS } from '@rpg/rules/systems/ordem/types/ritual'
 import { useOrdemStore } from '../../stores/characterStore'
-import { ELEMENT_NAMES, ELEMENT_COLORS, getRitualById } from '../../utils/ritualUtils'
-import { ORDEM_CLASSES } from '../../utils/classUtils'
-import { POWER_PARAM_SPECS } from '../../utils/characterUtils'
+import { ELEMENT_NAMES, getRitualById } from '@rpg/rules/systems/ordem/utils/ritualUtils'
+import { ELEMENT_COLORS } from '../common/elementColors'
+import { ORDEM_CLASSES } from '@rpg/rules/systems/ordem/utils/classUtils'
+import { POWER_PARAM_SPECS } from '@rpg/rules/systems/ordem/utils/characterUtils'
 import {
   getAvailableExpansionPowers,
   getLearnRitualMaxCircle,
   getSourceAcquisitionNex,
-} from '../../utils/paranormalPowerUtils'
+} from '@rpg/rules/systems/ordem/utils/paranormalPowerUtils'
 
 type Props = {
   draft: OrdemCharacterDraft

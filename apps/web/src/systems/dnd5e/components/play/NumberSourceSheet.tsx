@@ -1,4 +1,4 @@
-import { formatModifier } from '../../utils/abilityScoreUtils'
+import { formatModifier } from '@rpg/rules/systems/dnd5e/utils/abilityScoreUtils'
 import type { NumberSource } from './numberSources'
 import { PlayDialog } from './PlayDialog'
 

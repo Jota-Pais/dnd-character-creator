@@ -1,5 +1,5 @@
-import type { Subrace } from '../../types/race'
-import { ABILITY_LABELS, formatBonus } from '../../utils/abilityScoreUtils'
+import type { Subrace } from '@rpg/rules/systems/dnd5e/types/race'
+import { ABILITY_LABELS, formatBonus } from '@rpg/rules/systems/dnd5e/utils/abilityScoreUtils'
 
 type Props = {
   subrace: Subrace

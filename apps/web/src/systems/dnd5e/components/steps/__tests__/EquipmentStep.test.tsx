@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { render, cleanup, fireEvent, screen } from '@testing-library/react'
 import { WealthRoller } from '../EquipmentStep'
-import { sequenceRoller } from '../../../../../core/dice'
+import { sequenceRoller } from '@rpg/rules/core/dice'
 
 afterEach(() => cleanup())
 

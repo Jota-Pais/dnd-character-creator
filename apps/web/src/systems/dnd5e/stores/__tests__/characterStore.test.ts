@@ -1,14 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { useCharacterStore, AUTOSAVE_DELAY_MS } from '../characterStore'
-import { EMPTY_DRAFT } from '../../types/character'
+import { EMPTY_DRAFT } from '@rpg/rules/systems/dnd5e/types/character'
 import { loadLibrary } from '../../utils/storage'
-import { getMissingSteps } from '../../utils/draftValidation'
-import { COMPLETE_DRAFT } from '../../../../test/fixtures'
+import { getMissingSteps } from '@rpg/rules/systems/dnd5e/utils/draftValidation'
+import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
 import { useAppStore } from '../../../../core/stores/appStore'
 import { usePlayStore } from '../playStore'
-import { createPlayState, setInspiration } from '../../utils/playState'
+import { createPlayState, setInspiration } from '@rpg/rules/systems/dnd5e/utils/playState'
 import { loadOpenPlayId, loadPlayState, saveOpenPlayId, savePlayState } from '../../utils/playStorage'
-import { sequenceRoller } from '../../../../core/dice'
+import { sequenceRoller } from '@rpg/rules/core/dice'
 
 beforeEach(() => {
   // newCharacter grava a alteração pendente do teste anterior — só depois o storage é limpo

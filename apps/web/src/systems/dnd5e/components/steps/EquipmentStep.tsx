@@ -1,19 +1,19 @@
 import { useEffect, useState } from 'react'
 import { useCharacterStore } from '../../stores/characterStore'
-import { getClass, CLASS_PRESENTATION } from '../../utils/classUtils'
-import { getBackground, resolveBackgroundItems } from '../../utils/backgroundUtils'
+import { getClass, CLASS_PRESENTATION } from '@rpg/rules/systems/dnd5e/utils/classUtils'
+import { getBackground, resolveBackgroundItems } from '@rpg/rules/systems/dnd5e/utils/backgroundUtils'
 import {
   getItemName, getShopCatalog, getPurchasesTotalCopper,
   formatCurrency, type ShopCategory,
-} from '../../utils/equipmentUtils'
-import { getAllGrantedTools, hasInstrumentSpellcastingFocus } from '../../utils/proficiencyUtils'
-import type { FixedItem, InventoryItem } from '../../types/equipment'
-import type { Background, BackgroundChoiceSelections } from '../../types/background'
+} from '@rpg/rules/systems/dnd5e/utils/equipmentUtils'
+import { getAllGrantedTools, hasInstrumentSpellcastingFocus } from '@rpg/rules/systems/dnd5e/utils/proficiencyUtils'
+import type { FixedItem, InventoryItem } from '@rpg/rules/systems/dnd5e/types/equipment'
+import type { Background, BackgroundChoiceSelections } from '@rpg/rules/systems/dnd5e/types/background'
 import { EquipmentMethodSelector } from '../equipment/EquipmentMethodSelector'
 import { EquipmentChoiceCard } from '../equipment/EquipmentChoiceCard'
 import { StepNav } from '../../../../components/wizard/StepNav'
-import { formatPendingHint, getStepPendingReasons } from '../../utils/pendingReasons'
-import { cryptoRoller, type DieRoller } from '../../../../core/dice'
+import { formatPendingHint, getStepPendingReasons } from '@rpg/rules/systems/dnd5e/utils/pendingReasons'
+import { cryptoRoller, type DieRoller } from '@rpg/rules/core/dice'
 
 export function EquipmentStep() {
   const draft = useCharacterStore(state => state.draft)

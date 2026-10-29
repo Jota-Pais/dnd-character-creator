@@ -1,5 +1,5 @@
-import { formatModifier } from '../../utils/abilityScoreUtils'
-import type { AttackGuide } from '../../utils/rollGuide'
+import { formatModifier } from '@rpg/rules/systems/dnd5e/utils/abilityScoreUtils'
+import type { AttackGuide } from '@rpg/rules/systems/dnd5e/utils/rollGuide'
 import { rollButtonLabel } from './playFormat'
 import { RollMarks } from './RollMarks'
 import type { PlayTabProps } from './usePlayView'

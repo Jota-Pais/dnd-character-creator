@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { MAX_DICE } from '../../../../core/dice'
+import { MAX_DICE } from '@rpg/rules/core/dice'
 import { usePlayStore } from '../../stores/playStore'
 import {
   FREE_ROLL_DICE, FREE_ROLL_MAX_MODIFIER, formatFreeRoll, formatRollCopyText, readFreeRollNumber, rollFree,

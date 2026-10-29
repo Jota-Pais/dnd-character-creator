@@ -1,8 +1,8 @@
 import { useAppStore } from '../../../../../core/stores/appStore'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { usePlayStore } from '../../../stores/playStore'
-import type { CharacterDraft } from '../../../types/character'
-import { COMPLETE_DRAFT } from '../../../../../test/fixtures'
+import type { CharacterDraft } from '@rpg/rules/systems/dnd5e/types/character'
+import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
 
 /** Limpa o armazenamento e fecha o modo de jogo (o `beforeEach` dos testes da tela). */
 export function resetPlay(): void {

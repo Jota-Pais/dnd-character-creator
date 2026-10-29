@@ -1,11 +1,11 @@
 import { create } from 'zustand'
-import type { RollRecord } from '../../../core/dice'
-import { canonicalJson } from '../../../core/utils/canonicalJson'
-import type { CharacterDraft } from '../types/character'
-import type { PlayNotice, PlayResult, PlaySheet, PlayState, SheetSnapshot } from '../types/playState'
-import { buildPlaySheet } from '../utils/playSheet'
-import { clearRollHistory, recordRoll } from '../utils/playState'
-import { syncSheetSnapshot, takeSheetSnapshot } from '../utils/sheetSnapshot'
+import type { RollRecord } from '@rpg/rules/core/dice'
+import { canonicalJson } from '@rpg/rules/core/utils/canonicalJson'
+import type { CharacterDraft } from '@rpg/rules/systems/dnd5e/types/character'
+import type { PlayNotice, PlayResult, PlaySheet, PlayState, SheetSnapshot } from '@rpg/rules/systems/dnd5e/types/playState'
+import { buildPlaySheet } from '@rpg/rules/systems/dnd5e/utils/playSheet'
+import { clearRollHistory, recordRoll } from '@rpg/rules/systems/dnd5e/utils/playState'
+import { syncSheetSnapshot, takeSheetSnapshot } from '@rpg/rules/systems/dnd5e/utils/sheetSnapshot'
 import {
   loadPlayPreferences, loadPlayState, loadPlayStateFor, savePlayPreferences, savePlayState, type PlayPreferences,
 } from '../utils/playStorage'

@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { render, cleanup, fireEvent } from '@testing-library/react'
 import { RaceStep } from '../RaceStep'
 import { useCharacterStore } from '../../../stores/characterStore'
-import { EMPTY_DRAFT, type CharacterDraft, type RaceChoiceSelections } from '../../../types/character'
+import { EMPTY_DRAFT, type CharacterDraft, type RaceChoiceSelections } from '@rpg/rules/systems/dnd5e/types/character'
 
 // Mesmo padrão da etapa Classe: a perícia escolhida na raça que o antecedente trocado depois já dá
 // não some ao abrir a etapa — fica marcada, com o aviso, até o jogador trocar (p. 125).

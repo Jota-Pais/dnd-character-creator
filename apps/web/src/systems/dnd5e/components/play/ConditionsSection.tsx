@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { flushSync } from 'react-dom'
 import { registerPendingEdit } from '../../stores/playStore'
-import type { ConditionId } from '../../types/condition'
-import { CONDITION_NOTE_MAX_LENGTH } from '../../types/playState'
+import type { ConditionId } from '@rpg/rules/systems/dnd5e/types/condition'
+import { CONDITION_NOTE_MAX_LENGTH } from '@rpg/rules/systems/dnd5e/types/playState'
 import {
   addCondition, getPlayConditionEffects, isAtZeroHp, removeCondition, setConditionNote, standUp,
-} from '../../utils/playState'
-import { CONDITIONS, getCondition } from '../../utils/sheetEffects'
+} from '@rpg/rules/systems/dnd5e/utils/playState'
+import { CONDITIONS, getCondition } from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
 import type { PlayTabProps } from './usePlayView'
 
 const names = (ids: ConditionId[]) => ids.map(id => getCondition(id)?.name ?? id).join(', ')

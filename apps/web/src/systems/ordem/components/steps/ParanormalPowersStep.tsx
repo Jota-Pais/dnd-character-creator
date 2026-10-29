@@ -1,17 +1,18 @@
 import { useState } from 'react'
 import { useOrdemStore } from '../../stores/characterStore'
-import { STEP_LABELS } from '../../types/character'
-import type { ParanormalSourceKey } from '../../types/character'
-import { ELEMENT_NAMES, ELEMENT_COLORS } from '../../utils/ritualUtils'
-import { isStepComplete } from '../../utils/draftValidation'
+import { STEP_LABELS } from '@rpg/rules/systems/ordem/types/character'
+import type { ParanormalSourceKey } from '@rpg/rules/systems/ordem/types/character'
+import { ELEMENT_NAMES } from '@rpg/rules/systems/ordem/utils/ritualUtils'
+import { ELEMENT_COLORS } from '../common/elementColors'
+import { isStepComplete } from '@rpg/rules/systems/ordem/utils/draftValidation'
 import {
   getActiveParanormalSources,
   getAffinityState,
   getParanormalInstances,
   getSourceLabel,
   type ParanormalInstance,
-} from '../../utils/paranormalPowerUtils'
-import { isParanormalElement } from '../../utils/paranormalPowerUtils'
+} from '@rpg/rules/systems/ordem/utils/paranormalPowerUtils'
+import { isParanormalElement } from '@rpg/rules/systems/ordem/utils/paranormalPowerUtils'
 import { StepNav } from '../../../../components/wizard/StepNav'
 import { AffinitySection } from '../paranormal/AffinitySection'
 import { ParanormalPowerCatalog } from '../paranormal/ParanormalPowerCatalog'

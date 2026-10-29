@@ -5,8 +5,8 @@ import { useAppStore } from '../../../../../core/stores/appStore'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { usePlayStore } from '../../../stores/playStore'
 import { formatPlaySubtitle } from '../usePlayView'
-import { EMPTY_DRAFT, type CharacterDraft } from '../../../types/character'
-import { COMPLETE_DRAFT } from '../../../../../test/fixtures'
+import { EMPTY_DRAFT, type CharacterDraft } from '@rpg/rules/systems/dnd5e/types/character'
+import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
 import { openKrusk, resetPlay } from './openPlay'
 
 beforeEach(resetPlay)

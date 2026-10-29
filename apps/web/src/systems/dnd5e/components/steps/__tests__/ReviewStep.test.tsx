@@ -3,7 +3,7 @@ import { render, cleanup } from '@testing-library/react'
 import { ReviewStep } from '../ReviewStep'
 import { PrintableSheet } from '../../PrintableSheet'
 import { useCharacterStore } from '../../../stores/characterStore'
-import { EMPTY_DRAFT, type CharacterDraft } from '../../../types/character'
+import { EMPTY_DRAFT, type CharacterDraft } from '@rpg/rules/systems/dnd5e/types/character'
 
 afterEach(() => cleanup())
 

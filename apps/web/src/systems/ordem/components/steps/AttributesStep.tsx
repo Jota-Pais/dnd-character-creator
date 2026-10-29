@@ -1,6 +1,6 @@
-import type { OrdemAttributes } from '../../types/character'
+import type { OrdemAttributes } from '@rpg/rules/systems/ordem/types/character'
 import { useOrdemStore } from '../../stores/characterStore'
-import { ATTRIBUTES, ATTRIBUTE_POINTS_TOTAL, ATTRIBUTE_MAX, getAttributeSum, isValidAttributes } from '../../utils/attributeUtils'
+import { ATTRIBUTES, ATTRIBUTE_POINTS_TOTAL, ATTRIBUTE_MAX, getAttributeSum, isValidAttributes } from '@rpg/rules/systems/ordem/utils/attributeUtils'
 import { StepNav } from '../../../../components/wizard/StepNav'
 
 export function AttributesStep() {

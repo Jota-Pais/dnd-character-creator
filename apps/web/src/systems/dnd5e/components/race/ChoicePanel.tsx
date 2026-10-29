@@ -1,15 +1,15 @@
-import type { RaceChoice, AbilityScore } from '../../types/race'
-import type { RaceChoiceSelections } from '../../types/character'
-import { ALL_ABILITY_SCORES, ABILITY_LABELS } from '../../utils/abilityScoreUtils'
-import { SKILLS, TOOL_NAMES } from '../../utils/raceUtils'
-import { getCantrips, SPELLS } from '../../utils/spellUtils'
-import { getFeat } from '../../utils/featUtils'
+import type { RaceChoice, AbilityScore } from '@rpg/rules/systems/dnd5e/types/race'
+import type { RaceChoiceSelections } from '@rpg/rules/systems/dnd5e/types/character'
+import { ALL_ABILITY_SCORES, ABILITY_LABELS } from '@rpg/rules/systems/dnd5e/utils/abilityScoreUtils'
+import { SKILLS, TOOL_NAMES } from '@rpg/rules/systems/dnd5e/utils/raceUtils'
+import { getCantrips, SPELLS } from '@rpg/rules/systems/dnd5e/utils/spellUtils'
+import { getFeat } from '@rpg/rules/systems/dnd5e/utils/featUtils'
 import { FeatCatalog } from '../common/FeatCatalog'
 import { FeatChoiceSlots } from '../common/FeatChoiceSlots'
 import { LanguagePicker } from '../common/LanguagePicker'
 import { RepeatedProficiencyNotes } from '../common/RepeatedProficiencyNotes'
 import { REPEATED_OPTION_STYLE } from '../common/repeatedChipStyle'
-import { isChoiceFull, toggleChoice } from '../../utils/choiceToggle'
+import { isChoiceFull, toggleChoice } from '@rpg/rules/systems/dnd5e/utils/choiceToggle'
 
 type Props = {
   choices: RaceChoice[]

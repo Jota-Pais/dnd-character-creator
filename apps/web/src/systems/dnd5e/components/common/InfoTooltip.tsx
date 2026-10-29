@@ -1,5 +1,5 @@
 import { Tooltip } from '../../../../components/common/Tooltip'
-import { GLOSSARY, type TermId } from '../../utils/glossary'
+import { GLOSSARY, type TermId } from '@rpg/rules/systems/dnd5e/utils/glossary'
 
 type Props = {
   term: TermId

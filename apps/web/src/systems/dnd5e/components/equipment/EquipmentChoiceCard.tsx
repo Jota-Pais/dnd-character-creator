@@ -1,14 +1,14 @@
 import type {
   EquipmentChoice, EquipmentChoiceItem, ChoiceResolution,
   Weapon, GeneralItem, Tool,
-} from '../../types/equipment'
+} from '@rpg/rules/systems/dnd5e/types/equipment'
 import {
   describeEquipmentOption, isChoiceResolved,
   getWeaponsForFilter, getToolsForCategory, getFocusGroupItems,
   getWeaponById, getArmorById, getPackById, formatPackContents, getToolById,
-} from '../../utils/equipmentUtils'
-import { describeToolWithoutProficiency } from '../../utils/proficiencyUtils'
-import { formatWeaponSummary, formatArmorSummary } from '../../utils/weaponFormat'
+} from '@rpg/rules/systems/dnd5e/utils/equipmentUtils'
+import { describeToolWithoutProficiency } from '@rpg/rules/systems/dnd5e/utils/proficiencyUtils'
+import { formatWeaponSummary, formatArmorSummary } from '@rpg/rules/systems/dnd5e/utils/weaponFormat'
 
 /** O que o personagem já domina, pra guiar a escolha de ferramenta/instrumento sem decidir por ele. */
 type ToolGuidance = {

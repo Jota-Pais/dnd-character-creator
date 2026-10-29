@@ -3,9 +3,9 @@ import { act, render, screen, fireEvent, cleanup, waitFor, within } from '@testi
 import { PlayScreen } from '../PlayScreen'
 import { useCharacterStore } from '../../../stores/characterStore'
 import { usePlayStore } from '../../../stores/playStore'
-import type { SheetSnapshot } from '../../../types/playState'
+import type { SheetSnapshot } from '@rpg/rules/systems/dnd5e/types/playState'
 import { loadPlayState, savePlayState } from '../../../utils/playStorage'
-import { createPlayState, grantTempHp, stabilize, startConcentration } from '../../../utils/playState'
+import { createPlayState, grantTempHp, stabilize, startConcentration } from '@rpg/rules/systems/dnd5e/utils/playState'
 import { openKrusk, resetPlay } from './openPlay'
 
 beforeEach(resetPlay)

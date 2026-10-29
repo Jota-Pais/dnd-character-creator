@@ -1,12 +1,12 @@
-import { EMPTY_DRAFT, WIZARD_STEPS, STEP_LABELS } from './types/character';
-import { isStepComplete, getMissingSteps, canPlayDraft } from './utils/draftValidation';
+import { EMPTY_DRAFT, WIZARD_STEPS, STEP_LABELS } from '@rpg/rules/systems/dnd5e/types/character';
+import { isStepComplete, getMissingSteps, canPlayDraft } from '@rpg/rules/systems/dnd5e/utils/draftValidation';
 import { PrintableSheet } from './components/PrintableSheet';
 import { Dnd5eApp } from './Dnd5eApp';
 import { useCharacterStore } from './stores/characterStore';
-import { getRace, getSubrace } from './utils/raceUtils';
-import { getClass } from './utils/classUtils';
+import { getRace, getSubrace } from '@rpg/rules/systems/dnd5e/utils/raceUtils';
+import { getClass } from '@rpg/rules/systems/dnd5e/utils/classUtils';
 import type { IRpgSystem, StepConfig } from '../../core/types/system';
-import type { CharacterDraft } from './types/character';
+import type { CharacterDraft } from '@rpg/rules/systems/dnd5e/types/character';
 import { NameStep } from './components/steps/NameStep';
 import { RaceStep } from './components/steps/RaceStep';
 import { ClassStep } from './components/steps/ClassStep';

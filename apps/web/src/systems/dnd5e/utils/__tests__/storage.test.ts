@@ -4,12 +4,12 @@ import {
   loadLibrary, saveCharacterEntry, deleteCharacterEntry, newId, type SavedCharacter,
   buildCharacterFile, parseCharacterFile, exportCharacter, CHARACTER_FILE_FORMAT, CHARACTER_FILE_VERSION,
 } from '../storage'
-import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
-import { PLAY_STATE_VERSION } from '../../types/playState'
-import { sanitizeImportedDraft } from '../draftValidation'
-import { createPlayState } from '../playState'
+import { EMPTY_DRAFT, type CharacterDraft } from '@rpg/rules/systems/dnd5e/types/character'
+import { PLAY_STATE_VERSION } from '@rpg/rules/systems/dnd5e/types/playState'
+import { sanitizeImportedDraft } from '@rpg/rules/systems/dnd5e/utils/draftValidation'
+import { createPlayState } from '@rpg/rules/systems/dnd5e/utils/playState'
 import { savePlayState } from '../playStorage'
-import { COMPLETE_DRAFT } from '../../../../test/fixtures'
+import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
 
 const SESSION_KEY = 'dnd-character-session'
 

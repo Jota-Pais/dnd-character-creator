@@ -6,7 +6,7 @@ import fs from 'fs'
 import path from 'path'
 
 const EXTRACT = path.join(process.cwd(), 'docs/_book-extracts/ordem-paranormal.txt')
-const OUT_JSON = path.join(process.cwd(), 'apps/web/src/systems/ordem/data/rituals.json')
+const OUT_JSON = path.join(process.cwd(), 'packages/rules/src/systems/ordem/data/rituals.json')
 const OUT_DOC = path.join(process.cwd(), 'docs/ordem-paranormal/regras-rituais.md')
 
 const raw = fs.readFileSync(EXTRACT, 'utf-8').split('\n')

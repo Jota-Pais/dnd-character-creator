@@ -1,9 +1,9 @@
 import { useOrdemStore } from '../../stores/characterStore'
-import { ORIGINS, getOrigin } from '../../utils/originUtils'
-import { SKILLS, getSkillName } from '../../utils/skillUtils'
-import { isStepComplete } from '../../utils/draftValidation'
+import { ORIGINS, getOrigin } from '@rpg/rules/systems/ordem/utils/originUtils'
+import { SKILLS, getSkillName } from '@rpg/rules/systems/ordem/utils/skillUtils'
+import { isStepComplete } from '@rpg/rules/systems/ordem/utils/draftValidation'
 import { StepNav } from '../../../../components/wizard/StepNav'
-import type { Origin } from '../../types/origin'
+import type { Origin } from '@rpg/rules/systems/ordem/types/origin'
 
 export function OriginStep() {
   const draft = useOrdemStore(state => state.draft)

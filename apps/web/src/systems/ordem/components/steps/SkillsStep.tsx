@@ -1,6 +1,6 @@
 import { useOrdemStore } from '../../stores/characterStore'
-import { getOrdemClass } from '../../utils/classUtils'
-import { SKILLS, getSkillName, formatSkillWithAttribute } from '../../utils/skillUtils'
+import { getOrdemClass } from '@rpg/rules/systems/ordem/utils/classUtils'
+import { SKILLS, getSkillName, formatSkillWithAttribute } from '@rpg/rules/systems/ordem/utils/skillUtils'
 import {
   getOriginSkills,
   getAvailableChoiceGroupOptions,
@@ -12,8 +12,8 @@ import {
   getExpertSkills,
   getExpertDie,
   EXPERT_SKILL_COUNT,
-} from '../../utils/characterUtils'
-import { isStepComplete } from '../../utils/draftValidation'
+} from '@rpg/rules/systems/ordem/utils/characterUtils'
+import { isStepComplete } from '@rpg/rules/systems/ordem/utils/draftValidation'
 import { StepNav } from '../../../../components/wizard/StepNav'
 import { StepPrerequisite } from '../common/StepPrerequisite'
 

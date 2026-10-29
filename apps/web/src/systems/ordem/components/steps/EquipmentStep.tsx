@@ -1,6 +1,6 @@
 import { useOrdemStore } from '../../stores/characterStore'
-import { STEP_LABELS } from '../../types/character'
-import type { OrdemEquipment } from '../../types/equipment'
+import { STEP_LABELS } from '@rpg/rules/systems/ordem/types/character'
+import type { OrdemEquipment } from '@rpg/rules/systems/ordem/types/equipment'
 import {
   EQUIPMENTS, getTotalCarryCapacity, getModifiedSpaces, getDraftInstanceCategory, getCatalogCategory,
   hasItemProficiency, instanceItemId, newInstanceUid, getInstanceLabel,
@@ -9,21 +9,22 @@ import {
   getEquipmentByInstance, getKitSlots, getKitSkillOptions,
   getLoadState, OVERLOAD_DEFENSE_PENALTY, OVERLOAD_SKILL_PENALTY, OVERLOAD_SPEED_PENALTY_METERS,
   getElementChoiceSlots, getEquipmentElementOptions,
-} from '../../utils/equipmentUtils'
-import type { ParanormalElement } from '../../types/ritual'
-import { getSkillName, getSkillKitName } from '../../utils/skillUtils'
-import { getAvailableModifications, canApplyModification, isModifiable, countApplied } from '../../utils/modificationUtils'
+} from '@rpg/rules/systems/ordem/utils/equipmentUtils'
+import type { ParanormalElement } from '@rpg/rules/systems/ordem/types/ritual'
+import { getSkillName, getSkillKitName } from '@rpg/rules/systems/ordem/utils/skillUtils'
+import { getAvailableModifications, canApplyModification, isModifiable, countApplied } from '@rpg/rules/systems/ordem/utils/modificationUtils'
 import {
   getAvailableCurses, canApplyCurse, isCursable, getCurseCategoryDelta, curseChoiceKey, formatCurseElement, getSheetAttributes,
   canPatenteUseCursedItems, getCursePriceNote, getCursesBlockedByPatente,
-} from '../../utils/curseUtils'
-import type { OrdemElement } from '../../types/ritual'
-import { getAvailableRituals, ELEMENT_NAMES, ELEMENT_COLORS } from '../../utils/ritualUtils'
-import { hasClassPower, getFavoriteWeaponReduction, getFavoriteEquipmentReduction, getWorkToolBonus } from '../../utils/characterUtils'
-import { addsStrengthToDamage, formatWeaponSummary } from '../../utils/ordemWeaponUtils'
-import { getPatente, PATENTES } from '../../utils/patenteUtils'
-import { getEffectiveCreditLimit, getUnproficientProtections } from '../../utils/sheetEffects'
-import { isStepComplete } from '../../utils/draftValidation'
+} from '@rpg/rules/systems/ordem/utils/curseUtils'
+import type { OrdemElement } from '@rpg/rules/systems/ordem/types/ritual'
+import { getAvailableRituals, ELEMENT_NAMES } from '@rpg/rules/systems/ordem/utils/ritualUtils'
+import { ELEMENT_COLORS } from '../common/elementColors'
+import { hasClassPower, getFavoriteWeaponReduction, getFavoriteEquipmentReduction, getWorkToolBonus } from '@rpg/rules/systems/ordem/utils/characterUtils'
+import { addsStrengthToDamage, formatWeaponSummary } from '@rpg/rules/systems/ordem/utils/ordemWeaponUtils'
+import { getPatente, PATENTES } from '@rpg/rules/systems/ordem/utils/patenteUtils'
+import { getEffectiveCreditLimit, getUnproficientProtections } from '@rpg/rules/systems/ordem/utils/sheetEffects'
+import { isStepComplete } from '@rpg/rules/systems/ordem/utils/draftValidation'
 import { StepNav } from '../../../../components/wizard/StepNav'
 
 const CAT_ROMAN = ['0', 'I', 'II', 'III', 'IV']

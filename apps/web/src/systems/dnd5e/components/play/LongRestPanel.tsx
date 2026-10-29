@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { completeLongRest, formatHpAdjustment, getHitDiceAvailable, previewLongRest } from '../../utils/playState'
-import { countLabel } from '../../utils/textUtils'
+import { completeLongRest, formatHpAdjustment, getHitDiceAvailable, previewLongRest } from '@rpg/rules/systems/dnd5e/utils/playState'
+import { countLabel } from '@rpg/rules/systems/dnd5e/utils/textUtils'
 import { ordinal } from './playFormat'
 import type { PlayTabProps } from './usePlayView'
 

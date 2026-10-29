@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { sequenceRoller } from '../../../../../core/dice'
-import { formatGuideFormula, formatGuideNotation, type RollGuideEntry } from '../../../utils/rollGuide'
+import { sequenceRoller } from '@rpg/rules/core/dice'
+import { formatGuideFormula, formatGuideNotation, type RollGuideEntry } from '@rpg/rules/systems/dnd5e/utils/rollGuide'
 import {
   canRollEntry, describeRolledFormula, formatFreeRoll, formatRollCopyText, readFreeRollNumber, rerollNaturalOne, rollFree,
   rollGuideEntry,

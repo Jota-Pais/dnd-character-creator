@@ -1,0 +1,11 @@
+{
+  "name": "@rpg/rules",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    "./core/dice": "./src/core/dice/index.ts",
+    "./*.json": "./src/*.json",
+    "./*": "./src/*.ts"
+  }
+}

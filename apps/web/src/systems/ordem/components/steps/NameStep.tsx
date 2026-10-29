@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { useOrdemStore } from '../../stores/characterStore'
 import { importCharacter } from '../../utils/storage'
-import { NEX_STEPS } from '../../utils/progressionUtils'
+import { NEX_STEPS } from '@rpg/rules/systems/ordem/utils/progressionUtils'
 import { StepNav } from '../../../../components/wizard/StepNav'
 
 export function NameStep() {

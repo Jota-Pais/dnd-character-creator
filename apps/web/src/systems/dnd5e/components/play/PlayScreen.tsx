@@ -5,7 +5,7 @@ import { adjacentPlayTab, keyboardPlayTab, PLAY_TABS, type PlayTabId } from './p
 import { useTabSwipe } from './tabSwipe'
 import { PlaySettings } from './PlaySettings'
 import { formatPlaySubtitle, usePlayView, type PlayTabProps } from './usePlayView'
-import { findRollGuideEntry, type RollGuideEntry } from '../../utils/rollGuide'
+import { findRollGuideEntry, type RollGuideEntry } from '@rpg/rules/systems/dnd5e/utils/rollGuide'
 import { DeathSaves } from './DeathSaves'
 import { HP_PANEL_ID, HpPanel } from './HpPanel'
 import { NoticeToast, type NoticeToastHandle } from './NoticeToast'

@@ -1,6 +1,6 @@
-import type { GameClass } from '../../types/class'
-import { CLASS_PRESENTATION, ROLES, isActiveCaster, getHpFormula } from '../../utils/classUtils'
-import { ABILITY_LABELS } from '../../utils/abilityScoreUtils'
+import type { GameClass } from '@rpg/rules/systems/dnd5e/types/class'
+import { CLASS_PRESENTATION, ROLES, isActiveCaster, getHpFormula } from '@rpg/rules/systems/dnd5e/utils/classUtils'
+import { ABILITY_LABELS } from '@rpg/rules/systems/dnd5e/utils/abilityScoreUtils'
 
 type Props = {
   cls: GameClass

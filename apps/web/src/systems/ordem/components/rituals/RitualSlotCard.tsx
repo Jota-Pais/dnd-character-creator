@@ -1,5 +1,6 @@
-import type { OrdemElement, OrdemRitual } from '../../types/ritual'
-import { ELEMENT_COLORS, ELEMENT_NAMES, getRitualById, ritualNeedsElementChoice } from '../../utils/ritualUtils'
+import type { OrdemElement, OrdemRitual } from '@rpg/rules/systems/ordem/types/ritual'
+import { ELEMENT_NAMES, getRitualById, ritualNeedsElementChoice } from '@rpg/rules/systems/ordem/utils/ritualUtils'
+import { ELEMENT_COLORS } from '../common/elementColors'
 
 type Props = {
   /** Rótulo do slot (ex.: "Ritual Inicial 1", "Transcender — poder de NEX 45%"). */

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { ClassPower } from '../../types/power'
+import type { ClassPower } from '@rpg/rules/systems/ordem/types/power'
 
 type Props = {
   power: ClassPower

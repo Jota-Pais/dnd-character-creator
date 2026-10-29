@@ -1,17 +1,17 @@
-import type { CharacterDraft } from '../../types/character'
-import type { Spell } from '../../types/spell'
-import { ABILITY_LABELS, formatMeters } from '../../utils/abilityScoreUtils'
-import { getCharacterFeats, getSheetClassFeatures } from '../../utils/asiUtils'
-import { getClass } from '../../utils/classUtils'
-import { allClassEntries } from '../../utils/multiclassUtils'
-import { getProgressionChoiceBlocks } from '../../utils/progressionOptions'
+import type { CharacterDraft } from '@rpg/rules/systems/dnd5e/types/character'
+import type { Spell } from '@rpg/rules/systems/dnd5e/types/spell'
+import { ABILITY_LABELS, formatMeters } from '@rpg/rules/systems/dnd5e/utils/abilityScoreUtils'
+import { getCharacterFeats, getSheetClassFeatures } from '@rpg/rules/systems/dnd5e/utils/asiUtils'
+import { getClass } from '@rpg/rules/systems/dnd5e/utils/classUtils'
+import { allClassEntries } from '@rpg/rules/systems/dnd5e/utils/multiclassUtils'
+import { getProgressionChoiceBlocks } from '@rpg/rules/systems/dnd5e/utils/progressionOptions'
 import {
   describeDarkvision, describeInnateSpellUsage, getEffectiveDarkvision,
   getEffectiveTraitsWithChoices, getRace, getSubrace,
-} from '../../utils/raceUtils'
-import { formatCastingRestriction, getCastingRestrictions, getSheetFightingStyles } from '../../utils/sheetEffects'
-import { getKnownSpells } from '../../utils/sheetModel'
-import { FEAT_SPELL_USAGE } from '../../utils/spellUtils'
+} from '@rpg/rules/systems/dnd5e/utils/raceUtils'
+import { formatCastingRestriction, getCastingRestrictions, getSheetFightingStyles } from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
+import { getKnownSpells } from '@rpg/rules/systems/dnd5e/utils/sheetModel'
+import { FEAT_SPELL_USAGE } from '@rpg/rules/systems/dnd5e/utils/spellUtils'
 import { ordinal } from './playFormat'
 
 /**

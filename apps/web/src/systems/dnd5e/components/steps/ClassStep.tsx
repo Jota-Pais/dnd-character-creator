@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { GameClass } from '../../types/class'
+import type { GameClass } from '@rpg/rules/systems/dnd5e/types/class'
 import { useCharacterStore } from '../../stores/characterStore'
 import {
   CLASSES,
@@ -10,18 +10,18 @@ import {
   getHpFormula,
   getBaseClassFeaturesUpToLevel,
   getSubclassFeaturesUpToLevel,
-} from '../../utils/classUtils'
-import { getPrimaryLevel } from '../../utils/multiclassUtils'
-import { getEntrySpellcasting, getCantripsNeeded } from '../../utils/spellUtils'
-import { ABILITY_LABELS } from '../../utils/abilityScoreUtils'
-import { getClassSlotProficiencies } from '../../utils/proficiencyUtils'
-import { getToolName } from '../../utils/backgroundUtils'
-import { getFeatManeuvers, getTakenFightingStyles } from '../../utils/sheetEffects'
+} from '@rpg/rules/systems/dnd5e/utils/classUtils'
+import { getPrimaryLevel } from '@rpg/rules/systems/dnd5e/utils/multiclassUtils'
+import { getEntrySpellcasting, getCantripsNeeded } from '@rpg/rules/systems/dnd5e/utils/spellUtils'
+import { ABILITY_LABELS } from '@rpg/rules/systems/dnd5e/utils/abilityScoreUtils'
+import { getClassSlotProficiencies } from '@rpg/rules/systems/dnd5e/utils/proficiencyUtils'
+import { getToolName } from '@rpg/rules/systems/dnd5e/utils/backgroundUtils'
+import { getFeatManeuvers, getTakenFightingStyles } from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
 import { ClassCard } from '../class/ClassCard'
 import { ClassChoicePanel } from '../class/ClassChoicePanel'
 import { MulticlassPanel } from '../class/MulticlassPanel'
 import { StepNav } from '../../../../components/wizard/StepNav'
-import { formatPendingHint, getStepPendingReasons } from '../../utils/pendingReasons'
+import { formatPendingHint, getStepPendingReasons } from '@rpg/rules/systems/dnd5e/utils/pendingReasons'
 
 export function ClassStep() {
   const draft = useCharacterStore(state => state.draft)

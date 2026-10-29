@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import type { AbilityScore } from '../../types/race'
-import { ABILITY_LABELS } from '../../utils/abilityScoreUtils'
-import { getAllFeats } from '../../utils/featUtils'
+import type { AbilityScore } from '@rpg/rules/systems/dnd5e/types/race'
+import { ABILITY_LABELS } from '@rpg/rules/systems/dnd5e/utils/abilityScoreUtils'
+import { getAllFeats } from '@rpg/rules/systems/dnd5e/utils/featUtils'
 import { RuleText } from '../common/RuleText'
 
 type Props = {

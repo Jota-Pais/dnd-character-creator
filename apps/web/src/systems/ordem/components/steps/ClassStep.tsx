@@ -1,18 +1,18 @@
 import { useOrdemStore } from '../../stores/characterStore'
-import { ORDEM_CLASSES, getOrdemClass } from '../../utils/classUtils'
-import { getSkillName } from '../../utils/skillUtils'
-import { getCursedDerivedStats, getSheetAttributes } from '../../utils/curseUtils'
-import { getRequiredFreeSkillCount } from '../../utils/characterUtils'
-import { getNexIndex } from '../../utils/progressionUtils'
+import { ORDEM_CLASSES, getOrdemClass } from '@rpg/rules/systems/ordem/utils/classUtils'
+import { getSkillName } from '@rpg/rules/systems/ordem/utils/skillUtils'
+import { getCursedDerivedStats, getSheetAttributes } from '@rpg/rules/systems/ordem/utils/curseUtils'
+import { getRequiredFreeSkillCount } from '@rpg/rules/systems/ordem/utils/characterUtils'
+import { getNexIndex } from '@rpg/rules/systems/ordem/utils/progressionUtils'
 
 /** Cálculo por extenso de PV/PE: "12 + 1 VIG + 1×(2 + 1 VIG)". */
 function statBreakdown(initial: number, perNex: number, attr: number, abbrev: string, tiers: number): string {
   const base = `${initial} + ${attr} ${abbrev}`
   return tiers > 0 ? `${base} + ${tiers}×(${perNex} + ${attr} ${abbrev})` : base
 }
-import { isStepComplete } from '../../utils/draftValidation'
+import { isStepComplete } from '@rpg/rules/systems/ordem/utils/draftValidation'
 import { StepNav } from '../../../../components/wizard/StepNav'
-import type { OrdemClass } from '../../types/class'
+import type { OrdemClass } from '@rpg/rules/systems/ordem/types/class'
 
 const CLASS_EMOJI: Record<string, string> = {
   combatant: '⚔️',

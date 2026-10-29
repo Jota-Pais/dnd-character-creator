@@ -1,10 +1,10 @@
-import type { BackgroundChoice } from '../../types/background'
-import type { BackgroundChoiceSelections } from '../../types/character'
+import type { BackgroundChoice } from '@rpg/rules/systems/dnd5e/types/background'
+import type { BackgroundChoiceSelections } from '@rpg/rules/systems/dnd5e/types/character'
 import {
   getToolsByCategory, TOOL_CHOICE_LABEL, getChosenBackgroundItem,
   type BackgroundItemChoice,
-} from '../../utils/backgroundUtils'
-import { getItemName } from '../../utils/equipmentUtils'
+} from '@rpg/rules/systems/dnd5e/utils/backgroundUtils'
+import { getItemName } from '@rpg/rules/systems/dnd5e/utils/equipmentUtils'
 import { LanguagePicker } from '../common/LanguagePicker'
 import { RepeatedProficiencyNotes } from '../common/RepeatedProficiencyNotes'
 import { REPEATED_OPTION_STYLE } from '../common/repeatedChipStyle'

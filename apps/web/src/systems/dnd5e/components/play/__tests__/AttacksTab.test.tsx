@@ -2,13 +2,13 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { usePlayStore } from '../../../stores/playStore'
-import { COMPLETE_DRAFT } from '../../../../../test/fixtures'
+import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
 import { openDraft, resetPlay } from './openPlay'
 
 // Os dados do app saem sempre na face escolhida pelo teste (o d20 natural do crítico).
 const dice = vi.hoisted(() => ({ face: 10 }))
-vi.mock('../../../../../core/dice/rng', async importOriginal => {
-  const mod = await importOriginal<typeof import('../../../../../core/dice/rng')>()
+vi.mock('@rpg/rules/core/dice/rng', async importOriginal => {
+  const mod = await importOriginal<typeof import('@rpg/rules/core/dice/rng')>()
   return { ...mod, cryptoRoller: (sides: number) => Math.min(dice.face, sides) }
 })
 

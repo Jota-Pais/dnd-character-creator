@@ -1,5 +1,5 @@
-import { LANGUAGES, type Language } from '../../utils/raceUtils'
-import { isChoiceFull, toggleChoice } from '../../utils/choiceToggle'
+import { LANGUAGES, type Language } from '@rpg/rules/systems/dnd5e/utils/raceUtils'
+import { isChoiceFull, toggleChoice } from '@rpg/rules/systems/dnd5e/utils/choiceToggle'
 import { RepeatedProficiencyNotes } from './RepeatedProficiencyNotes'
 import { REPEATED_OPTION_STYLE } from './repeatedChipStyle'
 

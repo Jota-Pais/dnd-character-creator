@@ -2,8 +2,8 @@ import { describe, it, expect, afterEach } from 'vitest'
 import { render, cleanup, fireEvent } from '@testing-library/react'
 import { SpellStep } from '../SpellStep'
 import { useCharacterStore } from '../../../stores/characterStore'
-import { EMPTY_DRAFT, type CharacterDraft } from '../../../types/character'
-import { COMPLETE_DRAFT } from '../../../../../test/fixtures'
+import { EMPTY_DRAFT, type CharacterDraft } from '@rpg/rules/systems/dnd5e/types/character'
+import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
 
 // A etapa Magias vem depois de Atributos e Aprimoramentos para mostrar os modificadores FINAIS —
 // os mesmos da Revisão e da ficha imprimível. Ela lia os atributos base.

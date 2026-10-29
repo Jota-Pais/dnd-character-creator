@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
-import type { AbilityScore } from '../../types/race'
-import { ABILITY_LABELS, calculateModifier, formatModifier, formatBonus } from '../../utils/abilityScoreUtils'
+import type { AbilityScore } from '@rpg/rules/systems/dnd5e/types/race'
+import { ABILITY_LABELS, calculateModifier, formatModifier, formatBonus } from '@rpg/rules/systems/dnd5e/utils/abilityScoreUtils'
 
 type Props = {
   ability: AbilityScore

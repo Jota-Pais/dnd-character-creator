@@ -1,6 +1,6 @@
-import type { AbilityScore } from '../../types/race'
-import type { BaseAbilityScores } from '../../types/character'
-import { ALL_ABILITY_SCORES, STANDARD_ARRAY } from '../../utils/abilityScoreUtils'
+import type { AbilityScore } from '@rpg/rules/systems/dnd5e/types/race'
+import type { BaseAbilityScores } from '@rpg/rules/systems/dnd5e/types/character'
+import { ALL_ABILITY_SCORES, STANDARD_ARRAY } from '@rpg/rules/systems/dnd5e/utils/abilityScoreUtils'
 import { AbilityRow } from './AbilityRow'
 import { AbilityTableHeader } from './AbilityTableHeader'
 

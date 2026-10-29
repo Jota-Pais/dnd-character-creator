@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
-import type { RollRecord } from '../../../../core/dice'
-import { formatModifier } from '../../utils/abilityScoreUtils'
+import type { RollRecord } from '@rpg/rules/core/dice'
+import { formatModifier } from '@rpg/rules/systems/dnd5e/utils/abilityScoreUtils'
 
 /** O clipboard do navegador, quando a página pode escrever nele (só em contexto seguro); senão null. */
 function getClipboard(): Clipboard | null {

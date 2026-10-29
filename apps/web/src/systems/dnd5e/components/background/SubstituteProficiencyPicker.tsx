@@ -1,7 +1,7 @@
-import { SKILLS } from '../../utils/raceUtils'
-import { TOOLS, getSkillName, getToolName } from '../../utils/backgroundUtils'
-import { isChoiceFull, toggleChoice } from '../../utils/choiceToggle'
-import type { BackgroundOverlap } from '../../utils/proficiencyUtils'
+import { SKILLS } from '@rpg/rules/systems/dnd5e/utils/raceUtils'
+import { TOOLS, getSkillName, getToolName } from '@rpg/rules/systems/dnd5e/utils/backgroundUtils'
+import { isChoiceFull, toggleChoice } from '@rpg/rules/systems/dnd5e/utils/choiceToggle'
+import type { BackgroundOverlap } from '@rpg/rules/systems/dnd5e/utils/proficiencyUtils'
 import { RepeatedProficiencyNotes } from '../common/RepeatedProficiencyNotes'
 import { REPEATED_CHIP_STYLE } from '../common/repeatedChipStyle'
 

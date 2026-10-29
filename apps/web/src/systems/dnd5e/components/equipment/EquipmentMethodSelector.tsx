@@ -1,4 +1,4 @@
-import type { EquipmentDraft } from '../../types/equipment'
+import type { EquipmentDraft } from '@rpg/rules/systems/dnd5e/types/equipment'
 
 type Props = {
   method: EquipmentDraft['method']

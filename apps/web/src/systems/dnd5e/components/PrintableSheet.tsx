@@ -1,53 +1,53 @@
 import { Fragment } from 'react'
 import { useCharacterStore } from '../stores/characterStore'
-import type { AbilityScore } from '../types/race'
+import type { AbilityScore } from '@rpg/rules/systems/dnd5e/types/race'
 import {
   getRace, getSubrace, getEffectiveDarkvision, SKILLS,
   getEffectiveTraitsWithChoices, describeInnateSpellUsage,
-} from '../utils/raceUtils'
+} from '@rpg/rules/systems/dnd5e/utils/raceUtils'
 import {
   getClass,
-} from '../utils/classUtils'
+} from '@rpg/rules/systems/dnd5e/utils/classUtils'
 import {
   allClassEntries, getHitDicePool, formatClassLevelLabel,
-} from '../utils/multiclassUtils'
+} from '@rpg/rules/systems/dnd5e/utils/multiclassUtils'
 import {
   getBackground, getToolName, getBackgroundDetailPrompt, ROLEPLAY_FIELDS,
-} from '../utils/backgroundUtils'
+} from '@rpg/rules/systems/dnd5e/utils/backgroundUtils'
 import {
   calculateModifier, formatModifier, getProficiencyBonus, formatXpProgress, formatMeters,
   ALL_ABILITY_SCORES, ABILITY_LABELS,
-} from '../utils/abilityScoreUtils'
-import { getFinalAbilityScores, getCharacterFeats, getSheetClassFeatures } from '../utils/asiUtils'
+} from '@rpg/rules/systems/dnd5e/utils/abilityScoreUtils'
+import { getFinalAbilityScores, getCharacterFeats, getSheetClassFeatures } from '@rpg/rules/systems/dnd5e/utils/asiUtils'
 import {
   getAllGrantedTools, getLanguageLabels, EXOTIC_LANGUAGE_NOTE, getExpertiseTools, getSkillChecks,
   getSavingThrowChecks, getPassiveScore, getArmorProficiencyLabels, getWeaponProficiencyLabels, getUnproficientArmor,
   getUnproficientTools, formatUnproficientTool, describeHalfProficiencyOnChecks,
-} from '../utils/proficiencyUtils'
-import { formatArmorClassBreakdown } from '../utils/armorClassUtils'
-import { getStartingMoney, describeStartingMoneySource, formatCoins } from '../utils/equipmentUtils'
-import { getKnownSpells, getStartingInventory, listKnownSpells } from '../utils/sheetModel'
+} from '@rpg/rules/systems/dnd5e/utils/proficiencyUtils'
+import { formatArmorClassBreakdown } from '@rpg/rules/systems/dnd5e/utils/armorClassUtils'
+import { getStartingMoney, describeStartingMoneySource, formatCoins } from '@rpg/rules/systems/dnd5e/utils/equipmentUtils'
+import { getKnownSpells, getStartingInventory, listKnownSpells } from '@rpg/rules/systems/dnd5e/utils/sheetModel'
 import {
   formatResourceLine, formatTrackCircles, groupResourcesBySource, resourceGroupsNeedLabels,
   resourceSourceLabel,
-} from '../utils/classResourceUtils'
-import { formatUnmetPick, getProgressionChoiceBlocks } from '../utils/progressionOptions'
+} from '@rpg/rules/systems/dnd5e/utils/classResourceUtils'
+import { formatUnmetPick, getProgressionChoiceBlocks } from '@rpg/rules/systems/dnd5e/utils/progressionOptions'
 import {
   getSpell, getSpellSaveDC, formatSpellAttackBonus, getCombinedSpellSlots, getPactSlots,
   getMaxPreparedSpells, describeCastingAids, getCasterEntries, getSpellChoiceOverflows,
   getSecretSpellGroups, formatSecretGroupSpellName, getCasterColumnHeadings,
   getRepeatedSpells, formatRepeatedSpell,
-} from '../utils/spellUtils'
+} from '@rpg/rules/systems/dnd5e/utils/spellUtils'
 import { RuleText } from './common/RuleText'
-import { formatAttackDamage } from '../utils/weaponFormat'
-import { getSheetAttacks } from '../utils/attackUtils'
-import { REPEATED_FEAT_MANEUVER_NOTE, getClassManeuverSaveDc, isManeuverSlot } from '../utils/maneuverUtils'
+import { formatAttackDamage } from '@rpg/rules/systems/dnd5e/utils/weaponFormat'
+import { getSheetAttacks } from '@rpg/rules/systems/dnd5e/utils/attackUtils'
+import { REPEATED_FEAT_MANEUVER_NOTE, getClassManeuverSaveDc, isManeuverSlot } from '@rpg/rules/systems/dnd5e/utils/maneuverUtils'
 import {
   getTotalHp, getInitiativeBonusTotal, getSheetSpeed, describeSpeedBonuses,
   getConditionalAcBonuses, getSheetResources, getSheetArmorClass,
   describeAttacksPerAction, getSheetFightingStyles, describeConditionalSaveBonuses, getFeatManeuverBlock,
-} from '../utils/sheetEffects'
-import type { ClassSpellcasting } from '../types/class'
+} from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
+import type { ClassSpellcasting } from '@rpg/rules/systems/dnd5e/types/class'
 
 /**
  * Quantas magias a classe tem a cada descanso, na linguagem da mesa. As três formas do livro:

@@ -1,42 +1,42 @@
 import { useOrdemStore } from '../stores/characterStore'
-import { getOrigin } from '../utils/originUtils'
-import { getOrdemClass } from '../utils/classUtils'
-import { SKILLS, getSkillName, getSkillKitName } from '../utils/skillUtils'
-import { getTrilha } from '../utils/trilhaUtils'
-import { getPower } from '../utils/powerUtils'
+import { getOrigin } from '@rpg/rules/systems/ordem/utils/originUtils'
+import { getOrdemClass } from '@rpg/rules/systems/ordem/utils/classUtils'
+import { SKILLS, getSkillName, getSkillKitName } from '@rpg/rules/systems/ordem/utils/skillUtils'
+import { getTrilha } from '@rpg/rules/systems/ordem/utils/trilhaUtils'
+import { getPower } from '@rpg/rules/systems/ordem/utils/powerUtils'
 import {
   getTrainedSkills, getSkillGrade, getRitualCost, hasClassPower, getGrantedRituals, getEffectivePeLimit, getExpertSkills, getExpertDie,
   getParanormalResistanceBonus, getMentalParanormalDamageResistance, getOriginMentalDamageResistance, getConditionalDamageResistances,
-} from '../utils/characterUtils'
+} from '@rpg/rules/systems/ordem/utils/characterUtils'
 import {
   getSkillBonusTotal, getConditionalSkillBonuses, getConditionalDefenseBonuses, getExtraDamageDiceNotes,
   getSheetExplosives, getResolvedAbilityNotes, splitResolvedNotes, getEffectiveCreditLimit,
   getSkillDicePool, resolveDtInText,
   getDefenseReactions, isDodgeCondition, isBlockCondition,
-} from '../utils/sheetEffects'
-import { formatDicePool, ATTRIBUTE_ABBREV as ATTR_ABBREV } from '../utils/attributeUtils'
-import { getReachedTrilhaSlots, getPeLimit } from '../utils/progressionUtils'
-import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, getSlotRitualElement, getGrantedRitualElement, ELEMENT_NAMES } from '../utils/ritualUtils'
+} from '@rpg/rules/systems/ordem/utils/sheetEffects'
+import { formatDicePool, ATTRIBUTE_ABBREV as ATTR_ABBREV } from '@rpg/rules/systems/ordem/utils/attributeUtils'
+import { getReachedTrilhaSlots, getPeLimit } from '@rpg/rules/systems/ordem/utils/progressionUtils'
+import { getRitualById, formatRitualElementLabel, getRitualSlotsCount, getSlotRitualElement, getGrantedRitualElement, ELEMENT_NAMES } from '@rpg/rules/systems/ordem/utils/ritualUtils'
 import {
   getAffinityState, getParanormalEffects, getParanormalInstances, getSanityBreakdown, getSourceLabel,
   isParanormalElement, OPPRESSOR_OF,
-} from '../utils/paranormalPowerUtils'
+} from '@rpg/rules/systems/ordem/utils/paranormalPowerUtils'
 import {
   getEquipmentByInstance, getInstanceLabel, getModifiedDefenseBonus,
   getDraftInstanceCategory, getEquipmentDamageResistances, formatAccessorySkills,
   getKitSkills, hasKitForSkill, formatKitSkill,
   getLoadState, OVERLOAD_DEFENSE_PENALTY, OVERLOAD_SPEED_PENALTY_METERS,
-} from '../utils/equipmentUtils'
-import { getModification } from '../utils/modificationUtils'
+} from '@rpg/rules/systems/ordem/utils/equipmentUtils'
+import { getModification } from '@rpg/rules/systems/ordem/utils/modificationUtils'
 import {
   getCurse, getCursedDerivedStats, getSheetAttributes, formatCurseElement, formatCurseChoiceDetail,
   getRitualDt, getRitualPeLimit, getCurseResistances, formatUnitCursePrice,
-} from '../utils/curseUtils'
-import { getSheetWeaponAttacks, GRADE_BONUS } from '../utils/ordemWeaponUtils'
-import { getPatente, getCategoryLimit } from '../utils/patenteUtils'
-import type { OrdemEquipment } from '../types/equipment'
-import type { OrdemAttributes } from '../types/character'
-import type { OrdemRitual } from '../types/ritual'
+} from '@rpg/rules/systems/ordem/utils/curseUtils'
+import { getSheetWeaponAttacks, GRADE_BONUS } from '@rpg/rules/systems/ordem/utils/ordemWeaponUtils'
+import { getPatente, getCategoryLimit } from '@rpg/rules/systems/ordem/utils/patenteUtils'
+import type { OrdemEquipment } from '@rpg/rules/systems/ordem/types/equipment'
+import type { OrdemAttributes } from '@rpg/rules/systems/ordem/types/character'
+import type { OrdemRitual } from '@rpg/rules/systems/ordem/types/ritual'
 
 const CAT_ROMAN = ['0', 'I', 'II', 'III', 'IV']
 

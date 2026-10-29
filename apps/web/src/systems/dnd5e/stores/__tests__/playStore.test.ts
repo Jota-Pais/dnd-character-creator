@@ -2,10 +2,10 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { registerPendingEdit, usePlayStore, UNDO_LIMIT } from '../playStore'
 import {
   applyDamage, applyHealing, createPlayState, getCurrentHp, setInspiration, setNote,
-} from '../../utils/playState'
+} from '@rpg/rules/systems/dnd5e/utils/playState'
 import { loadPlayPreferences, loadPlayState, savePlayState } from '../../utils/playStorage'
-import { COMPLETE_DRAFT } from '../../../../test/fixtures'
-import { roll, sequenceRoller } from '../../../../core/dice'
+import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
+import { roll, sequenceRoller } from '@rpg/rules/core/dice'
 
 const draft = () => structuredClone(COMPLETE_DRAFT)
 

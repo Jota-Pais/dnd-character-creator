@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { SYSTEMS } from '../registry'
-import { COMPLETE_DRAFT } from '../../../test/fixtures'
+import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
 
 describe('contrato "play" dos sistemas (decisão 10.2.12)', () => {
   it('o D&D 5e tem modo de jogo; o Ordem ainda não (Fase 3)', () => {

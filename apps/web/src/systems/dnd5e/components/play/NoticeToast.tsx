@@ -1,9 +1,9 @@
 import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type Ref } from 'react'
 import { flushSync } from 'react-dom'
 import { usePlayStore } from '../../stores/playStore'
-import type { DamageInput, PlayNotice, PlayNoticeKind } from '../../types/playState'
-import { applyDamageDroppingToOneHp, endConcentration, standUp } from '../../utils/playState'
-import { describeRollGuide, getConcentrationGuide, type RollGuideEntry } from '../../utils/rollGuide'
+import type { DamageInput, PlayNotice, PlayNoticeKind } from '@rpg/rules/systems/dnd5e/types/playState'
+import { applyDamageDroppingToOneHp, endConcentration, standUp } from '@rpg/rules/systems/dnd5e/utils/playState'
+import { describeRollGuide, getConcentrationGuide, type RollGuideEntry } from '@rpg/rules/systems/dnd5e/utils/rollGuide'
 import type { PlayView } from './usePlayView'
 
 /** Destaque por tipo: recusa e regra em aberto chamam atenção; o resto é informação. */

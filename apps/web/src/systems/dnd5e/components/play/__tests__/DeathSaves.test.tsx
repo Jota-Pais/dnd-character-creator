@@ -3,8 +3,8 @@ import { render, screen, fireEvent, cleanup, act } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { TOAST_GAP } from '../deathSaveScroll'
 import { usePlayStore } from '../../../stores/playStore'
-import { applyDamage, stabilize, startConcentration } from '../../../utils/playState'
-import { COMPLETE_DRAFT } from '../../../../../test/fixtures'
+import { applyDamage, stabilize, startConcentration } from '@rpg/rules/systems/dnd5e/utils/playState'
+import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
 import { liveRegions, openDraft, openKrusk, resetPlay } from './openPlay'
 
 beforeEach(resetPlay)

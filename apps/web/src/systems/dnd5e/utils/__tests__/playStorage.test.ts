@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
+import { EMPTY_DRAFT, type CharacterDraft } from '@rpg/rules/systems/dnd5e/types/character'
 import { loadLibrary, saveCharacterEntry, type SavedCharacter } from '../storage'
-import { buildPlaySheet } from '../playSheet'
+import { buildPlaySheet } from '@rpg/rules/systems/dnd5e/utils/playSheet'
 import {
   addCondition, applyDamage, completeLongRest, completeShortRest, createPlayState, setExhaustion,
   spendHitDie, spendPactSlot, spendResource, spendSpellSlot, startConcentration,
-} from '../playState'
+} from '@rpg/rules/systems/dnd5e/utils/playState'
 import {
   PLAY_OPEN_KEY, PLAY_PREFERENCES_KEY, PLAY_STATES_KEY, PLAY_STORAGE_VERSION, deletePlayState, listPlayStateIds,
   loadOpenPlayId, loadOrCreatePlayState, loadPlayPreferences, loadPlayState, loadPlayStateFor, saveOpenPlayId,

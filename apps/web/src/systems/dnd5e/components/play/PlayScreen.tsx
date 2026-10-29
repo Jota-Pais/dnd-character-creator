@@ -16,6 +16,7 @@ import { NumberSourceSheet } from './NumberSourceSheet'
 import type { NumberSource } from './numberSources'
 import { REST_SECTION_ID } from './StatusTab'
 import { useWakeLock } from './wakeLock'
+import { trackPressedControls } from './pressedControl'
 
 /** Folga de fundo sem aviso aberto (px): o fim da página não encosta na borda. */
 const MIN_BOTTOM_GAP = 128
@@ -130,6 +131,10 @@ export function PlayScreen() {
       document.removeEventListener('visibilitychange', handleVisibility)
     }
   }, [])
+
+  // As folhas devolvem o foco a quem as abriu, e no Safari o toque não dá foco ao botão: o jogo
+  // anota o último controle tocado (pressedControl).
+  useEffect(() => trackPressedControls(), [])
 
   // O arrasto de lado nunca vira o "voltar página" do Chrome no celular, que tirava da mesa (e da
   // pilha do desfazer, que é só da sessão). O touch-action da raiz não basta: quem rola (a faixa de

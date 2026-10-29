@@ -305,6 +305,20 @@ describe('PlayScreen — vitais e receita', () => {
     expect(opener).toHaveFocus()
   })
 
+  it('no Safari o toque não dá foco ao botão: a folha devolve o foco a quem foi tocado, não ao body', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    const opener = screen.getByRole('button', { name: /Iniciativa/ })
+    // O toque do WebKit: o ponteiro desce e o clique vem, sem o botão receber o foco.
+    expect(opener).not.toHaveFocus()
+    fireEvent.pointerDown(opener)
+    fireEvent.click(opener)
+    expect(document.activeElement).not.toBe(opener)
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Fechar' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(opener).toHaveFocus()
+  })
+
   it('com os dados do app, "Rolar" mostra o total e grava no histórico', () => {
     openKrusk()
     usePlayStore.getState().setAppDice(true)

@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react'
+import { getOpener } from './pressedControl'
 
 /** O que recebe o foco dentro da folha (para prender o Tab). */
 const FOCUSABLE = 'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
@@ -38,8 +39,9 @@ export function PlayDialog({ title, titleId, onClose, onFocusAway, children }: {
 
   // Diálogo modal: o foco entra na folha ao abrir e volta para quem a abriu ao fechar. A limpeza
   // roda depois da tela já atualizada: o que a tela oferece no lugar de quem abriu já existe.
+  // Quem abriu sai de `getOpener`: no Safari, o botão tocado não fica com o foco.
   useEffect(() => {
-    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const opener = getOpener()
     closeRef.current?.focus()
     return () => {
       if (opener?.isConnected) opener.focus()

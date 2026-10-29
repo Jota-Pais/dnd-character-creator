@@ -62,6 +62,112 @@ describe('PlayScreen — casca', () => {
   })
 })
 
+/**
+ * Um dedo arrastado de `from` até `from + (dx, dy)` sobre `el`: toque, um movimento no meio do
+ * caminho (é nele que o gesto escolhe o eixo) e soltar.
+ */
+function swipe(el: Element, dx: number, dy = 0, from = { x: 200, y: 400 }) {
+  fireEvent.touchStart(el, { touches: [{ clientX: from.x, clientY: from.y }] })
+  fireEvent.touchMove(el, { touches: [{ clientX: from.x + dx / 2, clientY: from.y + dy / 2 }] })
+  fireEvent.touchEnd(el, { touches: [], changedTouches: [{ clientX: from.x + dx, clientY: from.y + dy }] })
+}
+
+const selectedTab = () => screen.getByRole('tab', { selected: true })
+
+describe('PlayScreen — deslizar entre as abas', () => {
+  it('para a esquerda vai à aba seguinte e para a direita volta, com o foco na aba aberta', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    swipe(screen.getByText('Atributos'), -120)
+    expect(selectedTab()).toHaveTextContent('Ataques')
+    expect(screen.getByRole('tab', { name: 'Ataques' })).toHaveFocus()
+    expect(screen.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', 'play-tab-attacks')
+
+    swipe(screen.getByRole('tabpanel'), 120)
+    expect(selectedTab()).toHaveTextContent('Testes')
+    expect(screen.getByRole('tab', { name: 'Testes' })).toHaveFocus()
+  })
+
+  it('começar num botão da aba também vale, e o toque não abre a receita', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    swipe(screen.getByRole('button', { name: /^Atletismo/ }), -120)
+    expect(selectedTab()).toHaveTextContent('Ataques')
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('nas pontas não dá a volta', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    swipe(screen.getByRole('tabpanel'), 120)
+    expect(selectedTab()).toHaveTextContent('Testes')
+    fireEvent.click(screen.getByRole('tab', { name: 'Notas' }))
+    swipe(screen.getByRole('tabpanel'), -120)
+    expect(selectedTab()).toHaveTextContent('Notas')
+  })
+
+  it('curto demais, inclinado demais ou começado na vertical (rolagem) não troca', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    const panel = screen.getByRole('tabpanel')
+    swipe(panel, -40)
+    swipe(panel, -120, 90)
+    // Começa descendo (a página rola) e só depois vai de lado: continua sendo rolagem.
+    fireEvent.touchStart(panel, { touches: [{ clientX: 200, clientY: 400 }] })
+    fireEvent.touchMove(panel, { touches: [{ clientX: 198, clientY: 380 }] })
+    fireEvent.touchMove(panel, { touches: [{ clientX: 60, clientY: 375 }] })
+    fireEvent.touchEnd(panel, { touches: [], changedTouches: [{ clientX: 40, clientY: 375 }] })
+    expect(selectedTab()).toHaveTextContent('Testes')
+  })
+
+  it('dois dedos (pinça) e toque cancelado não trocam', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    const panel = screen.getByRole('tabpanel')
+    fireEvent.touchStart(panel, { touches: [{ clientX: 200, clientY: 400 }, { clientX: 260, clientY: 420 }] })
+    fireEvent.touchEnd(panel, { touches: [], changedTouches: [{ clientX: 60, clientY: 400 }] })
+    fireEvent.touchStart(panel, { touches: [{ clientX: 200, clientY: 400 }] })
+    fireEvent.touchMove(panel, { touches: [{ clientX: 150, clientY: 400 }, { clientX: 300, clientY: 400 }] })
+    fireEvent.touchEnd(panel, { touches: [], changedTouches: [{ clientX: 60, clientY: 400 }] })
+    fireEvent.touchStart(panel, { touches: [{ clientX: 200, clientY: 400 }] })
+    fireEvent.touchCancel(panel, { touches: [] })
+    fireEvent.touchEnd(panel, { touches: [], changedTouches: [{ clientX: 60, clientY: 400 }] })
+    expect(selectedTab()).toHaveTextContent('Testes')
+  })
+
+  it('começar num campo de texto ou na nota da sessão não troca de aba', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Estado' }))
+    swipe(screen.getByRole('textbox', { name: 'Magia em que vai se concentrar' }), -120)
+    expect(selectedTab()).toHaveTextContent('Estado')
+    fireEvent.click(screen.getByRole('tab', { name: 'Notas' }))
+    swipe(screen.getByRole('textbox', { name: 'Anotações da sessão' }), 120)
+    expect(selectedTab()).toHaveTextContent('Notas')
+  })
+
+  it('com a regra aberta na aba Regras, deslizar na folha não troca de aba', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Regras' }))
+    fireEvent.click(screen.getByRole('button', { name: /^Fúria/ }))
+    swipe(within(screen.getByRole('dialog')).getByTestId('rule-sheet'), -120)
+    expect(selectedTab()).toHaveTextContent('Regras')
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    // O fundo escuro em volta da folha também é dela.
+    swipe(screen.getByRole('dialog').parentElement!, -120)
+    expect(selectedTab()).toHaveTextContent('Regras')
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+  })
+
+  it('fora da área de conteúdo (os vitais) o gesto não troca de aba', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    swipe(screen.getByTestId('vitals-hp'), -120)
+    expect(selectedTab()).toHaveTextContent('Testes')
+  })
+})
+
 describe('PlayScreen — vitais e receita', () => {
   it('mostra PV, CA, deslocamento e Percepção passiva da ficha', () => {
     openKrusk()

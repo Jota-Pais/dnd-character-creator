@@ -6,6 +6,7 @@ import { MagicTab } from './MagicTab'
 import { NotesTab } from './NotesTab'
 import { RulesTab } from './RulesTab'
 import { StatusTab } from './StatusTab'
+import type { SwipeDirection } from './tabSwipe'
 
 export type PlayTabId = 'checks' | 'attacks' | 'magic' | 'rules' | 'status' | 'notes'
 
@@ -34,3 +35,13 @@ export const PLAY_TABS: readonly PlayTab[] = [
   { id: 'status', label: 'Estado', hint: 'Condições, exaustão, concentração e descansos.', component: StatusTab },
   { id: 'notes', label: 'Notas', hint: 'Suas anotações da sessão; com os dados do app, o rolador livre e o histórico de rolagens.', component: NotesTab },
 ]
+
+/**
+ * A aba vizinha de `id` no deslizar do dedo, na ordem da barra; null nas pontas (não dá a volta:
+ * da última não se vai à primeira).
+ */
+export function adjacentPlayTab(id: PlayTabId, direction: SwipeDirection): PlayTabId | null {
+  const index = PLAY_TABS.findIndex(t => t.id === id)
+  if (index < 0) return null
+  return PLAY_TABS[index + (direction === 'next' ? 1 : -1)]?.id ?? null
+}

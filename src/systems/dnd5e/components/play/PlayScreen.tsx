@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { useCharacterStore } from '../../stores/characterStore'
-import { PLAY_TABS, type PlayTabId } from './playTabs'
+import { adjacentPlayTab, PLAY_TABS, type PlayTabId } from './playTabs'
+import { useTabSwipe } from './tabSwipe'
 import { PlaySettings } from './PlaySettings'
 import { formatPlaySubtitle, usePlayView, type PlayTabProps } from './usePlayView'
 import { findRollGuideEntry, type RollGuideEntry } from '../../utils/rollGuide'
@@ -46,6 +47,20 @@ export function PlayScreen() {
   const [source, setSource] = useState<NumberSource | null>(null)
   const stickyRef = useRef<HTMLDivElement>(null)
 
+  /**
+   * Rola até `el` ficar logo abaixo dos vitais fixos. Com `onlyIfCovered`, só se ele estiver atrás
+   * dos vitais ou acima deles (quem já está à vista fica onde está).
+   */
+  function scrollBelowVitals(el: Element, { onlyIfCovered = false } = {}) {
+    const rect = el.getBoundingClientRect()
+    // Sem layout (o jsdom dos testes), nada a rolar.
+    if (rect.height === 0) return
+    const covered = stickyRef.current?.getBoundingClientRect().height ?? 0
+    if (onlyIfCovered && rect.top >= covered) return
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    window.scrollBy({ top: rect.top - covered - STICKY_GAP, behavior: reduceMotion ? 'auto' : 'smooth' })
+  }
+
   // O "Descanso" dos vitais: abre a aba Estado e rola até os descansos, logo abaixo dos vitais
   // fixos, com o foco no primeiro botão (o teclado e o leitor de tela chegam junto).
   function openRests() {
@@ -53,13 +68,19 @@ export function PlayScreen() {
     const section = document.getElementById(REST_SECTION_ID)
     if (!section) return
     section.querySelector('button')?.focus({ preventScroll: true })
-    const rect = section.getBoundingClientRect()
-    // Sem layout (o jsdom dos testes), nada a rolar.
-    if (rect.height === 0) return
-    const covered = stickyRef.current?.getBoundingClientRect().height ?? 0
-    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-    window.scrollBy({ top: rect.top - covered - STICKY_GAP, behavior: reduceMotion ? 'auto' : 'smooth' })
+    scrollBelowVitals(section)
   }
+
+  // Deslizar o dedo de lado no conteúdo vai à aba vizinha, com o foco nela, como o toque na barra.
+  // Rolado lá para baixo, a tela volta até a barra de abas: vê-se que aba abriu e o começo dela.
+  const swipe = useTabSwipe(direction => {
+    const next = adjacentPlayTab(tab, direction)
+    if (!next) return
+    flushSync(() => setTab(next))
+    const tabButton = document.getElementById(`play-tab-${next}`)
+    tabButton?.focus({ preventScroll: true })
+    if (tabButton) scrollBelowVitals(tabButton, { onlyIfCovered: true })
+  })
 
   // No celular, trocar de app pode descartar a aba sem aviso: o que está sendo digitado (nota da
   // sessão, nota de duração) grava assim que a página some.
@@ -102,7 +123,7 @@ export function PlayScreen() {
 
   return (
     <div className="min-h-screen bg-surface-base text-parchment-200">
-      <div className="max-w-2xl mx-auto px-4" style={{ paddingBottom: Math.max(MIN_BOTTOM_GAP, Math.ceil(toastHeight) + 16) }}>
+      <div className="max-w-2xl mx-auto px-4">
         <header className="pt-3 pb-2">
           <div className="flex items-center justify-between gap-2">
             <button
@@ -149,44 +170,54 @@ export function PlayScreen() {
           {view.state.lifeState !== 'dead' && <HpPanel view={view} />}
         </div>
 
-        {/* No celular as abas dividem a largura em partes iguais, sem recuo lateral: as seis cabem
-            em 360 px ("Ataques", a mais larga, ocupa ~51 dos 54 px), sem rolagem escondida. */}
-        <nav
-          role="tablist"
-          aria-label="Seções da ficha"
-          className="mt-4 grid sm:flex sm:gap-1 border-b border-parchment-900"
-          style={{ gridTemplateColumns: `repeat(${PLAY_TABS.length}, minmax(0, 1fr))` }}
+        {/* A área do gesto de trocar de aba: a barra, o conteúdo e a folga de fundo (deslizar no
+            vazio abaixo de uma aba curta também troca). O navegador fica só com a rolagem vertical
+            e a pinça: o arrasto de lado é da troca de aba, não o "voltar página" do Chrome no
+            celular (que tirava da mesa ao deslizar para a direita). */}
+        <div
+          {...swipe}
+          className="touch-pan-y touch-pinch-zoom"
+          style={{ paddingBottom: Math.max(MIN_BOTTOM_GAP, Math.ceil(toastHeight) + 16) }}
         >
-          {PLAY_TABS.map(t => (
-            <button
-              key={t.id}
-              role="tab"
-              id={`play-tab-${t.id}`}
-              aria-selected={t.id === current.id}
-              aria-controls="play-tab-panel"
-              title={t.hint}
-              onClick={() => setTab(t.id)}
-              className={[
-                'min-h-10 min-w-0 px-0 sm:px-3 text-[0.66rem] sm:text-sm font-fantasy border-b-2 -mb-px transition-colors',
-                t.id === current.id
-                  ? 'border-gold-500 text-gold-300'
-                  : 'border-transparent text-parchment-500 hover:text-parchment-200',
-              ].join(' ')}
-            >
-              {t.label}
-            </button>
-          ))}
-        </nav>
+          {/* No celular as abas dividem a largura em partes iguais, sem recuo lateral: as seis cabem
+              em 360 px ("Ataques", a mais larga, ocupa ~51 dos 54 px), sem rolagem escondida. */}
+          <nav
+            role="tablist"
+            aria-label="Seções da ficha"
+            className="mt-4 grid sm:flex sm:gap-1 border-b border-parchment-900"
+            style={{ gridTemplateColumns: `repeat(${PLAY_TABS.length}, minmax(0, 1fr))` }}
+          >
+            {PLAY_TABS.map(t => (
+              <button
+                key={t.id}
+                role="tab"
+                id={`play-tab-${t.id}`}
+                aria-selected={t.id === current.id}
+                aria-controls="play-tab-panel"
+                title={t.hint}
+                onClick={() => setTab(t.id)}
+                className={[
+                  'min-h-10 min-w-0 px-0 sm:px-3 text-[0.66rem] sm:text-sm font-fantasy border-b-2 -mb-px transition-colors',
+                  t.id === current.id
+                    ? 'border-gold-500 text-gold-300'
+                    : 'border-transparent text-parchment-500 hover:text-parchment-200',
+                ].join(' ')}
+              >
+                {t.label}
+              </button>
+            ))}
+          </nav>
 
-        <section id="play-tab-panel" role="tabpanel" aria-labelledby={`play-tab-${current.id}`} className="pt-4">
-          {TabComponent ? <TabComponent {...tabProps} /> : (
-            <div className="rounded-xl border border-dashed border-parchment-800 p-6 text-center">
-              <p className="font-fantasy text-parchment-300">{current.label}</p>
-              <p className="mt-1 text-xs text-parchment-600">{current.hint}</p>
-              <p className="mt-2 text-xs text-parchment-700">Em breve.</p>
-            </div>
-          )}
-        </section>
+          <section id="play-tab-panel" role="tabpanel" aria-labelledby={`play-tab-${current.id}`} className="pt-4">
+            {TabComponent ? <TabComponent {...tabProps} /> : (
+              <div className="rounded-xl border border-dashed border-parchment-800 p-6 text-center">
+                <p className="font-fantasy text-parchment-300">{current.label}</p>
+                <p className="mt-1 text-xs text-parchment-600">{current.hint}</p>
+                <p className="mt-2 text-xs text-parchment-700">Em breve.</p>
+              </div>
+            )}
+          </section>
+        </div>
       </div>
 
       <NoticeToast view={view} onOpenRecipe={openRecipe} onHeightChange={setToastHeight} />

@@ -48,7 +48,11 @@ describe('DeathSaves', () => {
     expect(screen.queryByText(/Digite o d20 que saiu/)).toBeNull()
     const regions = liveRegions()
     fireEvent.change(screen.getByLabelText(/d20 que você tirou/), { target: { value: '21' } })
-    expect(screen.getByRole('button', { name: 'Registrar' })).toBeDisabled()
+    const register = screen.getByRole('button', { name: 'Registrar' })
+    expect(register).toHaveAttribute('aria-disabled', 'true')
+    // Apagado, o envio não faz nada.
+    fireEvent.click(register)
+    expect(usePlayStore.getState().state?.deathSaves).toEqual({ successes: 0, failures: 0 })
     // O botão apagado diz por quê, numa região viva que já existia antes do aviso.
     const hint = screen.getByText('Digite o d20 que saiu (1 a 20); o app soma o resto.')
     expect(regions.some(r => r.contains(hint))).toBe(true)
@@ -147,6 +151,114 @@ describe('DeathSaves', () => {
     forceD20(1)
     fireEvent.click(screen.getByRole('button', { name: 'rolar' }))
     expect(screen.queryByRole('button', { name: /Rolar de novo/ })).toBeNull()
+  })
+})
+
+// Controle que some (ou se desabilita) com a própria ação não larga o foco no body: estável e morto
+// trocam o painel (o foco vai ao título dele), e acordar o tira da tela (o foco vai ao painel de PV).
+describe('DeathSaves — o foco depois de cada botão', () => {
+  function registerFocused(value: string) {
+    fireEvent.change(screen.getByLabelText(/d20 que você tirou/), { target: { value } })
+    const register = screen.getByRole('button', { name: 'Registrar' })
+    register.focus()
+    fireEvent.click(register)
+    return register
+  }
+
+  it('"Registrar" ainda morrendo: o campo esvazia e o foco fica no botão, apagado', () => {
+    openKrusk()
+    dropToZero()
+    render(<PlayScreen />)
+    const register = registerFocused('12')
+    expect(usePlayStore.getState().state?.deathSaves.successes).toBe(1)
+    expect(register).not.toBeDisabled()
+    expect(register).toHaveAttribute('aria-disabled', 'true')
+    expect(register).toHaveFocus()
+  })
+
+  it('o 3º sucesso e o "Estabilizar" levam ao título "Estável"; o 3º fracasso, ao "Morto"', () => {
+    openKrusk()
+    dropToZero()
+    render(<PlayScreen />)
+    registerFocused('12')
+    registerFocused('12')
+    registerFocused('12')
+    expect(usePlayStore.getState().state?.lifeState).toBe('stable')
+    const stable = screen.getByText('Estável, com 0 PV')
+    expect(stable).toHaveAttribute('tabindex', '-1')
+    expect(stable).toHaveFocus()
+
+    cleanup()
+    resetPlay()
+    openKrusk()
+    dropToZero()
+    render(<PlayScreen />)
+    const stabilizeButton = screen.getByRole('button', { name: 'Estabilizar' })
+    stabilizeButton.focus()
+    fireEvent.click(stabilizeButton)
+    expect(screen.getByText('Estável, com 0 PV')).toHaveFocus()
+
+    cleanup()
+    resetPlay()
+    openKrusk()
+    dropToZero()
+    render(<PlayScreen />)
+    registerFocused('1')
+    registerFocused('5')
+    expect(usePlayStore.getState().state?.lifeState).toBe('dead')
+    // O título do painel, não o "Morto" dos vitais.
+    expect(screen.getByText('Morto', { selector: 'p' })).toHaveFocus()
+  })
+
+  it('o 20 natural, "recuperei 1 PV" e "Fui revivido" tiram os testes da tela: o foco vai ao painel de PV', () => {
+    openKrusk()
+    dropToZero()
+    render(<PlayScreen />)
+    registerFocused('20')
+    expect(usePlayStore.getState().state?.lifeState).toBe('conscious')
+    expect(screen.getByRole('button', { name: 'Dano' })).toHaveFocus()
+
+    cleanup()
+    resetPlay()
+    openKrusk()
+    dropToZero()
+    usePlayStore.getState().run(st => stabilize(st))
+    render(<PlayScreen />)
+    const regain = screen.getByRole('button', { name: 'Passou o tempo: recuperei 1 PV' })
+    regain.focus()
+    fireEvent.click(regain)
+    expect(screen.getByRole('button', { name: 'Dano' })).toHaveFocus()
+
+    cleanup()
+    resetPlay()
+    openKrusk()
+    dropToZero()
+    render(<PlayScreen />)
+    registerFocused('1')
+    registerFocused('5')
+    const revive = screen.getByRole('button', { name: 'Fui revivido' })
+    revive.focus()
+    fireEvent.click(revive)
+    expect(usePlayStore.getState().state?.lifeState).toBe('conscious')
+    expect(screen.getByRole('button', { name: 'Dano' })).toHaveFocus()
+  })
+
+  it('"Rolar de novo (Sortudo)" some, e o foco vai ao "Registrar"', () => {
+    const halfling = structuredClone(COMPLETE_DRAFT)
+    halfling.race = 'halfling'
+    halfling.subrace = 'lightfoot-halfling'
+    openDraft(halfling)
+    usePlayStore.getState().setAppDice(true)
+    usePlayStore.getState().run((st, sh) => applyDamage(st, sh, { amount: sh.maxHp }))
+    render(<PlayScreen />)
+    forceD20(1)
+    fireEvent.click(screen.getByRole('button', { name: 'rolar' }))
+    forceD20(15)
+    const luck = screen.getByRole('button', { name: 'Rolar de novo (Sortudo)' })
+    luck.focus()
+    fireEvent.click(luck)
+    expect(screen.queryByRole('button', { name: 'Rolar de novo (Sortudo)' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Registrar' })).toHaveFocus()
   })
 })
 

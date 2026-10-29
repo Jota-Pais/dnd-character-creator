@@ -1,7 +1,8 @@
-import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react'
-import type { DeathSaveCount } from '../../types/playState'
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type RefObject } from 'react'
+import { flushSync } from 'react-dom'
+import type { DeathSaveCount, PlayResult } from '../../types/playState'
 import { roll } from '../../../../core/dice'
-import { usePlayStore } from '../../stores/playStore'
+import { usePlayStore, type PlayOperation } from '../../stores/playStore'
 import { recordDeathSave, recordRoll, regainHpWhileStable, revive, stabilize } from '../../utils/playState'
 import { describeRollGuide } from '../../utils/rollGuide'
 import { rerollNaturalOne, rollGuideEntry, type GuideRoll } from './playDice'
@@ -22,19 +23,27 @@ function Marks({ label, count, filled }: { label: string; count: DeathSaveCount;
   )
 }
 
+/** Roda a ação de um botão dos testes contra a morte e passa o foco adiante (ver `DeathSaves`). */
+type DeathSaveAct = (op: PlayOperation) => PlayResult | null
+
 /**
  * A 0 PV, no lugar do PV: os testes contra a morte (pág. 199). O jogador rola o d20 e digita o
  * natural que valeu; o app soma o que vale para todo teste de resistência (`guide.deathSave`) e
  * chama `recordDeathSave`. Estável e morto mostram o que ainda dá para fazer.
  */
-export function DeathSaves({ view, bottomInset = 0 }: {
+export function DeathSaves({ view, bottomInset = 0, onLeave }: {
   view: PlayView
   /** Altura do aviso preso ao pé da tela (0 sem aviso): o d20 não pode ficar embaixo dele. */
   bottomInset?: number
+  /** O botão tirou os testes da tela (acordou, revivido): a tela diz para onde vai o foco. */
+  onLeave?: () => void
 }) {
   const { state, guide, appDice, run } = view
   const rootRef = useRef<HTMLDivElement>(null)
   const formRef = useRef<HTMLFormElement>(null)
+  const submitRef = useRef<HTMLButtonElement>(null)
+  // O título do painel de estável ou de morto (tabIndex -1, fora do Tab).
+  const titleRef = useRef<HTMLParagraphElement>(null)
   const insetRef = useRef(bottomInset)
   const [text, setText] = useState('')
 
@@ -71,6 +80,22 @@ export function DeathSaves({ view, bottomInset = 0 }: {
   const luckSource = entry.rerollNaturalOne?.join(', ')
   const offerLuck = Boolean(luckSource) && !luckUsed && rolled !== null && rolled.natural === 1 && natural === 1
 
+  /**
+   * Os botões daqui podem trocar o painel com eles (estável, morto) ou tirá-lo da tela (acordou,
+   * revivido). Síncrono (flushSync), o foco vai ao título do painel que entrou ou, sem painel, a
+   * `onLeave`. Recusada a ação, ou ainda morrendo (o "Registrar" fica), o foco fica.
+   */
+  const act: DeathSaveAct = op => {
+    const before = state.lifeState
+    const result = flushSync(() => run(op))
+    const after = result?.state.lifeState
+    if (after && after !== before) {
+      if (after === 'conscious') onLeave?.()
+      else titleRef.current?.focus()
+    }
+    return result
+  }
+
   function handleRoll() {
     const result = rollGuideEntry(entry)
     setRolled(result)
@@ -78,21 +103,25 @@ export function DeathSaves({ view, bottomInset = 0 }: {
     setText(result.natural === null ? '' : String(result.natural))
   }
 
+  // O "Rolar de novo" some com a própria ação: o foco vai ao "Registrar", o passo seguinte.
   function handleLuck() {
     if (!rolled) return
     // A primeira rolagem aconteceu: fica no histórico; o teste registra a nova.
     logRoll(rolled.record)
     const again = rerollNaturalOne(entry, rolled, luckSource ? { source: luckSource } : {})
-    setRolled(again)
-    setLuckUsed(true)
-    setText(again.natural === null ? '' : String(again.natural))
+    flushSync(() => {
+      setRolled(again)
+      setLuckUsed(true)
+      setText(again.natural === null ? '' : String(again.natural))
+    })
+    submitRef.current?.focus()
   }
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
     if (!valid) return
     const record = rolled && rolled.natural === natural ? rolled.record : null
-    run((st, sh) => {
+    act((st, sh) => {
       const result = recordDeathSave(st, sh, { natural, total: natural + entry.modifier })
       if (!record || result.state === st) return result
       return { state: recordRoll(result.state, record).state, notices: result.notices }
@@ -105,12 +134,12 @@ export function DeathSaves({ view, bottomInset = 0 }: {
   if (state.lifeState === 'dead') {
     return (
       <div className="rounded-xl border border-red-900 bg-red-950/30 p-4">
-        <p className="font-fantasy font-bold text-red-300">Morto</p>
+        <p ref={titleRef} tabIndex={-1} className="font-fantasy font-bold text-red-300">Morto</p>
         <p className="mt-1 text-xs text-parchment-400 leading-snug">
           Cura comum não traz de volta. Se uma magia ou o Mestre trouxer o personagem de volta, toque abaixo.
         </p>
         <button
-          onClick={() => run((st, sh) => revive(st, sh))}
+          onClick={() => act((st, sh) => revive(st, sh))}
           className="mt-3 min-h-10 rounded-lg border border-parchment-700 px-4 text-sm text-parchment-200 hover:border-gold-600"
         >
           Fui revivido
@@ -119,7 +148,7 @@ export function DeathSaves({ view, bottomInset = 0 }: {
     )
   }
 
-  if (state.lifeState === 'stable') return <StablePanel view={view} />
+  if (state.lifeState === 'stable') return <StablePanel view={view} act={act} titleRef={titleRef} />
 
   return (
     <div ref={rootRef} className="rounded-xl border border-red-900 bg-red-950/20 p-4">
@@ -168,10 +197,13 @@ export function DeathSaves({ view, bottomInset = 0 }: {
             Rolar de novo ({luckSource})
           </button>
         )}
+        {/* aria-disabled, não disabled: registrar esvazia o campo, e o botão desabilitado largaria
+            o foco de quem o acionou no body. Sem um d20 válido, o envio não faz nada. */}
         <button
+          ref={submitRef}
           type="submit"
-          disabled={!valid}
-          className="min-h-10 rounded-lg bg-gold-500 px-4 font-fantasy font-bold text-sm text-on-accent disabled:opacity-40 hover:bg-gold-400 transition-colors"
+          aria-disabled={!valid}
+          className="min-h-10 rounded-lg bg-gold-500 px-4 font-fantasy font-bold text-sm text-on-accent aria-disabled:opacity-40 hover:bg-gold-400 transition-colors"
         >
           Registrar
         </button>
@@ -186,7 +218,7 @@ export function DeathSaves({ view, bottomInset = 0 }: {
       </div>
 
       <button
-        onClick={() => run(st => stabilize(st))}
+        onClick={() => act(st => stabilize(st))}
         className="mt-3 min-h-10 rounded-lg border border-parchment-700 px-3 text-sm text-parchment-300 hover:border-gold-600"
       >
         Estabilizar
@@ -203,8 +235,12 @@ export function DeathSaves({ view, bottomInset = 0 }: {
  * curar, recupera 1 PV depois de 1d4 horas — o app não conta o tempo, o jogador confirma. Com os
  * dados do app, o 1d4 de horas pode ser rolado (vai para o histórico).
  */
-function StablePanel({ view }: { view: PlayView }) {
-  const { appDice, run } = view
+function StablePanel({ view, act, titleRef }: {
+  view: PlayView
+  act: DeathSaveAct
+  titleRef: RefObject<HTMLParagraphElement | null>
+}) {
+  const { appDice } = view
   const logRoll = usePlayStore(s => s.logRoll)
   const [hours, setHours] = useState<number | null>(null)
 
@@ -216,7 +252,7 @@ function StablePanel({ view }: { view: PlayView }) {
 
   return (
     <div className="rounded-xl border border-parchment-800 bg-surface-raised p-4">
-      <p className="font-fantasy font-bold text-parchment-200">Estável, com 0 PV</p>
+      <p ref={titleRef} tabIndex={-1} className="font-fantasy font-bold text-parchment-200">Estável, com 0 PV</p>
       <p className="mt-1 text-xs text-parchment-400 leading-snug">
         Não rola mais testes contra a morte, mas continua inconsciente até recuperar PV. Se sofrer dano, volta a morrer.
       </p>
@@ -237,7 +273,7 @@ function StablePanel({ view }: { view: PlayView }) {
         </div>
       )}
       <button
-        onClick={() => run((st, sh) => regainHpWhileStable(st, sh))}
+        onClick={() => act((st, sh) => regainHpWhileStable(st, sh))}
         className="mt-3 min-h-10 rounded-lg border border-parchment-700 px-3 text-sm text-parchment-200 hover:border-gold-600"
       >
         Passou o tempo: recuperei 1 PV

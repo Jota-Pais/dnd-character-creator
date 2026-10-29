@@ -55,6 +55,9 @@ function subscribeCoarsePointer(onChange: () => void) {
 
 const wasRefused = (result: PlayResult | null) => !result || result.notices.some(n => n.kind === 'refused')
 
+/** O painel de PV: os testes contra a morte que saem da tela passam o foco ao primeiro botão dele. */
+export const HP_PANEL_ID = 'play-hp'
+
 /** Lê o número digitado: inteiro de 0 para cima, ou null. */
 function parseAmount(text: string): number | null {
   if (!/^\d+$/.test(text.trim())) return null
@@ -160,7 +163,7 @@ export function HpPanel({ view }: { view: PlayView }) {
   const suggested = askTempChoice ? suggestTempHpChoice(state, amount) : null
 
   return (
-    <div className="rounded-xl border border-parchment-900 bg-surface-raised p-3">
+    <div id={HP_PANEL_ID} className="rounded-xl border border-parchment-900 bg-surface-raised p-3">
       <div className="grid grid-cols-3 gap-1.5" role="group" aria-label="Pontos de vida">
         {ACTIONS.map(a => (
           <button

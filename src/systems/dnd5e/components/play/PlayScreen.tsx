@@ -7,7 +7,7 @@ import { PlaySettings } from './PlaySettings'
 import { formatPlaySubtitle, usePlayView, type PlayTabProps } from './usePlayView'
 import { findRollGuideEntry, type RollGuideEntry } from '../../utils/rollGuide'
 import { DeathSaves } from './DeathSaves'
-import { HpPanel } from './HpPanel'
+import { HP_PANEL_ID, HpPanel } from './HpPanel'
 import { NoticeToast } from './NoticeToast'
 import { usePlayStore } from '../../stores/playStore'
 import { RollRecipeSheet, type RecipeLink } from './RollRecipeSheet'
@@ -77,6 +77,12 @@ export function PlayScreen() {
     if (!section) return
     section.querySelector('button')?.focus({ preventScroll: true })
     scrollBelowVitals(section)
+  }
+
+  // Os testes contra a morte saem da tela pelo próprio botão (o 20 natural, "recuperei 1 PV", "Fui
+  // revivido"): o foco vai ao painel de PV, que fica no lugar deles.
+  function focusHpPanel() {
+    document.getElementById(HP_PANEL_ID)?.querySelector('button')?.focus()
   }
 
   // Deslizar o dedo de lado no conteúdo vai à aba vizinha, com o foco nela, como o toque na barra.
@@ -197,7 +203,9 @@ export function PlayScreen() {
         {/* A 0 PV os testes contra a morte tomam a frente; dano e cura continuam valendo
             (dano a 0 PV conta fracasso, cura acorda). Morto, só o "Fui revivido". */}
         <div className="mt-3 space-y-2">
-          {view.state.lifeState !== 'conscious' && <DeathSaves view={view} bottomInset={toastHeight} />}
+          {view.state.lifeState !== 'conscious' && (
+            <DeathSaves view={view} bottomInset={toastHeight} onLeave={focusHpPanel} />
+          )}
           {view.state.lifeState !== 'dead' && <HpPanel view={view} />}
         </div>
 

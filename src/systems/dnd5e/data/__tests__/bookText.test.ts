@@ -165,6 +165,14 @@ describe('características de classe que seguem o inglês', () => {
     expect(text).toContain('Ao conjurar uma magia de transmutação de 1° nível ou superior')
   })
 
+  // Inglês: "Whenever you hit a creature with a melee weapon". "Ataque corpo-a-corpo" alcançaria o
+  // golpe desarmado, que é ataque corpo a corpo com arma sem ser arma (decisão de 2026-10-29).
+  it('Destruição Divina Aprimorada exige ARMA corpo a corpo (pt-BR: "com um ataque corpo-a-corpo")', () => {
+    const [text] = featureText('Destruição Divina Aprimorada')
+    expect(text).toContain('Sempre que você atingir uma criatura com uma arma corpo-a-corpo')
+    expect(text).not.toMatch(/ataques? corpo-a-corpo/)
+  })
+
   it.each([
     ['cleric', 'as magias de clérigo com o descritor ritual que tiver preparadas'],
     ['druid', 'as magias de druida preparadas que tenham o descritor ritual'],

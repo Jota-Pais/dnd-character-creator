@@ -609,7 +609,7 @@
       {
         "level": 11,
         "name": "Destruição Divina Aprimorada",
-        "description": "Seus ataques corpo-a-corpo com arma causam +1d8 de dano radiante (somado ao dano da Destruição Divina quando você a usar)."
+        "description": "Sempre que você atingir uma criatura com uma arma corpo-a-corpo, ela sofre 1d8 de dano radiante extra (somado ao dano da Destruição Divina quando você a usar)."
       },
       {
         "level": 14,

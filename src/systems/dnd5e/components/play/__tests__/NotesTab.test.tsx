@@ -101,6 +101,44 @@ describe('NotesTab', () => {
     expect(items[1]).toHaveTextContent('25')
   })
 
+  it('"Nova sessão" pergunta antes e apaga só o histórico, com o foco sempre num controle', () => {
+    usePlayStore.getState().setAppDice(true)
+    openKrusk()
+    usePlayStore.getState().run((st, sh) => applyDamage(st, sh, { amount: 3 }))
+    usePlayStore.getState().logRoll(roll('1d20+5', { label: 'Atletismo', roller: sequenceRoller([12]), at: 1 }))
+    usePlayStore.getState().logRoll(roll('1d12+3', { label: 'Machado Grande — dano', roller: sequenceRoller([4]), at: 2 }))
+    openNotes()
+
+    // Perguntar leva o foco ao "Cancelar"; cancelar volta ao "Nova sessão" e não apaga nada.
+    fireEvent.click(screen.getByRole('button', { name: 'Nova sessão' }))
+    const question = screen.getByRole('group', { name: /apaga as 2 rolagens do histórico/ })
+    expect(within(question).getByRole('button', { name: 'Cancelar' })).toHaveFocus()
+    fireEvent.click(within(question).getByRole('button', { name: 'Cancelar' }))
+    expect(screen.queryByRole('group', { name: /apaga/ })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Nova sessão' })).toHaveFocus()
+    expect(playState().rolls).toHaveLength(2)
+
+    // Apagar: o histórico some (o botão junto), o foco vai ao título, e o resto da sessão fica.
+    const before = playState()
+    fireEvent.click(screen.getByRole('button', { name: 'Nova sessão' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Apagar o histórico' }))
+    expect(playState()).toEqual({ ...before, rolls: [], updatedAt: playState().updatedAt })
+    expect(loadPlayState(playState().characterId)?.rolls).toEqual([])
+    expect(screen.queryByTestId('roll-history')).toBeNull()
+    expect(screen.getByText(/Nenhuma rolagem ainda/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Nova sessão' })).toBeNull()
+    expect(screen.getByRole('heading', { name: 'Rolagens recentes' })).toHaveFocus()
+    expect(usePlayStore.getState().undoStack).toHaveLength(1)
+  })
+
+  it('"Nova sessão" só aparece com rolagem no histórico', () => {
+    usePlayStore.getState().setAppDice(true)
+    openKrusk()
+    openNotes()
+    expect(screen.getByRole('heading', { name: 'Rolagens recentes' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Nova sessão' })).toBeNull()
+  })
+
   it('vários d20 que valem todos (rolador livre) não viram "20 natural" no histórico', () => {
     usePlayStore.getState().setAppDice(true)
     openKrusk()

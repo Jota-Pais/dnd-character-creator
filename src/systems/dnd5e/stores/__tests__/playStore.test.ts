@@ -172,6 +172,24 @@ describe('usePlayStore', () => {
     expect(loadPlayState('c1')?.rolls).toHaveLength(1)
   })
 
+  it('clearRolls ("Nova sessão") esvazia o histórico e grava, fora do desfazer e sem mexer nos avisos', () => {
+    usePlayStore.getState().open('c1', draft(), 1)
+    usePlayStore.getState().logRoll(roll('1d20', { roller: sequenceRoller([12]), at: 1 }))
+    usePlayStore.getState().run((st, sh) => applyDamage(st, sh, { amount: 4 }))
+    const { notices, undoStack } = usePlayStore.getState()
+    usePlayStore.getState().clearRolls()
+    const s = usePlayStore.getState()
+    expect(s.state?.rolls).toEqual([])
+    expect(s.state?.damageTaken).toBe(4)
+    expect(loadPlayState('c1')?.rolls).toEqual([])
+    expect(s.undoStack).toBe(undoStack)
+    expect(s.notices).toBe(notices)
+    expect(s.lastActionChanged).toBe(true)
+    // O desfazer do dano não traz as rolagens de volta: ele nunca toca o histórico.
+    usePlayStore.getState().undo()
+    expect(usePlayStore.getState().state).toMatchObject({ damageTaken: 0, rolls: [] })
+  })
+
   it('run em segundo plano grava e entra no desfazer, mas mantém os avisos', () => {
     usePlayStore.getState().open('c1', draft(), 1)
     usePlayStore.getState().run((st, sh) => applyDamage(st, sh, { amount: 4 }))

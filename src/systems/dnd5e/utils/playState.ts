@@ -907,6 +907,14 @@ export function recordRoll(state: PlayState, record: RollRecord): PlayResult {
   return done({ ...state, rolls: [...state.rolls, record].slice(-ROLL_HISTORY_LIMIT) })
 }
 
+/**
+ * "Nova sessão" (decisão 10.2.20): esvazia o histórico de rolagens, e só ele — PV, espaços,
+ * recursos, condições e a nota ficam como estão. Histórico vazio devolve o mesmo estado.
+ */
+export function clearRollHistory(state: PlayState): PlayResult {
+  return state.rolls.length === 0 ? done(state) : done({ ...state, rolls: [] })
+}
+
 // ── Descanso curto ──────────────────────────────────────────────────────────
 
 /** Avisos do que mexe na cura por Dado de Vida e ainda não está declarado como efeito nos dados. */

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { keptFaces, type RollRecord } from '../../../../core/dice'
-import { registerPendingEdit } from '../../stores/playStore'
+import { registerPendingEdit, usePlayStore } from '../../stores/playStore'
 import { formatModifier } from '../../utils/abilityScoreUtils'
 import { setNote } from '../../utils/playState'
 import { FreeRoller } from './FreeRoller'
@@ -59,7 +60,8 @@ function RollHistory({ rolls }: { rolls: RollRecord[] }) {
 /**
  * Aba "Notas": a anotação livre da sessão, gravada sozinha numa pausa da digitação (e ao sair do
  * campo), sem travar quem digita; e, só com os dados do app ligados, o rolador livre e o histórico
- * curto das rolagens, das mais recentes para as mais antigas, com o 20 e o 1 naturais em destaque.
+ * curto das rolagens, das mais recentes para as mais antigas, com o 20 e o 1 naturais em destaque
+ * e o "Nova sessão", que o esvazia.
  */
 export function NotesTab({ state, appDice, run }: PlayTabProps) {
   // O texto em edição ainda não gravado; null mostra o do estado (e acompanha o desfazer).
@@ -124,10 +126,83 @@ export function NotesTab({ state, appDice, run }: PlayTabProps) {
 
       {appDice && (
         <section>
-          <h2 className="text-[11px] uppercase tracking-wider text-parchment-600 font-fantasy mb-1.5">Rolagens recentes</h2>
+          <RollHistoryHeader count={state.rolls.length} />
           <RollHistory rolls={state.rolls} />
         </section>
       )}
     </div>
+  )
+}
+
+/**
+ * O título do histórico com o "Nova sessão" (decisão 10.2.20), que esvazia o histórico e só ele.
+ * O histórico fica fora do desfazer (`clearRolls`), então apagar pede confirmação ali mesmo, no
+ * padrão dos descansos. O foco nunca cai no body: abrir a pergunta leva ao "Cancelar" (a saída
+ * segura), cancelar volta ao "Nova sessão" e apagar vai ao título, porque o botão some com as
+ * rolagens.
+ */
+function RollHistoryHeader({ count }: { count: number }) {
+  const clearRolls = usePlayStore(s => s.clearRolls)
+  const [asking, setAsking] = useState(false)
+  const titleRef = useRef<HTMLHeadingElement>(null)
+  const newSessionRef = useRef<HTMLButtonElement>(null)
+  const cancelRef = useRef<HTMLButtonElement>(null)
+
+  function ask() {
+    flushSync(() => setAsking(true))
+    cancelRef.current?.focus()
+  }
+  function cancel() {
+    flushSync(() => setAsking(false))
+    newSessionRef.current?.focus()
+  }
+  function confirm() {
+    flushSync(() => {
+      clearRolls()
+      setAsking(false)
+    })
+    titleRef.current?.focus()
+  }
+
+  return (
+    <>
+      <div className="flex items-center justify-between gap-2 mb-1.5">
+        <h2 ref={titleRef} tabIndex={-1} className="text-[11px] uppercase tracking-wider text-parchment-600 font-fantasy outline-none">
+          Rolagens recentes
+        </h2>
+        {count > 0 && !asking && (
+          <button
+            ref={newSessionRef}
+            onClick={ask}
+            className="min-h-10 rounded-lg border border-parchment-700 px-3 text-xs text-parchment-200 hover:border-gold-600"
+          >
+            Nova sessão
+          </button>
+        )}
+      </div>
+      {asking && (
+        <div role="group" aria-labelledby="new-session-question" className="mb-3 rounded-xl border border-parchment-800 bg-surface-raised p-3">
+          <p id="new-session-question" className="text-sm text-parchment-200 leading-snug">
+            Começar uma nova sessão apaga {count === 1 ? 'a rolagem' : `as ${count} rolagens`} do histórico. PV, espaços,
+            condições e anotações ficam como estão.
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              onClick={confirm}
+              className="min-h-10 rounded-lg border border-red-800 px-3 text-xs text-red-200 hover:border-red-600"
+            >
+              Apagar o histórico
+            </button>
+            <button
+              ref={cancelRef}
+              onClick={cancel}
+              className="min-h-10 rounded-lg px-3 text-xs text-parchment-500 hover:text-parchment-200"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   )
 }

@@ -6,7 +6,7 @@ import type { SheetResource } from '../classResourceUtils'
 import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
 import { buildPlaySheet } from '../playSheet'
 import {
-  addCondition, adjustMaxHp, applyDamage, applyDamageDroppingToOneHp, applyHealing, clearTempHp, completeLongRest, completeShortRest,
+  addCondition, adjustMaxHp, applyDamage, applyDamageDroppingToOneHp, applyHealing, clearRollHistory, clearTempHp, completeLongRest, completeShortRest,
   createPlayState, describeHpMaxImmunity, endConcentration, getBaseMaxHp, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable,
   getLongRestHitDiceRecoverable, getPactSlotsAvailable, getPlayConditionEffects, getPlayConditionState, getPlaySpeed,
   getResourceAvailable, getShortRestSlotRecovery, getSpellSlotsAvailable, grantTempHp, previewLongRest, previewShortRest, reconcileLoadedPlayState,
@@ -790,6 +790,16 @@ describe('inspiração, nota e histórico', () => {
     expect(s.rolls).toHaveLength(ROLL_HISTORY_LIMIT)
     expect(s.rolls[0].id).toBe('r5')
     expect(s.rolls.at(-1)?.id).toBe(`r${ROLL_HISTORY_LIMIT + 4}`)
+  })
+
+  it('"Nova sessão" esvazia o histórico, e só ele', () => {
+    const before = state({ damageTaken: 4, tempHp: 2, conditions: ['poisoned'], inspiration: true, note: 'pistas' })
+    const withRolls = recordRoll(before, roll('1d20', { roller: sequenceRoller([10]), id: 'r', at: 1 })).state
+    const r = clearRollHistory(withRolls)
+    expect(r.state).toEqual({ ...withRolls, rolls: [] })
+    expect(r.notices).toEqual([])
+    // Sem rolagem, nada a fazer: o mesmo estado.
+    expect(clearRollHistory(before).state).toBe(before)
   })
 })
 

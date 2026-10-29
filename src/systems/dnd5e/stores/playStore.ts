@@ -4,7 +4,7 @@ import { canonicalJson } from '../../../core/utils/canonicalJson'
 import type { CharacterDraft } from '../types/character'
 import type { PlayNotice, PlayResult, PlaySheet, PlayState } from '../types/playState'
 import { buildPlaySheet } from '../utils/playSheet'
-import { recordRoll } from '../utils/playState'
+import { clearRollHistory, recordRoll } from '../utils/playState'
 import { syncSheetSnapshot, takeSheetSnapshot } from '../utils/sheetSnapshot'
 import {
   loadPlayPreferences, loadPlayState, loadPlayStateFor, savePlayPreferences, savePlayState, type PlayPreferences,
@@ -68,6 +68,11 @@ type PlayStoreState = {
    * não entra no desfazer nem mexe nos avisos (o aviso de concentração e o seu "Desfazer" ficam).
    */
   logRoll: (record: RollRecord) => void
+  /**
+   * "Nova sessão": esvazia o histórico de rolagens e grava. Como o `logRoll`, fora do desfazer e
+   * sem mexer nos avisos — o desfazer nunca toca o histórico, então quem pede confirmação é a tela.
+   */
+  clearRolls: () => void
   /**
    * Volta ao estado anterior à última ação que mudou algo, e grava. O histórico de rolagens fica
    * como está: desfazer um dano não apaga o que foi rolado depois dele.
@@ -178,6 +183,13 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
     const { state } = get()
     if (!state) return
     set({ state: savePlayState(recordRoll(state, record).state) })
+  },
+
+  clearRolls: () => {
+    const { state } = get()
+    if (!state) return
+    const next = clearRollHistory(state).state
+    if (next !== state) set({ state: savePlayState(next) })
   },
 
   undo: () => {

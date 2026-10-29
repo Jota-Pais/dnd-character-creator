@@ -3,7 +3,7 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { usePlayStore } from '../../../stores/playStore'
 import { addCondition } from '../../../utils/playState'
-import { openKrusk, resetPlay } from './openPlay'
+import { liveRegions, openKrusk, resetPlay } from './openPlay'
 
 beforeEach(resetPlay)
 afterEach(() => cleanup())
@@ -63,10 +63,20 @@ describe('HpPanel', () => {
   it('número sem sinal e sem botão não aplica; o botão tocado depois fica com o número', () => {
     openKrusk()
     render(<PlayScreen />)
-    fireEvent.change(screen.getByLabelText(/^Dano ou cura/), { target: { value: '4' } })
+    const field = screen.getByLabelText(/^Dano ou cura/)
+    expect(field).toHaveAccessibleDescription(/^Escolha Dano ou Cura, ou digite com o sinal/)
+    const regions = liveRegions()
+    fireEvent.change(field, { target: { value: '4' } })
     expect(screen.getByRole('button', { name: 'Aplicar' })).toBeDisabled()
-    expect(screen.getByText(/Escolha Dano ou Cura, ou digite com o sinal/)).toBeInTheDocument()
+    // O que falta é dito na hora (o teclado numérico do iPhone não tem sinal: o caminho são os botões).
+    const problem = screen.getByText('Para aplicar o 4, escolha Dano, Cura ou PV temporários.')
+    expect(regions.some(r => r.contains(problem))).toBe(true)
+    expect(field).toHaveAccessibleDescription('Para aplicar o 4, escolha Dano, Cura ou PV temporários.')
+    expect(screen.queryByText(/Escolha Dano ou Cura, ou digite com o sinal/)).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
+    // Com o botão, a ajuda da ação volta e o aviso some.
+    expect(regions.every(r => r.textContent === '')).toBe(true)
+    expect(screen.getByLabelText('Quanto de dano')).toHaveAccessibleDescription(/^O dano total que você sofreu/)
     expect(screen.getByLabelText('Quanto de dano')).toHaveValue('4')
     expect(screen.getByLabelText('Quanto de dano')).toHaveFocus()
     fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
@@ -88,9 +98,12 @@ describe('HpPanel', () => {
     openKrusk()
     render(<PlayScreen />)
     fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
+    const regions = liveRegions()
     fireEvent.change(screen.getByLabelText('Quanto de dano'), { target: { value: '2,5' } })
     expect(screen.getByRole('button', { name: 'Aplicar' })).toBeDisabled()
-    expect(screen.getByText('Digite só o número, com − na frente para dano ou + para cura.')).toBeInTheDocument()
+    // Numa região viva que já existia antes do aviso: o leitor de tela ouve por que não aplica.
+    const problem = screen.getByText('Digite só o número, com − na frente para dano ou + para cura.')
+    expect(regions.some(r => r.contains(problem))).toBe(true)
   })
 
   it('resistência marca a metade (para baixo)', () => {

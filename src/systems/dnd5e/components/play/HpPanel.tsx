@@ -44,6 +44,7 @@ export function HpPanel({ view }: { view: PlayView }) {
   const { state, run } = view
   const inputRef = useRef<HTMLInputElement>(null)
   const hintId = useId()
+  const problemId = useId()
   // O botão escolhido; o que vale é `action`, em que o sinal digitado manda.
   const [selected, setSelected] = useState<HpAction | null>(null)
   const [text, setText] = useState('')
@@ -62,9 +63,15 @@ export function HpPanel({ view }: { view: PlayView }) {
   const current = ACTIONS.find(a => a.id === action)
   // PV temporários já presentes: o jogador escolhe manter ou trocar (pág. 200).
   const askTempChoice = action === 'temp' && state.tempHp > 0 && amount !== null && amount > 0
-  const hint = !entry
+  // O que impede o "Aplicar": texto que não é número, ou número sem sinal e sem botão escolhido (no
+  // iPhone, o teclado numérico não tem sinal, e o caminho são os botões). Vai a uma região viva.
+  const problem = !entry
     ? 'Digite só o número, com − na frente para dano ou + para cura.'
-    : current?.help ?? 'Escolha Dano ou Cura, ou digite com o sinal: −7 é dano, +5 é cura.'
+    : amount !== null && action === null
+      ? `Para aplicar o ${amount}, escolha Dano, Cura ou PV temporários.`
+      : null
+  // A ajuda da ação, lida ao focar o campo: fora da região viva, não fala a cada toque nos botões.
+  const hint = current?.help ?? 'Escolha Dano ou Cura, ou digite com o sinal: −7 é dano, +5 é cura.'
 
   function clearOptions() {
     setResisted(false)
@@ -146,7 +153,7 @@ export function HpPanel({ view }: { view: PlayView }) {
             value={text}
             onChange={e => setText(e.target.value)}
             aria-label={current?.field ?? 'Dano ou cura (−7 é dano, +5 é cura)'}
-            aria-describedby={hintId}
+            aria-describedby={problem ? problemId : hintId}
             placeholder={current ? '0' : '−7 ou +5'}
             className="min-h-10 w-full min-w-0 rounded-lg border border-parchment-800 bg-surface-base px-3 text-lg text-parchment-100 outline-none focus:border-gold-600"
           />
@@ -160,7 +167,14 @@ export function HpPanel({ view }: { view: PlayView }) {
             </button>
           )}
         </div>
-        <p id={hintId} className={`text-xs leading-snug ${entry ? 'text-parchment-500' : 'text-amber-300'}`}>{hint}</p>
+        {/* Uma linha só: o impedimento no lugar da ajuda. A região viva existe antes dele: inserida
+            já com o texto, pode não ser anunciada. */}
+        <div>
+          <div aria-live="polite">
+            {problem && <p id={problemId} className="text-xs leading-snug text-amber-300">{problem}</p>}
+          </div>
+          {!problem && <p id={hintId} className="text-xs leading-snug text-parchment-500">{hint}</p>}
+        </div>
 
         {action === 'damage' && (
           <div className="space-y-1">

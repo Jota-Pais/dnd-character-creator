@@ -1,6 +1,9 @@
 import { useMemo, useRef, useState } from 'react'
 import { exportCharacter as exportDnd, importCharacter as importDnd, type SavedCharacter as DndSaved } from './systems/dnd5e/utils/storage'
 import { exportCharacter as exportOrdem, importCharacter as importOrdem, type SavedCharacter as OrdemSaved } from './systems/ordem/utils/storage'
+import { loadPlayState } from './systems/dnd5e/utils/playStorage'
+import { exportAllCharacters, formatRestoreResult, isBackupFile, parseBackupFile, planRestore, type RestorePlan } from './libraryBackup'
+import { readJsonFile } from './core/utils/download'
 import { useAppStore } from './core/stores/appStore'
 import {
   filterByName,
@@ -71,6 +74,7 @@ export function GlobalGallery() {
   const dndDuplicate = useDndStore(s => s.duplicateCharacter)
   const dndDelete = useDndStore(s => s.deleteCharacter)
   const dndImport = useDndStore(s => s.importDraft)
+  const dndRestore = useDndStore(s => s.restoreCharacters)
 
   const ordemLibrary = useOrdemStore(s => s.library)
   const ordemNew = useOrdemStore(s => s.newCharacter)
@@ -78,8 +82,11 @@ export function GlobalGallery() {
   const ordemDuplicate = useOrdemStore(s => s.duplicateCharacter)
   const ordemDelete = useOrdemStore(s => s.deleteCharacter)
   const ordemImport = useOrdemStore(s => s.importDraft)
+  const ordemRestore = useOrdemStore(s => s.restoreCharacters)
 
   const [importError, setImportError] = useState(false)
+  // O resultado da última cópia restaurada (quantas entraram, quantas já estavam aqui).
+  const [restored, setRestored] = useState<RestorePlan | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [showSystemSelect, setShowSystemSelect] = useState(false)
 
@@ -114,6 +121,22 @@ export function GlobalGallery() {
     if (!file) return
     e.target.value = ''
     setImportError(false)
+    setRestored(null)
+
+    // A cópia de todas as fichas: entram na galeria, que continua aberta.
+    const raw = await readJsonFile(file)
+    if (isBackupFile(raw)) {
+      const contents = parseBackupFile(raw)
+      if (!contents) {
+        setImportError(true)
+        return
+      }
+      const plan = planRestore(contents, { dnd5e: dndLibrary, ordem: ordemLibrary, playStateOf: loadPlayState })
+      dndRestore(plan.dnd5e)
+      ordemRestore(plan.ordem)
+      setRestored(plan)
+      return
+    }
 
     const dnd = await importDnd(file)
     if (dnd) {
@@ -177,16 +200,30 @@ export function GlobalGallery() {
               {total === 0 ? 'Nenhuma ficha salva neste navegador' : `${total} ficha${total > 1 ? 's' : ''} salva${total > 1 ? 's' : ''} neste navegador`}
             </p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <button
               onClick={() => fileInputRef.current?.click()}
               className="px-4 py-2.5 rounded-lg text-[13.5px] transition-colors"
               style={{ border: '1px solid #3a332b', color: '#cbbfae' }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = '#5c5245'; e.currentTarget.style.color = '#ede2d6' }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = '#3a332b'; e.currentTarget.style.color = '#cbbfae' }}
+              title="Uma ficha exportada ou a cópia de todas"
             >
               ↑ Importar
             </button>
+            {/* A cópia de segurança: um arquivo com todas as fichas e os estados de jogo. */}
+            {total > 0 && (
+              <button
+                onClick={() => exportAllCharacters()}
+                className="px-4 py-2.5 rounded-lg text-[13.5px] transition-colors"
+                style={{ border: '1px solid #3a332b', color: '#cbbfae' }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = '#5c5245'; e.currentTarget.style.color = '#ede2d6' }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = '#3a332b'; e.currentTarget.style.color = '#cbbfae' }}
+                title="Baixar um arquivo com todas as fichas e o que foi jogado nelas"
+              >
+                ↓ Exportar todas
+              </button>
+            )}
             <div className="relative">
               <button
                 onClick={() => setShowSystemSelect(!showSystemSelect)}
@@ -215,6 +252,10 @@ export function GlobalGallery() {
         {importError && (
           <p className="text-sm mb-4" style={{ color: '#ef4444' }}>Arquivo inválido — não parece uma ficha exportada compatível.</p>
         )}
+        {/* Montada vazia: inserida já com o texto, a região viva pode não ser anunciada. */}
+        <div role="status" aria-live="polite">
+          {restored && <p className="text-sm mb-4" style={{ color: '#cbbfae' }}>{formatRestoreResult(restored)}</p>}
+        </div>
 
         {total === 0 && (
           <div className="rounded-xl p-10 text-center" style={{ border: '2px dashed #3a332b' }}>

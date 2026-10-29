@@ -49,6 +49,8 @@ type CharacterStore = {
   goToStep: (step: WizardStep) => void
   reset: () => void
   importDraft: (draft: OrdemCharacterDraft) => void
+  /** As fichas de uma cópia de segurança (libraryBackup): fichas novas, com a galeria aberta. */
+  restoreCharacters: (drafts: OrdemCharacterDraft[]) => void
 }
 
 function persistCurrent(currentId: string | null, draft: OrdemCharacterDraft, step: WizardStep): { id: string; library: SavedCharacter[] } {
@@ -295,5 +297,14 @@ export const useOrdemStore = create<CharacterStore>((set, get) => ({
     const step = getFirstIncompleteStep(draft)
     const { id, library } = persistCurrent(newId(), draft, step)
     set({ view: 'wizard', draft, currentStep: step, currentId: id, library })
+  },
+
+  restoreCharacters: (drafts) => {
+    if (drafts.length === 0) return
+    let library = get().library
+    for (const draft of drafts) {
+      library = saveCharacterEntry({ id: newId(), updatedAt: Date.now(), step: getFirstIncompleteStep(draft), draft })
+    }
+    set({ library })
   },
 }))

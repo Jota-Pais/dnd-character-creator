@@ -7,7 +7,7 @@ import { getClass, subclassChangesSpellcasting } from '@rpg/rules/systems/dnd5e/
 import { getAdditionalLevelsUsed } from '@rpg/rules/systems/dnd5e/utils/multiclassUtils'
 import { EMPTY_EQUIPMENT_DRAFT } from '@rpg/rules/systems/dnd5e/types/equipment'
 import { EMPTY_SPELL_CHOICES } from '@rpg/rules/systems/dnd5e/types/spell'
-import { loadLibrary, saveCharacterEntry, deleteCharacterEntry, newId, type SavedCharacter } from '../utils/storage'
+import { loadLibrary, saveCharacterEntry, deleteCharacterEntry, newId, type ImportedCharacter, type SavedCharacter } from '../utils/storage'
 import { canPlayDraft, getFirstIncompleteStep } from '@rpg/rules/systems/dnd5e/utils/draftValidation'
 import { useAppStore } from '../../../core/stores/appStore'
 import { cryptoRoller, type DieRoller } from '@rpg/rules/core/dice'
@@ -117,6 +117,11 @@ type CharacterStore = {
   reset: () => void
   /** Ficha lida de um arquivo: entra como ficha nova, com o estado de jogo que veio nele (se veio). */
   importDraft: (draft: CharacterDraft, playState?: PlayState | null) => void
+  /**
+   * As fichas de uma cópia de segurança (libraryBackup): cada uma entra como ficha nova, como no
+   * `importDraft`, mas a galeria continua aberta.
+   */
+  restoreCharacters: (characters: ImportedCharacter[]) => void
 }
 
 const BLANK_DRAFT = canonicalJson(EMPTY_DRAFT)
@@ -629,6 +634,18 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     // máximos dele se encaixam na ficha importada ao abrir o jogo (`reconcileLoadedPlayState`).
     if (playState) savePlayState({ ...playState, characterId: id })
     set({ view: 'wizard', draft, currentStep: step, currentId: id, library })
+  },
+
+  restoreCharacters: (characters) => {
+    if (characters.length === 0) return
+    flushAutosave()
+    let library = get().library
+    for (const { draft, playState } of characters) {
+      const id = newId()
+      library = saveCharacterEntry({ id, updatedAt: Date.now(), step: getFirstIncompleteStep(draft), draft })
+      if (playState) savePlayState({ ...playState, characterId: id })
+    }
+    set({ library })
   },
 }))
 

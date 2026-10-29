@@ -1,6 +1,7 @@
 import type { AbilityScore } from '../types/race'
 import type { AbilityMethod, BaseAbilityScores } from '../types/character'
 import progressionData from '../data/progression.json'
+import { roll, type DieRoller } from '../../../core/dice'
 
 const PROFICIENCY_BY_LEVEL: number[] = progressionData.proficiencyBonus
 
@@ -106,11 +107,13 @@ export function getRemainingPoints(scores: Record<AbilityScore, number>): number
   return POINT_BUY_TOTAL - getTotalPointsSpent(scores)
 }
 
-export function rollAbilityScore(): { rolls: number[]; result: number } {
-  const rolls = Array.from({ length: 4 }, () => Math.floor(Math.random() * 6) + 1)
-  const sorted = [...rolls].sort((a, b) => b - a)
-  const result = sorted[0] + sorted[1] + sorted[2]
-  return { rolls, result }
+/**
+ * Um valor de habilidade rolado (p. 13): 4d6, somando os três maiores. `rolls` são os quatro
+ * dados na ordem em que saíram. O sorteio é do motor de dados; os testes passam o `roller`.
+ */
+export function rollAbilityScore(roller?: DieRoller): { rolls: number[]; result: number } {
+  const record = roll('4d6kh3', { roller })
+  return { rolls: record.terms[0].dice.map(d => d.value), result: record.total }
 }
 
 export function isAbilitiesStepComplete(

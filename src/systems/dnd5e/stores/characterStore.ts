@@ -10,6 +10,7 @@ import { EMPTY_SPELL_CHOICES } from '../types/spell'
 import { loadLibrary, saveCharacterEntry, deleteCharacterEntry, newId, type SavedCharacter } from '../utils/storage'
 import { canPlayDraft, getFirstIncompleteStep } from '../utils/draftValidation'
 import { useAppStore } from '../../../core/stores/appStore'
+import { cryptoRoller, type DieRoller } from '../../../core/dice'
 import { deletePlayState, loadOpenPlayId, saveOpenPlayId } from '../utils/playStorage'
 import { usePlayStore } from './playStore'
 
@@ -78,7 +79,8 @@ type CharacterStore = {
   setName: (name: string) => void
   setLevel: (level: number) => void
   setHpMethod: (method: HpMethod) => void
-  rollHpForLevel: (charLevel: number) => void
+  /** Rola o dado de vida de um nível pelo motor de dados; `roller` fixa as faces nos testes. */
+  rollHpForLevel: (charLevel: number, roller?: DieRoller) => void
   setHpRoll: (charLevel: number, value: number) => void
   setRace: (raceId: string) => void
   /** null volta à raça sem sub-raça (o Humano Padrão, quando a raça tem `baseOption`). */
@@ -297,11 +299,11 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
   setHpMethod: (method) =>
     editDraft(state => ({ draft: { ...state.draft, hpMethod: method, hpRolls: [] } })),
 
-  rollHpForLevel: (charLevel) =>
+  rollHpForLevel: (charLevel, roller = cryptoRoller) =>
     editDraft(state => {
       const cls = state.draft.class ? getClass(state.draft.class) : undefined
       const hitDie = cls?.hitDie ?? 8
-      const roll = Math.floor(Math.random() * hitDie) + 1
+      const roll = roller(hitDie)
       const rolls = [...state.draft.hpRolls]
       rolls[charLevel - 2] = roll
       return { draft: { ...state.draft, hpRolls: rolls } }

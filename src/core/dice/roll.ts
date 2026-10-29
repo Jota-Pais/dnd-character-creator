@@ -1,3 +1,4 @@
+import { createId } from '../utils/id'
 import { formatNotation, parseNotation, validateModifier, validateTerm } from './notation'
 import { cryptoRoller, type DieRoller } from './rng'
 import type { DiceTerm, DieResult, RollFormula, RollRecord, TermResult } from './types'
@@ -13,12 +14,6 @@ export type RollOptions = {
   label?: string
   id?: string
   at?: number
-}
-
-function newRollId(): string {
-  const c = globalThis.crypto
-  if (c?.randomUUID) return c.randomUUID()
-  return `roll-${Date.now()}-${Math.floor(Math.random() * 1e9)}`
 }
 
 /** Cópia profunda: o registro não pode mudar se quem chamou mexer na fórmula depois. */
@@ -78,7 +73,7 @@ export function roll(formula: RollFormula | string, options: RollOptions = {}): 
   const terms = f.dice.map((t, i) => rollTerm(t, roller, manual[i]))
   const modifierTotal = f.modifiers.reduce((sum, m) => sum + m.value, 0)
   const record: RollRecord = {
-    id: options.id ?? newRollId(),
+    id: options.id ?? createId('roll'),
     at: options.at ?? Date.now(),
     formula: f,
     notation: formatNotation(f),

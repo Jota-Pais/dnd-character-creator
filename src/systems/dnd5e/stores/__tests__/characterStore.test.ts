@@ -8,6 +8,7 @@ import { useAppStore } from '../../../../core/stores/appStore'
 import { usePlayStore } from '../playStore'
 import { createPlayState, setInspiration } from '../../utils/playState'
 import { loadOpenPlayId, loadPlayState, saveOpenPlayId, savePlayState } from '../../utils/playStorage'
+import { sequenceRoller } from '../../../../core/dice'
 
 beforeEach(() => {
   // newCharacter grava a alteração pendente do teste anterior — só depois o storage é limpo
@@ -181,6 +182,19 @@ describe('troca de subclasse x magias escolhidas', () => {
     useCharacterStore.getState().updateAdditionalSpellChoices('rogue', { spells: ['sleep'] })
     useCharacterStore.getState().updateAdditionalClassChoices('rogue', { subclass: 'thief' })
     expect(useCharacterStore.getState().draft.additionalClasses[0].spellChoices.spells).toEqual([])
+  })
+})
+
+describe('PV por rolagem (rollHpForLevel)', () => {
+  it('rola o dado de vida da classe pelo motor de dados, no índice do nível', () => {
+    useCharacterStore.getState().setClass('wizard')
+    useCharacterStore.getState().setLevel(3)
+    useCharacterStore.getState().setHpMethod('roll')
+    useCharacterStore.getState().rollHpForLevel(3, sequenceRoller([6]))
+    useCharacterStore.getState().rollHpForLevel(2, sequenceRoller([1]))
+    expect(useCharacterStore.getState().draft.hpRolls).toEqual([1, 6])
+    // O dado é o da classe (d6 do mago): uma face de d8 não cabe nele.
+    expect(() => useCharacterStore.getState().rollHpForLevel(2, sequenceRoller([7]))).toThrow()
   })
 })
 

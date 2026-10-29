@@ -1,5 +1,6 @@
 import type { OrdemCharacterDraft, WizardStep } from '../types/character'
 import { EMPTY_DRAFT } from '../types/character'
+import { createId } from '../../../core/utils/id'
 import { sanitizeImportedDraft } from './draftValidation'
 
 const LIBRARY_KEY = 'ordem-character-library'
@@ -60,9 +61,9 @@ export function deleteCharacterEntry(id: string): SavedCharacter[] {
   return characters
 }
 
+/** Gera um id único para uma ficha (o gerador comum do núcleo). */
 export function newId(): string {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID()
-  return `char-${Date.now()}-${Math.floor(Math.random() * 1e6)}`
+  return createId('char')
 }
 
 export function exportCharacter(character: OrdemCharacterDraft): void {

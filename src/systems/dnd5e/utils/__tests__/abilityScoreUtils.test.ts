@@ -17,6 +17,7 @@ import {
   formatXpProgress,
 } from '../abilityScoreUtils'
 import type { AbilityScore } from '../../types/race'
+import { sequenceRoller } from '../../../../core/dice'
 
 describe('calculateModifier', () => {
   it('retorna 0 para atributo 10', () => expect(calculateModifier(10)).toBe(0))
@@ -164,6 +165,14 @@ describe('rollAbilityScore', () => {
     const { rolls, result } = rollAbilityScore()
     const top3 = [...rolls].sort((a, b) => b - a).slice(0, 3)
     expect(result).toBe(top3[0] + top3[1] + top3[2])
+  })
+
+  it('sorteia pelo motor de dados: com as faces fixas, os 4 dados na ordem e a soma dos 3 maiores', () => {
+    expect(rollAbilityScore(sequenceRoller([2, 6, 1, 5]))).toEqual({ rolls: [2, 6, 1, 5], result: 13 })
+    // Empate no menor: descarta um só.
+    expect(rollAbilityScore(sequenceRoller([1, 4, 1, 4]))).toEqual({ rolls: [1, 4, 1, 4], result: 9 })
+    // Os quatro são d6: uma face de d8 não cabe.
+    expect(() => rollAbilityScore(sequenceRoller([7, 1, 1, 1]))).toThrow()
   })
 })
 

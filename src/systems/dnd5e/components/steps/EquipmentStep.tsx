@@ -13,6 +13,7 @@ import { EquipmentMethodSelector } from '../equipment/EquipmentMethodSelector'
 import { EquipmentChoiceCard } from '../equipment/EquipmentChoiceCard'
 import { StepNav } from '../../../../components/wizard/StepNav'
 import { formatPendingHint, getStepPendingReasons } from '../../utils/pendingReasons'
+import { cryptoRoller, type DieRoller } from '../../../../core/dice'
 
 export function EquipmentStep() {
   const draft = useCharacterStore(state => state.draft)
@@ -212,13 +213,14 @@ function parseDice(wealthDice: string): { count: number; sides: number } {
   return m ? { count: parseInt(m[1]), sides: parseInt(m[2]) } : { count: 1, sides: 6 }
 }
 
-function WealthRoller({
+export function WealthRoller({
   wealthDice,
   wealthMultiplier,
   wealthUnit,
   storedGold,
   accent,
   onChange,
+  roller = cryptoRoller,
 }: {
   wealthDice: string
   wealthMultiplier: number
@@ -226,6 +228,8 @@ function WealthRoller({
   storedGold: number | null
   accent: string
   onChange: (gold: number | null) => void
+  /** Quem sorteia cada dado: o motor de dados; os testes fixam as faces. */
+  roller?: DieRoller
 }) {
   const { count, sides } = parseDice(wealthDice)
   const [values, setValues] = useState<(number | null)[]>(() => Array(count).fill(null))
@@ -235,13 +239,13 @@ function WealthRoller({
   const total = allFilled ? diceSum * wealthMultiplier : null
 
   function rollAll() {
-    const rolled = Array.from({ length: count }, () => Math.floor(Math.random() * sides) + 1)
+    const rolled = Array.from({ length: count }, () => roller(sides))
     setValues(rolled)
     onChange(rolled.reduce((a, b) => a + b, 0) * wealthMultiplier)
   }
 
   function rollOne(idx: number) {
-    const newVal = Math.floor(Math.random() * sides) + 1
+    const newVal = roller(sides)
     const next = [...values]
     next[idx] = newVal
     setValues(next)

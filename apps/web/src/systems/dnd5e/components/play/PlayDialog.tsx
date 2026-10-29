@@ -64,6 +64,9 @@ export function PlayDialog({ title, titleId, onClose, onFocusAway, children }: {
 
   return (
     <div className="fixed inset-0 z-40 flex items-end sm:items-center justify-center bg-black/60" onClick={onClose}>
+      {/* A altura em dvh, a da tela à vista: o vh do Safari é o da tela com a barra dele escondida,
+          e com a barra à vista a folha alta passaria da tela, com o título e o ✕ fora dela por cima.
+          O fim fica acima da barra de gestos, e a rolagem da folha não arrasta a página de trás. */}
       <div
         ref={dialogRef}
         role="dialog"
@@ -71,7 +74,7 @@ export function PlayDialog({ title, titleId, onClose, onFocusAway, children }: {
         aria-labelledby={titleId}
         onClick={e => e.stopPropagation()}
         onKeyDown={trapTab}
-        className="w-full sm:max-w-md max-h-[85vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl border border-parchment-800 bg-surface-raised px-5 pt-4 pb-6"
+        className="w-full sm:max-w-md max-h-[85dvh] overflow-y-auto overscroll-contain rounded-t-2xl sm:rounded-2xl border border-parchment-800 bg-surface-raised px-5 pt-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
       >
         <div className="flex items-start justify-between gap-3">
           <h2 id={titleId} className="font-fantasy font-bold text-base text-parchment-200 leading-snug pt-2">{title}</h2>

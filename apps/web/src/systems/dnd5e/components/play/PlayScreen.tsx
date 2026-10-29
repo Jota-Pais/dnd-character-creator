@@ -27,6 +27,15 @@ const STICKY_GAP = 8
 const NO_OVERSCROLL_X = 'overscroll-x-none'
 
 /**
+ * Quanto do topo da tela os vitais fixos cobrem, grudados (px): a altura deles mais a área segura
+ * de cima onde grudam (o `top` deles, 0 fora do app de ponta a ponta do Android).
+ */
+function stickyCover(sticky: HTMLElement | null): number {
+  if (!sticky) return 0
+  return sticky.getBoundingClientRect().height + (parseFloat(getComputedStyle(sticky).top) || 0)
+}
+
+/**
  * Modo de jogo do D&D 5e: a ficha de UM personagem durante a sessão. Pensada para o celular
  * (360–430 px), numa coluna central; do tablet (md) para cima a coluna alarga e as abas Testes,
  * Ataques, Magia e Regras abrem em mais colunas — abaixo do md, nada muda. A ficha nunca muda
@@ -64,7 +73,7 @@ export function PlayScreen() {
     const rect = el.getBoundingClientRect()
     // Sem layout (o jsdom dos testes), nada a rolar.
     if (rect.height === 0) return
-    const covered = stickyRef.current?.getBoundingClientRect().height ?? 0
+    const covered = stickyCover(stickyRef.current)
     if (onlyIfCovered && rect.top >= covered) return
     const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
     window.scrollBy({ top: rect.top - covered - STICKY_GAP, behavior: reduceMotion ? 'auto' : 'smooth' })
@@ -141,7 +150,7 @@ export function PlayScreen() {
     const sticky = stickyRef.current
     if (!sticky) return
     const root = document.documentElement
-    const update = () => { root.style.scrollPaddingTop = `${Math.ceil(sticky.getBoundingClientRect().height) + STICKY_GAP}px` }
+    const update = () => { root.style.scrollPaddingTop = `${Math.ceil(stickyCover(sticky)) + STICKY_GAP}px` }
     update()
     const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(update)
     observer?.observe(sticky)
@@ -226,7 +235,8 @@ export function PlayScreen() {
           {settingsOpen && <div className="mt-3"><PlaySettings /></div>}
         </header>
 
-        <div ref={stickyRef} className="sticky top-0 z-20 -mx-4 px-4 py-2 bg-surface-base/95 backdrop-blur-sm border-b border-parchment-900">
+        {/* Grudam logo abaixo da área segura: no app de ponta a ponta, a barra de status cobre o topo. */}
+        <div ref={stickyRef} className="sticky top-[env(safe-area-inset-top)] z-20 -mx-4 px-4 py-2 bg-surface-base/95 backdrop-blur-sm border-b border-parchment-900">
           <VitalsBar view={view} onOpenRecipe={openRecipe} onOpenSource={setSource} onOpenRests={openRests} />
         </div>
 

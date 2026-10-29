@@ -114,10 +114,11 @@ export function NoticeToast({ view, onOpenRecipe, onHeightChange, onFocusAway, r
   // A região viva fica montada mesmo sem aviso, vazia: inserida já com o texto, o leitor de tela
   // pode não anunciar.
   return (
+    // Acima da barra de gestos e fora do entalhe (área segura); a altura medida já a inclui.
     <div ref={boxRef} className="fixed inset-x-0 bottom-0 z-30 pointer-events-none">
-      <div role="status" aria-live="polite" className="max-w-2xl mx-auto px-4">
+      <div role="status" aria-live="polite" className="max-w-2xl mx-auto pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]">
         {open && (
-          <div className="pb-4">
+          <div className="pb-[calc(1rem+env(safe-area-inset-bottom))]">
             <div className="pointer-events-auto rounded-xl border border-parchment-800 bg-surface-raised p-3 shadow-xl shadow-black/50">
               {/* Muitos avisos (um descanso com vários recursos) rolam dentro do cartão: ele nunca passa
                   da metade da tela e, em celular baixo, deixa espaço para os vitais fixos e o d20 do

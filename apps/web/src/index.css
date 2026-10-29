@@ -135,6 +135,23 @@
     color: #e8d5b7;
     font-family: var(--font-body);
     line-height: 1.6;
+    /* Área segura (viewport-fit=cover no index.html): o conteúdo não passa por baixo do entalhe
+       (iPhone deitado), da barra de gestos nem da barra de status do app de ponta a ponta (Android).
+       Sem entalhe nem barra, os env() valem 0. O que é fixo nas bordas (vitais, aviso do pé,
+       folhas, rodapé do criador) soma a margem dele. */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+
+  /* No app de ponta a ponta, a barra de status fica por cima da página: o que rola não aparece atrás
+     dela. Sem barra por cima (o navegador, o iPhone com a barra preta), a altura é 0. */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0 0 auto 0;
+    height: env(safe-area-inset-top);
+    background-color: var(--color-surface-base);
+    z-index: 60;
+    pointer-events: none;
   }
 
   h1, h2, h3 {

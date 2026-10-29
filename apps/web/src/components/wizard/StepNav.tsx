@@ -34,7 +34,8 @@ export function StepNav({
 }: Props) {
   return (
     <div
-      className="fixed bottom-0 right-0 left-0 lg:left-[250px] z-20 border-t border-parchment-900 px-5 lg:px-10 py-3.5 flex justify-between items-center gap-3"
+      // Acima da barra de gestos e fora do entalhe (área segura, viewport-fit=cover).
+      className="fixed bottom-0 right-0 left-0 lg:left-[250px] z-20 border-t border-parchment-900 pl-[max(1.25rem,env(safe-area-inset-left))] pr-[max(1.25rem,env(safe-area-inset-right))] lg:px-10 pt-3.5 pb-[calc(0.875rem+env(safe-area-inset-bottom))] flex justify-between items-center gap-3"
       style={{
         backgroundColor: 'color-mix(in srgb, var(--color-surface-raised) 93%, transparent)',
         backdropFilter: 'blur(8px)',

@@ -535,7 +535,7 @@ describe('getRollGuide — condições e modo', () => {
 // anulam, "da mesma maneira se várias circunstâncias impõem desvantagem e apenas uma concede
 // vantagem"; o Mestre também pode conceder vantagem ou impor desvantagem.
 describe('withTableMode — a circunstância da mesa (pág. 175)', () => {
-  const MESA = 'Circunstância da mesa'
+  const TABLE_LABEL = 'Circunstância da mesa'
 
   it('Normal e jogada que não é d20 voltam iguais', () => {
     const guide = getRollGuide(fighter('longsword'), play())
@@ -548,14 +548,14 @@ describe('withTableMode — a circunstância da mesa (pág. 175)', () => {
     const guide = getRollGuide(fighter('longsword'), play())
     const attack = withTableMode(guide.attacks[0].attack, 'advantage')
     expect(attack.mode).toBe('advantage')
-    expect(labelsOf(attack.advantage)).toEqual([MESA])
+    expect(labelsOf(attack.advantage)).toEqual([TABLE_LABEL])
     expect(attack.notation).toBe('2d20kh1+5')
     expect(attack.formula).toBe(guide.attacks[0].attack.formula)
     expect(attack.notes).toEqual(guide.attacks[0].attack.notes)
-    expect(describeRollGuide(attack)).toBe(`1d20 + 5, com vantagem (${MESA})`)
+    expect(describeRollGuide(attack)).toBe(`1d20 + 5, com vantagem (${TABLE_LABEL})`)
     const save = withTableMode(guide.saves.STR, 'disadvantage')
     expect(save.mode).toBe('disadvantage')
-    expect(labelsOf(save.disadvantage)).toEqual([MESA])
+    expect(labelsOf(save.disadvantage)).toEqual([TABLE_LABEL])
     expect(save.notation).toBe('2d20kl1+5')
     expect(save.modifier).toBe(guide.saves.STR.modifier)
   })
@@ -568,7 +568,7 @@ describe('withTableMode — a circunstância da mesa (pág. 175)', () => {
     expect(labelsOf(stealth.disadvantage)).toEqual(['Envenenado', 'Cota de Malha'])
     expect(stealth.notes[0]).toBe('Vantagem da mesa: anula a desvantagem: role um d20 só (pág. 175).')
     expect(describeRollGuide(stealth))
-      .toBe(`1d20 + 2, normal: vantagem (${MESA}) e desvantagem (Envenenado, Cota de Malha) se anulam`)
+      .toBe(`1d20 + 2, normal: vantagem (${TABLE_LABEL}) e desvantagem (Envenenado, Cota de Malha) se anulam`)
   })
 
   it('do mesmo lado não soma: continua um d20 a mais, e a nota diz por quê', () => {
@@ -576,7 +576,7 @@ describe('withTableMode — a circunstância da mesa (pág. 175)', () => {
     const attack = withTableMode(guide.attacks[0].attack, 'advantage')
     expect(attack.mode).toBe('advantage')
     expect(attack.notation).toBe('2d20kh1+5')
-    expect(labelsOf(attack.advantage)).toEqual(['Invisível', MESA])
+    expect(labelsOf(attack.advantage)).toEqual(['Invisível', TABLE_LABEL])
     expect(attack.notes[0]).toBe('Vantagem da mesa: a jogada já tinha vantagem; não muda nada (vantagens não se somam, pág. 175).')
     const poisoned = getRollGuide(fighter('longsword'), withConditions('poisoned'))
     const check = withTableMode(poisoned.checks.STR, 'disadvantage')
@@ -589,7 +589,7 @@ describe('withTableMode — a circunstância da mesa (pág. 175)', () => {
     const attack = withTableMode(guide.attacks[0].attack, 'disadvantage')
     expect(attack.mode).toBe('normal')
     expect(attack.notation).toBe('1d20+5')
-    expect(labelsOf(attack.disadvantage)).toEqual(['Envenenado', MESA])
+    expect(labelsOf(attack.disadvantage)).toEqual(['Envenenado', TABLE_LABEL])
     expect(attack.notes[0]).toBe('Desvantagem da mesa: não muda nada — vantagem e desvantagem já se anulavam, qualquer que seja a quantidade (pág. 175).')
   })
 

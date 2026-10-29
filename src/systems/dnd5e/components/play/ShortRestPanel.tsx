@@ -80,7 +80,9 @@ function HitDieInput({ die, available, entry, appDice, onAdd, lineRef }: {
       </p>
       {entry?.notes.map((n, i) => <p key={i} className="text-[11px] text-parchment-500 leading-snug">{n}</p>)}
       {available > 0 && (
-        <form onSubmit={handleSubmit} className="mt-1.5 flex flex-wrap gap-2">
+        // noValidate: quem valida é o app (o aviso abaixo). A validação do navegador entraria
+        // antes do onSubmit do botão apagado, com o balão e o foco no campo (o teclado do celular).
+        <form noValidate onSubmit={handleSubmit} className="mt-1.5 flex flex-wrap gap-2">
           <input
             type="number"
             inputMode="numeric"

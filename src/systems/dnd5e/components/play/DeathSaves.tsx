@@ -166,7 +166,9 @@ export function DeathSaves({ view, bottomInset = 0, onLeave }: {
         <Marks label="Fracassos" count={state.deathSaves.failures} filled="border-red-400 bg-red-600" />
       </div>
 
-      <form ref={formRef} onSubmit={handleSubmit} className="mt-3 flex flex-wrap gap-2">
+      {/* noValidate: quem valida é o app (o aviso abaixo). A validação do navegador entraria antes
+          do onSubmit do botão apagado, com o balão e o foco no campo (o teclado do celular). */}
+      <form ref={formRef} noValidate onSubmit={handleSubmit} className="mt-3 flex flex-wrap gap-2">
         <input
           type="number"
           inputMode="numeric"

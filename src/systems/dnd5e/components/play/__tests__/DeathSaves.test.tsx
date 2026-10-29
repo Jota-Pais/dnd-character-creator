@@ -47,11 +47,15 @@ describe('DeathSaves', () => {
     render(<PlayScreen />)
     expect(screen.queryByText(/Digite o d20 que saiu/)).toBeNull()
     const regions = liveRegions()
-    fireEvent.change(screen.getByLabelText(/d20 que você tirou/), { target: { value: '21' } })
+    const field = screen.getByLabelText(/d20 que você tirou/)
+    fireEvent.change(field, { target: { value: '21' } })
     const register = screen.getByRole('button', { name: 'Registrar' })
     expect(register).toHaveAttribute('aria-disabled', 'true')
-    // Apagado, o envio não faz nada.
+    // Apagado, o envio não faz nada: nem a validação do navegador, que levaria o foco ao campo.
+    const invalid = vi.fn()
+    field.addEventListener('invalid', invalid)
     fireEvent.click(register)
+    expect(invalid).not.toHaveBeenCalled()
     expect(usePlayStore.getState().state?.deathSaves).toEqual({ successes: 0, failures: 0 })
     // O botão apagado diz por quê, numa região viva que já existia antes do aviso.
     const hint = screen.getByText('Digite o d20 que saiu (1 a 20); o app soma o resto.')

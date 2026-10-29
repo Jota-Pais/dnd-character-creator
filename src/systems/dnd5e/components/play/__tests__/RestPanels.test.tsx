@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { act, render, screen, fireEvent, cleanup } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { usePlayStore } from '../../../stores/playStore'
@@ -67,11 +67,15 @@ describe('Descanso curto', () => {
     openHurtKrusk()
     fireEvent.click(screen.getByRole('button', { name: 'Descanso curto' }))
     const regions = liveRegions()
-    fireEvent.change(screen.getByLabelText('Quanto tirou no d12'), { target: { value: '14' } })
+    const field = screen.getByLabelText('Quanto tirou no d12')
+    fireEvent.change(field, { target: { value: '14' } })
     const spend = screen.getByRole('button', { name: 'Gastar d12' })
     expect(spend).toHaveAttribute('aria-disabled', 'true')
-    // Apagado, o envio não faz nada.
+    // Apagado, o envio não faz nada: nem a validação do navegador, que levaria o foco ao campo.
+    const invalid = vi.fn()
+    field.addEventListener('invalid', invalid)
     fireEvent.click(spend)
+    expect(invalid).not.toHaveBeenCalled()
     expect(screen.queryByTestId('short-rest-draft')).toBeNull()
     // O aviso sai numa região viva que já existia antes dele.
     expect(regions.some(r => r.contains(screen.getByText(/Digite só o que saiu no d12 \(1 a 12\)/)))).toBe(true)

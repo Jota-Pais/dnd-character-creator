@@ -91,7 +91,9 @@ export function RemainingTrack({ label, unitLabel, total, available, amountInput
         </button>
       </div>
       {amountInput && (
-        <form onSubmit={handleSubmit} className="flex gap-2">
+        // noValidate: o "Gastar" apagado não faz nada; a validação do navegador entraria antes do
+        // onSubmit, com o balão e o foco no campo (o teclado do celular).
+        <form noValidate onSubmit={handleSubmit} className="flex gap-2">
           <input
             type="number"
             inputMode="numeric"

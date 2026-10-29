@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { act, render, screen, fireEvent, cleanup, within } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { usePlayStore } from '../../../stores/playStore'
@@ -190,6 +190,23 @@ describe('MagicTab', () => {
     expect(remaining()).toHaveTextContent('restam 5 de 5 PV')
     expect(raise).toHaveAttribute('aria-disabled', 'true')
     expect(raise).toHaveFocus()
+  })
+
+  it('poço de PV: o "Gastar" apagado pelo 0 não aciona a validação do navegador (que levaria o foco ao campo)', () => {
+    openMagic({
+      ...structuredClone(COMPLETE_DRAFT),
+      class: 'paladin',
+      classChoices: { ...structuredClone(COMPLETE_DRAFT.classChoices), skills: ['insight', 'medicine'] },
+    })
+    const field = screen.getByLabelText('Quanto gastar: Cura pelas Mãos')
+    fireEvent.change(field, { target: { value: '0' } })
+    const spend = screen.getByRole('button', { name: 'Gastar' })
+    expect(spend).toHaveAttribute('aria-disabled', 'true')
+    const invalid = vi.fn()
+    field.addEventListener('invalid', invalid)
+    fireEvent.click(spend)
+    expect(invalid).not.toHaveBeenCalled()
+    expect(screen.getByTestId('remaining-Cura pelas Mãos')).toHaveTextContent('restam 5 de 5 PV')
   })
 
   it('o leitor de tela ouve a contagem quando um uso é gasto (abrir a aba não anuncia)', () => {

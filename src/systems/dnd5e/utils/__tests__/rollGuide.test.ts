@@ -506,6 +506,13 @@ describe('getRollGuide — condições e modo', () => {
     expect(withInspirationSpent(save)).toBe(save)
   })
 
+  it('Inspiração gasta com vantagem e desvantagem já anuladas: a mesma frase da mesa (pág. 175)', () => {
+    const guide = getRollGuide(fighter('longsword'), withConditions('invisible', 'poisoned'))
+    const attack = withInspirationSpent(guide.attacks[0].attack)
+    expect(attack.mode).toBe('normal')
+    expect(attack.notes[0]).toBe('Inspiração gasta: não muda nada — vantagem e desvantagem já se anulavam, qualquer que seja a quantidade (pág. 175).')
+  })
+
   it('Inspiração gasta: com falha automática avisa e não muda; dano volta igual', () => {
     const guide = getRollGuide(fighter('longsword'), withConditions('paralyzed'))
     const dex = withInspirationSpent(guide.saves.DEX)
@@ -607,6 +614,17 @@ describe('withTableMode — a circunstância da mesa (pág. 175)', () => {
     expect(save.notes.filter(n => n.startsWith('Inspiração'))).toHaveLength(1)
     const adv = withTableMode(guide.saves.STR, 'advantage')
     expect(adv.notes).toContain('Inspiração: a jogada já tem vantagem; gastá-la não muda nada (vantagens não se somam, pág. 175).')
+  })
+
+  it('a nota da Inspiração é trocada mesmo que outra composição tenha mudado o modo antes', () => {
+    const guide = getRollGuide(fighter(), play({ inspiration: true }))
+    // A nota foi escrita para a jogada normal; alguém pôs desvantagem sem reescrevê-la.
+    const before = { ...guide.saves.STR, mode: 'disadvantage' as const, disadvantage: [{ source: 'x', label: 'X' }] }
+    const save = withTableMode(before, 'advantage')
+    expect(save.mode).toBe('normal')
+    expect(save.notes.filter(n => n.startsWith('Inspiração'))).toEqual([
+      'Inspiração: aqui não muda nada — vantagem e desvantagem já se anulam, qualquer que seja a quantidade (pág. 175).',
+    ])
   })
 
   it('com a Inspiração gasta por cima, as fontes se combinam pela mesma regra', () => {

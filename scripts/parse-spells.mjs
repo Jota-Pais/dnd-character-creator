@@ -134,7 +134,7 @@ function main() {
 
   // O módulo do D&D mudou de lugar na arquitetura multi-RPG; sem isto o script recria um
   // src/data/ órfão e o app segue lendo o arquivo antigo.
-  const OUT = 'src/systems/dnd5e/data/spells.json'
+  const OUT = 'apps/web/src/systems/dnd5e/data/spells.json'
   mkdirSync(dirname(resolve(root, OUT)), { recursive: true })
   writeFileSync(
     resolve(root, OUT),

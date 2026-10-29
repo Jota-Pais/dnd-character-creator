@@ -6,7 +6,8 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  // .claude/worktrees: cópias do repositório de sessões paralelas, cada uma com o próprio lint.
+  globalIgnores(['**/dist', '.claude']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

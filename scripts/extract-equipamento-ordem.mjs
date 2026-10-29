@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-const outDir = path.resolve(__dirname, '../src/systems/ordem/data')
+const outDir = path.resolve(__dirname, '../apps/web/src/systems/ordem/data')
 const outFile = path.join(outDir, 'equipments.json')
 
 function cat(str) {

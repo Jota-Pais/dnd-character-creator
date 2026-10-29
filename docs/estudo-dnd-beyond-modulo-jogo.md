@@ -523,7 +523,7 @@ Mais específicas da ficha: concentração ausente, buffs fora das rolagens, pre
   - Hoje a V1 não lista modo de jogo e põe "evolução de personagem em sessão" fora do escopo.
   - O commit deve incluir a ficha jogável no escopo, manter subir de nível e XP fora e proibir explicitamente multiplayer, mestre e backend.
   - Também deve corrigir a descrição do storage: a camada é por sistema, em `src/systems/<sistema>/utils/storage.ts`.
-- **Corrigir os bugs de base** da seção 8.3, de preferência declarando como efeito nos dados (ex.: PV e CA sem armadura como efeitos de raça e de feature) em vez de espalhar `if`. Incluir a **migração** das fichas salvas e o aviso ao jogador.
+- **Corrigir os bugs de base** da seção 8.3, de preferência declarando como efeito nos dados (ex.: PV e CA sem armadura como efeitos de raça e de feature) em vez de espalhar `if`. Incluir a **migração** das fichas salvas e o aviso ao jogador. **Aviso feito em 2026-10-29** (decisão 10.2.23): a cada abertura do jogo, `utils/sheetSnapshot.ts` compara um retrato dos números (PV máximo, CA, CD e ataque de magia, espaços) com o da abertura anterior, guardado no estado de jogo; número diferente com a mesma ficha (mesma gravação ou mesmo draft) avisa "O app corrigiu sua ficha: PV máximo 12 → 14", uma vez. Com o estado em "gasto", o PV atual sobe junto com o máximo, sem migrar nada.
 - **Extrair o modelo de ficha puro** (armas equipadas, magias conhecidas, ataques por ação, inventário inicial resolvido), para Revisão, PDF e Jogo lerem a mesma conta. **Feito em 2026-10-29:** `utils/sheetModel.ts` tem o inventário inicial (`getStartingInventory`, de onde saem também as armas dos ataques) e as magias conhecidas por via (`getKnownSpells`, com o grimório do PDF em `listKnownSpells`); os ataques por ação já eram `getAttacksPerAction`.
 - **Digitalizar em `/docs`** as regras do modo de jogo a partir das linhas já localizadas no extrato (seção 8.1): descanso, morte (com estável e dano massivo), PV temporário, concentração, condições e exaustão, dano e crítico, ações padrão e carga. Isso segue o fluxo livro → `/docs` → `src/data`. Os pontos em que a tradução diverge do inglês vão ao dono (10.1).
 - **Dados de condições**: 14 condições mais a Exaustão, com o texto e os efeitos que mexem no estado de jogo.
@@ -531,14 +531,14 @@ Mais específicas da ficha: concentração ausente, buffs fora das rolagens, pre
 - **Definir o estado de jogo** como campo irmão do draft:
   - em "gasto", com extras temporários e ajuste temporário de máximo;
   - com ids estáveis e versão;
-  - incluído no mapper, no export/import (decisão 10.2.3: o export leva o estado de jogo) e num sanitizador.
+  - incluído no mapper, no export/import (decisão 10.2.3: o export leva o estado de jogo) e num sanitizador. **Export/import feito em 2026-10-29:** o arquivo é um envelope versionado (`format: "dnd5e-character"`, `version: 2`) com o draft e o estado de jogo lado a lado; o draft solto dos arquivos antigos continua entrando. Importar sempre cria ficha nova, e o estado do arquivo vai só para ela.
 - **Motor de rolagem puro no núcleo**: RNG confiável, notação mínima, V/D, crítico e resultado como registro serializável, com cobertura obrigatória de testes. Os `Math.random` espalhados, inclusive nos storages, passam a usar uma fonte comum. **Feito em 2026-10-29:** os dados do criador (4d6, PV por rolagem, ouro inicial) sorteiam pelo motor, e os ids saem de `createId` (`src/core/utils/id.ts`); só o `cryptoRng` chama o `Math.random`, como último recurso.
 - **Contrato de "jogar"** como capacidade **opcional** do sistema no `IRpgSystem`; o contrato entra agora (decisão 10.2.12), e o Ordem fica para a Fase 3 (decisão 10.2.17). Remover a `AppState` morta. **Feito em 2026-10-29:** `IRpgSystem.play` (`canPlay`, `startPlay`); a galeria pergunta ao sistema da ficha.
 
 ### Fase 1: MVP "ficha viva + dados"
 
 **Fechada em 2026-10-29.** Ficaram de fora, de propósito:
-- tela acesa, que a decisão 10.2.22 já definiu (ligada por padrão e desligável) e ainda não foi feita; som e vibração ficam fora pela mesma decisão;
+- tela acesa, que a decisão 10.2.22 já definiu (ligada por padrão e desligável); som e vibração ficam fora pela mesma decisão. **Feita em 2026-10-29:** Screen Wake Lock enquanto o jogo está aberto e visível, desligável na engrenagem; sem a API, a opção dá lugar à explicação;
 - a trava de "um descanso longo a cada 24 h", porque é tempo de jogo, não de relógio. Fica só o aviso.
 
 - **Entrada**: botão "Jogar" na galeria, que abre uma view de jogo própria e responsiva. No celular em retrato, uma coluna com seções por swipe. No tablet e no desktop, mais densidade.
@@ -611,7 +611,7 @@ Mais específicas da ficha: concentração ausente, buffs fora das rolagens, pre
   - Hoje a rota preferível é three com física própria ou dice-box-threejs (MIT, aceita resultado predeterminado), lembrando que o cannon-es está parado. Rapier e dice-box só servem se for possível forçar a face.
 - **Temas de dado** como recompensa local por marcos, com licenças próprias ou verificadas (decisão 10.2.13).
 - **Modo forma** (Forma Selvagem/Polimorfia), com dano excedente.
-- **Diário de sessão** estruturado, além da nota livre do MVP, e o "Nova sessão", que limpa o histórico de rolagens (decisão 10.2.20). Personagem de exemplo (decisão 10.2.21) e mini-guias "?".
+- **Diário de sessão** estruturado, além da nota livre do MVP, e o "Nova sessão", que limpa o histórico de rolagens (decisão 10.2.20; **o "Nova sessão" foi feito antes, em 2026-10-29**: no título do histórico, na aba Notas, com confirmação, porque o histórico fica fora do desfazer). Personagem de exemplo (decisão 10.2.21) e mini-guias "?".
 - **PDF** refletindo o estado de jogo e só as magias preparadas.
 - **Ordem** implementado sobre o mesmo contrato (decisão 10.2.17).
 

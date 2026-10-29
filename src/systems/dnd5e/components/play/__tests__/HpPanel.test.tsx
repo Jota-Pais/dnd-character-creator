@@ -212,3 +212,47 @@ describe('HpPanel', () => {
     expect(screen.getByTestId('hp-current')).toHaveTextContent('19')
   })
 })
+
+describe('HpPanel — o campo no celular e no computador', () => {
+  afterEach(() => Reflect.deleteProperty(window, 'matchMedia'))
+
+  /** Simula o ponteiro principal: grosso (dedo, celular e tablet) ou fino (mouse). */
+  function pointer(kind: 'coarse' | 'fine') {
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: (query: string) => ({ matches: query === `(pointer: ${kind})` }),
+    })
+  }
+
+  it('ponteiro grosso: placeholder e dica sem sinal, levando aos botões; o atalho com sinal continua valendo', () => {
+    pointer('coarse')
+    openKrusk()
+    render(<PlayScreen />)
+    const field = screen.getByRole('textbox', { name: 'Dano ou cura' })
+    expect(field).toHaveAttribute('placeholder', '0')
+    expect(field).toHaveAccessibleDescription('Escolha Dano, Cura ou PV temporários e digite o valor.')
+    // O teclado numérico do iPhone não tem sinal: nenhum texto do painel pede o "−7" ou o "+5".
+    expect(field.closest('form')).not.toHaveTextContent(/[−+]\d/)
+
+    fireEvent.change(field, { target: { value: 'sete' } })
+    expect(screen.getByText('Digite só o número.')).toBeInTheDocument()
+
+    fireEvent.change(field, { target: { value: '-3' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('11')
+    fireEvent.change(screen.getByRole('textbox', { name: 'Dano ou cura' }), { target: { value: '+2' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('13')
+  })
+
+  it('ponteiro fino: continua ensinando o atalho −7 / +5', () => {
+    pointer('fine')
+    openKrusk()
+    render(<PlayScreen />)
+    const field = screen.getByRole('textbox', { name: 'Dano ou cura (−7 é dano, +5 é cura)' })
+    expect(field).toHaveAttribute('placeholder', '−7 ou +5')
+    expect(field).toHaveAccessibleDescription('Escolha Dano ou Cura, ou digite com o sinal: −7 é dano, +5 é cura.')
+    fireEvent.change(field, { target: { value: 'sete' } })
+    expect(screen.getByText('Digite só o número, com − na frente para dano ou + para cura.')).toBeInTheDocument()
+  })
+})

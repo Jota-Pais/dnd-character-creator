@@ -1,4 +1,4 @@
-import { useId, useRef, useState, type FormEvent } from 'react'
+import { useId, useRef, useState, useSyncExternalStore, type FormEvent } from 'react'
 import type { ImmuneDamageType } from '../../types/condition'
 import type { PlayResult } from '../../types/playState'
 import {
@@ -24,6 +24,34 @@ const ACTIONS: { id: HpAction; label: string; sign?: string; field: string; help
   },
 ]
 
+/**
+ * O que o campo ensina sem ação escolhida. No computador, o atalho com sinal ("−7", "+5"); no
+ * celular e no tablet (ponteiro grosso) o teclado numérico do iPhone não tem sinal, e o texto leva
+ * aos botões. O atalho com sinal vale nos dois.
+ */
+const ENTRY_TEXT = {
+  fine: {
+    label: 'Dano ou cura (−7 é dano, +5 é cura)',
+    placeholder: '−7 ou +5',
+    hint: 'Escolha Dano ou Cura, ou digite com o sinal: −7 é dano, +5 é cura.',
+    invalid: 'Digite só o número, com − na frente para dano ou + para cura.',
+  },
+  coarse: {
+    label: 'Dano ou cura',
+    placeholder: '0',
+    hint: 'Escolha Dano, Cura ou PV temporários e digite o valor.',
+    invalid: 'Digite só o número.',
+  },
+}
+
+const COARSE_POINTER = '(pointer: coarse)'
+const isCoarsePointer = () => window.matchMedia?.(COARSE_POINTER).matches ?? false
+function subscribeCoarsePointer(onChange: () => void) {
+  const query = window.matchMedia?.(COARSE_POINTER)
+  query?.addEventListener?.('change', onChange)
+  return () => query?.removeEventListener?.('change', onChange)
+}
+
 const wasRefused = (result: PlayResult | null) => !result || result.notices.some(n => n.kind === 'refused')
 
 /** Lê o número digitado: inteiro de 0 para cima, ou null. */
@@ -36,13 +64,15 @@ function parseAmount(text: string): number | null {
  * Ações de PV: dano, cura e PV temporários, com o número digitado pelo jogador (o dano vem do
  * inimigo: nada de rolar aqui, mesmo com os dados do app). O campo fica sempre à mão e aceita o
  * atalho "−7" / "+5" sem escolher o botão antes (`hpEntry.ts`); o teclado do celular é o numérico,
- * que no iPhone não tem sinal, e por isso os botões Dano e Cura levam o "−" e o "+".
+ * que no iPhone não tem sinal, e por isso os botões Dano e Cura levam o "−" e o "+" e, com ponteiro
+ * grosso, o campo ensina os botões em vez do sinal (`ENTRY_TEXT`).
  * As regras ficam nas funções puras de `utils/playState.ts`; os avisos (resistência,
  * concentração, queda a 0 PV) saem pelo playStore.
  */
 export function HpPanel({ view }: { view: PlayView }) {
   const { state, run } = view
   const inputRef = useRef<HTMLInputElement>(null)
+  const texts = useSyncExternalStore(subscribeCoarsePointer, isCoarsePointer) ? ENTRY_TEXT.coarse : ENTRY_TEXT.fine
   const hintId = useId()
   const problemId = useId()
   // O botão escolhido; o que vale é `action`, em que o sinal digitado manda.
@@ -66,12 +96,12 @@ export function HpPanel({ view }: { view: PlayView }) {
   // O que impede o "Aplicar": texto que não é número, ou número sem sinal e sem botão escolhido (no
   // iPhone, o teclado numérico não tem sinal, e o caminho são os botões). Vai a uma região viva.
   const problem = !entry
-    ? 'Digite só o número, com − na frente para dano ou + para cura.'
+    ? texts.invalid
     : amount !== null && action === null
       ? `Para aplicar o ${amount}, escolha Dano, Cura ou PV temporários.`
       : null
   // A ajuda da ação, lida ao focar o campo: fora da região viva, não fala a cada toque nos botões.
-  const hint = current?.help ?? 'Escolha Dano ou Cura, ou digite com o sinal: −7 é dano, +5 é cura.'
+  const hint = current?.help ?? texts.hint
 
   function clearOptions() {
     setResisted(false)
@@ -152,9 +182,9 @@ export function HpPanel({ view }: { view: PlayView }) {
             autoComplete="off"
             value={text}
             onChange={e => setText(e.target.value)}
-            aria-label={current?.field ?? 'Dano ou cura (−7 é dano, +5 é cura)'}
+            aria-label={current?.field ?? texts.label}
             aria-describedby={problem ? problemId : hintId}
-            placeholder={current ? '0' : '−7 ou +5'}
+            placeholder={current ? '0' : texts.placeholder}
             className="min-h-10 w-full min-w-0 rounded-lg border border-parchment-800 bg-surface-base px-3 text-lg text-parchment-100 outline-none focus:border-gold-600"
           />
           {!askTempChoice && (

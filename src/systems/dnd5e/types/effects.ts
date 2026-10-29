@@ -58,7 +58,8 @@ export type ConditionalRollNote = {
 /**
  * O que uma característica proíbe na conjuração numa situação que a ficha não conhece — a Fúria
  * (p. 48): "Se você for capaz de conjurar magias, você não poderá conjurá-las ou se concentrar
- * nelas enquanto estiver em fúria". O modo de jogo não tem o estado "em fúria" (efeitos ativos são
+ * nelas enquanto estiver em fúria" — e entrar em fúria encerra a concentração (decisão de
+ * 2026-10-29, que o `text` diz). O modo de jogo não tem o estado "em fúria" (efeitos ativos são
  * da Fase 2): nunca bloqueia nem muda número — vira nota onde se conjura (a CD e o ataque de
  * magia, a concentração, as magias da aba Regras), inclusive nas magias inatas da raça.
  */

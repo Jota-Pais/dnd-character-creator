@@ -1017,7 +1017,7 @@ describe('getConditionalRollNotes', () => {
 // enquanto estiver em fúria."
 describe('getCastingRestrictions (Fúria)', () => {
   const rage = {
-    source: 'Fúria', when: 'em fúria', text: 'você não pode conjurar magias nem se concentrar nelas (pág. 48).',
+    source: 'Fúria', when: 'em fúria', text: 'você não pode conjurar magias nem se concentrar nelas (pág. 48); entrar em fúria encerra a concentração.',
   }
   const MAGIC_INITIATE = 'iniciado-em-magia'
 
@@ -1025,7 +1025,7 @@ describe('getCastingRestrictions (Fúria)', () => {
     const d = draft({ level: 2, multiclass: true, class: 'barbarian', additionalClasses: [extraClass('wizard', 1)] })
     expect(getCastingRestrictions(d)).toEqual([rage])
     expect(getCastingRestrictions(d).map(formatCastingRestriction)).toEqual([
-      'Fúria: em fúria, você não pode conjurar magias nem se concentrar nelas (pág. 48).',
+      'Fúria: em fúria, você não pode conjurar magias nem se concentrar nelas (pág. 48); entrar em fúria encerra a concentração.',
     ])
   })
 

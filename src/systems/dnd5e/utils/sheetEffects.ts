@@ -258,7 +258,7 @@ export function getCastingRestrictions(draft: CharacterDraft): SheetCastingRestr
   return out.length > 0 && canCastSpells(draft) ? out : []
 }
 
-/** "Fúria: em fúria, você não pode conjurar magias nem se concentrar nelas (pág. 48)." */
+/** "Fúria: em fúria, você não pode conjurar magias nem se concentrar nelas (pág. 48); entrar em fúria encerra a concentração." */
 export function formatCastingRestriction(restriction: SheetCastingRestriction): string {
   return `${restriction.source}: ${restriction.when}, ${restriction.text}`
 }

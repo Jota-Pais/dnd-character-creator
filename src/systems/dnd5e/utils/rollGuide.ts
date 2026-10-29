@@ -953,7 +953,8 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
  * max(10, metade do dano, para baixo). O dano é o total do evento, depois da resistência e
  * contando o que os PV temporários absorveram (assumido E, `regras-rolagens-e-concentracao.md`).
  * Conjurador de Guerra (pág. 169) entra como vantagem — aqui o efeito vale sempre. A restrição de
- * conjuração (em fúria não se concentra, pág. 48) vira nota.
+ * conjuração vira nota: em fúria não se concentra (pág. 48), e entrar em fúria encerra a
+ * concentração (decisão de 2026-10-29) — o estado "em fúria" só chega com os efeitos ativos.
  */
 export function getConcentrationGuide(draft: CharacterDraft, state: PlayState, damage: number): RollGuideEntry {
   const scores = getFinalAbilityScores(draft)

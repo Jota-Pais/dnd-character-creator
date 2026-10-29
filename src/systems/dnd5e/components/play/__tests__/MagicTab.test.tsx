@@ -54,7 +54,7 @@ const BARBARIAN_WIZARD: CharacterDraft = {
   multiclass: true,
 }
 
-const RAGE = 'Fúria: em fúria, você não pode conjurar magias nem se concentrar nelas (pág. 48).'
+const RAGE = 'Fúria: em fúria, você não pode conjurar magias nem se concentrar nelas (pág. 48); entrar em fúria encerra a concentração.'
 
 function openMagic(draft: CharacterDraft) {
   openDraft(draft)

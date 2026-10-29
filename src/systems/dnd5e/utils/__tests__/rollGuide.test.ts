@@ -908,7 +908,7 @@ describe('getRollGuide — magias de talento (Iniciado em Magia, p. 170)', () =>
 })
 
 describe('getRollGuide — em fúria não se conjura (pág. 48)', () => {
-  const RAGE = 'Fúria: em fúria, você não pode conjurar magias nem se concentrar nelas (pág. 48).'
+  const RAGE = 'Fúria: em fúria, você não pode conjurar magias nem se concentrar nelas (pág. 48); entrar em fúria encerra a concentração.'
   const FEAT = 'iniciado-em-magia'
   // Bárbaro 2 / mago 1: INT 10 (+0), proficiência +2.
   const barbarianWizard = draft({
@@ -938,7 +938,7 @@ describe('getRollGuide — em fúria não se conjura (pág. 48)', () => {
     ])
   })
 
-  it('a concentração lembra a regra; o mago sem Fúria não', () => {
+  it('a concentração lembra a regra e que entrar em fúria a encerra (decisão de 2026-10-29); o mago sem Fúria não', () => {
     const state = play({ concentration: { label: 'Escudo Arcano', startedAt: 0 } })
     expect(getConcentrationGuide(barbarianWizard, state, 10).notes[0]).toBe(RAGE)
     const wizard = draft({ class: 'wizard', level: 3, abilityScores: SCORES })

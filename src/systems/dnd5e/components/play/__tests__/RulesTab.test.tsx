@@ -60,7 +60,7 @@ const FIGHTER_INITIATE: CharacterDraft = {
   featSelections: { [MAGIC_INITIATE]: CLERIC_PICKS },
 }
 
-const RAGE = 'Fúria: em fúria, você não pode conjurar magias nem se concentrar nelas (pág. 48).'
+const RAGE = 'Fúria: em fúria, você não pode conjurar magias nem se concentrar nelas (pág. 48); entrar em fúria encerra a concentração.'
 
 /** Krusk tiefling bárbaro 3: Taumaturgia e Repreensão Infernal, as magias inatas da raça. */
 const TIEFLING_BARBARIAN: CharacterDraft = { ...structuredClone(COMPLETE_DRAFT), race: 'tiefling', level: 3 }

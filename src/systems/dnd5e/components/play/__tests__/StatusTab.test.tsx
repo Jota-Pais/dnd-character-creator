@@ -212,7 +212,7 @@ describe('StatusTab — exaustão e concentração', () => {
 })
 
 describe('StatusTab — em fúria não se concentra (p. 48)', () => {
-  const RAGE = 'Fúria: em fúria, você não pode conjurar magias nem se concentrar nelas (pág. 48).'
+  const RAGE = 'Fúria: em fúria, você não pode conjurar magias nem se concentrar nelas (pág. 48); entrar em fúria encerra a concentração.'
   /** Krusk tiefling bárbaro 3: conjura só a magia inata da raça (Taumaturgia, Repreensão Infernal). */
   const TIEFLING_BARBARIAN: CharacterDraft = { ...structuredClone(COMPLETE_DRAFT), race: 'tiefling', level: 3 }
   const concentration = () => screen.getByText('Concentração').closest('section')!

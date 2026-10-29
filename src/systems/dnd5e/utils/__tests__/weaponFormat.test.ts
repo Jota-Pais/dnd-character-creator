@@ -275,6 +275,24 @@ describe('weaponFormat', () => {
           '+3 de dano em fúria, sem armadura pesada (Dano de Fúria) — não vale agora: você está de Placas',
         ])
       })
+
+      // O piso 0 é sobre o dano TOTAL (decisão 14): com a linha em 0, "0 + 2" erraria.
+      it('Força baixa, dano em 0: a nota diz a conta inteira com o bônus', () => {
+        // Força 6-7: 1 − 2 dá 0 na linha, mas em fúria 1 − 2 + 2 = 1, não 2.
+        const str7 = getUnarmedStrike({ strMod: -2, dexMod: 0, proficiencyBonus: 2, ...rage(2) })
+        expect(str7.damage).toBe('0 concussão')
+        expect(str7.notes).toEqual(['+2 de dano em fúria, sem armadura pesada (Dano de Fúria): com ele, o dano é 1 (1 − 2 + 2)'])
+        // Força 8-9: a linha diz que não causa dano, e a nota diz quanto causa em fúria.
+        expect(getUnarmedStrike({ strMod: -1, dexMod: 0, proficiencyBonus: 2, ...rage(2) }).notes)
+          .toEqual(['+2 de dano em fúria, sem armadura pesada (Dano de Fúria): com ele, o dano é 2 (1 − 1 + 2)'])
+        // Força 2-3: nem com o bônus passa de 0.
+        expect(getUnarmedStrike({ strMod: -4, dexMod: 0, proficiencyBonus: 2, ...rage(2, 'Placas') }).notes).toEqual([
+          '+2 de dano em fúria, sem armadura pesada (Dano de Fúria): com ele, o dano é 0 (1 − 4 + 2, mínimo 0) — não vale agora: você está de Placas',
+        ])
+        // Com dano positivo, o bônus soma no número da linha: sem conta.
+        expect(getUnarmedStrike({ strMod: 0, dexMod: 0, proficiencyBonus: 2, ...rage(2) }).notes)
+          .toEqual(['+2 de dano em fúria, sem armadura pesada (Dano de Fúria)'])
+      })
     })
   })
 

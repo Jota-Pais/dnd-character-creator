@@ -215,6 +215,14 @@ describe('getRollGuide — ataques', () => {
     expect(weak(10).notes).not.toContain(noDamage)
   })
 
+  it('bárbaro com Força 6 no golpe desarmado: o Dano de Fúria diz a conta com o piso 0 sobre o total', () => {
+    const unarmed = getRollGuide(draft({ class: 'barbarian', level: 1, abilityScores: { ...SCORES, STR: 6 } }), play())
+      .attacks.find(a => a.key === 'unarmed')!.damage!
+    expect(unarmed).toMatchObject({ modifier: 0, formula: '0 concussão' })
+    // Em fúria, 1 − 2 + 2 = 1: somar o bônus ao 0 da receita daria 2.
+    expect(unarmed.notes).toContain('+2 de dano em fúria, sem armadura pesada (Dano de Fúria): com ele, o dano é 1 (1 − 2 + 2)')
+  })
+
   it('Rede (sem dano): só a jogada de ataque', () => {
     const guide = getRollGuide(fighter('net'), play())
     const net = guide.attacks.find(a => a.key === 'net')!

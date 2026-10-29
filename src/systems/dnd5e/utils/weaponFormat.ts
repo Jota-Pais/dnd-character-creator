@@ -179,21 +179,41 @@ export type SourcedAttackEffect = {
   conditionalDamage?: ResolvedConditionalDamage
 }
 
-/** "+2 de dano em fúria, sem armadura pesada (Dano de Fúria)", com a ressalva da linha e o bloqueio. */
-function formatConditionalDamage(bonus: ResolvedConditionalDamage, caveat: string): string {
-  const text = `${signed(bonus.value)} de dano ${bonus.condition}${caveat} (${bonus.name})`
+/** O dano fixo de uma linha sem dado (golpe desarmado, zarabatana): o valor da arma e o modificador. */
+type FixedDamage = { base: number; mod: number }
+
+/** "1 − 2 + 2": a conta escrita, com o sinal separado do número. */
+const spacedSigned = (n: number) => (n < 0 ? `− ${-n}` : `+ ${n}`)
+
+/**
+ * "+2 de dano em fúria, sem armadura pesada (Dano de Fúria)", com a ressalva da linha e o bloqueio.
+ * No dano fixo que dá 0 ou menos, a linha mostra 0 ("não causa dano") e somar o bônus a ele pode
+ * errar: o piso 0 é sobre o total (decisão 14 de `regras-dano-e-morte.md`), e o golpe desarmado com
+ * Força 6-7 em fúria causa 1 − 2 + 2 = 1, não 0 + 2. Aí a nota diz a conta inteira. Com ressalva, a
+ * linha usa outro modificador e não há conta a dizer (linha de dano fixo com Destreza não existe).
+ */
+function formatConditionalDamage(bonus: ResolvedConditionalDamage, caveat: string, fixed?: FixedDamage): string {
+  let text = `${signed(bonus.value)} de dano ${bonus.condition}${caveat} (${bonus.name})`
+  if (fixed && !caveat && fixed.base + fixed.mod <= 0) {
+    const sum = fixed.base + fixed.mod + bonus.value
+    const sumText = `${fixed.base} ${spacedSigned(fixed.mod)} ${spacedSigned(bonus.value)}${sum < 0 ? ', mínimo 0' : ''}`
+    text += `: com ele, o dano é ${Math.max(0, sum)} (${sumText})`
+  }
   return bonus.blockedBy ? `${text} — não vale agora: você está de ${bonus.blockedBy}` : text
 }
 
 /**
  * As notas dos efeitos que alcançam a linha, da arma ou do golpe desarmado: a `note` e o bônus de
- * dano condicional, com a ressalva do que a linha não cumpre do escopo (`scopeCaveat`).
+ * dano condicional, com a ressalva do que a linha não cumpre do escopo (`scopeCaveat`). `fixed`: o
+ * dano da linha sem dado, para a conta do bônus quando o piso 0 cortou.
  */
-function pushEffectNotes(notes: string[], effects: SourcedAttackEffect[], useDex: boolean, thrown: boolean) {
+function pushEffectNotes(
+  notes: string[], effects: SourcedAttackEffect[], useDex: boolean, thrown: boolean, fixed?: FixedDamage,
+) {
   for (const { source, value, conditionalDamage } of effects) {
     const caveat = scopeCaveat(value.weapons, useDex, thrown)
     if (value.note) notes.push(`${value.note}${caveat} (${source})`)
-    if (conditionalDamage) notes.push(formatConditionalDamage(conditionalDamage, caveat))
+    if (conditionalDamage) notes.push(formatConditionalDamage(conditionalDamage, caveat, fixed))
   }
 }
 
@@ -317,7 +337,8 @@ export function getWeaponAttack(weapon: Weapon, ctx: AttackContext): WeaponAttac
     notes.push(`inclui ${martialArts.source} (${martialArts.condition})`)
   }
 
-  pushEffectNotes(notes, effects, useDex, hasProperty(weapon, 'thrown'))
+  const fixed = roll && !('dice' in roll && roll.dice) ? { base: roll.flat ?? 0, mod } : undefined
+  pushEffectNotes(notes, effects, useDex, hasProperty(weapon, 'thrown'), fixed)
 
   const attacksPerAction = getWeaponAttacksPerAction(weapon, ctx, notes)
 
@@ -400,7 +421,7 @@ export function getUnarmedStrike(ctx: UnarmedStrikeContext): WeaponAttack {
     attackBonus += value.attackBonus
     notes.push(`inclui ${signed(value.attackBonus)} no ataque (${source})`)
   }
-  pushEffectNotes(notes, effects, useDex, false)
+  pushEffectNotes(notes, effects, useDex, false, die > 0 ? undefined : { base: 1, mod })
   if (martialArts) {
     notes.push(`depois de atacar com golpe desarmado ou arma de monge na ação de Atacar, um golpe desarmado como ação bônus (${martialArts.source})`)
   }

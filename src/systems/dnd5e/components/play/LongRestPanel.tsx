@@ -96,23 +96,27 @@ export function LongRestPanel({ view, onClose }: { view: PlayTabProps; onClose: 
               <ul className="mt-1 space-y-1">
                 {pool.filter(p => p.spent > 0).map(p => {
                   const count = hitDice[p.die] ?? 0
+                  const canLower = count > 0
+                  const canRaise = count < p.spent && chosen < preview.hitDice.recoverable
+                  // aria-disabled, não disabled: o toque que chega ao limite apagaria o botão
+                  // com o foco nele, que cairia no body. No limite, o toque não faz nada.
                   return (
                     <li key={p.die} className="flex items-center gap-2">
                       <span className="w-12 text-sm text-parchment-200">d{p.die}</span>
                       <button
-                        onClick={() => setCount(p.die, count - 1)}
-                        disabled={count <= 0}
+                        onClick={() => { if (canLower) setCount(p.die, count - 1) }}
+                        aria-disabled={!canLower}
                         aria-label={`Um d${p.die} a menos`}
-                        className="w-10 h-10 rounded-lg border border-parchment-800 text-parchment-300 disabled:opacity-30"
+                        className="w-10 h-10 rounded-lg border border-parchment-800 text-parchment-300 aria-disabled:opacity-30"
                       >
                         −
                       </button>
                       <span className="w-6 text-center font-fantasy font-bold text-parchment-100">{count}</span>
                       <button
-                        onClick={() => setCount(p.die, count + 1)}
-                        disabled={count >= p.spent || chosen >= preview.hitDice.recoverable}
+                        onClick={() => { if (canRaise) setCount(p.die, count + 1) }}
+                        aria-disabled={!canRaise}
                         aria-label={`Um d${p.die} a mais`}
-                        className="w-10 h-10 rounded-lg border border-parchment-800 text-parchment-300 disabled:opacity-30"
+                        className="w-10 h-10 rounded-lg border border-parchment-800 text-parchment-300 aria-disabled:opacity-30"
                       >
                         +
                       </button>

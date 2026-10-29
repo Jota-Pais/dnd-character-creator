@@ -1,4 +1,5 @@
-import { useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
+import { flushSync } from 'react-dom'
 import type { RollRecord } from '../../../../core/dice'
 import { usePlayStore, type ShortRestSpend } from '../../stores/playStore'
 import type { PlayNotice, PlaySheet, PlayState } from '../../types/playState'
@@ -37,13 +38,17 @@ function simulate(state: PlayState, sheet: PlaySheet, spends: ShortRestSpend[]):
   return { state: current, lines, warnings, refused: null }
 }
 
-/** O campo de um tipo de Dado de Vida: a face tirada (digitada, ou "rolar" com os dados do app). */
-function HitDieInput({ die, available, entry, appDice, onAdd }: {
+/**
+ * O campo de um tipo de Dado de Vida: a face tirada (digitada, ou "rolar" com os dados do app). A
+ * linha do dado (`lineRef`) recebe o foco quando o campo e o "Gastar" somem (tabIndex -1).
+ */
+function HitDieInput({ die, available, entry, appDice, onAdd, lineRef }: {
   die: number
   available: number
   entry: RollGuideEntry | undefined
   appDice: boolean
   onAdd: (value: number, record: RollRecord | null) => boolean
+  lineRef: (el: HTMLParagraphElement | null) => void
 }) {
   const [text, setText] = useState('')
   const [rolled, setRolled] = useState<RollRecord | null>(null)
@@ -69,7 +74,7 @@ function HitDieInput({ die, available, entry, appDice, onAdd }: {
 
   return (
     <li className="py-2">
-      <p className="text-sm text-parchment-200">
+      <p ref={lineRef} tabIndex={-1} className="text-sm text-parchment-200">
         d{die}: <span className="font-fantasy font-bold">{available}</span> {pluralize(available, 'disponível', 'disponíveis')}
         {entry && <span className="ml-1.5 text-xs text-parchment-500">cada um cura {entry.formula}</span>}
       </p>
@@ -97,10 +102,12 @@ function HitDieInput({ die, available, entry, appDice, onAdd }: {
               rolar
             </button>
           )}
+          {/* aria-disabled, não disabled: gastar esvazia o campo, e o botão desabilitado largaria o
+              foco de quem o acionou no body. Sem face válida, o envio não faz nada. */}
           <button
             type="submit"
-            disabled={!valid}
-            className="min-h-10 rounded-lg border border-gold-700 px-3 text-sm text-gold-300 disabled:opacity-40 hover:border-gold-500"
+            aria-disabled={!valid}
+            className="min-h-10 rounded-lg border border-gold-700 px-3 text-sm text-gold-300 aria-disabled:opacity-40 hover:border-gold-500"
           >
             Gastar d{die}
           </button>
@@ -147,6 +154,10 @@ export function ShortRestPanel({ view, onClose }: { view: PlayTabProps; onClose:
     ...preview.resources.map(r => r.name),
   ]
 
+  // A linha de cada tipo de dado ("d12: 0 disponíveis"): o foco vai a ela quando o controle em
+  // que estava some. Síncrono (flushSync): a tela já sem ele.
+  const dieLines = useRef(new Map<number, HTMLParagraphElement | null>())
+
   function add(die: number, value: number, record: RollRecord | null): boolean {
     const next = [...spends, { die, value, record }]
     const trial = simulate(state, sheet, next)
@@ -154,9 +165,24 @@ export function ShortRestPanel({ view, onClose }: { view: PlayTabProps; onClose:
       setError(trial.refused)
       return false
     }
-    setSpends(next)
-    setError(null)
+    flushSync(() => {
+      setSpends(next)
+      setError(null)
+    })
+    // O último dado do tipo: o campo e o "Gastar" somem.
+    if (getHitDiceAvailable(trial.state, sheet).find(p => p.die === die)?.available === 0) dieLines.current.get(die)?.focus()
     return true
+  }
+
+  // O rascunho de um dado só: desfazê-lo tira o bloco do rascunho, com o botão. O foco vai à linha
+  // do dado que voltou.
+  function undoLastDie() {
+    const last = spends.at(-1)
+    flushSync(() => {
+      setSpends(spends.slice(0, -1))
+      setError(null)
+    })
+    if (last && spends.length === 1) dieLines.current.get(last.die)?.focus()
   }
 
   function confirm() {
@@ -218,6 +244,7 @@ export function ShortRestPanel({ view, onClose }: { view: PlayTabProps; onClose:
               entry={guide.hitDice.find(e => e.id === `hit-die:${p.die}`)}
               appDice={appDice}
               onAdd={(value, record) => add(p.die, value, record)}
+              lineRef={el => { dieLines.current.set(p.die, el) }}
             />
           ))}
         </ul>
@@ -241,7 +268,7 @@ export function ShortRestPanel({ view, onClose }: { view: PlayTabProps; onClose:
             PV: {hpBefore} → <span className="font-bold text-parchment-100">{hpAfter}</span> de {getEffectiveMaxHp(sim.state, sheet)}
           </p>
           <button
-            onClick={() => { setSpends(spends.slice(0, -1)); setError(null) }}
+            onClick={undoLastDie}
             className="mt-1 min-h-10 text-xs text-parchment-400 underline hover:text-parchment-200"
           >
             Desfazer o último dado

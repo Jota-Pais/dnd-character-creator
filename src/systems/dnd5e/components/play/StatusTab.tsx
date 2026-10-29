@@ -1,6 +1,6 @@
 import { useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode, type RefObject } from 'react'
 import { flushSync } from 'react-dom'
-import { usePlayStore } from '../../stores/playStore'
+import { usePlayStore, type RestPanel } from '../../stores/playStore'
 import { describeHpMaxImmunity, endConcentration, setExhaustion, startConcentration } from '../../utils/playState'
 import { EXHAUSTION } from '../../utils/sheetEffects'
 import { ConditionsSection } from './ConditionsSection'
@@ -181,12 +181,19 @@ function ConcentrationSection({ state, guide, run, titleRef }: PlayTabProps & {
   )
 }
 
-/** Os dois descansos; um painel aberto por vez, cada um com o seu "Concluir"/"Cancelar". */
+/**
+ * Os dois descansos; um painel aberto por vez, cada um com o seu "Concluir"/"Cancelar". O painel
+ * fecha pelo próprio botão e some com ele: o foco volta ao botão do descanso, que fica.
+ */
 function RestSection(view: PlayTabProps) {
   // No playStore, não aqui: a aba desmonta ao trocar, e o descanso em curso não pode sumir.
   const open = usePlayStore(s => s.restPanel)
   const setOpen = usePlayStore(s => s.setRestPanel)
-  const close = () => setOpen(null)
+  const toggles = useRef<Partial<Record<RestPanel, HTMLButtonElement | null>>>({})
+  function close() {
+    flushSync(() => setOpen(null))
+    if (open) toggles.current[open]?.focus()
+  }
   const tabs = [
     { id: 'short' as const, label: 'Descanso curto' },
     { id: 'long' as const, label: 'Descanso longo' },
@@ -197,6 +204,7 @@ function RestSection(view: PlayTabProps) {
         {tabs.map(t => (
           <button
             key={t.id}
+            ref={el => { toggles.current[t.id] = el }}
             onClick={() => setOpen(open === t.id ? null : t.id)}
             aria-expanded={open === t.id}
             className={[

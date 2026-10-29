@@ -31,8 +31,9 @@ export type NoticeToastHandle = { focus: () => boolean }
 
 /**
  * Os avisos da última ação do modo de jogo (ou da abertura, se a ficha mudou), presos ao pé da
- * tela, com o "Desfazer" quando a ação mudou algo. O aviso de concentração traz a CD e a receita
- * do TR de Constituição (`getConcentrationGuide`), com atalho para a folha e para encerrar.
+ * tela, com o "Desfazer" quando a ação mudou algo; a correção da ficha fica entre eles até o OK.
+ * O aviso de concentração traz a CD e a receita do TR de Constituição (`getConcentrationGuide`),
+ * com atalho para a folha e para encerrar.
  */
 export function NoticeToast({ view, onOpenRecipe, onHeightChange, onFocusAway, ref }: {
   view: PlayView
@@ -48,6 +49,7 @@ export function NoticeToast({ view, onOpenRecipe, onHeightChange, onFocusAway, r
   ref?: Ref<NoticeToastHandle>
 }) {
   const storeNotices = usePlayStore(s => s.notices)
+  const storeCorrection = usePlayStore(s => s.sheetCorrection?.notice ?? null)
   const canUndo = usePlayStore(s => s.lastActionChanged && s.undoStack.length > 0)
   const undo = usePlayStore(s => s.undo)
   const dismiss = usePlayStore(s => s.dismissNotices)
@@ -57,13 +59,20 @@ export function NoticeToast({ view, onOpenRecipe, onHeightChange, onFocusAway, r
   // Os avisos da abertura (a correção da ficha, a reconciliação) já estão na fila quando a tela
   // monta: eles esperam o quadro seguinte, para a região viva existir vazia antes do texto. O que
   // chega depois (qualquer ação) aparece na hora.
-  const [heldAtMount] = useState(() => usePlayStore.getState().notices)
+  const [heldAtMount] = useState(() => {
+    const s = usePlayStore.getState()
+    return { notices: s.notices, correction: s.sheetCorrection?.notice ?? null }
+  })
   const [released, setReleased] = useState(false)
   useEffect(() => {
     const frame = requestAnimationFrame(() => setReleased(true))
     return () => cancelAnimationFrame(frame)
   }, [])
-  const notices = !released && storeNotices === heldAtMount ? NO_NOTICES : storeNotices
+  const held = !released && storeNotices === heldAtMount.notices && storeCorrection === heldAtMount.correction
+  const actionNotices = held ? NO_NOTICES : storeNotices
+  // A correção da ficha fica até o OK, junto dos avisos de cada ação; o "Desfazer" é só da ação.
+  const correction = held ? null : storeCorrection
+  const notices = correction ? [correction, ...actionNotices] : actionNotices
   const open = notices.length > 0
 
   function focusNotice(): boolean {
@@ -119,7 +128,7 @@ export function NoticeToast({ view, onOpenRecipe, onHeightChange, onFocusAway, r
                 ))}
               </ul>
               <div className="mt-2 flex justify-end gap-2">
-                {canUndo && (
+                {canUndo && actionNotices.length > 0 && (
                   <button
                     ref={undoRef}
                     onClick={() => act(undo)}

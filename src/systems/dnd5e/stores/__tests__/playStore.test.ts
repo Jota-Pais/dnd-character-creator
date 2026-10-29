@@ -59,23 +59,42 @@ describe('usePlayStore', () => {
     expect(loadPlayState('c1')).toEqual(saved)
   })
 
-  it('a ficha igual com números novos (correção do app) avisa uma vez e atualiza o retrato', () => {
+  it('a ficha igual com números novos (correção do app) avisa até o OK, e só aí atualiza o retrato', () => {
     usePlayStore.getState().open('c1', draft(), 1)
     const snapshot = usePlayStore.getState().state!.sheetSnapshot!
     usePlayStore.getState().close()
     // O retrato da última sessão tinha os números de antes da correção.
-    savePlayState({ ...loadPlayState('c1')!, damageTaken: 3, sheetSnapshot: { ...snapshot, maxHp: 12, armorClass: 13 } })
+    const old = { ...snapshot, maxHp: 12, armorClass: 13 }
+    savePlayState({ ...loadPlayState('c1')!, damageTaken: 3, sheetSnapshot: old })
     usePlayStore.getState().open('c1', draft(), 1)
-    expect(usePlayStore.getState().notices).toEqual([
-      { kind: 'sheetCorrected', text: 'O app corrigiu sua ficha: PV máximo 12 → 14; CA 13 → 14.' },
-    ])
+    const correction = { kind: 'sheetCorrected', text: 'O app corrigiu sua ficha: PV máximo 12 → 14; CA 13 → 14.' }
+    expect(usePlayStore.getState().sheetCorrection?.notice).toEqual(correction)
+    expect(usePlayStore.getState().notices).toEqual([])
     expect(usePlayStore.getState().lastActionChanged).toBe(false)
     // O gasto fica: o PV atual sobe junto com o máximo.
     expect(getCurrentHp(usePlayStore.getState().state!, usePlayStore.getState().sheet!)).toBe(11)
+
+    // A primeira ação troca os avisos, mas não a correção; e o retrato de antes fica gravado.
+    usePlayStore.getState().run(st => setInspiration(st, true))
+    expect(usePlayStore.getState().sheetCorrection?.notice).toEqual(correction)
+    expect(loadPlayState('c1')?.sheetSnapshot).toEqual(old)
+    // Fechado o jogo sem o OK (ou recarregada a página), o aviso volta.
+    usePlayStore.getState().close()
+    usePlayStore.getState().open('c1', draft(), 1)
+    expect(usePlayStore.getState().sheetCorrection?.notice).toEqual(correction)
+
+    usePlayStore.getState().run(st => setInspiration(st, false))
+    usePlayStore.getState().dismissNotices()
+    expect(usePlayStore.getState().sheetCorrection).toBeNull()
+    expect(loadPlayState('c1')?.sheetSnapshot).toEqual(snapshot)
+    // O desfazer não traz de volta o retrato de antes da correção lida.
+    usePlayStore.getState().undo()
+    expect(usePlayStore.getState().state?.inspiration).toBe(true)
     expect(loadPlayState('c1')?.sheetSnapshot).toEqual(snapshot)
 
     usePlayStore.getState().close()
     usePlayStore.getState().open('c1', draft(), 1)
+    expect(usePlayStore.getState().sheetCorrection).toBeNull()
     expect(usePlayStore.getState().notices).toEqual([])
   })
 

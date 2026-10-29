@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import type { RollRecord } from '../../../core/dice'
 import { canonicalJson } from '../../../core/utils/canonicalJson'
 import type { CharacterDraft } from '../types/character'
-import type { PlayNotice, PlayResult, PlaySheet, PlayState } from '../types/playState'
+import type { PlayNotice, PlayResult, PlaySheet, PlayState, SheetSnapshot } from '../types/playState'
 import { buildPlaySheet } from '../utils/playSheet'
 import { clearRollHistory, recordRoll } from '../utils/playState'
 import { syncSheetSnapshot, takeSheetSnapshot } from '../utils/sheetSnapshot'
@@ -40,6 +40,12 @@ type PlayStoreState = {
   /** Avisos da última ação (ou da abertura, quando a ficha mudou desde a última sessão). */
   notices: PlayNotice[]
   /**
+   * O aviso de correção da ficha (decisão 10.2.23) ainda não fechado, com o retrato novo. Fica
+   * fora dos `notices`, que cada ação troca: só o OK (`dismissNotices`) o tira, e só aí o retrato
+   * novo entra no estado — fechado o jogo antes (ou recarregada a página), o aviso volta.
+   */
+  sheetCorrection: { notice: PlayNotice; snapshot: SheetSnapshot } | null
+  /**
    * A última ação mudou o estado? Só aí o `undo` desfaz ELA; depois de uma recusa (ou de algo sem
    * efeito) o desfazer voltaria uma ação anterior, então a UI não o oferece junto dos avisos.
    */
@@ -75,9 +81,11 @@ type PlayStoreState = {
   clearRolls: () => void
   /**
    * Volta ao estado anterior à última ação que mudou algo, e grava. O histórico de rolagens fica
-   * como está: desfazer um dano não apaga o que foi rolado depois dele.
+   * como está: desfazer um dano não apaga o que foi rolado depois dele. O retrato da ficha também:
+   * o de antes da correção lida faria o aviso voltar.
    */
   undo: () => void
+  /** Fecha os avisos (o "OK"); com a correção da ficha entre eles, grava o retrato novo. */
   dismissNotices: () => void
   /** Liga/desliga os dados do app (preferência do aparelho, não da ficha). */
   setAppDice: (on: boolean) => void
@@ -117,6 +125,7 @@ const CLOSED = {
   state: null,
   undoStack: [],
   notices: [],
+  sheetCorrection: null,
   lastActionChanged: false,
   restPanel: null,
   shortRestDraft: [],
@@ -139,16 +148,18 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
   open: (id, draft, sheetUpdatedAt) => {
     const sheet = buildPlaySheet(draft)
     const loaded = loadPlayStateFor(id, sheet)
-    // O aviso de correção do app vem antes: ele explica um PV que a reconciliação ajustou.
-    const synced = syncSheetSnapshot(loaded.state, takeSheetSnapshot(draft, sheet, sheetUpdatedAt))
-    const notices = [...synced.notices, ...loaded.notices]
+    const snapshot = takeSheetSnapshot(draft, sheet, sheetUpdatedAt)
+    const synced = syncSheetSnapshot(loaded.state, snapshot)
+    // Corrigida pelo app, o retrato novo espera o OK do aviso; até lá, o estado fica com o de antes.
+    const correction = synced.notices.find(n => n.kind === 'sheetCorrected')
+    const opened = correction ? loaded.state : synced.state
     // A abertura mudou o estado (reconciliado com a ficha mudada, ou com o retrato novo da ficha):
-    // grava, para cada aviso aparecer uma vez só (e não em toda abertura até a primeira ação). A
-    // primeira abertura grava o retrato, para a próxima ter com o que comparar.
+    // grava, para o aviso da reconciliação aparecer uma vez só (e não em toda abertura até a
+    // primeira ação). A primeira abertura grava o retrato, para a próxima ter com o que comparar.
     const saved = loadPlayState(id)
-    const state = !saved || canonicalJson(saved) !== canonicalJson(synced.state)
-      ? savePlayState(synced.state)
-      : synced.state
+    const state = !saved || canonicalJson(saved) !== canonicalJson(opened)
+      ? savePlayState(opened)
+      : opened
     set({
       ...CLOSED,
       characterId: id,
@@ -156,7 +167,8 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
       sheet,
       state,
       undoStack: [],
-      notices,
+      notices: loaded.notices,
+      sheetCorrection: correction ? { notice: correction, snapshot } : null,
       lastActionChanged: false,
       prefs: loadPlayPreferences(),
     })
@@ -197,12 +209,17 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
   undo: () => {
     const { undoStack, state } = get()
     const previous = undoStack.at(-1)
-    if (!previous) return
-    const restored = { ...previous, rolls: state?.rolls ?? previous.rolls }
+    if (!previous || !state) return
+    const restored = { ...previous, rolls: state.rolls, sheetSnapshot: state.sheetSnapshot }
     set({ state: savePlayState(restored), undoStack: undoStack.slice(0, -1), notices: [], lastActionChanged: false })
   },
 
-  dismissNotices: () => set({ notices: [] }),
+  dismissNotices: () => {
+    const { state, sheetCorrection } = get()
+    // Fora do desfazer, como o histórico: o retrato é da ficha, não da sessão.
+    const read = state && sheetCorrection ? { state: savePlayState({ ...state, sheetSnapshot: sheetCorrection.snapshot }) } : {}
+    set({ ...read, notices: [], sheetCorrection: null })
+  },
 
   setAppDice: (on) => set(s => ({ prefs: savePlayPreferences({ ...s.prefs, appDice: on }) })),
 

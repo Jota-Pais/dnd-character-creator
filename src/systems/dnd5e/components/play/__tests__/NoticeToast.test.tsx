@@ -292,6 +292,27 @@ describe('aviso de correção da ficha (decisão 10.2.23)', () => {
     useCharacterStore.getState().exitPlay()
     useCharacterStore.getState().playCharacter(id)
     expect(usePlayStore.getState().notices).toEqual([])
+    expect(usePlayStore.getState().sheetCorrection).toBeNull()
+  })
+
+  it('a correção do app fica na tela depois da primeira ação, e o "Desfazer" é só da ação', async () => {
+    const id = openKrusk()
+    reopenWithSnapshot(id, { maxHp: 12 })
+    render(<PlayScreen />)
+    const live = screen.getByRole('status')
+    await waitFor(() => expect(live).toHaveTextContent('O app corrigiu sua ficha: PV máximo 12 → 14.'))
+    fireEvent.click(screen.getByRole('button', { name: /Sem inspiração/ }))
+    expect(live).toHaveTextContent('O app corrigiu sua ficha: PV máximo 12 → 14.')
+    expect(within(live).queryByRole('button', { name: '↶ Desfazer' })).toBeNull()
+    // Com o aviso da ação, o "Desfazer" volta, e desfazer a ação deixa a correção.
+    usePlayStore.getState().run(st => grantTempHp(st, 3))
+    damage('5')
+    expect(live).toHaveTextContent('Os PV temporários absorveram 3.')
+    fireEvent.click(within(live).getByRole('button', { name: '↶ Desfazer' }))
+    expect(live).toHaveTextContent('O app corrigiu sua ficha: PV máximo 12 → 14.')
+    expect(live).not.toHaveTextContent('Os PV temporários absorveram 3.')
+    fireEvent.click(within(live).getByRole('button', { name: 'OK' }))
+    expect(live).toBeEmptyDOMElement()
   })
 
   it('a ficha mudada no criador desde a última sessão não avisa', () => {

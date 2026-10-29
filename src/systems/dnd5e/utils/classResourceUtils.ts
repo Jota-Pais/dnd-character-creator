@@ -70,6 +70,8 @@ export type SheetResource = {
   amount?: { value: number; unit: ResourceAmountUnit }
   recharge?: ResourceRecharge
   note?: string
+  /** Gastar um uso encerra a concentração, com este motivo (`ResourceEffect.spendEndsConcentration`). */
+  spendEndsConcentration?: string
   /** Recupera espaços de magia no descanso curto (Recuperação Arcana): até que nível, e a página. */
   slotRecovery?: SlotRecovery
   /**
@@ -123,6 +125,7 @@ export function evaluateResource(
     ...(effect.amount ? { amount: { value: q(effect.amount.value), unit: effect.amount.unit } } : {}),
     ...(recharge && !unlimited ? { recharge } : {}),
     ...(effect.note ? { note: effect.note } : {}),
+    ...(effect.spendEndsConcentration ? { spendEndsConcentration: effect.spendEndsConcentration } : {}),
     ...(effect.slotRecovery ? { slotRecovery: { ...effect.slotRecovery } } : {}),
     sharedWith: [],
     addedFrom: [],

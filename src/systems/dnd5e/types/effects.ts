@@ -485,6 +485,12 @@ export type ResourceEffect = {
   /** Ressalva curta do livro que muda o uso na mesa (ex.: "nenhum espaço de 6º nível ou superior"). */
   note?: string
   /**
+   * Gastar um uso encerra a concentração, e este é o motivo que o aviso diz: "entrar em fúria
+   * (pág. 48)" — em fúria não se concentra (decisão (e) de 2026-10-29). Até o estado "em fúria"
+   * chegar com os efeitos ativos da Fase 2, gastar o uso da Fúria é o ato de entrar nela.
+   */
+  spendEndsConcentration?: string
+  /**
    * O recurso recupera espaços de magia gastos num descanso curto (Recuperação Arcana, Recuperação
    * Natural): `amount` em `slotLevels` é a soma dos níveis; nenhum espaço acima de `maxSlotLevel`.
    * O modo de jogo lembra disso no painel do descanso curto — a escolha dos espaços é do jogador.

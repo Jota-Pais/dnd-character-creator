@@ -7,7 +7,7 @@
         "description": "No seu turno, como ação bônus, entre em fúria por 1 minuto. Sem armadura pesada, você tem: vantagem em testes e testes de resistência de Força; o bônus de Dano de Fúria nas jogadas de dano de ataques com arma corpo-a-corpo usando Força; resistência a dano de concussão, cortante e perfurante. Em fúria você não pode conjurar magias nem se concentrar nelas, e entrar em fúria encerra a concentração. A fúria termina antes se você cair inconsciente ou se seu turno acabar sem que você tenha atacado uma criatura hostil nem sofrido dano desde o seu último turno; você também pode encerrá-la no seu turno com uma ação bônus. Usos e Dano de Fúria do seu nível em Recursos; os usos voltam num descanso longo.",
         "effects": {
           "resources": [
-            { "id": "rage", "name": "Fúria", "uses": { "byLevel": [{ "from": 1, "value": 2 }, { "from": 3, "value": 3 }, { "from": 6, "value": 4 }, { "from": 12, "value": 5 }, { "from": 17, "value": 6 }] }, "unlimitedFrom": 20, "recharge": "long" },
+            { "id": "rage", "name": "Fúria", "uses": { "byLevel": [{ "from": 1, "value": 2 }, { "from": 3, "value": 3 }, { "from": 6, "value": 4 }, { "from": 12, "value": 5 }, { "from": 17, "value": 6 }] }, "unlimitedFrom": 20, "recharge": "long", "spendEndsConcentration": "entrar em fúria (pág. 48)" },
             { "id": "rage-damage", "name": "Dano de Fúria", "amount": { "value": { "byLevel": [{ "from": 1, "value": 2 }, { "from": 9, "value": 3 }, { "from": 16, "value": 4 }] }, "unit": "bonus" } }
           ],
           "weaponAttacks": [

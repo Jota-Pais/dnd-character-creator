@@ -555,6 +555,29 @@ describe('recursos', () => {
     expect(recoverResource(state(), S, 'rage').notices[0].kind).toBe('refused')
   })
 
+  it('gastar o recurso que encerra a concentração (entrar em fúria, decisão (e) de 2026-10-29) a encerra, com o motivo', () => {
+    const sh = sheet({
+      resources: [{ ...resource('rage', 3, 'long'), spendEndsConcentration: 'entrar em fúria (pág. 48)' }, resource('second-wind', 1, 'short')],
+    })
+    const concentrating = startConcentration(state(), { label: 'Bênção' }, 0).state
+    const r = spendResource(concentrating, sh, 'rage')
+    expect(r.state.concentration).toBeNull()
+    expect(r.state.resourcesSpent).toEqual({ rage: 1 })
+    expect(r.notices).toEqual([{ kind: 'concentrationEnded', text: 'A concentração em Bênção terminou: entrar em fúria (pág. 48).' }])
+    // Sem concentração, só gasta; recuperar não encerra; outro recurso não encerra; recusado não mexe.
+    expect(spendResource(state(), sh, 'rage').notices).toEqual([])
+    expect(recoverResource({ ...concentrating, resourcesSpent: { rage: 1 } }, sh, 'rage').state.concentration).not.toBeNull()
+    expect(spendResource(concentrating, sh, 'second-wind').state.concentration).not.toBeNull()
+    const empty = { ...concentrating, resourcesSpent: { rage: 3 } }
+    expect(spendResource(empty, sh, 'rage').state).toBe(empty)
+  })
+
+  it('a Fúria do bárbaro declara nos dados que gastá-la encerra a concentração', () => {
+    const barbarian: CharacterDraft = { ...structuredClone(EMPTY_DRAFT), race: 'human', class: 'barbarian', level: 1 }
+    const rage = buildPlaySheet(barbarian).resources.find(r => r.id === 'rage')
+    expect(rage?.spendEndsConcentration).toBe('entrar em fúria (pág. 48)')
+  })
+
   it('poço de PV gasta aos poucos', () => {
     const s = spendResource(state(), S, 'lay-on-hands', 7).state
     expect(getResourceAvailable(s, S, 'lay-on-hands')).toBe(13)

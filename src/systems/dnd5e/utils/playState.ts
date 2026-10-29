@@ -711,7 +711,11 @@ function resourceChange(state0: PlayState, sheet: PlaySheet, id: string, delta: 
   const resourcesSpent = { ...state.resourcesSpent }
   if (after === 0) delete resourcesSpent[id]
   else resourcesSpent[id] = after
-  return done({ ...state, resourcesSpent })
+  const next: PlayState = { ...state, resourcesSpent }
+  const notices: PlayNotice[] = []
+  // Gastar a Fúria é entrar nela, e em fúria não se concentra (pág. 48): o motivo vem dos dados.
+  if (delta > 0 && r.spendEndsConcentration) endConcentrationInto(next, notices, r.spendEndsConcentration)
+  return done(next, notices)
 }
 
 /** Gasta `amount` usos (ou PV, pontos, dados) de um recurso pelo `id`. Ilimitado não rastreia. */

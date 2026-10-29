@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { render, screen, fireEvent, cleanup } from '@testing-library/react'
+import { render, screen, fireEvent, cleanup, act } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
+import { TOAST_GAP } from '../deathSaveScroll'
 import { usePlayStore } from '../../../stores/playStore'
-import { applyDamage, stabilize } from '../../../utils/playState'
+import { applyDamage, stabilize, startConcentration } from '../../../utils/playState'
 import { COMPLETE_DRAFT } from '../../../../../test/fixtures'
 import { liveRegions, openDraft, openKrusk, resetPlay } from './openPlay'
 
@@ -146,6 +147,61 @@ describe('DeathSaves', () => {
     forceD20(1)
     fireEvent.click(screen.getByRole('button', { name: 'rolar' }))
     expect(screen.queryByRole('button', { name: /Rolar de novo/ })).toBeNull()
+  })
+})
+
+describe('DeathSaves — a queda rola o d20 para cima do aviso', () => {
+  // Layout falso (o jsdom não tem): o aviso do pé cresce 150 px por linha; o cartão do teste e o
+  // formulário do d20 ficam em posições fixas, numa tela de 768 px.
+  const PANEL = { top: 900, height: 300 }
+  const FORM = { top: 1080, height: 40 }
+  const LINE_HEIGHT = 150
+  const rect = ({ top, height }: { top: number; height: number }) =>
+    ({ top, bottom: top + height, height, left: 0, right: 0, width: 0, x: 0, y: top, toJSON: () => ({}) }) as DOMRect
+  const toastHeight = () => document.querySelectorAll('[role=status] li').length * LINE_HEIGHT
+  let frames: FrameRequestCallback[] = []
+  const scrollBy = () => vi.mocked(window.scrollBy)
+
+  beforeEach(() => {
+    frames = []
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => frames.push(cb))
+    vi.stubGlobal('cancelAnimationFrame', () => {})
+    vi.spyOn(window, 'scrollBy').mockImplementation(() => {})
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      if (this.firstElementChild?.getAttribute('role') === 'status') {
+        return rect({ top: window.innerHeight - toastHeight(), height: toastHeight() })
+      }
+      if (this.firstElementChild?.textContent === 'Morrendo: testes contra a morte') return rect(PANEL)
+      if (this.tagName === 'FORM' && this.querySelector('[aria-label^="d20"]')) return rect(FORM)
+      return rect({ top: 0, height: 0 })
+    })
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  function hit(amount: number) {
+    fireEvent.change(screen.getByRole('textbox', { name: /Dano ou cura/ }), { target: { value: `-${amount}` } })
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
+  }
+
+  it('o aviso já aberto (teste de concentração) cresce na queda: rola com a altura nova', () => {
+    openKrusk()
+    usePlayStore.getState().run(st => startConcentration(st, { label: 'Bênção' }, 0))
+    render(<PlayScreen />)
+    hit(3)
+    expect(screen.getByRole('status')).toHaveTextContent(/precisa de 10 ou mais/)
+    const before = toastHeight()
+
+    // Krusk tinha 11 PV: cai a 0, e o aviso ganha a queda e a Resistência Implacável.
+    hit(11)
+    expect(usePlayStore.getState().state?.lifeState).toBe('dying')
+    const inset = toastHeight()
+    expect(inset).toBeGreaterThan(before)
+    act(() => frames.splice(0).forEach(frame => frame(0)))
+
+    expect(scrollBy()).toHaveBeenCalledTimes(1)
+    const { top } = scrollBy().mock.calls[0][0] as ScrollToOptions
+    // O "Registrar" termina acima do aviso, com a folga.
+    expect(FORM.top + FORM.height - top!).toBe(window.innerHeight - inset - TOAST_GAP)
   })
 })
 

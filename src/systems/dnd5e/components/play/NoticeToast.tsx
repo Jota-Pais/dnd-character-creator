@@ -57,6 +57,13 @@ export function NoticeToast({ view, onOpenRecipe, onHeightChange }: {
       onHeightChange(0)
     }
   }, [open, onHeightChange])
+  // E a cada desenho, antes do quadro seguinte: o aviso que troca de texto sem fechar (o teste de
+  // concentração aberto quando vem a queda) só chega ao ResizeObserver depois do
+  // requestAnimationFrame em que o teste contra a morte rola a tela, com a altura velha.
+  useLayoutEffect(() => {
+    const el = boxRef.current
+    if (el && onHeightChange) onHeightChange(el.getBoundingClientRect().height)
+  })
 
   // A região viva fica montada mesmo sem aviso, vazia: inserida já com o texto, o leitor de tela
   // pode não anunciar.

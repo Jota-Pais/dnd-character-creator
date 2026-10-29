@@ -180,6 +180,35 @@ describe('StatusTab — exaustão e concentração', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Encerrar concentração' }))
     expect(playState().concentration).toBeNull()
   })
+
+  it('teclado na concentração: o foco vai ao "Encerrar" que aparece e, ao encerrar, ao título da seção', () => {
+    openStatus()
+    const title = screen.getByRole('heading', { name: 'Concentração' })
+    // Fora do Tab: o título só recebe o foco quando o controle da seção some.
+    expect(title).toHaveAttribute('tabindex', '-1')
+
+    const field = screen.getByLabelText('Magia em que vai se concentrar')
+    field.focus()
+    fireEvent.change(field, { target: { value: 'Bênção' } })
+    fireEvent.submit(field.closest('form')!) // o Enter no campo
+    expect(playState().concentration?.label).toBe('Bênção')
+    expect(screen.getByRole('button', { name: 'Encerrar concentração' })).toHaveFocus()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Encerrar concentração' }))
+    expect(playState().concentration).toBeNull()
+    expect(title).toHaveFocus()
+  })
+
+  it('teclado na concentração: recusada, o foco fica no campo', () => {
+    openStatus()
+    fireEvent.click(screen.getByRole('switch', { name: 'Incapacitado' }))
+    const field = screen.getByLabelText('Magia em que vai se concentrar')
+    field.focus()
+    fireEvent.change(field, { target: { value: 'Bênção' } })
+    fireEvent.submit(field.closest('form')!)
+    expect(playState().concentration).toBeNull()
+    expect(field).toHaveFocus()
+  })
 })
 
 describe('StatusTab — em fúria não se concentra (p. 48)', () => {

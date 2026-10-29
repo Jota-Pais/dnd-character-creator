@@ -1,4 +1,5 @@
-import { useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
+import { useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode, type RefObject } from 'react'
+import { flushSync } from 'react-dom'
 import { usePlayStore } from '../../stores/playStore'
 import { describeHpMaxImmunity, endConcentration, setExhaustion, startConcentration } from '../../utils/playState'
 import { EXHAUSTION } from '../../utils/sheetEffects'
@@ -18,10 +19,22 @@ const EXHAUSTION_KEY_STEP: Partial<Record<string, 1 | -1>> = { ArrowRight: 1, Ar
 /** A seção dos descansos: o "Descanso" dos vitais rola até ela. */
 export const REST_SECTION_ID = 'play-rests'
 
-function Section({ title, id, children }: { title: string; id?: string; children: ReactNode }) {
+/** `headingRef`: o título recebe o foco quando o controle da seção some (tabIndex -1, fora do Tab). */
+function Section({ title, id, headingRef, children }: {
+  title: string
+  id?: string
+  headingRef?: RefObject<HTMLHeadingElement | null>
+  children: ReactNode
+}) {
   return (
     <section id={id}>
-      <h2 className="text-[11px] uppercase tracking-wider text-parchment-600 font-fantasy mb-1.5">{title}</h2>
+      <h2
+        ref={headingRef}
+        tabIndex={headingRef ? -1 : undefined}
+        className="text-[11px] uppercase tracking-wider text-parchment-600 font-fantasy mb-1.5"
+      >
+        {title}
+      </h2>
       {children}
     </section>
   )
@@ -94,17 +107,33 @@ function ExhaustionSection({ state, sheet, run }: PlayTabProps) {
 /**
  * Concentração: iniciar com o nome da magia (texto livre) e encerrar. Uma por vez (pág. 205). A
  * restrição de conjuração (em fúria não se concentra, pág. 48) fica embaixo, nos dois estados.
+ * Iniciar e encerrar trocam o formulário pelo botão (e vice-versa): o foco vai ao "Encerrar" que
+ * aparece, ou ao título da seção (`titleRef`), e não cai no body. Ao encerrar, o título e não o
+ * campo: o foco no campo abriria o teclado do celular a cada toque.
  */
-function ConcentrationSection({ state, guide, run }: PlayTabProps) {
+function ConcentrationSection({ state, guide, run, titleRef }: PlayTabProps & {
+  titleRef: RefObject<HTMLHeadingElement | null>
+}) {
   const [label, setLabel] = useState('')
+  const endRef = useRef<HTMLButtonElement>(null)
   const restrictions = guide.castingRestrictions.map((r, i) => (
     <p key={i} className="text-xs text-amber-200 leading-snug">{r}</p>
   ))
 
+  // Síncrono (flushSync): o controle que entra no lugar já existe para receber o foco. Recusado (o
+  // aviso diz por quê), o foco fica onde estava.
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    const result = run(st => startConcentration(st, { label }, Date.now()))
-    if (result && result.state.concentration?.label === label.trim()) setLabel('')
+    const result = flushSync(() => run(st => startConcentration(st, { label }, Date.now())))
+    if (result && result.state.concentration?.label === label.trim()) {
+      setLabel('')
+      endRef.current?.focus()
+    }
+  }
+
+  function end() {
+    const result = flushSync(() => run(st => endConcentration(st)))
+    if (result && !result.state.concentration) titleRef.current?.focus()
   }
 
   if (state.concentration) {
@@ -113,7 +142,8 @@ function ConcentrationSection({ state, guide, run }: PlayTabProps) {
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-sm text-violet-200">Concentrado em <span className="font-bold">{state.concentration.label}</span></p>
           <button
-            onClick={() => run(st => endConcentration(st))}
+            ref={endRef}
+            onClick={end}
             className="min-h-10 rounded-lg border border-violet-800 px-3 text-sm text-violet-200 hover:border-violet-500"
           >
             Encerrar concentração
@@ -191,6 +221,7 @@ function RestSection(view: PlayTabProps) {
  * concentração e os descansos.
  */
 export function StatusTab(view: PlayTabProps) {
+  const concentrationTitle = useRef<HTMLHeadingElement>(null)
   return (
     <div className="space-y-6">
       <Section title="Condições">
@@ -199,8 +230,8 @@ export function StatusTab(view: PlayTabProps) {
       <Section title="Exaustão">
         <ExhaustionSection {...view} />
       </Section>
-      <Section title="Concentração">
-        <ConcentrationSection {...view} />
+      <Section title="Concentração" headingRef={concentrationTitle}>
+        <ConcentrationSection {...view} titleRef={concentrationTitle} />
       </Section>
       <Section title="Descansos" id={REST_SECTION_ID}>
         <RestSection {...view} />

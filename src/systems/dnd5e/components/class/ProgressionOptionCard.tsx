@@ -70,7 +70,7 @@ export function ProgressionOptionCard({
       </div>
 
       {option.prerequisite && (
-        <span className="inline-block mb-1.5 text-[10px] uppercase px-1.5 py-0.5 rounded font-bold text-gold-400 bg-gold-950/40 border border-gold-800">
+        <span className="inline-block mb-1.5 text-[10px] uppercase px-1.5 py-0.5 rounded font-bold text-gold-400 bg-gold-900/40 border border-gold-800">
           Requer {option.prerequisite}
         </span>
       )}

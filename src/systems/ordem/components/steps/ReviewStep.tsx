@@ -355,7 +355,7 @@ export function ReviewStep() {
                       </span>
                     )}
                     {instance.isAffinityCopy && (
-                      <span className="text-[9px] uppercase px-1.5 py-0.5 rounded font-bold text-gold-400 bg-gold-950/40 border border-gold-800">
+                      <span className="text-[9px] uppercase px-1.5 py-0.5 rounded font-bold text-gold-400 bg-gold-900/40 border border-gold-800">
                         2ª vez — Afinidade
                       </span>
                     )}

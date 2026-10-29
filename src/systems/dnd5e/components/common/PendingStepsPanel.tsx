@@ -13,7 +13,7 @@ export function PendingStepsPanel({ pending }: { pending: PendingStep[] }) {
   if (pending.length === 0) return null
 
   return (
-    <div className="rounded-xl border border-gold-800 bg-gold-950/20 p-4">
+    <div className="rounded-xl border border-gold-800 bg-gold-900/30 p-4">
       <p className="font-fantasy font-bold text-[15px] text-gold-400">
         ⚠ {formatMissingCount(pending.length)} para fechar a ficha
       </p>

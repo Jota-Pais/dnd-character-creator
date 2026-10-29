@@ -147,7 +147,7 @@ function SourceCard({ instance, open, onOpen, onClose, onPick }: {
               </span>
             )}
             {instance.isAffinityCopy && (
-              <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded border text-gold-400 bg-gold-950/40 border-gold-800">
+              <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded border text-gold-400 bg-gold-900/40 border-gold-800">
                 2ª vez — Afinidade
               </span>
             )}

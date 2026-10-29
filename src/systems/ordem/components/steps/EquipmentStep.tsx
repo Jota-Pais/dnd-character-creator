@@ -625,7 +625,7 @@ export function EquipmentStep() {
             const style = s.overflow
               ? 'bg-red-950/50 border-red-500/50 text-red-300'
               : borrowing || s.spillIn > 0
-                ? 'bg-gold-950/40 border-gold-600/50 text-gold-300'
+                ? 'bg-gold-900/40 border-gold-600/50 text-gold-300'
                 : 'bg-parchment-900/30 border-parchment-800/50 text-parchment-300'
             return (
               <div key={s.category} className={`flex flex-col px-4 py-2 rounded-lg border ${style}`}>

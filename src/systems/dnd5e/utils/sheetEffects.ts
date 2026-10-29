@@ -708,8 +708,8 @@ export function getAttacksPerAction(draft: CharacterDraft): SheetAttacksPerActio
 /**
  * A margem de crítico dos ataques com arma (`weaponCritThreshold`: Crítico Aprimorado 19, Crítico
  * Superior 18 do campeão), de cada feature no nível NA classe dona. Não soma: vale a menor margem.
- * `null` sem nenhuma — o crítico fica no 20 natural (p. 196). O golpe desarmado não é arma e
- * quem aplica só nas armas é o guia de rolagens.
+ * `null` sem nenhuma — o crítico fica no 20 natural (p. 196). Quem aplica só nas armas é o guia de
+ * rolagens; o golpe desarmado fica no 20 (decisão 20 de `regras-dano-e-morte.md`, em aberto).
  */
 export function getWeaponCritThreshold(draft: CharacterDraft): SheetEffect<number> | null {
   let best: SheetEffect<number> | null = null

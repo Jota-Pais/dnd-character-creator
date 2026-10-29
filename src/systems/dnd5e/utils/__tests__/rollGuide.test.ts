@@ -309,7 +309,7 @@ describe('getRollGuide — ataques', () => {
       'Ataques Selvagens: no acerto crítico com esta arma corpo a corpo, role mais 1d12 (o dado da arma neste ataque) e some ao dano.',
     ])
     expect(axe.damage!.notes.some(n => n.includes('Crítico Brutal'))).toBe(false)
-    // Arco (à distância) e golpe desarmado (não é arma): nada.
+    // Arco (à distância) e golpe desarmado (decisão 21, em aberto): nada.
     expect(guide.attacks.find(a => a.key === 'longbow')!.damage!.crit!.notes).toBeUndefined()
     expect(guide.attacks.find(a => a.key === 'unarmed')!.damage!.crit!.notes).toBeUndefined()
     // Bárbaro 8 humano: sem nenhuma das duas.

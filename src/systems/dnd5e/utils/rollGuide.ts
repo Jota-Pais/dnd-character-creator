@@ -573,14 +573,15 @@ function attackGuide(attack: SheetAttack, ctx: AttackGuideContext): AttackGuide 
     if (m) breakdown.push({ label: m[2], value: Number(m[1]) })
     else notes.push(n)
   }
-  // A margem do Campeão vale nos ataques COM ARMA; o golpe desarmado fica no 20.
+  // A margem do Campeão vale nas armas; o golpe desarmado fica no 20 (decisão 20 de
+  // regras-dano-e-morte.md, em aberto desde que ele é ataque corpo a corpo com arma, decisão 27).
   const weaponCrit = attack.weapon ? ctx.weaponCrit : null
   const critThreshold = weaponCrit?.value ?? 20
   // Pesada: "criaturas pequenas têm desvantagem nas jogadas de ataque com estas armas" (pág. 149).
   const heavySmall: GuideReason[] = attack.weapon?.heavy && ctx.small
     ? [{ source: 'weapon:heavy-small', label: `${attack.name} pesada para criatura Pequena` }]
     : []
-  // Só arma corpo a corpo: o golpe desarmado não é arma (pág. 196).
+  // Só arma corpo a corpo: o golpe desarmado fica de fora (decisão 21, em aberto pela 27).
   const critExtraDice = attack.weapon?.melee ? ctx.meleeCritExtraDice : []
   const extraAttacks = attack.attacksPerAction > 1
     ? [`${ctx.attacksPerActionSource ?? 'Ataque Extra'}: você faz ${attack.attacksPerAction} ataques ao usar a ação de Atacar — role cada um.`]

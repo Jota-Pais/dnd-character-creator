@@ -367,13 +367,15 @@ export type FeatureEffects = {
    * Margem de acerto crítico dos ataques COM ARMA, em degraus pelo nível NA classe dona: Crítico
    * Aprimorado do campeão, 19 a partir do 3º (p. 85); Crítico Superior, 18 a partir do 15º (p. 86).
    * Só lido em features de classe e subclasse. Fontes não somam: vale a menor margem. O golpe
-   * desarmado não é arma (p. 196) e não entra. Incondicional: entra no `critThreshold` do guia.
+   * desarmado fica no 20 pela decisão 20 de `regras-dano-e-morte.md`, em aberto desde que ele passou
+   * a ser ataque corpo a corpo com arma (decisão 27). Incondicional: entra no `critThreshold` do guia.
    */
   weaponCritThreshold?: LevelStep[]
   /**
    * Dados de dano da arma a mais no acerto crítico com arma corpo a corpo: Crítico Brutal do
    * bárbaro, 1/2/3 no 9º/13º/17º pelo nível NA classe (p. 49); Ataques Selvagens do meio-orc, 1
    * (p. 41, nível de personagem). Por ora só NOTA na receita do dano crítico — a fórmula não muda.
+   * Só nas armas: o golpe desarmado fica de fora até o dono decidir (decisão 21, em aberto).
    */
   meleeCritExtraWeaponDice?: LevelStep[]
   /** Artes Marciais do monge — só lido em features de classe, no nível NA classe dona. */

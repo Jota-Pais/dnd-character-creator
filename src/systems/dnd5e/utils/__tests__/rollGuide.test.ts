@@ -862,12 +862,60 @@ describe('getRollGuide — magias de talento (Iniciado em Magia, p. 170)', () =>
   })
 })
 
+describe('getRollGuide — em fúria não se conjura (pág. 48)', () => {
+  const RAGE = 'Fúria: em fúria, você não pode conjurar magias nem se concentrar nelas (pág. 48).'
+  const FEAT = 'iniciado-em-magia'
+  // Bárbaro 2 / mago 1: INT 10 (+0), proficiência +2.
+  const barbarianWizard = draft({
+    class: 'barbarian', level: 3, abilityScores: SCORES, multiclass: true, additionalClasses: [extraClass('wizard', 1)],
+  })
+
+  it('bárbaro / mago: nota no ataque de magia, sem mexer no número nem no modo; fora das notas em vigor', () => {
+    const guide = getRollGuide(barbarianWizard, play())
+    expect(guide.castingRestrictions).toEqual([RAGE])
+    expect(guide.notes).toEqual([])
+    const [sc] = guide.spellcasting
+    expect(sc.attack.notes).toContain(RAGE)
+    expect(sc.attack).toMatchObject({ formula: '1d20 + 2', mode: 'normal' })
+  })
+
+  it('bárbaro com Iniciado em Magia: também no ataque de magia do talento, depois da armadura que impede', () => {
+    const d = draft({
+      class: 'barbarian', level: 4, abilityScores: SCORES, ...carrying('chain-mail'),
+      asiChoices: [{ kind: 'feat', featId: FEAT }],
+      featSelections: { [FEAT]: { spellClass: 'cleric', cantrips: ['sacred-flame', 'guidance'], spells: ['cure-wounds'] } },
+    })
+    const [sc] = getRollGuide(d, play()).spellcasting
+    expect(sc.key).toBe(`feat:${FEAT}`)
+    expect(sc.attack.notes.slice(0, 2)).toEqual([
+      'Usando Cota de Malha sem proficiência, você não pode conjurar magias (pág. 144).',
+      RAGE,
+    ])
+  })
+
+  it('a concentração lembra a regra; o mago sem Fúria não', () => {
+    const state = play({ concentration: { label: 'Escudo Arcano', startedAt: 0 } })
+    expect(getConcentrationGuide(barbarianWizard, state, 10).notes[0]).toBe(RAGE)
+    const wizard = draft({ class: 'wizard', level: 3, abilityScores: SCORES })
+    expect(getConcentrationGuide(wizard, state, 10).notes.some(n => n.includes('fúria'))).toBe(false)
+    expect(getRollGuide(wizard, play()).castingRestrictions).toEqual([])
+  })
+
+  it('tiefling bárbaro: sem conjuração de classe, a restrição vale pela magia inata', () => {
+    const guide = getRollGuide(draft({ class: 'barbarian', level: 3, race: 'tiefling', abilityScores: SCORES }), play())
+    expect(guide.spellcasting).toEqual([])
+    expect(guide.castingRestrictions).toEqual([RAGE])
+  })
+})
+
 describe('getRollGuide — fixture completa', () => {
   it('meio-orc bárbaro: números da ficha e d12', () => {
     const guide = getRollGuide(COMPLETE_DRAFT, play())
     expect(guide.saves.STR.formula).toBe('1d20 + 5')
     expect(guide.hitDice[0].formula).toBe('1d12 + 2')
     expect(guide.notes).toEqual([])
+    // Não conjura nada: a Fúria não tem o que restringir.
+    expect(guide.castingRestrictions).toEqual([])
   })
 })
 

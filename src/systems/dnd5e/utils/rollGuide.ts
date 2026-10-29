@@ -11,8 +11,8 @@ import { getPlayConditionEffects } from './playState'
 import { getRace } from './raceUtils'
 import { getSavingThrowChecks, getSkillChecks, getPassiveScore, getUnproficientArmor } from './proficiencyUtils'
 import {
-  EXHAUSTION, describeConditionalSaveBonuses, getAttacksPerAction, getBestHalfProficiencySource, getCondition,
-  getConditionalRollNotes,
+  EXHAUSTION, describeConditionalSaveBonuses, formatCastingRestriction, getAttacksPerAction, getBestHalfProficiencySource,
+  getCastingRestrictions, getCondition, getConditionalRollNotes,
   getHalfProficiencySources, getMeleeCritExtraWeaponDice,
   getInitiativeAdvantageSources, getInitiativeBonuses, getOwnedFeats, getSheetArmorClass, getWeaponCritThreshold, resolveRollMode,
   type ActiveConditionEffects, type ConditionRoll, type SheetEffect,
@@ -163,6 +163,12 @@ export type RollGuide = {
    * componente verbal) e não conjurar com armadura sem proficiência.
    */
   notes: string[]
+  /**
+   * O que proíbe conjurar numa situação que a ficha não conhece (em fúria, pág. 48 —
+   * `getCastingRestrictions`): condicional, nunca em `notes`, que é só o que está em vigor. Também
+   * nas notas do ataque de magia e da concentração.
+   */
+  castingRestrictions: string[]
 }
 
 // ── Formatação ───────────────────────────────────────────────────────────────
@@ -718,6 +724,8 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
   const cannotSpeak = effects.cannotSpeak.active
     ? [`Não pode falar (${labels(effects.cannotSpeak.sources)}): sem o componente verbal, a magia que o exige não pode ser conjurada (pág. 205).`]
     : []
+  // Em fúria não se conjura (pág. 48): a ficha não sabe se você está em fúria, então é nota.
+  const castingRestrictions = getCastingRestrictions(draft).map(formatCastingRestriction)
 
   // Testes de atributo puros: modificador + meia proficiência quando a ficha a tem (Versatilidade).
   const halfSources = getHalfProficiencySources(draft)
@@ -845,6 +853,7 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
           ...cannotAct,
           ...cannotSpeak,
           ...cannotCast,
+          ...castingRestrictions,
           critNote(20),
           ...linesFor(lines, 'attack'),
         ],
@@ -927,6 +936,7 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
   return {
     checks, saves, skills, initiative, passivePerception, attacks, spellcasting, deathSave, hitDice,
     notes: [...cannotAct, ...cannotSpeak, ...cannotCast],
+    castingRestrictions,
   }
 }
 
@@ -934,7 +944,8 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
  * O TR de Constituição para manter a concentração depois de um dano (pág. 205): CD =
  * max(10, metade do dano, para baixo). O dano é o total do evento, depois da resistência e
  * contando o que os PV temporários absorveram (assumido E, `regras-rolagens-e-concentracao.md`).
- * Conjurador de Guerra (pág. 169) entra como vantagem — aqui o efeito vale sempre.
+ * Conjurador de Guerra (pág. 169) entra como vantagem — aqui o efeito vale sempre. A restrição de
+ * conjuração (em fúria não se concentra, pág. 48) vira nota.
  */
 export function getConcentrationGuide(draft: CharacterDraft, state: PlayState, damage: number): RollGuideEntry {
   const scores = getFinalAbilityScores(draft)
@@ -952,6 +963,7 @@ export function getConcentrationGuide(draft: CharacterDraft, state: PlayState, d
     id: 'concentration',
     label: spell ? `Concentração em ${spell} — TR de Constituição` : 'Concentração — TR de Constituição',
     extraAdvantage: warCaster ? [warCaster] : [],
+    notes: [...getCastingRestrictions(draft).map(formatCastingRestriction), ...(input.notes ?? [])],
     dc: Math.max(10, Math.floor(amount / 2)),
   }, state.inspiration)
 }

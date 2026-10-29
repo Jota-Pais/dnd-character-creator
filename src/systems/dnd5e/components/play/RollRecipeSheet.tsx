@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { usePlayStore } from '../../stores/playStore'
 import type { RollMode } from '../../types/condition'
 import { formatModifier } from '../../utils/abilityScoreUtils'
@@ -64,10 +65,14 @@ export type RecipeLink = { label: string; entry: RollGuideEntry }
  * `critThreshold` abre o dano já como crítico. A folha de dano aberta com `crit` mostra e rola os
  * dados dobrados (pág. 196), com o "não foi crítico" para voltar ao normal.
  */
-export function RollRecipeSheet({ entry: baseEntry, appDice, onClose, crit = false, links = [], critThreshold = 20, onOpenLink }: {
+export function RollRecipeSheet({
+  entry: baseEntry, appDice, onClose, onFocusAway, crit = false, links = [], critThreshold = 20, onOpenLink,
+}: {
   entry: RollGuideEntry
   appDice: boolean
   onClose: () => void
+  /** Quem abriu a folha sumiu com a ação dela (ver `PlayDialog`). */
+  onFocusAway?: () => void
   /** Abrir já no modo crítico (só jogada de dano, que tem `entry.crit`). */
   crit?: boolean
   links?: RecipeLink[]
@@ -111,29 +116,47 @@ export function RollRecipeSheet({ entry: baseEntry, appDice, onClose, crit = fal
     setResult({ ...rolled, crit: asCrit, formula: describeRolledFormula(entry, asCrit) })
   }
 
+  // A folha fecha, e quem a abriu (o "Ver o que rolar" do aviso) some junto: o foco vai aonde a
+  // tela disser (`onFocusAway`).
   function endFailedConcentration() {
     run(st => endConcentration(st))
     onClose()
   }
 
+  // Os botões abaixo somem com a própria ação. Síncrono (flushSync), o foco vai ao que entra no
+  // lugar (o "Usar" e o "Devolver" da inspiração trocam de lugar) ou à fórmula, o título da folha.
+  const formulaRef = useRef<HTMLParagraphElement>(null)
+  const inspireRef = useRef<HTMLButtonElement>(null)
+  const returnRef = useRef<HTMLButtonElement>(null)
+
   function leaveCrit() {
-    setCritMode(false)
-    setResult(null)
+    flushSync(() => {
+      setCritMode(false)
+      setResult(null)
+    })
+    formulaRef.current?.focus()
   }
 
   /** Gasta a Inspiração nesta jogada: um passo do desfazer, e o modo mostrado e rolado muda. */
   function spendInspiration() {
-    const r = run(st => setInspiration(st, false))
-    if (!r || r.state.inspiration) return
-    setInspirationSpent({ undoTop: usePlayStore.getState().undoStack.at(-1) })
-    setResult(null)
+    flushSync(() => {
+      const r = run(st => setInspiration(st, false))
+      if (!r || r.state.inspiration) return
+      setInspirationSpent({ undoTop: usePlayStore.getState().undoStack.at(-1) })
+      setResult(null)
+    })
+    // Recusado, o "Usar" fica, e o foco também.
+    returnRef.current?.focus()
   }
 
   /** Devolve a Inspiração gasta aqui, desfazendo o gasto (só se ele ainda é o último passo). */
   function returnInspiration() {
-    if (inspirationSpent && undoTop === inspirationSpent.undoTop) undo()
-    setInspirationSpent(null)
-    setResult(null)
+    flushSync(() => {
+      if (inspirationSpent && undoTop === inspirationSpent.undoTop) undo()
+      setInspirationSpent(null)
+      setResult(null)
+    })
+    ;(inspireRef.current ?? formulaRef.current)?.focus()
   }
 
   /** Outra circunstância da mesa: o resultado anterior saiu com o modo de antes e some. */
@@ -155,8 +178,10 @@ export function RollRecipeSheet({ entry: baseEntry, appDice, onClose, crit = fal
     && entry.dc !== undefined && (entry.autoFail.length > 0 || result.record.total < entry.dc)
 
   return (
-    <PlayDialog title={entry.label} titleId={titleId} onClose={onClose}>
-      <p className="mt-2 font-fantasy font-bold text-3xl text-gold-300" data-testid="recipe-formula">{shown.formula}</p>
+    <PlayDialog title={entry.label} titleId={titleId} onClose={onClose} onFocusAway={onFocusAway}>
+      <p ref={formulaRef} tabIndex={-1} className="mt-2 font-fantasy font-bold text-3xl text-gold-300" data-testid="recipe-formula">
+        {shown.formula}
+      </p>
 
       {critMode && (
         <div className="mt-2 rounded-lg border border-gold-800 bg-gold-900/30 px-3 py-2 text-sm text-gold-300">
@@ -189,6 +214,7 @@ export function RollRecipeSheet({ entry: baseEntry, appDice, onClose, crit = fal
       )}
       {isD20 && inspired && !usingInspiration && (
         <button
+          ref={inspireRef}
           onClick={spendInspiration}
           className="mt-2 min-h-10 rounded-lg border border-gold-700 px-3 text-sm text-gold-300 hover:border-gold-500"
         >
@@ -197,6 +223,7 @@ export function RollRecipeSheet({ entry: baseEntry, appDice, onClose, crit = fal
       )}
       {usingInspiration && inspirationSpent && undoTop === inspirationSpent.undoTop && (
         <button
+          ref={returnRef}
           onClick={returnInspiration}
           className="mt-1 min-h-10 text-xs text-parchment-400 underline hover:text-parchment-200"
         >

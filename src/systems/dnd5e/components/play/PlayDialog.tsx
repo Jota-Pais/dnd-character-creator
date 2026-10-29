@@ -1,4 +1,4 @@
-import { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react'
 
 /** O que recebe o foco dentro da folha (para prender o Tab). */
 const FOCUSABLE = 'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
@@ -6,16 +6,27 @@ const FOCUSABLE = 'button:not([disabled]), a[href], input:not([disabled]), selec
 /**
  * A folha modal do modo de jogo: sobe do pé da tela no celular, centralizada no desktop. Fecha no
  * ✕, no fundo escuro e no Esc; o foco entra nela ao abrir, circula dentro dela no Tab e volta para
- * quem a abriu ao fechar. O conteúdo (`children`) vem logo abaixo do título.
+ * quem a abriu ao fechar — ou, se ele sumiu enquanto ela estava aberta, a `onFocusAway`. O
+ * conteúdo (`children`) vem logo abaixo do título.
  */
-export function PlayDialog({ title, titleId, onClose, children }: {
+export function PlayDialog({ title, titleId, onClose, onFocusAway, children }: {
   title: ReactNode
   titleId: string
   onClose: () => void
+  /**
+   * Quem abriu a folha não existe mais ao fechar (o "Ver o que rolar" do aviso que a ação da folha
+   * trocou): a tela diz para onde vai o foco, que senão cairia no body.
+   */
+  onFocusAway?: () => void
   children: ReactNode
 }) {
   const dialogRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
+  const focusAwayRef = useRef(onFocusAway)
+
+  useLayoutEffect(() => {
+    focusAwayRef.current = onFocusAway
+  })
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
@@ -25,12 +36,14 @@ export function PlayDialog({ title, titleId, onClose, children }: {
     return () => window.removeEventListener('keydown', handleKey)
   }, [onClose])
 
-  // Diálogo modal: o foco entra na folha ao abrir e volta para quem a abriu ao fechar.
+  // Diálogo modal: o foco entra na folha ao abrir e volta para quem a abriu ao fechar. A limpeza
+  // roda depois da tela já atualizada: o que a tela oferece no lugar de quem abriu já existe.
   useEffect(() => {
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
     closeRef.current?.focus()
     return () => {
       if (opener?.isConnected) opener.focus()
+      else focusAwayRef.current?.()
     }
   }, [])
 

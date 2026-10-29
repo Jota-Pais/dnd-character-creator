@@ -8,7 +8,7 @@ import { formatPlaySubtitle, usePlayView, type PlayTabProps } from './usePlayVie
 import { findRollGuideEntry, type RollGuideEntry } from '../../utils/rollGuide'
 import { DeathSaves } from './DeathSaves'
 import { HP_PANEL_ID, HpPanel } from './HpPanel'
-import { NoticeToast } from './NoticeToast'
+import { NoticeToast, type NoticeToastHandle } from './NoticeToast'
 import { usePlayStore } from '../../stores/playStore'
 import { RollRecipeSheet, type RecipeLink } from './RollRecipeSheet'
 import { VitalsBar } from './VitalsBar'
@@ -54,6 +54,7 @@ export function PlayScreen() {
   // O "de onde vem" aberto de um número que não se rola (CA, CD de magia, Percepção passiva).
   const [source, setSource] = useState<NumberSource | null>(null)
   const stickyRef = useRef<HTMLDivElement>(null)
+  const toastRef = useRef<NoticeToastHandle>(null)
 
   /**
    * Rola até `el` ficar logo abaixo dos vitais fixos. Com `onlyIfCovered`, só se ele estiver atrás
@@ -145,6 +146,14 @@ export function PlayScreen() {
   const tabProps: PlayTabProps = { ...view, openRecipe, openSource: setSource }
   const current = PLAY_TABS.find(t => t.id === tab) ?? PLAY_TABS[0]
   const TabComponent = current.component
+  // A aba aberta dá nome ao painel: sem rolar a tela, o Tab seguinte entra no conteúdo dela.
+  const focusOpenTab = () => document.getElementById(`play-tab-${current.id}`)?.focus({ preventScroll: true })
+  // A folha da receita fechou, e quem a abriu sumiu com a ação dela (o "Falhei: encerrar" troca o
+  // aviso de concentração, e o "Ver o que rolar" vai junto): o foco vai ao aviso que ficou ou, sem
+  // aviso, à aba aberta, como depois do botão do próprio aviso.
+  const focusAfterSheet = () => {
+    if (!toastRef.current?.focus()) focusOpenTab()
+  }
   const liveRecipe = recipe ? findRollGuideEntry(view.guide, recipe.entry.id) ?? recipe.entry : null
   // Da folha de um ataque, o dano (e o dano a duas mãos) a um toque.
   const attackRow = liveRecipe ? view.guide.attacks.find(a => a.attack.id === liveRecipe.id) : undefined
@@ -256,13 +265,13 @@ export function PlayScreen() {
         </div>
       </div>
 
-      {/* O aviso fechado pelo próprio botão ("Desfazer", "OK") devolve o foco à aba aberta, que dá
-          nome ao painel: sem rolar a tela, o Tab seguinte entra no conteúdo dela. */}
+      {/* O aviso fechado pelo próprio botão ("Desfazer", "OK") devolve o foco à aba aberta. */}
       <NoticeToast
+        ref={toastRef}
         view={view}
         onOpenRecipe={openRecipe}
         onHeightChange={setToastHeight}
-        onFocusAway={() => document.getElementById(`play-tab-${current.id}`)?.focus({ preventScroll: true })}
+        onFocusAway={focusOpenTab}
       />
 
       {liveRecipe && recipe && (
@@ -271,6 +280,7 @@ export function PlayScreen() {
           entry={liveRecipe}
           appDice={view.appDice}
           onClose={() => setRecipe(null)}
+          onFocusAway={focusAfterSheet}
           crit={recipe.crit}
           links={recipeLinks}
           critThreshold={attackRow?.critThreshold}

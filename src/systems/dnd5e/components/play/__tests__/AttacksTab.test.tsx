@@ -45,9 +45,13 @@ describe('AttacksTab', () => {
     expect(screen.getByTestId('recipe-formula')).toHaveTextContent('2d12 + 3 cortante')
     // Meio-orc: os Ataques Selvagens só como nota do crítico.
     expect(screen.getByTestId('crit-note')).toHaveTextContent('Ataques Selvagens: no acerto crítico com esta arma corpo a corpo, role mais 1d12 (o dado da arma neste ataque)')
-    fireEvent.click(screen.getByRole('button', { name: 'Não foi crítico' }))
+    const notCrit = screen.getByRole('button', { name: 'Não foi crítico' })
+    notCrit.focus()
+    fireEvent.click(notCrit)
     expect(screen.getByTestId('recipe-formula')).toHaveTextContent('1d12 + 3 cortante')
     expect(screen.queryByTestId('crit-note')).toBeNull()
+    // O botão sumiu com a caixa do crítico: o foco vai à fórmula, o título da folha.
+    expect(screen.getByTestId('recipe-formula')).toHaveFocus()
   })
 
   it('Dano de Fúria: nota no cartão do machado e na receita do dano, fora da fórmula', () => {

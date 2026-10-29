@@ -62,6 +62,20 @@ describe('RollRecipeSheet — usar a Inspiração', () => {
     expect(record.terms.flatMap(t => t.dice)).toHaveLength(2)
   })
 
+  it('"Usar" e "Devolver" trocam de lugar, e o foco passa de um ao outro', () => {
+    openKrusk()
+    usePlayStore.getState().run(st => setInspiration(st, true))
+    openAthletics()
+    const use = screen.getByRole('button', { name: /Usar inspiração/ })
+    use.focus()
+    fireEvent.click(use)
+    expect(screen.getByRole('button', { name: 'Devolver a inspiração' })).toHaveFocus()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Devolver a inspiração' }))
+    expect(usePlayStore.getState().state!.inspiration).toBe(true)
+    expect(screen.getByRole('button', { name: /Usar inspiração/ })).toHaveFocus()
+  })
+
   it('depois de outra ação, o "devolver" some (o desfazer geral continua valendo)', () => {
     openKrusk()
     usePlayStore.getState().run(st => setInspiration(st, true))

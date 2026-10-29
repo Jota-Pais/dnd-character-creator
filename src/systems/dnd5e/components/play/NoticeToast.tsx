@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type Ref } from 'react'
 import { flushSync } from 'react-dom'
 import { usePlayStore } from '../../stores/playStore'
 import type { DamageInput, PlayNotice, PlayNoticeKind } from '../../types/playState'
@@ -26,12 +26,15 @@ const sortByAction = (notices: PlayNotice[]) => [
   ...notices.filter(n => !ACTION_KINDS.includes(n.kind)),
 ]
 
+/** O que a tela pede ao aviso: o foco no "Desfazer" ou no "OK" dele; false sem aviso aberto. */
+export type NoticeToastHandle = { focus: () => boolean }
+
 /**
  * Os avisos da última ação do modo de jogo (ou da abertura, se a ficha mudou), presos ao pé da
  * tela, com o "Desfazer" quando a ação mudou algo. O aviso de concentração traz a CD e a receita
  * do TR de Constituição (`getConcentrationGuide`), com atalho para a folha e para encerrar.
  */
-export function NoticeToast({ view, onOpenRecipe, onHeightChange, onFocusAway }: {
+export function NoticeToast({ view, onOpenRecipe, onHeightChange, onFocusAway, ref }: {
   view: PlayView
   onOpenRecipe: (entry: RollGuideEntry) => void
   /**
@@ -41,6 +44,8 @@ export function NoticeToast({ view, onOpenRecipe, onHeightChange, onFocusAway }:
   onHeightChange?: (height: number) => void
   /** O aviso fechou pelo botão que tinha o foco: a tela diz para onde ele vai (a aba aberta). */
   onFocusAway?: () => void
+  /** A folha da receita que fecha sem quem a abriu passa o foco ao aviso (`NoticeToastHandle`). */
+  ref?: Ref<NoticeToastHandle>
 }) {
   const storeNotices = usePlayStore(s => s.notices)
   const canUndo = usePlayStore(s => s.lastActionChanged && s.undoStack.length > 0)
@@ -61,14 +66,19 @@ export function NoticeToast({ view, onOpenRecipe, onHeightChange, onFocusAway }:
   const notices = !released && storeNotices === heldAtMount ? NO_NOTICES : storeNotices
   const open = notices.length > 0
 
+  function focusNotice(): boolean {
+    const target = undoRef.current ?? okRef.current
+    target?.focus()
+    return target !== null
+  }
+  useImperativeHandle(ref, () => ({ focus: focusNotice }))
+
   // Todo botão do aviso some com a própria ação ("Falhei: encerrar", "Levantar", e o "Desfazer" e o
   // "OK", que fecham o aviso): síncrono (flushSync), o foco vai ao "Desfazer" ou ao "OK" do aviso
   // que ficou e, com o aviso fechado, a `onFocusAway` — nunca cai no body.
   function act(action: () => void) {
     flushSync(action)
-    const target = undoRef.current ?? okRef.current
-    if (target) target.focus()
-    else onFocusAway?.()
+    if (!focusNotice()) onFocusAway?.()
   }
 
   // A caixa existe sempre (sem aviso, com altura 0): o ResizeObserver acompanha abrir e fechar.

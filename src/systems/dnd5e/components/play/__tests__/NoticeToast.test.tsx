@@ -208,6 +208,41 @@ describe('foco nos botões do aviso', () => {
     expect(screen.getByRole('tab', { name: 'Estado' })).toHaveFocus()
   })
 
+  it('"Falhei: encerrar" da folha leva o "Ver o que rolar" que a abriu: o foco vai ao "Desfazer" do aviso novo', () => {
+    openKrusk()
+    usePlayStore.getState().setAppDice(true)
+    usePlayStore.getState().run(st => startConcentration(st, { label: 'Bênção' }, 0))
+    render(<PlayScreen />)
+    damage('10')
+    const opener = within(screen.getByRole('status')).getByRole('button', { name: 'Ver o que rolar' })
+    opener.focus()
+    fireEvent.click(opener)
+    forceD20(2)
+    fireEvent.click(screen.getByRole('button', { name: 'Rolar' }))
+    const end = within(screen.getByRole('dialog')).getByRole('button', { name: 'Falhei: encerrar' })
+    end.focus()
+    fireEvent.click(end)
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(opener).not.toBeInTheDocument()
+    const toast = screen.getByRole('status')
+    expect(toast).toHaveTextContent('A concentração em Bênção terminou')
+    expect(within(toast).getByRole('button', { name: '↶ Desfazer' })).toHaveFocus()
+  })
+
+  it('a folha fechada sem quem a abriu e sem aviso passa o foco à aba aberta', () => {
+    openKrusk()
+    usePlayStore.getState().run(st => startConcentration(st, { label: 'Bênção' }, 0))
+    render(<PlayScreen />)
+    damage('3')
+    const opener = within(screen.getByRole('status')).getByRole('button', { name: 'Ver o que rolar' })
+    opener.focus()
+    fireEvent.click(opener)
+    // O aviso sai por fora com a folha aberta (o "OK" dele, atrás do fundo escuro).
+    act(() => usePlayStore.getState().dismissNotices())
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Fechar' }))
+    expect(screen.getByRole('tab', { name: 'Testes' })).toHaveFocus()
+  })
+
   it('"Levantar" passa o foco ao "Desfazer"; o "OK" fecha o aviso e o passa à aba aberta', () => {
     openKrusk()
     render(<PlayScreen />)

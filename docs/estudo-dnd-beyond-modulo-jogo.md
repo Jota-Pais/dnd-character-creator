@@ -584,6 +584,9 @@ Mais específicas da ficha: concentração ausente, buffs fora das rolagens, pre
 - **Gamificação barata**: feedback visual de dano e cura, aviso de PV baixo (inspirado nas extensões) e celebração do 20 natural.
 
 ### Fase 2: o turno completo
+
+O desenho técnico, com as ondas na ordem, está em `docs/fase2-desenho-tecnico.md` (2026-10-29). O PWA saiu desta fase e vem antes, junto do APK Android.
+
 - **"O que posso fazer no meu turno?"**: ações agrupadas em Ação / Ação Bônus / Reação / Outras, com as ações padrão do PHB, custo visível e botão "Usar" que gasta o recurso. Exige o bloco declarativo novo nas features, nos talentos e nos traços raciais (ex.: Arma de Sopro, Sortudo). As regras do turno e das ações estão em `docs/regras-acoes-em-combate.md`.
 - **Efeitos ativos com liga/desliga** (Fúria, Bênção, Escudo Arcano, Armadura Arcana). Ligado, o efeito muda os números da ficha em jogo (dano, CA, ataque, testes); desligado, nada muda (decisão 10.2.16). Entrar em fúria encerra a concentração (`docs/regras-rolagens-e-concentracao.md`, seção 10.2). Fúria e Bênção são candidatas a ir antes.
 - **Recursos completos** (a lista da seção 8.2), talentos com uso, magias inatas com contador e custos das escolhas de progressão. Entra também a **Conjuração Flexível** como extras temporários, feita pela tela do jogo e com desfazer (decisão 10.2.4).

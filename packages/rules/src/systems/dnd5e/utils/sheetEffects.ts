@@ -3,9 +3,11 @@ import type { Feat } from '../types/feat'
 import type { ArmorProficiency, LevelFeature } from '../types/class'
 import type { AbilityScore, RacialTrait } from '../types/race'
 import type {
-  AttackScope, CastingRestriction, ConditionalAcBonus, ConditionalRollNote, EquipmentRequirement, FeatureEffects,
-  LevelStep, LoadingOverride, ResourceEffect,
+  ActiveEffect, AttackScope, CastingRestriction, ConditionalAcBonus, ConditionalRollNote, EquipmentRequirement, FeatureEffects,
+  LevelStep, LoadingOverride, ResourceEffect, ToggleBenefits,
 } from '../types/effects'
+import type { SheetAction } from '../types/actions'
+import { NO_SESSION, type SheetSession, type SheetToggle, type SourcedActiveEffect } from '../types/session'
 import { getFeat } from './featUtils'
 import { getOwnedFeats } from './ownedFeats'
 import {
@@ -22,7 +24,7 @@ import {
 import {
   evaluateQuantity, evaluateResource, stepValue, type FinalScores, type ResourceSource, type SheetResource,
 } from './classResourceUtils'
-import { getActivePicks, getProgressionSlotsUpToLevel } from './progressionChoiceUtils'
+import { getActivePicks, getProgressionSlotsUpToLevel, type ProgressionSlot } from './progressionChoiceUtils'
 import { getProgressionOptions, getUnmetRequirement, type ProgressionOption } from './progressionOptions'
 import { formatManeuverSaveDc, getClassManeuvers, getManeuver, getManeuverSaveDc } from './maneuverUtils'
 import { getFeatChosenSpell, getFeatSpellPicks, getSpellSources } from './spellUtils'
@@ -231,8 +233,11 @@ export function getConditionalRollNotes(draft: CharacterDraft): SheetConditional
 
 // ── Restrições de conjuração ───────────────────────────────────────────────────
 
-/** Uma restrição de conjuração condicional, com quem a dá (o nome da feature). */
-export type SheetCastingRestriction = CastingRestriction & { source: string }
+/**
+ * Uma restrição de conjuração condicional, com quem a dá (o nome da feature). `active`: o efeito
+ * ligado que é a situação dela está ligado na sessão — ela está em vigor.
+ */
+export type SheetCastingRestriction = CastingRestriction & { source: string; active?: true }
 
 /**
  * O personagem "for capaz de conjurar magias" (Fúria, p. 48)? Com alguma fonte de magia da ficha
@@ -249,17 +254,19 @@ export function canCastSpells(draft: CharacterDraft): boolean {
 }
 
 /**
- * O que proíbe conjurar numa situação que a ficha não conhece (`castingRestriction`: em fúria,
- * p. 48) — features de classe e subclasse no nível NA classe dona, pela origem, sem repetir. A
- * regra é para quem "for capaz de conjurar magias" (`canCastSpells`); quem não conjura nada fica
- * com a lista vazia. Nunca bloqueia nem muda número; quem a põe onde se conjura é o modo de jogo.
+ * O que proíbe conjurar numa situação (`castingRestriction`: em fúria, p. 48) — features de classe
+ * e subclasse no nível NA classe dona, pela origem, sem repetir. A regra é para quem "for capaz de
+ * conjurar magias" (`canCastSpells`); quem não conjura nada fica com a lista vazia. Sem sessão
+ * (Revisão, PDF) é sempre condicional: nunca bloqueia nem muda número, e quem a põe onde se conjura
+ * é o modo de jogo. Com o efeito da situação ligado na sessão, ela vem `active`: está em vigor.
  */
-export function getCastingRestrictions(draft: CharacterDraft): SheetCastingRestriction[] {
+export function getCastingRestrictions(draft: CharacterDraft, session: SheetSession = NO_SESSION): SheetCastingRestriction[] {
   const out: SheetCastingRestriction[] = []
   for (const feature of getOwnedClassFeatures(draft)) {
     const restriction = feature.effects?.castingRestriction
     if (restriction && !out.some(o => o.source === feature.name && o.text === restriction.text)) {
-      out.push({ ...restriction, source: feature.name })
+      const active = restriction.toggle !== undefined && session.active.some(t => t.id === restriction.toggle)
+      out.push({ ...restriction, source: feature.name, ...(active ? { active: true as const } : {}) })
     }
   }
   return out.length > 0 && canCastSpells(draft) ? out : []
@@ -268,6 +275,80 @@ export function getCastingRestrictions(draft: CharacterDraft): SheetCastingRestr
 /** "Fúria: em fúria, você não pode conjurar magias nem se concentrar nelas (pág. 48); entrar em fúria encerra a concentração." */
 export function formatCastingRestriction(restriction: SheetCastingRestriction): string {
   return `${restriction.source}: ${restriction.when}, ${restriction.text}`
+}
+
+// ── Efeitos ligados e ações (Fase 2) ───────────────────────────────────────────
+
+const sourced = (source: string, effects: ActiveEffect[] | undefined): SourcedActiveEffect[] =>
+  (effects ?? []).map(effect => ({ source, effect }))
+
+/**
+ * Os efeitos que a ficha pode ligar em jogo (`toggle`: a Fúria), das features de classe e subclasse
+ * no nível NA classe dona, com o que as outras características acrescentam (`toggleModifiers`, das
+ * features e das opções escolhidas em slot de progressão: o Frenesi, a Fúria Inconsciente, a Fúria
+ * Persistente, os totens) já fundido. A opção leva o nome do slot ("Totem Espiritual — Urso"): o
+ * mesmo animal pode estar em duas características.
+ *
+ * O bloqueio dos benefícios pelo equipamento é avaliado aqui, com a armadura da ficha — o mesmo
+ * critério da CA e das defesas (`blockedBy`). A restrição de conjuração da mesma situação
+ * (`CastingRestriction.toggle`) entra como efeito de estado (`cannotCast`, `endsConcentration`),
+ * fora dos benefícios: vale também de armadura pesada (p. 48), e só para quem conjura.
+ */
+export function getSheetToggles(draft: CharacterDraft): SheetToggle[] {
+  const equipped = getDraftEquippedArmor(draft)
+  const benefitsOf = (source: string, b: ToggleBenefits): SheetToggle['benefits'][number] => {
+    const blockedBy = equipmentBlocker(b.requires, equipped)
+    return { requires: b.requires, effects: sourced(source, b.effects), ...(blockedBy ? { blockedBy } : {}) }
+  }
+  const features = getOwnedClassFeatures(draft)
+  const toggles: SheetToggle[] = []
+  for (const feature of features) {
+    const t = feature.effects?.toggle
+    if (!t || toggles.some(o => o.id === t.id)) continue
+    toggles.push({
+      id: t.id, label: t.label, source: feature.name, page: t.page,
+      effects: sourced(feature.name, t.effects),
+      benefits: t.benefits ? [benefitsOf(feature.name, t.benefits)] : [],
+      endsOn: [...(t.endsOn ?? [])],
+      ...(t.earlyEndReminder ? { earlyEndReminder: t.earlyEndReminder } : {}),
+      options: [],
+    })
+  }
+  const modifiers = [
+    ...features.flatMap(f => (f.effects?.toggleModifiers ?? []).map(m => ({ source: f.name, m }))),
+    ...getOwnedProgressionOptions(draft).flatMap(({ slot, option }) =>
+      (option.effects?.toggleModifiers ?? []).map(m => ({ source: `${slot.label} — ${option.name}`, m }))),
+  ]
+  for (const { source, m } of modifiers) {
+    const t = toggles.find(o => o.id === m.toggle)
+    if (!t) continue
+    t.effects.push(...sourced(source, m.effects))
+    if (m.benefits) t.benefits.push(benefitsOf(source, m.benefits))
+    t.options.push(...(m.options ?? []).map(o => ({ ...o, source })))
+    if (m.suppressEarlyEnd) delete t.earlyEndReminder
+  }
+  for (const r of getCastingRestrictions(draft)) {
+    const t = r.toggle ? toggles.find(o => o.id === r.toggle) : undefined
+    if (!t) continue
+    if (r.blocks?.includes('cast')) t.effects.push({ source: r.source, effect: { kind: 'cannotCast', scope: 'gameState', page: t.page } })
+    if (r.blocks?.includes('concentrate')) t.effects.push({ source: r.source, effect: { kind: 'endsConcentration', scope: 'gameState', page: t.page } })
+  }
+  return toggles
+}
+
+/**
+ * As ações das características (`actions`: entrar em fúria, encerrá-la), das features de classe e
+ * subclasse no nível NA classe dona, com quem as dá. O mesmo id vale uma vez. É o que as
+ * operações de jogo usam (`performAction`): o custo e o que a ação liga ou desliga.
+ */
+export function getSheetActions(draft: CharacterDraft): SheetAction[] {
+  const out: SheetAction[] = []
+  for (const feature of getOwnedClassFeatures(draft)) {
+    for (const action of feature.effects?.actions ?? []) {
+      if (!out.some(o => o.id === action.id)) out.push({ ...action, source: feature.name })
+    }
+  }
+  return out
 }
 
 // ── Deslocamento ───────────────────────────────────────────────────────────────
@@ -774,7 +855,7 @@ export function getMeleeCritExtraWeaponDice(draft: CharacterDraft): ScopedSheetE
  */
 function getOwnedProgressionOptions(
   draft: CharacterDraft,
-): { entry: ClassEntry; option: ProgressionOption }[] {
+): { entry: ClassEntry; slot: ProgressionSlot; option: ProgressionOption }[] {
   return allClassEntries(draft).flatMap(entry => {
     const { classId, level, classChoices: { subclass, progressionChoices } } = entry
     const slots = getProgressionSlotsUpToLevel(classId, subclass, level, progressionChoices)
@@ -787,7 +868,7 @@ function getOwnedProgressionOptions(
         .map(id => options.find(o => o.id === id))
         .filter((o): o is ProgressionOption => o !== undefined)
         .filter(option => !getUnmetRequirement(classId, subclass, activePicks, option))
-        .map(option => ({ entry, option }))
+        .map(option => ({ entry, slot, option }))
     })
   })
 }
@@ -937,9 +1018,14 @@ export function getSheetFightingStyles(draft: CharacterDraft): SheetFightingStyl
  * O bônus de dano condicional (`conditionalDamage`) sai daqui calculado: o `amount` do recurso que
  * a MESMA característica declara, no nível NA classe dona (bárbaro 9 / guerreiro 3 tem o Dano de
  * Fúria +3; talento, no de personagem), com os atributos finais, e o equipamento que descumpre a
- * condição — a armadura vestida, o mesmo critério da CA.
+ * condição — a armadura vestida, o mesmo critério da CA. Com a sessão, o bônus cujo efeito
+ * (`toggle`) está ligado vem `met`: a linha que cumpre o escopo o põe no número.
  */
-export function getWeaponAttackEffects(draft: CharacterDraft, finalScores: FinalScores): SourcedAttackEffect[] {
+export function getWeaponAttackEffects(
+  draft: CharacterDraft,
+  finalScores: FinalScores,
+  session: SheetSession = NO_SESSION,
+): SourcedAttackEffect[] {
   const charLevel = draft.level ?? 1
   const prof = getProficiencyBonus(charLevel)
   const equipped = getDraftEquippedArmor(draft)
@@ -956,12 +1042,15 @@ export function getWeaponAttackEffects(draft: CharacterDraft, finalScores: Final
         continue
       }
       const blockedBy = damage.requires ? equipmentBlocker(damage.requires, equipped) : undefined
+      // A condição é satisfeita pelo estado: o efeito dela (em fúria) está ligado na sessão.
+      const met = damage.toggle !== undefined && session.active.some(t => t.id === damage.toggle)
       out.push({
         source, value,
         conditionalDamage: {
           value: evaluateQuantity(resource.amount.value, level, finalScores, prof),
           name: resource.name, condition: damage.condition,
           ...(blockedBy ? { blockedBy } : {}),
+          ...(met ? { met: true as const } : {}),
         },
       })
     }

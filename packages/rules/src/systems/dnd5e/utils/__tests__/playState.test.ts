@@ -62,6 +62,8 @@ function sheet(overrides: Partial<PlaySheet> = {}): PlaySheet {
     ],
     featIds: [],
     defenses: [],
+    toggles: [],
+    actions: [],
     ...overrides,
   }
 }

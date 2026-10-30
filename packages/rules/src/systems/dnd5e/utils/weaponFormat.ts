@@ -175,9 +175,10 @@ function formatRoll(damage: DamageRoll, mod: number): string {
 /**
  * O `conditionalDamage` de um efeito já calculado para o personagem (`getWeaponAttackEffects`): o
  * valor do recurso no nível NA classe dona, o nome dele ("Dano de Fúria") e a condição;
- * `blockedBy` é o que, no equipamento, descumpre a condição agora (a armadura pesada vestida).
+ * `blockedBy` é o que, no equipamento, descumpre a condição agora (a armadura pesada vestida);
+ * `met`, que o efeito da condição está ligado na sessão de jogo (em fúria).
  */
-export type ResolvedConditionalDamage = { value: number; name: string; condition: string; blockedBy?: string }
+export type ResolvedConditionalDamage = { value: number; name: string; condition: string; blockedBy?: string; met?: true }
 
 /**
  * Um efeito de ataque com o nome de quem o dá (o `SheetEffect` de `sheetEffects`) e, se ele declara

@@ -31,3 +31,6 @@ export type ActionDeclaration = {
   requiresToggle?: string
   page: number
 }
+
+/** Uma ação da ficha (`getSheetActions`), com quem a dá (o nome da característica). */
+export type SheetAction = ActionDeclaration & { source: string }

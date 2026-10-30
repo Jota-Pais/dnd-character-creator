@@ -6,8 +6,8 @@ import { getFinalAbilityScores } from './asiUtils'
 import { getHitDicePool } from './multiclassUtils'
 import { getSavingThrowChecks } from './proficiencyUtils'
 import {
-  getDamageDefenses, getDropToOneHp, getHpMaxReductionImmunity, getInitiativeBonusTotal, getOwnedFeats, getSheetResources,
-  getSheetSpeed, getTotalHp,
+  getDamageDefenses, getDropToOneHp, getHpMaxReductionImmunity, getInitiativeBonusTotal, getOwnedFeats, getSheetActions,
+  getSheetResources, getSheetSpeed, getSheetToggles, getTotalHp,
 } from './sheetEffects'
 import { getCombinedSpellSlots, getPactSlots } from './spellUtils'
 
@@ -46,5 +46,7 @@ export function buildPlaySheet(draft: CharacterDraft): PlaySheet {
     ...(hpMaxImmunity ? { hpMaxReductionImmunity: hpMaxImmunity } : {}),
     ...(dropToOneHp ? { dropToOneHp } : {}),
     defenses: structuredClone(getDamageDefenses(draft)),
+    toggles: structuredClone(getSheetToggles(draft)),
+    actions: structuredClone(getSheetActions(draft)),
   }
 }

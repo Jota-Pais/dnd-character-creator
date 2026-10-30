@@ -3,6 +3,7 @@ import type { AdvantageMode, ConditionEffect, RollCategory, RollMode } from '../
 import type { PlayState } from '../types/playState'
 import type { AbilityScore } from '../types/race'
 import { ABILITY_LABELS, ALL_ABILITY_SCORES, calculateModifier, getProficiencyBonus } from './abilityScoreUtils'
+import { getSheetSession } from './activeEffects'
 import { getFinalAbilityScores } from './asiUtils'
 import { getSheetAttacks, isSheetAttackInScope, type SheetAttack } from './attackUtils'
 import { SKILLS } from './backgroundUtils'
@@ -711,6 +712,8 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
   const mods = Object.fromEntries(ALL_ABILITY_SCORES.map(ab => [ab, calculateModifier(scores[ab])])) as Record<AbilityScore, number>
   const level = draft.level ?? 1
   const prof = getProficiencyBonus(level)
+  // A sessão sai do estado que o guia já recebe: os efeitos ligados (em fúria) e o que fazem agora.
+  const session = getSheetSession(draft, state)
   const effects = getPlayConditionEffects(state)
   // As linhas das condições e as da ficha. O valor passivo leva só as das condições: rerrolar ou
   // "vantagem contra veneno" não alcançam um número que não se rola.
@@ -740,7 +743,7 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
     ? [`Não pode falar (${labels(effects.cannotSpeak.sources)}): sem o componente verbal, a magia que o exige não pode ser conjurada (pág. 205).`]
     : []
   // Em fúria não se conjura (pág. 48): a ficha não sabe se você está em fúria, então é nota.
-  const castingRestrictions = getCastingRestrictions(draft).map(formatCastingRestriction)
+  const castingRestrictions = getCastingRestrictions(draft, session).map(formatCastingRestriction)
 
   // Testes de atributo puros: modificador + meia proficiência quando a ficha a tem (Versatilidade).
   const halfSources = getHalfProficiencySources(draft)
@@ -848,7 +851,7 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
     small: (draft.race ? getRace(draft.race)?.size : undefined) === 'Small',
     meleeCritExtraDice: getMeleeCritExtraWeaponDice(draft),
   }
-  const attacks = getSheetAttacks(draft, scores).map(a => attackGuide(a, attackContext))
+  const attacks = getSheetAttacks(draft, scores, session).map(a => attackGuide(a, attackContext))
 
   // A CD e o ataque de magia de uma conjuração, com os números prontos da fonte dela.
   const spellcastingGuide = ({ attackId, attackModifier, ...source }: SpellcastingInput): SpellcastingGuide => {
@@ -979,7 +982,7 @@ export function getConcentrationGuide(draft: CharacterDraft, state: PlayState, d
     id: 'concentration',
     label: spell ? `Concentração em ${spell} — TR de Constituição` : 'Concentração — TR de Constituição',
     extraAdvantage: warCaster ? [warCaster] : [],
-    notes: [...getCastingRestrictions(draft).map(formatCastingRestriction), ...(input.notes ?? [])],
+    notes: [...getCastingRestrictions(draft, getSheetSession(draft, state)).map(formatCastingRestriction), ...(input.notes ?? [])],
     dc: Math.max(10, Math.floor(amount / 2)),
   }, state.inspiration)
 }

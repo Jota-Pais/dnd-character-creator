@@ -1,4 +1,6 @@
 import type { RollRecord } from '../../../core/dice'
+import type { SheetAction } from './actions'
+import type { SheetToggle } from './session'
 import type { SheetResource } from '../utils/classResourceUtils'
 import type { SheetDamageDefense } from '../utils/sheetEffects'
 import type { ConditionId, ExhaustionLevel } from './condition'
@@ -184,6 +186,13 @@ export type PlaySheet = {
    * com a condição de equipamento já avaliada. O painel de PV as aplica ao dano do tipo informado.
    */
   defenses: SheetDamageDefense[]
+  /**
+   * Os efeitos que a ficha pode ligar (`getSheetToggles`: a Fúria, com o que a modifica), com o
+   * bloqueio pelo equipamento já avaliado. As operações resolvem o `activeEffects` contra eles.
+   */
+  toggles: SheetToggle[]
+  /** As ações das características (`getSheetActions`): o custo e o que ligam ou desligam. */
+  actions: SheetAction[]
 }
 
 /** Uma parcela de um dano de vários tipos (o golpe com Auxílio Divino, a coluna de chamas). */

@@ -1,6 +1,7 @@
 import type { CharacterDraft } from '../types/character'
 import type { AttackScope } from '../types/effects'
 import type { Weapon } from '../types/equipment'
+import { NO_SESSION, type SheetSession } from '../types/session'
 import { getWeaponById } from './equipmentUtils'
 import { getStartingInventory } from './sheetModel'
 import { calculateModifier, getProficiencyBonus } from './abilityScoreUtils'
@@ -74,13 +75,16 @@ export function isSheetAttackInScope(attack: SheetAttack, scope: AttackScope): b
  * de monge e do golpe desarmado quando o equipamento deixa (sem armadura nem escudo); quando não
  * deixa, a linha do golpe desarmado diz o que a impede. O "2×" do Ataque Extra vem em cada linha
  * (`attacksPerAction`): arma de recarga fica em 1 (p. 149), salvo Especialista em Besta.
+ *
+ * Com a sessão de jogo (`session`), o condicional cujo efeito está ligado (em fúria) entra no número
+ * da linha que cumpre o escopo; a Revisão e o PDF não a passam e continuam com a nota.
  */
-export function getSheetAttacks(draft: CharacterDraft, finalScores: FinalScores): SheetAttack[] {
+export function getSheetAttacks(draft: CharacterDraft, finalScores: FinalScores, session: SheetSession = NO_SESSION): SheetAttack[] {
   const base = {
     strMod: calculateModifier(finalScores.STR),
     dexMod: calculateModifier(finalScores.DEX),
     proficiencyBonus: getProficiencyBonus(draft.level ?? 1),
-    effects: getWeaponAttackEffects(draft, finalScores),
+    effects: getWeaponAttackEffects(draft, finalScores, session),
     attacksPerAction: getAttacksPerAction(draft),
     loadingOverrides: getLoadingOverrides(draft),
     twoLightMeleeWeapons: carriesTwoLightMeleeWeapons(draft),

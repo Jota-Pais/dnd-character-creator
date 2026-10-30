@@ -347,15 +347,17 @@ const sourcesOf = (defenses: SheetDamageDefense[]) => [...new Set(defenses.map(d
 
 /**
  * As parcelas do evento, já somadas por tipo e com piso 0 (decisão 3): a resistência arredonda por
- * tipo, somando antes as parcelas do mesmo tipo (decisão de 2026-10-30, item 12). Sem `parts`, o
- * evento é uma parcela só, com o tipo informado ou sem tipo.
+ * tipo, somando antes as parcelas do mesmo tipo (decisão de 2026-10-30, item 12). A parcela sem tipo
+ * ("Outro tipo") fica sozinha: o app não sabe se duas sem tipo são do mesmo tipo, e quem separa o
+ * dano em parcelas separa dois tipos (a tempestade de gelo: concussão e frio). Sem `parts`, o evento
+ * é uma parcela só, com o tipo informado ou sem tipo.
  */
 function groupDamageParts(input: DamageInput): DamagePart[] {
   const parts = input.parts?.length ? input.parts : [{ amount: input.amount, damageType: input.damageType }]
   const groups: DamagePart[] = []
   for (const part of parts) {
     const amount = Math.max(0, Math.floor(part.amount))
-    const group = groups.find(g => g.damageType === part.damageType)
+    const group = part.damageType ? groups.find(g => g.damageType === part.damageType) : undefined
     if (group) group.amount += amount
     else groups.push(part.damageType ? { amount, damageType: part.damageType } : { amount })
   }

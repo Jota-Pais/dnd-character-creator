@@ -1402,6 +1402,20 @@ describe('applyDamage — o tipo do dano e as defesas da ficha', () => {
     expect(lost(TIEFLING, { amount: 14, parts: [{ amount: 7, damageType: 'fire' }, { amount: 7, damageType: 'fire' }] })).toBe(7)
   })
 
+  it('duas parcelas sem tipo são dois tipos: a tempestade de gelo, 7 de concussão e 9 de frio, dá 3 + 4 (item 12)', () => {
+    // Tiefling paladino dos Anciões 7: os chips são Fogo e Outro tipo, e as duas parcelas vão como Outro tipo.
+    const tieflingPaladin = sheetOf({ race: 'tiefling', ...sub('paladin', 7, 'oath-of-the-ancients') })
+    const r = applyDamage(state(), tieflingPaladin, { amount: 16, parts: [{ amount: 7 }, { amount: 9 }], conditionalDefenses: ['de magia'] })
+    expect(getCurrentHp(state(), tieflingPaladin) - getCurrentHp(r.state, tieflingPaladin)).toBe(7)
+    expect(texts(r)).toEqual([
+      'Resistência (Aura de Vigilância): 7 → 3.',
+      'Resistência (Aura de Vigilância): 9 → 4.',
+      'Dano somado: 3 + 4 = 7.',
+    ])
+    // A resistência marcada no painel arredonda do mesmo jeito.
+    expect(lost(TIEFLING, { amount: 16, parts: [{ amount: 7 }, { amount: 9 }], resisted: true })).toBe(7)
+  })
+
   it('resistência e vulnerabilidade ao mesmo tipo: só a metade (decisão 10); só a vulnerabilidade: o dobro', () => {
     const vulnerable = { source: 'Maldição', kind: 'vulnerability', types: ['fire'] } as const
     const both = sheet({ defenses: [...TIEFLING.defenses, { ...vulnerable, types: [...vulnerable.types] }] })

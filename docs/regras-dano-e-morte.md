@@ -277,25 +277,26 @@ interface HitPointState {
 
 Entrada: lista de parcelas `{ amount, damageType, isCritical, isMagical? }` (um ataque pode ter vários tipos), uma lista de **modificadores no nível do evento** (ex.: "reduz todo o dano em 5"), mais um sinal `knockout?` (o atacante escolheu nocautear; só vale para corpo-a-corpo).
 
-O modelo de entrada fica **flexível** porque o livro não decide os ataques com vários tipos (Ponto em aberto 12): a redução fixa fica no evento, não copiada em cada parcela, e a resistência é por tipo. A ordem abaixo é **proposta**.
+O livro não decide os ataques com vários tipos; o Ponto em aberto 12 foi **decidido em 2026-10-30**: a redução fixa fica no evento, não copiada em cada parcela, e a resistência é por tipo. **Implementado (2026-10-30)** em `applyDamage` (`utils/playState.ts`): o `DamageInput` leva o tipo (`damageType`) ou as parcelas (`parts`), as condicionais confirmadas (`conditionalDefenses`) e as exceções marcadas (`exceptions`); sem tipo informado, só a resistência a todo dano (Petrificado) e a marcada no painel.
 
-1. **Modificadores de dano** que não são resistência (ex.: redução fixa de uma aura), **uma vez por evento** (proposta; como repartir entre tipos é o Ponto em aberto 12).
-2. **Resistência / vulnerabilidade por tipo**, depois do passo 1 (pág. 199). Várias resistências ao mesmo tipo contam como uma (idem vulnerabilidade). Metade arredonda **para baixo** (pág. 7). Proposta: somar as parcelas do mesmo tipo e arredondar uma vez por tipo (Ponto em aberto 12). **Resistência e vulnerabilidade ao mesmo tipo:** o app aplica **só a resistência** (metade, para baixo); qualquer outro ajuste é manual (decisão 10).
-3. **Soma** os tipos = `total`, com **piso 0**: modificador negativo nunca leva o dano abaixo de 0 nem o transforma em cura (decisão 3). Este `total` é o "dano recebido" da concentração: CD = `max(10, floor(total / 2))`, já contando o que os PV temporários vão absorver, **um teste por evento** (assumido (E); `regras-rolagens-e-concentracao.md`, 11.4).
-4. **PV temporários absorvem primeiro:** `absorbed = min(tempHp, total)`; `tempHp -= absorbed`; `rest = total - absorbed`.
-5. Se `lifeState === 'conscious'`:
+1. **Modificadores de dano** que não são resistência (ex.: a redução de 3 da Maestria em Armadura Pesada), **uma vez por evento**, sobre as parcelas do tipo que ela alcança (decidido em 2026-10-30). Quando ela alcança mais de uma parcela e outra defesa nelas faz a ordem mudar o resultado, o app não a aplica e avisa (Ponto em aberto 28); sem outra defesa, a ordem não muda o total.
+2. **Imunidade** ao tipo, da ficha ou de condição: a parcela vira 0.
+3. **Resistência / vulnerabilidade por tipo**, depois do passo 1 (pág. 199). Várias resistências ao mesmo tipo contam como uma (idem vulnerabilidade): a da ficha, a de condição, a marcada no painel e as condicionais confirmadas. Metade arredonda **para baixo** (pág. 7), somando antes as parcelas do mesmo tipo (decidido em 2026-10-30). **Resistência e vulnerabilidade ao mesmo tipo:** o app aplica **só a resistência** (metade, para baixo); qualquer outro ajuste é manual (decisão 10).
+4. **Soma** os tipos = `total`, com **piso 0**: modificador negativo nunca leva o dano abaixo de 0 nem o transforma em cura (decisão 3). Este `total` é o "dano recebido" da concentração: CD = `max(10, floor(total / 2))`, já contando o que os PV temporários vão absorver, **um teste por evento** (assumido (E); `regras-rolagens-e-concentracao.md`, 11.4).
+5. **PV temporários absorvem primeiro:** `absorbed = min(tempHp, total)`; `tempHp -= absorbed`; `rest = total - absorbed`.
+6. Se `lifeState === 'conscious'`:
    - `current = currentHp` (fórmula acima; pelo invariante, nunca acima do máximo efetivo). Se `rest < current`: `damageTaken = sheetMaxHp - (current - rest)`. Fim.
    - Senão, `overflow = rest - current` e o personagem vai a 0 (`damageTaken = sheetMaxHp`, o que dá `currentHp = 0` com qualquer máximo efetivo):
      - `overflow ≥ effectiveMaxHp` → `dead` (morte instantânea; o máximo **efetivo**, assumido (C));
      - senão, `knockout` → `stable`; caso contrário → `dying` com contadores zerados. Nos dois casos, disparam os efeitos da transição para 0 PV (Caído gravado, aviso de largar o que segura, fim da concentração; seção anterior).
      - A morte instantânea é avaliada **antes** do nocaute, então o dano massivo vence o nocaute. O texto do nocaute (linhas 17937-17941) não trata dessa interação; **decidido** assim (Ponto em aberto 13).
      - `tempHp` restante **não** é zerado ao cair a 0 (decisão 6).
-6. Se `lifeState` é `dying` ou `stable` (já a 0 PV):
-   - `rest ≥ effectiveMaxHp` → `dead` (mesmo máximo do passo 5);
+7. Se `lifeState` é `dying` ou `stable` (já a 0 PV):
+   - `rest ≥ effectiveMaxHp` → `dead` (mesmo máximo do passo 6);
    - senão, `failures += isCritical ? 2 : 1` (limitado a 3; 3 → `dead`), e `stable` vira `dying` (assumido (D)).
    - **Inclusive com `rest === 0`** (tudo absorvido pelos temporários): conta o fracasso, porque a regra fala em "qualquer dano" (decisão 5). Já um evento com `total === 0` depois do piso e da resistência **não** é dano: não conta fracasso nem pede TR de concentração (decidido, Ponto em aberto 19).
-7. Toda transição para `dead` (passos 5 e 6, terceiro fracasso, exaustão 6) encerra a concentração no mesmo evento (assumido (F)).
-8. Tudo vira um **evento de log desfazível** (o estado anterior é guardado), coerente com o "desfazer" do crítico.
+8. Toda transição para `dead` (passos 6 e 7, terceiro fracasso, exaustão 6) encerra a concentração no mesmo evento (assumido (F)).
+9. Tudo vira um **evento de log desfazível** (o estado anterior é guardado), coerente com o "desfazer" do crítico.
 
 **Cura:** `dead` → sem efeito (só "fui revivido"). Caso contrário, `novo = min(effectiveMaxHp, currentHp + heal)` e `damageTaken = sheetMaxHp - novo`, com `heal` de **piso 0** (decisão 3). O excedente se perde. Se estava a 0 e `heal > 0` → `conscious`, contadores zerados, e o Caído gravado continua (decisão 14). Cura **não** toca `tempHp`.
 
@@ -303,12 +304,14 @@ O modelo de entrada fica **flexível** porque o livro não decide os ataques com
 
 ### Resistências e vulnerabilidades do personagem
 
-O passo 2 recebe as resistências do **próprio personagem**. Elas vêm de **efeitos declarados nos dados**, agregados por `sheetEffects`, não de `if` na UI. Hoje `types/effects.ts` não tem resistência a dano (só testes de resistência). Proposta: um efeito novo, algo como `damageResistance: { types, condition? }` (e o par `damageVulnerability`).
+**Implementado (2026-10-30, onda `defesas` da Fase 2).** Os passos 1 a 3 recebem as defesas do **próprio personagem**, que vêm de **efeitos declarados nos dados** (`damageDefenses` em `types/effects.ts`: resistências, imunidades, vulnerabilidades, redução fixa e imunidade a condição), agregados por `getDamageDefenses` (`sheetEffects`), não de `if` na UI. O `PlaySheet` as leva, e `getPlayDamageDefenses` junta a elas as das condições (Petrificado: resistência a todo dano e imunidade a veneno). O texto de cada uma sai de `describeDamageDefenses`, o mesmo na aba Estado, na Revisão e no PDF.
 
 Segue a regra de ouro dos efeitos:
 
-- **Incondicional** → o pipeline aplica sozinho. Ex.: Acostumado à Morte-Vida, "resistência a dano necrótico" (`class-progression-features.json`, linha 1452); a condição **Petrificado** ("resistência a todos os tipos de dano", pág. 293), que chega pelo mesmo agregador com o estado de jogo como fonte (decisão 11; `regras-condicoes.md`, 6.3).
-- **Condicional** → vira **toggle/linha própria** perguntada antes de aplicar o dano, desligada por padrão. Ex.: Fúria do bárbaro, resistência a concussão, cortante e perfurante só enquanto em fúria e sem armadura pesada (linha 7: "em fúria?"); resistência "proveniente de ataques com armas não-mágicas" (linha 662: "o ataque era de arma não-mágica?", que casa com o `isMagical?` da parcela).
+- **Incondicional** → o pipeline aplica sozinho ao dano do tipo informado. Ex.: Resistência Infernal (fogo), Resiliência Anã e dos Robustos (veneno), a Resistência a Dano do draconato (o tipo do ancestral), Acostumado à Morte-Vida (necrótico), Escudo de Pensamentos (psíquico), Pureza Corporal e Proteção Natural (imune a veneno e à condição Envenenado, a leitura do Petrificado); a condição **Petrificado** ("resistência a todos os tipos de dano", pág. 293), pelo mesmo caminho (decisão 11; `regras-condicoes.md`, 6.3).
+- **Condicional** (`condition`) → **caixa desligada** no painel de PV ("Dano de magia?"), que o jogador marca quando o dano é daquela situação: Aura de Vigilância ("de magia"), Avatar da Batalha ("de ataque com arma não mágica"), Maestria em Armadura Pesada ("de ataque não mágico", só vestindo armadura pesada), Explorador de Cavernas ("de armadilha").
+- **Exceção** (`exceptWhen`) → vale sempre, e a caixa desligada a cancela: Resistência Demoníaca ("arma mágica ou de prata"). A escolha do tipo dela, ao terminar um descanso, chega com os recursos que faltam (onda `recursos-completos`); até lá, a ficha mostra só a linha que pede a escolha.
+- A **resistência da Fúria** (concussão, cortante e perfurante, só em fúria e sem armadura pesada) passa a ser **efeito ligado** na onda seguinte (`efeitos-ativos`): ligada a Fúria, ela entra como as outras.
 
 ### Cobertura do personagem
 
@@ -335,7 +338,7 @@ O motor é puro e agnóstico de sistema; o D&D monta a expressão.
   - **Desfecho:** o **10 é comparado ao total** (d20 + bônus); o **1 e o 20 são do d20 natural** (o dado mantido, depois de vantagem/desvantagem) (decisão 8).
   - Não há falha automática: a do Inconsciente vale só para TR de Força e Destreza, e o teste contra a morte não é vinculado a habilidade.
 - **Estável → 1 PV em 1d4 horas:** o motor rola 1d4 e a UI mostra "recupera 1 PV em N horas". O app não conta tempo real; o jogador confirma.
-- **Tipos de dano:** `DamageType` em `packages/rules/src/systems/dnd5e/types/equipment.ts` hoje só tem `bludgeoning | piercing | slashing` (armas). Para resistências e magias, ampliar para os 13 `id` da seção 5 (e `DAMAGE_TYPE_PT` em `utils/weaponFormat.ts`).
+- **Tipos de dano:** os 13 `id` da seção 5 moram em `types/damage.ts` (`DamageTypeId`) e `data/damage-types.json` (nome e dano por extenso), lidos por `utils/damageTypes.ts` (2026-10-30). O `DamageType` das armas (`types/equipment.ts`, só os três físicos), o `DAMAGE_TYPE_PT` (`utils/weaponFormat.ts`), a imunidade das condições e a tabela Ancestral Dracônico derivam deles.
 
 ## Pontos em aberto (decidir com o dono)
 
@@ -352,7 +355,7 @@ O motor é puro e agnóstico de sistema; o D&D monta a expressão.
 9. **Tradução, cobertura (linhas 17703-17706):** "três-quartos" e "cobertura superior" são o mesmo grau. Sem decisão. Segue a proposta ("três-quartos" na UI) até decisão em contrário.
 10. **Tradução, crítico (linha 17763-17764):** "ele joga esses dados duas vezes também". Não muda a regra. Só registro.
 11. **Morte e "reviver":** botão de "desfazer morte" além do desfazer? **Decidido (2026-10-24):** botão "fui revivido", que volta a `conscious` com 1 PV e contadores zerados, além do desfazer.
-12. **Ataque com vários tipos de dano** (linhas 17816-17823): (a) redução fixa por evento ou por parcela; (b) metade por parcela ou sobre a soma do tipo. Sem decisão. Segue a proposta (redução no nível do evento, resistência e arredondamento por tipo) até decisão em contrário.
+12. **Ataque com vários tipos de dano** (linhas 17816-17823): (a) redução fixa por evento ou por parcela; (b) metade por parcela ou sobre a soma do tipo. **Decidido (2026-10-30):** (a) a redução fixa vale uma vez por evento, sobre as parcelas do tipo que ela alcança; (b) a resistência se aplica e arredonda por tipo, somando antes as parcelas do mesmo tipo, e depois soma os tipos. Implementado em `applyDamage` (onda `defesas` da Fase 2).
 13. **Nocaute com dano que sobra ≥ PV máximo** (linhas 17937-17941 × 17854-17857). **Decidido (2026-10-25):** o dano massivo vence o nocaute. A morte instantânea é avaliada antes do nocaute, no pipeline e na tela (a caixa de nocaute com dano massivo leva a `dead`).
 14. **Dano total ≤ 0 com modificador negativo.** **Decidido (2026-10-24):** piso 0. O dano nunca vira cura.
 15. **PV temporários com duração própria e o descanso longo** (linhas 17970-17973). Sem decisão. Segue a proposta do MVP (só o número; o descanso longo zera, salvo com 0 PV no início, assumido (A)) até decisão em contrário.
@@ -370,3 +373,4 @@ O motor é puro e agnóstico de sistema; o D&D monta a expressão.
 27. **Golpe desarmado e "ataque com arma"** (págs. 48 e 196). O pt-BR opõe o golpe desarmado ao "ataque corpo-a-corpo armado"; o inglês diz que ele é *melee weapon attack*, sem ser arma. O Dano de Fúria vale em "ataque com arma corpo-a-corpo usando Força". **Decidido (2026-10-29):** segue o inglês. O golpe desarmado é ataque corpo a corpo com arma, e o Dano de Fúria vale nele (o escopo `melee-strength`); os efeitos que falam da arma (Duelismo, Armas Grandes, Arquearia, duas armas) não. Com o dano fixo em 0 (item 25), a nota do bônus diz a conta inteira ("com ele, o dano é 1 (1 − 2 + 2)"), porque o piso 0 é sobre o total (item 14). Ver o caso na lista pt-BR × inglês do CLAUDE.md. Os itens 20 e 21 dependiam da premissa "não é arma" e foram decididos de novo em 2026-10-29. **Decidido também (2026-10-29), para os outros efeitos que falam de arma ou de ataque com arma:**
     - **Destruição Divina Aprimorada** (paladino 11, pág. 111) segue o inglês, "Whenever you hit a creature with a melee weapon, the creature takes an extra 1d8 radiant damage": exige **arma** corpo a corpo, e o golpe desarmado fica de fora. O pt-BR diz "Sempre que você atingir uma criatura com um ataque corpo-a-corpo" (linhas 9987-9989), o que abriria o efeito para todo ataque corpo a corpo, e a frase anterior, "todos os seus ataques corpo-a-corpo com arma" (linha 9986), alcançaria o golpe desarmado pela decisão 27. Ver o caso na lista pt-BR × inglês do CLAUDE.md.
     - **Ataque Descuidado** (bárbaro 2, pág. 48): o texto fica como está ("vantagem nas jogadas de ataque com armas corpo-a-corpo usando Força"). A vantagem é circunstância que o jogador marca na folha da receita, sem efeito declarado.
+28. **Redução fixa que alcança duas parcelas** (linhas 17816-17823; Maestria em Armadura Pesada, linhas 15210-15212). A redução vale uma vez por evento, sobre as parcelas do tipo que ela alcança (item 12), mas de qual delas os 3 saem primeiro? Sem outra defesa, a ordem não muda o total; com resistência, imunidade ou vulnerabilidade numa delas, muda (a metade arredonda por tipo: 4 cortante + 5 perfurante, petrificado, dá 0 + 2 ou 2 + 1). Sem decisão. O app não aplica a redução nesse caso e avisa (`unresolvedRule`), para a mesa decidir.

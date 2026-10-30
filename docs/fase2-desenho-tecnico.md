@@ -346,6 +346,16 @@ FeatureEffects.spellHealingBonus?: { base: number; perSpellLevel: number }   // 
 
 ### Tipos de dano e defesas no painel de PV (`defesas`)
 
+**Feita em 2026-10-30.** O que mudou em relação ao desenho abaixo:
+- `getDamageDefenses(draft)` não recebe sessão: `SheetSession` nasce na onda `efeitos-ativos`. A armadura é a do draft, como a CA, e a escolha da Resistência Demoníaca chega em `recursos-completos` (a linha já leva `sessionPick`).
+- `describeDamageDefenses` recebe a lista: a da ficha (Revisão, PDF) ou a do jogo, `getPlayDamageDefenses(state, sheet)`, com as das condições.
+- As situações ficam no singular, porque entram depois de "dano" na linha e na caixa: 'de magia', 'de ataque com arma não mágica' (o texto do Avatar da Batalha nos dados), 'de ataque não mágico' (Maestria), 'de armadilha'.
+- O Explorador de Cavernas entrou ('de armadilha'): o teste de cobertura o achou.
+- "Outro tipo" é dano sem tipo. Para a resistência `allExcept` (o Urso), que precisa saber o tipo, a onda `efeitos-ativos` decide os chips.
+- A redução que alcança duas parcelas, quando outra defesa faz a ordem mudar o resultado, não se aplica e vira `unresolvedRule` (Ponto em aberto 28 de `regras-dano-e-morte.md`, levado ao dono).
+- O ácido fica "dano de ácido", a forma que o app já mostrava; a p. 198 diz "dano ácido". Só redação.
+- O teste do ancestral ficou no `draconicAncestor.test.ts`, que já existia.
+
 - **Tamanho:** M
 - **Depende de:** nada
 

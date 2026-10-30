@@ -1156,6 +1156,27 @@ describe('getDamageDefenses e describeDamageDefenses', () => {
     ])
   })
 
+  it('opção escolhida em slot de progressão também declara defesa, como nas notas das jogadas', () => {
+    // Nenhuma opção do livro declara defesa hoje (a do Urso é efeito ligado): o teste põe uma por um
+    // instante, para a leitura não deixar de fora, em silêncio, a que vier.
+    const option = getProgressionOptions('hunter-superior-defense').find(o => o.id === 'stand-against-the-tide')
+    if (!option) throw new Error('a opção do Caçador sumiu')
+    const hunter = draft({
+      level: 15, class: 'ranger',
+      classChoices: {
+        ...structuredClone(EMPTY_DRAFT.classChoices), subclass: 'hunter',
+        progressionChoices: { 'hunter-superior-defense-15': ['stand-against-the-tide'] },
+      },
+    })
+    expect(lines(hunter)).toEqual([])
+    option.effects = { damageDefenses: { resistances: ['fire'] } }
+    try {
+      expect(lines(hunter)).toEqual(['Resistência a fogo (Manter-se Contra a Maré)'])
+    } finally {
+      delete option.effects
+    }
+  })
+
   it('sem defesa, nada: humano guerreiro, meio-orc bárbaro', () => {
     expect(getDamageDefenses(draft({ level: 5, class: 'fighter', race: 'human' }))).toEqual([])
     expect(getDamageDefenses(draft({ level: 5, class: 'barbarian', race: 'half-orc' }))).toEqual([])

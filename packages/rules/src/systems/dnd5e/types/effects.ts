@@ -443,7 +443,8 @@ export type FeatureEffects = {
   /**
    * Defesas contra dano e condição (Resistência Infernal, Pureza Corporal, Aura de Vigilância,
    * Maestria em Armadura Pesada). Lidas de features de classe e subclasse (no nível NA classe
-   * dona), talentos e traços raciais, por `getDamageDefenses`.
+   * dona), opções escolhidas em slot de progressão, talentos e traços raciais, por
+   * `getDamageDefenses`.
    */
   damageDefenses?: DamageDefenses
   /**

@@ -1608,7 +1608,10 @@ export type SheetDamageDefense = {
   sessionPick?: string
 }
 
-/** As declarações de defesa, com quem as dá: traços raciais, features de classe (nível NA classe) e talentos. */
+/**
+ * As declarações de defesa, com quem as dá: traços raciais, features de classe (nível NA classe),
+ * opções escolhidas em slot de progressão (como nas notas das jogadas) e talentos.
+ */
 function getDeclaredDamageDefenses(draft: CharacterDraft): { source: string; defenses: DamageDefenses }[] {
   const out: { source: string; defenses: DamageDefenses }[] = []
   for (const trait of getOwnedRacialTraits(draft)?.traits ?? []) {
@@ -1616,6 +1619,9 @@ function getDeclaredDamageDefenses(draft: CharacterDraft): { source: string; def
   }
   for (const feature of getOwnedClassFeatures(draft)) {
     if (feature.effects?.damageDefenses) out.push({ source: feature.name, defenses: feature.effects.damageDefenses })
+  }
+  for (const { option } of getOwnedProgressionOptions(draft)) {
+    if (option.effects?.damageDefenses) out.push({ source: option.name, defenses: option.effects.damageDefenses })
   }
   for (const feat of getOwnedFeats(draft)) {
     if (feat.effects?.damageDefenses) out.push({ source: feat.name, defenses: feat.effects.damageDefenses })

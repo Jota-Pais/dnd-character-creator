@@ -2,6 +2,7 @@
   "files": [],
   "references": [
     { "path": "./packages/rules" },
+    { "path": "./packages/rules/tsconfig.test.json" },
     { "path": "./apps/web" },
     { "path": "./apps/mobile" },
     { "path": "./tsconfig.node.json" }

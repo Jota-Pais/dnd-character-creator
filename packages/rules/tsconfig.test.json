@@ -1,0 +1,12 @@
+{
+  /* Os testes do motor, que rodam no Node pelo Vitest: o import.meta.glob (o Vitest roda sobre o
+     Vite) pede os tipos do Vite, e o teste da fronteira lê arquivos com o Node. O código do motor
+     não tem nenhum dos dois (tsconfig.json). */
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.test.tsbuildinfo",
+    "types": ["vite/client", "node"]
+  },
+  "include": ["src/**/__tests__", "src/test", "src/runtime.d.ts"],
+  "exclude": []
+}

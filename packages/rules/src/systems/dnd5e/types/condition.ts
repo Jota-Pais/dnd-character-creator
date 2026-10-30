@@ -1,3 +1,4 @@
+import type { DamageTypeId } from './damage'
 import type { AbilityScore } from './race'
 
 /**
@@ -64,15 +65,12 @@ export type HpMaxEffect = { kind: 'hpMax'; op: 'half'; scope: 'sheet' }
 /** Resistência a todos os tipos de dano (Petrificado). */
 export type DamageResistanceEffect = { kind: 'damageResistance'; types: 'all'; scope: 'sheet' }
 
-/** Tipos de dano a que uma condição dá imunidade (Petrificado: veneno, pág. 293). */
-export type ImmuneDamageType = 'poison'
-
 /**
  * Imunidade a um tipo de dano: o dano desse tipo vira 0 no rastreador de PV (Petrificado "imune a
- * veneno", decisão de 2026-10-25). `damageLabel` é o dano por extenso, para a tela ("dano de
- * veneno"; um tipo adjetivo seria "dano elétrico") — nunca montar "dano de ${tipo}".
+ * veneno", pág. 293, decisão de 2026-10-25). O dano por extenso, para a tela ("dano de veneno"),
+ * sai de `damage-types.json` (`getDamageLabel`) — nunca montar "dano de ${tipo}".
  */
-export type DamageImmunityEffect = { kind: 'damageImmunity'; damageType: ImmuneDamageType; damageLabel: string; scope: 'sheet' }
+export type DamageImmunityEffect = { kind: 'damageImmunity'; damageType: DamageTypeId; scope: 'sheet' }
 
 /** Efeitos que mexem no estado de jogo, sem número. */
 export type StateEffect = {

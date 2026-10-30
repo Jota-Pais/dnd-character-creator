@@ -1,12 +1,15 @@
-import type { Armor, DamageRoll, DamageType, Weapon, WeaponProperty } from '../types/equipment'
+import type { Armor, DamageRoll, Weapon, WeaponProperty } from '../types/equipment'
+import type { DamageTypeId } from '../types/damage'
 import type { AttackScope, LoadingOverride, WeaponAttackEffect } from '../types/effects'
+import { DAMAGE_TYPES, getDamageTypeName } from './damageTypes'
 
-/** Nomes em português dos tipos de dano (padrão do PHB pt-BR, como usado em classes.json). */
-export const DAMAGE_TYPE_PT: Record<DamageType, string> = {
-  bludgeoning: 'concussão',
-  piercing: 'perfurante',
-  slashing: 'cortante',
-}
+/**
+ * Os tipos de dano em português, em minúsculas, como vêm depois do dado ("1d8 perfurante").
+ * Derivados de `damage-types.json`, a fonte única dos nomes.
+ */
+export const DAMAGE_TYPE_PT = Object.fromEntries(
+  DAMAGE_TYPES.map(t => [t.id, getDamageTypeName(t.id)]),
+) as Record<DamageTypeId, string>
 
 /** "1d8", "2d6", "1" (dano fixo) ou "—" (sem dano). */
 export function formatDamageRoll(damage: DamageRoll | null): string {

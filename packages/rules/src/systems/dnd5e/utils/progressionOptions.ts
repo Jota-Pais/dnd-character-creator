@@ -15,7 +15,9 @@ import type { FeatureEffects } from '../types/effects'
 import type { ClassEntry } from '../types/character'
 import type { LevelFeature } from '../types/class'
 import { FIGHTING_STYLES, getClass } from './classUtils'
+import type { DamageTypeId } from '../types/damage'
 import { DRAGON_ANCESTORS } from './dragonAncestors'
+import { getDamageLabel, getDamageTypeName } from './damageTypes'
 import {
   getActivePicks, getProgressionSlots, getProgressionSlotsUpToLevel, isSpellChoiceSlot, SPELL_OPTIONS_LIST_ID,
   type ProgressionSlot,
@@ -42,10 +44,11 @@ export type ProgressionOption = {
    * convocar familiar, p. 58). Derivadas, nunca gravadas no draft (getGrantedSpellGroups).
    */
   grantsSpells?: string[]
-  /** Tipo de dano da opção (Ancestral Dracônico: "Fogo"), que a Afinidade Elemental mostra (p. 80). */
-  damageType?: string
-  /** O dano por extenso, da tabela ("dano de fogo", "dano elétrico"); nunca montado do tipo. */
-  damageLabel?: string
+  /**
+   * Tipo de dano da opção (Ancestral Dracônico: fogo), que a Afinidade Elemental mostra (p. 80). O
+   * nome e o dano por extenso saem de `damage-types.json`; nunca montados aqui.
+   */
+  damageType?: DamageTypeId
 }
 
 export function getProgressionOptions(optionsListId: string): ProgressionOption[] {
@@ -69,9 +72,8 @@ export function getProgressionOptions(optionsListId: string): ProgressionOption[
       return DRAGON_ANCESTORS.map(a => ({
         id: a.id,
         name: a.name,
-        description: `Tipo de dano: ${a.damageType.toLowerCase()}.`,
+        description: `Tipo de dano: ${getDamageTypeName(a.damageType)}.`,
         damageType: a.damageType,
-        damageLabel: a.damageLabel,
       }))
     case SPELL_OPTIONS_LIST_ID:
       // Todas as magias do jogo; o seletor corta pelo nível com getSecretSpellOptions.
@@ -269,7 +271,7 @@ function getPickedOption(entry: ClassEntry, slotId: string): ProgressionOption |
 
 /** "Vermelho (dano de fogo)", "Azul (dano elétrico)" — a opção com o dano, quando tem. */
 function describeShortPick(option: ProgressionOption): string {
-  return option.damageLabel ? `${option.name} (${option.damageLabel})` : option.name
+  return option.damageType ? `${option.name} (${getDamageLabel(option.damageType)})` : option.name
 }
 
 /**
@@ -283,7 +285,7 @@ export function describeFeaturePick(entry: ClassEntry, feature: LevelFeature): {
   const option = getPickedOption(entry, feature.showsPick.slot)
   if (!option) return null
   if (feature.showsPick.as === 'damageType' && option.damageType) {
-    return { label: 'Tipo de dano', text: `${option.damageType.toLowerCase()} (ancestral ${option.name})` }
+    return { label: 'Tipo de dano', text: `${getDamageTypeName(option.damageType)} (ancestral ${option.name})` }
   }
   return { label: 'Escolha', text: describeShortPick(option) }
 }

@@ -11,6 +11,7 @@ import {
   type ConditionState,
 } from '../sheetEffects'
 import type { ConditionId, ExhaustionLevel } from '../../types/condition'
+import { getDamageLabel } from '../damageTypes'
 
 const ALL: ConditionId[] = [
   'blinded', 'charmed', 'deafened', 'frightened', 'grappled', 'incapacitated', 'invisible',
@@ -38,13 +39,14 @@ describe('catálogo de condições', () => {
     }
   })
 
-  it('imunidade a dano guarda o dano por extenso, como a tabela do Ancestral Dracônico', () => {
-    // A tela usa o texto direto ("Imune a dano de veneno"): montar "dano de ${tipo}" daria
+  it('imunidade a dano aponta para o tipo; o dano por extenso sai de damage-types.json', () => {
+    // A tela usa o texto da tabela ("Imune a dano de veneno"): montar "dano de ${tipo}" daria
     // "dano de elétrico" num tipo adjetivo.
     const immunities = CONDITIONS.flatMap(c => c.effects).filter(e => e.kind === 'damageImmunity')
-    expect(immunities.map(e => [e.damageType, e.damageLabel])).toEqual([['poison', 'dano de veneno']])
+    expect(immunities.map(e => e.damageType)).toEqual(['poison'])
+    expect(immunities.map(e => getDamageLabel(e.damageType))).toEqual(['dano de veneno'])
     expect(active(['petrified']).damageImmunities).toEqual([
-      { damageType: 'poison', damageLabel: 'dano de veneno', sources: [{ source: 'condition:petrified', label: 'Petrificado' }] },
+      { damageType: 'poison', sources: [{ source: 'condition:petrified', label: 'Petrificado' }] },
     ])
   })
 

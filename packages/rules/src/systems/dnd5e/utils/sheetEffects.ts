@@ -1227,8 +1227,9 @@ export function getClassFeatureSavingThrows(draft: CharacterDraft): AbilityScore
 
 import conditionsData from '../data/conditions.json'
 import type {
-  Condition, ConditionCatalog, ConditionEffect, ConditionId, ExhaustionLevel, ImmuneDamageType, RollMode,
+  Condition, ConditionCatalog, ConditionEffect, ConditionId, ExhaustionLevel, RollMode,
 } from '../types/condition'
+import type { DamageTypeId } from '../types/damage'
 
 const CONDITION_CATALOG = conditionsData as ConditionCatalog
 
@@ -1322,7 +1323,7 @@ export type ActiveConditionEffects = {
 }
 
 /** Imunidade ativa a um tipo de dano: o dano desse tipo vira 0 no rastreador de PV. */
-export type ConditionDamageImmunity = { damageType: ImmuneDamageType; damageLabel: string; sources: ConditionSource[] }
+export type ConditionDamageImmunity = { damageType: DamageTypeId; sources: ConditionSource[] }
 
 /**
  * Vantagem e desvantagem (pág. 175): várias do mesmo lado valem uma; uma de cada lado anula,
@@ -1487,7 +1488,7 @@ export function getActiveConditionEffects(state: ConditionState): ActiveConditio
       case 'damageImmunity': {
         const existing = immunities.find(i => i.damageType === effect.damageType)
         if (existing) existing.sources.push(source)
-        else immunities.push({ damageType: effect.damageType, damageLabel: effect.damageLabel, sources: [source] })
+        else immunities.push({ damageType: effect.damageType, sources: [source] })
         break
       }
       case 'noActions':

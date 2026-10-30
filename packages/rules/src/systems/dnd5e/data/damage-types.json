@@ -1,0 +1,15 @@
+[
+  { "id": "acid",        "name": "Ácido",      "damageLabel": "dano de ácido" },
+  { "id": "bludgeoning", "name": "Concussão",  "damageLabel": "dano de concussão" },
+  { "id": "slashing",    "name": "Cortante",   "damageLabel": "dano cortante" },
+  { "id": "lightning",   "name": "Elétrico",   "damageLabel": "dano elétrico" },
+  { "id": "force",       "name": "Energia",    "damageLabel": "dano de energia" },
+  { "id": "fire",        "name": "Fogo",       "damageLabel": "dano de fogo" },
+  { "id": "cold",        "name": "Frio",       "damageLabel": "dano de frio" },
+  { "id": "necrotic",    "name": "Necrótico",  "damageLabel": "dano necrótico" },
+  { "id": "piercing",    "name": "Perfurante", "damageLabel": "dano perfurante" },
+  { "id": "psychic",     "name": "Psíquico",   "damageLabel": "dano psíquico" },
+  { "id": "radiant",     "name": "Radiante",   "damageLabel": "dano radiante" },
+  { "id": "thunder",     "name": "Trovejante", "damageLabel": "dano trovejante" },
+  { "id": "poison",      "name": "Veneno",     "damageLabel": "dano de veneno" }
+]

@@ -1,3 +1,5 @@
+import type { DamageTypeId } from './damage'
+
 // Custo armazenado canonicamente em peças de cobre (pc).
 // null  = sem preço publicado no PHB (item não vendido individualmente)
 // 0     = item narrativo de antecedente (concedido gratuitamente)
@@ -11,7 +13,8 @@ export type DamageRoll =
   | { flat: number }
 
 // --- Armas ---
-export type DamageType = 'bludgeoning' | 'piercing' | 'slashing'
+// As armas do livro só causam os três tipos físicos (tabela Armas, p. 151); os 13 tipos moram em types/damage.ts.
+export type DamageType = Extract<DamageTypeId, 'bludgeoning' | 'piercing' | 'slashing'>
 export type WeaponCategory = 'simple' | 'martial'
 export type WeaponType = 'melee' | 'ranged'
 

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { DRAGON_ANCESTORS } from '../dragonAncestors'
+import { getDamageType } from '../damageTypes'
 import {
   getRace,
   getSubrace,
@@ -301,7 +302,7 @@ describe('draconato: área da Arma de Sopro por ancestral (tabela Ancestral Drac
 
 describe('tabela Ancestral Dracônico (pp. 34 e 80)', () => {
   it('dez dragões, com o tipo de dano do livro', () => {
-    expect(DRAGON_ANCESTORS.map(a => `${a.name}: ${a.damageType}`)).toEqual([
+    expect(DRAGON_ANCESTORS.map(a => `${a.name}: ${getDamageType(a.damageType).name}`)).toEqual([
       'Azul: Elétrico', 'Branco: Frio', 'Bronze: Elétrico', 'Cobre: Ácido', 'Latão: Fogo',
       'Negro: Ácido', 'Ouro: Fogo', 'Prata: Frio', 'Verde: Veneno', 'Vermelho: Fogo',
     ])

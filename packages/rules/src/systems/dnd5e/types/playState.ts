@@ -1,6 +1,7 @@
 import type { RollRecord } from '../../../core/dice'
 import type { SheetResource } from '../utils/classResourceUtils'
-import type { ConditionId, ExhaustionLevel, ImmuneDamageType } from './condition'
+import type { ConditionId, ExhaustionLevel } from './condition'
+import type { DamageTypeId } from './damage'
 import type { AbilityScore } from './race'
 
 /**
@@ -176,7 +177,7 @@ export type DamageInput = {
    * O tipo do dano, quando a tela o pergunta: só para as imunidades das condições (Petrificado:
    * veneno vira 0). Sem ele, nenhuma imunidade se aplica.
    */
-  damageType?: ImmuneDamageType
+  damageType?: DamageTypeId
 }
 
 export type PlayNoticeKind =

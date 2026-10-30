@@ -8,6 +8,7 @@ import spellsData from '../data/spells.json'
 import { getFeat } from './featUtils'
 import { ABILITY_LABELS, formatMeters } from './abilityScoreUtils'
 import { getDragonAncestor } from './dragonAncestors'
+import { getDamageType } from './damageTypes'
 
 /**
  * Nome de cada ferramenta, lido de tools.json: o mesmo da etapa Raça, da Revisão e da ficha. Era
@@ -44,7 +45,7 @@ function withDragonAncestorTraits(subrace: Subrace): Subrace {
   return {
     ...subrace,
     traits: [
-      { name: 'Tipo de Dano', description: `${ancestor.damageType}.` },
+      { name: 'Tipo de Dano', description: `${getDamageType(ancestor.damageType).name}.` },
       { name: 'Área do Sopro', description: ancestor.breath },
       ...subrace.traits,
     ],

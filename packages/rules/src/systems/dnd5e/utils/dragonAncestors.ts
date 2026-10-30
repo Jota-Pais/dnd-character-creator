@@ -1,4 +1,5 @@
 import dragonAncestorsData from '../data/dragon-ancestors.json'
+import type { DamageTypeId } from '../types/damage'
 
 /**
  * Uma linha da tabela Ancestral Dracônico. O livro a imprime duas vezes — no draconato (p. 34,
@@ -11,13 +12,11 @@ export type DragonAncestor = {
   id: string
   /** O dragão, como na tabela: "Vermelho", "Latão". */
   name: string
-  /** O tipo de dano associado, como na tabela: "Fogo", "Elétrico". */
-  damageType: string
   /**
-   * O dano por extenso, na forma do livro: "dano de fogo", mas "dano elétrico" — o adjetivo
-   * dispensa o "de". Guardado no dado para ninguém montar "dano de ${tipo}" ("dano de elétrico").
+   * O tipo de dano associado. O nome ("Fogo", "Elétrico") e o dano por extenso ("dano de fogo",
+   * "dano elétrico") saem de `damage-types.json` (`getDamageType`), sem cópia aqui.
    */
-  damageLabel: string
+  damageType: DamageTypeId
   /** Área e teste da arma de sopro do draconato (p. 34). */
   breath: string
 }

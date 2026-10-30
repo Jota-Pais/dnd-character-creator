@@ -1,11 +1,12 @@
 import { useId, useRef, useState, useSyncExternalStore, type FormEvent } from 'react'
 import { flushSync } from 'react-dom'
-import type { ImmuneDamageType } from '@rpg/rules/systems/dnd5e/types/condition'
+import type { DamageTypeId } from '@rpg/rules/systems/dnd5e/types/damage'
 import type { PlayResult } from '@rpg/rules/systems/dnd5e/types/playState'
 import {
   adjustMaxHp, applyDamage, applyHealing, formatHpAdjustment, getPlayConditionEffects, grantTempHp, isAtZeroHp,
   suggestTempHpChoice,
 } from '@rpg/rules/systems/dnd5e/utils/playState'
+import { getDamageLabel } from '@rpg/rules/systems/dnd5e/utils/damageTypes'
 import { parseHpEntry, resolveHpAction, stripHpSign, type HpAction } from './hpEntry'
 import type { PlayView } from './usePlayView'
 
@@ -85,7 +86,7 @@ export function HpPanel({ view }: { view: PlayView }) {
   const [text, setText] = useState('')
   const [resisted, setResisted] = useState(false)
   const [critical, setCritical] = useState(false)
-  const [immuneTo, setImmuneTo] = useState<ImmuneDamageType | null>(null)
+  const [immuneTo, setImmuneTo] = useState<DamageTypeId | null>(null)
   const [knockout, setKnockout] = useState(false)
   const atZero = isAtZeroHp(state)
   // Nocaute (pág. 200): só faz sentido para quem ainda está de pé — é o golpe que levaria a 0 PV.
@@ -235,7 +236,7 @@ export function HpPanel({ view }: { view: PlayView }) {
                   onChange={e => setImmuneTo(e.target.checked ? i.damageType : null)}
                   className="w-5 h-5 shrink-0 accent-gold-500"
                 />
-                É {i.damageLabel} ({i.sources.map(s => s.label).join(', ')}: imune, não sofre nada)
+                É {getDamageLabel(i.damageType)} ({i.sources.map(s => s.label).join(', ')}: imune, não sofre nada)
               </label>
             ))}
             {atZero && (

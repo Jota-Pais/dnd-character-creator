@@ -1,0 +1,114 @@
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+
+apply plugin: 'com.android.application'
+
+// A versão do APK (docs/app-android.md, "Subir a versão"). O versionCode sobe 1 a cada APK
+// distribuído (o Android só instala por cima um número maior); o versionName é o que a pessoa vê.
+// Quando o site passar a depender do APK novo, o mínimo em apps/web/public/app-version.json sobe
+// para este versionCode.
+def forjaVersionCode = 1
+def forjaVersionName = '0.1.0'
+
+android {
+    namespace = "io.github.jotapais.forja"
+    compileSdk = rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId "io.github.jotapais.forja"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode forjaVersionCode
+        versionName forjaVersionName
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    buildTypes {
+        debug {
+            // A variante de teste se instala ao lado do APK da turma, com o próprio nome.
+            applicationIdSuffix = '.teste'
+            versionNameSuffix = '-teste'
+            resValue 'string', 'title_activity_main', 'Forja (teste)'
+        }
+        release {
+            minifyEnabled = false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+/**
+ * A variante de teste aberta num servidor local (docs/app-android.md, "Testar com o site local"):
+ * com FORJA_DEV_URL na hora do build (ex.: http://localhost:5263, com `adb reverse`), o
+ * capacitor.config.json do debug passa a abrir esse endereço. O do release nunca muda: o `cap sync`
+ * o grava com o site publicado, e só o debug leva a cópia daqui, que vale por cima da do main.
+ */
+abstract class ForjaDevServerConfig extends DefaultTask {
+    @InputFile
+    abstract RegularFileProperty getBaseConfig()
+
+    @Input
+    abstract Property<String> getDevUrl()
+
+    @OutputDirectory
+    abstract DirectoryProperty getOutputDir()
+
+    @TaskAction
+    void write() {
+        def out = outputDir.get().asFile
+        out.deleteDir()
+        out.mkdirs()
+        def url = devUrl.get()
+        if (!url) {
+            return
+        }
+        def config = new JsonSlurper().parse(baseConfig.get().asFile)
+        def uri = new URI(url)
+        config.server.url = url
+        config.server.allowNavigation = [uri.host]
+        config.server.cleartext = uri.scheme == 'http'
+        // O emulador desta máquina tem o WebView 109: a variante de teste abre nele assim mesmo,
+        // para conferir a casca (o que pede o 111 pode sair errado lá).
+        config.android?.remove('minWebViewVersion')
+        new File(out, 'capacitor.config.json').text = JsonOutput.prettyPrint(JsonOutput.toJson(config))
+    }
+}
+
+androidComponents {
+    onVariants(selector().withBuildType('debug')) { variant ->
+        def task = project.tasks.register("forjaDevServerConfig${variant.name.capitalize()}", ForjaDevServerConfig) {
+            baseConfig = project.layout.projectDirectory.file('src/main/assets/capacitor.config.json')
+            devUrl = project.providers.environmentVariable('FORJA_DEV_URL').orElse('')
+        }
+        variant.sources.assets.addGeneratedSourceDirectory(task, { it.outputDir })
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.activity:activity:$androidxActivityVersion"
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}

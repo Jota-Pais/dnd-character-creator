@@ -3,6 +3,7 @@
   "references": [
     { "path": "./packages/rules" },
     { "path": "./apps/web" },
+    { "path": "./apps/mobile" },
     { "path": "./tsconfig.node.json" }
   ]
 }

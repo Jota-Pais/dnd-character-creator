@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Só a variante de teste: ela pode abrir o servidor local por http (FORJA_DEV_URL; ver o
+     app/build.gradle e docs/app-android.md). O APK de release segue sem tráfego aberto. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application
+        android:usesCleartextTraffic="true"
+        tools:replace="android:usesCleartextTraffic" />
+</manifest>

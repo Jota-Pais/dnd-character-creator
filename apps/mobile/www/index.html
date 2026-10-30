@@ -1,0 +1,109 @@
+<!doctype html>
+<!--
+  A página de erro do APK (server.errorPath do capacitor.config.ts; docs/app-android.md). O app abre
+  o site publicado, e o service worker dele o abre sem rede depois da primeira vez: esta página só
+  aparece sem rede e sem essa cópia (a primeira abertura), quando o site não responde ou com o
+  WebView velho demais. Mora no APK, fora da origem do site: não tem o Capacitor nem as fontes
+  dele, por isso tudo aqui é local e as fontes são as do aparelho.
+-->
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark" />
+    <title>Forja de Heróis</title>
+    <style>
+      :root {
+        --surface-base: #0e0a06;
+        --surface-raised: #141008;
+        --parchment-200: #e8d5b7;
+        --parchment-400: #c9a883;
+        --parchment-800: #3a2614;
+        --gold-400: #f0b429;
+        --gold-500: #d4900a;
+        --on-accent: #0a0704;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; min-height: 100%; }
+      body {
+        min-height: 100dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right))
+          max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+        background: radial-gradient(circle at 50% 35%, #3a2614 0%, var(--surface-base) 60%);
+        background-color: var(--surface-base);
+        color: var(--parchment-400);
+        font-family: Georgia, 'Noto Serif', serif;
+        font-size: 16px;
+        line-height: 1.6;
+        text-align: center;
+      }
+      main { max-width: 22rem; }
+      svg { width: 72px; height: 72px; }
+      .app { margin: 12px 0 28px; font-size: 13px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold-500); }
+      h1 { margin: 0 0 8px; font-size: 22px; font-weight: bold; color: var(--parchment-200); }
+      p { margin: 0 0 24px; }
+      button {
+        min-height: 44px;
+        padding: 0 24px;
+        border: 0;
+        border-radius: 12px;
+        background: var(--gold-500);
+        color: var(--on-accent);
+        font: inherit;
+        font-weight: bold;
+      }
+      button:focus-visible { outline: 2px solid var(--gold-400); outline-offset: 3px; }
+      .status { min-height: 1.6em; margin: 16px 0 0; font-size: 14px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <!-- O d20 do favicon e dos ícones do app. -->
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <polygon points="50,5 95,25 95,75 50,95 5,75 5,25" fill="#facc15" stroke="#b45309" stroke-width="4" stroke-linejoin="round" />
+        <polyline points="5,25 50,45 95,25" fill="none" stroke="#b45309" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+        <line x1="50" y1="45" x2="50" y2="95" stroke="#b45309" stroke-width="3" stroke-linecap="round" />
+        <polyline points="50,5 50,45" fill="none" stroke="#b45309" stroke-width="3" stroke-linecap="round" />
+        <polyline points="5,75 50,45 95,75" fill="none" stroke="#b45309" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+        <polygon points="30,30 70,30 50,70" fill="#fef08a" stroke="#b45309" stroke-width="3" stroke-linejoin="round" />
+        <text x="50" y="55" font-family="Georgia, serif" font-weight="bold" font-size="20" fill="#78350f" text-anchor="middle" alignment-baseline="middle">20</text>
+      </svg>
+      <div class="app">Forja de Heróis</div>
+
+      <h1 id="title">Sem conexão</h1>
+      <p id="message">Abra o app uma vez com internet. Depois disso, ele abre também sem rede, com as suas fichas.</p>
+      <button id="retry" type="button">Tentar de novo</button>
+      <!-- Região viva montada vazia: o aviso de que ainda não há rede entra depois do toque. -->
+      <p class="status" id="status" aria-live="polite"></p>
+    </main>
+
+    <script>
+      // O mesmo mínimo do `MIN_WEBVIEW_VERSION` do capacitor.config.ts (o teste do apps/mobile
+      // confere): abaixo dele, o Capacitor nem tenta abrir o site e manda para cá.
+      var MIN_WEBVIEW_VERSION = 111
+      var match = /Chrome\/(\d+)/.exec(navigator.userAgent)
+      var webViewVersion = match ? Number(match[1]) : 0
+
+      if (webViewVersion > 0 && webViewVersion < MIN_WEBVIEW_VERSION) {
+        document.getElementById('title').textContent = 'Atualize o WebView do Android'
+        document.getElementById('message').textContent =
+          'O app precisa de uma versão mais nova do “Android System WebView”. Atualize-o pela Play Store e abra o app de novo.'
+      }
+
+      // O caminho que a casca nativa entende como "abrir o site de novo" (ErrorPagePlugin.java).
+      // Sem rede, nem tenta: o aviso diz e a página fica.
+      document.getElementById('retry').addEventListener('click', function () {
+        var status = document.getElementById('status')
+        if (!navigator.onLine) {
+          status.textContent = 'Ainda sem internet. Ligue o Wi-Fi ou os dados móveis.'
+          return
+        }
+        status.textContent = 'Abrindo…'
+        window.location.href = '/tentar-de-novo'
+      })
+    </script>
+  </body>
+</html>

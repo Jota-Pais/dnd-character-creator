@@ -7,7 +7,8 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
   // .claude/worktrees: cópias do repositório de sessões paralelas, cada uma com o próprio lint.
-  globalIgnores(['**/dist', '.claude']),
+  // apps/mobile/android: o projeto nativo; o JS de lá é o do Capacitor, copiado pelo build.
+  globalIgnores(['**/dist', '.claude', 'apps/mobile/android']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

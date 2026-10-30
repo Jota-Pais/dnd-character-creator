@@ -42,11 +42,12 @@ export function downloadJsonFile(fileName: string, data: unknown): void {
 /**
  * Abre o seletor de arquivo de um `<input type="file">` (os "Importar"). No APK, o seletor é uma
  * tela do Android por cima do app: a ida ao segundo plano é do próprio app (`markOwnTrip`), e a
- * volta com o arquivo não aplica a versão nova no meio da importação.
+ * volta com o arquivo não aplica a versão nova no meio da importação. No navegador, só o seletor:
+ * lá a volta não aplica nada, e a marca ficaria esperando uma ida que ninguém conta.
  */
-export function pickFile(input: HTMLInputElement | null): void {
+export function pickFile(input: HTMLInputElement | null, native: boolean = isNativeApp()): void {
   if (!input) return
-  markOwnTrip()
+  if (native) markOwnTrip()
   input.click()
 }
 

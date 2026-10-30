@@ -1,6 +1,7 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
-import { BLOB_URL_LIFETIME_MS, downloadJsonFile, saveJsonFile } from '../download'
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
+import { BLOB_URL_LIFETIME_MS, downloadJsonFile, pickFile, saveJsonFile } from '../download'
 import { saveTextFileNative } from '../../native/nativeShell'
+import { isOwnTripPending, takeOwnTrip } from '../../native/backgroundTrips'
 
 // O "Salvar como" do APK, de mentira: no jsdom não há a casca.
 vi.mock('../../native/nativeShell', () => ({ saveTextFileNative: vi.fn() }))
@@ -67,5 +68,38 @@ describe('saveJsonFile', () => {
     saveJsonFile('fichas.json', { a: 1 }, onSaved, true)
     await vi.waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1))
     expect(clicked).toHaveLength(0)
+  })
+})
+
+describe('pickFile: o seletor de arquivo dos "Importar"', () => {
+  beforeEach(() => {
+    takeOwnTrip()
+  })
+
+  function fileInput() {
+    const input = document.createElement('input')
+    input.type = 'file'
+    const click = vi.spyOn(input, 'click').mockImplementation(() => {})
+    return { input, click }
+  }
+
+  // A volta do seletor traz o arquivo: a versão nova não pode recarregar a página ali.
+  it('no APK, marca a ida do seletor como do próprio app e o abre', () => {
+    const { input, click } = fileInput()
+    pickFile(input, true)
+    expect(click).toHaveBeenCalledTimes(1)
+    expect(isOwnTripPending()).toBe(true)
+  })
+
+  it('no navegador e no iPhone, só abre o seletor: lá a volta não aplica nada', () => {
+    const { input, click } = fileInput()
+    pickFile(input, false)
+    expect(click).toHaveBeenCalledTimes(1)
+    expect(isOwnTripPending()).toBe(false)
+  })
+
+  it('sem o campo (ainda não montado), nada', () => {
+    pickFile(null, true)
+    expect(isOwnTripPending()).toBe(false)
   })
 })

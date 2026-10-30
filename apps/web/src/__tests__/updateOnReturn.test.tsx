@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, fireEvent, cleanup } from '@testing-library/react'
+import { Capacitor } from '@capacitor/core'
 import App from '../App'
 import {
   applyUpdateOnReturn,
@@ -53,7 +54,10 @@ beforeEach(() => {
   useAppStore.getState().setActiveSystem(null)
   takeOwnTrip()
 })
-afterEach(() => cleanup())
+afterEach(() => {
+  cleanup()
+  vi.restoreAllMocks()
+})
 
 describe('a versão nova entra sozinha na volta à galeria (APK), só com ela parada', () => {
   it('com o menu "Novo personagem" aberto, não; fechado, sim', () => {
@@ -86,6 +90,7 @@ describe('a versão nova entra sozinha na volta à galeria (APK), só com ela pa
 
   // A volta do seletor traz o arquivo: recarregar ali perderia a importação.
   it('o "Importar" marca a ida do seletor de arquivo: a volta dela não aplica, a seguinte sim', () => {
+    vi.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(true)
     render(<App />)
     const { away, applied } = waitingVersion()
     fireEvent.click(screen.getByText('↑ Importar'))

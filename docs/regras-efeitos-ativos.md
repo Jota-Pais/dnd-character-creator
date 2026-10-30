@@ -1,9 +1,9 @@
 # Efeitos ativos — D&D 5e (PHB 2014)
 
-> **Fonte:** Livro do Jogador pt-BR. Cap. 3, o Bárbaro: Fúria (pág. 48, linhas 3643-3672), Fúria Implacável (pág. 49, linhas 3733-3742), Fúria Persistente (pág. 49, linhas 3743-3746), Frenesi (pág. 49, linhas 3770-3776), Fúria Inconsciente (pág. 49, linhas 3778-3781) e os totens do Guerreiro Totêmico (pág. 50, linhas 3842-3857 e 3890-3905); Cap. 8, a duração dos descansos (pág. 188, linhas 16797-16798 e 16812-16813); Cap. 10, "Combinando Efeitos Mágicos" (pág. 207, linhas 18487-18498).
+> **Fonte:** Livro do Jogador pt-BR. Cap. 3, o Bárbaro: Fúria (pág. 48, linhas 3643-3672), Fúria Implacável (pág. 49, linhas 3733-3742), Fúria Persistente (pág. 49, linhas 3743-3746), Frenesi (pág. 49, linhas 3770-3776), Fúria Inconsciente (pág. 49, linhas 3778-3781) e os totens do Guerreiro Totêmico (pág. 50, linhas 3842-3857 e 3890-3905); Cap. 8, a duração dos descansos (pág. 188, linhas 16797-16798 e 16812-16813); Cap. 10, "Combinando Efeitos Mágicos" (pág. 207, linhas 18487-18498); as magias e ações recebidas da seção 7 (Cap. 9 e 11, cada uma com as linhas dela).
 > Digitalizado do extrato `docs/_book-extracts/dnd-phb.txt`. É a **fonte da verdade documental** dos efeitos ligados do modo de jogo (Fase 2, onda `efeitos-ativos`; desenho em `docs/fase2-desenho-tecnico.md`). A página citada é a impressa no pt-BR (o número logo depois do marcador `PAGINA` do extrato: marcador + 1 até o 188, + 2 a partir do 189).
 >
-> As seções 1 a 4 são regra do livro, com as decisões do dono. A seção 5 traz as notas de implementação e **não** é regra. A seção 6 lista o que fica em aberto.
+> As seções 1 a 4 e 7 são regra do livro, com as decisões do dono. A seção 5 traz as notas de implementação e **não** é regra. A seção 6 lista o que fica em aberto.
 
 ## 1. Fúria (pág. 48, linhas 3643-3672)
 
@@ -92,8 +92,97 @@ A vantagem da Fúria entra na mesma escada das condições (pág. 175): várias 
 
 - **A falha no teste da Fúria Implacável conta como uso?** "Cada vez que você utilizar essa característica após a primeira, a CD aumenta em 5" (linhas 3740-3741): o texto não diz se usar é fazer o teste ou passar nele. Hoje o app só conta quem passa (o "Passei"); quem falha não registra nada, e a próxima CD fica a mesma. Levado ao dono, com a recomendação da revisão: contar a tentativa ("você pode realizar um teste", linha 3737), com um "Falhei" no aviso que soma o uso sem mudar o PV, no mesmo passo do desfazer.
 - **A oferta quando a própria queda mata** (linhas 3736-3738, "e não morrer"): o Furioso 11 em Frenesi na exaustão 5 que cai a 0 PV morre pela exaustão 6 que o fim da fúria traz, e o aviso oferece o teste mesmo assim. Ver o Ponto em aberto 29 de `regras-dano-e-morte.md`, que vale também para a Resistência Implacável.
+- **O Auxílio Divino na Rede** (linhas 20519-20521, "seus ataques com arma causam 1d4 de dano radiante extra ao atingirem"): a Rede acerta sem causar dano (pág. 150, linhas 13476-13488, e a tabela de armas, linha 13548). O 1d4 radiante vem assim mesmo? Hoje a linha da Rede continua sem dano, como antes da onda. Levado ao dono, com a recomendação: sim, a Rede é arma e o acerto causa o 1d4 radiante.
+- **O mínimo 0 com dano extra de outro tipo** (item 14 e decisões 25 e 27 de `regras-dano-e-morte.md`): o golpe desarmado com Força 6-7 dá 1 − 2 = −1 de concussão; com o Auxílio Divino, o piso 0 vale sobre o total (−1 + 1d4) ou por parcela (0 concussão + 1d4 radiante)? Hoje a linha fica como antes da onda — a concussão com o mínimo 0 dela — e o 1d4 radiante vem à parte. Levado ao dono, com a recomendação: por parcela, porque o pipeline aplica as defesas por tipo (item 12) e o painel de PV recebe as parcelas por tipo.
 
 Decididos em 2026-10-30 (pelo texto do livro) e feitos na leva `ajustes-leva-1`:
 - **A fúria na morte que não passa pelo Inconsciente** (a instantânea e a da exaustão 6): acaba, como na queda (seção 1).
 - **A Fúria Implacável** entrou antes da onda `recursos-completos` (seções 2.4 e 5).
 - **As Auras de Coragem (paladino 10, pág. 111, linhas 9978-9981) e de Devoção (Juramento de Devoção 7, pág. 112, linhas 10105-10108)** valem como imunidade a condição do próprio paladino, só enquanto ele estiver consciente; os aliados ficam fora, porque o app é a ficha individual (`regras-dano-e-morte.md`, "Resistências e vulnerabilidades do personagem").
+
+## 7. Efeitos recebidos: magias e ações (onda `efeitos-recebidos`, 2026-10-30)
+
+O catálogo `data/active-effects.json` traz as magias e ações que se marcam em você. Cada entrada declara só o que o efeito faz, com a página e as linhas do extrato; o nome, o texto, a duração, o alcance e a concentração são os de `spells.json`. Qualquer ficha liga a que um aliado conjura nela; as de alcance Pessoal (Escudo Arcano, Auxílio Divino), só quem as conhece (decisão do desenho, "Respondidas no desenho").
+
+### 7.1 Bênção (pág. 223, linhas 20595-20607)
+
+> "Sempre que um alvo realizar uma jogada de ataque ou teste de resistência antes da magia acabar, o alvo pode jogar um d4 e adicionar o valor jogado ao ataque ou teste de resistência."
+
+- **+1d4** nas jogadas de ataque e nos testes de resistência, com o d4 na fórmula ("1d20 + 5 + 1d4"), apesar do "pode": é sempre benéfico (decisão do desenho).
+- Vale no **teste contra a morte**, pelo raciocínio da decisão 22 (Sortudo): o app pede o d4 quando o d20 não decide sozinho (o 1 e o 20 decidem).
+- Concentração, até 1 minuto: de quem a conjurou.
+
+### 7.2 Perdição (pág. 269, linhas 25990-26004)
+
+> "Sempre que um alvo que falhou nessa resistência realizar uma jogada de ataque ou um teste de resistência antes da magia acabar, o alvo deve rolar um d4 e subtrair o valor rolado da jogada de ataque ou teste de resistência."
+
+- **−1d4** nas mesmas jogadas da Bênção, inclusive o teste contra a morte; é obrigatória. Marcar a Perdição é dizer que você falhou no TR de Carisma.
+
+### 7.3 Escudo Arcano (pág. 243, linhas 23192-23203)
+
+> "Até o início do seu próximo turno, você recebe +5 de bônus na CA, incluindo contra o ataque que desencadeou a magia, e você não sofre dano de mísseis mágicos."
+
+- **+5 de CA**, parcela própria; o "não sofre dano de mísseis mágicos" é linha. Alcance Pessoal.
+- Acaba no início do seu próximo turno (`endsOn: 'startOfYourTurn'`): até o Novo turno (onda `turno`), o cartão o lembra e o jogador marca "Já acabou".
+
+### 7.4 Armadura Arcana (pág. 220, linhas 20244-20255)
+
+> "Você toca uma criatura voluntária que não esteja vestindo armadura [...]. A CA base do alvo se torna 13 + o modificador de Destreza dele. A magia acaba se o alvo colocar uma armadura [...]."
+
+- **13 + DES** como fórmula de CA sem armadura: disputa a base com as das características, e fica a maior (pág. 14, "você escolhe qual usar").
+- **Decidido (2026-10-30):** o escudo não encerra a magia e soma +2, como na Defesa sem Armadura do bárbaro; "colocar uma armadura" é a armadura de corpo (a tabela "Vestindo e Despindo uma Armadura", linhas 13327-13332, lista o escudo à parte). Com armadura vestida na ficha, a magia fica sem os benefícios (`requires: 'noArmor'`); vestir no jogo é da onda `armadura` (`endsOn: 'donArmor'`).
+- Dura 8 horas: o descanso longo a encerra; o curto, não.
+
+### 7.5 Escudo da Fé (págs. 243-244, linhas 23204-23216)
+
+- **+2 de CA** pela duração (concentração, até 10 minutos, de quem conjurou).
+
+### 7.6 Velocidade (pág. 289, linhas 28204-28219)
+
+> "Até a magia acabar, o deslocamento do alvo é dobrado, ele ganha +2 de bônus na CA, ele tem vantagem em testes de resistência de Destreza e ganha uma ação adicional em cada um dos turnos dele. [...] Quando a magia acabar, o alvo não poderá se mover ou realizar ações até depois do seu próximo turno [...]."
+
+- **Deslocamento dobrado**, **+2 de CA**, **vantagem nos TR de Destreza**; a ação a mais (só Atacar com um ataque com arma, Disparada, Desengajar, Esconder ou Usar um Objeto) é linha.
+- A letargia ao acabar o app não aplica: o aviso do fim a diz (`onEnd`), por qualquer motivo.
+- Escudo da Fé + Velocidade: +4 de CA — magias diferentes somam (seção 3).
+
+### 7.7 Passos Longos (pág. 267, linhas 25901-25907)
+
+- **+3 m** no deslocamento (10 pés), somados antes do dobro da Velocidade e da metade da Exaustão 2. O Agarrado e o Impedido zeram assim mesmo: "não pode se beneficiar de qualquer bônus em seu deslocamento" (pág. 291).
+
+### 7.8 Auxílio Divino (pág. 222, linhas 20514-20521)
+
+> "Até o fim da magia, seus ataques com arma causam 1d4 de dano radiante extra ao atingirem."
+
+- **+1d4 radiante** no dano de todo ataque com arma, como parcela de outro tipo ("1d8 + 3 cortante + 1d4 radiante"). Vale no golpe desarmado, que é ataque com arma sem ser arma (decisão a). Alcance Pessoal e concentração: é sempre sua, sustentada pela sua concentração.
+
+### 7.9 Pele de Árvore (pág. 268, linhas 25943-25953)
+
+> "[...] a CA do alvo não pode ser inferior a 16, independentemente do tipo de armadura que ela esteja vestindo."
+
+- **Piso de 16** sobre a CA com tudo, escudo e Escudo Arcano incluídos: max(CA, 16), e os bônus não somam por cima do piso (decisão do desenho). No "de onde vem", a parcela que falta leva o nome da magia.
+
+### 7.10 Esquivar (ação, pág. 194, linhas 17408-17414)
+
+> "Até o começo do seu próximo turno, qualquer jogada de ataque contra você é feita com desvantagem se você puder ver o atacante e você tem vantagem em testes de Destreza. Você perde esse benefício se estiver incapacitado [...] ou se seu deslocamento cair para 0."
+
+- **Decidido (2026-10-30), pt-BR × inglês:** vantagem nos **testes de resistência** de Destreza ("Dexterity saving throws"); o pt-BR diz "testes de Destreza". Na lista do CLAUDE.md e preso em `bookText.test.ts`.
+- A desvantagem dos ataques contra você é linha (o jogador avisa o Mestre). Incapacitado (gravado ou derivado) ou com o deslocamento em 0, acaba sozinho, com aviso; a 0 PV, também (o Inconsciente incapacita).
+- A ação que o liga (e a Defesa Paciente do monge, que remete a ela) chega com a onda `turno`.
+
+### 7.11 Destruição Divina Aprimorada (paladino 11, pág. 111, linhas 9984-9991)
+
+- **+1d8 radiante** no dano de toda **arma** corpo a corpo, incondicional: está no número na Revisão, no PDF e no jogo. O golpe desarmado fica de fora (decisão c, pelo inglês). A azagaia soma na linha corpo a corpo, e arremessada não soma (o ataque arremessado é à distância).
+- A ficha salva de paladino 11+ muda de número, e o aviso de correção o diz (decisão 10.2.23).
+
+### 7.12 O crítico (pág. 198, linhas 17752-17764)
+
+> "Jogue todos os dados de dano duas vezes e some todos eles. [...] Se o ataque envolve outros dados de dano, como a característica Ataque Furtivo, do ladino, ele joga esses dados duas vezes também."
+
+- Os dados a mais do dano dobram com os da arma ("2d8 + 3 cortante + 2d4 radiante"); o fixo não. A folha do crítico deixa desmarcar um grupo (item 6 de `regras-dano-e-morte.md`).
+
+### 7.13 Quem conjura mantém a concentração
+
+- A magia de concentração que você conjurou em si (`sustainedByConcentration`) começa a sua concentração nela e acaba junto com ela, por qualquer motivo: fim voluntário, dano, incapacitação, outra concentração (pág. 205). O "Já acabou" dela encerra a concentração.
+- A recebida de um aliado não depende da sua concentração: quem a mantém é ele, e ela só sai à mão.
+- A magia recebida liga a 0 PV (a Bênção nos testes contra a morte): o app só registra o que a mesa já fez. A Fúria, que você liga, continua recusando o inconsciente.
+- O descanso encerra a magia que dura no máximo ele, pela conta das durações de `spells.json` (a rodada tem 6 segundos, pág. 191): a Bênção nos dois descansos; a Armadura Arcana (8 horas) só no longo, que tem pelo menos 8 horas (pág. 188). É o mesmo raciocínio da Fúria (seção 1).

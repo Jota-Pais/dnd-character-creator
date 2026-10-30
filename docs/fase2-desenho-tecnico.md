@@ -784,6 +784,24 @@ O que muda só no número é anunciado pelo ChangeAnnouncer.
 
 ### Bênção, Escudo Arcano, Armadura Arcana e dano extra na arma (`efeitos-recebidos`)
 
+**Feita em 2026-10-30.** O que mudou em relação ao desenho abaixo:
+- O catálogo é lido por `getCatalogToggles` (`utils/activeEffects.ts`), e não por `getSheetToggles`: o filtro das de alcance Pessoal precisa das magias conhecidas (`getKnownSpells`, em `sheetModel`), que o `sheetEffects` não importa sem ciclo. `getSessionToggles` junta os dois e é a lista do `PlaySheet` e da sessão; `getSheetToggles` segue só com os da ficha.
+- A entrada que não é magia (o Esquivar) leva `name`; as de magia, `spellId`; todas, `bookLines`. A concentração e o alcance saem de `spells.json` na carga (`SheetToggle.concentration`, `selfOnly`, `known`), nunca nos dados.
+- O descanso encerra a magia pela conta das durações de `spells.json` (a Bênção nos dois, a Armadura Arcana só no longo), como a Fúria; o desenho não dizia.
+- `ToggleEnd` ganhou `incapacitated` e `speedZero` (o Esquivar acaba sozinho, também a 0 PV), `startOfYourTurn` (lembrete no cartão até o Novo turno da onda `turno`) e `donArmor` (para a onda `armadura`). A Armadura Arcana com armadura vestida na ficha fica sem os benefícios pelo requisito novo `noArmor` (o escudo não conta, decisão de 2026-10-30). `concentrationEnds` não entrou: quem liga a magia ao fim da concentração é o `ActiveToggle.sustainedByConcentration`.
+- A Velocidade ganhou `onEnd.notice`: a letargia vem no aviso do fim, por qualquer motivo.
+- Esquivar: a vantagem entrou nos TR de Destreza (a dúvida de regra foi decidida). A ação que o liga é da onda `turno`; até lá, nenhuma tela o liga.
+- `rollBonus` não entrou: nenhuma entrada do catálogo o usa. Nem `choice` (tipo de dano, atributo): entra com a primeira magia que pedir escolha. A "escolha" da folha é quem conjurou.
+- `RollGuideEntry.extraDice` serve aos dois casos do desenho: no d20 (a Bênção) e no dano (o dado a mais com o tipo, `damageType`), em vez de um `parts` separado. O dano extra chega às linhas como `WeaponAttackEffect.extraDamage` (a Destruição Divina Aprimorada nos dados; o Auxílio Divino, da sessão) e `WeaponAttack.extraDamage`; o `damage` da linha fica com o dado da arma, e o `formatAttackDamage` junta.
+- `calculateArmorClass` recebe `bonuses` e `minimum`; a fórmula da Armadura Arcana entra na mesma lista `unarmoredAc` das características (a disputa é a mesma), sem `extraUnarmored`. A CA da sessão é a dos vitais; o retrato da ficha, a Revisão e o PDF seguem sem sessão.
+- O deslocamento: os bônus e o dobro vão ao agregador (`ActiveConditionEffects.speed.bonuses` e `doubled`), e o `applyConditionSpeed` os aplica antes da metade da Exaustão 2; o voo já era linha.
+- O "desmarcar" do item 6 de `regras-dano-e-morte.md` entrou na folha do crítico (`getCritRecipe`), só da folha aberta.
+- Os testes contra a morte pedem o d4 da Bênção quando o d20 não decide sozinho; o "rolar" preenche os dois.
+- A magia recebida liga a 0 PV (a Bênção vale nos testes contra a morte): a recusa do inconsciente ficou só para o efeito da ficha. A pergunta "quem conjurou?" só aparece para quem conhece a magia; a de alcance Pessoal com concentração (o Auxílio Divino) é sempre sustentada. `endConcentration` passou a receber o `PlaySheet`.
+- O aviso de migração da Destruição Divina Aprimorada: o retrato da ficha ganhou o dano das linhas de ataque (`SheetSnapshot.attacks`, com o extra à parte), e o retrato de antes, sem ataques, é lido como o mesmo dano sem o extra.
+- Conferido no Edge a 390 e a 360 px, pelo teclado: a folha (busca, detalhe, "Outra magia", "Marcar em mim"), o cartão, os chips, o "+1d4" das abas, o d4 dos testes contra a morte; alvos de 45 px, sem rolagem lateral, console sem erros.
+- Fica com o dono (`regras-efeitos-ativos.md`, seção 6): o Auxílio Divino na Rede, que acerta sem dano, e o mínimo 0 do golpe desarmado com dano extra de outro tipo.
+
 - **Tamanho:** M
 - **Depende de:** `efeitos-ativos`
 

@@ -5,7 +5,7 @@ import { NO_SESSION } from '../../types/session'
 import { COMPLETE_DRAFT } from '../../../../test/fixtures'
 import { getFinalAbilityScores } from '../asiUtils'
 import { getSheetAttacks } from '../attackUtils'
-import { getSheetSession, resolveActiveEffects } from '../activeEffects'
+import { describeToggleEffects, getSheetSession, resolveActiveEffects } from '../activeEffects'
 import { buildPlaySheet } from '../playSheet'
 import { createPlayState } from '../playState'
 import { getConcentrationGuide, getRollGuide } from '../rollGuide'
@@ -156,5 +156,42 @@ describe('sem sessão ≡ NO_SESSION ≡ estado sem efeito ligado', () => {
     const unknown = { ...empty, activeEffects: [{ id: 'spell:bless', startedAt: 1 }] }
     expect(getRollGuide(d, unknown)).toEqual(getRollGuide(d, empty))
     expect(getConcentrationGuide(d, unknown, 10)).toEqual(getConcentrationGuide(d, empty, 10))
+  })
+})
+
+describe('describeToggleEffects: o que o efeito ligado está fazendo', () => {
+  const describe1 = (d: CharacterDraft, option?: string) => {
+    const [t] = resolveActiveEffects([{ id: 'rage', startedAt: 1, ...(option ? { option } : {}) }], getSheetToggles(d))
+    return describeToggleEffects(d, t, 30)
+  }
+
+  it('bárbaro 9: a vantagem, o Dano de Fúria do nível e a resistência, com a origem', () => {
+    expect(describe1(barbarian(9))).toEqual([
+      'Vantagem em testes e testes de resistência de Força (Fúria)',
+      '+3 de dano nos ataques com arma corpo a corpo usando Força (Dano de Fúria)',
+      'Resistência a concussão, cortante e perfurante (Fúria)',
+    ])
+  })
+
+  it('de Placas, sem os benefícios: só o que fica proibido, para quem conjura', () => {
+    expect(describe1(barbarian(3, { race: 'tiefling', ...carrying('plate') }))).toEqual([
+      'Não pode conjurar magias nem se concentrar nelas (Fúria)',
+    ])
+  })
+
+  it('Furioso 6 em frenesi: a imunidade e o lembrete do Frenesi', () => {
+    expect(describe1(barbarian(6, {}, 'berserker'), 'frenzy').slice(2)).toEqual([
+      'Resistência a concussão, cortante e perfurante (Fúria)',
+      'Imunidade às condições Enfeitiçado e Amedrontado (Fúria Inconsciente)',
+      'Em cada um dos seus turnos seguintes, você pode fazer um único ataque corpo-a-corpo com arma como ação bônus (Frenesi)',
+    ])
+  })
+
+  it('Guerreiro Totêmico 14 (Urso, Águia): a resistência do Urso e o voo pelo deslocamento de caminhada', () => {
+    const totem = barbarian(14, {}, 'totem-warrior', { 'totem-warrior-totem-3': ['bear'], 'totem-warrior-attunement-14': ['eagle'] })
+    const lines = describe1(totem)
+    expect(lines).toContain('Resistência a todo dano, exceto psíquico (Totem Espiritual — Urso)')
+    expect(lines).toContain('Deslocamento de voo de 9 m, igual ao de caminhada (Sintonia Totêmica — Águia)')
+    expect(lines.at(-1)).toBe('Não pode conjurar magias nem se concentrar nelas (Fúria)')
   })
 })

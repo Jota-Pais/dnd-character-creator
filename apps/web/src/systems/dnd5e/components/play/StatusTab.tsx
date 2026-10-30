@@ -5,6 +5,7 @@ import {
   describeHpMaxImmunity, endConcentration, getPlayDamageDefenses, setExhaustion, startConcentration,
 } from '@rpg/rules/systems/dnd5e/utils/playState'
 import { describeDamageDefenses, EXHAUSTION } from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
+import { ACTIVE_EFFECTS_SECTION_ID, ActiveEffectsSection } from './ActiveEffectsSection'
 import { ConditionsSection } from './ConditionsSection'
 import { LongRestPanel } from './LongRestPanel'
 import { ShortRestPanel } from './ShortRestPanel'
@@ -247,14 +248,21 @@ function RestSection(view: PlayTabProps) {
 }
 
 /**
- * Aba "Estado": as condições (liga/desliga, regra a um toque, nota de duração), as defesas contra
- * dano (só quem tem), a exaustão, a concentração e os descansos.
+ * Aba "Estado": os efeitos ativos (só quem tem o que ligar: a Fúria), as condições (liga/desliga,
+ * regra a um toque, nota de duração), as defesas contra dano (só quem tem), a exaustão, a
+ * concentração e os descansos.
  */
 export function StatusTab(view: PlayTabProps) {
   const concentrationTitle = useRef<HTMLHeadingElement>(null)
+  const effectsTitle = useRef<HTMLHeadingElement>(null)
   const defenseLines = describeDamageDefenses(getPlayDamageDefenses(view.state, view.sheet))
   return (
     <div className="space-y-6">
+      {view.sheet.toggles.length > 0 && (
+        <Section title="Efeitos ativos" id={ACTIVE_EFFECTS_SECTION_ID} headingRef={effectsTitle}>
+          <ActiveEffectsSection {...view} titleRef={effectsTitle} />
+        </Section>
+      )}
       <Section title="Condições">
         <ConditionsSection {...view} />
       </Section>

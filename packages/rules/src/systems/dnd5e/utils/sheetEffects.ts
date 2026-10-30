@@ -1830,10 +1830,11 @@ export function getDamageDefenses(draft: CharacterDraft): SheetDamageDefense[] {
 
 /**
  * As linhas de uma declaração de defesa, uma por efeito — a mesma conta para a ficha
- * (`getDamageDefenses`) e para os efeitos ligados (as defesas da Fúria, no agregador). `blockedBy`
- * é o que o equipamento impede agora; `ancestor`, o tipo do ancestral dracônico (`fromAncestor`).
+ * (`getDamageDefenses`) e para os efeitos ligados (as defesas da Fúria, no agregador e na seção
+ * Efeitos ativos). `blockedBy` é o que o equipamento impede agora; `ancestor`, o tipo do ancestral
+ * dracônico (`fromAncestor`).
  */
-function toSheetDefenses(
+export function toSheetDefenses(
   source: string,
   d: DamageDefenses,
   context: { blockedBy?: string; ancestor?: DamageTypeId } = {},

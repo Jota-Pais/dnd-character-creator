@@ -3,7 +3,7 @@ import { flushSync } from 'react-dom'
 import { formatMeters, formatModifier } from '@rpg/rules/systems/dnd5e/utils/abilityScoreUtils'
 import {
   endConcentration, formatHpAdjustment, getBaseMaxHp, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable,
-  getPlayEffects, getPlaySpeed, setInspiration,
+  getPlayEffects, getPlaySpeed, getPlayToggles, setInspiration,
 } from '@rpg/rules/systems/dnd5e/utils/playState'
 import type { RollGuideEntry } from '@rpg/rules/systems/dnd5e/utils/rollGuide'
 import { getConditionalAcBonuses, isConditionSuspended } from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
@@ -102,12 +102,14 @@ function Stat({ label, children, sub, onOpen, ariaLabel }: {
  * descansos), CA, deslocamento efetivo, iniciativa (tocável: abre a receita), Percepção passiva,
  * inspiração, concentração e as condições ativas (só leitura; quem mexe nelas é a aba Estado).
  */
-export function VitalsBar({ view, onOpenRecipe, onOpenSource, onOpenRests }: {
+export function VitalsBar({ view, onOpenRecipe, onOpenSource, onOpenRests, onOpenEffects }: {
   view: PlayView
   onOpenRecipe: (entry: RollGuideEntry) => void
   onOpenSource: (source: NumberSource) => void
   /** Leva aos descansos curto e longo (aba Estado). */
   onOpenRests: () => void
+  /** Leva à seção Efeitos ativos (aba Estado), onde o efeito ligado se encerra. */
+  onOpenEffects: () => void
 }) {
   const { draft, state, sheet, guide, armorClass, run } = view
   const current = getCurrentHp(state, sheet)
@@ -116,6 +118,7 @@ export function VitalsBar({ view, onOpenRecipe, onOpenSource, onOpenRests }: {
   const baseMax = getBaseMaxHp(state, sheet)
   const speed = getPlaySpeed(state, sheet)
   const effects = getPlayEffects(state, sheet)
+  const toggles = getPlayToggles(state, sheet)
   const initiative = guide.initiative
   const passive = guide.passivePerception
   const life = state.lifeState === 'conscious' ? null : LIFE_LABEL[state.lifeState]
@@ -261,6 +264,24 @@ export function VitalsBar({ view, onOpenRecipe, onOpenSource, onOpenRests }: {
             </button>
           </span>
         )}
+
+        {/* Um chip por efeito ligado (em fúria): o toque leva à seção onde ele se encerra. */}
+        {toggles.map(t => (
+          <button
+            key={t.id}
+            onClick={onOpenEffects}
+            aria-label={`${t.label}${t.option ? ` (${t.option.label})` : ''}${t.blockedBy ? ', sem os benefícios' : ''}: ver os efeitos ativos`}
+            className={[
+              'shrink-0 whitespace-nowrap min-h-10 px-3 rounded-full border text-xs transition-colors',
+              t.blockedBy ? 'border-parchment-700 text-parchment-400' : 'border-amber-600 bg-amber-950/40 text-amber-200 hover:border-amber-400',
+            ].join(' ')}
+            data-testid={`vitals-toggle-${t.id}`}
+          >
+            {t.label}
+            {t.option && <span className="text-amber-300"> · {t.option.label}</span>}
+            {t.blockedBy && ' (sem benefícios)'}
+          </button>
+        ))}
 
         {state.exhaustionLevel > 0 && (
           <span className="shrink-0 whitespace-nowrap inline-flex items-center min-h-8 rounded-full border border-amber-800 px-3 text-xs text-amber-300">

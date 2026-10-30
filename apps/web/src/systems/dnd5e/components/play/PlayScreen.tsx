@@ -15,6 +15,7 @@ import { VitalsBar } from './VitalsBar'
 import { NumberSourceSheet } from './NumberSourceSheet'
 import type { NumberSource } from './numberSources'
 import { REST_SECTION_ID } from './StatusTab'
+import { ACTIVE_EFFECTS_SECTION_ID } from './ActiveEffectsSection'
 import { useWakeLock } from './wakeLock'
 import { trackPressedControls } from './pressedControl'
 import { useBackHandler } from '../../../../core/navigation/back'
@@ -97,6 +98,16 @@ export function PlayScreen() {
     const section = document.getElementById(REST_SECTION_ID)
     if (!section) return
     section.querySelector('button')?.focus({ preventScroll: true })
+    scrollBelowVitals(section)
+  }
+
+  // O chip de um efeito ligado (em fúria): abre a aba Estado e rola até os efeitos ativos, com o foco
+  // no título da seção, e não no "Encerrar": um Enter a mais encerraria a fúria sem querer.
+  function openEffects() {
+    flushSync(() => setTab('status'))
+    const section = document.getElementById(ACTIVE_EFFECTS_SECTION_ID)
+    if (!section) return
+    section.querySelector('h2')?.focus({ preventScroll: true })
     scrollBelowVitals(section)
   }
 
@@ -253,7 +264,7 @@ export function PlayScreen() {
 
         {/* Grudam logo abaixo da área segura: no app de ponta a ponta, a barra de status cobre o topo. */}
         <div ref={stickyRef} className="sticky top-[env(safe-area-inset-top)] z-20 -mx-4 px-4 py-2 bg-surface-base/95 backdrop-blur-sm border-b border-parchment-900">
-          <VitalsBar view={view} onOpenRecipe={openRecipe} onOpenSource={setSource} onOpenRests={openRests} />
+          <VitalsBar view={view} onOpenRecipe={openRecipe} onOpenSource={setSource} onOpenRests={openRests} onOpenEffects={openEffects} />
         </div>
 
         {/* A 0 PV os testes contra a morte tomam a frente; dano e cura continuam valendo

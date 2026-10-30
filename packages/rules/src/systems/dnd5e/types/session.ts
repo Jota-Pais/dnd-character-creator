@@ -18,16 +18,21 @@ export type SourcedActiveEffect = { source: string; effect: ActiveEffect }
 export type SheetToggleOption = ToggleOption & { source: string }
 
 /**
- * Um efeito que a ficha pode ligar (`getSheetToggles`): a declaração da característica dona com o
- * que as outras acrescentam (`toggleModifiers`) já fundido, e a restrição de conjuração da mesma
- * situação como efeito de estado.
+ * Um efeito que se liga em jogo: o da ficha (`getSheetToggles`: a declaração da característica dona
+ * com o que as outras acrescentam, `toggleModifiers`, já fundido, e a restrição de conjuração da
+ * mesma situação como efeito de estado) ou o do catálogo (`getCatalogToggles`: a magia ou a ação
+ * recebida).
  */
 export type SheetToggle = {
   id: string
   label: string
-  /** A característica que o declara ("Fúria"). */
+  /** A característica que o declara ("Fúria"), a magia ("Bênção") ou a ação ("Esquivar"). */
   source: string
   page: number
+  /** A magia do efeito do catálogo (`spells.json`): a duração e a concentração vêm dela. */
+  spellId?: string
+  /** O que vem quando ele acaba e o app não aplica (a letargia da Velocidade). */
+  onEnd?: { notice: string }
   /** Valem sempre que ligado. */
   effects: SourcedActiveEffect[]
   /** Valem com o equipamento; `blockedBy` é o que o impede agora (a armadura pesada vestida). */

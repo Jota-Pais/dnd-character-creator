@@ -1,19 +1,87 @@
 import type { CharacterDraft } from '../types/character'
 import type { RollModeEffect } from '../types/condition'
-import type { AttackScope } from '../types/effects'
+import type { AttackScope, ToggleDeclaration, ToggleEnd } from '../types/effects'
 import type { ActiveToggle, PlayState } from '../types/playState'
 import type { ResolvedToggle, SheetSession, SheetToggle } from '../types/session'
+import catalogData from '../data/active-effects.json'
 import { ABILITY_LABELS, formatMeters } from './abilityScoreUtils'
 import { getFinalAbilityScores } from './asiUtils'
-import { describeDamageDefenses, getSheetToggles, getWeaponAttackEffects, toSheetDefenses } from './sheetEffects'
+import { getKnownSpells, listKnownSpells } from './sheetModel'
+import { describeDamageDefenses, getDeclaredToggle, getSheetToggles, getWeaponAttackEffects, toSheetDefenses } from './sheetEffects'
+import { getSpell } from './spellUtils'
 import { joinPt } from './textUtils'
 
 /**
  * Os efeitos ligados do estado de jogo, resolvidos contra a ficha: o que cada um faz AGORA. Uma
  * função só para a tela e para as operações — as operações leem os efeitos do `PlaySheet`
  * (`sheet.toggles`), a tela e o guia de rolagens os da ficha (`getSheetSession`), e os dois são o
- * mesmo `getSheetToggles`.
+ * mesmo `getSessionToggles`: os da ficha (a Fúria) e os do catálogo (a Bênção recebida).
  */
+
+// ── O catálogo dos efeitos recebidos ─────────────────────────────────────────
+
+/**
+ * As magias e ações que se marcam como recebidas (`data/active-effects.json`): a Bênção, o Escudo
+ * Arcano, a Armadura Arcana, o Esquivar. A declaração só diz o que o efeito faz, com a página e as
+ * linhas do extrato; o nome, o texto, a duração e a concentração são os de `spells.json`.
+ */
+export const ACTIVE_EFFECT_CATALOG = catalogData as ToggleDeclaration[]
+
+/** "Pessoal": a magia só alcança quem a conjura (o Escudo Arcano, o Auxílio Divino). */
+const isSelfOnly = (spellId: string) => /^pessoal/i.test(getSpell(spellId)?.range ?? '')
+
+/** O descanso curto tem pelo menos 1 hora, e o longo, 8 (p. 188), em minutos. */
+const REST_MINUTES: Record<'shortRest' | 'longRest', number> = { shortRest: 60, longRest: 480 }
+
+/**
+ * A duração da magia em minutos, como `spells.json` a escreve ("até 1 minuto", "1 rodada" — 6
+ * segundos, p. 191 —, "8 horas"); null sem número ("Instantânea", "até ser dissipada").
+ */
+function spellDurationMinutes(duration: string): number | null {
+  const m = /(\d+)\s*(rodada|minuto|hora|dia)/i.exec(duration)
+  if (!m) return null
+  const per = { rodada: 0.1, minuto: 1, hora: 60, dia: 1440 }[m[2].toLowerCase() as 'rodada' | 'minuto' | 'hora' | 'dia']
+  return Number(m[1]) * per
+}
+
+/**
+ * Os descansos em que o efeito do catálogo acaba, pela conta das durações (o mesmo raciocínio da
+ * Fúria, `regras-efeitos-ativos.md`): a magia que dura no máximo o descanso acabou nele — a Bênção
+ * (1 minuto) nos dois, a Armadura Arcana (8 horas) só no longo. O que dura até o início do seu
+ * próximo turno (o Esquivar) também. A duração não se copia: sai de `spells.json`.
+ */
+function restEnds(declaration: ToggleDeclaration): ToggleEnd[] {
+  const minutes = declaration.spellId
+    ? spellDurationMinutes(getSpell(declaration.spellId)?.duration ?? '')
+    : declaration.endsOn?.includes('startOfYourTurn') ? 0 : null
+  if (minutes === null) return []
+  return (['shortRest', 'longRest'] as const).filter(rest => minutes <= REST_MINUTES[rest])
+}
+
+/**
+ * Os efeitos do catálogo que a ficha pode ter ligados. Qualquer ficha liga os que um aliado conjura
+ * nela (a Bênção, a Armadura Arcana); os de alcance Pessoal só quem conhece a magia
+ * (`getKnownSpells`), porque ninguém mais os conjura nela. A fonte é o nome da magia, ou o da ação.
+ */
+export function getCatalogToggles(draft: CharacterDraft): SheetToggle[] {
+  const known = new Set(listKnownSpells(getKnownSpells(draft)).map(s => s.id))
+  return ACTIVE_EFFECT_CATALOG.flatMap(declaration => {
+    const { spellId } = declaration
+    if (spellId && isSelfOnly(spellId) && !known.has(spellId)) return []
+    const source = (spellId ? getSpell(spellId)?.name : declaration.name) ?? declaration.id
+    const toggle = getDeclaredToggle(draft, declaration, source)
+    for (const rest of restEnds(declaration)) if (!toggle.endsOn.includes(rest)) toggle.endsOn.push(rest)
+    return [toggle]
+  })
+}
+
+/**
+ * Todos os efeitos que se ligam na sessão: os da ficha (`getSheetToggles`: a Fúria) e os do
+ * catálogo (`getCatalogToggles`). É a lista do `PlaySheet` e a da sessão das funções da ficha.
+ */
+export function getSessionToggles(draft: CharacterDraft): SheetToggle[] {
+  return [...getSheetToggles(draft), ...getCatalogToggles(draft)]
+}
 
 /**
  * O que vale agora de cada efeito ligado: os efeitos de sempre, os benefícios que o equipamento
@@ -45,7 +113,7 @@ export function resolveActiveEffects(active: readonly ActiveToggle[], toggles: r
  * estado (o guia de rolagens, o da concentração, a tela). A Revisão e o PDF não a têm.
  */
 export function getSheetSession(draft: CharacterDraft, state: PlayState): SheetSession {
-  return { active: resolveActiveEffects(state.activeEffects, getSheetToggles(draft)) }
+  return { active: resolveActiveEffects(state.activeEffects, getSessionToggles(draft)) }
 }
 
 // ── O que o efeito ligado está fazendo, em texto ────────────────────────────

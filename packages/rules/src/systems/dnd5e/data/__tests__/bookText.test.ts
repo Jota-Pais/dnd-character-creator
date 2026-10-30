@@ -8,6 +8,7 @@ import spellsData from '../spells.json'
 import progressionFeatures from '../class-progression-features.json'
 import invocationsData from '../eldritch-invocations.json'
 import racesData from '../races.json'
+import activeEffectsData from '../active-effects.json'
 
 /**
  * A digitalização do PHB vem de um PDF que usa Wingdings para os marcadores de lista: o extrator
@@ -133,6 +134,15 @@ describe('divergências pt-BR × inglês que seguem o inglês', () => {
     const unarmed = getSheetAttacks(barbarian, scores).find(a => a.key === 'unarmed')
     expect(unarmed?.weapon).toBeNull()
     expect(unarmed?.notes).toContain('+2 de dano em fúria, sem armadura pesada (Dano de Fúria)')
+  })
+  // Inglês: "you have advantage on Dexterity saving throws" (Dodge, p. 194). O pt-BR diz "vantagem em
+  // testes de Destreza", que são testes de habilidade (decisão de 2026-10-30). O texto da ação não está
+  // nos dados: a declaração do efeito fica presa.
+  it('Esquivar dá vantagem nos TR de Destreza, não nos testes (pt-BR: "vantagem em testes de Destreza")', () => {
+    const dodge = (activeEffectsData as { id: string; effects?: { kind: string; rolls?: string[]; abilities?: string[] }[] }[])
+      .find(t => t.id === 'action:dodge')
+    const modes = dodge?.effects?.filter(e => e.kind === 'rollMode')
+    expect(modes).toEqual([{ kind: 'rollMode', rolls: ['save'], abilities: ['DEX'], mode: 'advantage', scope: 'sheet' }])
   })
   // Inglês: "When you score a critical hit with a melee weapon attack". O pt-BR ("com uma arma
   // corpo-a-corpo") deixaria de fora o golpe desarmado com dado, onde o traço vale (decisão 21).

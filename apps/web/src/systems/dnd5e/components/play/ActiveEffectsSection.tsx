@@ -6,6 +6,7 @@ import type { SheetToggle } from '@rpg/rules/systems/dnd5e/types/session'
 import { describeToggleEffects } from '@rpg/rules/systems/dnd5e/utils/activeEffects'
 import { deactivateToggle, getPlaySpeed, getPlayToggles, getResourceAvailable, performAction } from '@rpg/rules/systems/dnd5e/utils/playState'
 import { ChangeAnnouncer } from './ChangeAnnouncer'
+import { getShownToggles, togglingActions } from './effectToggles'
 import type { PlayTabProps } from './usePlayView'
 
 /** A seção dos efeitos ativos na aba Estado: o chip dos vitais leva até ela. */
@@ -18,13 +19,6 @@ const TIMING_LABEL: Record<ActionTiming, string> = {
   free: 'livre',
   movement: 'movimento',
   special: 'especial',
-}
-
-/** As ações que ligam e desligam o efeito (a Fúria: entrar e encerrar), pelo que elas causam. */
-function togglingActions(sheet: PlaySheet, id: string): { on?: SheetAction; off?: SheetAction } {
-  const causes = (kind: 'toggleOn' | 'toggleOff') =>
-    sheet.actions.find(a => a.outcomes.some(o => o.kind === kind && o.toggle === id))
-  return { on: causes('toggleOn'), off: causes('toggleOff') }
 }
 
 /** O custo e o saldo de quem liga: "gasta 1 Fúria — restam 2"; no 20º nível, "Fúria: usos ilimitados". */
@@ -189,7 +183,7 @@ export function ActiveEffectsSection({ titleRef, ...view }: PlayTabProps & { tit
     <div className="space-y-2">
       {/* Primeiro filho: no fim, o space-y daria margem a ele. */}
       <ChangeAnnouncer text={describeForAnnouncement(view.state, view.sheet)} />
-      {view.sheet.toggles.map(t => <ToggleCard key={t.id} toggle={t} view={view} titleRef={titleRef} />)}
+      {getShownToggles(view.state, view.sheet).map(t => <ToggleCard key={t.id} toggle={t} view={view} titleRef={titleRef} />)}
     </div>
   )
 }

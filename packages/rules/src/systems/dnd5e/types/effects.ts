@@ -1,6 +1,6 @@
 import type { ActionDeclaration } from './actions'
 import type { ArmorProficiency } from './class'
-import type { ConditionId, NoticeEffect, RollCategory, RollModeEffect, StateEffect } from './condition'
+import type { AgainstYouEffect, ConditionId, NoticeEffect, RollCategory, RollModeEffect, StateEffect } from './condition'
 import type { DamageTypeId } from './damage'
 import type { AbilityScore } from './race'
 
@@ -119,9 +119,11 @@ export type ConditionalSaveBonus = {
  * da CA (`getEquippedArmor`):
  * - `noHeavyArmor`: sem armadura pesada (Movimento Rápido, p. 49);
  * - `noArmorNoShield`: sem armadura nenhuma e sem escudo (Movimento sem Armadura, p. 104);
+ * - `noArmor`: sem armadura vestida; o escudo não conta, porque não é o que se veste (Armadura
+ *   Arcana, p. 220 — decisão de 2026-10-30: o escudo soma +2 e não encerra a magia);
  * - `heavyArmor`: vestindo armadura pesada (Maestria em Armadura Pesada, p. 170).
  */
-export type EquipmentRequirement = 'noHeavyArmor' | 'noArmorNoShield' | 'heavyArmor'
+export type EquipmentRequirement = 'noHeavyArmor' | 'noArmorNoShield' | 'noArmor' | 'heavyArmor'
 
 /** Os tipos que uma defesa alcança: uma lista, todo dano ou todo dano menos alguns. */
 export type DamageTypeSet = DamageTypeId[] | 'all' | { allExcept: DamageTypeId[] }
@@ -346,27 +348,93 @@ export type ConditionImmunityEffect = { kind: 'conditionImmunity'; conditions: C
 /** Deslocamento de voo igual ao de caminhada (Sintonia Totêmica da Águia, p. 50). */
 export type FlySpeedEffect = { kind: 'flySpeed'; feet: 'walking'; scope: 'sheet' }
 
+/** Um grupo de dados: `{ count: 1, sides: 4 }` é 1d4. */
+export type DiceCount = { count: number; sides: number }
+
+/**
+ * Um dado somado (ou subtraído) às jogadas d20 enquanto ligado: a Bênção, +1d4 nas jogadas de
+ * ataque e nos testes de resistência (p. 223); a Perdição, −1d4 (p. 269). Entra na fórmula ("1d20 +
+ * 5 + 1d4"), com o d20 primeiro. `deathSave`: vale também no teste contra a morte, o "teste de
+ * resistência especial" (p. 199), pelo mesmo raciocínio do Sortudo (decisão 22).
+ */
+export type RollDiceEffect = {
+  kind: 'rollDice'
+  rolls: RollCategory[]
+  dice: DiceCount
+  sign: 1 | -1
+  deathSave?: true
+  scope: 'sheet'
+}
+
+/** Bônus na CA enquanto ligado, como parcela própria: Escudo Arcano +5, Escudo da Fé +2, Velocidade +2. */
+export type AcBonusEffect = { kind: 'acBonus'; value: number; scope: 'sheet' }
+
+/**
+ * Outra forma de calcular a CA sem armadura (a Armadura Arcana: 13 + DES, p. 220): entra na mesma
+ * disputa das fórmulas das características, e fica a maior (p. 14).
+ */
+export type AcFormulaEffect = { kind: 'acFormula'; formula: UnarmoredAcFormula; scope: 'sheet' }
+
+/**
+ * Piso da CA final: "a CA do alvo não pode ser inferior a 16, independentemente do tipo de armadura"
+ * (Pele de Árvore, p. 268). É max(CA com tudo, piso): os bônus não somam por cima dele.
+ */
+export type AcMinimumEffect = { kind: 'acMinimum'; value: number; scope: 'sheet' }
+
+/** Bônus no deslocamento, em PÉS, a unidade da raça (Passos Longos: +3 m = +10 pés, p. 267). */
+export type SpeedBonusEffect = { kind: 'speedBonus'; feet: number; scope: 'sheet' }
+
+/** O deslocamento dobrado (Velocidade, p. 289). */
+export type SpeedMultiplierEffect = { kind: 'speedMultiplier'; factor: 2; scope: 'sheet' }
+
+/**
+ * Dano extra nos ataques do escopo enquanto ligado (Auxílio Divino: 1d4 radiante "nos seus ataques
+ * com arma", p. 222). Entra no dano da linha como parcela de outro tipo, e o crítico o dobra (p. 198).
+ */
+export type WeaponDamageEffect = {
+  kind: 'weaponDamage'
+  weapons: AttackScope
+  dice: DiceCount
+  damageType: DamageTypeId
+  scope: 'sheet'
+}
+
 /**
  * O que um efeito LIGADO faz, no vocabulário das condições (`types/condition.ts`): `sheet` muda o
- * número ou o modo, `gameState` mexe no estado, `notice` é linha que nunca muda número. Os de
- * estado `cannotCast` e `endsConcentration` não se declaram aqui: vêm da restrição de conjuração
- * da característica (`CastingRestriction.blocks`), a fonte única dela.
+ * número ou o modo, `gameState` mexe no estado, `notice` é linha que nunca muda número (o
+ * `againstYou` é a jogada de outra criatura contra você: o Esquivar). Os de estado `cannotCast` e
+ * `endsConcentration` não se declaram aqui: vêm da restrição de conjuração da característica
+ * (`CastingRestriction.blocks`), a fonte única dela.
  */
 export type ActiveEffect =
   | RollModeEffect
+  | RollDiceEffect
+  | AcBonusEffect
+  | AcFormulaEffect
+  | AcMinimumEffect
+  | SpeedBonusEffect
+  | SpeedMultiplierEffect
+  | WeaponDamageEffect
   | ToggleDamageDefenses
   | ConditionImmunityEffect
   | FlySpeedEffect
   | StateEffect
+  | AgainstYouEffect
   | NoticeEffect
 
 /**
- * O que encerra sozinho um efeito ligado: cair inconsciente (a Fúria, p. 48) e o descanso que dura
- * mais que ele — o curto tem pelo menos 1 hora, e o longo, 8 (p. 188); a Fúria dura 1 minuto. O app
- * não conta o tempo de jogo, mas o descanso é tempo de jogo declarado: o efeito acaba nele, antes do
- * que o descanso devolve.
+ * O que encerra sozinho um efeito ligado:
+ * - `unconscious`: cair inconsciente (a Fúria, p. 48);
+ * - `incapacitated` e `speedZero`: ficar incapacitado ou com o deslocamento em 0 (o Esquivar, p. 194);
+ * - `shortRest` e `longRest`: o descanso que dura mais que ele — o curto tem pelo menos 1 hora, e o
+ *   longo, 8 (p. 188); a Fúria dura 1 minuto. O app não conta o tempo de jogo, mas o descanso é
+ *   tempo de jogo declarado: o efeito acaba nele, antes do que o descanso devolve;
+ * - `startOfYourTurn`: o início do seu próximo turno (o Escudo Arcano, o Esquivar). O app não conta
+ *   turnos: até o Novo turno (onda `turno`), a seção Efeitos ativos o lembra, e o jogador marca o fim;
+ * - `donArmor`: vestir uma armadura (a Armadura Arcana, p. 220). A armadura é a da ficha até a onda
+ *   `armadura`; vestida no criador, os benefícios ficam bloqueados (`noArmor`).
  */
-export type ToggleEnd = 'unconscious' | 'shortRest' | 'longRest'
+export type ToggleEnd = 'unconscious' | 'incapacitated' | 'speedZero' | 'shortRest' | 'longRest' | 'startOfYourTurn' | 'donArmor'
 
 /** Efeitos que só valem com o equipamento certo (a Fúria: "se você não estiver vestindo uma armadura pesada"). */
 export type ToggleBenefits = { requires: EquipmentRequirement; effects: ActiveEffect[] }
@@ -379,16 +447,24 @@ export type ToggleBenefits = { requires: EquipmentRequirement; effects: ActiveEf
 export type ToggleOption = { id: string; label: string; effects?: ActiveEffect[]; onEnd?: { exhaustion: 1 } }
 
 /**
- * Um efeito que o jogador liga em jogo (a Fúria), declarado na característica dona. Não repete o
- * que mora em outro lugar: o texto e a duração são os da característica (`description`), e o custo
- * de ligar é o da ação que liga (`effects.actions`). O "ligado" mora no estado de jogo
+ * Um efeito que o jogador liga em jogo, declarado onde mora: a Fúria na característica dona, e as
+ * magias e ações recebidas no catálogo (`data/active-effects.json`: Bênção, Escudo Arcano, Esquivar).
+ * Não repete o que mora em outro lugar: o texto e a duração são os da característica
+ * (`description`) ou da magia (`spells.json`, pelo `spellId`, com a concentração), e o custo de
+ * ligar é o da ação que liga (`effects.actions`). O "ligado" mora no estado de jogo
  * (`PlayState.activeEffects`), nunca na ficha.
  */
 export type ToggleDeclaration = {
   id: string
-  /** Só o rótulo do estado ("Em fúria"): o chip dos vitais e a seção da aba Estado. */
+  /** Só o rótulo do estado ("Em fúria", "Sob a Bênção"): o chip dos vitais e a seção da aba Estado. */
   label: string
   page: number
+  /** A magia do efeito (catálogo): o nome, o texto, a duração, o alcance e a concentração vêm dela. */
+  spellId?: string
+  /** O nome do efeito que não é magia (a ação "Esquivar"); a característica e a magia já o têm. */
+  name?: string
+  /** As linhas do extrato do livro (catálogo), para conferir a declaração com o texto. */
+  bookLines?: [number, number]
   /** Valem sempre que ligado. */
   effects?: ActiveEffect[]
   /** Valem ligado e com o equipamento: sem ele, o efeito liga mas fica sem eles (p. 48). */
@@ -399,6 +475,12 @@ export type ToggleDeclaration = {
    * inglês), para o jogador desligar na mesa; o app não conta turnos.
    */
   earlyEndReminder?: string
+  /**
+   * O que vem quando o efeito acaba, por qualquer motivo, e o app não aplica (a letargia da
+   * Velocidade, p. 289, depois de "ao acabar:"): o aviso do fim o diz, e a seção o mostra enquanto
+   * ligado.
+   */
+  onEnd?: { notice: string }
 }
 
 /**

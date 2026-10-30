@@ -1,0 +1,114 @@
+[
+  {
+    "id": "spell:bless",
+    "label": "Sob a Bênção",
+    "spellId": "bless",
+    "page": 223,
+    "bookLines": [20595, 20607],
+    "effects": [
+      { "kind": "rollDice", "rolls": ["attack", "save"], "dice": { "count": 1, "sides": 4 }, "sign": 1, "deathSave": true, "scope": "sheet" }
+    ]
+  },
+  {
+    "id": "spell:bane",
+    "label": "Sob a Perdição",
+    "spellId": "bane",
+    "page": 269,
+    "bookLines": [25990, 26004],
+    "effects": [
+      { "kind": "rollDice", "rolls": ["attack", "save"], "dice": { "count": 1, "sides": 4 }, "sign": -1, "deathSave": true, "scope": "sheet" }
+    ]
+  },
+  {
+    "id": "spell:shield",
+    "label": "Sob o Escudo Arcano",
+    "spellId": "shield",
+    "page": 243,
+    "bookLines": [23192, 23203],
+    "effects": [
+      { "kind": "acBonus", "value": 5, "scope": "sheet" },
+      { "kind": "notice", "scope": "notice", "text": "Você não sofre dano de mísseis mágicos." }
+    ],
+    "endsOn": ["startOfYourTurn"]
+  },
+  {
+    "id": "spell:mage-armor",
+    "label": "Com a Armadura Arcana",
+    "spellId": "mage-armor",
+    "page": 220,
+    "bookLines": [20244, 20255],
+    "benefits": {
+      "requires": "noArmor",
+      "effects": [
+        { "kind": "acFormula", "formula": { "id": "mage-armor", "base": 13, "abilities": ["DEX"] }, "scope": "sheet" }
+      ]
+    },
+    "endsOn": ["donArmor"]
+  },
+  {
+    "id": "spell:shield-of-faith",
+    "label": "Sob o Escudo da Fé",
+    "spellId": "shield-of-faith",
+    "page": 243,
+    "bookLines": [23204, 23216],
+    "effects": [
+      { "kind": "acBonus", "value": 2, "scope": "sheet" }
+    ]
+  },
+  {
+    "id": "spell:haste",
+    "label": "Sob a Velocidade",
+    "spellId": "haste",
+    "page": 289,
+    "bookLines": [28204, 28219],
+    "effects": [
+      { "kind": "acBonus", "value": 2, "scope": "sheet" },
+      { "kind": "rollMode", "rolls": ["save"], "abilities": ["DEX"], "mode": "advantage", "scope": "sheet" },
+      { "kind": "speedMultiplier", "factor": 2, "scope": "sheet" },
+      { "kind": "notice", "scope": "notice", "text": "Uma ação a mais em cada um dos seus turnos, só para Atacar (um ataque com arma, apenas), Disparada, Desengajar, Esconder ou Usar um Objeto." }
+    ],
+    "onEnd": { "notice": "você não pode se mover nem realizar ações até depois do seu próximo turno" }
+  },
+  {
+    "id": "spell:longstrider",
+    "label": "Com Passos Longos",
+    "spellId": "longstrider",
+    "page": 267,
+    "bookLines": [25901, 25907],
+    "effects": [
+      { "kind": "speedBonus", "feet": 10, "scope": "sheet" }
+    ]
+  },
+  {
+    "id": "spell:divine-favor",
+    "label": "Com o Auxílio Divino",
+    "spellId": "divine-favor",
+    "page": 222,
+    "bookLines": [20514, 20521],
+    "effects": [
+      { "kind": "weaponDamage", "weapons": "weapon-attack", "dice": { "count": 1, "sides": 4 }, "damageType": "radiant", "scope": "sheet" }
+    ]
+  },
+  {
+    "id": "spell:barkskin",
+    "label": "Com a Pele de Árvore",
+    "spellId": "barkskin",
+    "page": 268,
+    "bookLines": [25943, 25953],
+    "effects": [
+      { "kind": "acMinimum", "value": 16, "scope": "sheet" }
+    ]
+  },
+  {
+    "id": "action:dodge",
+    "label": "Esquivando",
+    "name": "Esquivar",
+    "page": 194,
+    "bookLines": [17408, 17414],
+    "effects": [
+      { "kind": "againstYou", "scope": "notice", "text": "Toda jogada de ataque contra você tem desvantagem, se você puder ver o atacante." },
+      { "kind": "rollMode", "rolls": ["save"], "abilities": ["DEX"], "mode": "advantage", "scope": "sheet" }
+    ],
+    "endsOn": ["startOfYourTurn", "incapacitated", "speedZero"]
+  }
+]

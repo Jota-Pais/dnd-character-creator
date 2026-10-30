@@ -8,7 +8,7 @@ import {
 } from '../types/playState'
 import {
   getActiveConditionEffects, getCondition, getEffectiveConditions, getEffectiveHpMax,
-  applyConditionSpeed, damageTypeSetHas, halveSpeedOnGrid, withConditionApplied,
+  applyConditionSpeed, damageTypeSetHas, halveSpeedOnGrid, isConditionSuspended, withConditionApplied,
   type ActiveConditionEffects, type ConditionState, type SheetDamageDefense,
 } from './sheetEffects'
 import type { ZeroHpSave } from '../types/effects'
@@ -1007,14 +1007,17 @@ const RECHARGE_TEXT: Record<NonNullable<SheetResource['recharge']>, string> = {
 export type ToggleOn = { option?: string; now: number }
 
 /**
- * Tira um efeito ligado do rascunho `next` da operação, com o que a opção dele custa ao acabar (o
- * Frenesi: um nível de exaustão, pelo caminho do `setExhaustion`, com os avisos dele).
+ * Tira um efeito ligado do rascunho `next` da operação, com o que vem quando ele acaba: o que o app
+ * não aplica, em aviso (a letargia da Velocidade), e o que a opção custa (o Frenesi: um nível de
+ * exaustão, pelo caminho do `setExhaustion`, com os avisos dele).
  */
 function endToggleInto(next: PlayState, sheet: PlaySheet, id: string, notices: PlayNotice[]): void {
   const active = next.activeEffects.find(a => a.id === id)
   if (!active) return
   next.activeEffects = next.activeEffects.filter(a => a.id !== id)
-  const option = active.option ? sheet.toggles.find(t => t.id === id)?.options.find(o => o.id === active.option) : undefined
+  const toggle = sheet.toggles.find(t => t.id === id)
+  if (toggle?.onEnd) notices.push(note('warning', `${toggle.source} acabou: ${toggle.onEnd.notice} (pág. ${toggle.page}).`))
+  const option = active.option ? toggle?.options.find(o => o.id === active.option) : undefined
   const exhaustion = option?.onEnd?.exhaustion ?? 0
   if (!option || exhaustion === 0) return
   const before = next.exhaustionLevel
@@ -1028,14 +1031,36 @@ function endToggleInto(next: PlayState, sheet: PlaySheet, id: string, notices: P
 
 /**
  * Cair inconsciente encerra o que declara `endsOn: 'unconscious'` (a Fúria, pág. 48), com aviso; a
- * morte também (`toDead`), com o aviso dela.
+ * morte também (`toDead`), com o aviso dela. O Inconsciente incapacita (pág. 292): o que acaba
+ * incapacitado (o Esquivar) acaba aqui também.
  */
 function endTogglesOnUnconscious(next: PlayState, sheet: PlaySheet, notices: PlayNotice[], by: 'unconscious' | 'death' = 'unconscious'): void {
   for (const toggle of sheet.toggles) {
-    if (!toggle.endsOn.includes('unconscious') || !next.activeEffects.some(a => a.id === toggle.id)) continue
+    const ends = toggle.endsOn.includes('unconscious') || toggle.endsOn.includes('incapacitated')
+    if (!ends || !next.activeEffects.some(a => a.id === toggle.id)) continue
     notices.push(note('info', by === 'death'
       ? `${toggle.source}: terminou com a morte.`
       : `${toggle.source}: terminou ao cair inconsciente (pág. ${toggle.page}).`))
+    endToggleInto(next, sheet, toggle.id, notices)
+  }
+}
+
+/**
+ * Ficar incapacitado (gravado ou derivado: Atordoado, Paralisado) ou com o deslocamento em 0
+ * (Agarrado, Exaustão 5) encerra o que declara `endsOn` 'incapacitated' e 'speedZero' (o Esquivar,
+ * pág. 194: "Você perde esse benefício"), com aviso. O Inconsciente vai por `endTogglesOnUnconscious`.
+ */
+function endTogglesOnState(next: PlayState, sheet: PlaySheet, notices: PlayNotice[]): void {
+  const fx = getPlayEffects(next, sheet)
+  const incapacitated = fx.conditions.find(c => c.id === 'incapacitated' && !isConditionSuspended(c))
+  const stopped = getPlaySpeed(next, sheet) === 0
+  for (const toggle of sheet.toggles) {
+    if (!next.activeEffects.some(a => a.id === toggle.id)) continue
+    const why = incapacitated && toggle.endsOn.includes('incapacitated')
+      ? `você está incapacitado (${incapacitated.direct ? incapacitated.name : getCondition(incapacitated.impliedBy[0])?.name ?? incapacitated.name})`
+      : stopped && toggle.endsOn.includes('speedZero') ? 'seu deslocamento caiu para 0' : null
+    if (!why) continue
+    notices.push(note('info', `${toggle.source}: terminou, ${why} (pág. ${toggle.page}).`))
     endToggleInto(next, sheet, toggle.id, notices)
   }
 }
@@ -1070,8 +1095,9 @@ export function endTogglesOnRest(state0: PlayState, sheet: PlaySheet, rest: 'sho
 
 /**
  * Liga um efeito (em fúria), sem custo: quem paga é a ação que liga (`performAction`), e o efeito
- * recebido de um aliado liga de graça. Recusa morto ou inconsciente, o efeito já ligado (a mesma
- * magia não acumula, pág. 207) e a opção que a ficha não tem. Os efeitos colaterais vêm com aviso,
+ * recebido de um aliado liga de graça. Recusa morto, o efeito já ligado (a mesma magia não acumula,
+ * pág. 207) e a opção que a ficha não tem; o da ficha, também inconsciente. A magia recebida, não:
+ * o app só registra o que a mesa já fez, e a Bênção num aliado a 0 PV vale nos testes contra a morte. Os efeitos colaterais vêm com aviso,
  * no mesmo passo do desfazer: a restrição em vigor encerra a concentração (decisão (e), pág. 48),
  * as condições de que agora você está imune ficam suspensas, e de armadura pesada o efeito liga sem
  * os benefícios (pág. 48).
@@ -1080,7 +1106,7 @@ export function activateToggle(state0: PlayState, sheet: PlaySheet, id: string, 
   const toggle = sheet.toggles.find(t => t.id === id)
   if (!toggle) return refuse(state0, `Efeito desconhecido: ${id}.`)
   if (state0.lifeState === 'dead') return refuse(state0, `${toggle.label}: o personagem está morto.`)
-  if (getPlayConditionState(state0).conditions.includes('unconscious')) {
+  if (!toggle.spellId && getPlayConditionState(state0).conditions.includes('unconscious')) {
     return refuse(state0, `${toggle.label}: o personagem está inconsciente.`)
   }
   if (state0.activeEffects.some(a => a.id === id)) return refuse(state0, `Já está ${lowerFirst(toggle.label)}.`)
@@ -1189,6 +1215,7 @@ export function addCondition(state: PlayState, sheet: PlaySheet, id: ConditionId
   if (cond.onApply?.dropHeldItems) notices.push(note('droppedItems', 'Largou o que estava segurando (pág. 292).'))
   checkConcentration(next, sheet, notices)
   if (id === 'unconscious') endTogglesOnUnconscious(next, sheet, notices)
+  endTogglesOnState(next, sheet, notices)
   return done(next, notices)
 }
 
@@ -1299,6 +1326,7 @@ export function setExhaustion(state0: PlayState, sheet: PlaySheet, level: number
     notices.push(note('info', 'Continua morto: use "fui revivido" para voltar.'))
   }
   checkConcentration(next, sheet, notices)
+  endTogglesOnState(next, sheet, notices)
   return done(next, notices)
 }
 

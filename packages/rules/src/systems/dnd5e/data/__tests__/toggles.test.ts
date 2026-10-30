@@ -1,11 +1,16 @@
 import { describe, it, expect } from 'vitest'
 import type { FeatureEffects } from '../../types/effects'
 import type { LevelFeature } from '../../types/class'
+import { EMPTY_DRAFT } from '../../types/character'
+import { ACTIVE_EFFECT_CATALOG } from '../../utils/activeEffects'
+import { buildPlaySheet } from '../../utils/playSheet'
+import { activateToggle, createPlayState } from '../../utils/playState'
 import { getProgressionOptions } from '../../utils/progressionOptions'
 import progressionFeatures from '../class-progression-features.json'
 import progressionChoices from '../progression-choices.json'
 import featsData from '../feats.json'
 import racesData from '../races.json'
+import spellsData from '../spells.json'
 
 /**
  * Os efeitos ligados nos dados (Fase 2, onda `efeitos-ativos`): a Fúria e o que a modifica. A
@@ -129,5 +134,102 @@ describe('efeitos ligados nos dados', () => {
     expect(elsewhere.map(x => x.name)).toEqual([])
     // O efeito ligado é de feature de classe; opção só o modifica.
     expect(OPTIONS.filter(h => h.effects.toggle || h.effects.actions).map(h => h.name)).toEqual([])
+  })
+})
+
+/**
+ * O catálogo das magias e ações recebidas (onda `efeitos-recebidos`): a declaração só diz o que o
+ * efeito faz, com a página e as linhas do extrato; o nome, o texto, a duração e a concentração são
+ * os de `spells.json`, sem cópia.
+ */
+describe('catálogo de efeitos de magia e de ação', () => {
+  const SPELLS = spellsData as { id: string; name: string }[]
+  // As chaves que uma entrada do catálogo pode ter: nenhum texto da magia (descrição, duração,
+  // alcance, concentração) entra aqui.
+  const ALLOWED = new Set(['id', 'label', 'spellId', 'name', 'page', 'bookLines', 'effects', 'benefits', 'endsOn', 'onEnd'])
+
+  it('cada entrada tem id único, que não colide com o da ficha, rótulo, página e as linhas do extrato', () => {
+    const ids = ACTIVE_EFFECT_CATALOG.map(t => t.id)
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(ids.filter(id => TOGGLE_IDS.has(id))).toEqual([])
+    for (const t of ACTIVE_EFFECT_CATALOG) {
+      expect(t.label, t.id).not.toBe('')
+      expect(t.page, t.id).toBeGreaterThan(0)
+      expect(t.bookLines?.[0], t.id).toBeGreaterThan(0)
+      expect(t.bookLines?.[1], t.id).toBeGreaterThanOrEqual(t.bookLines?.[0] ?? Infinity)
+    }
+  })
+
+  it('a magia existe em spells.json; o nome próprio é só do que não é magia (a ação)', () => {
+    for (const t of ACTIVE_EFFECT_CATALOG) {
+      if (t.spellId) {
+        expect(SPELLS.some(s => s.id === t.spellId), t.id).toBe(true)
+        expect(t.id).toBe(`spell:${t.spellId}`)
+        expect(t.name, t.id).toBeUndefined()
+      } else {
+        expect(t.name, t.id).toBeTruthy()
+        expect(t.id.startsWith('action:'), t.id).toBe(true)
+      }
+    }
+  })
+
+  it('nenhum campo de texto copiado de spells.json: só as chaves da declaração', () => {
+    const extra = ACTIVE_EFFECT_CATALOG.flatMap(t => Object.keys(t).filter(k => !ALLOWED.has(k)).map(k => `${t.id}: ${k}`))
+    expect(extra).toEqual([])
+    // O texto curto dos avisos não repete a descrição da magia.
+    const descriptions = (spellsData as { id: string; description: string }[])
+    for (const t of ACTIVE_EFFECT_CATALOG) {
+      const description = descriptions.find(s => s.id === t.spellId)?.description ?? ''
+      const texts = [...(t.effects ?? []), ...(t.benefits?.effects ?? [])].flatMap(e => ('text' in e ? [e.text] : []))
+      for (const text of texts) expect(description.includes(text), `${t.id}: ${text}`).toBe(false)
+    }
+  })
+
+  it('as dez entradas do desenho, com o que cada uma faz', () => {
+    const kinds = Object.fromEntries(ACTIVE_EFFECT_CATALOG.map(t =>
+      [t.id, [...(t.effects ?? []), ...(t.benefits?.effects ?? [])].map(e => e.kind)]))
+    expect(kinds).toEqual({
+      'spell:bless': ['rollDice'],
+      'spell:bane': ['rollDice'],
+      'spell:shield': ['acBonus', 'notice'],
+      'spell:mage-armor': ['acFormula'],
+      'spell:shield-of-faith': ['acBonus'],
+      'spell:haste': ['acBonus', 'rollMode', 'speedMultiplier', 'notice'],
+      'spell:longstrider': ['speedBonus'],
+      'spell:divine-favor': ['weaponDamage'],
+      'spell:barkskin': ['acMinimum'],
+      'action:dodge': ['againstYou', 'rollMode'],
+    })
+  })
+
+  // "o alvo pode jogar um d4 e adicionar" (linhas 20601-20604); "deve rolar um d4 e subtrair"
+  // (linhas 26000-26002). As duas alcançam o teste contra a morte (decisão 22, pelo Sortudo).
+  it('a Bênção soma 1d4 e a Perdição subtrai, no ataque e no TR, também no teste contra a morte', () => {
+    const dice = (id: string) => ACTIVE_EFFECT_CATALOG.find(t => t.id === id)?.effects?.[0]
+    expect(dice('spell:bless')).toEqual({ kind: 'rollDice', rolls: ['attack', 'save'], dice: { count: 1, sides: 4 }, sign: 1, deathSave: true, scope: 'sheet' })
+    expect(dice('spell:bane')).toMatchObject({ rolls: ['attack', 'save'], sign: -1, deathSave: true })
+  })
+
+  // "A magia acaba se o alvo colocar uma armadura" (linhas 20253-20255); o escudo soma +2 e não a
+  // encerra (decisão de 2026-10-30).
+  it('a Armadura Arcana vale sem armadura vestida e acaba ao vestir uma; o escudo não conta', () => {
+    const mageArmor = ACTIVE_EFFECT_CATALOG.find(t => t.id === 'spell:mage-armor')
+    expect(mageArmor?.benefits?.requires).toBe('noArmor')
+    expect(mageArmor?.endsOn).toEqual(['donArmor'])
+    expect(mageArmor?.benefits?.effects).toEqual([
+      { kind: 'acFormula', formula: { id: 'mage-armor', base: 13, abilities: ['DEX'] }, scope: 'sheet' },
+    ])
+  })
+
+  it('a mesma magia não liga duas vezes: um id, um efeito (pág. 207)', () => {
+    const sheet = buildPlaySheet({ ...structuredClone(EMPTY_DRAFT), race: 'human', class: 'fighter', level: 1 })
+    const once = activateToggle(createPlayState('c'), sheet, 'spell:bless', { now: 1 })
+    expect(once.state.activeEffects.map(a => a.id)).toEqual(['spell:bless'])
+    const twice = activateToggle(once.state, sheet, 'spell:bless', { now: 2 })
+    expect(twice.state).toBe(once.state)
+    expect(twice.notices).toEqual([{ kind: 'refused', text: 'Já está sob a Bênção.' }])
+    // Magias diferentes somam.
+    const both = activateToggle(once.state, sheet, 'spell:shield-of-faith', { now: 3 })
+    expect(both.state.activeEffects.map(a => a.id)).toEqual(['spell:bless', 'spell:shield-of-faith'])
   })
 })

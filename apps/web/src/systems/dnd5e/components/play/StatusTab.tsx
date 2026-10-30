@@ -6,6 +6,7 @@ import {
 } from '@rpg/rules/systems/dnd5e/utils/playState'
 import { describeDamageDefenses, EXHAUSTION } from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
 import { ACTIVE_EFFECTS_SECTION_ID, ActiveEffectsSection } from './ActiveEffectsSection'
+import { getShownToggles } from './effectToggles'
 import { ConditionsSection } from './ConditionsSection'
 import { LongRestPanel } from './LongRestPanel'
 import { ShortRestPanel } from './ShortRestPanel'
@@ -258,7 +259,7 @@ export function StatusTab(view: PlayTabProps) {
   const defenseLines = describeDamageDefenses(getPlayDamageDefenses(view.state, view.sheet))
   return (
     <div className="space-y-6">
-      {view.sheet.toggles.length > 0 && (
+      {getShownToggles(view.state, view.sheet).length > 0 && (
         <Section title="Efeitos ativos" id={ACTIVE_EFFECTS_SECTION_ID} headingRef={effectsTitle}>
           <ActiveEffectsSection {...view} titleRef={effectsTitle} />
         </Section>

@@ -5,7 +5,7 @@ import { NO_SESSION } from '../../types/session'
 import { COMPLETE_DRAFT } from '../../../../test/fixtures'
 import { getFinalAbilityScores } from '../asiUtils'
 import { getSheetAttacks } from '../attackUtils'
-import { describeToggleEffects, getSheetSession, resolveActiveEffects } from '../activeEffects'
+import { describeToggleEffects, getCatalogToggles, getSessionToggles, getSheetSession, resolveActiveEffects } from '../activeEffects'
 import { buildPlaySheet } from '../playSheet'
 import { createPlayState } from '../playState'
 import { getConcentrationGuide, getRollGuide } from '../rollGuide'
@@ -142,6 +142,54 @@ describe('resolveActiveEffects', () => {
   })
 })
 
+describe('getCatalogToggles: as magias e ações recebidas', () => {
+  const human = (patch: Partial<CharacterDraft> = {}): CharacterDraft =>
+    ({ ...structuredClone(EMPTY_DRAFT), race: 'human', class: 'fighter', level: 1, ...patch })
+  const ids = (d: CharacterDraft) => getCatalogToggles(d).map(t => t.id)
+
+  it('qualquer ficha liga as que um aliado conjura; as de alcance Pessoal, só quem conhece a magia', () => {
+    expect(ids(human())).toEqual([
+      'spell:bless', 'spell:bane', 'spell:mage-armor', 'spell:shield-of-faith', 'spell:haste',
+      'spell:longstrider', 'spell:barkskin', 'action:dodge',
+    ])
+    const wizard = human({ class: 'wizard', spellChoices: { cantrips: [], spells: ['shield'] } })
+    expect(ids(wizard)).toContain('spell:shield')
+    expect(ids(wizard)).not.toContain('spell:divine-favor')
+    const paladin = human({ class: 'paladin', level: 2, spellChoices: { cantrips: [], spells: ['divine-favor'] } })
+    expect(ids(paladin)).toContain('spell:divine-favor')
+  })
+
+  it('a fonte é o nome da magia (spells.json) ou o da ação; o rótulo e a página são os da declaração', () => {
+    const [bless] = getCatalogToggles(human())
+    expect(bless).toMatchObject({ id: 'spell:bless', label: 'Sob a Bênção', source: 'Bênção', page: 223, spellId: 'bless' })
+    expect(getCatalogToggles(human()).at(-1)).toMatchObject({ id: 'action:dodge', label: 'Esquivando', source: 'Esquivar', page: 194 })
+  })
+
+  // A conta das durações (`spells.json`), como a da Fúria: a Bênção (1 minuto) acaba nos dois
+  // descansos; a Armadura Arcana (8 horas), só no longo, que tem pelo menos 8 horas (p. 188).
+  it('o descanso encerra pela duração da magia, sem cópia dela', () => {
+    const byId = Object.fromEntries(getCatalogToggles(human()).map(t => [t.id, t.endsOn]))
+    expect(byId['spell:bless']).toEqual(['shortRest', 'longRest'])
+    expect(byId['spell:mage-armor']).toEqual(['donArmor', 'longRest'])
+    expect(byId['spell:longstrider']).toEqual(['shortRest', 'longRest'])
+    expect(byId['action:dodge']).toEqual(['startOfYourTurn', 'incapacitated', 'speedZero', 'shortRest', 'longRest'])
+  })
+
+  it('a Armadura Arcana fica sem os benefícios de armadura vestida; o escudo não a impede', () => {
+    const mageArmor = (d: CharacterDraft) => getCatalogToggles(d).find(t => t.id === 'spell:mage-armor')?.benefits[0]
+    expect(mageArmor(human(carrying('chain-mail')))?.blockedBy).toBe('Cota de Malha')
+    expect(mageArmor(human(carrying('shield')))?.blockedBy).toBeUndefined()
+  })
+
+  it('o PlaySheet e a sessão levam os da ficha e os do catálogo', () => {
+    const d = barbarian(1)
+    expect(getSessionToggles(d).map(t => t.id)).toEqual(['rage', ...ids(d)])
+    expect(buildPlaySheet(d).toggles.map(t => t.id)).toEqual(getSessionToggles(d).map(t => t.id))
+    const blessed = { ...createPlayState('c'), activeEffects: [{ id: 'spell:bless', startedAt: 1 }] }
+    expect(getSheetSession(d, blessed).active.map(t => [t.id, t.source])).toEqual([['spell:bless', 'Bênção']])
+  })
+})
+
 // Duas portas, sem conta paralela: sem sessão, NO_SESSION e a sessão de um estado sem efeito
 // ligado dão a mesma ficha. A Revisão e o PDF nunca passam sessão.
 describe('sem sessão ≡ NO_SESSION ≡ estado sem efeito ligado', () => {
@@ -160,7 +208,7 @@ describe('sem sessão ≡ NO_SESSION ≡ estado sem efeito ligado', () => {
     expect(getCastingRestrictions(d, NO_SESSION)).toEqual(getCastingRestrictions(d))
     const empty = createPlayState('c')
     // Um id que a ficha não tem não muda nada.
-    const unknown = { ...empty, activeEffects: [{ id: 'spell:bless', startedAt: 1 }] }
+    const unknown = { ...empty, activeEffects: [{ id: 'spell:inventada', startedAt: 1 }] }
     expect(getRollGuide(d, unknown)).toEqual(getRollGuide(d, empty))
     expect(getConcentrationGuide(d, unknown, 10)).toEqual(getConcentrationGuide(d, empty, 10))
   })

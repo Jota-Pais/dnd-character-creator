@@ -4,7 +4,7 @@ import type { ArmorProficiency, LevelFeature } from '../types/class'
 import type { AbilityScore, RacialTrait } from '../types/race'
 import type {
   ActiveEffect, AttackScope, CastingRestriction, ConditionalAcBonus, ConditionalRollNote, EquipmentRequirement, FeatureEffects,
-  LevelStep, LoadingOverride, ResourceEffect, ToggleBenefits,
+  LevelStep, LoadingOverride, ResourceEffect, ToggleBenefits, ToggleDeclaration,
 } from '../types/effects'
 import type { SheetAction } from '../types/actions'
 import { NO_SESSION, type ResolvedToggle, type SheetSession, type SheetToggle, type SourcedActiveEffect } from '../types/session'
@@ -290,6 +290,35 @@ export function formatCastingRestriction(restriction: SheetCastingRestriction): 
 const sourced = (source: string, effects: ActiveEffect[] | undefined): SourcedActiveEffect[] =>
   (effects ?? []).map(effect => ({ source, effect }))
 
+/** Os benefícios com quem os dá e o que, no equipamento, os impede agora (`blockedBy`). */
+function toggleBenefits(source: string, b: ToggleBenefits, equipped: ReturnType<typeof getEquippedArmor>): SheetToggle['benefits'][number] {
+  const blockedBy = equipmentBlocker(b.requires, equipped)
+  return { requires: b.requires, effects: sourced(source, b.effects), ...(blockedBy ? { blockedBy } : {}) }
+}
+
+/** A declaração de um efeito ligado, com quem a dá e os benefícios avaliados com o equipamento. */
+function declaredToggle(t: ToggleDeclaration, source: string, equipped: ReturnType<typeof getEquippedArmor>): SheetToggle {
+  return {
+    id: t.id, label: t.label, source, page: t.page,
+    ...(t.spellId ? { spellId: t.spellId } : {}),
+    effects: sourced(source, t.effects),
+    benefits: t.benefits ? [toggleBenefits(source, t.benefits, equipped)] : [],
+    endsOn: [...(t.endsOn ?? [])],
+    ...(t.earlyEndReminder ? { earlyEndReminder: t.earlyEndReminder } : {}),
+    ...(t.onEnd ? { onEnd: { ...t.onEnd } } : {}),
+    options: [],
+  }
+}
+
+/**
+ * Um efeito do catálogo (a magia ou a ação recebida, `getCatalogToggles`) como a ficha o liga: com
+ * quem o dá (o nome da magia ou da ação) e o bloqueio dos benefícios pela armadura da ficha — o
+ * mesmo critério dos efeitos das características (a Armadura Arcana, só sem armadura vestida).
+ */
+export function getDeclaredToggle(draft: CharacterDraft, declaration: ToggleDeclaration, source: string): SheetToggle {
+  return declaredToggle(declaration, source, getDraftEquippedArmor(draft))
+}
+
 /**
  * Os efeitos que a ficha pode ligar em jogo (`toggle`: a Fúria), das features de classe e subclasse
  * no nível NA classe dona, com o que as outras características acrescentam (`toggleModifiers`, das
@@ -304,23 +333,12 @@ const sourced = (source: string, effects: ActiveEffect[] | undefined): SourcedAc
  */
 export function getSheetToggles(draft: CharacterDraft): SheetToggle[] {
   const equipped = getDraftEquippedArmor(draft)
-  const benefitsOf = (source: string, b: ToggleBenefits): SheetToggle['benefits'][number] => {
-    const blockedBy = equipmentBlocker(b.requires, equipped)
-    return { requires: b.requires, effects: sourced(source, b.effects), ...(blockedBy ? { blockedBy } : {}) }
-  }
   const features = getOwnedClassFeatures(draft)
   const toggles: SheetToggle[] = []
   for (const feature of features) {
     const t = feature.effects?.toggle
     if (!t || toggles.some(o => o.id === t.id)) continue
-    toggles.push({
-      id: t.id, label: t.label, source: feature.name, page: t.page,
-      effects: sourced(feature.name, t.effects),
-      benefits: t.benefits ? [benefitsOf(feature.name, t.benefits)] : [],
-      endsOn: [...(t.endsOn ?? [])],
-      ...(t.earlyEndReminder ? { earlyEndReminder: t.earlyEndReminder } : {}),
-      options: [],
-    })
+    toggles.push(declaredToggle(t, feature.name, equipped))
   }
   const modifiers = [
     ...features.flatMap(f => (f.effects?.toggleModifiers ?? []).map(m => ({ source: f.name, m }))),
@@ -331,7 +349,7 @@ export function getSheetToggles(draft: CharacterDraft): SheetToggle[] {
     const t = toggles.find(o => o.id === m.toggle)
     if (!t) continue
     t.effects.push(...sourced(source, m.effects))
-    if (m.benefits) t.benefits.push(benefitsOf(source, m.benefits))
+    if (m.benefits) t.benefits.push(toggleBenefits(source, m.benefits, equipped))
     t.options.push(...(m.options ?? []).map(o => ({ ...o, source })))
     if (m.suppressEarlyEnd) delete t.earlyEndReminder
     if (m.zeroHpSave) t.zeroHpSave = { ...m.zeroHpSave, source }
@@ -393,6 +411,8 @@ function equipmentBlocker(
   if (requires === 'noHeavyArmor') {
     return bodyArmor?.category === 'heavy' ? bodyArmor.name : undefined
   }
+  // O escudo não é armadura que se veste (a Armadura Arcana com escudo, decisão de 2026-10-30).
+  if (requires === 'noArmor') return bodyArmor?.name
   const worn = [bodyArmor?.name, hasShield ? 'escudo' : undefined].filter(Boolean)
   return worn.length > 0 ? worn.join(' e ') : undefined
 }
@@ -1892,6 +1912,7 @@ const REQUIREMENT_TEXT: Record<EquipmentRequirement, { when: string; blocked: (b
   heavyArmor: { when: 'vestindo armadura pesada', blocked: () => 'você não está de armadura pesada' },
   noHeavyArmor: { when: 'sem armadura pesada', blocked: by => `você está de ${by}` },
   noArmorNoShield: { when: 'sem armadura nem escudo', blocked: by => `você está de ${by}` },
+  noArmor: { when: 'sem armadura', blocked: by => `você está de ${by}` },
 }
 
 function describeDamageDefense(d: SheetDamageDefense, all: readonly SheetDamageDefense[]): string {

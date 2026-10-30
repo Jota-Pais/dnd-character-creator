@@ -1889,3 +1889,54 @@ describe('efeitos ligados: a Fúria pela ação que a liga', () => {
     expect(r.notices).toEqual([])
   })
 })
+
+describe('efeitos recebidos: o catálogo no estado de jogo', () => {
+  const fighter = buildPlaySheet({ ...structuredClone(EMPTY_DRAFT), race: 'human', class: 'fighter', level: 3 })
+  const on = (s: PlayState, id: string) => activateToggle(s, fighter, id, { now: 5 })
+  const ids = (s: PlayState) => s.activeEffects.map(a => a.id)
+
+  it('a magia recebida liga a 0 PV (a Bênção vale no teste contra a morte); a do personagem morto, não', () => {
+    const dying = state({ lifeState: 'dying', damageTaken: 20 })
+    expect(ids(on(dying, 'spell:bless').state)).toEqual(['spell:bless'])
+    const dead = state({ lifeState: 'dead', damageTaken: 20 })
+    expect(on(dead, 'spell:bless').notices).toEqual([{ kind: 'refused', text: 'Sob a Bênção: o personagem está morto.' }])
+  })
+
+  // "Você perde esse benefício se estiver incapacitado [...] ou se seu deslocamento cair para 0"
+  // (linhas 17413-17414).
+  it('o Esquivar acaba incapacitado, derivado também, e com o deslocamento em 0', () => {
+    const dodging = on(state(), 'action:dodge').state
+    const stunned = addCondition(dodging, fighter, 'stunned')
+    expect(ids(stunned.state)).toEqual([])
+    expect(stunned.notices).toContainEqual({ kind: 'info', text: 'Esquivar: terminou, você está incapacitado (Atordoado) (pág. 194).' })
+    const grappled = addCondition(dodging, fighter, 'grappled')
+    expect(ids(grappled.state)).toEqual([])
+    expect(grappled.notices).toContainEqual({ kind: 'info', text: 'Esquivar: terminou, seu deslocamento caiu para 0 (pág. 194).' })
+    expect(ids(setExhaustion(dodging, fighter, 5).state)).toEqual([])
+    // O Inconsciente incapacita: a queda a 0 PV o encerra como encerra a fúria.
+    const fallen = applyDamage(dodging, fighter, { amount: 30 })
+    expect(ids(fallen.state)).toEqual([])
+    expect(fallen.notices).toContainEqual({ kind: 'info', text: 'Esquivar: terminou ao cair inconsciente (pág. 194).' })
+    // O que não incapacita nem para, não.
+    expect(ids(addCondition(dodging, fighter, 'poisoned').state)).toEqual(['action:dodge'])
+    expect(ids(setExhaustion(dodging, fighter, 2).state)).toEqual(['action:dodge'])
+  })
+
+  // "Quando a magia acabar, o alvo não poderá se mover ou realizar ações até depois do seu próximo
+  // turno" (linhas 28217-28219): o app não aplica, e o aviso do fim o diz.
+  it('a Velocidade avisa a letargia quando acaba', () => {
+    const hasted = on(state(), 'spell:haste').state
+    expect(deactivateToggle(hasted, fighter, 'spell:haste').notices).toEqual([{
+      kind: 'warning',
+      text: 'Velocidade acabou: você não pode se mover nem realizar ações até depois do seu próximo turno (pág. 289).',
+    }])
+  })
+
+  it('o descanso encerra o que dura menos que ele: a Bênção no curto, a Armadura Arcana só no longo', () => {
+    const both = on(on(state(), 'spell:bless').state, 'spell:mage-armor').state
+    const short = completeShortRest(both, fighter)
+    expect(ids(short.state)).toEqual(['spell:mage-armor'])
+    expect(short.notices).toContainEqual({ kind: 'info', text: 'Bênção: acaba durante o descanso (pág. 223).' })
+    expect(ids(completeLongRest(both, fighter).state)).toEqual([])
+  })
+})

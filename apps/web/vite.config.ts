@@ -35,7 +35,7 @@ export default defineConfig({
   build: {
     // O JS é um arquivo só (~1,9 MB, 530 kB comprimido; os dados dos dois sistemas são a maior
     // parte). Medido em 2026-10-30 (docs/app-instalavel.md): no celular com 4G rápido, a primeira
-    // abertura mostra a galeria em ~1,6 s, longe dos ~3 s a partir dos quais vale dividir o código,
+    // abertura mostra a galeria em ~1,3 s, longe dos ~3 s a partir dos quais vale dividir o código,
     // e as aberturas seguintes saem do service worker. O aviso volta acima de 2 MB: medir de novo.
     chunkSizeWarningLimit: 2048,
   },

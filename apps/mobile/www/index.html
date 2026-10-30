@@ -93,7 +93,7 @@
           'O app precisa de uma versão mais nova do “Android System WebView”. Atualize-o pela Play Store e abra o app de novo.'
       }
 
-      // O caminho que a casca nativa entende como "abrir o site de novo" (ErrorPagePlugin.java).
+      // O caminho que a casca nativa entende como "abrir o site de novo" (NativeShellPlugin.java).
       // Sem rede, nem tenta: o aviso diz e a página fica.
       document.getElementById('retry').addEventListener('click', function () {
         var status = document.getElementById('status')

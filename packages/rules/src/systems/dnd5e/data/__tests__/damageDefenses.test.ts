@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { DamageDefenses } from '../../types/effects'
 import type { ConditionId } from '../../types/condition'
-import { isDamageTypeId } from '../../utils/damageTypes'
+import { DAMAGE_TYPES, isDamageTypeId } from '../../utils/damageTypes'
 import { CONDITIONS } from '../../utils/sheetEffects'
 import { getProgressionOptions } from '../../utils/progressionOptions'
 import progressionFeatures from '../class-progression-features.json'
@@ -33,11 +33,20 @@ const ENTRIES: Entry[] = [
   ...optionLists.flatMap(id => (getProgressionOptions(id) as Described[]).map(toEntry(`opção ${id}`))),
 ]
 
+/** Os nomes dos tipos, para o texto que os lista sem dizer "dano" (Pedra de Transmutador, p. 101). */
+const DAMAGE_TYPE_NAMES = DAMAGE_TYPES.map(t => t.name.toLowerCase()).join('|')
+
 /**
  * O texto fala de defesa contra dano ou de imunidade. As formas do livro e dos dados: "resistência a
- * dano de fogo", "resistência contra o dano causado por magias" (Resistência à Magia, p. 98).
+ * dano de fogo", "resistência contra o dano causado por magias" (Resistência à Magia, p. 98),
+ * "resistência a ácido, frio, fogo…" (Pedra de Transmutador).
  */
-const MENTIONS_DEFENSE = /resist[êe]ncia (?:a|ao|à|contra) (?:o |todo |todos os tipos de |esse tipo de |o tipo de )?dano|imunes? a/i
+const MENTIONS_DEFENSE = new RegExp(
+  'resist[êe]ncia (?:a|ao|à|contra) (?:o |todo |todos os tipos de |esse tipo de |o tipo de )?dano'
+  + `|resist[êe]ncia a (?:${DAMAGE_TYPE_NAMES})\\b`
+  + '|imunes? a',
+  'i',
+)
 
 /**
  * O texto fala de defesa, mas a defesa não é da ficha a toda hora: fica com o motivo. Quando a onda
@@ -54,6 +63,8 @@ const EXCEPTIONS: Record<string, string> = {
   'subclasse circle-of-the-land: Santuário Natural': 'a imunidade é da criatura que ataca',
   'subclasse oath-of-vengeance: Canalizar Divindade': '"imunes a amedrontado" são os alvos',
   'talento: Adepto Elemental': 'fala das magias que você conjura, não de uma defesa sua',
+  'subclasse transmutation: Pedra de Transmutador':
+    'a resistência é de quem está com a pedra (você ou outra criatura), ao tipo escolhido ao criá-la: escolha de sessão fora do desenho (levada ao dono)',
 }
 
 describe('defesas contra dano nos dados (p. 199)', () => {
@@ -68,6 +79,12 @@ describe('defesas contra dano nos dados (p. 199)', () => {
     const magic = ENTRIES.find(e => e.where === 'subclasse abjuration' && e.name === 'Resistência à Magia')
     expect(MENTIONS_DEFENSE.test(magic?.text ?? '')).toBe(true)
     expect(magic?.defenses).toEqual({ resistances: 'all', condition: 'de magia' })
+  })
+
+  it('a procura reconhece a lista de tipos sem a palavra "dano": a Pedra de Transmutador fica nas exceções', () => {
+    const stone = ENTRIES.find(e => e.where === 'subclasse transmutation' && e.name === 'Pedra de Transmutador')
+    expect(MENTIONS_DEFENSE.test(stone?.text ?? '')).toBe(true)
+    expect(EXCEPTIONS['subclasse transmutation: Pedra de Transmutador']).toBeDefined()
   })
 
   it('todo id de tipo de dano existe em damage-types.json, e toda condição em conditions.json', () => {

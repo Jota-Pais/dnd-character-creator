@@ -1,6 +1,6 @@
 # App instalável e sem rede
 
-> O site publicado (`https://dnd-character-creator-gamma.vercel.app`) vira app no celular, por decisão do dono de 2026-10-29: no **iPhone**, o site instalado pela tela de início (sem App Store); no **Android**, o APK distribuído direto, que abre o mesmo site (ou o "Instalar app" do Chrome). Feito em 2026-10-29 e 2026-10-30.
+> O site publicado (`https://dnd-character-creator-gamma.vercel.app`) vira app no celular, por decisão do dono de 2026-10-29: no **iPhone**, o site instalado pela tela de início (sem App Store); no **Android**, o APK distribuído direto, que abre o mesmo site (ou o "Instalar app" do Chrome; o APK em `docs/app-android.md`). Feito em 2026-10-29 e 2026-10-30.
 >
 > **A origem não pode mudar.** As fichas moram no localStorage dela, o service worker e o cache também, e o APK abre esse endereço. Domínio novo é app novo, com a galeria vazia.
 

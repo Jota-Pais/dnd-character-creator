@@ -168,8 +168,12 @@ export function HpPanel({ view }: { view: PlayView }) {
   const questions = action === 'damage'
     ? getDefenseQuestions(defenses, partTypes)
     : { conditions: [], exceptions: [] }
+  // Só as caixas à vista: a de um tipo desmarcado depois não vale.
+  const conditionalDefenses = questions.conditions.map(q => q.text).filter(q => confirmed.includes(q))
+  const exceptions = questions.exceptions.map(q => q.text).filter(q => excepted.includes(q))
   const chosenTypes = partTypes.filter((t): t is DamageTypeId => t !== undefined)
-  const typeLines = describeDamageDefenses(getDefensesForTypes(defenses, chosenTypes))
+  // A linha diz o que o tipo vai fazer com as caixas como estão, pelo mesmo critério do pipeline.
+  const typeLines = describeDamageDefenses(getDefensesForTypes(defenses, chosenTypes, { conditionalDefenses, exceptions }))
 
   // O que impede o "Aplicar": texto que não é número, ou número sem sinal e sem botão escolhido (no
   // iPhone, o teclado numérico não tem sinal, e o caminho são os botões), ou a 2ª parcela com texto
@@ -220,15 +224,12 @@ export function HpPanel({ view }: { view: PlayView }) {
         { amount: secondAmount, ...(secondType ? { damageType: secondType } : {}) },
       ]
       : null
-    // Só as caixas à vista: a de um tipo desmarcado depois não vale.
-    const conditions = questions.conditions.map(q => q.text).filter(q => confirmed.includes(q))
-    const exceptions = questions.exceptions.map(q => q.text).filter(q => excepted.includes(q))
     return {
       amount: value + (secondAmount ?? 0),
       resisted,
       critical: atZero && critical,
       ...(parts ? { parts } : firstType ? { damageType: firstType } : {}),
-      ...(conditions.length > 0 ? { conditionalDefenses: conditions } : {}),
+      ...(conditionalDefenses.length > 0 ? { conditionalDefenses } : {}),
       ...(exceptions.length > 0 ? { exceptions } : {}),
       ...(canBeKnockedOut && knockout ? { knockout: true } : {}),
     }

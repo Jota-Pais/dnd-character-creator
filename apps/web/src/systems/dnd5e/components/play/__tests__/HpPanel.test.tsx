@@ -431,6 +431,30 @@ describe('HpPanel — o tipo do dano', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
     expect(screen.getByTestId('hp-current')).toHaveTextContent('6')
   })
+
+  it('a linha embaixo dos chips só diz o que vai valer: a condicional com a caixa, a de exceção sem a caixa que a cancela', () => {
+    openKrusk()
+    usePlayStore.setState(s => ({
+      sheet: s.sheet && {
+        ...s.sheet,
+        defenses: [
+          { source: 'Avatar da Batalha', kind: 'resistance', types: ['bludgeoning', 'piercing', 'slashing'], condition: 'de ataque com arma não mágica' },
+          { source: 'Resistência Demoníaca', kind: 'resistance', types: ['slashing'], exceptWhen: 'arma mágica ou de prata' },
+        ],
+      },
+    }))
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
+    fireEvent.click(typeGroup().getByRole('button', { name: 'Cortante' }))
+    const avatarLine = 'Resistência a concussão, cortante e perfurante de ataque com arma não mágica (Avatar da Batalha)'
+    const fiendLine = 'Resistência a cortante, salvo arma mágica ou de prata (Resistência Demoníaca)'
+    expect(screen.queryByText(avatarLine)).toBeNull()
+    expect(screen.getByText(fiendLine)).toBeInTheDocument()
+    fireEvent.click(screen.getByLabelText('Dano de ataque com arma não mágica? (Avatar da Batalha)'))
+    expect(screen.getByText(avatarLine)).toBeInTheDocument()
+    fireEvent.click(screen.getByLabelText('Arma mágica ou de prata? (anula Resistência Demoníaca)'))
+    expect(screen.queryByText(fiendLine)).toBeNull()
+  })
 })
 
 describe('HpPanel — o foco com as parcelas', () => {

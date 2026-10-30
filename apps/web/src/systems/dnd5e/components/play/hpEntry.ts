@@ -1,5 +1,7 @@
 import type { DamageTypeId } from '@rpg/rules/systems/dnd5e/types/damage'
+import type { DamageInput } from '@rpg/rules/systems/dnd5e/types/playState'
 import { DAMAGE_TYPES } from '@rpg/rules/systems/dnd5e/utils/damageTypes'
+import { defenseApplies } from '@rpg/rules/systems/dnd5e/utils/playState'
 import { damageTypeSetHas, type SheetDamageDefense } from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
 
 /** O que o campo de PV aplica: dano, cura ou PV temporários. */
@@ -57,7 +59,7 @@ export function choiceToDamageType(choice: DamageTypeChoice | null): DamageTypeI
   return choice && choice !== 'other' ? choice : undefined
 }
 
-/** A defesa vale agora para algum tipo de dano (não impedida pelo equipamento, nem só de condição). */
+/** A defesa pode valer agora para algum tipo de dano (não impedida pelo equipamento, nem só de condição). */
 const usableAgainstDamage = (d: SheetDamageDefense) => !d.blockedBy && d.kind !== 'conditionImmunity'
 
 /**
@@ -100,11 +102,15 @@ export function getDefenseQuestions(
 
 /**
  * As defesas que se aplicam aos tipos escolhidos, para a linha embaixo dos chips: o jogador vê o
- * que o tipo vai fazer antes de aplicar ("Resistência a fogo (Resistência Infernal)").
+ * que o tipo vai fazer antes de aplicar ("Resistência a fogo (Resistência Infernal)"). Só as que
+ * vão valer, pelo mesmo critério do pipeline (`defenseApplies`): a condicional entra com a caixa
+ * dela marcada, e a de exceção sai com a caixa que a cancela.
  */
 export function getDefensesForTypes(
   defenses: readonly SheetDamageDefense[],
   types: readonly DamageTypeId[],
+  boxes: Pick<DamageInput, 'conditionalDefenses' | 'exceptions'>,
 ): SheetDamageDefense[] {
-  return defenses.filter(d => usableAgainstDamage(d) && Array.isArray(d.types) && types.some(t => damageTypeSetHas(d.types, t)))
+  return defenses.filter(d => usableAgainstDamage(d) && defenseApplies(d, boxes)
+    && Array.isArray(d.types) && types.some(t => damageTypeSetHas(d.types, t)))
 }

@@ -118,7 +118,14 @@ describe('o tipo do dano e as caixas das defesas', () => {
   })
 
   it('a linha embaixo dos chips: as defesas que alcançam os tipos escolhidos', () => {
-    expect(getDefensesForTypes([infernal, avatar, aura], ['fire'])).toEqual([infernal])
-    expect(getDefensesForTypes([infernal, avatar], [])).toEqual([])
+    expect(getDefensesForTypes([infernal, avatar, aura], ['fire'], {})).toEqual([infernal])
+    expect(getDefensesForTypes([infernal, avatar], [], {})).toEqual([])
+  })
+
+  it('a linha diz só o que vai valer: a condicional com a caixa marcada, a de exceção sem a caixa que a cancela', () => {
+    expect(getDefensesForTypes([avatar, master], ['slashing'], {})).toEqual([])
+    expect(getDefensesForTypes([avatar, master], ['slashing'], { conditionalDefenses: ['de ataque não mágico'] })).toEqual([master])
+    expect(getDefensesForTypes([fiend], ['fire'], {})).toEqual([fiend])
+    expect(getDefensesForTypes([fiend], ['fire'], { exceptions: ['arma mágica ou de prata'] })).toEqual([])
   })
 })

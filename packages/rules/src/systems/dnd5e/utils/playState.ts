@@ -337,8 +337,14 @@ export function formatDefenseConditionQuestion(condition: string): string {
   return `Dano ${condition}?`
 }
 
-/** A defesa vale neste dano: não impedida pelo equipamento, com a situação confirmada e sem a exceção marcada. */
-function defenseApplies(d: SheetDamageDefense, input: DamageInput): boolean {
+/**
+ * A defesa vale neste dano: não impedida pelo equipamento, com a situação confirmada e sem a exceção
+ * marcada. O pipeline e a linha embaixo dos chips do painel de PV perguntam aqui.
+ */
+export function defenseApplies(
+  d: SheetDamageDefense,
+  input: Pick<DamageInput, 'conditionalDefenses' | 'exceptions'>,
+): boolean {
   if (d.blockedBy) return false
   if (d.condition && !(input.conditionalDefenses ?? []).includes(d.condition)) return false
   return !(d.exceptWhen && (input.exceptions ?? []).includes(d.exceptWhen))

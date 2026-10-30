@@ -242,3 +242,28 @@ describe('CD das manobras do Mestre de Batalha', () => {
     expect(text.indexOf(line)).toBe(text.lastIndexOf(line))
   })
 })
+
+// As defesas (resistências e imunidades) ganham a linha "Defesas" na Revisão e no PDF, pela mesma
+// função do jogo (describeDamageDefenses; decisão de produto de 2026-10-30).
+describe('Defesas na Revisão e no PDF', () => {
+  const tiefling: CharacterDraft = { ...structuredClone(EMPTY_DRAFT), name: 'Tielle', race: 'tiefling', class: 'fighter', level: 1 }
+  const monk10: CharacterDraft = { ...structuredClone(EMPTY_DRAFT), name: 'Lin', race: 'human', class: 'monk', level: 10 }
+
+  it.each([
+    ['Revisão', () => render(<ReviewStep />)],
+    ['ficha imprimível', () => render(<PrintableSheet />)],
+  ])('%s: a linha com as defesas da ficha; sem defesa, sem linha', (_, renderIt) => {
+    useCharacterStore.setState({ draft: structuredClone(tiefling) })
+    const { container, unmount } = renderIt()
+    expect(container.textContent).toContain('Defesas: Resistência a fogo (Resistência Infernal)')
+    unmount()
+
+    useCharacterStore.setState({ draft: structuredClone(monk10) })
+    const monk = renderIt()
+    expect(monk.container.textContent).toContain('Defesas: Imunidade a veneno e à condição Envenenado (Pureza Corporal)')
+    monk.unmount()
+
+    useCharacterStore.setState({ draft: { ...structuredClone(tiefling), race: 'human' } })
+    expect(renderIt().container.textContent).not.toContain('Defesas:')
+  })
+})

@@ -46,6 +46,7 @@ import {
   getTotalHp, getInitiativeBonusTotal, getSheetSpeed, describeSpeedBonuses,
   getConditionalAcBonuses, getSheetResources, getSheetArmorClass,
   describeAttacksPerAction, getSheetFightingStyles, describeConditionalSaveBonuses, getFeatManeuverBlock,
+  getDamageDefenses, describeDamageDefenses,
 } from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
 import type { ClassSpellcasting } from '@rpg/rules/systems/dnd5e/types/class'
 
@@ -110,6 +111,8 @@ export function PrintableSheet() {
   const speedLines = describeSpeedBonuses(draft, finalScores)
   const initiative = dexMod + getInitiativeBonusTotal(draft)
   const conditionalAc = getConditionalAcBonuses(draft)
+  // Resistências e imunidades: a mesma linha da Revisão e do jogo.
+  const defenseLines = describeDamageDefenses(getDamageDefenses(draft))
   const darkvision = race ? getEffectiveDarkvision(race, subrace) : 0
 
   const skillChecks = getSkillChecks(draft, finalScores)
@@ -209,6 +212,11 @@ export function PrintableSheet() {
       {/* Bônus de deslocamento com condição de equipamento: somado ou não, com o motivo. */}
       {speedLines.length > 0 && (
         <p className="text-xs mb-1">{speedLines.join(' · ')}</p>
+      )}
+
+      {/* Defesas: resistências e imunidades, com a situação quando são condicionais. */}
+      {defenseLines.length > 0 && (
+        <p className="text-xs mb-1"><span className="text-gray-600">Defesas: </span>{defenseLines.join(' · ')}</p>
       )}
 
       {/* CA condicional: fora do número, com a condição, pra valer na mesa sem inflar a ficha. */}

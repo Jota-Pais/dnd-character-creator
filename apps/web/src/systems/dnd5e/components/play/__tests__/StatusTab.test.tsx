@@ -277,3 +277,32 @@ describe('StatusTab — em fúria não se concentra (p. 48)', () => {
     expect(concentration()).not.toHaveTextContent('em fúria')
   })
 })
+
+// ── Defesas contra dano (p. 199) ─────────────────────────────────────────────
+
+describe('StatusTab — Defesas', () => {
+  const defensesSection = () => screen.queryByRole('heading', { name: 'Defesas' })?.closest('section') ?? null
+
+  it('o tiefling mostra "Resistência a fogo (Resistência Infernal)"', () => {
+    openDraft({ ...structuredClone(COMPLETE_DRAFT), name: 'Tielle', race: 'tiefling' })
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Estado' }))
+    const section = defensesSection()
+    expect(section).not.toBeNull()
+    expect(within(section!).getAllByRole('listitem').map(li => li.textContent)).toEqual([
+      'Resistência a fogo (Resistência Infernal)',
+    ])
+  })
+
+  it('a ficha sem defesa não ganha o bloco; as defesas das condições entram nele', () => {
+    openStatus()
+    expect(defensesSection()).toBeNull()
+    fireEvent.click(screen.getByRole('switch', { name: 'Petrificado' }))
+    expect(within(defensesSection()!).getAllByRole('listitem').map(li => li.textContent)).toEqual([
+      'Resistência a todo dano (Petrificado)',
+      'Imunidade a veneno (Petrificado)',
+    ])
+    fireEvent.click(screen.getByRole('switch', { name: 'Petrificado' }))
+    expect(defensesSection()).toBeNull()
+  })
+})

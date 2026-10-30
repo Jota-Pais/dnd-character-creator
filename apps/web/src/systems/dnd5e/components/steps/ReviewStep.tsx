@@ -38,6 +38,7 @@ import {
   getTotalHp, getInitiativeBonusTotal, getSheetSpeed, describeSpeedBonuses,
   getConditionalAcBonuses, getSheetResources, getSheetArmorClass,
   describeAttacksPerAction, getSheetFightingStyles, describeConditionalSaveBonuses, getFeatManeuverBlock,
+  getDamageDefenses, describeDamageDefenses,
 } from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
 import { getSheetAttacks } from '@rpg/rules/systems/dnd5e/utils/attackUtils'
 import { REPEATED_FEAT_MANEUVER_NOTE, getClassManeuverSaveDc, isManeuverSlot } from '@rpg/rules/systems/dnd5e/utils/maneuverUtils'
@@ -119,6 +120,8 @@ export function ReviewStep() {
   const conditionalAc = getConditionalAcBonuses(draft)
   // Ataque Extra (e a Lâmina Sedenta, com a condição): o mesmo texto da ficha imprimível.
   const attackLines = describeAttacksPerAction(draft)
+  // Resistências e imunidades (Resistência Infernal, Pureza Corporal): a mesma linha do PDF e do jogo.
+  const defenseLines = describeDamageDefenses(getDamageDefenses(draft))
   const sheetAttacks = getSheetAttacks(draft, finalScores)
   const darkvision = race ? getEffectiveDarkvision(race, subrace ?? null) : 0
   const classEquipment = cls?.startingEquipment
@@ -262,6 +265,9 @@ export function ReviewStep() {
         {attackLines.map(line => (
           <p key={line} className="text-xs text-parchment-700 mt-1 text-center">{line}</p>
         ))}
+        {defenseLines.length > 0 && (
+          <p className="text-xs text-parchment-700 mt-1 text-center">Defesas: {defenseLines.join(' · ')}</p>
+        )}
 
         {cls && level > 1 && (
           <div className="mt-4 pt-4 border-t border-parchment-900/60">

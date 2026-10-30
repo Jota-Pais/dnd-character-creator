@@ -1,8 +1,10 @@
 import { useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode, type RefObject } from 'react'
 import { flushSync } from 'react-dom'
 import { usePlayStore, type RestPanel } from '../../stores/playStore'
-import { describeHpMaxImmunity, endConcentration, setExhaustion, startConcentration } from '@rpg/rules/systems/dnd5e/utils/playState'
-import { EXHAUSTION } from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
+import {
+  describeHpMaxImmunity, endConcentration, getPlayDamageDefenses, setExhaustion, startConcentration,
+} from '@rpg/rules/systems/dnd5e/utils/playState'
+import { describeDamageDefenses, EXHAUSTION } from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
 import { ConditionsSection } from './ConditionsSection'
 import { LongRestPanel } from './LongRestPanel'
 import { ShortRestPanel } from './ShortRestPanel'
@@ -102,6 +104,20 @@ function ExhaustionSection({ state, sheet, run }: PlayTabProps) {
         Cada nível inclui os efeitos dos anteriores. O descanso longo tira 1 nível, se você comeu e bebeu.
       </p>
     </div>
+  )
+}
+
+/**
+ * As defesas contra dano em vigor, só leitura: as da ficha e as das condições (o Petrificado), com
+ * o mesmo texto da Revisão e do PDF. O painel de PV as aplica quando o jogador toca o tipo do dano.
+ */
+function DefensesSection({ lines }: { lines: string[] }) {
+  return (
+    <ul className="space-y-0.5" data-testid="damage-defenses">
+      {lines.map(line => (
+        <li key={line} className="text-sm text-parchment-300 leading-snug">{line}</li>
+      ))}
+    </ul>
   )
 }
 
@@ -229,16 +245,22 @@ function RestSection(view: PlayTabProps) {
 }
 
 /**
- * Aba "Estado": as condições (liga/desliga, regra a um toque, nota de duração), a exaustão, a
- * concentração e os descansos.
+ * Aba "Estado": as condições (liga/desliga, regra a um toque, nota de duração), as defesas contra
+ * dano (só quem tem), a exaustão, a concentração e os descansos.
  */
 export function StatusTab(view: PlayTabProps) {
   const concentrationTitle = useRef<HTMLHeadingElement>(null)
+  const defenseLines = describeDamageDefenses(getPlayDamageDefenses(view.state, view.sheet))
   return (
     <div className="space-y-6">
       <Section title="Condições">
         <ConditionsSection {...view} />
       </Section>
+      {defenseLines.length > 0 && (
+        <Section title="Defesas">
+          <DefensesSection lines={defenseLines} />
+        </Section>
+      )}
       <Section title="Exaustão">
         <ExhaustionSection {...view} />
       </Section>

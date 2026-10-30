@@ -203,12 +203,21 @@ describe('checkForUpdateOnReturn: o app que volta do segundo plano', () => {
     const doc = fakeDoc()
     let now = 0
     checkForUpdateOnReturn(asReg(reg), doc, () => now, true)
+    // Antes de completar a hora, nem a ida nem a volta procuram: o mesmo volume de pedidos de antes.
+    now = UPDATE_CHECK_INTERVAL_MS - 1
+    turn(doc, 'hidden')
+    turn(doc, 'visible')
+    expect(reg.update).not.toHaveBeenCalled()
+
     now = UPDATE_CHECK_INTERVAL_MS
     turn(doc, 'hidden')
     expect(reg.update).toHaveBeenCalledTimes(1)
     // A volta logo depois não procura de novo: o download que começou na saída já corre.
     now += AUTO_APPLY_MIN_AWAY_MS
     turn(doc, 'visible')
+    expect(reg.update).toHaveBeenCalledTimes(1)
+    // Nem a ida seguinte, dentro da hora.
+    turn(doc, 'hidden')
     expect(reg.update).toHaveBeenCalledTimes(1)
   })
 

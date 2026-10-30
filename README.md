@@ -13,7 +13,7 @@ Aplicativo web pra criar fichas de RPG de mesa em poucos minutos, mesmo sem conh
 
 - Assistente passo a passo com validação em tempo real e navegação livre entre etapas.
 - Galeria de personagens com salvamento automático no navegador.
-- Instalável no celular e funciona sem internet depois da primeira visita ([como funciona](docs/app-instalavel.md)).
+- Instalável no celular e funciona sem internet depois da primeira visita ([como funciona](docs/app-instalavel.md)); no Android, também como APK ([app do Android](docs/app-android.md)).
 - Exportar/importar fichas em JSON, uma a uma ou todas num arquivo só.
 - Ficha imprimível / exportável em PDF.
 - Regras digitalizadas das fontes oficiais, cobertas por mais de 1.100 testes automatizados.
@@ -22,7 +22,7 @@ Aplicativo web pra criar fichas de RPG de mesa em poucos minutos, mesmo sem conh
 
 React 19 + TypeScript estrito · Vite · Tailwind CSS v4 · Zustand · Vitest.
 
-SPA 100% front-end, sem backend, num repositório com workspaces npm: o motor de regras (`packages/rules`, TypeScript puro, sem tela, que roda no navegador e no Node) e o site (`apps/web`). A arquitetura é modular: o núcleo (`core/`) é agnóstico de regras, e cada sistema é um plugin em `systems/` — pronto pra receber outros RPGs.
+SPA 100% front-end, sem backend, num repositório com workspaces npm: o motor de regras (`packages/rules`, TypeScript puro, sem tela, que roda no navegador e no Node), o site (`apps/web`) e o APK do Android (`apps/mobile`, Capacitor, que abre o site publicado). A arquitetura é modular: o núcleo (`core/`) é agnóstico de regras, e cada sistema é um plugin em `systems/` — pronto pra receber outros RPGs.
 
 ## 🚀 Como Executar
 

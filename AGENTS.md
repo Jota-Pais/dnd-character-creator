@@ -22,6 +22,7 @@ Toda decisão de produto e design serve a esse objetivo: guiar o iniciante sem t
 - Deploy estático na Vercel (`vercel.json` na raiz), com CI de lint, testes e build no GitHub Actions
 - Sem servidor por enquanto: não sugerir API routes, server actions ou arquitetura com servidor próprio. O servidor (conta e sincronização) é plano do dono para depois, e o motor de regras já fica pronto para ele
 - App instalável e sem rede (iPhone pela tela de início, Android pelo APK que abre o site publicado): service worker que guarda só o que é do site, versão nova só na próxima abertura (nunca recarrega no meio do jogo), margens de área segura no que fica fixo nas bordas. Ver `docs/app-instalavel.md`
+- APK do Android (`apps/mobile`, Capacitor 8): casca que abre o site publicado (origem fixa, as fichas moram nela); código do site só do APK em `apps/web/src/core/native` (`isNativeApp()`); o voltar do Android pelo `useBackHandler` (folha e menu na camada `overlay`); chave de assinatura nunca no repositório. Ver `docs/app-android.md`
 
 ## Versão de D&D
 
@@ -62,6 +63,7 @@ apps/web/src/         # @rpg/web: o site (importa o motor como @rpg/rules/<camin
  ├─ core/             # tipos do IRpgSystem, registro dos sistemas, AppStore, galleryGrouping
  ├─ components/       # Design System / UI Genérica (Componentes sem regras de negócios)
  └─ systems/          # components, stores e storage.ts / playStorage.ts (localStorage) de cada sistema
+apps/mobile/          # @rpg/mobile: o APK do Android (Capacitor; android/, a página de erro em www/)
 docs/                 # Regras digitalizadas em markdown
 scripts/              # gravam nos dados do motor (packages/rules/src/systems/<sistema>/data)
 

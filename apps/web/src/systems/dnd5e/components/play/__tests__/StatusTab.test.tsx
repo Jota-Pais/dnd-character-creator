@@ -305,4 +305,16 @@ describe('StatusTab — Defesas', () => {
     fireEvent.click(screen.getByRole('switch', { name: 'Petrificado' }))
     expect(defensesSection()).toBeNull()
   })
+
+  it('paladino 10: a Aura de Coragem com a situação; consciente, o Amedrontado é recusado', () => {
+    openDraft({ ...structuredClone(COMPLETE_DRAFT), name: 'Valen', class: 'paladin', level: 10 })
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Estado' }))
+    expect(within(defensesSection()!).getAllByRole('listitem').map(li => li.textContent)).toEqual([
+      'Imunidade à condição Amedrontado, enquanto você estiver consciente (Aura de Coragem)',
+    ])
+    fireEvent.click(screen.getByRole('switch', { name: 'Amedrontado' }))
+    expect(playState().conditions).toEqual([])
+    expect(screen.getByText('Imune a Amedrontado (Aura de Coragem): a condição não foi aplicada.')).toBeInTheDocument()
+  })
 })

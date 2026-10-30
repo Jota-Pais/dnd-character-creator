@@ -1090,6 +1090,22 @@ describe('getDamageDefenses e describeDamageDefenses', () => {
     expect(lines(sub('warlock', 9, 'the-archfey'))).toEqual([])
   })
 
+  // "Você e as criaturas amigáveis [...] não podem ser amedrontadas enquanto você estiver consciente"
+  // (p. 111); os aliados ficam fora: o app é a ficha de quem joga.
+  it('paladino 10 e Juramento de Devoção 7: as auras, só enquanto consciente (p. 111 e 112)', () => {
+    expect(getDamageDefenses(draft({ level: 10, class: 'paladin' }))).toEqual([
+      { source: 'Aura de Coragem', kind: 'conditionImmunity', types: [], conditions: ['frightened'], whileConscious: true },
+    ])
+    expect(lines(draft({ level: 10, class: 'paladin' }))).toEqual([
+      'Imunidade à condição Amedrontado, enquanto você estiver consciente (Aura de Coragem)',
+    ])
+    expect(lines(draft({ level: 9, class: 'paladin' }))).toEqual([])
+    expect(lines(sub('paladin', 10, 'oath-of-devotion'))).toEqual([
+      'Imunidade à condição Enfeitiçado, enquanto você estiver consciente (Aura de Devoção)',
+      'Imunidade à condição Amedrontado, enquanto você estiver consciente (Aura de Coragem)',
+    ])
+  })
+
   it('paladino dos Anciões 7 e clérigo da Guerra 17: condicionais, com a situação (p. 113 e 68)', () => {
     expect(getDamageDefenses(sub('paladin', 7, 'oath-of-the-ancients'))).toEqual([
       { source: 'Aura de Vigilância', kind: 'resistance', types: 'all', condition: 'de magia' },

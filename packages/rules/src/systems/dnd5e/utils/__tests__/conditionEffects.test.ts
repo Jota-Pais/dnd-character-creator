@@ -442,6 +442,34 @@ describe('condições e efeitos ligados na mesma escada (p. 175)', () => {
     expect(fx.attack.mode).toBe('normal')
   })
 
+  // "Não podem ser amedrontadas enquanto você estiver consciente" (Aura de Coragem, p. 111).
+  describe('paladino 10 (Aura de Coragem): imune a Amedrontado só consciente', () => {
+    const paladin = buildPlaySheet({ ...structuredClone(EMPTY_DRAFT), class: 'paladin', level: 10 })
+    const REFUSED = { kind: 'refused', text: 'Imune a Amedrontado (Aura de Coragem): a condição não foi aplicada.' }
+
+    it('consciente: addCondition recusa, e o Amedrontado gravado fica suspenso', () => {
+      expect(addCondition(createPlayState('c'), paladin, 'frightened').notices).toEqual([REFUSED])
+      const fx = getPlayEffects({ ...createPlayState('c'), conditions: ['frightened'] }, paladin)
+      expect(fx.conditions[0].immuneBy).toEqual(['Aura de Coragem'])
+      // Os outros não: a aura é só do Amedrontado.
+      expect(addCondition(createPlayState('c'), paladin, 'charmed').state.conditions).toEqual(['charmed'])
+    })
+
+    it('a 0 PV, com o Inconsciente gravado ou morto, a aura não vale', () => {
+      const down = { ...createPlayState('c'), lifeState: 'dying' as const, damageTaken: paladin.maxHp }
+      const asleep = { ...createPlayState('c'), conditions: ['unconscious' as const] }
+      const dead = { ...createPlayState('c'), lifeState: 'dead' as const, damageTaken: paladin.maxHp }
+      for (const s of [down, { ...down, lifeState: 'stable' as const }, asleep, dead]) {
+        const r = addCondition(s, paladin, 'frightened')
+        expect(r.state.conditions, s.lifeState).toContain('frightened')
+        expect(getPlayEffects(r.state, paladin).conditions.find(c => c.id === 'frightened')?.immuneBy, s.lifeState).toBeUndefined()
+      }
+      // De volta à consciência, o Amedrontado gravado fica suspenso de novo.
+      const awake = getPlayEffects({ ...createPlayState('c'), conditions: ['frightened'] }, paladin)
+      expect(awake.conditions[0].immuneBy).toEqual(['Aura de Coragem'])
+    })
+  })
+
   it('o Urso resiste a fogo e não a psíquico, inclusive de Placas', () => {
     for (const items of [[], ['plate']]) {
       const sheet = buildPlaySheet(barbarian(3, carrying(...items), 'totem-warrior', { 'totem-warrior-totem-3': ['bear'] }))

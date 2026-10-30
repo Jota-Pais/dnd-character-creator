@@ -634,7 +634,8 @@
       {
         "level": 10,
         "name": "Aura de Coragem",
-        "description": "Enquanto você estiver consciente, você e as criaturas amigáveis a até 3 metros (9 metros a partir do 18° nível) não podem ser amedrontados."
+        "description": "Enquanto você estiver consciente, você e as criaturas amigáveis a até 3 metros (9 metros a partir do 18° nível) não podem ser amedrontados.",
+        "effects": { "damageDefenses": { "conditionImmunities": ["frightened"], "whileConscious": true } }
       },
       {
         "level": 11,
@@ -1281,7 +1282,8 @@
       {
         "level": 7,
         "name": "Aura de Devoção",
-        "description": "Enquanto você estiver consciente, você e as criaturas amistosas a até 3 metros (ou 9 metros no 18° nível) não podem ser enfeitiçadas."
+        "description": "Enquanto você estiver consciente, você e as criaturas amistosas a até 3 metros (ou 9 metros no 18° nível) não podem ser enfeitiçadas.",
+        "effects": { "damageDefenses": { "conditionImmunities": ["charmed"], "whileConscious": true } }
       },
       {
         "level": 15,

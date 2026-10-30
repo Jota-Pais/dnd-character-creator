@@ -83,8 +83,6 @@ const EXCEPTIONS: Record<string, string> = {
   'talento: Adepto Elemental': 'fala das magias que você conjura, não de uma defesa sua',
   'subclasse light-domain: Truque Adicional e Labareda Protetora': 'a imunidade é do atacante que não pode ser cegado',
   'subclasse enchantment: Encanto Instintivo': 'a imunidade é do atacante que não pode ser enfeitiçado',
-  'classe paladin: Aura de Coragem': 'só enquanto você estiver consciente, e vale para os aliados: levada ao dono',
-  'subclasse oath-of-devotion: Aura de Devoção': 'só enquanto você estiver consciente, e vale para os aliados: levada ao dono',
   'subclasse transmutation: Pedra de Transmutador':
     'a resistência é de quem está com a pedra (você ou outra criatura), ao tipo escolhido ao criá-la: escolha de sessão fora do desenho (levada ao dono)',
 }
@@ -129,6 +127,23 @@ describe('defesas contra dano nos dados (p. 199)', () => {
     expect(MENTIONS_DEFENSE.test('Você e as criaturas amigáveis não podem ser amedrontados.')).toBe(true)
     // "Não pode ser surpreendido" (Alerta) não é condição.
     expect(MENTIONS_DEFENSE.test('Você não pode ser surpreendido enquanto estiver consciente.')).toBe(false)
+  })
+
+  // Decisão do dono (2026-10-30): as auras valem como imunidade a condição do próprio paladino, salvo
+  // inconsciente; os aliados ficam fora (o app é a ficha individual).
+  it('as Auras de Coragem e de Devoção declaram a imunidade a condição, só enquanto você estiver consciente', () => {
+    const defenses = (where: string, name: string) => ENTRIES.find(e => e.where === where && e.name === name)?.defenses
+    expect(defenses('classe paladin', 'Aura de Coragem')).toEqual({ conditionImmunities: ['frightened'], whileConscious: true })
+    expect(defenses('subclasse oath-of-devotion', 'Aura de Devoção')).toEqual({ conditionImmunities: ['charmed'], whileConscious: true })
+  })
+
+  it('"enquanto consciente" só na imunidade a condição: o painel de PV não pergunta se você está consciente', () => {
+    for (const { where, name, defenses: d } of ENTRIES) {
+      if (!d?.whileConscious) continue
+      const label = `${where}: ${name}`
+      expect(d.conditionImmunities?.length, label).toBeGreaterThan(0)
+      expect([d.resistances, d.immunities, d.vulnerabilities, d.reduction, d.fromAncestor, d.fromSessionPick].filter(x => x !== undefined), label).toEqual([])
+    }
   })
 
   it('todo id de tipo de dano existe em damage-types.json, e toda condição em conditions.json', () => {

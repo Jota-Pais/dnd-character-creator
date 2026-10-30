@@ -155,6 +155,13 @@ export type DamageDefenses = {
    */
   exceptWhen?: string
   requires?: EquipmentRequirement
+  /**
+   * Só vale "enquanto você estiver consciente" (Aura de Coragem, p. 111; Aura de Devoção, p. 112): no
+   * jogo, não vale Inconsciente (a 0 PV ou com a condição gravada) nem morto, e a linha diz a
+   * situação. Só na imunidade a condição: o painel de PV não pergunta se você está consciente (o
+   * teste dos dados cobra).
+   */
+  whileConscious?: true
   /** A resistência é ao tipo do ancestral dracônico da sub-raça (Resistência a Dano, p. 34). */
   fromAncestor?: true
   /**

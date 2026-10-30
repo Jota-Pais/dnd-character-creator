@@ -263,6 +263,11 @@ describe('Defesas na Revisão e no PDF', () => {
     expect(monk.container.textContent).toContain('Defesas: Imunidade a veneno e à condição Envenenado (Pureza Corporal)')
     monk.unmount()
 
+    useCharacterStore.setState({ draft: { ...structuredClone(monk10), class: 'paladin' } })
+    const paladin = renderIt()
+    expect(paladin.container.textContent).toContain('Defesas: Imunidade à condição Amedrontado, enquanto você estiver consciente (Aura de Coragem)')
+    paladin.unmount()
+
     useCharacterStore.setState({ draft: { ...structuredClone(tiefling), race: 'human' } })
     expect(renderIt().container.textContent).not.toContain('Defesas:')
   })

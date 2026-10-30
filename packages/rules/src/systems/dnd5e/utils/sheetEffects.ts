@@ -1763,7 +1763,9 @@ export type DamageDefenseKind = 'resistance' | 'immunity' | 'vulnerability' | 'r
  *   escolhido que ainda não tem escolha;
  * - `condition` / `exceptWhen`: a situação que a liga ou a cancela (caixas do painel de PV);
  * - `blockedBy`: o que, no equipamento, a impede agora (`requires`); impedida, não se aplica;
- * - `sessionPick`: o tipo é escolha de sessão (Resistência Demoníaca); sem escolha, `types` vazio.
+ * - `sessionPick`: o tipo é escolha de sessão (Resistência Demoníaca); sem escolha, `types` vazio;
+ * - `whileConscious`: só vale consciente (as Auras de Coragem e de Devoção); quem sabe se você está
+ *   é o estado de jogo (`getPlayConditionState`).
  */
 export type SheetDamageDefense = {
   source: string
@@ -1776,6 +1778,7 @@ export type SheetDamageDefense = {
   requires?: EquipmentRequirement
   blockedBy?: string
   sessionPick?: string
+  whileConscious?: true
 }
 
 /**
@@ -1845,6 +1848,7 @@ export function toSheetDefenses(
     ...(d.exceptWhen ? { exceptWhen: d.exceptWhen } : {}),
     ...(d.requires ? { requires: d.requires } : {}),
     ...(context.blockedBy ? { blockedBy: context.blockedBy } : {}),
+    ...(d.whileConscious ? { whileConscious: true as const } : {}),
   }
   const out: SheetDamageDefense[] = []
   if (d.fromSessionPick) out.push({ ...common, kind: 'resistance', types: [], sessionPick: d.fromSessionPick })
@@ -1917,14 +1921,16 @@ function describeDamageDefense(d: SheetDamageDefense, all: readonly SheetDamageD
       break
   }
   const requires = d.requires ? `, ${REQUIREMENT_TEXT[d.requires].when}` : ''
+  const conscious = d.whileConscious ? ', enquanto você estiver consciente' : ''
   const blocked = d.requires && d.blockedBy ? ` — sem efeito agora: ${REQUIREMENT_TEXT[d.requires].blocked(d.blockedBy)}` : ''
-  return `${text}${requires} (${d.source})${blocked}`
+  return `${text}${requires}${conscious} (${d.source})${blocked}`
 }
 
 /**
  * As linhas das defesas, o mesmo texto no jogo (aba Estado), na Revisão e no PDF:
  * "Resistência a fogo (Resistência Infernal)", "Resistência a todo dano de magia (Aura de
- * Vigilância)", "Imunidade a veneno e à condição Envenenado (Pureza Corporal)". Recebe a lista —
+ * Vigilância)", "Imunidade a veneno e à condição Envenenado (Pureza Corporal)", "Imunidade à
+ * condição Amedrontado, enquanto você estiver consciente (Aura de Coragem)". Recebe a lista —
  * a da ficha (`getDamageDefenses`) ou, no jogo, a da ficha com as das condições.
  */
 export function describeDamageDefenses(defenses: readonly SheetDamageDefense[]): string[] {

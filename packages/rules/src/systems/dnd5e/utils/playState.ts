@@ -92,7 +92,9 @@ export function isAtZeroHp(state: Pick<PlayState, 'lifeState'>): boolean {
  * O que o agregador de condições (`sheetEffects.ts`) recebe deste estado: as condições gravadas,
  * mais o Inconsciente enquanto o personagem está a 0 PV (`regras-condicoes.md`, 6.4); os efeitos
  * ligados já resolvidos (`toggles`) e a imunidade a condição das defesas da ficha (`defenses`: a
- * Pureza Corporal), que valem só sem situação nem bloqueio.
+ * Pureza Corporal), que valem só sem situação nem bloqueio. A de "enquanto você estiver consciente"
+ * (`whileConscious`: as Auras de Coragem e de Devoção, págs. 111-112) só vale consciente: não a 0
+ * PV, nem com o Inconsciente gravado, nem morto.
  */
 export function getPlayConditionState(
   state: PlayState,
@@ -102,8 +104,10 @@ export function getPlayConditionState(
   const conditions: ConditionId[] = isAtZeroHp(state) && !state.conditions.includes('unconscious')
     ? [...state.conditions, 'unconscious']
     : [...state.conditions]
+  const conscious = state.lifeState === 'conscious' && !conditions.includes('unconscious')
   const conditionImmunities = defenses
     .filter(d => d.kind === 'conditionImmunity' && d.conditions?.length && !d.blockedBy && !d.condition && !d.exceptWhen)
+    .filter(d => conscious || !d.whileConscious)
     .map(d => ({ source: d.source, conditions: d.conditions ?? [] }))
   return {
     conditions,

@@ -27,8 +27,8 @@ describe('ChecksTab', () => {
 
   it('condição ativa: o modo entra no número e a linha condicional vira lembrete', () => {
     openKrusk()
-    usePlayStore.getState().run(st => addCondition(st, 'poisoned'))
-    usePlayStore.getState().run(st => addCondition(st, 'frightened'))
+    usePlayStore.getState().run((st, sh) => addCondition(st, sh, 'poisoned'))
+    usePlayStore.getState().run((st, sh) => addCondition(st, sh, 'frightened'))
     render(<PlayScreen />)
     expect(screen.getByRole('button', { name: /^Furtividade: 1d20 \+ 2, com desvantagem \(Envenenado\)$/ })).toBeInTheDocument()
     expect(screen.getByText('Lembretes')).toBeInTheDocument()
@@ -37,7 +37,7 @@ describe('ChecksTab', () => {
 
   it('paralisado: falha automática no TR de Destreza', () => {
     openKrusk()
-    usePlayStore.getState().run(st => addCondition(st, 'paralyzed'))
+    usePlayStore.getState().run((st, sh) => addCondition(st, sh, 'paralyzed'))
     render(<PlayScreen />)
     expect(screen.getByRole('button', { name: /^TR de Destreza: .*falha automática/ })).toBeInTheDocument()
   })

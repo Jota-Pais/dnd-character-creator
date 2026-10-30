@@ -32,7 +32,7 @@ describe('"De onde vem" dos números que não se rolam', () => {
 
   it('a Percepção passiva mostra o −5 da desvantagem em vigor', () => {
     openKrusk()
-    usePlayStore.getState().run(st => addCondition(st, 'poisoned'))
+    usePlayStore.getState().run((st, sh) => addCondition(st, sh, 'poisoned'))
     render(<PlayScreen />)
     fireEvent.click(screen.getByRole('button', { name: /^Percepção passiva \d+: de onde vem$/ }))
     expect(screen.getByRole('dialog')).toHaveAccessibleName('Percepção passiva')

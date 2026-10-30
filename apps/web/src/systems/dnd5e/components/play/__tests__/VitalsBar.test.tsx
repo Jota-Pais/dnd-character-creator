@@ -112,7 +112,7 @@ describe('VitalsBar — Dados de Vida e Descanso', () => {
 describe('VitalsBar — concentração', () => {
   it('o "encerrar" some com a concentração, e o foco vai à inspiração, na mesma faixa', () => {
     openKrusk()
-    act(() => { usePlayStore.getState().run(st => startConcentration(st, { label: 'Bênção' }, 0)) })
+    act(() => { usePlayStore.getState().run((st, sh) => startConcentration(st, sh, { label: 'Bênção' }, 0)) })
     render(<PlayScreen />)
     const chips = screen.getByTestId('vitals-chips')
     const end = within(chips).getByRole('button', { name: 'encerrar' })

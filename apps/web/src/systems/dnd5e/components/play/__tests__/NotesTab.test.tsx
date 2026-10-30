@@ -70,7 +70,7 @@ describe('NotesTab', () => {
 
   it('o autosave da nota não apaga o aviso da última ação', async () => {
     openKrusk()
-    usePlayStore.getState().run(st => startConcentration(st, { label: 'Bênção' }, 0))
+    usePlayStore.getState().run((st, sh) => startConcentration(st, sh, { label: 'Bênção' }, 0))
     usePlayStore.getState().run((st, sh) => applyDamage(st, sh, { amount: 10 }))
     openNotes()
     // O aviso que já estava na fila quando a tela montou aparece no quadro seguinte (NoticeToast).

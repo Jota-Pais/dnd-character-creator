@@ -63,13 +63,21 @@ export function choiceToDamageType(choice: DamageTypeChoice | null): DamageTypeI
 const usableAgainstDamage = (d: SheetDamageDefense) => !d.blockedBy && d.kind !== 'conditionImmunity'
 
 /**
+ * A defesa pergunta o tipo: a de uma lista e a de todo dano menos alguns (o Urso, "exceto psíquico",
+ * só vale sabendo que não é psíquico). A de todo dano (Petrificado, Aura de Vigilância) não pede.
+ */
+const needsType = (d: SheetDamageDefense) => d.types !== 'all'
+
+/**
  * Os tipos que têm defesa a aplicar agora — os chips do painel, na ordem do livro, antes do "Outro
- * tipo". A defesa de todo dano (Petrificado, Aura de Vigilância) não pede o tipo e não vira chip.
- * Vazio: quem não tem defesa por tipo usa o painel como na Fase 1.
+ * tipo". A defesa de todo dano (Petrificado, Aura de Vigilância) não pede o tipo e não vira chip; a
+ * de todo dano menos alguns (o Urso em fúria) vira um chip por tipo que ela alcança, e o "Outro tipo"
+ * fica para o que ela não alcança (psíquico) e para o dano sem tipo. Vazio: quem não tem defesa por
+ * tipo usa o painel como na Fase 1.
  */
 export function getDefendedDamageTypes(defenses: readonly SheetDamageDefense[]): DamageTypeId[] {
-  const usable = defenses.filter(usableAgainstDamage)
-  return DAMAGE_TYPES.map(t => t.id).filter(id => usable.some(d => Array.isArray(d.types) && d.types.includes(id)))
+  const usable = defenses.filter(d => usableAgainstDamage(d) && needsType(d))
+  return DAMAGE_TYPES.map(t => t.id).filter(id => usable.some(d => damageTypeSetHas(d.types, id)))
 }
 
 /** Uma caixa do painel: a situação (ou a exceção) e quem a declara. */
@@ -112,5 +120,5 @@ export function getDefensesForTypes(
   boxes: Pick<DamageInput, 'conditionalDefenses' | 'exceptions'>,
 ): SheetDamageDefense[] {
   return defenses.filter(d => usableAgainstDamage(d) && defenseApplies(d, boxes)
-    && Array.isArray(d.types) && types.some(t => damageTypeSetHas(d.types, t)))
+    && needsType(d) && types.some(t => damageTypeSetHas(d.types, t)))
 }

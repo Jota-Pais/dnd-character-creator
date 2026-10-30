@@ -4,9 +4,9 @@ import { registerPendingEdit } from '../../stores/playStore'
 import type { ConditionId } from '@rpg/rules/systems/dnd5e/types/condition'
 import { CONDITION_NOTE_MAX_LENGTH } from '@rpg/rules/systems/dnd5e/types/playState'
 import {
-  addCondition, getPlayConditionEffects, isAtZeroHp, removeCondition, setConditionNote, standUp,
+  addCondition, getPlayEffects, isAtZeroHp, removeCondition, setConditionNote, standUp,
 } from '@rpg/rules/systems/dnd5e/utils/playState'
-import { CONDITIONS, getCondition } from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
+import { CONDITIONS, getCondition, isConditionSuspended } from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
 import type { PlayTabProps } from './usePlayView'
 
 const names = (ids: ConditionId[]) => ids.map(id => getCondition(id)?.name ?? id).join(', ')
@@ -102,9 +102,9 @@ function ConditionNote({ id, name, stored, run }: {
  * toggle próprio: saem junto com a origem. Cada condição gravada leva uma nota de duração
  * opcional; o Caído tem o "Levantar" (que confere o deslocamento, págs. 192-193).
  */
-export function ConditionsSection({ state, run }: PlayTabProps) {
+export function ConditionsSection({ state, sheet, run }: PlayTabProps) {
   const [openRule, setOpenRule] = useState<ConditionId | null>(null)
-  const effective = getPlayConditionEffects(state).conditions
+  const effective = getPlayEffects(state, sheet).conditions
   const atZero = isAtZeroHp(state)
   // O switch e o "regra" de cada linha: recebem o foco quando o controle em que ele estava some
   // com a própria ação. Síncrono (flushSync): a tela já sem ele.
@@ -114,7 +114,7 @@ export function ConditionsSection({ state, run }: PlayTabProps) {
   // Desligar a condição que outra também dá (o Incapacitado com o Paralisado ligado) a deixa só
   // derivada, sem switch: o foco vai ao "regra" da mesma linha.
   function toggle(id: ConditionId, recorded: boolean) {
-    flushSync(() => run(st => (recorded ? removeCondition(st, id) : addCondition(st, id))))
+    flushSync(() => run((st, sh) => (recorded ? removeCondition(st, id) : addCondition(st, sh, id))))
     if (!switches.current.get(id)) ruleButtons.current.get(id)?.focus()
   }
 
@@ -173,11 +173,14 @@ export function ConditionsSection({ state, run }: PlayTabProps) {
               </button>
             </div>
 
-            {(because || eff?.suspendedBy) && (
+            {(because || (eff && isConditionSuspended(eff))) && (
               <p className="pl-12 text-[11px] text-parchment-500 leading-snug">
-                {because}
-                {because && eff?.suspendedBy && ' · '}
-                {eff?.suspendedBy && `suspensa enquanto durar ${names(eff.suspendedBy)}`}
+                {[
+                  because,
+                  eff?.suspendedBy && `suspensa enquanto durar ${names(eff.suspendedBy)}`,
+                  // A imunidade de agora (em fúria, Fúria Inconsciente; Pureza Corporal) também suspende.
+                  eff?.immuneBy && `suspensa: você está imune (${eff.immuneBy.join(', ')})`,
+                ].filter(Boolean).join(' · ')}
               </p>
             )}
 

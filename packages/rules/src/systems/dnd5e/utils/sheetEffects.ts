@@ -7,7 +7,7 @@ import type {
   LevelStep, LoadingOverride, ResourceEffect, ToggleBenefits,
 } from '../types/effects'
 import type { SheetAction } from '../types/actions'
-import { NO_SESSION, type SheetSession, type SheetToggle, type SourcedActiveEffect } from '../types/session'
+import { NO_SESSION, type ResolvedToggle, type SheetSession, type SheetToggle, type SourcedActiveEffect } from '../types/session'
 import { getFeat } from './featUtils'
 import { getOwnedFeats } from './ownedFeats'
 import {
@@ -1349,8 +1349,17 @@ export function getCondition(id: ConditionId): Condition | undefined {
   return CONDITIONS_BY_ID.get(id)
 }
 
-/** O que o estado de jogo guarda das condições: as gravadas e o nível de exaustão. */
-export type ConditionState = { conditions: readonly ConditionId[]; exhaustion: ExhaustionLevel }
+/**
+ * O que o agregador recebe do jogo: as condições gravadas e o nível de exaustão, os efeitos ligados
+ * em vigor (`resolveActiveEffects`: em fúria) e a imunidade a condição da ficha (a Pureza Corporal,
+ * pela linha de `getDamageDefenses`). Uma escada só (p. 175) para condições e efeitos ligados.
+ */
+export type ConditionState = {
+  conditions: readonly ConditionId[]
+  exhaustion: ExhaustionLevel
+  toggles?: readonly ResolvedToggle[]
+  conditionImmunities?: readonly { source: string; conditions: readonly ConditionId[] }[]
+}
 
 /**
  * Origem estável de um efeito, no formato do motor de rolagem (`regras-rolagens-e-concentracao.md`,
@@ -1369,7 +1378,15 @@ export type EffectiveCondition = {
    * Envenenado). Suspensa continua na lista, para a UI marcar, mas não tem efeito.
    */
   suspendedBy?: ConditionId[]
+  /**
+   * Só em `getActiveConditionEffects`: quem deixa você imune a ela agora (a Fúria Inconsciente em
+   * fúria, a Pureza Corporal). A gravada fica suspensa, como a de `suspendedBy` (`isConditionSuspended`).
+   */
+  immuneBy?: string[]
 }
+
+/** A condição está na lista, mas sem efeito: suspensa por outra ou por uma imunidade. */
+export const isConditionSuspended = (c: EffectiveCondition) => c.suspendedBy !== undefined || c.immuneBy !== undefined
 
 /** Uma jogada sob as condições: as fontes de cada lado, o modo já resolvido e as falhas automáticas. */
 export type ConditionRoll = {
@@ -1417,9 +1434,15 @@ export type ActiveConditionEffects = {
   noReactions: ConditionFlag
   cannotSpeak: ConditionFlag
   endsConcentration: ConditionFlag
+  /** Não pode conjurar: a restrição de um efeito ligado em vigor (em fúria, pág. 48). */
+  cannotCast: ConditionFlag
   resistAllDamage: ConditionFlag
   /** Imunidades a um tipo de dano (Petrificado: veneno), cada uma com quem a dá. */
   damageImmunities: ConditionDamageImmunity[]
+  /** As defesas dos efeitos ligados (a Fúria: concussão, cortante e perfurante), no formato da ficha. */
+  defenses: SheetDamageDefense[]
+  /** Imunidade a condição em vigor, da ficha e dos efeitos ligados: `addCondition` recusa a nova. */
+  conditionImmunities: { condition: ConditionId; sources: ConditionSource[] }[]
   dead: ConditionFlag
   lines: ConditionLine[]
 }
@@ -1485,17 +1508,40 @@ const byAbility = <T>(make: (ability: AbilityScore) => T): Record<AbilityScore, 
 
 const flag = (sources: ConditionSource[]): ConditionFlag => ({ active: sources.length > 0, sources })
 
+const labels = (sources: ConditionSource[]) => [...new Set(sources.map(s => s.label))].join(', ')
+
 /**
- * Os efeitos ATIVOS das condições e da exaustão, resolvidos. Pura: o estado de jogo passa o que
- * guardou, a ficha não muda. A exaustão é cumulativa (nível N aplica 1..N); o nível 6 sinaliza
- * morte e encerra a concentração. As falhas automáticas não impedem rolar ("rolar mesmo assim"
- * é da UI); a desvantagem em testes de habilidade vale também na iniciativa e no passivo.
+ * Os efeitos ATIVOS das condições, da exaustão e dos efeitos ligados, resolvidos. Pura: o estado de
+ * jogo passa o que guardou, a ficha não muda. A exaustão é cumulativa (nível N aplica 1..N); o nível
+ * 6 sinaliza morte e encerra a concentração. As falhas automáticas não impedem rolar ("rolar mesmo
+ * assim" é da UI); a desvantagem em testes de habilidade vale também na iniciativa e no passivo.
  * Condição suspensa por outra ativa (`suspends`: Petrificado → Envenenado) fica na lista com
- * `suspendedBy`, sem efeito nenhum, e com uma linha dizendo que está suspensa.
+ * `suspendedBy`, sem efeito nenhum, e com uma linha dizendo que está suspensa; a de que você está
+ * imune agora (`conditionImmunity`), com `immuneBy`, do mesmo jeito.
+ *
+ * Os efeitos ligados (`toggles`) entram na mesma escada, com a origem `toggle:<id>` e o nome de
+ * quem os dá: a vantagem da Fúria no modo das jogadas de Força, as defesas dela em `defenses`, a
+ * restrição em vigor em `cannotCast` e `endsConcentration`.
  */
 export function getActiveConditionEffects(state: ConditionState): ActiveConditionEffects {
   const exhaustion = clampExhaustion(state.exhaustion)
   const lines: ConditionLine[] = []
+
+  // A imunidade a condição em vigor: a da ficha e a dos efeitos ligados.
+  const conditionImmunities: ActiveConditionEffects['conditionImmunities'] = []
+  const addImmunity = (ids: readonly ConditionId[], source: ConditionSource) => {
+    for (const condition of ids) {
+      const known = conditionImmunities.find(i => i.condition === condition)
+      if (!known) conditionImmunities.push({ condition, sources: [source] })
+      else if (!known.sources.some(s => s.label === source.label)) known.sources.push(source)
+    }
+  }
+  for (const i of state.conditionImmunities ?? []) addImmunity(i.conditions, { source: `sheet:${i.source}`, label: i.source })
+  const toggled = (state.toggles ?? []).flatMap(t =>
+    t.effects.map(e => ({ source: { source: `toggle:${t.id}`, label: e.source }, effect: e.effect })))
+  for (const { source, effect } of toggled) {
+    if (effect.kind === 'conditionImmunity') addImmunity(effect.conditions, source)
+  }
 
   const effective = getEffectiveConditions(state.conditions)
   const suspendedBy = new Map<ConditionId, ConditionId[]>()
@@ -1514,11 +1560,24 @@ export function getActiveConditionEffects(state: ConditionState): ActiveConditio
       }
     }
   }
-  const conditions = effective.map(cond =>
-    suspendedBy.has(cond.id) ? { ...cond, suspendedBy: suspendedBy.get(cond.id) } : cond)
+  const conditions = effective.map(cond => {
+    const immune = conditionImmunities.find(i => i.condition === cond.id)
+    if (immune) {
+      lines.push({
+        kind: 'notice',
+        text: `${cond.name} fica suspenso: você está imune (${labels(immune.sources)}). Sem efeito, mas não removido.`,
+        source: immune.sources[0],
+      })
+    }
+    return {
+      ...cond,
+      ...(suspendedBy.has(cond.id) ? { suspendedBy: suspendedBy.get(cond.id) } : {}),
+      ...(immune ? { immuneBy: immune.sources.map(s => s.label) } : {}),
+    }
+  })
 
-  const tagged: { source: ConditionSource; effect: ConditionEffect }[] = [
-    ...conditions.filter(cond => !cond.suspendedBy).flatMap(cond => {
+  const tagged: { source: ConditionSource; effect: ConditionEffect | ActiveEffect }[] = [
+    ...conditions.filter(cond => !isConditionSuspended(cond)).flatMap(cond => {
       const source = conditionSourceOf(cond)
       return (getCondition(cond.id)?.effects ?? []).map(effect => ({ source, effect }))
     }),
@@ -1528,6 +1587,7 @@ export function getActiveConditionEffects(state: ConditionState): ActiveConditio
         const source = { source: `exhaustion:${row.level}`, label: `Exaustão ${row.level}` }
         return row.effects.map(effect => ({ source, effect }))
       }),
+    ...toggled,
   ]
 
   const attack = emptyRoll()
@@ -1543,10 +1603,12 @@ export function getActiveConditionEffects(state: ConditionState): ActiveConditio
     noReactions: [] as ConditionSource[],
     cannotSpeak: [] as ConditionSource[],
     endsConcentration: [] as ConditionSource[],
+    cannotCast: [] as ConditionSource[],
     death: [] as ConditionSource[],
   }
   const resistAll: ConditionSource[] = []
   const immunities: ConditionDamageImmunity[] = []
+  const defenses: SheetDamageDefense[] = []
 
   for (const { source, effect } of tagged) {
     if (effect.scope === 'notice') {
@@ -1597,11 +1659,19 @@ export function getActiveConditionEffects(state: ConditionState): ActiveConditio
       case 'noReactions':
       case 'cannotSpeak':
       case 'endsConcentration':
+      case 'cannotCast':
       case 'death':
         stateFlags[effect.kind].push(source)
         break
+      case 'damageDefenses':
+        defenses.push(...toSheetDefenses(source.label, effect.defenses))
+        break
       case 'suspends':
-        // Já tratado antes do laço: a condição suspensa nem entra em `tagged`.
+      case 'conditionImmunity':
+        // Já tratados antes do laço: a condição suspensa (ou imune) nem entra em `tagged`.
+        break
+      case 'flySpeed':
+        // Não muda número nem modo: o voo é linha da seção Efeitos ativos (describeToggleEffects).
         break
     }
   }
@@ -1631,8 +1701,11 @@ export function getActiveConditionEffects(state: ConditionState): ActiveConditio
     noReactions: flag(stateFlags.noReactions),
     cannotSpeak: flag(stateFlags.cannotSpeak),
     endsConcentration: flag(stateFlags.endsConcentration),
+    cannotCast: flag(stateFlags.cannotCast),
     resistAllDamage: flag(resistAll),
     damageImmunities: immunities,
+    defenses,
+    conditionImmunities,
     dead: flag(stateFlags.death),
     lines,
   }
@@ -1738,26 +1811,40 @@ export function getDamageDefenses(draft: CharacterDraft): SheetDamageDefense[] {
   const equipped = getDraftEquippedArmor(draft)
   const ancestor = getAncestorDamageType(draft)
   const out: SheetDamageDefense[] = []
-  const push = (d: SheetDamageDefense) => {
-    if (!out.some(o => o.source === d.source && o.kind === d.kind && sameTypes(o.types, d.types))) out.push(d)
-  }
   for (const { source, defenses: d } of getDeclaredDamageDefenses(draft)) {
     const blockedBy = d.requires ? equipmentBlocker(d.requires, equipped) : undefined
-    const common = {
-      source,
-      ...(d.condition ? { condition: d.condition } : {}),
-      ...(d.exceptWhen ? { exceptWhen: d.exceptWhen } : {}),
-      ...(d.requires ? { requires: d.requires } : {}),
-      ...(blockedBy ? { blockedBy } : {}),
+    for (const line of toSheetDefenses(source, d, { blockedBy, ancestor })) {
+      if (!out.some(o => o.source === line.source && o.kind === line.kind && sameTypes(o.types, line.types))) out.push(line)
     }
-    if (d.fromSessionPick) push({ ...common, kind: 'resistance', types: [], sessionPick: d.fromSessionPick })
-    const resistances = d.fromAncestor ? (ancestor ? [ancestor] : undefined) : d.resistances
-    if (resistances) push({ ...common, kind: 'resistance', types: resistances })
-    if (d.immunities) push({ ...common, kind: 'immunity', types: d.immunities })
-    if (d.vulnerabilities) push({ ...common, kind: 'vulnerability', types: d.vulnerabilities })
-    if (d.reduction) push({ ...common, kind: 'reduction', types: d.reduction.types, amount: d.reduction.amount })
-    if (d.conditionImmunities) push({ ...common, kind: 'conditionImmunity', types: [], conditions: d.conditionImmunities })
   }
+  return out
+}
+
+/**
+ * As linhas de uma declaração de defesa, uma por efeito — a mesma conta para a ficha
+ * (`getDamageDefenses`) e para os efeitos ligados (as defesas da Fúria, no agregador). `blockedBy`
+ * é o que o equipamento impede agora; `ancestor`, o tipo do ancestral dracônico (`fromAncestor`).
+ */
+function toSheetDefenses(
+  source: string,
+  d: DamageDefenses,
+  context: { blockedBy?: string; ancestor?: DamageTypeId } = {},
+): SheetDamageDefense[] {
+  const common = {
+    source,
+    ...(d.condition ? { condition: d.condition } : {}),
+    ...(d.exceptWhen ? { exceptWhen: d.exceptWhen } : {}),
+    ...(d.requires ? { requires: d.requires } : {}),
+    ...(context.blockedBy ? { blockedBy: context.blockedBy } : {}),
+  }
+  const out: SheetDamageDefense[] = []
+  if (d.fromSessionPick) out.push({ ...common, kind: 'resistance', types: [], sessionPick: d.fromSessionPick })
+  const resistances = d.fromAncestor ? (context.ancestor ? [context.ancestor] : undefined) : d.resistances
+  if (resistances) out.push({ ...common, kind: 'resistance', types: resistances })
+  if (d.immunities) out.push({ ...common, kind: 'immunity', types: d.immunities })
+  if (d.vulnerabilities) out.push({ ...common, kind: 'vulnerability', types: d.vulnerabilities })
+  if (d.reduction) out.push({ ...common, kind: 'reduction', types: d.reduction.types, amount: d.reduction.amount })
+  if (d.conditionImmunities) out.push({ ...common, kind: 'conditionImmunity', types: [], conditions: d.conditionImmunities })
   return out
 }
 

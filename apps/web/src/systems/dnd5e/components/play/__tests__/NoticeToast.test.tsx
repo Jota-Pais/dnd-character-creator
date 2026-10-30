@@ -110,7 +110,7 @@ describe('desfazer e avisos', () => {
 
   it('dano com concentração mostra a CD e o que rolar, e "Falhei: encerrar" encerra', () => {
     openKrusk()
-    usePlayStore.getState().run(st => startConcentration(st, { label: 'Bênção' }, 0))
+    usePlayStore.getState().run((st, sh) => startConcentration(st, sh, { label: 'Bênção' }, 0))
     render(<PlayScreen />)
     expect(screen.getByText(/Concentrado: Bênção/)).toBeInTheDocument()
     damage('10')
@@ -128,7 +128,7 @@ describe('desfazer e avisos', () => {
   it('rolar o TR de concentração pelo app não apaga o aviso nem o "Desfazer" do dano', () => {
     openKrusk()
     usePlayStore.getState().setAppDice(true)
-    usePlayStore.getState().run(st => startConcentration(st, { label: 'Bênção' }, 0))
+    usePlayStore.getState().run((st, sh) => startConcentration(st, sh, { label: 'Bênção' }, 0))
     render(<PlayScreen />)
     damage('10')
     const undoBefore = usePlayStore.getState().undoStack.length
@@ -153,7 +153,7 @@ describe('desfazer e avisos', () => {
   it('TR de concentração rolado abaixo da CD oferece "Falhei: encerrar" na própria folha', () => {
     openKrusk()
     usePlayStore.getState().setAppDice(true)
-    usePlayStore.getState().run(st => startConcentration(st, { label: 'Bênção' }, 0))
+    usePlayStore.getState().run((st, sh) => startConcentration(st, sh, { label: 'Bênção' }, 0))
     render(<PlayScreen />)
     damage('10')
     fireEvent.click(within(screen.getByRole('status')).getByRole('button', { name: 'Ver o que rolar' }))
@@ -199,7 +199,7 @@ describe('desfazer e avisos', () => {
 describe('foco nos botões do aviso', () => {
   it('"Falhei: encerrar" passa o foco ao "Desfazer" do aviso, que fecha o aviso e o passa à aba aberta', () => {
     openKrusk()
-    usePlayStore.getState().run(st => startConcentration(st, { label: 'Bênção' }, 0))
+    usePlayStore.getState().run((st, sh) => startConcentration(st, sh, { label: 'Bênção' }, 0))
     render(<PlayScreen />)
     fireEvent.click(screen.getByRole('tab', { name: 'Estado' }))
     damage('3')
@@ -219,7 +219,7 @@ describe('foco nos botões do aviso', () => {
   it('"Falhei: encerrar" da folha leva o "Ver o que rolar" que a abriu: o foco vai ao "Desfazer" do aviso novo', () => {
     openKrusk()
     usePlayStore.getState().setAppDice(true)
-    usePlayStore.getState().run(st => startConcentration(st, { label: 'Bênção' }, 0))
+    usePlayStore.getState().run((st, sh) => startConcentration(st, sh, { label: 'Bênção' }, 0))
     render(<PlayScreen />)
     damage('10')
     const opener = within(screen.getByRole('status')).getByRole('button', { name: 'Ver o que rolar' })
@@ -239,7 +239,7 @@ describe('foco nos botões do aviso', () => {
 
   it('a folha fechada sem quem a abriu e sem aviso passa o foco à aba aberta', () => {
     openKrusk()
-    usePlayStore.getState().run(st => startConcentration(st, { label: 'Bênção' }, 0))
+    usePlayStore.getState().run((st, sh) => startConcentration(st, sh, { label: 'Bênção' }, 0))
     render(<PlayScreen />)
     damage('3')
     const opener = within(screen.getByRole('status')).getByRole('button', { name: 'Ver o que rolar' })

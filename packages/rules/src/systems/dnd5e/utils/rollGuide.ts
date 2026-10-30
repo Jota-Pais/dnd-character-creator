@@ -1,6 +1,7 @@
 import type { CharacterDraft } from '../types/character'
 import type { AdvantageMode, ConditionEffect, RollCategory, RollMode } from '../types/condition'
 import type { PlayState } from '../types/playState'
+import type { SheetSession } from '../types/session'
 import type { AbilityScore } from '../types/race'
 import { ABILITY_LABELS, ALL_ABILITY_SCORES, calculateModifier, getProficiencyBonus } from './abilityScoreUtils'
 import { getSheetSession } from './activeEffects'
@@ -8,12 +9,12 @@ import { getFinalAbilityScores } from './asiUtils'
 import { getSheetAttacks, isSheetAttackInScope, type SheetAttack } from './attackUtils'
 import { SKILLS } from './backgroundUtils'
 import { getHitDicePool } from './multiclassUtils'
-import { getPlayConditionEffects } from './playState'
+import { getPlayConditionState } from './playState'
 import { getRace } from './raceUtils'
 import { getSavingThrowChecks, getSkillChecks, getPassiveScore, getUnproficientArmor } from './proficiencyUtils'
 import {
-  EXHAUSTION, describeConditionalSaveBonuses, formatCastingRestriction, getAttacksPerAction, getBestHalfProficiencySource,
-  getCastingRestrictions, getCondition, getConditionalRollNotes,
+  EXHAUSTION, describeConditionalSaveBonuses, formatCastingRestriction, getActiveConditionEffects, getAttacksPerAction,
+  getBestHalfProficiencySource, getCastingRestrictions, getCondition, getConditionalRollNotes, getDamageDefenses, isConditionSuspended,
   getHalfProficiencySources, getMeleeCritExtraWeaponDice,
   getInitiativeAdvantageSources, getInitiativeBonuses, getOwnedFeats, getSheetArmorClass, getWeaponCritThreshold, resolveRollMode,
   type ActiveConditionEffects, type ConditionRoll, type ScopedSheetEffect, type SheetEffect,
@@ -282,7 +283,7 @@ type ConditionalLine = {
  */
 function getConditionalLines(effects: ActiveConditionEffects): ConditionalLine[] {
   const tagged: { label: string; effect: ConditionEffect }[] = [
-    ...effects.conditions.filter(c => !c.suspendedBy).flatMap(c =>
+    ...effects.conditions.filter(c => !isConditionSuspended(c)).flatMap(c =>
       (getCondition(c.id)?.effects ?? []).map(effect => ({ label: c.name, effect }))),
     ...EXHAUSTION.levels.filter(row => row.level <= effects.exhaustion).flatMap(row =>
       row.effects.map(effect => ({ label: `Exaustão ${row.level}`, effect }))),
@@ -302,7 +303,7 @@ function getConditionalLines(effects: ActiveConditionEffects): ConditionalLine[]
  * derivados) tira a linha enquanto valer (decisão de 2026-10-25).
  */
 function getSheetConditionalLines(draft: CharacterDraft, effects: ActiveConditionEffects): ConditionalLine[] {
-  const active = new Set(effects.conditions.filter(c => !c.suspendedBy).map(c => c.id))
+  const active = new Set(effects.conditions.filter(c => !isConditionSuspended(c)).map(c => c.id))
   return getConditionalRollNotes(draft).filter(n => !n.unlessConditions?.some(id => active.has(id))).map(n => ({
     rolls: n.rolls,
     ...(n.abilities ? { abilities: n.abilities } : {}),
@@ -703,6 +704,15 @@ function saveInput(
   }
 }
 
+/**
+ * Os efeitos em vigor para o guia: as condições e a exaustão do estado, os efeitos ligados da sessão
+ * e a imunidade a condição da ficha — o mesmo agregador das operações (`getPlayEffects`), com as
+ * mesmas entradas tiradas da ficha em vez do `PlaySheet`.
+ */
+function getGuideEffects(draft: CharacterDraft, state: PlayState, session: SheetSession): ActiveConditionEffects {
+  return getActiveConditionEffects(getPlayConditionState(state, session.active, getDamageDefenses(draft)))
+}
+
 /** Uma conjuração (classe ou talento) com a CD e o bônus de ataque já calculados pela fonte dela. */
 type SpellcastingInput = Omit<SpellcastingGuide, 'saveDcBreakdown' | 'attack'> & { attackId: string; attackModifier: number }
 
@@ -712,9 +722,10 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
   const mods = Object.fromEntries(ALL_ABILITY_SCORES.map(ab => [ab, calculateModifier(scores[ab])])) as Record<AbilityScore, number>
   const level = draft.level ?? 1
   const prof = getProficiencyBonus(level)
-  // A sessão sai do estado que o guia já recebe: os efeitos ligados (em fúria) e o que fazem agora.
+  // A sessão sai do estado que o guia já recebe: os efeitos ligados (em fúria) e o que fazem agora,
+  // na mesma escada das condições (a vantagem da Fúria nas jogadas de Força).
   const session = getSheetSession(draft, state)
-  const effects = getPlayConditionEffects(state)
+  const effects = getGuideEffects(draft, state, session)
   // As linhas das condições e as da ficha. O valor passivo leva só as das condições: rerrolar ou
   // "vantagem contra veneno" não alcançam um número que não se rola.
   const conditionLines = getConditionalLines(effects)
@@ -970,7 +981,8 @@ export function getConcentrationGuide(draft: CharacterDraft, state: PlayState, d
   const scores = getFinalAbilityScores(draft)
   const mods = Object.fromEntries(ALL_ABILITY_SCORES.map(ab => [ab, calculateModifier(scores[ab])])) as Record<AbilityScore, number>
   const prof = getProficiencyBonus(draft.level ?? 1)
-  const effects = getPlayConditionEffects(state)
+  const session = getSheetSession(draft, state)
+  const effects = getGuideEffects(draft, state, session)
   const lines = [...getConditionalLines(effects), ...getSheetConditionalLines(draft, effects)]
   const sheet: SheetModeSources = { unproficientArmor: [], stealth: [] }
   const input = saveInput('CON', getSavingThrowChecks(draft, scores).CON, mods, prof, effects, sheet, lines)
@@ -982,7 +994,7 @@ export function getConcentrationGuide(draft: CharacterDraft, state: PlayState, d
     id: 'concentration',
     label: spell ? `Concentração em ${spell} — TR de Constituição` : 'Concentração — TR de Constituição',
     extraAdvantage: warCaster ? [warCaster] : [],
-    notes: [...getCastingRestrictions(draft, getSheetSession(draft, state)).map(formatCastingRestriction), ...(input.notes ?? [])],
+    notes: [...getCastingRestrictions(draft, session).map(formatCastingRestriction), ...(input.notes ?? [])],
     dc: Math.max(10, Math.floor(amount / 2)),
   }, state.inspiration)
 }

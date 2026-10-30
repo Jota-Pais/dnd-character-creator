@@ -11,7 +11,13 @@ import {
   type ConditionState,
 } from '../sheetEffects'
 import type { ConditionId, ExhaustionLevel } from '../../types/condition'
+import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
+import type { PlayState } from '../../types/playState'
+import { COMPLETE_DRAFT } from '../../../../test/fixtures'
 import { getDamageLabel } from '../damageTypes'
+import { buildPlaySheet } from '../playSheet'
+import { addCondition, applyDamage, createPlayState, getCurrentHp, getPlayEffects } from '../playState'
+import { getRollGuide } from '../rollGuide'
 
 const ALL: ConditionId[] = [
   'blinded', 'charmed', 'deafened', 'frightened', 'grappled', 'incapacitated', 'invisible',
@@ -353,5 +359,103 @@ describe('teste contra a morte (regras-dano-e-morte.md, Notas)', () => {
     expect(fx.savingThrows.DEX.mode).toBe('disadvantage')
     expect(fx.deathSave.mode).toBe('normal')
     expect(fx.deathSave.disadvantage).toEqual([])
+  })
+})
+
+// ── Efeitos ligados no mesmo agregador (Fase 2, onda efeitos-ativos) ──────────────
+
+/** Bárbaro meio-orc no nível dado, com um caminho, as escolhas dele e o que carrega. */
+function barbarian(level: number, patch: Partial<CharacterDraft> = {}, subclass: string | null = null, picks: Record<string, string[]> = {}): CharacterDraft {
+  const base = structuredClone(COMPLETE_DRAFT)
+  return { ...base, level, ...patch, classChoices: { ...base.classChoices, subclass, progressionChoices: picks } }
+}
+
+const carrying = (...itemIds: string[]) => ({
+  equipment: {
+    ...structuredClone(EMPTY_DRAFT.equipment),
+    method: 'wealth' as const,
+    purchasedItems: itemIds.map(itemId => ({ itemId, quantity: 1, source: 'purchased' as const })),
+  },
+})
+
+const inRage = (patch: Partial<PlayState> = {}): PlayState =>
+  ({ ...createPlayState('c'), activeEffects: [{ id: 'rage', startedAt: 1 }], ...patch })
+
+describe('condições e efeitos ligados na mesma escada (p. 175)', () => {
+  it('Fúria: vantagem em check:STR, skill:athletics e save:STR, com a origem; nada no ataque', () => {
+    const d = barbarian(3, carrying('greataxe'))
+    const guide = getRollGuide(d, inRage())
+    expect(guide.checks.STR.mode).toBe('advantage')
+    expect(guide.checks.STR.advantage).toEqual([{ source: 'toggle:rage', label: 'Fúria' }])
+    expect(guide.skills.athletics.mode).toBe('advantage')
+    expect(guide.saves.STR.mode).toBe('advantage')
+    expect(guide.saves.DEX.mode).toBe('normal')
+    expect(guide.deathSave.mode).toBe('normal')
+    expect(guide.attacks.map(a => a.attack.mode)).toEqual(['normal', 'normal'])
+    // Desligada, o guia volta ao de antes.
+    expect(getRollGuide(d, createPlayState('c')).checks.STR.mode).toBe('normal')
+  })
+
+  it('a vantagem da Fúria e a desvantagem do Envenenado se anulam, como as das condições', () => {
+    const guide = getRollGuide(barbarian(3), inRage({ conditions: ['poisoned'] }))
+    expect(guide.checks.STR.mode).toBe('normal')
+    expect(guide.checks.STR.advantage.map(r => r.label)).toEqual(['Fúria'])
+    expect(guide.checks.STR.disadvantage.map(r => r.label)).toEqual(['Envenenado'])
+  })
+
+  it('de Placas: sem os benefícios, mas com cannotCast e endsConcentration (tiefling bárbaro)', () => {
+    const sheet = buildPlaySheet(barbarian(3, { race: 'tiefling', ...carrying('plate') }))
+    const fx = getPlayEffects(inRage(), sheet)
+    expect(fx.savingThrows.STR.mode).toBe('normal')
+    expect(fx.defenses).toEqual([])
+    expect(fx.cannotCast).toEqual({ active: true, sources: [{ source: 'toggle:rage', label: 'Fúria' }] })
+    expect(fx.endsConcentration.active).toBe(true)
+    // Sem armadura, os benefícios: a vantagem e as defesas, no formato da ficha.
+    const free = getPlayEffects(inRage(), buildPlaySheet(barbarian(3, { race: 'tiefling' })))
+    expect(free.savingThrows.STR.mode).toBe('advantage')
+    expect(free.defenses).toEqual([{ source: 'Fúria', kind: 'resistance', types: ['bludgeoning', 'piercing', 'slashing'] }])
+  })
+
+  it('Fúria Inconsciente suspende o Amedrontado gravado, com linha, e o aplicar recusa o Enfeitiçado', () => {
+    const sheet = buildPlaySheet(barbarian(6, {}, 'berserker'))
+    const fx = getPlayEffects(inRage({ conditions: ['frightened'] }), sheet)
+    expect(fx.conditions).toEqual([expect.objectContaining({ id: 'frightened', immuneBy: ['Fúria Inconsciente'] })])
+    // Suspenso, o Amedrontado não dá nem as linhas dele.
+    expect(fx.lines.some(l => l.source.label === 'Amedrontado')).toBe(false)
+    expect(fx.lines.map(l => l.text)).toContain('Amedrontado fica suspenso: você está imune (Fúria Inconsciente). Sem efeito, mas não removido.')
+    const r = addCondition(inRage(), sheet, 'charmed')
+    expect(r.state.conditions).toEqual([])
+    expect(r.notices).toEqual([{ kind: 'refused', text: 'Imune a Enfeitiçado (Fúria Inconsciente): a condição não foi aplicada.' }])
+    // Fora da fúria, o Amedrontado volta a valer e o Enfeitiçado se aplica.
+    const calm = getPlayEffects({ ...createPlayState('c'), conditions: ['frightened'] }, sheet)
+    expect(calm.conditions[0].immuneBy).toBeUndefined()
+    expect(calm.lines.some(l => l.source.label === 'Amedrontado')).toBe(true)
+    expect(addCondition(createPlayState('c'), sheet, 'charmed').state.conditions).toEqual(['charmed'])
+  })
+
+  it('Monge 10 (Pureza Corporal): addCondition("poisoned") recusa, e o Envenenado já gravado fica suspenso', () => {
+    const monk = buildPlaySheet({ ...structuredClone(EMPTY_DRAFT), class: 'monk', level: 10 })
+    const r = addCondition(createPlayState('c'), monk, 'poisoned')
+    expect(r.notices).toEqual([{ kind: 'refused', text: 'Imune a Envenenado (Pureza Corporal): a condição não foi aplicada.' }])
+    const fx = getPlayEffects({ ...createPlayState('c'), conditions: ['poisoned'] }, monk)
+    expect(fx.conditions[0].immuneBy).toEqual(['Pureza Corporal'])
+    expect(fx.attack.mode).toBe('normal')
+  })
+
+  it('o Urso resiste a fogo e não a psíquico, inclusive de Placas', () => {
+    for (const items of [[], ['plate']]) {
+      const sheet = buildPlaySheet(barbarian(3, carrying(...items), 'totem-warrior', { 'totem-warrior-totem-3': ['bear'] }))
+      const fire = applyDamage(inRage(), sheet, { amount: 10, damageType: 'fire' })
+      expect(getCurrentHp(fire.state, sheet), items.join()).toBe(sheet.maxHp - 5)
+      expect(fire.notices.map(n => n.text)).toContain('Resistência a fogo (Totem Espiritual — Urso): 10 → 5.')
+      const psychic = applyDamage(inRage(), sheet, { amount: 10, damageType: 'psychic' })
+      expect(getCurrentHp(psychic.state, sheet), items.join()).toBe(sheet.maxHp - 10)
+    }
+  })
+
+  it('a Fúria resiste ao cortante; desligada, não', () => {
+    const sheet = buildPlaySheet(barbarian(3))
+    expect(getCurrentHp(applyDamage(inRage(), sheet, { amount: 9, damageType: 'slashing' }).state, sheet)).toBe(sheet.maxHp - 4)
+    expect(getCurrentHp(applyDamage(createPlayState('c'), sheet, { amount: 9, damageType: 'slashing' }).state, sheet)).toBe(sheet.maxHp - 9)
   })
 })

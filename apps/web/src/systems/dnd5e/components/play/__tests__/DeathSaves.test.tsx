@@ -301,7 +301,7 @@ describe('DeathSaves — a queda rola o d20 para cima do aviso', () => {
 
   it('o aviso já aberto (teste de concentração) cresce na queda: rola com a altura nova', () => {
     openKrusk()
-    usePlayStore.getState().run(st => startConcentration(st, { label: 'Bênção' }, 0))
+    usePlayStore.getState().run((st, sh) => startConcentration(st, sh, { label: 'Bênção' }, 0))
     render(<PlayScreen />)
     hit(3)
     expect(screen.getByRole('status')).toHaveTextContent(/precisa de 10 ou mais/)

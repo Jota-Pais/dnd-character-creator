@@ -89,6 +89,15 @@ describe('o tipo do dano e as caixas das defesas', () => {
     expect(getDefendedDamageTypes([{ ...master, blockedBy: 'sem armadura pesada' }])).toEqual([])
   })
 
+  it('o Urso em fúria (todo dano menos psíquico) dá um chip por tipo que alcança; o psíquico fica no "Outro tipo"', () => {
+    const bear: SheetDamageDefense = { source: 'Totem Espiritual — Urso', kind: 'resistance', types: { allExcept: ['psychic'] } }
+    const chips = getDefendedDamageTypes([bear])
+    expect(chips).toHaveLength(12)
+    expect(chips).not.toContain('psychic')
+    expect(getDefensesForTypes([bear], ['fire'], {})).toEqual([bear])
+    expect(getDefensesForTypes([bear], ['psychic'], {})).toEqual([])
+  })
+
   it('"Outro tipo" e nenhum escolhido não levam tipo', () => {
     expect(choiceToDamageType('fire')).toBe('fire')
     expect(choiceToDamageType('other')).toBeUndefined()

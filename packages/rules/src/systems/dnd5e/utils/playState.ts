@@ -11,7 +11,9 @@ import {
   applyConditionSpeed, damageTypeSetHas, halveSpeedOnGrid, withConditionApplied,
   type ActiveConditionEffects, type ConditionState, type SheetDamageDefense,
 } from './sheetEffects'
+import type { ResolvedToggle } from '../types/session'
 import { formatMeters } from './abilityScoreUtils'
+import { resolveActiveEffects } from './activeEffects'
 import { getDamageLabel, getDamageTypeName } from './damageTypes'
 import { countLabel, joinPt } from './textUtils'
 
@@ -87,18 +89,40 @@ export function isAtZeroHp(state: Pick<PlayState, 'lifeState'>): boolean {
 
 /**
  * O que o agregador de condições (`sheetEffects.ts`) recebe deste estado: as condições gravadas,
- * mais o Inconsciente enquanto o personagem está a 0 PV (`regras-condicoes.md`, 6.4).
+ * mais o Inconsciente enquanto o personagem está a 0 PV (`regras-condicoes.md`, 6.4); os efeitos
+ * ligados já resolvidos (`toggles`) e a imunidade a condição das defesas da ficha (`defenses`: a
+ * Pureza Corporal), que valem só sem situação nem bloqueio.
  */
-export function getPlayConditionState(state: PlayState): ConditionState {
+export function getPlayConditionState(
+  state: PlayState,
+  toggles: readonly ResolvedToggle[] = [],
+  defenses: readonly SheetDamageDefense[] = [],
+): ConditionState {
   const conditions: ConditionId[] = isAtZeroHp(state) && !state.conditions.includes('unconscious')
     ? [...state.conditions, 'unconscious']
     : [...state.conditions]
-  return { conditions, exhaustion: state.exhaustionLevel }
+  const conditionImmunities = defenses
+    .filter(d => d.kind === 'conditionImmunity' && d.conditions?.length && !d.blockedBy && !d.condition && !d.exceptWhen)
+    .map(d => ({ source: d.source, conditions: d.conditions ?? [] }))
+  return {
+    conditions,
+    exhaustion: state.exhaustionLevel,
+    ...(toggles.length > 0 ? { toggles } : {}),
+    ...(conditionImmunities.length > 0 ? { conditionImmunities } : {}),
+  }
 }
 
-/** Efeitos ativos das condições e da exaustão deste estado (o mesmo agregador da ficha). */
-export function getPlayConditionEffects(state: PlayState): ActiveConditionEffects {
-  return getActiveConditionEffects(getPlayConditionState(state))
+/** Os efeitos ligados do estado, resolvidos contra a ficha (`resolveActiveEffects`). */
+export function getPlayToggles(state: PlayState, sheet: PlaySheet): ResolvedToggle[] {
+  return resolveActiveEffects(state.activeEffects, sheet.toggles)
+}
+
+/**
+ * Os efeitos em vigor deste estado: condições, exaustão e efeitos ligados (em fúria), com a
+ * imunidade a condição da ficha — o mesmo agregador da ficha, uma escada só (p. 175).
+ */
+export function getPlayEffects(state: PlayState, sheet: PlaySheet): ActiveConditionEffects {
+  return getActiveConditionEffects(getPlayConditionState(state, getPlayToggles(state, sheet), sheet.defenses))
 }
 
 /**
@@ -118,7 +142,7 @@ export function getBaseMaxHp(state: PlayState, sheet: PlaySheet): number {
 export function getEffectiveMaxHp(state: PlayState, sheet: PlaySheet): number {
   const baseMax = getBaseMaxHp(state, sheet)
   if (sheet.hpMaxReductionImmunity) return baseMax
-  return getEffectiveHpMax(baseMax, getPlayConditionEffects(state))
+  return getEffectiveHpMax(baseMax, getPlayEffects(state, sheet))
 }
 
 /**
@@ -127,7 +151,7 @@ export function getEffectiveMaxHp(state: PlayState, sheet: PlaySheet): number {
  */
 export function describeHpMaxImmunity(state: PlayState, sheet: PlaySheet): string | null {
   if (!sheet.hpMaxReductionImmunity) return null
-  if (getPlayConditionEffects(state).hpMax.multiplier === 1) return null
+  if (getPlayEffects(state, sheet).hpMax.multiplier === 1) return null
   return `Exaustão ${state.exhaustionLevel} sem efeito no PV máximo (${sheet.hpMaxReductionImmunity}): seu máximo de pontos de vida não pode ser reduzido (pág. 101).`
 }
 
@@ -142,7 +166,7 @@ export function getCurrentHp(state: PlayState, sheet: PlaySheet): number {
 
 /** Deslocamento efetivo em pés, com as condições e a exaustão. */
 export function getPlaySpeed(state: PlayState, sheet: PlaySheet): number {
-  return applyConditionSpeed(sheet.speed, getPlayConditionEffects(state))
+  return applyConditionSpeed(sheet.speed, getPlayEffects(state, sheet))
 }
 
 export type HitDiceAvailability = { die: number; total: number; spent: number; available: number }
@@ -316,14 +340,16 @@ function availableDropToOneHp(state: PlayState, sheet: PlaySheet): PlaySheet['dr
 }
 
 /**
- * As defesas contra dano em vigor: as da ficha (`PlaySheet.defenses`) e as das condições, no mesmo
- * formato — o Petrificado dá resistência a todo dano e imunidade a veneno (pág. 293). O pipeline de
- * dano e a aba Estado leem daqui.
+ * As defesas contra dano em vigor: as da ficha (`PlaySheet.defenses`), as dos efeitos ligados (a
+ * Fúria: concussão, cortante e perfurante) e as das condições, no mesmo formato — o Petrificado dá
+ * resistência a todo dano e imunidade a veneno (pág. 293). O pipeline de dano e a aba Estado leem
+ * daqui.
  */
 export function getPlayDamageDefenses(state: PlayState, sheet: PlaySheet): SheetDamageDefense[] {
-  const effects = getPlayConditionEffects(state)
+  const effects = getPlayEffects(state, sheet)
   return [
     ...sheet.defenses,
+    ...effects.defenses,
     ...effects.resistAllDamage.sources.map((s): SheetDamageDefense => ({ source: s.label, kind: 'resistance', types: 'all' })),
     ...effects.damageImmunities.flatMap(i => i.sources.map((s): SheetDamageDefense =>
       ({ source: s.label, kind: 'immunity', types: [i.damageType] }))),
@@ -550,7 +576,7 @@ function damagePipeline(state0: PlayState, sheet: PlaySheet, input: DamageInput,
     notices.push(note('warning', `${source} não se aplica a este dano: só quando ele deixaria você a 0 PV sem matar na hora, e com um uso disponível. O dano foi aplicado normalmente.`))
   }
 
-  checkConcentration(next, notices)
+  checkConcentration(next, sheet, notices)
   if (next.concentration) {
     const dc = Math.max(10, Math.floor(total / 2))
     notices.push(note('concentrationCheck', `TR de Constituição para manter ${next.concentration.label} — CD ${dc}.`, dc))
@@ -856,24 +882,30 @@ export function recoverResource(state: PlayState, sheet: PlaySheet, id: string, 
 // ── Condições e exaustão ────────────────────────────────────────────────────
 
 /** Encerra a concentração se o estado novo incapacita ou mata (assumido F). */
-function checkConcentration(next: PlayState, notices: PlayNotice[]): void {
+function checkConcentration(next: PlayState, sheet: PlaySheet, notices: PlayNotice[]): void {
   if (!next.concentration) return
-  const ends = getPlayConditionEffects(next).endsConcentration
+  const ends = getPlayEffects(next, sheet).endsConcentration
   if (ends.active) endConcentrationInto(next, notices, `${ends.sources.map(s => s.label).join(', ')} (pág. 205)`)
 }
 
 /**
  * Aplica uma condição gravada, com o `onApply` dela (Inconsciente grava o Caído e avisa de largar o
- * que segura). Condição que incapacita encerra a concentração (assumido F).
+ * que segura). Condição que incapacita encerra a concentração (assumido F). Recusa a condição de que
+ * o personagem está imune agora: a da ficha (Pureza Corporal: Envenenado) e a de um efeito ligado
+ * (Fúria Inconsciente, em fúria: Enfeitiçado e Amedrontado).
  */
-export function addCondition(state: PlayState, id: ConditionId): PlayResult {
+export function addCondition(state: PlayState, sheet: PlaySheet, id: ConditionId): PlayResult {
   const cond = getCondition(id)
   if (!cond) return refuse(state, `Condição desconhecida: ${id}.`)
   if (state.conditions.includes(id)) return done(state)
+  const immune = getPlayEffects(state, sheet).conditionImmunities.find(i => i.condition === id)
+  if (immune) {
+    return refuse(state, `Imune a ${cond.name} (${[...new Set(immune.sources.map(s => s.label))].join(', ')}): a condição não foi aplicada.`)
+  }
   const notices: PlayNotice[] = []
   const next: PlayState = { ...state, conditions: withConditionApplied(state.conditions, id) }
   if (cond.onApply?.dropHeldItems) notices.push(note('droppedItems', 'Largou o que estava segurando (pág. 292).'))
-  checkConcentration(next, notices)
+  checkConcentration(next, sheet, notices)
   return done(next, notices)
 }
 
@@ -983,7 +1015,7 @@ export function setExhaustion(state0: PlayState, sheet: PlaySheet, level: number
   if (before === 6 && next.lifeState === 'dead') {
     notices.push(note('info', 'Continua morto: use "fui revivido" para voltar.'))
   }
-  checkConcentration(next, notices)
+  checkConcentration(next, sheet, notices)
   return done(next, notices)
 }
 
@@ -991,17 +1023,22 @@ export function setExhaustion(state0: PlayState, sheet: PlaySheet, level: number
 
 /**
  * Começa a se concentrar. Uma concentração por vez (pág. 205): a anterior termina, com aviso.
- * Recusa a quem não está consciente ou está incapacitado.
+ * Recusa a quem não está consciente ou está incapacitado, e com a restrição de um efeito ligado em
+ * vigor: "Em fúria você não pode se concentrar (pág. 48)".
  */
 export function startConcentration(
   state: PlayState,
+  sheet: PlaySheet,
   spell: { spellId?: string; label: string },
   now: number,
 ): PlayResult {
   const label = spell.label.trim()
   if (!label) return refuse(state, 'Informe a magia da concentração.')
   if (state.lifeState !== 'conscious') return refuse(state, 'Só um personagem consciente pode se concentrar.')
-  const ends = getPlayConditionEffects(state).endsConcentration
+  const blocking = getPlayToggles(state, sheet).find(t =>
+    t.effects.some(e => e.effect.kind === 'endsConcentration' || e.effect.kind === 'cannotCast'))
+  if (blocking) return refuse(state, `${blocking.label} você não pode se concentrar (pág. ${blocking.page}).`)
+  const ends = getPlayEffects(state, sheet).endsConcentration
   if (ends.active) return refuse(state, `Não é possível se concentrar: ${ends.sources.map(s => s.label).join(', ')}.`)
   const notices: PlayNotice[] = []
   if (state.concentration) {

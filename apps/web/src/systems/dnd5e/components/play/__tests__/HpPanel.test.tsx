@@ -408,7 +408,7 @@ describe('HpPanel — o tipo do dano', () => {
   it('Petrificado sem defesa da ficha continua oferecendo o veneno: imune, não tira PV', () => {
     openKrusk()
     render(<PlayScreen />)
-    usePlayStore.getState().run(st => addCondition(st, 'petrified'))
+    usePlayStore.getState().run((st, sh) => addCondition(st, sh, 'petrified'))
     fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
     expect(typeGroup().getAllByRole('button').map(b => b.textContent)).toEqual(['Veneno', 'Outro tipo'])
     fireEvent.change(screen.getByLabelText('Quanto de dano'), { target: { value: '9' } })

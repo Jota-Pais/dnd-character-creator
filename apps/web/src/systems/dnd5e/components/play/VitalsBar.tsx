@@ -3,10 +3,10 @@ import { flushSync } from 'react-dom'
 import { formatMeters, formatModifier } from '@rpg/rules/systems/dnd5e/utils/abilityScoreUtils'
 import {
   endConcentration, formatHpAdjustment, getBaseMaxHp, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable,
-  getPlayConditionEffects, getPlaySpeed, setInspiration,
+  getPlayEffects, getPlaySpeed, setInspiration,
 } from '@rpg/rules/systems/dnd5e/utils/playState'
 import type { RollGuideEntry } from '@rpg/rules/systems/dnd5e/utils/rollGuide'
-import { getConditionalAcBonuses } from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
+import { getConditionalAcBonuses, isConditionSuspended } from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
 import { ChangeAnnouncer } from './ChangeAnnouncer'
 import {
   describeHitDiceAvailable, describeHpForAnnouncement, formatHitDiceAvailable, getHpBand, getHpBarPercent, getHpFlash,
@@ -115,7 +115,7 @@ export function VitalsBar({ view, onOpenRecipe, onOpenSource, onOpenRests }: {
   // O máximo antes da exaustão: o da ficha com o ajuste temporário (Ajuda).
   const baseMax = getBaseMaxHp(state, sheet)
   const speed = getPlaySpeed(state, sheet)
-  const effects = getPlayConditionEffects(state)
+  const effects = getPlayEffects(state, sheet)
   const initiative = guide.initiative
   const passive = guide.passivePerception
   const life = state.lifeState === 'conscious' ? null : LIFE_LABEL[state.lifeState]
@@ -270,17 +270,18 @@ export function VitalsBar({ view, onOpenRecipe, onOpenSource, onOpenRests }: {
 
         {effects.conditions.map(c => {
           const note = state.conditionNotes?.[c.id]
+          const suspended = isConditionSuspended(c)
           return (
             <span
               key={c.id}
               className={[
                 'shrink-0 whitespace-nowrap inline-flex items-center min-h-8 rounded-full border px-3 text-xs',
-                c.suspendedBy ? 'border-parchment-900 text-parchment-600' : 'border-red-900 text-red-200',
+                suspended ? 'border-parchment-900 text-parchment-600' : 'border-red-900 text-red-200',
               ].join(' ')}
               title={note}
             >
               {c.name}
-              {c.suspendedBy && ' (suspensa)'}
+              {suspended && ' (suspensa)'}
               {/* A nota inteira fica na aba Estado (e no title); aqui, uma linha cortada. */}
               {note && <span className="ml-1 max-w-[8rem] truncate text-parchment-500">· {note}</span>}
             </span>

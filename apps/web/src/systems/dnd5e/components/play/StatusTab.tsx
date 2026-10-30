@@ -141,7 +141,7 @@ function ConcentrationSection({ state, guide, run, titleRef }: PlayTabProps & {
   // aviso diz por quê), o foco fica onde estava.
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    const result = flushSync(() => run(st => startConcentration(st, { label }, Date.now())))
+    const result = flushSync(() => run((st, sh) => startConcentration(st, sh, { label }, Date.now())))
     if (result && result.state.concentration?.label === label.trim()) {
       setLabel('')
       endRef.current?.focus()

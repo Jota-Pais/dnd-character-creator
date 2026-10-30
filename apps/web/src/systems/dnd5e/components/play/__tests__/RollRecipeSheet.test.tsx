@@ -42,7 +42,7 @@ describe('RollRecipeSheet — usar a Inspiração', () => {
 
   it('com desvantagem, gastar anula e a folha diz que é um d20 só', () => {
     openKrusk()
-    usePlayStore.getState().run(st => addCondition(st, 'poisoned'))
+    usePlayStore.getState().run((st, sh) => addCondition(st, sh, 'poisoned'))
     usePlayStore.getState().run(st => setInspiration(st, true))
     openAthletics()
     expect(screen.getByText(/Com desvantagem/)).toBeInTheDocument()
@@ -83,7 +83,7 @@ describe('RollRecipeSheet — usar a Inspiração', () => {
     fireEvent.click(screen.getByRole('button', { name: /Usar inspiração/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Devolver a inspiração' }))
     fireEvent.click(screen.getByRole('button', { name: /Usar inspiração/ }))
-    act(() => { usePlayStore.getState().run(st => addCondition(st, 'prone')) })
+    act(() => { usePlayStore.getState().run((st, sh) => addCondition(st, sh, 'prone')) })
     expect(screen.queryByRole('button', { name: 'Devolver a inspiração' })).toBeNull()
   })
 })
@@ -108,7 +108,7 @@ describe('RollRecipeSheet — Normal / Vantagem / Desvantagem da mesa', () => {
 
   it('com Envenenado, a vantagem da mesa anula a desvantagem (pág. 175)', () => {
     openKrusk()
-    usePlayStore.getState().run(st => addCondition(st, 'poisoned'))
+    usePlayStore.getState().run((st, sh) => addCondition(st, sh, 'poisoned'))
     openAthletics()
     expect(screen.getByText(/Com desvantagem/)).toBeInTheDocument()
     fireEvent.click(tableButton('Vantagem'))

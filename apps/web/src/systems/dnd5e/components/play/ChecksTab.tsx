@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { ABILITY_LABELS, ALL_ABILITY_SCORES, formatModifier } from '@rpg/rules/systems/dnd5e/utils/abilityScoreUtils'
 import { getFinalAbilityScores } from '@rpg/rules/systems/dnd5e/utils/asiUtils'
 import { SKILLS } from '@rpg/rules/systems/dnd5e/utils/backgroundUtils'
-import { getPlayConditionEffects } from '@rpg/rules/systems/dnd5e/utils/playState'
+import { getPlayEffects } from '@rpg/rules/systems/dnd5e/utils/playState'
 import { getSkillChecks } from '@rpg/rules/systems/dnd5e/utils/proficiencyUtils'
 import type { CheckProficiency } from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
 import type { RollGuideEntry } from '@rpg/rules/systems/dnd5e/utils/rollGuide'
@@ -53,7 +53,7 @@ function RollRow({ entry, mark, sub, onOpen }: {
  * condicionais das condições ativas ficam num bloco "Lembretes" no topo: elas nunca mudam o número.
  */
 export function ChecksTab({ draft, state, sheet, guide, openRecipe }: PlayTabProps) {
-  const lines = getPlayConditionEffects(state).lines
+  const lines = getPlayEffects(state, sheet).lines
   // Proficiência e Especialização de cada perícia: a mesma fonte da Revisão e do PDF.
   const skillChecks = useMemo(() => getSkillChecks(draft, getFinalAbilityScores(draft)), [draft])
 

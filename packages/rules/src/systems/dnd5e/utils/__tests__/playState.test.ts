@@ -8,7 +8,7 @@ import { buildPlaySheet } from '../playSheet'
 import {
   addCondition, adjustMaxHp, applyDamage, applyDamageDroppingToOneHp, applyHealing, clearRollHistory, clearTempHp, completeLongRest, completeShortRest,
   createPlayState, describeHpMaxImmunity, endConcentration, getBaseMaxHp, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable,
-  getLongRestHitDiceRecoverable, getPactSlotsAvailable, getPlayConditionEffects, getPlayConditionState, getPlayDamageDefenses, getPlaySpeed,
+  getLongRestHitDiceRecoverable, getPactSlotsAvailable, getPlayEffects, getPlayConditionState, getPlayDamageDefenses, getPlaySpeed,
   getResourceAvailable, getShortRestSlotRecovery, getSpellSlotsAvailable, grantTempHp, previewLongRest, previewShortRest, reconcileLoadedPlayState,
   reconcilePlayState,
   recordDeathSave, recordRoll, recoverPactSlot, regainHpWhileStable, recoverResource, recoverSpellSlot, removeCondition,
@@ -102,7 +102,7 @@ describe('leituras derivadas', () => {
     const s = state({ lifeState: 'dying', damageTaken: 20 })
     expect(getPlayConditionState(s).conditions).toContain('unconscious')
     expect(s.conditions).not.toContain('unconscious')
-    const fx = getPlayConditionEffects(s)
+    const fx = getPlayEffects(s, S)
     expect(fx.savingThrows.STR.autoFail.length).toBeGreaterThan(0)
     expect(fx.endsConcentration.active).toBe(true)
   })
@@ -165,15 +165,15 @@ describe('applyDamage', () => {
   })
 
   it('Petrificado suspende o Envenenado, aplicado antes ou depois, e ele volta ao sair', () => {
-    const before = addCondition(addCondition(state(), 'poisoned').state, 'petrified').state
-    const after = addCondition(addCondition(state(), 'petrified').state, 'poisoned').state
+    const before = addCondition(addCondition(state(), S, 'poisoned').state, S, 'petrified').state
+    const after = addCondition(addCondition(state(), S, 'petrified').state, S, 'poisoned').state
     for (const s of [before, after]) {
-      const poisoned = getPlayConditionEffects(s).conditions.find(c => c.id === 'poisoned')
+      const poisoned = getPlayEffects(s, S).conditions.find(c => c.id === 'poisoned')
       expect(poisoned?.suspendedBy).toEqual(['petrified'])
-      expect(getPlayConditionEffects(s).attack.disadvantage).toEqual([])
+      expect(getPlayEffects(s, S).attack.disadvantage).toEqual([])
     }
     const freed = removeCondition(after, 'petrified').state
-    expect(getPlayConditionEffects(freed).attack.disadvantage.map(d => d.label)).toEqual(['Envenenado'])
+    expect(getPlayEffects(freed, S).attack.disadvantage.map(d => d.label)).toEqual(['Envenenado'])
   })
 
   it('cair a 0 PV: morrendo, Caído gravado, aviso de largar o que segura e fim da concentração', () => {
@@ -360,7 +360,7 @@ describe('applyHealing', () => {
   })
 
   it('Inconsciente GRAVADO (sono mágico) não sai com a cura: o aviso não diz que acordou', () => {
-    let s = addCondition(state(), 'unconscious').state
+    let s = addCondition(state(), S, 'unconscious').state
     s = applyDamage(s, S, { amount: 25 }).state
     expect(s.lifeState).toBe('dying')
     const r = applyHealing(s, S, 5)
@@ -370,7 +370,7 @@ describe('applyHealing', () => {
     const warning = r.notices.find(n => n.kind === 'warning')
     expect(warning?.text).toContain('continua Inconsciente (condição gravada)')
     expect(warning?.text).not.toContain('acordou')
-    expect(getPlayConditionEffects(r.state).noActions.active).toBe(true)
+    expect(getPlayEffects(r.state, S).noActions.active).toBe(true)
     // Sem o Inconsciente gravado, o aviso de sempre.
     expect(kinds(applyHealing(state({ lifeState: 'dying', damageTaken: 20 }), S, 2))).toContain('regainedConsciousness')
   })
@@ -562,7 +562,7 @@ describe('recursos', () => {
     const sh = sheet({
       resources: [{ ...resource('rage', 3, 'long'), spendEndsConcentration: 'entrar em fúria (pág. 48)' }, resource('second-wind', 1, 'short')],
     })
-    const concentrating = startConcentration(state(), { label: 'Bênção' }, 0).state
+    const concentrating = startConcentration(state(), S, { label: 'Bênção' }, 0).state
     const r = spendResource(concentrating, sh, 'rage')
     expect(r.state.concentration).toBeNull()
     expect(r.state.resourcesSpent).toEqual({ rage: 1 })
@@ -604,14 +604,14 @@ describe('condições', () => {
   const c = { label: 'Bênção', startedAt: 0 }
 
   it('condição que incapacita encerra a concentração (assumido F); Envenenado não', () => {
-    const r = addCondition(state({ concentration: c }), 'paralyzed')
+    const r = addCondition(state({ concentration: c }), S, 'paralyzed')
     expect(r.state.concentration).toBeNull()
     expect(kinds(r)).toContain('concentrationEnded')
-    expect(addCondition(state({ concentration: c }), 'poisoned').state.concentration).toEqual(c)
+    expect(addCondition(state({ concentration: c }), S, 'poisoned').state.concentration).toEqual(c)
   })
 
   it('Inconsciente manual grava o Caído e avisa de largar o que segura; tirá-lo deixa o Caído', () => {
-    const r = addCondition(state(), 'unconscious')
+    const r = addCondition(state(), S, 'unconscious')
     expect(r.state.conditions).toEqual(['unconscious', 'prone'])
     expect(kinds(r)).toContain('droppedItems')
     expect(removeCondition(r.state, 'unconscious').state.conditions).toEqual(['prone'])
@@ -626,8 +626,8 @@ describe('condições', () => {
 
   it('id desconhecido é recusado; repetida não duplica', () => {
     const s = state({ conditions: ['poisoned'] })
-    expect(kinds(addCondition(s, 'sleepy' as never))).toEqual(['refused'])
-    expect(addCondition(s, 'poisoned').state).toBe(s)
+    expect(kinds(addCondition(s, S, 'sleepy' as never))).toEqual(['refused'])
+    expect(addCondition(s, S, 'poisoned').state).toBe(s)
   })
 
   it('levantar: tira o Caído, mas não com deslocamento 0', () => {
@@ -781,18 +781,18 @@ describe('setExhaustion', () => {
 
 describe('concentração', () => {
   it('começa, troca com aviso e termina', () => {
-    let r = startConcentration(state(), { spellId: 'bless', label: 'Bênção' }, 5)
+    let r = startConcentration(state(), S, { spellId: 'bless', label: 'Bênção' }, 5)
     expect(r.state.concentration).toEqual({ spellId: 'bless', label: 'Bênção', startedAt: 5 })
-    r = startConcentration(r.state, { label: 'Raio de Luar' }, 6)
+    r = startConcentration(r.state, S, { label: 'Raio de Luar' }, 6)
     expect(kinds(r)).toEqual(['concentrationReplaced'])
     expect(r.state.concentration?.label).toBe('Raio de Luar')
     expect(endConcentration(r.state).state.concentration).toBeNull()
   })
 
   it('recusa quem está incapacitado ou a 0 PV, e rótulo vazio', () => {
-    expect(kinds(startConcentration(state({ conditions: ['stunned'] }), { label: 'X' }, 0))).toEqual(['refused'])
-    expect(kinds(startConcentration(state({ lifeState: 'dying', damageTaken: 20 }), { label: 'X' }, 0))).toEqual(['refused'])
-    expect(kinds(startConcentration(state(), { label: '  ' }, 0))).toEqual(['refused'])
+    expect(kinds(startConcentration(state({ conditions: ['stunned'] }), S, { label: 'X' }, 0))).toEqual(['refused'])
+    expect(kinds(startConcentration(state({ lifeState: 'dying', damageTaken: 20 }), S, { label: 'X' }, 0))).toEqual(['refused'])
+    expect(kinds(startConcentration(state(), S, { label: '  ' }, 0))).toEqual(['refused'])
   })
 })
 
@@ -1209,7 +1209,7 @@ describe('reconcilePlayState', () => {
     const after = spendSpellSlot(two, sheet({ maxHp: 9 }), 1).state
     expect(after.damageTaken).toBe(8)
     expect(after.lifeState).toBe('conscious')
-    expect(startConcentration(after, { label: 'X' }, 0).state.concentration?.label).toBe('X')
+    expect(startConcentration(after, S, { label: 'X' }, 0).state.concentration?.label).toBe('X')
   })
 
   it('ficha encolhida com exaustão 4: o mínimo de 1 PV vale sobre o corte', () => {

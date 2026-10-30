@@ -8,7 +8,7 @@ import { buildPlaySheet } from '../playSheet'
 import { COMPLETE_DRAFT } from '../../../../test/fixtures'
 import {
   activateToggle, addCondition, adjustMaxHp, applyDamage, applyDamageDroppingToOneHp, applyHealing, clearRollHistory, clearTempHp, completeLongRest, completeShortRest,
-  createPlayState, describeHpMaxImmunity, endConcentration, getBaseMaxHp, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable,
+  createPlayState, deactivateToggle, describeHpMaxImmunity, endConcentration, getBaseMaxHp, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable,
   getLongRestHitDiceRecoverable, getPactSlotsAvailable, getPlayEffects, getPlayConditionState, getPlayDamageDefenses, getPlaySpeed,
   getResourceAvailable, getShortRestSlotRecovery, performAction, getSpellSlotsAvailable, grantTempHp, previewLongRest, previewShortRest, reconcileLoadedPlayState,
   reconcilePlayState,
@@ -1620,6 +1620,20 @@ describe('efeitos ligados: a Fúria pela ação que a liga', () => {
     expect(r.state.activeEffects).toEqual([])
     expect(r.state.resourcesSpent).toEqual({ rage: 1 })
     expect(r.notices).toEqual([])
+  })
+
+  // "Sua fúria dura por 1 minuto. Ela termina prematuramente se [...] seu turno acabar e você não
+  // tiver atacado [...]" (pág. 48): esse fim não é ação. Só encerrar por vontade é ação bônus.
+  it('atordoado em fúria: a ação de encerrar recusa, e o fim que não é ação desliga, com a exaustão do Frenesi', () => {
+    const sh = barbarian(3, {}, 'berserker')
+    for (const condition of ['stunned', 'paralyzed', 'incapacitated', 'petrified'] as const) {
+      const stuck = addCondition(enter(state(), sh, 'frenzy').state, sh, condition).state
+      expect(end(stuck, sh).notices[0].kind).toBe('refused')
+      const r = deactivateToggle(stuck, sh, 'rage')
+      expect(r.state.activeEffects).toEqual([])
+      expect(r.state.exhaustionLevel).toBe(1)
+      expect(r.notices).toEqual([{ kind: 'warning', text: 'Frenesi: ao terminar, você sofre um nível de exaustão (0 → 1, pág. 292).' }])
+    }
   })
 
   it('cair a 0 PV encerra a fúria, com aviso; aplicar o Inconsciente também', () => {

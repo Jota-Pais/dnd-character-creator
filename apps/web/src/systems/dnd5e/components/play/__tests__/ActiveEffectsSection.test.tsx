@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { usePlayStore } from '../../../stores/playStore'
-import { startConcentration } from '@rpg/rules/systems/dnd5e/utils/playState'
+import { addCondition, startConcentration } from '@rpg/rules/systems/dnd5e/utils/playState'
 import type { CharacterDraft } from '@rpg/rules/systems/dnd5e/types/character'
 import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
 import { liveRegions, openDraft, resetPlay } from './openPlay'
@@ -114,6 +114,29 @@ describe('ActiveEffectsSection — ligar a Fúria é um toque', () => {
     expect(playState().activeEffects).toEqual([])
     expect(playState().resourcesSpent).toEqual({})
     expect(playState().concentration?.label).toBe('Escuridão')
+  })
+
+  // A fúria acaba sozinha (o minuto, o turno sem ataque nem dano, pág. 48): isso não é a ação bônus
+  // do "Encerrar", que quem não pode agir não tem.
+  it('o "Já acabou" desliga sem ação, mesmo Atordoado, com a exaustão do Frenesi; o foco vai ao título', () => {
+    openStatus(krusk(3, {}, 'berserker'))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Frenesi (ao terminar, +1 nível de exaustão)' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar em fúria' }))
+    usePlayStore.getState().run((st, sh) => addCondition(st, sh, 'stunned'))
+    const end = screen.getByRole('button', { name: 'Encerrar a fúria' })
+    end.focus()
+    fireEvent.click(end)
+    expect(playState().activeEffects.map(a => a.id)).toEqual(['rage'])
+    expect(screen.getByRole('status')).toHaveTextContent('sem ações nem reações (pág. 292)')
+    expect(end).toHaveFocus()
+
+    expect(section()).toHaveTextContent('Já acabousem gastar ação')
+    fireEvent.click(within(section()).getByRole('button', { name: 'Já acabou' }))
+    expect(playState().activeEffects).toEqual([])
+    expect(playState().exhaustionLevel).toBe(1)
+    expect(screen.getByRole('status')).toHaveTextContent('Frenesi: ao terminar, você sofre um nível de exaustão (0 → 1, pág. 292).')
+    expect(screen.getByRole('heading', { name: 'Efeitos ativos' })).toHaveFocus()
+    expect(screen.queryByTestId('vitals-toggle-rage')).toBeNull()
   })
 
   it('de Placas: liga, gasta o uso e diz que não há benefícios', () => {

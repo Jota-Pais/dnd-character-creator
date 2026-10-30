@@ -4,7 +4,7 @@ import type { ActionTiming, SheetAction } from '@rpg/rules/systems/dnd5e/types/a
 import type { PlaySheet, PlayState } from '@rpg/rules/systems/dnd5e/types/playState'
 import type { SheetToggle } from '@rpg/rules/systems/dnd5e/types/session'
 import { describeToggleEffects } from '@rpg/rules/systems/dnd5e/utils/activeEffects'
-import { getPlaySpeed, getPlayToggles, getResourceAvailable, performAction } from '@rpg/rules/systems/dnd5e/utils/playState'
+import { deactivateToggle, getPlaySpeed, getPlayToggles, getResourceAvailable, performAction } from '@rpg/rules/systems/dnd5e/utils/playState'
 import { ChangeAnnouncer } from './ChangeAnnouncer'
 import type { PlayTabProps } from './usePlayView'
 
@@ -41,11 +41,12 @@ function describeCost(action: SheetAction, state: PlayState, sheet: PlaySheet): 
 /**
  * Um efeito que a ficha liga (a Fúria): desligado, o botão da ação que o liga, com o momento, o
  * custo e o saldo, e a opção de ligar (o Frenesi); ligado, o que ele está fazendo (ou o que o
- * impede), o lembrete do fim prematuro e o botão que o encerra.
+ * impede), o lembrete do fim prematuro, o botão da ação que o encerra e o "Já acabou", o fim que
+ * não é ação (`deactivateToggle`).
  *
  * Foco (as regras do CLAUDE.md): ligar troca o botão pelo "Encerrar", que recebe o foco; encerrar
- * leva o foco ao título da seção; recusado (sem usos, já em fúria), o aviso diz por quê e o foco
- * fica onde estava.
+ * ou o "Já acabou" levam o foco ao título da seção; recusado (sem usos, já em fúria, sem ações), o
+ * aviso diz por quê e o foco fica onde estava.
  */
 function ToggleCard({ toggle, view, titleRef }: {
   toggle: SheetToggle
@@ -74,6 +75,15 @@ function ToggleCard({ toggle, view, titleRef }: {
     if (result && !result.state.activeEffects.some(a => a.id === toggle.id)) titleRef.current?.focus()
   }
 
+  // O fim que não é ação: a duração passou, ou o fim prematuro (a Fúria: o turno acabou sem ataque
+  // nem dano, pág. 48). Sem custo e sem pedir que o personagem possa agir — Atordoado, a fúria acaba
+  // do mesmo jeito, e a ação bônus do "Encerrar" seria recusada. O que a opção custa ao acabar (o
+  // Frenesi) vale igual.
+  function markEnded() {
+    const result = flushSync(() => run((st, sh) => deactivateToggle(st, sh, toggle.id)))
+    if (result && !result.state.activeEffects.some(a => a.id === toggle.id)) titleRef.current?.focus()
+  }
+
   if (resolved) {
     const lines = describeToggleEffects(draft, resolved, getPlaySpeed(state, sheet))
     return (
@@ -98,18 +108,29 @@ function ToggleCard({ toggle, view, titleRef }: {
             {resolved.option.label}: ao terminar, você sofre um nível de exaustão.
           </p>
         )}
-        {off && (
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          {off && (
+            <span className="flex items-center gap-2">
+              <button
+                ref={endRef}
+                onClick={turnOff}
+                className="min-h-10 rounded-lg border border-amber-700 px-3 text-sm text-amber-200 hover:border-amber-500"
+              >
+                {off.name}
+              </button>
+              <span className="text-[11px] text-parchment-500">{TIMING_LABEL[off.timing]}</span>
+            </span>
+          )}
+          <span className="flex items-center gap-2">
             <button
-              ref={endRef}
-              onClick={turnOff}
-              className="min-h-10 rounded-lg border border-amber-700 px-3 text-sm text-amber-200 hover:border-amber-500"
+              onClick={markEnded}
+              className="min-h-10 rounded-lg border border-parchment-700 px-3 text-sm text-parchment-300 hover:border-parchment-500"
             >
-              {off.name}
+              Já acabou
             </button>
-            <span className="text-[11px] text-parchment-500">{TIMING_LABEL[off.timing]}</span>
-          </div>
-        )}
+            <span className="text-[11px] text-parchment-500">sem gastar ação</span>
+          </span>
+        </div>
       </div>
     )
   }

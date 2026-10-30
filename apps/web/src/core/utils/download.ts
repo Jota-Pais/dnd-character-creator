@@ -1,4 +1,11 @@
-/** Baixa `data` como um arquivo JSON legível (o mesmo jeito do exportar de cada ficha). */
+/**
+ * Quanto o endereço do arquivo baixado vive depois do clique. O Safari do iPhone lê o arquivo depois
+ * que o clique volta, e soltar o endereço na hora é a causa conhecida do download que falha lá
+ * ("WebKitBlobResource error 1"). Um minuto sobra para um JSON de fichas.
+ */
+export const BLOB_URL_LIFETIME_MS = 60_000
+
+/** Baixa `data` como um arquivo JSON legível: o exportar de cada ficha e o de todas. */
 export function downloadJsonFile(fileName: string, data: unknown): void {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
@@ -8,7 +15,7 @@ export function downloadJsonFile(fileName: string, data: unknown): void {
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
-  URL.revokeObjectURL(url)
+  setTimeout(() => URL.revokeObjectURL(url), BLOB_URL_LIFETIME_MS)
 }
 
 /** O JSON de um arquivo escolhido pelo jogador; undefined se não é JSON (ou não deu para ler). */

@@ -3,6 +3,7 @@ import { EMPTY_DRAFT } from '@rpg/rules/systems/ordem/types/character'
 import { createId } from '@rpg/rules/core/utils/id'
 import { sanitizeImportedDraft } from '@rpg/rules/systems/ordem/utils/draftValidation'
 import { requestPersistentStorage } from '../../../core/pwa/persistentStorage'
+import { downloadJsonFile } from '../../../core/utils/download'
 
 const LIBRARY_KEY = 'ordem-character-library'
 export const LIBRARY_VERSION = 1
@@ -70,16 +71,7 @@ export function newId(): string {
 }
 
 export function exportCharacter(character: OrdemCharacterDraft): void {
-  const json = JSON.stringify(character, null, 2)
-  const blob = new Blob([json], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = `${character.name.trim() || 'agente'}-ordem.json`
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
+  downloadJsonFile(`${character.name.trim() || 'agente'}-ordem.json`, character)
 }
 
 export function importCharacter(file: File): Promise<OrdemCharacterDraft | null> {

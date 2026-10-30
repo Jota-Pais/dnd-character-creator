@@ -6,6 +6,7 @@ import { sanitizeImportedDraft } from '@rpg/rules/systems/dnd5e/utils/draftValid
 import { sanitizePlayState } from '@rpg/rules/systems/dnd5e/utils/playState'
 import { loadPlayState } from './playStorage'
 import { requestPersistentStorage } from '../../../core/pwa/persistentStorage'
+import { downloadJsonFile } from '../../../core/utils/download'
 
 const SESSION_KEY = 'dnd-character-session'
 const LIBRARY_KEY = 'dnd-character-library'
@@ -188,16 +189,7 @@ export function parseCharacterFile(raw: unknown): ImportedCharacter | null {
 /** Baixa a ficha como JSON, com o estado de jogo salvo dela (`characterId`; null numa ficha nova). */
 export function exportCharacter(character: CharacterDraft, characterId: string | null): void {
   const file = buildCharacterFile(character, characterId ? loadPlayState(characterId) : null)
-  const json = JSON.stringify(file, null, 2)
-  const blob = new Blob([json], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = `${character.name.trim() || 'personagem'}-dnd5e.json`
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
+  downloadJsonFile(`${character.name.trim() || 'personagem'}-dnd5e.json`, file)
 }
 
 export function importCharacter(file: File): Promise<ImportedCharacter | null> {

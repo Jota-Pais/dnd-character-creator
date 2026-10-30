@@ -186,16 +186,44 @@ describe('checkForUpdateOnReturn: o app que volta do segundo plano', () => {
     expect(reg.update).toHaveBeenCalledTimes(1)
   })
 
-  it('a procura que falha (sem rede) não vira erro', async () => {
+  it('a procura que falha (sem rede) não vira erro nem gasta a hora: a próxima volta procura de novo', async () => {
     const reg = new FakeRegistration()
     reg.update.mockRejectedValueOnce(new Error('offline'))
     const doc = fakeDoc()
     let now = 0
     checkForUpdateOnReturn(asReg(reg), doc, () => now)
     now = UPDATE_CHECK_INTERVAL_MS
-    doc.dispatchEvent(new Event('visibilitychange'))
+    turn(doc, 'hidden')
+    turn(doc, 'visible')
     await Promise.resolve()
     expect(reg.update).toHaveBeenCalledTimes(1)
+
+    now += 5 * 60 * 1000
+    turn(doc, 'hidden')
+    turn(doc, 'visible')
+    expect(reg.update).toHaveBeenCalledTimes(2)
+    // A que deu certo gasta a hora.
+    await Promise.resolve()
+    now += 5 * 60 * 1000
+    turn(doc, 'hidden')
+    turn(doc, 'visible')
+    expect(reg.update).toHaveBeenCalledTimes(2)
+  })
+
+  // A mesa num porão: sai do app sem sinal, pega sinal e volta antes de uma hora.
+  it('no APK, a procura da ida que falha (sem rede, a conexão cortada com o app congelado) não gasta a hora: a volta procura', async () => {
+    const reg = new FakeRegistration()
+    reg.update.mockRejectedValueOnce(new Error('offline'))
+    const doc = fakeDoc()
+    let now = 0
+    checkForUpdateOnReturn(asReg(reg), doc, () => now, true)
+    now = UPDATE_CHECK_INTERVAL_MS
+    turn(doc, 'hidden')
+    await Promise.resolve()
+    expect(reg.update).toHaveBeenCalledTimes(1)
+    now += 10 * 60 * 1000
+    turn(doc, 'visible')
+    expect(reg.update).toHaveBeenCalledTimes(2)
   })
 
   it('no APK, a ida ao segundo plano também procura, no mesmo limite de uma vez por hora', () => {

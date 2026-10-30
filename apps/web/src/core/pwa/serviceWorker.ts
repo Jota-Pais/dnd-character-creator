@@ -83,7 +83,13 @@ export const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000
  * hora. O download que começa na saída tem o tempo fora para terminar, e a versão entra sozinha já
  * na volta (`applyUpdateOnReturn`). Procurando só na volta, o download termina com o app de novo na
  * frente, tarde para ela, e a versão esperaria a volta seguinte. Se o Android congelar o app parado
- * antes do fim, o download continua na volta, como antes. No navegador e no iPhone, só a volta.
+ * antes do fim, o download continua na volta, se a conexão sobreviver. No navegador e no iPhone, só
+ * a volta.
+ *
+ * A procura que falha (sem rede, ou a conexão cortada com o app congelado) não gasta a hora: a
+ * próxima ida ou volta procura de novo, e o pedido que falha não custa nada. Achada a versão, o
+ * download do build que falhar depois espera a hora seguinte (ou a próxima abertura): repetido a
+ * cada volta, ele baixaria o build inteiro de novo a cada vez.
  */
 export function checkForUpdateOnReturn(
   reg: SwRegistration,
@@ -95,9 +101,12 @@ export function checkForUpdateOnReturn(
   doc.addEventListener('visibilitychange', () => {
     const watched = doc.visibilityState === 'visible' || (alsoOnLeave && doc.visibilityState === 'hidden')
     if (!watched || now() - lastCheck < UPDATE_CHECK_INTERVAL_MS) return
+    // A hora se gasta já na procura, e não no fim dela: uma segunda não sai enquanto esta corre.
+    const previous = lastCheck
     lastCheck = now()
-    // Sem rede, a procura falha: tenta de novo na volta seguinte.
-    reg.update().catch(() => {})
+    reg.update().catch(() => {
+      lastCheck = previous
+    })
   })
 }
 

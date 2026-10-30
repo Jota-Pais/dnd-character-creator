@@ -67,7 +67,7 @@ apps/mobile/          # @rpg/mobile: o APK do Android (Capacitor; android/, a p�
 docs/                 # Regras digitalizadas em markdown
 scripts/              # gravam nos dados do motor (packages/rules/src/systems/<sistema>/data)
 
-Arquivo novo vai ao motor quando é regra e não precisa de tela; o que importa React ou zustand, toca API do navegador ou tem classe do Tailwind fica no site. O site importa o motor, nunca o contrário (o ESLint e o tsconfig do pacote, sem a lib DOM, cobram).
+Arquivo novo vai ao motor quando é regra e não precisa de tela; o que importa React ou zustand, toca API do navegador ou tem classe do Tailwind fica no site. O site importa o motor, nunca o contrário (o ESLint, que recusa no pacote `.tsx` e import, também por `import()`, de React, zustand, Capacitor e do site, e o tsconfig do pacote, sem a lib DOM nem os tipos do Vite, cobram). No Node, o motor entra por um bundler ou carregador de TS (o Vitest hoje): o Node puro não o carrega.
 
 ## Convenções de Código
 

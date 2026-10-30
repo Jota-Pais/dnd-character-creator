@@ -19,7 +19,7 @@ Cada push na `main` vai para a Vercel e chega ao celular sozinho, sem APK novo. 
 
 1. A Vercel publica um `sw.js` novo, porque a lista de arquivos com revisão muda a cada build.
 2. Na abertura seguinte do app, o navegador procura o `sw.js`. A Vercel o serve com `max-age=0, must-revalidate`, então ele não fica preso em cache. O app que volta do segundo plano sem ser fechado também procura, no máximo uma vez por hora (`checkForUpdateOnReturn`). Achando, o SW novo baixa a versão nova inteira e **espera**.
-3. A página aberta continua na versão velha: **nada recarrega sozinho, nunca no meio do jogo**. A galeria mostra "Versão nova do app pronta", com "Atualizar agora" para quem quiser na hora (`GalleryNotices.tsx`). Esse é o único lugar que recarrega, e só pelo toque.
+3. A página aberta continua na versão velha: **nada recarrega sozinho, nunca no meio do jogo**. A galeria mostra "Versão nova do app pronta", com "Atualizar agora" para quem quiser na hora (`GalleryNotices.tsx`; no APK do Android, "Atualização pronta", ver `docs/app-android.md`). Esse é o único lugar que recarrega, e só pelo toque.
 4. Quando nenhuma página usa mais a versão velha, a nova assume. Isso acontece na próxima abertura, com o app fechado de verdade: no Android e no iPhone, tirado da lista de apps recentes. Trocar de app não fecha.
 
 Por isso uma publicação leva **duas aberturas** para valer: a primeira baixa, a segunda usa. Sem rede, o app abre a última versão guardada, e a procura falha em silêncio até a próxima.

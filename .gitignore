@@ -33,6 +33,12 @@ docs/_book-extracts/
 *.p12
 *.apk
 *.aab
+# As senhas da chave (forja-release.properties). Um *.properties genérico levaria junto o
+# gradle.properties e o gradle-wrapper.properties, que são do projeto
+forja-release.properties
+*-release.properties
+*signing*.properties
+keystore.properties
 
 # Claude Code (config local de máquina)
 .claude/

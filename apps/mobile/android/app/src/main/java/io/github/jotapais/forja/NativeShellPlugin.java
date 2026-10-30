@@ -1,17 +1,39 @@
 package io.github.jotapais.forja;
 
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.SystemClock;
+import android.print.PrintAttributes;
+import android.print.PrintManager;
 import android.webkit.RenderProcessGoneDetail;
 import android.webkit.WebView;
 import androidx.activity.OnBackPressedCallback;
+import androidx.activity.result.ActivityResult;
+import com.getcapacitor.JSObject;
 import com.getcapacitor.Logger;
 import com.getcapacitor.Plugin;
+import com.getcapacitor.PluginCall;
+import com.getcapacitor.PluginMethod;
 import com.getcapacitor.WebViewListener;
+import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 
 /**
- * O que a casca faz além do Capacitor, sem nada para a página chamar (docs/app-android.md):
+ * O que a casca faz além do Capacitor (docs/app-android.md). Para a página chamar (o site, em
+ * apps/web/src/core/native/nativeShell.ts; desde o versionCode 2):
+ *
+ * - `saveFile`: o "Exportar" e o "Exportar todas". O WebView ignora o download do site (o link com
+ *   `download` para um blob:), e o arquivo não saía. Aqui, o "Salvar como" do Android (a pasta
+ *   Downloads, o Drive...) grava o texto, e a página sabe se foi salvo ou cancelado.
+ * - `print`: o "Imprimir / Salvar PDF". O WebView não implementa o window.print(); aqui, a
+ *   impressão do Android da página aberta, que também salva em PDF.
+ *
+ * Sem nada para a página chamar:
  *
  * - O "Tentar de novo" da página de erro (www/index.html), que não tem a ponte do Capacitor e não
  *   sabe o endereço do site (o da variante de teste é outro): ela navega para RETRY_PATH, e daqui o
@@ -66,6 +88,67 @@ public class NativeShellPlugin extends Plugin {
             }
         };
         bridge.addWebViewListener(webViewListener);
+    }
+
+    /**
+     * Grava um arquivo de texto onde a pessoa escolher, pelo "Salvar como" do Android (sem pedir
+     * permissão de armazenamento). Resolve `{ saved }`: false quando ela cancela.
+     */
+    @PluginMethod
+    public void saveFile(PluginCall call) {
+        String fileName = call.getString("fileName");
+        if (fileName == null || call.getString("text") == null) {
+            call.reject("saveFile pede fileName e text");
+            return;
+        }
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT)
+            .addCategory(Intent.CATEGORY_OPENABLE)
+            .setType(call.getString("mimeType", "application/json"))
+            .putExtra(Intent.EXTRA_TITLE, fileName);
+        startActivityForResult(call, intent, "saveFileResult");
+    }
+
+    @ActivityCallback
+    private void saveFileResult(PluginCall call, ActivityResult result) {
+        if (call == null) {
+            return;
+        }
+        Uri uri = result.getData() == null ? null : result.getData().getData();
+        JSObject ret = new JSObject();
+        if (result.getResultCode() != Activity.RESULT_OK || uri == null) {
+            ret.put("saved", false);
+            call.resolve(ret);
+            return;
+        }
+        try (OutputStream out = getContext().getContentResolver().openOutputStream(uri, "w")) {
+            if (out == null) {
+                throw new IOException("Sem como escrever em " + uri);
+            }
+            out.write(call.getString("text").getBytes(StandardCharsets.UTF_8));
+            ret.put("saved", true);
+            call.resolve(ret);
+        } catch (IOException | SecurityException e) {
+            Logger.error("NativeShell", "Não deu para gravar o arquivo escolhido.", e);
+            call.reject("Não deu para gravar o arquivo", e);
+        }
+    }
+
+    /**
+     * A impressão do Android da página aberta (com o "Salvar como PDF"), pelo CSS de impressão do
+     * site, como o window.print() do navegador. `name` vira o nome do trabalho e do PDF.
+     */
+    @PluginMethod
+    public void print(PluginCall call) {
+        String name = call.getString("name", "Ficha");
+        getActivity().runOnUiThread(() -> {
+            PrintManager printManager = (PrintManager) getActivity().getSystemService(Context.PRINT_SERVICE);
+            if (printManager == null) {
+                call.reject("O aparelho não tem o serviço de impressão");
+                return;
+            }
+            printManager.print(name, bridge.getWebView().createPrintDocumentAdapter(name), new PrintAttributes.Builder().build());
+            call.resolve();
+        });
     }
 
     @Override

@@ -7,8 +7,8 @@ apply plugin: 'com.android.application'
 // distribuído (o Android só instala por cima um número maior); o versionName é o que a pessoa vê.
 // Quando o site passar a depender do APK novo, o mínimo em apps/web/public/app-version.json sobe
 // para este versionCode.
-def forjaVersionCode = 1
-def forjaVersionName = '0.1.0'
+def forjaVersionCode = 2
+def forjaVersionName = '0.1.1'
 
 // O local.properties (ignorado pelo git) é desta máquina: o SDK e, se quiser, o caminho da chave.
 def localProperties = new Properties()

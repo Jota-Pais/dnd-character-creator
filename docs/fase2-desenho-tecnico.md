@@ -356,6 +356,15 @@ FeatureEffects.spellHealingBonus?: { base: number; perSpellLevel: number }   // 
 - O ácido fica "dano de ácido", a forma que o app já mostrava; a p. 198 diz "dano ácido". Só redação.
 - O teste do ancestral ficou no `draconicAncestor.test.ts`, que já existia.
 
+Correções da revisão (2026-10-30):
+- A Resistência à Magia do abjurador 14 entrou ('de magia', a mesma caixa da Aura de Vigilância), e a Defesa Sedutora declara a imunidade a Enfeitiçado. A cobertura passou a ver "contra o dano", a lista de tipos sem "dano" e "não pode(m) ser" + condição.
+- Ficam nas exceções, levadas ao dono: a Pedra de Transmutador (a resistência é de quem está com a pedra, ao tipo escolhido ao criá-la) e as Auras de Coragem e de Devoção (só enquanto você estiver consciente, e alcançam os aliados).
+- O Avatar da Batalha segue o texto dos dados ('de ataque com arma não mágica', do inglês); o pt-BR diz 'de ataques não-mágicos', como a Maestria, e o mesmo golpe pede duas caixas. Levado ao dono.
+- A imunidade a condição da ficha (Pureza Corporal, Proteção Natural, Defesa Sedutora) é só a linha Defesas: o `addCondition` não recusa nem avisa. A recusa do item 4 de `efeitos-ativos` cobre também a da ficha.
+- `getDamageDefenses` lê as opções de progressão, como `getConditionalRollNotes`.
+- A parcela sem tipo fica sozinha no arredondamento: duas "Outro tipo" são dois tipos.
+- O aviso da redução em duas parcelas manda não marcar a caixa da situação; a linha embaixo dos chips segue o `defenseApplies` do pipeline; a 2ª parcela vazia diz por que o "Aplicar" está apagado, e o impedimento dela descreve o campo dela.
+
 - **Tamanho:** M
 - **Depende de:** nada
 
@@ -641,7 +650,7 @@ usePlayView: armorClass = getSheetArmorClass(draft, scores, getSheetSession(draf
 ConditionState ganha toggles?: ResolvedToggle[]. getActiveConditionEffects soma os efeitos ligados com a origem 'toggle:<id>':
 - modos, com ActiveConditionEffects.scopedAttack para o attackScope de cada linha;
 - defesas com tipo;
-- imunidade a condição: addCondition recusa a nova, e a já gravada fica suspensa, com linha;
+- imunidade a condição: addCondition recusa a nova, e a já gravada fica suspensa, com linha. Vale também para a da ficha (`PlaySheet.defenses`, `conditionImmunity`: Pureza Corporal, Proteção Natural, Defesa Sedutora), que desde a onda `defesas` é só a linha Defesas;
 - cannotCast e endsConcentration vindos da restrição em vigor.
 
 getPlayConditionEffects(state) vira getPlayEffects(state, sheet). O rollGuide passa pela sessão, e o damagePipeline lê as defesas ligadas.
@@ -651,6 +660,7 @@ getPlayConditionEffects(state) vira getPlayEffects(state, sheet). O rollGuide pa
 - Fúria: vantagem em check:STR, skill:athletics e save:STR; nada no ataque.
 - De Placas: sem os benefícios, mas com cannotCast e endsConcentration.
 - Fúria Inconsciente suspende Amedrontado gravado.
+- Monge 10 (Pureza Corporal): addCondition('poisoned') recusa.
 - Urso resiste a fogo e não a psíquico, inclusive de Placas.
 - **Aceite:** Uma só escada da p. 175 para condições e efeitos ligados.
 

@@ -3,7 +3,7 @@ import { render, screen, fireEvent, cleanup, act } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { TOAST_GAP } from '../deathSaveScroll'
 import { usePlayStore } from '../../../stores/playStore'
-import { applyDamage, stabilize, startConcentration } from '@rpg/rules/systems/dnd5e/utils/playState'
+import { activateToggle, applyDamage, stabilize, startConcentration } from '@rpg/rules/systems/dnd5e/utils/playState'
 import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
 import { liveRegions, openDraft, openKrusk, resetPlay } from './openPlay'
 
@@ -377,3 +377,42 @@ function forceD20(face: number) {
     return array
   })
 }
+
+// A Bênção vale no teste contra a morte (decisão 22, pelo Sortudo): o total é d20 + 1d4, e o app
+// pede o d4; o 1 e o 20 naturais decidem sozinhos (pág. 199).
+describe('DeathSaves — com a Bênção', () => {
+  function blessedAtZero() {
+    openKrusk()
+    dropToZero()
+    usePlayStore.getState().run((st, sh) => activateToggle(st, sh, 'spell:bless', { now: 1 }))
+    render(<PlayScreen />)
+  }
+
+  it('pede o d4 e soma: 8 + 2 é sucesso', () => {
+    blessedAtZero()
+    const regions = liveRegions()
+    expect(screen.getByText(/role 1d20 \+ 1d4/)).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText(/d20 que você tirou/), { target: { value: '8' } })
+    const register = screen.getByRole('button', { name: 'Registrar' })
+    expect(register).toHaveAttribute('aria-disabled', 'true')
+    const hint = screen.getByText('Falta o 1d4 de Bênção (1 a 4); o app soma o resto.')
+    expect(regions.some(r => r.contains(hint))).toBe(true)
+    fireEvent.change(screen.getByLabelText(/1d4 de Bênção/), { target: { value: '2' } })
+    fireEvent.click(register)
+    expect(screen.getByRole('img', { name: 'Sucessos: 1 de 3' })).toBeInTheDocument()
+  })
+
+  it('o 20 natural registra sem o d4', () => {
+    blessedAtZero()
+    registerNatural('20')
+    expect(usePlayStore.getState().state!.lifeState).toBe('conscious')
+  })
+
+  it('com os dados do app, rolar preenche o d20 e o d4', () => {
+    usePlayStore.getState().setAppDice(true)
+    blessedAtZero()
+    fireEvent.click(screen.getByRole('button', { name: 'rolar' }))
+    expect(screen.getByLabelText(/d20 que você tirou/)).not.toHaveValue(null)
+    expect(Number((screen.getByLabelText(/1d4 de Bênção/) as HTMLInputElement).value)).toBeGreaterThanOrEqual(1)
+  })
+})

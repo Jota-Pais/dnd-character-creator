@@ -37,6 +37,32 @@ describe('rollGuideEntry', () => {
     expect(record.total).toBe(21)
   })
 
+  // A Bênção: "1d20+5+1d4", com o d20 primeiro — o natural é dele, não do d4.
+  it('o natural sai do d20, com o 1d4 junto na conta', () => {
+    const bless = [{ label: 'Bênção', count: 1, sides: 4, sign: 1 as const }]
+    const e = entry({ modifier: 5, extraDice: bless, notation: formatGuideNotation('1d20', 5, bless) })
+    expect(e.notation).toBe('1d20+5+1d4')
+    const { record, natural } = rollGuideEntry(e, { roller: sequenceRoller([9, 3]) })
+    expect(natural).toBe(9)
+    expect(record.total).toBe(17)
+    // Com vantagem, o natural é o d20 que ficou, e o d4 não entra na disputa.
+    const adv = rollGuideEntry({ ...e, mode: 'advantage', notation: '2d20kh1+5+1d4' }, { roller: sequenceRoller([2, 11, 4]) })
+    expect(adv.natural).toBe(11)
+    expect(adv.record.total).toBe(20)
+  })
+
+  it('dano fixo com dado a mais (o Auxílio Divino): dá para rolar, e o crítico dobra só o dado a mais', () => {
+    const favor = [{ label: 'Auxílio Divino', count: 1, sides: 4, sign: 1 as const, damageType: 'radiante' }]
+    const e = entry({
+      id: 'damage:unarmed', kind: 'damage', label: 'Golpe desarmado', dice: '', modifier: 4, extraDice: favor,
+      notation: formatGuideNotation('', 4, favor),
+      crit: { dice: '', formula: '4 concussão + 2d4 radiante', notation: '4+2d4' },
+    })
+    expect(canRollEntry(e)).toBe(true)
+    expect(rollGuideEntry(e, { roller: sequenceRoller([3]) }).record.total).toBe(7)
+    expect(rollGuideEntry(e, { crit: true, roller: sequenceRoller([3, 2]) }).record.total).toBe(9)
+  })
+
   it('crítico de dano fixo (sem dado): não há o que rolar nem dobrar', () => {
     const e = entry({
       id: 'damage:unarmed', kind: 'damage', label: 'Golpe desarmado', dice: '', modifier: 4, notation: '4',

@@ -1940,3 +1940,24 @@ describe('efeitos recebidos: o catálogo no estado de jogo', () => {
     expect(ids(completeLongRest(both, fighter).state)).toEqual([])
   })
 })
+
+describe('efeitos recebidos: o deslocamento ao vivo (getPlaySpeed)', () => {
+  const human = buildPlaySheet({ ...structuredClone(EMPTY_DRAFT), race: 'human', class: 'fighter', level: 1 })
+  const on = (s: PlayState, ...ids: string[]) =>
+    ids.reduce((acc, id) => activateToggle(acc, human, id, { now: 1 }).state, s)
+
+  // "o deslocamento do alvo é dobrado" (linhas 28211-28212); "aumenta em 3 metros" (linhas 25906-25907).
+  it('a Velocidade dobra o deslocamento; Passos Longos soma 3 m antes do dobro', () => {
+    expect(getPlaySpeed(state(), human)).toBe(30)
+    expect(getPlaySpeed(on(state(), 'spell:haste'), human)).toBe(60)
+    expect(getPlaySpeed(on(state(), 'spell:longstrider'), human)).toBe(40)
+    expect(getPlaySpeed(on(state(), 'spell:haste', 'spell:longstrider'), human)).toBe(80)
+    // A Exaustão 2 corta a metade por último, na grade de 1,5 m.
+    expect(getPlaySpeed(on(state({ exhaustionLevel: 2 }), 'spell:longstrider'), human)).toBe(20)
+  })
+
+  it('o Agarrado zera mesmo com Passos Longos: não se beneficia de bônus (pág. 291)', () => {
+    const grappled = on(state({ conditions: ['grappled'] }), 'spell:longstrider', 'spell:haste')
+    expect(getPlaySpeed(grappled, human)).toBe(0)
+  })
+})

@@ -1,6 +1,6 @@
 import type { CharacterDraft } from '../types/character'
 import type { RollModeEffect } from '../types/condition'
-import type { AttackScope, ToggleDeclaration, ToggleEnd } from '../types/effects'
+import type { AttackScope, RollDiceEffect, ToggleDeclaration, ToggleEnd } from '../types/effects'
 import type { ActiveToggle, PlayState } from '../types/playState'
 import type { ResolvedToggle, SheetSession, SheetToggle } from '../types/session'
 import catalogData from '../data/active-effects.json'
@@ -10,6 +10,7 @@ import { getKnownSpells, listKnownSpells } from './sheetModel'
 import { describeDamageDefenses, getDeclaredToggle, getSheetToggles, getWeaponAttackEffects, toSheetDefenses } from './sheetEffects'
 import { getSpell } from './spellUtils'
 import { joinPt } from './textUtils'
+import { DAMAGE_TYPE_PT } from './weaponFormat'
 
 /**
  * Os efeitos ligados do estado de jogo, resolvidos contra a ficha: o que cada um faz AGORA. Uma
@@ -143,15 +144,23 @@ function describeRollMode(e: RollModeEffect): string {
   return `${e.mode === 'advantage' ? 'Vantagem' : 'Desvantagem'} em ${joinPt(e.rolls.map(r => ROLL_TEXT[r]))}${of}`
 }
 
+/** "+1d4 nas jogadas de ataque e testes de resistência, inclusive no teste contra a morte". */
+function describeRollDice(e: RollDiceEffect): string {
+  const deathSave = e.deathSave ? ', inclusive no teste contra a morte' : ''
+  return `${e.sign < 0 ? '−' : '+'}${e.dice.count}d${e.dice.sides} nas ${joinPt(e.rolls.map(r => ROLL_TEXT[r]))}${deathSave}`
+}
+
 /**
  * O que um efeito ligado está fazendo agora, uma linha por efeito com quem o dá — a seção Efeitos
  * ativos da aba Estado. As mesmas fontes dos números: o bônus de dano que as linhas de ataque somam
  * (`getWeaponAttackEffects` com a sessão), as defesas com o texto de `describeDamageDefenses`, o
  * voo pelo deslocamento de caminhada do jogo (`walkingFeet`, `getPlaySpeed`). Primeiro o que muda
- * número ou modo, depois os lembretes e, no fim, o que fica proibido.
+ * número ou modo (o dado a mais nas jogadas, a CA, o deslocamento, o dano), depois os lembretes e,
+ * no fim, o que fica proibido.
  */
 export function describeToggleEffects(draft: CharacterDraft, toggle: ResolvedToggle, walkingFeet: number): string[] {
   const modes: string[] = []
+  const numbers: string[] = []
   const defenses: string[] = []
   const immunities: string[] = []
   const notices: string[] = []
@@ -160,6 +169,29 @@ export function describeToggleEffects(draft: CharacterDraft, toggle: ResolvedTog
     switch (effect.kind) {
       case 'rollMode':
         modes.push(`${describeRollMode(effect)} (${source})`)
+        break
+      case 'rollDice':
+        numbers.push(`${describeRollDice(effect)} (${source})`)
+        break
+      case 'acBonus':
+        numbers.push(`+${effect.value} na CA (${source})`)
+        break
+      case 'acFormula': {
+        const abilities = effect.formula.abilities.map(a => ` + ${ABILITY_LABELS[a].long}`).join('')
+        numbers.push(`CA sem armadura de ${effect.formula.base}${abilities}, se for a maior (${source})`)
+        break
+      }
+      case 'acMinimum':
+        numbers.push(`CA mínima de ${effect.value} (${source})`)
+        break
+      case 'speedBonus':
+        numbers.push(`+${formatMeters(effect.feet)} de deslocamento (${source})`)
+        break
+      case 'speedMultiplier':
+        numbers.push(`Deslocamento dobrado (${source})`)
+        break
+      case 'weaponDamage':
+        numbers.push(`+${effect.dice.count}d${effect.dice.sides} ${DAMAGE_TYPE_PT[effect.damageType]} ${SCOPE_TEXT[effect.weapons]} (${source})`)
         break
       case 'damageDefenses':
         defenses.push(...describeDamageDefenses(toSheetDefenses(source, effect.defenses)))
@@ -171,6 +203,7 @@ export function describeToggleEffects(draft: CharacterDraft, toggle: ResolvedTog
         notices.push(`Deslocamento de voo de ${formatMeters(walkingFeet)}, igual ao de caminhada (${source})`)
         break
       case 'notice':
+      case 'againstYou':
         // O texto dos dados é frase com ponto; a origem vem antes dele.
         notices.push(`${effect.text.replace(/\.$/, '')} (${source})`)
         break
@@ -192,5 +225,5 @@ export function describeToggleEffects(draft: CharacterDraft, toggle: ResolvedTog
     const what = b.cast && b.concentrate ? 'conjurar magias nem se concentrar nelas' : b.cast ? 'conjurar magias' : 'se concentrar em magias'
     return `Não pode ${what} (${source})`
   })
-  return [...modes, ...damage, ...defenses, ...immunities, ...notices, ...forbidden]
+  return [...modes, ...numbers, ...damage, ...defenses, ...immunities, ...notices, ...forbidden]
 }

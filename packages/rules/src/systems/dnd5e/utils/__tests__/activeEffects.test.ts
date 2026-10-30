@@ -9,7 +9,8 @@ import { describeToggleEffects, getCatalogToggles, getSessionToggles, getSheetSe
 import { buildPlaySheet } from '../playSheet'
 import { createPlayState } from '../playState'
 import { getConcentrationGuide, getRollGuide } from '../rollGuide'
-import { getCastingRestrictions, getSheetActions, getSheetToggles } from '../sheetEffects'
+import { formatArmorClassBreakdown } from '../armorClassUtils'
+import { getCastingRestrictions, getSheetActions, getSheetArmorClass, getSheetToggles } from '../sheetEffects'
 
 /** Itens comprados pelo método riqueza: as armas e a armadura que a ficha considera equipadas. */
 const carrying = (...itemIds: string[]) => ({
@@ -248,5 +249,64 @@ describe('describeToggleEffects: o que o efeito ligado está fazendo', () => {
     expect(lines).toContain('Resistência a todo dano, exceto psíquico (Totem Espiritual — Urso)')
     expect(lines).toContain('Deslocamento de voo de 9 m, igual ao de caminhada (Sintonia Totêmica — Águia)')
     expect(lines.at(-1)).toBe('Não pode conjurar magias nem se concentrar nelas (Fúria)')
+  })
+})
+
+describe('os efeitos recebidos nos números, pela sessão', () => {
+  const wizard = (patch: Partial<CharacterDraft> = {}): CharacterDraft => ({
+    ...structuredClone(EMPTY_DRAFT), race: 'human', class: 'wizard', level: 3,
+    abilityScores: { STR: 8, DEX: 16, CON: 12, INT: 16, WIS: 10, CHA: 10 },
+    spellChoices: { cantrips: [], spells: ['shield', 'mage-armor'] }, ...patch,
+  })
+  const on = (...ids: string[]) => ({ ...createPlayState('c'), activeEffects: ids.map((id, i) => ({ id, startedAt: i })) })
+  const ac = (d: CharacterDraft, ...ids: string[]) => getSheetArmorClass(d, getFinalAbilityScores(d), getSheetSession(d, on(...ids)))
+
+  it('a CA: a Armadura Arcana disputa a base e o Escudo Arcano é parcela, com o nome da magia', () => {
+    // Humano +1 em tudo: DES 17 (+3).
+    expect(ac(wizard()).value).toBe(13)
+    expect(ac(wizard(), 'spell:mage-armor').components).toEqual([
+      { label: 'Armadura Arcana', value: 13 }, { label: 'DES', value: 3 },
+    ])
+    expect(formatArmorClassBreakdown(ac(wizard(), 'spell:mage-armor', 'spell:shield'))).toBe('13 (Armadura Arcana) + 3 (DES) + 5 (Escudo Arcano)')
+    // A Revisão e o PDF não passam sessão.
+    expect(getSheetArmorClass(wizard(), getFinalAbilityScores(wizard())).value).toBe(13)
+  })
+
+  it('de armadura vestida, a Armadura Arcana fica sem os benefícios e a CA é a da armadura', () => {
+    const armored = wizard(carrying('leather'))
+    expect(ac(armored, 'spell:mage-armor').value).toBe(14)
+    expect(getSheetSession(armored, on('spell:mage-armor')).active[0].blockedBy).toBe('Couro')
+  })
+
+  it('a Pele de Árvore é piso, e o Escudo da Fé com a Velocidade somam +4', () => {
+    expect(ac(wizard(), 'spell:barkskin').value).toBe(16)
+    expect(ac(wizard(), 'spell:shield-of-faith', 'spell:haste').value).toBe(17)
+  })
+
+  it('describeToggleEffects diz o que cada um faz, com a magia', () => {
+    const lines = (id: string) => {
+      const d = wizard()
+      const [t] = getSheetSession(d, on(id)).active
+      return describeToggleEffects(d, t, 30)
+    }
+    expect(lines('spell:bless')).toEqual(['+1d4 nas jogadas de ataque e testes de resistência, inclusive no teste contra a morte (Bênção)'])
+    expect(lines('spell:bane')).toEqual(['−1d4 nas jogadas de ataque e testes de resistência, inclusive no teste contra a morte (Perdição)'])
+    expect(lines('spell:shield')).toEqual(['+5 na CA (Escudo Arcano)', 'Você não sofre dano de mísseis mágicos (Escudo Arcano)'])
+    expect(lines('spell:mage-armor')).toEqual(['CA sem armadura de 13 + Destreza, se for a maior (Armadura Arcana)'])
+    expect(lines('spell:haste')).toEqual([
+      'Vantagem em testes de resistência de Destreza (Velocidade)',
+      '+2 na CA (Velocidade)',
+      'Deslocamento dobrado (Velocidade)',
+      'Uma ação a mais em cada um dos seus turnos, só para Atacar (um ataque com arma, apenas), Disparada, Desengajar, Esconder ou Usar um Objeto (Velocidade)',
+    ])
+    expect(lines('spell:longstrider')).toEqual(['+3 m de deslocamento (Passos Longos)'])
+    expect(lines('spell:barkskin')).toEqual(['CA mínima de 16 (Pele de Árvore)'])
+    expect(lines('action:dodge')).toEqual([
+      'Vantagem em testes de resistência de Destreza (Esquivar)',
+      'Toda jogada de ataque contra você tem desvantagem, se você puder ver o atacante (Esquivar)',
+    ])
+    const paladin: CharacterDraft = { ...wizard(), class: 'paladin', spellChoices: { cantrips: [], spells: ['divine-favor'] } }
+    const [favor] = getSheetSession(paladin, on('spell:divine-favor')).active
+    expect(describeToggleEffects(paladin, favor, 30)).toEqual(['+1d4 radiante nos ataques com arma (Auxílio Divino)'])
   })
 })

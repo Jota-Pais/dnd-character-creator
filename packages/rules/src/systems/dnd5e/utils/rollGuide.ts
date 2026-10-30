@@ -20,7 +20,7 @@ import {
   type ActiveConditionEffects, type ConditionRoll, type ScopedSheetEffect, type SheetEffect,
 } from './sheetEffects'
 import { getCasterEntries, getFeatSpellBlocks, getSpellAttackBonus, getSpellSaveDC } from './spellUtils'
-import { scopeCaveat } from './weaponFormat'
+import { DAMAGE_TYPE_PT, scopeCaveat } from './weaponFormat'
 
 /**
  * Guia de rolagens do modo de jogo: a "receita" de cada jogada da ficha — o que rolar, quanto
@@ -49,6 +49,14 @@ export type GuideKind = 'd20' | 'damage' | 'heal'
 /** Uma parcela do modificador: "Destreza" +3, "Proficiência" +2. A soma dos `value` = `modifier`. */
 export type GuideBreakdownItem = { label: string; value: number }
 
+/**
+ * Um grupo de dados a mais na jogada, com quem o dá: o d4 da Bênção (+) e o da Perdição (−) no d20,
+ * o 1d4 radiante do Auxílio Divino no dano (com o tipo). Entra na fórmula depois do modificador
+ * ("1d20 + 5 + 1d4", "1d8 + 3 cortante + 1d4 radiante") e na notação depois do d20, que fica
+ * primeiro para o natural sair dele.
+ */
+export type GuideExtraDice = { label: string; count: number; sides: number; sign: 1 | -1; damageType?: string }
+
 export type RollGuideEntry = {
   /**
    * `check:STR` | `save:DEX` | `skill:stealth` | `initiative` | `attack:<key>` | `damage:<key>` |
@@ -64,6 +72,10 @@ export type RollGuideEntry = {
   /** Dados a rolar ("1d20", "2d6"); vazio no dano fixo sem dado ("1 concussão"). */
   dice: string
   modifier: number
+  /** Os dados a mais dos efeitos ligados e do dano extra (a Bênção, o Auxílio Divino); ausente sem nenhum. */
+  extraDice?: GuideExtraDice[]
+  /** Só dano: o tipo do dado da arma, por extenso ("cortante"), para remontar a fórmula do crítico. */
+  damageType?: string
   /** Texto pronto: "1d20 + 5", "1d8 + 3 cortante". O modo vai à parte (`describeRollGuide`). */
   formula: string
   /** Para o motor de `src/core/dice`: "2d20kh1+5" com vantagem, "1d8+3". */
@@ -81,8 +93,8 @@ export type RollGuideEntry = {
   /** Jogada de ataque (arma, golpe desarmado, magia): o 1 natural erra sempre (pág. 196). */
   attackRoll?: true
   /**
-   * Só dano: os dados dobrados do acerto crítico, o modificador igual (pág. 198). `notes`: o que
-   * vale só no crítico e fica fora da fórmula (Ataques Selvagens, Crítico Brutal).
+   * Só dano: os dados dobrados do acerto crítico, os a mais também, o modificador igual (pág. 198).
+   * `notes`: o que vale só no crítico e fica fora da fórmula (Ataques Selvagens, Crítico Brutal).
    */
   crit?: { dice: string; formula: string; notation: string; notes?: string[] }
   /**
@@ -192,21 +204,58 @@ function notationModifier(modifier: number): string {
   return modifier > 0 ? `+${modifier}` : `${modifier}`
 }
 
-/** Fórmula de texto: "1d8 + 3 cortante"; sem dado, só o número ("4 concussão"). */
-export function formatGuideFormula(dice: string, modifier: number, damageType = ''): string {
+/** Os dados a mais dobram no crítico (pág. 198), menos os grupos que o jogador desmarcou. */
+const timesFor = (e: GuideExtraDice, crit: boolean, undoubled: readonly string[]) =>
+  (crit && !undoubled.includes(e.label) ? 2 : 1)
+
+/** " + 1d4", " - 1d4", " + 1d4 radiante": os dados a mais, na fórmula de texto. */
+function extraFormula(extra: readonly GuideExtraDice[], crit = false, undoubled: readonly string[] = []): string {
+  return extra.map(e => `${e.sign < 0 ? ' - ' : ' + '}${e.count * timesFor(e, crit, undoubled)}d${e.sides}${e.damageType ? ` ${e.damageType}` : ''}`).join('')
+}
+
+/** "+1d4", "-1d4": os dados a mais, na notação do motor. */
+function extraNotation(extra: readonly GuideExtraDice[], crit = false, undoubled: readonly string[] = []): string {
+  return extra.map(e => `${e.sign < 0 ? '-' : '+'}${e.count * timesFor(e, crit, undoubled)}d${e.sides}`).join('')
+}
+
+/**
+ * Fórmula de texto: "1d8 + 3 cortante"; sem dado, só o número ("4 concussão"); com os dados a mais
+ * depois ("1d20 + 5 + 1d4", "1d8 + 3 cortante + 1d4 radiante").
+ */
+export function formatGuideFormula(dice: string, modifier: number, damageType = '', extra: readonly GuideExtraDice[] = []): string {
   const base = dice ? `${dice}${spacedModifier(modifier)}` : String(modifier)
-  return damageType ? `${base} ${damageType}` : base
+  return `${damageType ? `${base} ${damageType}` : base}${extraFormula(extra)}`
 }
 
-/** Notação do motor: "1d8+3"; sem dado, a constante ("4"). */
-export function formatGuideNotation(dice: string, modifier: number): string {
-  return dice ? `${dice}${notationModifier(modifier)}` : String(modifier)
+/** Notação do motor: "1d8+3"; sem dado, a constante ("4"); os dados a mais depois ("1d20+5+1d4"). */
+export function formatGuideNotation(dice: string, modifier: number, extra: readonly GuideExtraDice[] = []): string {
+  return `${dice ? `${dice}${notationModifier(modifier)}` : String(modifier)}${extraNotation(extra)}`
 }
 
-/** O d20 na notação do motor: com vantagem, dois d20 e fica o maior (`2d20kh1`). */
-function d20Notation(mode: RollMode, modifier: number): string {
+/**
+ * O d20 na notação do motor: com vantagem, dois d20 e fica o maior (`2d20kh1`); os dados a mais
+ * vêm depois, e o d20 fica primeiro (o natural sai dele).
+ */
+function d20Notation(mode: RollMode, modifier: number, extra: readonly GuideExtraDice[] = []): string {
   const dice = mode === 'advantage' ? '2d20kh1' : mode === 'disadvantage' ? '2d20kl1' : '1d20'
-  return `${dice}${notationModifier(modifier)}`
+  return `${dice}${notationModifier(modifier)}${extraNotation(extra)}`
+}
+
+/**
+ * O acerto crítico de uma jogada de dano com alguns grupos de dados a mais sem dobrar (o
+ * "desmarcar" do item 6 de `regras-dano-e-morte.md`: o livro dobra todos, pág. 198, e o jogador
+ * pode tirar um grupo da conta). Sem grupo desmarcado, é o `crit` da jogada.
+ */
+export function getCritRecipe(entry: RollGuideEntry, undoubled: readonly string[] = []): NonNullable<RollGuideEntry['crit']> | null {
+  if (!entry.crit) return null
+  if (undoubled.length === 0) return entry.crit
+  const extra = entry.extraDice ?? []
+  const text = entry.crit.dice ? `${entry.crit.dice}${spacedModifier(entry.modifier)}` : String(entry.modifier)
+  return {
+    ...entry.crit,
+    formula: `${entry.damageType ? `${text} ${entry.damageType}` : text}${extraFormula(extra, true, undoubled)}`,
+    notation: `${formatGuideNotation(entry.crit.dice, entry.modifier)}${extraNotation(extra, true, undoubled)}`,
+  }
 }
 
 const labels = (reasons: GuideReason[]) => reasons.map(r => r.label).join(', ')
@@ -378,6 +427,8 @@ function d20Entry(input: D20Input, inspiration: boolean): RollGuideEntry {
   const mode = resolveRollMode(advantage, disadvantage)
   const notes = [...(input.notes ?? [])]
   if (inspiration) notes.push(inspirationNote({ mode, advantage, disadvantage, autoFail: input.condition.autoFail }))
+  // Os dados a mais dos efeitos ligados (a Bênção, a Perdição), com o nome de quem os dá.
+  const extraDice: GuideExtraDice[] = input.condition.extraDice.map(d => ({ label: d.source.label, count: d.count, sides: d.sides, sign: d.sign }))
   return {
     id: input.id,
     kind: 'd20',
@@ -385,8 +436,9 @@ function d20Entry(input: D20Input, inspiration: boolean): RollGuideEntry {
     ...(input.ability ? { ability: input.ability } : {}),
     dice: '1d20',
     modifier: input.modifier,
-    formula: formatGuideFormula('1d20', input.modifier),
-    notation: d20Notation(mode, input.modifier),
+    ...(extraDice.length > 0 ? { extraDice } : {}),
+    formula: formatGuideFormula('1d20', input.modifier, '', extraDice),
+    notation: d20Notation(mode, input.modifier, extraDice),
     mode,
     advantage,
     disadvantage,
@@ -426,7 +478,7 @@ function addModeSource(
         : canceled
           ? 'não muda nada — vantagem e desvantagem já se anulavam, qualquer que seja a quantidade (pág. 175).'
           : null
-  return { next: { ...entry, advantage, disadvantage, mode, notation: d20Notation(mode, entry.modifier) }, effect }
+  return { next: { ...entry, advantage, disadvantage, mode, notation: d20Notation(mode, entry.modifier, entry.extraDice) }, effect }
 }
 
 /** A fonte de vantagem da Inspiração gasta numa jogada (pág. 127). */
@@ -482,6 +534,8 @@ type DamageInput = {
   critExtraDice?: CritExtraDice[]
   /** O dano é do golpe desarmado, que não é arma: a nota do dado a mais fala do golpe. */
   unarmedStrike?: boolean
+  /** O dano extra de outro tipo (o Auxílio Divino, a Destruição Divina Aprimorada): parcela própria, que o crítico dobra. */
+  extraDice?: GuideExtraDice[]
 }
 
 /** O que a ficha diz do dano fixo que dá 0 (golpe desarmado com Força baixa). */
@@ -498,8 +552,10 @@ function damageEntry(input: DamageInput): RollGuideEntry {
   // Sem dado (o golpe desarmado de dano fixo), não há dado a rolar a mais (decisão 21).
   const critNotes = count > 0 ? (input.critExtraDice ?? []).map(e => critExtraDiceNote(e, sides, input.unarmedStrike)) : []
   const notes = [...(input.notes ?? [])]
+  const extra = input.extraDice ?? []
   if (count === 0 && modifier === 0) notes.push(NO_DAMAGE_NOTE)
-  else if (count === 0) notes.push('Dano fixo, sem dado: o acerto crítico não muda o valor (só os dados dobram, pág. 198).')
+  else if (count === 0 && extra.length === 0) notes.push('Dano fixo, sem dado: o acerto crítico não muda o valor (só os dados dobram, pág. 198).')
+  else if (count === 0) notes.push('Dano fixo: no acerto crítico, só os dados a mais dobram (pág. 198).')
   const breakdown = floor > 0 ? [...input.breakdown, { label: 'Mínimo 0', value: floor }] : input.breakdown
   return {
     id: input.id,
@@ -507,18 +563,21 @@ function damageEntry(input: DamageInput): RollGuideEntry {
     label: input.label,
     dice,
     modifier,
-    formula: formatGuideFormula(dice, modifier, input.damageType),
-    notation: formatGuideNotation(dice, modifier),
+    ...(extra.length > 0 ? { extraDice: extra } : {}),
+    ...(input.damageType ? { damageType: input.damageType } : {}),
+    formula: formatGuideFormula(dice, modifier, input.damageType, extra),
+    notation: formatGuideNotation(dice, modifier, extra),
     mode: 'normal',
     advantage: [],
     disadvantage: [],
     autoFail: [],
     breakdown: closeBreakdown(breakdown, modifier),
     notes,
+    // O crítico dobra todos os dados de dano do ataque, os a mais também (pág. 198, linhas 17752-17764).
     crit: {
       dice: critDice,
-      formula: formatGuideFormula(critDice, modifier, input.damageType),
-      notation: formatGuideNotation(critDice, modifier),
+      formula: `${formatGuideFormula(critDice, modifier, input.damageType)}${extraFormula(extra, true)}`,
+      notation: `${formatGuideNotation(critDice, modifier)}${extraNotation(extra, true)}`,
       ...(critNotes.length > 0 ? { notes: critNotes } : {}),
     },
   }
@@ -632,6 +691,9 @@ function attackGuide(attack: SheetAttack, ctx: AttackGuideContext): AttackGuide 
   const parsed = text && text.count === 0 && attack.fixedDamageBase !== undefined
     ? { ...text, modifier: attack.fixedDamageBase + mods[ability] + includedDamage }
     : text
+  // O dano extra de outro tipo (o Auxílio Divino ligado), parcela própria nas duas empunhaduras.
+  const extraDice: GuideExtraDice[] = (attack.extraDamage ?? []).map(e =>
+    ({ label: e.label, count: e.count, sides: e.sides, sign: 1, damageType: DAMAGE_TYPE_PT[e.damageType] }))
   const damageBreakdown = (p: ParsedDamage): GuideBreakdownItem[] => [
     ...(p.count === 0 ? [{ label: attack.name, value: attack.fixedDamageBase ?? p.modifier - mods[ability] - includedDamage }] : []),
     { label: attack.ability, value: mods[ability] },
@@ -647,6 +709,7 @@ function attackGuide(attack: SheetAttack, ctx: AttackGuideContext): AttackGuide 
       notes,
       critExtraDice,
       unarmedStrike: attack.weapon === null,
+      extraDice,
     })
     : null
 
@@ -660,6 +723,7 @@ function attackGuide(attack: SheetAttack, ctx: AttackGuideContext): AttackGuide 
       breakdown: damageBreakdown(versatileParsed),
       notes,
       critExtraDice,
+      extraDice,
     })
     : null
 

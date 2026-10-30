@@ -311,7 +311,7 @@ describe('concentração e estados', () => {
     expect(fx.lines).toEqual([])
     expect(fx.endsConcentration.active).toBe(false)
     expect(fx.passiveModifier.WIS).toBe(0)
-    expect(fx.deathSave).toEqual({ mode: 'normal', advantage: [], disadvantage: [], autoFail: [] })
+    expect(fx.deathSave).toEqual({ mode: 'normal', advantage: [], disadvantage: [], autoFail: [], extraDice: [] })
   })
 })
 

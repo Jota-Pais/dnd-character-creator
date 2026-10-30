@@ -12,6 +12,8 @@ export type ArmorClassResult = {
   value: number
   components: AcComponent[]
   stealthDisadvantage: boolean
+  /** O piso da CA em vigor (Pele de Árvore: 16), com quem o dá — mesmo quando a CA já passa dele. */
+  minimum?: { value: number; source: string }
 }
 
 export type ArmorClassParams = {
@@ -22,6 +24,10 @@ export type ArmorClassParams = {
   /** Fórmulas alternativas de CA sem armadura que o personagem tem (de características). */
   unarmoredAc?: UnarmoredAcOption[]
   hasDefenseFightingStyle?: boolean
+  /** Bônus que somam por cima de tudo, cada um com o nome (Escudo Arcano +5, Escudo da Fé +2). */
+  bonuses?: AcComponent[]
+  /** O piso da CA final (Pele de Árvore: 16). */
+  minimum?: { value: number; source: string }
 }
 
 /** O cálculo padrão de quem não veste armadura: 10 + DES (p. 14). */
@@ -49,6 +55,9 @@ const sum = (components: AcComponent[]) => components.reduce((s, c) => s + c.val
  *   Dracônica). Elas não se somam — "você escolhe qual usar" (p. 14) —, então a ficha mostra a
  *   maior. A que proíbe escudo (monge) sai da disputa quando há escudo.
  * - Escudo soma +2 sobre qualquer base (p. 146).
+ * - Os bônus dos efeitos ligados somam depois, cada um como parcela (Escudo Arcano +5).
+ * - O piso (Pele de Árvore, p. 268) vale sobre a CA com tudo: abaixo dele, a parcela que falta
+ *   leva o nome de quem o dá, e os bônus não somam por cima do piso (max(CA, 16)).
  */
 export function calculateArmorClass(params: ArmorClassParams): ArmorClassResult {
   const {
@@ -57,6 +66,8 @@ export function calculateArmorClass(params: ArmorClassParams): ArmorClassResult 
     hasShield = false,
     unarmoredAc = [],
     hasDefenseFightingStyle = false,
+    bonuses = [],
+    minimum,
   } = params
 
   let components: AcComponent[] = []
@@ -86,8 +97,12 @@ export function calculateArmorClass(params: ArmorClassParams): ArmorClassResult 
   }
 
   if (hasShield) components.push({ label: 'Escudo', value: 2 })
+  components.push(...bonuses)
+  if (minimum && sum(components) < minimum.value) {
+    components.push({ label: `${minimum.source} (mínimo ${minimum.value})`, value: minimum.value - sum(components) })
+  }
 
-  return { value: sum(components), components, stealthDisadvantage }
+  return { value: sum(components), components, stealthDisadvantage, ...(minimum ? { minimum } : {}) }
 }
 
 /**

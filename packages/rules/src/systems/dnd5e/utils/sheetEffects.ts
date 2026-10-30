@@ -19,7 +19,7 @@ import {
 } from './abilityScoreUtils'
 import { getEquippedArmor } from './equipmentUtils'
 import {
-  calculateArmorClass, type ArmorClassResult, type UnarmoredAcOption,
+  calculateArmorClass, type AcComponent, type ArmorClassResult, type UnarmoredAcOption,
 } from './armorClassUtils'
 import {
   evaluateQuantity, evaluateResource, stepValue, type FinalScores, type ResourceSource, type SheetResource,
@@ -730,18 +730,34 @@ export function getUnarmoredAcOptions(draft: CharacterDraft): UnarmoredAcOption[
 /**
  * A CA da ficha — a Revisão e o PDF chamam só isto. Junta a armadura e o escudo equipados, as
  * fórmulas sem armadura das features e o Estilo de Luta Defesa de qualquer classe.
+ *
+ * Com a sessão de jogo, os efeitos ligados entram com o nome de quem os dá: a fórmula sem armadura
+ * na mesma disputa das features (a Armadura Arcana, p. 14), os bônus como parcela (Escudo Arcano,
+ * Escudo da Fé, Velocidade: magias diferentes somam, p. 207) e o piso sobre a CA final (Pele de
+ * Árvore; com dois, vale o maior).
  */
-export function getSheetArmorClass(draft: CharacterDraft, finalScores: FinalScores): ArmorClassResult {
+export function getSheetArmorClass(draft: CharacterDraft, finalScores: FinalScores, session: SheetSession = NO_SESSION): ArmorClassResult {
   const { bodyArmor, hasShield } = getDraftEquippedArmor(draft)
   const mods = Object.fromEntries(
     ALL_ABILITY_SCORES.map(ab => [ab, calculateModifier(finalScores[ab])]),
   ) as Record<AbilityScore, number>
+  const live = session.active.flatMap(t => t.effects)
+  const unarmoredAc = getUnarmoredAcOptions(draft)
+  const bonuses: AcComponent[] = []
+  let minimum: { value: number; source: string } | undefined
+  for (const { source, effect } of live) {
+    if (effect.kind === 'acFormula' && !unarmoredAc.some(o => o.id === effect.formula.id)) unarmoredAc.push({ ...effect.formula, source })
+    if (effect.kind === 'acBonus') bonuses.push({ label: source, value: effect.value })
+    if (effect.kind === 'acMinimum' && (!minimum || effect.value > minimum.value)) minimum = { value: effect.value, source }
+  }
   return calculateArmorClass({
     mods,
     bodyArmor,
     hasShield,
-    unarmoredAc: getUnarmoredAcOptions(draft),
+    unarmoredAc,
     hasDefenseFightingStyle: getOwnedFightingStyleIds(draft).includes('defense'),
+    bonuses,
+    ...(minimum ? { minimum } : {}),
   })
 }
 
@@ -1048,7 +1064,8 @@ export function getSheetFightingStyles(draft: CharacterDraft): SheetFightingStyl
  * a MESMA característica declara, no nível NA classe dona (bárbaro 9 / guerreiro 3 tem o Dano de
  * Fúria +3; talento, no de personagem), com os atributos finais, e o equipamento que descumpre a
  * condição — a armadura vestida, o mesmo critério da CA. Com a sessão, o bônus cujo efeito
- * (`toggle`) está ligado vem `met`: a linha que cumpre o escopo o põe no número.
+ * (`toggle`) está ligado vem `met`: a linha que cumpre o escopo o põe no número; e o dano extra de
+ * um efeito ligado (`weaponDamage`: o Auxílio Divino) entra como `extraDamage`, com o nome da magia.
  */
 export function getWeaponAttackEffects(
   draft: CharacterDraft,
@@ -1092,6 +1109,10 @@ export function getWeaponAttackEffects(
     for (const feature of features) add(feature.name, feature.effects, entry.level)
   }
   for (const feat of getOwnedFeats(draft)) add(feat.name, feat.effects, charLevel)
+  for (const { source, effect } of session.active.flatMap(t => t.effects)) {
+    if (effect.kind !== 'weaponDamage') continue
+    out.push({ source, value: { weapons: effect.weapons, extraDamage: { dice: { ...effect.dice }, damageType: effect.damageType } } })
+  }
   return out
 }
 
@@ -1417,12 +1438,19 @@ export type EffectiveCondition = {
 /** A condição está na lista, mas sem efeito: suspensa por outra ou por uma imunidade. */
 export const isConditionSuspended = (c: EffectiveCondition) => c.suspendedBy !== undefined || c.immuneBy !== undefined
 
-/** Uma jogada sob as condições: as fontes de cada lado, o modo já resolvido e as falhas automáticas. */
+/** Um grupo de dados somado (ou subtraído) a uma jogada, com quem o dá: o d4 da Bênção. */
+export type ConditionDice = { source: ConditionSource; count: number; sides: number; sign: 1 | -1 }
+
+/**
+ * Uma jogada sob as condições: as fontes de cada lado, o modo já resolvido, as falhas automáticas e
+ * os dados a mais dos efeitos ligados (a Bênção, a Perdição).
+ */
 export type ConditionRoll = {
   mode: RollMode
   advantage: ConditionSource[]
   disadvantage: ConditionSource[]
   autoFail: ConditionSource[]
+  extraDice: ConditionDice[]
 }
 
 export type ConditionFlag = { active: boolean; sources: ConditionSource[] }
@@ -1451,12 +1479,17 @@ export type ActiveConditionEffects = {
   deathSave: ConditionRoll
   /** Ajuste do valor passivo por atributo: +5 com vantagem, −5 com desvantagem (pág. 177). */
   passiveModifier: Record<AbilityScore, -5 | 0 | 5>
-  /** `zero` prevalece sobre `half`. */
+  /**
+   * `zero` prevalece sobre `half`. Os bônus e o dobro vêm dos efeitos ligados (Passos Longos, a
+   * Velocidade), por pé, e não valem com `ignoreBonuses` (Agarrado, Impedido, que já zeram).
+   */
   speed: {
     result: 'normal' | 'half' | 'zero'
     ignoreBonuses: boolean
     zero: ConditionSource[]
     half: ConditionSource[]
+    bonuses: { feet: number; source: ConditionSource }[]
+    doubled: ConditionSource[]
   }
   hpMax: { multiplier: 1 | 0.5; sources: ConditionSource[] }
   noActions: ConditionFlag
@@ -1530,7 +1563,7 @@ function conditionSourceOf(cond: EffectiveCondition): ConditionSource {
   return { source: `condition:${cond.id}`, label: `${cond.name} (por ${parents})` }
 }
 
-const emptyRoll = (): ConditionRoll => ({ mode: 'normal', advantage: [], disadvantage: [], autoFail: [] })
+const emptyRoll = (): ConditionRoll => ({ mode: 'normal', advantage: [], disadvantage: [], autoFail: [], extraDice: [] })
 
 const byAbility = <T>(make: (ability: AbilityScore) => T): Record<AbilityScore, T> =>
   Object.fromEntries(ALL_ABILITIES.map(a => [a, make(a)])) as Record<AbilityScore, T>
@@ -1625,6 +1658,8 @@ export function getActiveConditionEffects(state: ConditionState): ActiveConditio
   const deathSave = emptyRoll()
   const speedZero: ConditionSource[] = []
   const speedHalf: ConditionSource[] = []
+  const speedBonuses: ActiveConditionEffects['speed']['bonuses'] = []
+  const speedDoubled: ConditionSource[] = []
   let ignoreBonuses = false
   const hpHalf: ConditionSource[] = []
   const stateFlags = {
@@ -1664,6 +1699,21 @@ export function getActiveConditionEffects(state: ConditionState): ActiveConditio
         for (const ability of effect.abilities ?? ALL_ABILITIES) table[ability].autoFail.push(source)
         break
       }
+      case 'rollDice': {
+        const dice: ConditionDice = { source, count: effect.dice.count, sides: effect.dice.sides, sign: effect.sign }
+        for (const roll of effect.rolls) {
+          if (roll === 'attack') attack.extraDice.push(dice)
+          else for (const ability of ALL_ABILITIES) (roll === 'save' ? savingThrows : abilityChecks)[ability].extraDice.push(dice)
+        }
+        if (effect.deathSave) deathSave.extraDice.push(dice)
+        break
+      }
+      case 'speedBonus':
+        speedBonuses.push({ feet: effect.feet, source })
+        break
+      case 'speedMultiplier':
+        speedDoubled.push(source)
+        break
       case 'speed':
         if (effect.op === 'zero') {
           speedZero.push(source)
@@ -1702,6 +1752,13 @@ export function getActiveConditionEffects(state: ConditionState): ActiveConditio
       case 'flySpeed':
         // Não muda número nem modo: o voo é linha da seção Efeitos ativos (describeToggleEffects).
         break
+      case 'acBonus':
+      case 'acFormula':
+      case 'acMinimum':
+      case 'weaponDamage':
+        // Números da ficha com a sessão: a CA (getSheetArmorClass) e as linhas de ataque
+        // (getWeaponAttackEffects), que leem os efeitos ligados direto da sessão.
+        break
     }
   }
 
@@ -1724,6 +1781,8 @@ export function getActiveConditionEffects(state: ConditionState): ActiveConditio
       ignoreBonuses,
       zero: speedZero,
       half: speedHalf,
+      bonuses: speedBonuses,
+      doubled: speedDoubled,
     },
     hpMax: { multiplier: hpHalf.length > 0 ? 0.5 : 1, sources: hpHalf },
     noActions: flag(stateFlags.noActions),
@@ -1750,13 +1809,17 @@ export function halveSpeedOnGrid(speedFeet: number): number {
 }
 
 /**
- * Deslocamento efetivo em pés, a partir do da ficha JÁ com bônus: 0 se algo zera (o "sem bônus"
- * do Agarrado/Impedido dá no mesmo); metade na grade de 1,5 m na Exaustão 2 (`halveSpeedOnGrid`).
+ * Deslocamento efetivo em pés, a partir do da ficha JÁ com os bônus dela: 0 se algo zera (o "sem
+ * bônus" do Agarrado/Impedido dá no mesmo); senão, os bônus dos efeitos ligados (Passos Longos), o
+ * dobro (Velocidade) e, por último, a metade na grade de 1,5 m da Exaustão 2 (`halveSpeedOnGrid`).
  */
 export function applyConditionSpeed(speedFeet: number, effects: Pick<ActiveConditionEffects, 'speed'>): number {
-  if (effects.speed.result === 'zero') return 0
-  if (effects.speed.result === 'half') return halveSpeedOnGrid(speedFeet)
-  return speedFeet
+  const { speed } = effects
+  if (speed.result === 'zero') return 0
+  const boosted = speed.ignoreBonuses
+    ? speedFeet
+    : (speedFeet + speed.bonuses.reduce((sum, b) => sum + b.feet, 0)) * (speed.doubled.length > 0 ? 2 : 1)
+  return speed.result === 'half' ? halveSpeedOnGrid(boosted) : boosted
 }
 
 /** PV máximo efetivo: metade, arredondada para baixo, a partir da Exaustão 4 (págs. 7, 292). */

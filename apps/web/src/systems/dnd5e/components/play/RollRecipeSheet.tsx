@@ -4,12 +4,20 @@ import { usePlayStore } from '../../stores/playStore'
 import type { RollMode } from '@rpg/rules/systems/dnd5e/types/condition'
 import { formatModifier } from '@rpg/rules/systems/dnd5e/utils/abilityScoreUtils'
 import { endConcentration, setInspiration } from '@rpg/rules/systems/dnd5e/utils/playState'
-import { withInspirationSpent, withTableMode, type RollGuideEntry } from '@rpg/rules/systems/dnd5e/utils/rollGuide'
+import {
+  getCritRecipe, withInspirationSpent, withTableMode, type GuideExtraDice, type RollGuideEntry,
+} from '@rpg/rules/systems/dnd5e/utils/rollGuide'
 import { canRollEntry, describeRolledFormula, formatRollCopyText, rollGuideEntry, type GuideRoll } from './playDice'
 import { PlayDialog } from './PlayDialog'
 import { RollOutcome } from './RollOutcome'
 
 const reasonLabels = (reasons: { label: string }[]) => reasons.map(r => r.label).join(', ')
+
+/** "1d4 radiante", ou "+2d4" com o sinal (a parcela do "de onde vem"; a da Perdição, "−1d4"). */
+function formatExtraDice(d: GuideExtraDice, times = 1, signed = false): string {
+  const sign = signed ? (d.sign < 0 ? '−' : '+') : ''
+  return `${sign}${d.count * times}d${d.sides}${d.damageType ? ` ${d.damageType}` : ''}`
+}
 
 const TABLE_MODES: { mode: RollMode; label: string; pressed: string }[] = [
   { mode: 'normal', label: 'Normal', pressed: 'border-parchment-500 bg-parchment-800 text-parchment-100' },
@@ -96,7 +104,13 @@ export function RollRecipeSheet({
   // A circunstância da mesa: só desta folha aberta, nunca gravada.
   const [tableMode, setTableMode] = useState<RollMode>('normal')
   const atTable = withTableMode(baseEntry, tableMode)
-  const entry = usingInspiration ? withInspirationSpent(atTable) : atTable
+  const played = usingInspiration ? withInspirationSpent(atTable) : atTable
+  // Os grupos de dados a mais que o jogador tirou do dobro do crítico (o "desmarcar" do item 6 de
+  // regras-dano-e-morte.md; o livro dobra todos, pág. 198): só desta folha, como a mesa.
+  const [undoubled, setUndoubled] = useState<string[]>([])
+  const critRecipe = getCritRecipe(played, undoubled)
+  const entry = critRecipe && critRecipe !== played.crit ? { ...played, crit: critRecipe } : played
+  const extraDice = entry.extraDice ?? []
 
   // O resultado sai abaixo do "Rolar", e num ataque o dano vem depois dele: no celular, os dois
   // podiam ficar abaixo da borda da folha, e o toque parecia não dar em nada. A cada rolagem, a
@@ -165,6 +179,12 @@ export function RollRecipeSheet({
     if (mode !== tableMode) setResult(null)
   }
 
+  /** Dobra ou não um grupo de dados a mais no crítico: o resultado anterior saiu com a conta de antes. */
+  function toggleDoubled(label: string, doubled: boolean) {
+    setUndoubled(list => (doubled ? list.filter(l => l !== label) : [...list, label]))
+    setResult(null)
+  }
+
   const titleId = `recipe-${entry.id}`
   const isD20 = entry.kind === 'd20'
   const canceled = entry.mode === 'normal' && entry.advantage.length > 0 && entry.disadvantage.length > 0
@@ -189,6 +209,24 @@ export function RollRecipeSheet({
           {entry.crit?.notes?.map((n, i) => (
             <p key={i} className="mt-1 text-xs text-parchment-100" data-testid="crit-note">• {n}</p>
           ))}
+          {extraDice.length > 0 && (
+            <fieldset className="mt-1">
+              <legend className="text-xs text-parchment-100 leading-snug">
+                O livro dobra também os dados a mais (pág. 198); desmarque um só se a mesa decidir diferente:
+              </legend>
+              {extraDice.map(d => (
+                <label key={d.label} className="flex items-center gap-2 min-h-10 text-xs text-parchment-200 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={!undoubled.includes(d.label)}
+                    onChange={e => toggleDoubled(d.label, e.target.checked)}
+                    className="w-5 h-5 shrink-0 accent-gold-500"
+                  />
+                  Dobrar {formatExtraDice(d)} ({d.label})
+                </label>
+              ))}
+            </fieldset>
+          )}
           <button onClick={leaveCrit} className="mt-1 min-h-10 text-xs text-parchment-400 underline hover:text-parchment-200">
             Não foi crítico
           </button>
@@ -262,6 +300,15 @@ export function RollRecipeSheet({
                 <span className="text-parchment-200">{shown.dice}</span>
               </li>
             )}
+            {/* Os dados a mais, com o nome de quem os dá (a Bênção, o Auxílio Divino); no crítico, dobrados. */}
+            {extraDice.map(d => (
+              <li key={d.label} className="flex justify-between py-1 text-sm">
+                <span className="text-parchment-400">{d.label}</span>
+                <span className="text-parchment-200">
+                  {formatExtraDice(d, critMode && !undoubled.includes(d.label) ? 2 : 1, true)}
+                </span>
+              </li>
+            ))}
             {entry.breakdown.map((b, i) => (
               <li key={i} className="flex justify-between py-1 text-sm">
                 <span className="text-parchment-400">{b.label}</span>
@@ -310,7 +357,7 @@ export function RollRecipeSheet({
           <p className="text-[11px] uppercase tracking-wider text-parchment-600">Acertou? Role o dano</p>
           <ul className="mt-2 space-y-2">
             {links.map(link => {
-              const canCrit = link.entry.crit !== undefined && link.entry.dice !== ''
+              const canCrit = link.entry.crit !== undefined && canRollEntry(link.entry)
               return (
                 <li key={link.entry.id} className="flex flex-wrap items-center gap-2">
                   {critHit && canCrit ? (

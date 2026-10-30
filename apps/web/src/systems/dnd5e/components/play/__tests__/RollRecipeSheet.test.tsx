@@ -2,8 +2,12 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, fireEvent, cleanup, act, within } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { usePlayStore } from '../../../stores/playStore'
-import { addCondition, setInspiration } from '@rpg/rules/systems/dnd5e/utils/playState'
-import { openKrusk, resetPlay } from './openPlay'
+import { activateToggle, addCondition, setInspiration } from '@rpg/rules/systems/dnd5e/utils/playState'
+import { getRollGuide } from '@rpg/rules/systems/dnd5e/utils/rollGuide'
+import { EMPTY_DRAFT, type CharacterDraft } from '@rpg/rules/systems/dnd5e/types/character'
+import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
+import { RollRecipeSheet } from '../RollRecipeSheet'
+import { openDraft, openKrusk, resetPlay } from './openPlay'
 
 beforeEach(resetPlay)
 afterEach(() => {
@@ -223,5 +227,44 @@ describe('RollRecipeSheet — o resultado à vista', () => {
     openAthletics()
     fireEvent.click(screen.getByRole('button', { name: 'Rolar' }))
     expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest', behavior: 'auto' })
+  })
+})
+
+describe('RollRecipeSheet — os dados a mais dos efeitos ligados', () => {
+  it('a Bênção: a fórmula leva o 1d4, e o "de onde vem" diz de quem é', () => {
+    openKrusk()
+    usePlayStore.getState().run((st, sh) => activateToggle(st, sh, 'spell:bless', { now: 1 }))
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('button', { name: /^TR de Força: 1d20 \+ \d+ \+ 1d4/ }))
+    expect(screen.getByTestId('recipe-formula').textContent).toMatch(/^1d20 \+ \d+ \+ 1d4$/)
+    const blessRow = screen.getByText('Bênção').closest('li')!
+    expect(within(blessRow).getByText('+1d4')).toBeInTheDocument()
+  })
+
+  it('no crítico, o dado a mais dobra; desmarcado, volta a 1d4 e o "Rolar" segue a conta', () => {
+    usePlayStore.getState().setAppDice(true)
+    const paladin: CharacterDraft = {
+      ...structuredClone(COMPLETE_DRAFT),
+      race: 'human',
+      class: 'paladin',
+      level: 2,
+      classChoices: structuredClone(EMPTY_DRAFT.classChoices),
+      spellChoices: { cantrips: [], spells: ['divine-favor'] },
+      equipment: { ...structuredClone(COMPLETE_DRAFT.equipment), purchasedItems: [{ itemId: 'longsword', quantity: 1, source: 'purchased' }] },
+    }
+    openDraft(paladin)
+    usePlayStore.getState().run((st, sh) => activateToggle(st, sh, 'spell:divine-favor', { now: 1 }))
+    const damage = getRollGuide(paladin, usePlayStore.getState().state!).attacks[0].damage!
+    render(<RollRecipeSheet entry={damage} appDice crit onClose={() => {}} />)
+    expect(screen.getByTestId('recipe-formula').textContent).toMatch(/^2d8 \+ \d cortante \+ 2d4 radiante$/)
+    expect(within(screen.getByText('Auxílio Divino', { selector: 'li span' }).closest('li')!).getByText('+2d4 radiante')).toBeInTheDocument()
+    const box = screen.getByRole('checkbox', { name: 'Dobrar 1d4 radiante (Auxílio Divino)' })
+    expect(box).toBeChecked()
+    fireEvent.click(box)
+    expect(box).not.toBeChecked()
+    expect(screen.getByTestId('recipe-formula').textContent).toMatch(/^2d8 \+ \d cortante \+ 1d4 radiante$/)
+    fireEvent.click(screen.getByRole('button', { name: 'Rolar' }))
+    const last = usePlayStore.getState().state!.rolls.at(-1)!
+    expect(last.terms.map(t => `${t.term.count}d${t.term.sides}`)).toEqual(['2d8', '1d4'])
   })
 })

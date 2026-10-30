@@ -59,7 +59,8 @@ export function usePlayView(): PlayView | null {
 
   const guide = useMemo(() => (state ? getRollGuide(draft, state) : null), [draft, state])
   const session = useMemo(() => (state ? getSheetSession(draft, state) : NO_SESSION), [draft, state])
-  const armorClass = useMemo(() => getSheetArmorClass(draft, getFinalAbilityScores(draft)), [draft])
+  // A CA com os efeitos ligados (o Escudo Arcano, a Armadura Arcana), pela mesma sessão do guia.
+  const armorClass = useMemo(() => getSheetArmorClass(draft, getFinalAbilityScores(draft), session), [draft, session])
 
   if (!sheet || !state || !guide) return null
   return { draft, characterName, sheet, state, session, guide, armorClass, appDice, run }

@@ -11,7 +11,7 @@ import { getFinalAbilityScores } from '../asiUtils'
 import { getPassiveScore, getSavingThrowChecks, getSkillChecks } from '../proficiencyUtils'
 import { getFeatSpellBlocks } from '../spellUtils'
 import {
-  describeRollGuide, findRollGuideEntry, formatGuideFormula, getConcentrationGuide, getRollGuide, getZeroHpSaveGuide,
+  describeRollGuide, findRollGuideEntry, formatGuideFormula, getConcentrationGuide, getCritRecipe, getRollGuide, getZeroHpSaveGuide,
   parseDamageText, withInspirationSpent, withTableMode, type RollGuide, type RollGuideEntry,
 } from '../rollGuide'
 
@@ -1124,5 +1124,99 @@ describe('getRollGuide — bônus condicional nas resistências', () => {
   it('antes do 6º nível de paladino, nada', () => {
     const d = draft({ class: 'paladin', level: 5, abilityScores: { ...SCORES, CHA: 16 } })
     expect(getRollGuide(d, play()).saves.WIS.notes.some(n => n.includes('Aura de Proteção'))).toBe(false)
+  })
+})
+
+// Bênção (linhas 20601-20604) e Perdição (linhas 25999-26002): o d4 entra na fórmula, com o d20
+// primeiro na notação (o natural sai dele); alcançam o teste contra a morte (decisão 22).
+describe('getRollGuide — efeitos recebidos: os dados a mais', () => {
+  const on = (...ids: string[]) => play({ activeEffects: ids.map((id, i) => ({ id, startedAt: i })) })
+
+  it('Bênção no ataque, no TR e no teste contra a morte; não nos testes de habilidade', () => {
+    const guide = getRollGuide(fighter('longsword'), on('spell:bless'))
+    const attack = guide.attacks[0].attack
+    expect(attack.formula).toBe('1d20 + 5 + 1d4')
+    expect(attack.notation).toBe('1d20+5+1d4')
+    expect(attack.extraDice).toEqual([{ label: 'Bênção', count: 1, sides: 4, sign: 1 }])
+    expect(guide.saves.STR.formula).toBe('1d20 + 5 + 1d4')
+    expect(guide.saves.WIS.notation).toBe('1d20+1+1d4')
+    expect(guide.deathSave.formula).toBe('1d20 + 1d4')
+    expect(guide.deathSave.notation).toBe('1d20+1d4')
+    expect(guide.checks.STR.extraDice).toBeUndefined()
+    expect(guide.skills.athletics.formula).toBe('1d20 + 5')
+    // O número da aba é o mesmo: o dado se rola por cima.
+    expect(attack.modifier).toBe(5)
+    expect(() => parseNotation(attack.notation)).not.toThrow()
+  })
+
+  it('Perdição subtrai; as duas juntas ficam as duas', () => {
+    const bane = getRollGuide(fighter('longsword'), on('spell:bane')).attacks[0].attack
+    expect(bane.formula).toBe('1d20 + 5 - 1d4')
+    expect(bane.notation).toBe('1d20+5-1d4')
+    const both = getRollGuide(fighter('longsword'), on('spell:bless', 'spell:bane')).saves.CON
+    expect(both.formula).toBe('1d20 + 4 + 1d4 - 1d4')
+    expect(both.extraDice?.map(d => d.label)).toEqual(['Bênção', 'Perdição'])
+  })
+
+  it('Bênção com vantagem da mesa e com a Inspiração gasta: o d4 continua', () => {
+    const attack = getRollGuide(fighter('longsword'), on('spell:bless')).attacks[0].attack
+    expect(withTableMode(attack, 'advantage').notation).toBe('2d20kh1+5+1d4')
+    expect(withInspirationSpent(attack).notation).toBe('2d20kh1+5+1d4')
+    expect(withTableMode(attack, 'advantage').formula).toBe('1d20 + 5 + 1d4')
+  })
+
+  it('a concentração e o ataque de magia também levam a Bênção', () => {
+    const wizard = draft({ class: 'wizard', level: 1, abilityScores: SCORES })
+    expect(getConcentrationGuide(wizard, on('spell:bless'), 10).formula).toBe('1d20 + 2 + 1d4')
+    expect(getRollGuide(wizard, on('spell:bless')).spellcasting[0].attack.formula).toBe('1d20 + 2 + 1d4')
+  })
+
+  it('sem o efeito ligado, nada muda', () => {
+    expect(getRollGuide(fighter('longsword'), play())).toEqual(getRollGuide(fighter('longsword'), on()))
+  })
+})
+
+// Auxílio Divino (linhas 20519-20521): "seus ataques com arma causam 1d4 de dano radiante extra".
+// O crítico dobra todos os dados, inclusive os somados (pág. 198, linhas 17752-17764).
+describe('getRollGuide — dano extra na arma (Auxílio Divino)', () => {
+  const paladin = (...items: string[]) =>
+    draft({ class: 'paladin', level: 2, abilityScores: SCORES, spellChoices: { cantrips: [], spells: ['divine-favor'] }, ...carrying(...items) })
+  const favored = play({ activeEffects: [{ id: 'spell:divine-favor', startedAt: 1 }] })
+
+  it('a espada longa: 1d8 + 3 cortante + 1d4 radiante, nas duas empunhaduras', () => {
+    const [sword] = getRollGuide(paladin('longsword'), favored).attacks
+    expect(sword.damage?.formula).toBe('1d8 + 3 cortante + 1d4 radiante')
+    expect(sword.damage?.notation).toBe('1d8+3+1d4')
+    expect(sword.versatile?.formula).toBe('1d10 + 3 cortante + 1d4 radiante')
+    expect(sword.damage?.extraDice).toEqual([{ label: 'Auxílio Divino', count: 1, sides: 4, sign: 1, damageType: 'radiante' }])
+  })
+
+  it('crítico com Auxílio Divino: 2d8 + 3 + 2d4', () => {
+    const crit = getRollGuide(paladin('longsword'), favored).attacks[0].damage?.crit
+    expect(crit?.formula).toBe('2d8 + 3 cortante + 2d4 radiante')
+    expect(crit?.notation).toBe('2d8+3+2d4')
+  })
+
+  it('o jogador pode tirar um grupo do dobro (item 6 de regras-dano-e-morte.md)', () => {
+    const damage = getRollGuide(paladin('longsword'), favored).attacks[0].damage!
+    expect(getCritRecipe(damage, ['Auxílio Divino'])).toMatchObject({ formula: '2d8 + 3 cortante + 1d4 radiante', notation: '2d8+3+1d4' })
+    expect(getCritRecipe(damage, [])).toBe(damage.crit)
+  })
+
+  it('arma à distância e golpe desarmado também (ataque com arma; decisão a)', () => {
+    const guide = getRollGuide(paladin('light-crossbow'), favored)
+    expect(guide.attacks[0].damage?.formula).toBe('1d8 + 2 perfurante + 1d4 radiante')
+    const unarmed = guide.attacks.find(a => a.key === 'unarmed')!.damage!
+    expect(unarmed.formula).toBe('4 concussão + 1d4 radiante')
+    expect(unarmed.notation).toBe('4+1d4')
+    // O fixo não dobra; o dado a mais, sim.
+    expect(unarmed.crit?.formula).toBe('4 concussão + 2d4 radiante')
+    expect(unarmed.notes).toContain('Dano fixo: no acerto crítico, só os dados a mais dobram (pág. 198).')
+  })
+
+  it('a Revisão e o PDF não têm sessão: o dano fica como era', () => {
+    const [sword] = getRollGuide(paladin('longsword'), play()).attacks
+    expect(sword.damage?.formula).toBe('1d8 + 3 cortante')
+    expect(sword.damage?.extraDice).toBeUndefined()
   })
 })

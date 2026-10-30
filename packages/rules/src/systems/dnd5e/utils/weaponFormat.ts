@@ -262,6 +262,29 @@ function choosesDex(strMod: number, dexMod: number, effects: SourcedAttackEffect
 /** Um bônus que a linha JÁ somou, com quem o dá — o "de onde vem" do guia — e a nota que o diz, se houver. */
 export type IncludedBonus = { label: string; value: number; note?: string }
 
+/** Uma parcela de dano extra de outro tipo na linha (`WeaponAttackEffect.extraDamage`), com quem a dá. */
+export type WeaponExtraDamage = { label: string; count: number; sides: number; damageType: DamageTypeId }
+
+/**
+ * As parcelas de dano extra que alcançam a linha (o Auxílio Divino, a Destruição Divina
+ * Aprimorada). A que a linha só cumpre sem arremessar (o escopo de arma corpo a corpo) entra na
+ * linha, que é a do ataque corpo a corpo, e a nota diz que arremessada não soma (p. 149 e 197).
+ */
+function getExtraDamage(effects: SourcedAttackEffect[], thrown: boolean, notes: string[]): WeaponExtraDamage[] {
+  return effects.flatMap(({ source, value }) => {
+    if (!value.extraDamage) return []
+    const { dice, damageType } = value.extraDamage
+    const extra = { label: source, count: dice.count, sides: dice.sides, damageType }
+    if (scopeCaveat(value.weapons, false, thrown)) notes.push(`arremessando, sem o ${formatExtraDamage(extra)} (${source})`)
+    return [extra]
+  })
+}
+
+/** "1d8 radiante": uma parcela de dano extra, com o tipo. */
+function formatExtraDamage(extra: Pick<WeaponExtraDamage, 'count' | 'sides' | 'damageType'>): string {
+  return `${extra.count}d${extra.sides} ${DAMAGE_TYPE_PT[extra.damageType]}`
+}
+
 /** Artes Marciais em vigor — quem chama já conferiu o equipamento. */
 export type ActiveMartialArts = { source: string; die: number; condition: string }
 
@@ -330,6 +353,12 @@ export type WeaponAttack = {
    * daqui o "de onde vem". Ausente quando nada foi somado.
    */
   includedBonuses?: { attack: IncludedBonus[]; damage: IncludedBonus[] }
+  /**
+   * O dano extra de outro tipo, à parte do `damage` (que fica com o dado da arma): a Revisão e o PDF
+   * o leem junto (`formatAttackDamage`: "1d8+3 cortante + 1d8 radiante"), e o guia o põe na fórmula
+   * como parcela, que o crítico dobra. Ausente quando nada alcança a linha.
+   */
+  extraDamage?: WeaponExtraDamage[]
 }
 
 /** O `includedBonuses` da linha, só quando há algo somado (a linha sem bônus fica como era). */
@@ -350,11 +379,15 @@ function addAttackBonuses(effects: SourcedAttackEffect[], notes: string[], inclu
   return total
 }
 
-/** "1d8+3 cortante (1d10+3 a duas mãos)": o dano da linha, com o versátil quando houver. */
+/**
+ * "1d8+3 cortante (1d10+3 a duas mãos) + 1d8 radiante": o dano da linha, com o versátil quando houver
+ * e o dano extra de outro tipo depois, que vale nas duas empunhaduras.
+ */
 export function formatAttackDamage(attack: WeaponAttack): string {
-  return attack.versatileDamage
+  const base = attack.versatileDamage
     ? `${attack.damage} (${attack.versatileDamage} a duas mãos)`
     : attack.damage
+  return [base, ...(attack.extraDamage ?? []).map(formatExtraDamage)].join(' + ')
 }
 
 /**
@@ -408,6 +441,7 @@ export function getWeaponAttack(weapon: Weapon, ctx: AttackContext): WeaponAttac
 
   const fixed = roll && !('dice' in roll && roll.dice) ? { base: roll.flat ?? 0, mod } : undefined
   pushEffectNotes(notes, effects, useDex, hasProperty(weapon, 'thrown'), fixed, includedDamage)
+  const extraDamage = roll ? getExtraDamage(effects, hasProperty(weapon, 'thrown'), notes) : []
 
   const attacksPerAction = getWeaponAttacksPerAction(weapon, ctx, notes)
 
@@ -435,6 +469,7 @@ export function getWeaponAttack(weapon: Weapon, ctx: AttackContext): WeaponAttac
     attacksPerAction,
     notes,
     ...includedBonusesOf(includedAttack, includedDamage.map(damageIncluded)),
+    ...(extraDamage.length > 0 ? { extraDamage } : {}),
   }
 }
 
@@ -496,6 +531,7 @@ export function getUnarmedStrike(ctx: UnarmedStrikeContext): WeaponAttack {
   const includedDamage = getIncludedDamage(effects, useDex)
   const damageBonus = sumIncluded(includedDamage)
   pushEffectNotes(notes, effects, useDex, false, die > 0 ? undefined : { base: 1, mod }, includedDamage)
+  const extraDamage = getExtraDamage(effects, false, notes)
   if (martialArts) {
     notes.push(`depois de atacar com golpe desarmado ou arma de monge na ação de Atacar, um golpe desarmado como ação bônus (${martialArts.source})`)
   }
@@ -511,5 +547,6 @@ export function getUnarmedStrike(ctx: UnarmedStrikeContext): WeaponAttack {
     attacksPerAction: ctx.attacksPerAction?.value ?? 1,
     notes,
     ...includedBonusesOf(includedAttack, includedDamage.map(damageIncluded)),
+    ...(extraDamage.length > 0 ? { extraDamage } : {}),
   }
 }

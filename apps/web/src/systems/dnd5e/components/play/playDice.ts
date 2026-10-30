@@ -5,9 +5,12 @@ import { normalizeMinus } from './hpEntry'
 /** Uma rolagem dos dados do app para uma jogada do guia. `natural` só no d20: o dado que valeu. */
 export type GuideRoll = { record: RollRecord; natural: number | null }
 
-/** Dá para rolar pelo app? Só jogada com dado (o dano fixo do golpe desarmado não tem o que rolar). */
+/**
+ * Dá para rolar pelo app? Só jogada com dado: o dano fixo do golpe desarmado não tem o que rolar,
+ * salvo os dados a mais (o 1d4 radiante do Auxílio Divino).
+ */
 export function canRollEntry(entry: RollGuideEntry): boolean {
-  return entry.dice !== ''
+  return entry.dice !== '' || (entry.extraDice?.length ?? 0) > 0
 }
 
 /**

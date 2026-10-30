@@ -244,7 +244,10 @@ export type ConditionalDamageBonus = {
  * - `offHandAddsModifier`: o ataque da outra mão soma o modificador no dano (Combate com Duas
  *   Armas, p. 85), trocando a regra-base da p. 197, que o deixa de fora;
  * - `conditionalDamage`: bônus de dano condicional cujo valor é um recurso (Dano de Fúria) — nota
- *   com o valor do nível, calculado por `getWeaponAttackEffects`.
+ *   com o valor do nível, calculado por `getWeaponAttackEffects`;
+ * - `extraDamage`: dano extra de outro tipo, INCONDICIONAL na linha do escopo — entra na fórmula
+ *   como parcela própria ("1d8+3 cortante + 1d4 radiante"), e o crítico o dobra (p. 198). Ligado no
+ *   jogo, o Auxílio Divino (`weaponDamage`, que `getWeaponAttackEffects` traz da sessão nesta forma).
  */
 export type WeaponAttackEffect = {
   weapons: AttackScope
@@ -252,6 +255,7 @@ export type WeaponAttackEffect = {
   note?: string
   offHandAddsModifier?: boolean
   conditionalDamage?: ConditionalDamageBonus
+  extraDamage?: { dice: DiceCount; damageType: DamageTypeId }
 }
 
 /**

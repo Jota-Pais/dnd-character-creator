@@ -23,6 +23,13 @@ function Marks({ label, count, filled }: { label: string; count: DeathSaveCount;
   )
 }
 
+/** O valor digitado de um grupo de dados a mais (o d4 da Bênção), ou null fora de count…count×lados. */
+function readExtraDie(text: string, count: number, sides: number): number | null {
+  if (!/^\d+$/.test(text.trim())) return null
+  const value = Number(text.trim())
+  return value >= count && value <= count * sides ? value : null
+}
+
 /** Roda a ação de um botão dos testes contra a morte e passa o foco adiante (ver `DeathSaves`). */
 type DeathSaveAct = (op: PlayOperation) => PlayResult | null
 
@@ -87,7 +94,15 @@ export function DeathSaves({ view, bottomInset = 0, onLeave }: {
   const logRoll = usePlayStore(s => s.logRoll)
   const entry = guide.deathSave
   const natural = /^\d+$/.test(text.trim()) ? Number(text.trim()) : null
-  const valid = natural !== null && natural >= 1 && natural <= 20
+  const naturalValid = natural !== null && natural >= 1 && natural <= 20
+  // Os dados a mais de um efeito ligado (o d4 da Bênção, o da Perdição): o app não sabe quanto
+  // saíram, e o total depende deles. O 1 e o 20 naturais decidem sozinhos (pág. 199).
+  const extras = entry.extraDice ?? []
+  const [extraText, setExtraText] = useState<string[]>([])
+  const extraValues = extras.map((d, i) => readExtraDie(extraText[i] ?? '', d.count, d.sides))
+  const decidesAlone = natural === 1 || natural === 20
+  const missingExtra = naturalValid && !decidesAlone ? extras.find((_, i) => extraValues[i] === null) : undefined
+  const valid = naturalValid && !missingExtra
   // Sortudo: o 1 natural que os dados do app tiraram pode ser jogado de novo antes de registrar.
   const luckSource = entry.rerollNaturalOne?.join(', ')
   const offerLuck = Boolean(luckSource) && !luckUsed && rolled !== null && rolled.natural === 1 && natural === 1
@@ -114,6 +129,8 @@ export function DeathSaves({ view, bottomInset = 0, onLeave }: {
     setRolled(result)
     setLuckUsed(false)
     setText(result.natural === null ? '' : String(result.natural))
+    // O d20 vem primeiro na notação; os dados a mais, na ordem do guia (o termo traz o sinal).
+    setExtraText(result.record.terms.slice(1).map(t => String(Math.abs(t.subtotal))))
   }
 
   // O "Rolar de novo" some com a própria ação: o foco vai ao "Registrar", o passo seguinte.
@@ -134,12 +151,14 @@ export function DeathSaves({ view, bottomInset = 0, onLeave }: {
     e.preventDefault()
     if (!valid) return
     const record = rolled && rolled.natural === natural ? rolled.record : null
+    const extraTotal = extras.reduce((sum, d, i) => sum + d.sign * (extraValues[i] ?? 0), 0)
     act((st, sh) => {
-      const result = recordDeathSave(st, sh, { natural, total: natural + entry.modifier })
+      const result = recordDeathSave(st, sh, { natural, total: natural + entry.modifier + extraTotal })
       if (!record || result.state === st) return result
       return { state: recordRoll(result.state, record).state, notices: result.notices }
     })
     setText('')
+    setExtraText([])
     setRolled(null)
     setLuckUsed(false)
   }
@@ -194,6 +213,28 @@ export function DeathSaves({ view, bottomInset = 0, onLeave }: {
           placeholder="d20"
           className="min-h-10 w-24 rounded-lg border border-parchment-800 bg-surface-base px-3 text-lg text-parchment-100 outline-none focus:border-gold-600"
         />
+        {extras.map((d, i) => (
+          <label key={d.label} className="flex items-center gap-1.5 text-xs text-parchment-400">
+            <span aria-hidden="true">{d.sign < 0 ? '−' : '+'} {d.count}d{d.sides} ({d.label})</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              min={d.count}
+              max={d.count * d.sides}
+              value={extraText[i] ?? ''}
+              onChange={e => {
+                const next = [...extraText]
+                next[i] = e.target.value
+                setExtraText(next)
+                setRolled(null)
+              }}
+              aria-label={`${d.count}d${d.sides} de ${d.label} (${d.count} a ${d.count * d.sides}), ${d.sign < 0 ? 'subtraído' : 'somado'} ao d20`}
+              placeholder={`d${d.sides}`}
+              className="min-h-10 w-16 rounded-lg border border-parchment-800 bg-surface-base px-2 text-lg text-parchment-100 outline-none focus:border-gold-600"
+            />
+          </label>
+        ))}
         {appDice && (
           <button
             type="button"
@@ -225,9 +266,14 @@ export function DeathSaves({ view, bottomInset = 0, onLeave }: {
       </form>
       {/* A região viva existe antes do aviso: inserida já com o texto, pode não ser anunciada. */}
       <div aria-live="polite">
-        {text.trim() !== '' && !valid && (
+        {text.trim() !== '' && !naturalValid && (
           <p className="mt-1 text-[11px] text-red-300 leading-snug">
             Digite o d20 que saiu (1 a 20); o app soma o resto.
+          </p>
+        )}
+        {missingExtra && (
+          <p className="mt-1 text-[11px] text-red-300 leading-snug">
+            Falta o {missingExtra.count}d{missingExtra.sides} de {missingExtra.label} ({missingExtra.count} a {missingExtra.count * missingExtra.sides}); o app soma o resto.
           </p>
         )}
       </div>

@@ -172,3 +172,54 @@ describe('formatArmorClassBreakdown', () => {
     expect(formatArmorClassBreakdown(r)).toBe('10 − 1 (DES)')
   })
 })
+
+// Os efeitos ligados na CA (onda `efeitos-recebidos`): a fórmula entra na disputa, o bônus vira
+// parcela com o nome da magia, e o piso vale sobre a CA com tudo.
+describe('calculateArmorClass — efeitos ligados', () => {
+  const mageArmor: UnarmoredAcOption = { id: 'mage-armor', base: 13, abilities: ['DEX'], source: 'Armadura Arcana' }
+
+  it('bárbaro com Armadura Arcana: fica a maior das duas (pág. 14)', () => {
+    // DES +3, CON +1: Defesa sem Armadura 14, Armadura Arcana 16.
+    const r = calculateArmorClass({ mods: mods({ DEX: 3, CON: 1 }), unarmoredAc: [barbarian, mageArmor] })
+    expect(r.value).toBe(16)
+    expect(r.components[0]).toEqual({ label: 'Armadura Arcana', value: 13 })
+    // CON +4: a Defesa sem Armadura (17) ganha.
+    expect(calculateArmorClass({ mods: mods({ DEX: 3, CON: 4 }), unarmoredAc: [barbarian, mageArmor] }).components[0].label)
+      .toBe('Defesa sem Armadura')
+  })
+
+  it('a Armadura Arcana com escudo soma +2 (decisão de 2026-10-30)', () => {
+    expect(calculateArmorClass({ mods: mods({ DEX: 2 }), unarmoredAc: [mageArmor], hasShield: true }).value).toBe(17)
+  })
+
+  it('o Escudo Arcano é parcela própria, com o nome da magia', () => {
+    const r = calculateArmorClass({ mods: mods({ DEX: 2 }), bodyArmor: leather, bonuses: [{ label: 'Escudo Arcano', value: 5 }] })
+    expect(r.value).toBe(18)
+    expect(formatArmorClassBreakdown(r)).toBe('11 (Couro) + 2 (DES) + 5 (Escudo Arcano)')
+  })
+
+  it('Escudo da Fé + Velocidade: +4, magias diferentes somam (pág. 207)', () => {
+    const r = calculateArmorClass({
+      mods: mods({ DEX: 1 }), bonuses: [{ label: 'Escudo da Fé', value: 2 }, { label: 'Velocidade', value: 2 }],
+    })
+    expect(r.value).toBe(15)
+  })
+
+  it('Pele de Árvore com escudo: max(CA, 16), e a parcela que falta leva o nome', () => {
+    const r = calculateArmorClass({ mods: mods({ DEX: 1 }), hasShield: true, minimum: { value: 16, source: 'Pele de Árvore' } })
+    expect(r.value).toBe(16)
+    expect(r.components.at(-1)).toEqual({ label: 'Pele de Árvore (mínimo 16)', value: 3 })
+    expect(r.minimum).toEqual({ value: 16, source: 'Pele de Árvore' })
+    // Acima do piso, o piso não soma nada.
+    const plated = calculateArmorClass({ mods: mods({}), bodyArmor: plate, hasShield: true, minimum: { value: 16, source: 'Pele de Árvore' } })
+    expect(plated.value).toBe(20)
+    expect(plated.components.map(c => c.label)).toEqual(['Placas', 'Escudo'])
+  })
+
+  it('o piso vem depois dos bônus: o Escudo Arcano não soma por cima do 16', () => {
+    const r = calculateArmorClass({
+      mods: mods({}), bonuses: [{ label: 'Escudo Arcano', value: 5 }], minimum: { value: 16, source: 'Pele de Árvore' },
+    })
+    expect(r.value).toBe(16)
+  })
+})

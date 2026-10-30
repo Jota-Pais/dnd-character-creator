@@ -3,7 +3,7 @@ import { render, screen, fireEvent, cleanup, within } from '@testing-library/rea
 import { PlayScreen } from '../PlayScreen'
 import { usePlayStore } from '../../../stores/playStore'
 import { EMPTY_DRAFT, type CharacterDraft } from '@rpg/rules/systems/dnd5e/types/character'
-import { addCondition } from '@rpg/rules/systems/dnd5e/utils/playState'
+import { activateToggle, addCondition } from '@rpg/rules/systems/dnd5e/utils/playState'
 import { getFinalAbilityScores } from '@rpg/rules/systems/dnd5e/utils/asiUtils'
 import { formatArmorClassBreakdown } from '@rpg/rules/systems/dnd5e/utils/armorClassUtils'
 import { getSheetArmorClass } from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
@@ -28,6 +28,16 @@ describe('"De onde vem" dos números que não se rolam', () => {
     expect(screen.getByText(formatArmorClassBreakdown(ac))).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Fechar' }))
     expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('com o Escudo da Fé ligado, a CA dos vitais sobe 2 e o "de onde vem" mostra a magia', () => {
+    openKrusk()
+    const ac = getSheetArmorClass(COMPLETE_DRAFT, getFinalAbilityScores(COMPLETE_DRAFT))
+    usePlayStore.getState().run((st, sh) => activateToggle(st, sh, 'spell:shield-of-faith', { now: 1 }))
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('button', { name: `Classe de Armadura ${ac.value + 2}: de onde vem` }))
+    expect(itemLabels()).toEqual([...ac.components.map(c => c.label), 'Escudo da Fé', 'Total'])
+    expect(screen.getByText(`${formatArmorClassBreakdown(ac)} + 2 (Escudo da Fé)`)).toBeInTheDocument()
   })
 
   it('a Percepção passiva mostra o −5 da desvantagem em vigor', () => {

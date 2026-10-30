@@ -24,7 +24,9 @@ export type NumberSource = {
 
 /**
  * A CA da ficha (`getSheetArmorClass`), com os bônus condicionais como linha — somar o +1 do
- * Ambidestro mentiria para quem não está com duas armas (o mesmo texto da Revisão).
+ * Ambidestro mentiria para quem não está com duas armas (o mesmo texto da Revisão). No jogo, a CA
+ * vem com os efeitos ligados, cada um com o nome da magia (Escudo Arcano +5), e o piso em vigor
+ * (Pele de Árvore) é dito mesmo quando a CA já passa dele.
  */
 export function armorClassSource(ac: ArmorClassResult, conditional: SheetConditionalAc[]): NumberSource {
   return {
@@ -34,6 +36,7 @@ export function armorClassSource(ac: ArmorClassResult, conditional: SheetConditi
     formula: formatArmorClassBreakdown(ac),
     hint: 'O ataque contra você acerta se o total for igual ou maior que a sua CA.',
     notes: [
+      ...(ac.minimum ? [`A CA não fica abaixo de ${ac.minimum.value} (${ac.minimum.source}).`] : []),
       ...conditional.map(b => `+${b.value} de CA ${b.condition} (${b.source}).`),
       ...(ac.stealthDisadvantage ? ['A armadura vestida dá desvantagem em Furtividade.'] : []),
     ],

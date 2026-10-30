@@ -1,6 +1,6 @@
 # App instalável e sem rede
 
-> O site publicado (`https://dnd-character-creator-gamma.vercel.app`) vira app no celular, por decisão do dono de 2026-10-29: no **iPhone**, o site instalado pela tela de início (sem App Store); no **Android**, o APK distribuído direto, que abre o mesmo site (ou o "Instalar app" do Chrome; o APK em `docs/app-android.md`). Feito em 2026-10-29 e 2026-10-30.
+> O site publicado (`https://dnd-character-creator-gamma.vercel.app`) vira app no celular, por decisão do dono de 2026-10-29: no **iPhone**, o site instalado pela tela de início (sem App Store); no **Android**, o APK distribuído direto, que abre o mesmo site (`docs/app-android.md`; o Chrome não oferece sozinho instalar o site, ver a seção 1). Feito em 2026-10-29 e 2026-10-30.
 >
 > **A origem não pode mudar.** As fichas moram no localStorage dela, o service worker e o cache também, e o APK abre esse endereço. Domínio novo é app novo, com a galeria vazia.
 
@@ -11,6 +11,7 @@
 - **Fontes do próprio site**: Cinzel e Lora vêm dos pacotes `@fontsource-variable` (OFL), não do Google. Entram no cache junto com o build, sem pedido a terceiros, e só os subconjuntos que o texto usa descem (`unicode-range`).
 - **Service worker** (`vite-plugin-pwa` com o Workbox, gerado no build como `/sw.js`; a configuração está no `apps/web/vite.config.ts`). Guarda o build inteiro: HTML, JS, CSS, fontes, ícones e a imagem do Ordem (22 arquivos, ~2,6 MB). Ficam de fora os subconjuntos cirílico e vietnamita das fontes, que o português não usa. Toda navegação abre o `index.html` guardado, e a versão nova apaga o cache da velha. Só entra no cache o que é do site: nenhum cache de outro domínio.
 - **Registro** (`apps/web/src/core/pwa/serviceWorker.ts`, chamado no `main.tsx`): só no build de produção (no `npm run dev` não há SW, que guardaria código velho) e só depois do `load`, para a primeira abertura não dividir a rede com o SW baixando o build.
+- **No Android, o app é o APK** (2026-10-30). Sozinho, o Chrome do Android ofereceria instalar o site (a barrinha de instalar), e o que ele instala é um segundo "Forja", com as fichas à parte das do APK. Fora do APK, no Android, a página recusa o `beforeinstallprompt` (`refuseAutomaticInstallOffer`, `core/pwa/platform.ts`), e a oferta automática não aparece. O "Instalar app" do menu do Chrome continua: é escolha de quem o procura, e a página não tem como tirá-lo. No computador e no iPhone nada muda, e o manifesto fica (o iPhone precisa dele).
 - **Área segura**: com `viewport-fit=cover`, a página vai até as bordas. O `body` leva as margens `env(safe-area-inset-*)`, e uma capa (`body::before`) cobre o que rola por baixo da barra de status do Android de ponta a ponta. O que fica fixo nas bordas soma a margem: os vitais do jogo, o aviso do pé, as folhas e o rodapé do criador. Sem entalhe nem barra, as margens valem 0.
 
 ## 2. Como atualiza
@@ -18,11 +19,11 @@
 Cada push na `main` vai para a Vercel e chega ao celular sozinho, sem APK novo. O APK só muda quando muda a parte nativa.
 
 1. A Vercel publica um `sw.js` novo, porque a lista de arquivos com revisão muda a cada build.
-2. Na abertura seguinte do app, o navegador procura o `sw.js`. A Vercel o serve com `max-age=0, must-revalidate`, então ele não fica preso em cache. O app que volta do segundo plano sem ser fechado também procura, no máximo uma vez por hora (`checkForUpdateOnReturn`). Achando, o SW novo baixa a versão nova inteira e **espera**.
-3. A página aberta continua na versão velha: **nada recarrega sozinho, nunca no meio do jogo**. A galeria mostra "Versão nova do app pronta", com "Atualizar agora" para quem quiser na hora (`GalleryNotices.tsx`; no APK do Android, "Atualização pronta", ver `docs/app-android.md`). Esse é o único lugar que recarrega, e só pelo toque.
+2. Na abertura seguinte do app, o navegador procura o `sw.js`. A Vercel o serve com `max-age=0, must-revalidate`, então ele não fica preso em cache. O app que volta do segundo plano sem ser fechado também procura, no máximo uma vez por hora (`checkForUpdateOnReturn`); no APK do Android, também o que vai para o segundo plano, no mesmo limite. Achando, o SW novo baixa a versão nova inteira e **espera**.
+3. A página aberta continua na versão velha: **no criador e no jogo, nada recarrega, nunca**. A galeria mostra "Versão nova do app pronta", com "Atualizar agora" para quem quiser na hora (`GalleryNotices.tsx`; no APK do Android, "Atualização pronta"). Só a galeria recarrega: no navegador e no iPhone, só pelo toque; no APK, também sozinha, quando o app volta do segundo plano para a galeria sem nada aberto (`applyUpdateOnReturn`; as condições em `docs/app-android.md`).
 4. Quando nenhuma página usa mais a versão velha, a nova assume. Isso acontece na próxima abertura, com o app fechado de verdade: no Android e no iPhone, tirado da lista de apps recentes. Trocar de app não fecha.
 
-Por isso uma publicação leva **duas aberturas** para valer: a primeira baixa, a segunda usa. Sem rede, o app abre a última versão guardada, e a procura falha em silêncio até a próxima.
+Por isso uma publicação leva **duas aberturas** para valer: a primeira baixa, a segunda usa. No APK, a que usa é, em geral, a volta à galeria depois de uma ida ao segundo plano. Sem rede, o app abre a última versão guardada, e a procura falha em silêncio até a próxima.
 
 Depois da primeira publicação com o SW, confira com `curl -I https://dnd-character-creator-gamma.vercel.app/sw.js`: deve vir `cache-control: public, max-age=0, must-revalidate`. É o padrão da Vercel para arquivo sem hash, conferido no `/favicon.svg` em 2026-10-30. Se não vier, o `vercel.json` ganha o cabeçalho.
 
@@ -69,9 +70,9 @@ Build servido (`vite preview`), Edge no tamanho do celular (390×844, toque), CP
 
 Para a turma de teste, num iPhone e num Android:
 
-1. Instalar: no iPhone pela dica da galeria; no Android pelo APK ou pelo "Instalar app" do Chrome. O ícone e o nome "Forja" na tela de início.
+1. Instalar: no iPhone pela dica da galeria; no Android pelo APK. No Chrome do Android, o site não oferece instalar sozinho. O ícone e o nome "Forja" na tela de início.
 2. No iPhone, com fichas no Safari: "Exportar todas" pela dica, instalar, e "Importar" no app.
 3. Abrir em modo avião: a galeria, criar uma ficha, jogar.
 4. No jogo: os títulos e números em negrito (Cinzel), o campo de PV com o teclado numérico aberto (o "Aplicar" à vista), a folha da receita com a barra do Safari aparecendo e sumindo, o celular deitado (entalhe).
 5. "Exportar todas": o arquivo aparece em Arquivos (iPhone) ou em Downloads (Android) e volta pelo "Importar".
-6. Depois de um push na `main`: abrir (o aviso de versão nova aparece na galeria), fechar o app de verdade e abrir de novo (já é a nova).
+6. Depois de um push na `main`: abrir (o aviso de versão nova aparece na galeria), fechar o app de verdade e abrir de novo (já é a nova). No APK, o roteiro da atualização é o do `docs/app-android.md`.

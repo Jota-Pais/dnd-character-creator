@@ -13,7 +13,7 @@ Aplicativo web pra criar fichas de RPG de mesa em poucos minutos, mesmo sem conh
 
 - Assistente passo a passo com validação em tempo real e navegação livre entre etapas.
 - Galeria de personagens com salvamento automático no navegador.
-- Instalável no celular e funciona sem internet depois da primeira visita ([como funciona](docs/app-instalavel.md)); no Android, também como APK ([app do Android](docs/app-android.md)).
+- Instalável no celular e funciona sem internet depois da primeira visita ([como funciona](docs/app-instalavel.md)): no iPhone, pela tela de início; no Android, como APK ([app do Android](docs/app-android.md)).
 - Exportar/importar fichas em JSON, uma a uma ou todas num arquivo só.
 - Ficha imprimível / exportável em PDF.
 - Regras digitalizadas das fontes oficiais, cobertas por mais de 1.100 testes automatizados.

@@ -1,5 +1,6 @@
 import { isNativeApp } from '../native/nativeApp'
 import { saveTextFileNative } from '../native/nativeShell'
+import { markOwnTrip } from '../native/backgroundTrips'
 
 /**
  * Quanto o endereço do arquivo baixado vive depois do clique. O Safari do iPhone lê o arquivo depois
@@ -36,6 +37,17 @@ export function downloadJsonFile(fileName: string, data: unknown): void {
   link.click()
   document.body.removeChild(link)
   setTimeout(() => URL.revokeObjectURL(url), BLOB_URL_LIFETIME_MS)
+}
+
+/**
+ * Abre o seletor de arquivo de um `<input type="file">` (os "Importar"). No APK, o seletor é uma
+ * tela do Android por cima do app: a ida ao segundo plano é do próprio app (`markOwnTrip`), e a
+ * volta com o arquivo não aplica a versão nova no meio da importação.
+ */
+export function pickFile(input: HTMLInputElement | null): void {
+  if (!input) return
+  markOwnTrip()
+  input.click()
 }
 
 /** O JSON de um arquivo escolhido pelo jogador; undefined se não é JSON (ou não deu para ler). */

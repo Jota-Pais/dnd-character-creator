@@ -43,8 +43,11 @@ export function GalleryNotices({ latestChangeAt, onExportAll }: {
       <div aria-live="polite">
         {updateReady && (
           <Notice actions={<NoticeButton onClick={() => { if (!applyUpdate()) useAppUpdateStore.setState({ updateReady: false }) }}>Atualizar agora</NoticeButton>}>
-            {/* No APK, abrir pelo ícone só traz de volta a tela que o Android guardou: a versão
-                esperando não entra. E "versão nova do app" lá é o APK novo, o aviso de baixo. */}
+            {/* No APK, abrir pelo ícone só traz de volta a tela que o Android guardou: não há
+                "próxima abertura" a prometer. A versão esperando entra pelo toque, ou sozinha na
+                volta do segundo plano à galeria parada (applyUpdateOnReturn), que o aviso não
+                promete: depende de onde a pessoa estiver ao voltar. E "versão nova do app" lá é o
+                APK novo, o aviso de baixo. */}
             {native
               ? 'Atualização pronta: toque em Atualizar agora para usá-la.'
               : 'Versão nova do app pronta: ela entra na próxima vez que você abrir o app.'}

@@ -11,8 +11,9 @@ export default defineConfig({
     tailwindcss(),
     // O service worker do app instalável (docs/app-instalavel.md): guarda o build inteiro, para
     // abrir sem rede, e só o que é do próprio site (as fontes saem daqui, não do Google). O
-    // registro é nosso (src/core/pwa/serviceWorker.ts), sem o do plugin: a versão nova espera e só vale
-    // na próxima abertura, nunca recarregando a página aberta. O manifesto é o de public/.
+    // registro é nosso (src/core/pwa/serviceWorker.ts), sem o do plugin: a versão nova espera a
+    // próxima abertura, e só a galeria a aplica antes (pelo toque; no APK, também na volta do segundo
+    // plano), nunca com ficha ou jogo aberto. O manifesto é o de public/.
     VitePWA({
       injectRegister: false,
       registerType: 'prompt',

@@ -1,6 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
   applyUpdateNow,
+  applyUpdateOnReturn,
+  AUTO_APPLY_MIN_AWAY_MS,
   checkForUpdateOnReturn,
   SKIP_WAITING_MESSAGE,
   startServiceWorker,
@@ -11,6 +13,9 @@ import {
   type SwContainer,
   type SwRegistration,
 } from '../serviceWorker'
+import { markOwnTrip, takeOwnTrip } from '../../native/backgroundTrips'
+import { registerBackHandler } from '../../navigation/back'
+import { useAppStore } from '../../stores/appStore'
 
 // O navegador simulado: o SW, o registro e o `navigator.serviceWorker`, com os eventos de verdade.
 class FakeWorker extends EventTarget {
@@ -57,6 +62,11 @@ const fakeDoc = () => {
   const doc = new EventTarget() as EventTarget & { visibilityState: DocumentVisibilityState }
   doc.visibilityState = 'visible'
   return doc
+}
+type FakeDoc = ReturnType<typeof fakeDoc>
+const turn = (doc: FakeDoc, state: DocumentVisibilityState) => {
+  doc.visibilityState = state
+  doc.dispatchEvent(new Event('visibilitychange'))
 }
 
 beforeEach(() => {
@@ -184,5 +194,158 @@ describe('checkForUpdateOnReturn: o app que volta do segundo plano', () => {
     doc.dispatchEvent(new Event('visibilitychange'))
     await Promise.resolve()
     expect(reg.update).toHaveBeenCalledTimes(1)
+  })
+
+  it('no APK, a ida ao segundo plano também procura, no mesmo limite de uma vez por hora', () => {
+    const reg = new FakeRegistration()
+    const doc = fakeDoc()
+    let now = 0
+    checkForUpdateOnReturn(asReg(reg), doc, () => now, true)
+    now = UPDATE_CHECK_INTERVAL_MS
+    turn(doc, 'hidden')
+    expect(reg.update).toHaveBeenCalledTimes(1)
+    // A volta logo depois não procura de novo: o download que começou na saída já corre.
+    now += AUTO_APPLY_MIN_AWAY_MS
+    turn(doc, 'visible')
+    expect(reg.update).toHaveBeenCalledTimes(1)
+  })
+
+  it('no navegador e no iPhone, a ida não procura: só a volta', () => {
+    const reg = new FakeRegistration()
+    const doc = fakeDoc()
+    let now = 0
+    checkForUpdateOnReturn(asReg(reg), doc, () => now)
+    now = UPDATE_CHECK_INTERVAL_MS
+    turn(doc, 'hidden')
+    expect(reg.update).not.toHaveBeenCalled()
+    turn(doc, 'visible')
+    expect(reg.update).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('applyUpdateOnReturn: no APK, a versão que espera entra sozinha na volta à galeria', () => {
+  const removers: (() => void)[] = []
+
+  beforeEach(() => {
+    useAppStore.setState({ activeSystemId: null })
+    takeOwnTrip()
+  })
+  afterEach(() => {
+    removers.splice(0).forEach(remove => remove())
+  })
+
+  /** O APK com uma versão esperando, e a ida ao segundo plano com o relógio andando. */
+  function waitingVersion() {
+    const reg = new FakeRegistration()
+    const container = new FakeContainer(reg)
+    const worker = new FakeWorker()
+    reg.waiting = worker
+    useAppUpdateStore.setState({ updateReady: true })
+    const doc = fakeDoc()
+    let now = 0
+    const reload = vi.fn()
+    applyUpdateOnReturn(asReg(reg), asContainer(container), doc, { now: () => now, reload })
+    const away = (ms: number) => {
+      turn(doc, 'hidden')
+      now += ms
+      turn(doc, 'visible')
+    }
+    return { reg, container, worker, reload, away }
+  }
+
+  it('volta à galeria parada depois de um minuto fora: o SW novo assume, e a página recarrega quando ele está no controle', () => {
+    const { container, worker, reload, away } = waitingVersion()
+    away(AUTO_APPLY_MIN_AWAY_MS)
+    expect(worker.postMessage).toHaveBeenCalledWith(SKIP_WAITING_MESSAGE)
+    expect(reload).not.toHaveBeenCalled()
+    container.dispatchEvent(new Event('controllerchange'))
+    expect(reload).toHaveBeenCalledTimes(1)
+  })
+
+  it('a olhada rápida em outro app (menos de um minuto fora) não pisca a tela', () => {
+    const { worker, away } = waitingVersion()
+    away(AUTO_APPLY_MIN_AWAY_MS - 1)
+    expect(worker.postMessage).not.toHaveBeenCalled()
+  })
+
+  // Voltar do seletor do Importar, do "Salvar como" ou da impressão e recarregar perderia o arquivo.
+  it('a volta de uma ida do próprio app não aplica, por mais longa; a ida seguinte, sim', () => {
+    const { worker, away } = waitingVersion()
+    markOwnTrip()
+    away(60 * 60 * 1000)
+    expect(worker.postMessage).not.toHaveBeenCalled()
+    away(AUTO_APPLY_MIN_AWAY_MS)
+    expect(worker.postMessage).toHaveBeenCalledTimes(1)
+  })
+
+  it('nunca no criador nem no jogo: a versão espera a volta que dê na galeria', () => {
+    const { worker, away } = waitingVersion()
+    useAppStore.setState({ activeSystemId: 'dnd5e' })
+    away(60 * 60 * 1000)
+    expect(worker.postMessage).not.toHaveBeenCalled()
+    useAppStore.setState({ activeSystemId: null })
+    away(AUTO_APPLY_MIN_AWAY_MS)
+    expect(worker.postMessage).toHaveBeenCalledTimes(1)
+  })
+
+  it('nunca com algo aberto na galeria (o menu "Novo personagem", o "Excluir?")', () => {
+    const { worker, away } = waitingVersion()
+    const closeMenu = registerBackHandler('overlay', () => {})
+    removers.push(closeMenu)
+    away(60 * 60 * 1000)
+    expect(worker.postMessage).not.toHaveBeenCalled()
+    closeMenu()
+    away(AUTO_APPLY_MIN_AWAY_MS)
+    expect(worker.postMessage).toHaveBeenCalledTimes(1)
+  })
+
+  it('sem versão esperando, nada; o aviso que ficou sem versão (outra aba já aplicou) sai', () => {
+    const { reg, worker, reload, away } = waitingVersion()
+    useAppUpdateStore.setState({ updateReady: false })
+    away(AUTO_APPLY_MIN_AWAY_MS)
+    expect(worker.postMessage).not.toHaveBeenCalled()
+
+    useAppUpdateStore.setState({ updateReady: true })
+    reg.waiting = null
+    away(AUTO_APPLY_MIN_AWAY_MS)
+    expect(useAppUpdateStore.getState().updateReady).toBe(false)
+    expect(reload).not.toHaveBeenCalled()
+  })
+})
+
+describe('startServiceWorker: o APK e o navegador', () => {
+  beforeEach(() => {
+    useAppStore.setState({ activeSystemId: null })
+    takeOwnTrip()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  /** Abre com uma versão esperando, sai depois de uma hora e volta um minuto depois, na galeria. */
+  async function leaveAndReturn(native: boolean) {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(0)
+    const reg = new FakeRegistration()
+    const worker = new FakeWorker()
+    reg.waiting = worker
+    const container = new FakeContainer(reg)
+    const doc = fakeDoc()
+    await startServiceWorker({ isProd: true, container: asContainer(container), whenLoaded: Promise.resolve(), doc, native })
+    expect(useAppUpdateStore.getState().updateReady).toBe(true)
+    vi.setSystemTime(UPDATE_CHECK_INTERVAL_MS)
+    turn(doc, 'hidden')
+    const checkedOnLeave = reg.update.mock.calls.length > 0
+    vi.setSystemTime(UPDATE_CHECK_INTERVAL_MS + AUTO_APPLY_MIN_AWAY_MS)
+    turn(doc, 'visible')
+    return { checkedOnLeave, applied: worker.postMessage.mock.calls.length > 0 }
+  }
+
+  it('no APK, a ida procura versão nova e a volta à galeria aplica a que espera', async () => {
+    expect(await leaveAndReturn(true)).toEqual({ checkedOnLeave: true, applied: true })
+  })
+
+  it('no navegador e no iPhone, como antes: a ida não procura, e só o toque aplica', async () => {
+    expect(await leaveAndReturn(false)).toEqual({ checkedOnLeave: false, applied: false })
   })
 })

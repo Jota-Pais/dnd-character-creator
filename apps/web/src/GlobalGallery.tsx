@@ -4,7 +4,7 @@ import { exportCharacter as exportOrdem, importCharacter as importOrdem, type Sa
 import { loadPlayState } from './systems/dnd5e/utils/playStorage'
 import { exportAllCharacters, formatRestoreResult, getLatestChangeAt, isBackupFile, parseBackupFile, planRestore, type RestorePlan } from './libraryBackup'
 import { GalleryNotices } from './GalleryNotices'
-import { readJsonFile } from './core/utils/download'
+import { pickFile, readJsonFile } from './core/utils/download'
 import { useAppStore } from './core/stores/appStore'
 import { useBackHandler } from './core/navigation/back'
 import { isNativeApp } from './core/native/nativeApp'
@@ -233,7 +233,7 @@ export function GlobalGallery() {
           </div>
           <div className="flex flex-wrap gap-3">
             <button
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => pickFile(fileInputRef.current)}
               className="px-4 py-2.5 rounded-lg text-[13.5px] transition-colors"
               style={{ border: '1px solid #3a332b', color: '#cbbfae' }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = '#5c5245'; e.currentTarget.style.color = '#ede2d6' }}

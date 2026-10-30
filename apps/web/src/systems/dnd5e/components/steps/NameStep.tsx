@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useCharacterStore } from '../../stores/characterStore'
 import { importCharacter } from '../../utils/storage'
+import { pickFile } from '../../../../core/utils/download'
 
 const ORDINALS = [
   '', '1°', '2°', '3°', '4°', '5°', '6°', '7°', '8°', '9°', '10°',
@@ -141,7 +142,7 @@ export function NameStep() {
       <div className="mt-8 pt-8 border-t border-parchment-900">
         <p className="text-parchment-700 text-xs mb-3 font-fantasy">Já tem uma ficha?</p>
         <button
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => pickFile(fileInputRef.current)}
           className="px-5 py-2 rounded-lg border border-parchment-800 text-parchment-500 hover:text-parchment-300 hover:border-parchment-700 transition-all text-sm font-fantasy"
         >
           Importar ficha (.json)

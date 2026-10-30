@@ -28,6 +28,14 @@ export function registerBackHandler(layer: BackLayer, run: () => void): () => vo
   }
 }
 
+/**
+ * Há algo aberto que o voltar fecharia: uma tela fora da galeria, uma folha, um menu. Na galeria sem
+ * nada aberto, nada (é ela que a versão nova espera para entrar sozinha, core/pwa/serviceWorker.ts).
+ */
+export function hasOpenLayer(): boolean {
+  return entries.size > 0
+}
+
 /** Faz o voltar da camada de cima (a mais recente, na mesma camada). False: não há para onde voltar. */
 export function handleBack(): boolean {
   let top: Entry | null = null

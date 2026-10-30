@@ -7,6 +7,8 @@ import { GalleryNotices } from './GalleryNotices'
 import { readJsonFile } from './core/utils/download'
 import { useAppStore } from './core/stores/appStore'
 import { useBackHandler } from './core/navigation/back'
+import { isNativeApp } from './core/native/nativeApp'
+import { sheetsPlace } from './core/pwa/platform'
 import {
   filterByName,
   groupGalleryCharacters,
@@ -129,6 +131,8 @@ export function GlobalGallery() {
     [dndLibrary],
   )
   const total = ordemRows.length + dndRows.length
+  const native = isNativeApp()
+  const place = sheetsPlace(window, native)
   // O lembrete de cópia: a última mudança nas fichas e nos estados de jogo.
   const latestChangeAt = useMemo(() => getLatestChangeAt(dndLibrary, ordemLibrary), [dndLibrary, ordemLibrary])
 
@@ -224,7 +228,7 @@ export function GlobalGallery() {
           <div>
             <h1 className="font-fantasy font-bold text-2xl" style={{ color: '#f6ece0', letterSpacing: '.04em' }}>MEUS PERSONAGENS</h1>
             <p className="text-[13px] mt-0.5" style={{ color: '#a39685' }}>
-              {total === 0 ? 'Nenhuma ficha salva neste navegador' : `${total} ficha${total > 1 ? 's' : ''} salva${total > 1 ? 's' : ''} neste navegador`}
+              {total === 0 ? `Nenhuma ficha salva ${place}` : `${total} ficha${total > 1 ? 's' : ''} salva${total > 1 ? 's' : ''} ${place}`}
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -291,6 +295,13 @@ export function GlobalGallery() {
           <div className="rounded-xl p-10 text-center" style={{ border: '2px dashed #3a332b' }}>
             <div className="text-5xl mb-3">📜</div>
             <p style={{ color: '#a39685' }}>Você ainda não tem personagens salvos.</p>
+            {/* O APK guarda à parte do navegador (docs/app-android.md): quem já jogava pelo site
+                abre o app vazio, e só o arquivo leva as fichas de um ao outro. */}
+            {native && (
+              <p className="mt-3 text-[13px] leading-relaxed" style={{ color: '#a39685' }}>
+                Já criou fichas pelo navegador do celular? Elas ficam lá: no navegador, toque em Exportar todas e, aqui, em Importar.
+              </p>
+            )}
           </div>
         )}
 

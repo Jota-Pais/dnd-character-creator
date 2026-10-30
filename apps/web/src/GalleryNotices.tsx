@@ -1,7 +1,8 @@
 import { useState, type ReactNode } from 'react'
 import { applyUpdate, useAppUpdateStore } from './core/pwa/serviceWorker'
 import { useNativeVersionStore } from './core/native/appVersion'
-import { shouldShowInstallHint } from './core/pwa/platform'
+import { sheetsPlace, shouldShowInstallHint } from './core/pwa/platform'
+import { isNativeApp } from './core/native/nativeApp'
 import { useDeviceStore } from './core/stores/deviceStore'
 import { BACKUP_SNOOZE_MS, shouldRemindBackup } from './core/utils/backupReminder'
 
@@ -25,6 +26,8 @@ export function GalleryNotices({ latestChangeAt, onExportAll }: {
   const [now] = useState(() => Date.now())
 
   const hasSheets = latestChangeAt !== null
+  const native = isNativeApp()
+  const place = sheetsPlace(window, native)
   const installHint = shouldShowInstallHint(window, device.installHintDismissedAt)
   const backupReminder = !installHint && shouldRemindBackup({
     latestChangeAt,
@@ -40,7 +43,11 @@ export function GalleryNotices({ latestChangeAt, onExportAll }: {
       <div aria-live="polite">
         {updateReady && (
           <Notice actions={<NoticeButton onClick={() => { if (!applyUpdate()) useAppUpdateStore.setState({ updateReady: false }) }}>Atualizar agora</NoticeButton>}>
-            Versão nova do app pronta: ela entra na próxima vez que você abrir o app.
+            {/* No APK, abrir pelo ícone só traz de volta a tela que o Android guardou: a versão
+                esperando não entra. E "versão nova do app" lá é o APK novo, o aviso de baixo. */}
+            {native
+              ? 'Atualização pronta: toque em Atualizar agora para usá-la.'
+              : 'Versão nova do app pronta: ela entra na próxima vez que você abrir o app.'}
           </Notice>
         )}
         {/* O APK só muda com a parte nativa, e quem o distribui é o grupo: o app não baixa nada. */}
@@ -73,7 +80,7 @@ export function GalleryNotices({ latestChangeAt, onExportAll }: {
           }
         >
           {device.lastBackupAt === null
-            ? 'As fichas ficam só neste navegador. Guarde uma cópia em arquivo.'
+            ? `As fichas ficam só ${place}. Guarde uma cópia em arquivo.`
             : `Sua última cópia das fichas é de ${new Date(device.lastBackupAt).toLocaleDateString('pt-BR')}. Guarde uma nova.`}
         </Notice>
       )}

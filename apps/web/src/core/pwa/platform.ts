@@ -34,6 +34,15 @@ export function isInstalled(win: WindowLike): boolean {
   return win.matchMedia?.('(display-mode: standalone)').matches === true
 }
 
+/**
+ * Onde as fichas moram, nos textos da galeria. No APK do Android e no app instalado, "neste app":
+ * o do APK guarda à parte do Chrome, e o do iPhone, à parte do Safari. No navegador, "neste
+ * navegador".
+ */
+export function sheetsPlace(win: WindowLike, native: boolean): 'neste app' | 'neste navegador' {
+  return native || isInstalled(win) ? 'neste app' : 'neste navegador'
+}
+
 /** A dica "Adicionar à Tela de Início" da galeria: no iPhone, fora do app instalado, até ser dispensada. */
 export function shouldShowInstallHint(win: WindowLike, dismissedAt: number | null): boolean {
   return dismissedAt === null && isIos(win.navigator) && !isInstalled(win)

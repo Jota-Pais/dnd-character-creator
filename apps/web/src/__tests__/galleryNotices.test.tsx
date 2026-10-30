@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, fireEvent, cleanup, act, within } from '@testing-library/react'
+import { Capacitor } from '@capacitor/core'
 import App from '../App'
 import { useAppStore } from '../core/stores/appStore'
 import { useCharacterStore } from '../systems/dnd5e/stores/characterStore'
@@ -76,6 +77,46 @@ describe('aviso de APK velho (docs/app-android.md)', () => {
     act(() => useNativeVersionStore.setState({ outdated: true }))
     const notice = screen.getByText(APK_OUTDATED)
     expect(notice.closest('[aria-live="polite"]')).not.toBeNull()
+  })
+})
+
+// O APK guarda à parte do Chrome, e quem já jogava pelo site abre o app vazio (docs/app-android.md).
+describe('no APK do Android', () => {
+  const pretendNative = () => vi.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(true)
+
+  it('a galeria vazia diz como trazer as fichas do navegador, e os textos falam do app', () => {
+    pretendNative()
+    render(<App />)
+    expect(screen.getByText('Nenhuma ficha salva neste app')).toBeInTheDocument()
+    expect(screen.getByText(/Já criou fichas pelo navegador do celular\? Elas ficam lá: no navegador, toque em Exportar todas e, aqui, em Importar\./)).toBeInTheDocument()
+  })
+
+  it('com fichas, a dica sai, e o lembrete de cópia diz "neste app"', () => {
+    pretendNative()
+    withSheet()
+    render(<App />)
+    expect(screen.getByText('1 ficha salva neste app')).toBeInTheDocument()
+    expect(screen.queryByText(/Já criou fichas pelo navegador/)).toBeNull()
+    expect(screen.getByText('As fichas ficam só neste app. Guarde uma cópia em arquivo.')).toBeInTheDocument()
+  })
+
+  // Abrir pelo ícone traz de volta a tela que o Android guardou, e a versão que espera não entra.
+  it('a atualização pronta não promete a próxima abertura nem se chama "versão nova do app", que é o APK', () => {
+    pretendNative()
+    useAppUpdateStore.setState({ updateReady: true })
+    useNativeVersionStore.setState({ outdated: true })
+    render(<App />)
+    expect(screen.getByText('Atualização pronta: toque em Atualizar agora para usá-la.')).toBeInTheDocument()
+    expect(screen.queryByText(/Versão nova do app pronta/)).toBeNull()
+    expect(screen.queryByText(/próxima vez que você abrir/)).toBeNull()
+    expect(screen.getAllByText(/versão nova do app/i)).toHaveLength(1)
+    expect(screen.getByText(APK_OUTDATED)).toBeInTheDocument()
+  })
+
+  it('no navegador, nada muda: "neste navegador" e sem a dica do APK', () => {
+    render(<App />)
+    expect(screen.getByText('Nenhuma ficha salva neste navegador')).toBeInTheDocument()
+    expect(screen.queryByText(/Já criou fichas pelo navegador/)).toBeNull()
   })
 })
 

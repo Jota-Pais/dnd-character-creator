@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useAppStore } from '../../core/stores/appStore'
-import { useBackHandler } from '../../core/navigation/back'
+import { useBackHandler, useStepPath } from '../../core/navigation/back'
 import { useCharacterStore } from './stores/characterStore'
 import { WizardShell } from '../../components/wizard/WizardShell'
 import { getMissingSteps } from '@rpg/rules/systems/dnd5e/utils/draftValidation'
@@ -67,13 +67,17 @@ export function Dnd5eApp() {
   }, [prevStep, view])
 
   // O voltar do Android (core/navigation/back.ts): o jogo volta à galeria, como o "← Personagens";
-  // a impressão, à ficha; o criador, à etapa anterior, como o Esc e o "← Voltar" do rodapé, e da
-  // primeira etapa à galeria.
+  // a impressão, à ficha; o criador refaz o caminho desta visita (useStepPath): a etapa de onde se
+  // veio e, da primeira que se abriu, a galeria. A ficha aberta na Revisão volta direto à galeria.
+  const stepCameFrom = useStepPath(currentStep)
   useBackHandler(() => {
     if (view === 'play') exitPlay()
     else if (view === 'print') exitPrint()
-    else if (currentStep === steps[0]?.id) goToGallery()
-    else prevStep()
+    else {
+      const previous = stepCameFrom()
+      if (previous) goToStep(previous)
+      else goToGallery()
+    }
   })
 
   // Modo de jogo: tela própria, fora do WizardShell (a ficha não é editada aqui).

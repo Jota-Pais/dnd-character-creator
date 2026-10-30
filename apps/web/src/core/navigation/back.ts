@@ -41,6 +41,25 @@ export function handleBack(): boolean {
 }
 
 /**
+ * O caminho percorrido no criador desde que ele abriu, para o voltar do Android refazê-lo, como o
+ * voltar de qualquer app: cada etapa aberta entra no caminho, e abrir a etapa de onde se veio (pelo
+ * voltar, pelo "← Voltar" do rodapé ou pelo stepper) a tira. Devolve a etapa de onde se veio, ou
+ * null na primeira que se abriu: a de uma ficha nova, ou a do "Abrir" na galeria (a Revisão, numa
+ * ficha pronta), de onde o voltar leva de volta à galeria. O Esc e o "← Voltar" do rodapé
+ * continuam indo à etapa anterior do fluxo.
+ */
+export function useStepPath<Step extends string>(step: Step): () => Step | null {
+  const path = useRef<Step[]>([])
+  useEffect(() => {
+    const steps = path.current
+    if (steps[steps.length - 1] === step) return
+    if (steps[steps.length - 2] === step) steps.pop()
+    else steps.push(step)
+  }, [step])
+  return () => path.current[path.current.length - 2] ?? null
+}
+
+/**
  * O voltar desta tela (ou folha) enquanto ela está montada; `null` não registra (o menu fechado).
  * A função pode mudar a cada desenho: o voltar chama a do último.
  */

@@ -6,6 +6,7 @@ import { EXHAUSTION } from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
 import { ConditionsSection } from './ConditionsSection'
 import { LongRestPanel } from './LongRestPanel'
 import { ShortRestPanel } from './ShortRestPanel'
+import { useBackHandler } from '../../../../core/navigation/back'
 import type { PlayTabProps } from './usePlayView'
 
 const EXHAUSTION_LEVELS = [0, 1, 2, 3, 4, 5, 6] as const
@@ -194,6 +195,9 @@ function RestSection(view: PlayTabProps) {
     flushSync(() => setOpen(null))
     if (open) toggles.current[open]?.focus()
   }
+  // O voltar do Android (core/navigation/back.ts) fecha o painel aberto, como o "Cancelar", antes
+  // de sair do jogo. Com a aba fechada o painel não está à vista, e o voltar é o da tela.
+  useBackHandler(open ? close : null, 'overlay')
   const tabs = [
     { id: 'short' as const, label: 'Descanso curto' },
     { id: 'long' as const, label: 'Descanso longo' },

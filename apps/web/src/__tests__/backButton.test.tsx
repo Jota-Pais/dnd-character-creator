@@ -47,11 +47,13 @@ describe('o voltar do Android em cada tela', () => {
     expect(pressBack()).toBe(false)
   })
 
-  it('no criador do D&D, volta uma etapa e, da primeira, à galeria', () => {
+  it('no criador do D&D, refaz o caminho: as etapas percorridas e, da primeira, a galeria', () => {
     useCharacterStore.getState().newCharacter()
     useAppStore.getState().setActiveSystem('dnd5e')
-    useCharacterStore.getState().goToStep('class')
     render(<App />)
+    act(() => useCharacterStore.getState().nextStep())
+    act(() => useCharacterStore.getState().nextStep())
+    expect(useCharacterStore.getState().currentStep).toBe('class')
     pressBack()
     expect(useCharacterStore.getState().currentStep).toBe('race')
     pressBack()
@@ -59,6 +61,34 @@ describe('o voltar do Android em cada tela', () => {
     pressBack()
     expect(useAppStore.getState().activeSystemId).toBeNull()
     expect(screen.getByText('MEUS PERSONAGENS')).toBeInTheDocument()
+  })
+
+  // Quem abriu a ficha pronta só para olhar volta de onde veio, em vez de percorrer as 9 etapas.
+  it('a ficha aberta pela galeria na Revisão volta direto à galeria', () => {
+    useCharacterStore.getState().importDraft(structuredClone(COMPLETE_DRAFT))
+    useCharacterStore.getState().goToStep('review')
+    useCharacterStore.getState().goToGallery()
+    render(<App />)
+    fireEvent.click(screen.getByText('Abrir'))
+    expect(useCharacterStore.getState().currentStep).toBe('review')
+    expect(pressBack()).toBe(true)
+    expect(useAppStore.getState().activeSystemId).toBeNull()
+    expect(screen.getByText('MEUS PERSONAGENS')).toBeInTheDocument()
+  })
+
+  it('a etapa aberta pelo stepper volta à de onde se veio, e o "← Voltar" do rodapé conta como voltar', () => {
+    useCharacterStore.getState().importDraft(structuredClone(COMPLETE_DRAFT))
+    useAppStore.getState().setActiveSystem('dnd5e')
+    useCharacterStore.getState().goToStep('review')
+    render(<App />)
+    act(() => useCharacterStore.getState().goToStep('abilities'))
+    act(() => useCharacterStore.getState().nextStep())
+    act(() => useCharacterStore.getState().prevStep())
+    expect(useCharacterStore.getState().currentStep).toBe('abilities')
+    pressBack()
+    expect(useCharacterStore.getState().currentStep).toBe('review')
+    pressBack()
+    expect(useAppStore.getState().activeSystemId).toBeNull()
   })
 
   it('na impressão, volta à ficha', () => {
@@ -86,11 +116,38 @@ describe('o voltar do Android em cada tela', () => {
     expect(pressBack()).toBe(false)
   })
 
-  it('no criador do Ordem, volta uma etapa e, da primeira, à galeria', () => {
+  it('no jogo, o painel de descanso e a engrenagem abertos fecham antes de o jogo sair', () => {
+    openKrusk()
+    render(<App />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Estado' }))
+    const shortRest = screen.getByRole('button', { name: 'Descanso curto' })
+    fireEvent.click(shortRest)
+    expect(shortRest).toHaveAttribute('aria-expanded', 'true')
+    expect(pressBack()).toBe(true)
+    expect(shortRest).toHaveAttribute('aria-expanded', 'false')
+    expect(shortRest).toHaveFocus()
+    expect(useCharacterStore.getState().view).toBe('play')
+
+    const gear = screen.getByRole('button', { name: 'Configurações do modo de jogo' })
+    fireEvent.click(gear)
+    expect(gear).toHaveAttribute('aria-expanded', 'true')
+    screen.getAllByRole('checkbox')[0]?.focus()
+    expect(pressBack()).toBe(true)
+    expect(gear).toHaveAttribute('aria-expanded', 'false')
+    expect(gear).toHaveFocus()
+    expect(useCharacterStore.getState().view).toBe('play')
+
+    expect(pressBack()).toBe(true)
+    expect(useCharacterStore.getState().view).toBe('gallery')
+  })
+
+  it('no criador do Ordem, refaz o caminho: as etapas percorridas e, da primeira, a galeria', () => {
     useOrdemStore.getState().newCharacter()
     useAppStore.getState().setActiveSystem('ordem')
-    useOrdemStore.getState().goToStep('origin')
     render(<App />)
+    act(() => useOrdemStore.getState().nextStep())
+    act(() => useOrdemStore.getState().nextStep())
+    expect(useOrdemStore.getState().currentStep).toBe('origin')
     pressBack()
     expect(useOrdemStore.getState().currentStep).toBe('attributes')
     pressBack()

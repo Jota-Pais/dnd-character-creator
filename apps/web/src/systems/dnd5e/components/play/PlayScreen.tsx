@@ -17,6 +17,7 @@ import type { NumberSource } from './numberSources'
 import { REST_SECTION_ID } from './StatusTab'
 import { useWakeLock } from './wakeLock'
 import { trackPressedControls } from './pressedControl'
+import { useBackHandler } from '../../../../core/navigation/back'
 
 /** Folga de fundo sem aviso aberto (px): o fim da página não encosta na borda. */
 const MIN_BOTTOM_GAP = 128
@@ -53,6 +54,15 @@ export function PlayScreen() {
   // A tela não apaga sozinha enquanto a ficha está na mesa (preferência ligada por padrão).
   useWakeLock(keepScreenOn && view !== null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const settingsToggleRef = useRef<HTMLButtonElement>(null)
+  const settingsRef = useRef<HTMLDivElement>(null)
+  // O voltar do Android (core/navigation/back.ts) fecha a engrenagem aberta antes de sair do jogo;
+  // o foco que estava nela volta ao botão da engrenagem, não ao body.
+  useBackHandler(settingsOpen ? () => {
+    const focusInside = settingsRef.current?.contains(document.activeElement) ?? false
+    flushSync(() => setSettingsOpen(false))
+    if (focusInside) settingsToggleRef.current?.focus()
+  } : null, 'overlay')
   const [tab, setTab] = useState<PlayTabId>(PLAY_TABS[0].id)
   // Altura do aviso preso ao pé da tela: vira folga de fundo, para ele não cobrir o fim da página.
   const [toastHeight, setToastHeight] = useState(0)
@@ -224,6 +234,7 @@ export function PlayScreen() {
                 ↶
               </button>
               <button
+                ref={settingsToggleRef}
                 onClick={() => setSettingsOpen(o => !o)}
                 aria-label="Configurações do modo de jogo"
                 aria-expanded={settingsOpen}
@@ -237,7 +248,7 @@ export function PlayScreen() {
             {view.characterName || 'Personagem sem nome'}
           </h1>
           <p className="text-xs text-parchment-500 line-clamp-2">{formatPlaySubtitle(view.draft)}</p>
-          {settingsOpen && <div className="mt-3"><PlaySettings /></div>}
+          {settingsOpen && <div ref={settingsRef} className="mt-3"><PlaySettings /></div>}
         </header>
 
         {/* Grudam logo abaixo da área segura: no app de ponta a ponta, a barra de status cobre o topo. */}

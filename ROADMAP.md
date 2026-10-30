@@ -64,7 +64,7 @@ A validação `isClassStepComplete(cls, choices, currentLevel)` já aceita níve
 | # | Etapa | Detalhe | Status |
 | - | ----- | ------- | ------ |
 | 2.1 | Ativar seleção por nível | Passar `draft.level` ao `isClassStepComplete`; `ClassChoicePanel` renderiza o seletor quando `subclassLevel <= level` (todas as classes) | ✅ |
-| 2.2 | Features de entrada das 29 subclasses vazias | Digitalizadas do PHB; `scripts/fill-subclass-features.mjs` | ✅ |
+| 2.2 | Features de entrada das 29 subclasses vazias | Digitalizadas do PHB; o script de uso único que as gravou (`ac79db1`, `20f1351`) foi apagado em 2026-10-30 | ✅ |
 | 2.3 | Escolhas embutidas na entrada da subclasse | Totem, manobras, disciplinas, terreno, Presa do Caçador — **movido para a Fase 3** (mesma infraestrutura de "escolher N de uma lista" das escolhas de progressão) | ↪ Fase 3 |
 
 **Pronto quando:** qualquer classe criada em nível ≥ `subclassLevel` escolhe subclasse (obrigatória) e recebe as features de entrada. ✅ (as sub-escolhas viram seletores na Fase 3)

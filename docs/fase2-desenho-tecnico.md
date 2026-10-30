@@ -562,7 +562,7 @@ Avaliar vite-plugin-pwa (MIT) com Vite 8 e rolldown. Se não servir, usar um SW 
 - `useAction` chama-se `performAction`: a regra dos hooks do React toma por hook toda função `use…` chamada nas telas.
 - A sessão opcional entrou só onde um efeito desta onda muda o resultado: `getWeaponAttackEffects`, `getSheetAttacks` e `getCastingRestrictions`. A CA, o deslocamento, a penalidade da armadura, as Artes Marciais e a armadura sem proficiência ganham o parâmetro na onda do efeito que os muda (o `noUnusedParameters` recusaria o parâmetro sem uso). Pelo mesmo motivo, o `getPlaySpeed` não mudou: a Fúria não mexe no deslocamento.
 - `resolveActiveEffects(active, toggles)` não recebe a armadura: o bloqueio dos benefícios é avaliado em `getSheetToggles`, com a armadura da ficha, como a CA e as defesas. A onda `armadura` passa a vestida pelo `buildPlaySheet(draft, worn)`; `WornArmor` e `SheetSession.worn` chegam com ela.
-- Os tipos ficaram com o que a onda usa: `ActiveEffect` com o modo das jogadas, as defesas, a imunidade a condição, o voo, os de estado e a nota; `ToggleEnd` só com `'unconscious'`; `ActionCost` com `amount` numérico. Sem `attackScope` nem `scopedAttack`: nenhum efeito ligado desta onda dá modo ao ataque. `ToggleOption` ganhou `effects`, para o ataque de ação bônus do Frenesi aparecer enquanto ele dura.
+- Os tipos ficaram com o que a onda usa: `ActiveEffect` com o modo das jogadas, as defesas, a imunidade a condição, o voo, os de estado e a nota; `ToggleEnd` com `'unconscious'` e, depois da revisão, os dois descansos; `ActionCost` com `amount` numérico. Sem `attackScope` nem `scopedAttack`: nenhum efeito ligado desta onda dá modo ao ataque. `ToggleOption` ganhou `effects`, para o ataque de ação bônus do Frenesi aparecer enquanto ele dura.
 - A Fúria Inconsciente é um efeito só, `conditionImmunity`, que recusa a nova e suspende a gravada: um `suspends` a mais repetiria a declaração.
 - `ConditionState` ganhou `toggles` e `conditionImmunities` (a imunidade a condição da ficha); `EffectiveCondition`, `immuneBy` (`isConditionSuspended`). `addCondition` e `startConcentration` recebem o `PlaySheet`.
 - `getSheetActions` nasce mínimo (as ações das features de classe), e o `PlaySheet` leva `toggles` e `actions`. O `spendEndsConcentration` do recurso saiu: quem encerra a concentração é ligar a Fúria.
@@ -570,7 +570,12 @@ Avaliar vite-plugin-pwa (MIT) com Vite 8 e rolldown. Se não servir, usar um SW 
 - A resistência a todo dano menos alguns (o Urso) dá um chip por tipo que alcança no painel de PV; o "Outro tipo" fica para o psíquico e o dano sem tipo.
 - A seção Efeitos ativos já mostra o lembrete do fim prematuro (o do Novo turno chega com a onda `turno`) e o que o efeito está fazendo (`describeToggleEffects`).
 - Nenhum número de ficha salva muda: o retrato do aviso de migração é tirado sobre um estado vazio, sem efeito ligado.
-- Fica com o dono: a fúria na morte instantânea (`regras-efeitos-ativos.md`, seção 6).
+- Da revisão (2026-10-30):
+  - `ToggleEnd` ganhou 'shortRest' e 'longRest': o descanso, que dura mais que a fúria, a encerra no começo, antes do que devolve (`endTogglesOnRest`; a exaustão do Frenesi vem antes do −1 do longo), e as prévias o dizem;
+  - o "Já acabou" (sem gastar ação, `deactivateToggle`) é o fim que não é ação, também para quem não pode agir: a ação bônus "Encerrar a fúria" recusa o Atordoado;
+  - a reconciliação avisa a opção perdida (o Frenesi), e não só o efeito;
+  - no empate de FOR e DES, a linha que escolhe fica na Força quando só ela soma o Dano de Fúria ligado (`choosesDex`).
+- Fica com o dono (`regras-efeitos-ativos.md`, seção 6): a fúria na morte que não passa pelo Inconsciente (a instantânea e a da exaustão 6), antecipar a Fúria Implacável (o desenho a põe em `recursos-completos`) e as Auras de Coragem e de Devoção como imunidade a condição do paladino.
 
 - **Tamanho:** G
 - **Depende de:** `defesas`

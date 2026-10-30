@@ -87,7 +87,10 @@ Não são da seção "Descanso", mas o assistente de descanso precisa saber dela
 - "Terminar um descanso longo **reduz a exaustão** de uma criatura **em 1 nível**, contanto que ela também tenha **ingerido um pouco de água e comida**" (linhas 28561-28563).
 - Interação: no **nível 4** de exaustão, o **máximo de pontos de vida** fica reduzido à metade (linha 28545). A tabela completa e o acúmulo de níveis ficam no doc de condições.
 
-### 5.4 Características que "recuperam no descanso"
+### 5.4 Efeitos ligados que duram menos que o descanso — ver `docs/regras-efeitos-ativos.md`
+- A Fúria "dura por 1 minuto" (pág. 48, linha 3662), e o descanso curto tem pelo menos 1 hora (linhas 16797-16798): concluído com ela ligada, ela acabou no começo dele. O app a encerra antes do que o descanso devolve, com aviso e na prévia, e o nível de exaustão do Frenesi vem antes do −1 do descanso longo (seção 5.3). Os Dados de Vida do curto, gastos "no final" (linhas 16801-16802), já veem o PV máximo depois dele.
+
+### 5.5 Características que "recuperam no descanso"
 - Muitas características de **classe**, traços de **raça** e **talentos** têm usos que voltam ao terminar um descanso (dezenas de ocorrências no extrato). Todas dependem das regras deste documento para saber **quando** um descanso terminou.
 - A redação **varia** de texto para texto. **Não** há padrão "curto ou longo": no extrato, a maior parte das ocorrências diz só descanso **longo**. Um exemplo de cada redação:
   - **só longo** (a mais comum): Magia Drow, "Você precisa terminar um descanso longo para poder conjurar as magias desse traço novamente" (pág. 24, linhas 1941-1943);
@@ -137,7 +140,8 @@ Tudo acontece num **rascunho de descanso** que fica em memória. Nada é gravado
    - longo: PV cheio (até o máximo efetivo, seção 6.1), quantos Dados de Vida voltam (`max(1, floor(total / 2))`, limitado aos gastos; decisões 1 e 2), espaços do pool e de Pacto, recursos (inclusive os de recarga `'day'`, assumido (B)), PV temporários zerados e a exaustão −1 com a caixa "comeu e bebeu" **marcada por padrão** (decisão 14);
    - na multiclasse, o jogador **escolhe** quais tipos de Dado de Vida voltam; o app pré-preenche com os **maiores primeiro** e deixa trocar (decisão 2);
    - os pré-requisitos: com 0 PV no início, a prévia **bloqueia todos** os benefícios e explica por quê (assumido (A)); as 24 h viram só aviso (item 5);
-   - com `lifeState === 'dead'`, a prévia **bloqueia** a cura (o morto não recupera PV, linhas 17846-17848) e avisa por quê.
+   - com `lifeState === 'dead'`, a prévia **bloqueia** a cura (o morto não recupera PV, linhas 17846-17848) e avisa por quê;
+   - nos dois, antes do que volta, os **efeitos ligados que acabam** no descanso (a Fúria, seção 5.4), com o que custam ao acabar (o nível de exaustão do Frenesi, já contado na exaustão do longo); se o fim levar à exaustão 6, a prévia bloqueia e diz para encerrar o efeito antes.
 2. **Gastar Dados de Vida, um a um** (só no descanso curto):
    - o jogador escolhe o **tipo** quando o poço tem mais de um (multiclasse);
    - **valor manual** do dado físico (validar de 1 ao número de lados), que é o padrão, ou **rolagem digital** pelo motor puro de `packages/rules/src/core/dice` quando o jogador liga os dados do app (decisão de 2026-10-25);

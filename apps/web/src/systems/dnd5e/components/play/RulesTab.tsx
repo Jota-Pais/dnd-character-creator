@@ -59,8 +59,8 @@ function TextBody({ detail }: { detail: Extract<RuleDetail, { kind: 'text' }> })
  * os traços raciais e os talentos, cada um com a regra completa numa folha a um toque. As listas
  * vêm de `getRuleReference` (as mesmas fontes da Revisão e da ficha imprimível).
  */
-export function RulesTab({ draft }: PlayTabProps) {
-  const sections = useMemo(() => getRuleReference(draft), [draft])
+export function RulesTab({ draft, session }: PlayTabProps) {
+  const sections = useMemo(() => getRuleReference(draft, session), [draft, session])
   const [open, setOpen] = useState<RuleEntry | null>(null)
 
   if (sections.length === 0) {

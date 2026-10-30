@@ -11,6 +11,7 @@ import {
 } from '@rpg/rules/systems/dnd5e/utils/raceUtils'
 import { formatCastingRestriction, getCastingRestrictions, getSheetFightingStyles } from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
 import { getKnownSpells } from '@rpg/rules/systems/dnd5e/utils/sheetModel'
+import { NO_SESSION, type SheetSession } from '@rpg/rules/systems/dnd5e/types/session'
 import { FEAT_SPELL_USAGE } from '@rpg/rules/systems/dnd5e/utils/spellUtils'
 import { ordinal } from './playFormat'
 
@@ -84,12 +85,12 @@ function groupByLevel(items: { spell: Spell; source: string | null }[], keyPrefi
  * da conjuração da classe — o truque da raça, o da subclasse e as magias inatas — com o jeito de
  * usar de `describeInnateSpellUsage`. A restrição de conjuração (em fúria,
  * `getCastingRestrictions`) vale para toda magia, de qualquer fonte: sai sob o título da seção e na
- * folha de cada uma.
+ * folha de cada uma — com a fúria ligada na sessão, dizendo que está em vigor.
  */
-function spellSection(draft: CharacterDraft): RuleSection | null {
+function spellSection(draft: CharacterDraft, session: SheetSession): RuleSection | null {
   const known = getKnownSpells(draft)
   const isMc = allClassEntries(draft).length > 1
-  const notes = getCastingRestrictions(draft).map(formatCastingRestriction)
+  const notes = getCastingRestrictions(draft, session).map(formatCastingRestriction)
   const blocks: RuleBlock[] = known.classes.map(({ caster, spells }) => {
     // Conjuração de subclasse (Cavaleiro/Trapaceiro Arcano) se identifica mesmo sem multiclasse.
     const showLabel = isMc || caster.casting.casterId !== caster.cls.id
@@ -246,8 +247,9 @@ function featSection(draft: CharacterDraft): RuleSection | null {
 /**
  * A aba "Regras": o que o personagem sabe fazer, só para leitura, montado das mesmas funções que
  * a Revisão e a ficha imprimível usam — nenhuma lista é agregada aqui. Seções vazias ficam de fora.
+ * A sessão (os efeitos ligados) só muda a restrição de conjuração das magias: em vigor ou não.
  */
-export function getRuleReference(draft: CharacterDraft): RuleSection[] {
-  return [spellSection(draft), classSection(draft), raceSection(draft), featSection(draft)]
+export function getRuleReference(draft: CharacterDraft, session: SheetSession = NO_SESSION): RuleSection[] {
+  return [spellSection(draft, session), classSection(draft), raceSection(draft), featSection(draft)]
     .filter((s): s is RuleSection => s !== null)
 }

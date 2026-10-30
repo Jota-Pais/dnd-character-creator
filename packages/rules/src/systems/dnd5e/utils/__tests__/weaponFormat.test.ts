@@ -294,6 +294,62 @@ describe('weaponFormat', () => {
           .toEqual(['+2 de dano em fúria, sem armadura pesada (Dano de Fúria)'])
       })
     })
+
+    // No jogo, com a fúria ligada (`met`), a condição é satisfeita pelo estado: o bônus entra no
+    // número da linha que cumpre o escopo, com a parcela em `includedBonuses`.
+    describe('em fúria (a condição satisfeita pelo estado)', () => {
+      const raging = (value: number, blockedBy?: string): Partial<AttackContext> => {
+        const [effect] = rage(value, blockedBy).effects!
+        return { effects: [{ ...effect, conditionalDamage: { ...effect.conditionalDamage!, met: true } }] }
+      }
+
+      it('machado grande com Força: 1d12+5, com a parcela Dano de Fúria +2 e sem a nota', () => {
+        const atk = getWeaponAttack(getWeaponById('greataxe')!, ctx(3, 1, 2, true, raging(2)))
+        expect(atk.damage).toBe('1d12+5 cortante')
+        expect(atk.notes).toEqual([])
+        expect(atk.includedBonuses).toEqual({ attack: [], damage: [{ label: 'Dano de Fúria', value: 2 }] })
+        // O versátil soma também: espada longa a duas mãos.
+        expect(getWeaponAttack(getWeaponById('longsword')!, ctx(3, 1, 2, true, raging(2))).versatileDamage).toBe('1d10+5')
+      })
+
+      it('rapieira com a Destreza maior: a linha usa Destreza e o bônus continua nota', () => {
+        const atk = getWeaponAttack(getWeaponById('rapier')!, ctx(1, 3, 2, true, raging(2)))
+        expect(atk.damage).toBe('1d8+3 perfurante')
+        expect(atk.notes).toEqual(['+2 de dano em fúria, sem armadura pesada, atacando com Força em vez de Destreza (Dano de Fúria)'])
+        expect(atk.includedBonuses).toBeUndefined()
+      })
+
+      it('machadinha: a linha corpo a corpo soma, com a nota de que arremessando não soma', () => {
+        const atk = getWeaponAttack(getWeaponById('handaxe')!, ctx(3, 1, 2, true, raging(2)))
+        expect(atk.damage).toBe('1d6+5 cortante')
+        expect(atk.notes).toEqual(['arremessando, sem o Dano de Fúria'])
+      })
+
+      it('de Placas: continua nota, que não vale agora', () => {
+        const atk = getWeaponAttack(getWeaponById('greataxe')!, ctx(3, 1, 2, true, raging(2, 'Placas')))
+        expect(atk.damage).toBe('1d12+3 cortante')
+        expect(atk.notes).toEqual(['+2 de dano em fúria, sem armadura pesada (Dano de Fúria) — não vale agora: você está de Placas'])
+      })
+
+      it('golpe desarmado de dano fixo: soma ao total, e o piso 0 vale sobre o total (decisões 25 e 27)', () => {
+        // Força 6: 1 − 2 + 2 = 1, não 0 + 2.
+        const weak = getUnarmedStrike({ strMod: -2, dexMod: 0, proficiencyBonus: 2, ...raging(2) })
+        expect(weak.damage).toBe('1 concussão')
+        expect(weak.fixedDamageBase).toBe(1)
+        expect(weak.notes).toEqual([])
+        expect(getUnarmedStrike({ strMod: -4, dexMod: 0, proficiencyBonus: 2, ...raging(2) }).damage).toBe('0 concussão')
+        expect(getUnarmedStrike({ strMod: 3, dexMod: 1, proficiencyBonus: 2, ...raging(2) }).damage).toBe('6 concussão')
+      })
+
+      it('a Arquearia continua parcela do ataque, com a nota da Revisão', () => {
+        const archery = FIGHTING_STYLES.find(s => s.id === 'archery')!
+        const bow = getWeaponAttack(getWeaponById('longbow')!, ctx(0, 3, 2, true, {
+          effects: [{ source: archery.name, value: archery.effects!.weaponAttacks![0] }],
+        }))
+        expect(bow.notes).toEqual(['inclui +2 no ataque (Arquearia)'])
+        expect(bow.includedBonuses).toEqual({ attack: [{ label: 'Arquearia', value: 2, note: 'inclui +2 no ataque (Arquearia)' }], damage: [] })
+      })
+    })
   })
 
   // p. 149: arma de recarga dispara uma munição por ação, "não importando quantos ataques você

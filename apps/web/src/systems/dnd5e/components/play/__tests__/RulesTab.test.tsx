@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { getRuleReference } from '../ruleReference'
+import { getSheetSession } from '@rpg/rules/systems/dnd5e/utils/activeEffects'
+import { createPlayState } from '@rpg/rules/systems/dnd5e/utils/playState'
 import { EMPTY_DRAFT, type CharacterDraft } from '@rpg/rules/systems/dnd5e/types/character'
 import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
 import { openDraft, openKrusk, resetPlay } from './openPlay'
@@ -276,6 +278,18 @@ describe('getRuleReference', () => {
     const entries = section.blocks.flatMap(b => b.groups.flatMap(g => g.entries))
     expect(entries.map(e => e.name)).toEqual(expect.arrayContaining(['Chama Sagrada', 'Escudo Arcano', 'Taumaturgia', 'Druidismo']))
     for (const e of entries) expect(e.detail).toMatchObject({ kind: 'spell', notes: [RAGE] })
+  })
+
+  it('com a fúria ligada (a sessão), a nota das magias diz que a restrição está em vigor', () => {
+    const session = getSheetSession(TIEFLING_BARBARIAN, { ...createPlayState('c'), activeEffects: [{ id: 'rage', startedAt: 1 }] })
+    const section = getRuleReference(TIEFLING_BARBARIAN, session).find(s => s.id === 'spells')!
+    const RAGE_ON = 'Em fúria agora (Fúria): você não pode conjurar magias nem se concentrar nelas (pág. 48); entrar em fúria encerra a concentração.'
+    expect(section.notes).toEqual([RAGE_ON])
+    for (const e of section.blocks.flatMap(b => b.groups.flatMap(g => g.entries))) {
+      expect(e.detail).toMatchObject({ kind: 'spell', notes: [RAGE_ON] })
+    }
+    // Sem sessão (a Revisão e o PDF não têm), a nota condicional de sempre.
+    expect(getRuleReference(TIEFLING_BARBARIAN).find(s => s.id === 'spells')!.notes).toEqual([RAGE])
   })
 
   it('sem a Fúria, as magias não levam nota', () => {

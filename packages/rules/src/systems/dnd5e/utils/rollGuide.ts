@@ -167,11 +167,16 @@ export type RollGuide = {
    */
   notes: string[]
   /**
-   * O que proíbe conjurar numa situação que a ficha não conhece (em fúria, pág. 48 —
-   * `getCastingRestrictions`): condicional, nunca em `notes`, que é só o que está em vigor. Também
+   * O que proíbe conjurar numa situação (em fúria, pág. 48 — `getCastingRestrictions`) que o estado
+   * de jogo não cumpre agora: condicional, nunca em `notes`, que é só o que está em vigor. Também
    * nas notas do ataque de magia e da concentração.
    */
   castingRestrictions: string[]
+  /**
+   * A mesma restrição com o efeito da situação ligado (em fúria): em vigor, sai de
+   * `castingRestrictions` e entra aqui e em `notes` (a caixa vermelha da aba Magia).
+   */
+  activeCastingRestrictions: string[]
 }
 
 // ── Formatação ───────────────────────────────────────────────────────────────
@@ -521,9 +526,6 @@ function damageEntry(input: DamageInput): RollGuideEntry {
 
 const ABILITY_BY_LONG_NAME = new Map(ALL_ABILITY_SCORES.map(ab => [ABILITY_LABELS[ab].long, ab]))
 
-/** "inclui +2 no ataque (Arquearia)": o bônus que `getWeaponAttack` já somou, com a origem. */
-const INCLUDED_ATTACK_BONUS = /^inclui ([+-]\d+) no ataque \((.+)\)$/
-
 /** O que todo ataque da ficha compartilha: o personagem, o estado de jogo e as fontes do modo. */
 type AttackGuideContext = {
   mods: Record<AbilityScore, number>
@@ -578,14 +580,15 @@ function attackGuide(attack: SheetAttack, ctx: AttackGuideContext): AttackGuide 
     { label: attack.ability, value: mods[ability] },
     ...(attack.proficient ? [{ label: 'Proficiência', value: proficiencyBonus }] : []),
   ]
-  // As notas da arma (Duelismo, outra mão, recarga, Artes Marciais) valem no ataque e no dano:
-  // a folha de cada jogada diz o que muda nela.
-  const notes: string[] = []
-  for (const n of attack.notes) {
-    const m = INCLUDED_ATTACK_BONUS.exec(n)
-    if (m) breakdown.push({ label: m[2], value: Number(m[1]) })
-    else notes.push(n)
-  }
+  // O que a linha já somou (`includedBonuses`: a Arquearia no ataque, o Dano de Fúria ligado no
+  // dano) vira parcela do "de onde vem", e a nota que o diz sai das notas. As outras notas da arma
+  // (Duelismo, outra mão, recarga, Artes Marciais) valem no ataque e no dano: a folha de cada jogada
+  // diz o que muda nela.
+  const included = attack.includedBonuses ?? { attack: [], damage: [] }
+  for (const b of included.attack) breakdown.push({ label: b.label, value: b.value })
+  const includedNotes = new Set([...included.attack, ...included.damage].flatMap(b => (b.note ? [b.note] : [])))
+  const notes = attack.notes.filter(n => !includedNotes.has(n))
+  const includedDamage = included.damage.reduce((sum, b) => sum + b.value, 0)
   // A margem do Campeão vale na linha que está no alcance dela: as armas e o golpe desarmado (decisão
   // 20 de regras-dano-e-morte.md, revista em 2026-10-29).
   const weaponCrit = ctx.weaponCrit && isSheetAttackInScope(attack, ctx.weaponCrit.weapons) ? ctx.weaponCrit : null
@@ -623,14 +626,16 @@ function attackGuide(attack: SheetAttack, ctx: AttackGuideContext): AttackGuide 
   }, inspiration)
 
   // O texto do dano fixo já vem com o piso 0 ("0 concussão"): a conta aberta sai do valor fixo da
-  // arma mais o modificador, e o damageEntry põe de volta o piso como parcela ("Mínimo 0").
+  // arma mais o modificador e o que a linha somou, e o damageEntry põe de volta o piso como parcela
+  // ("Mínimo 0").
   const text = parseDamageText(attack.damage)
   const parsed = text && text.count === 0 && attack.fixedDamageBase !== undefined
-    ? { ...text, modifier: attack.fixedDamageBase + mods[ability] }
+    ? { ...text, modifier: attack.fixedDamageBase + mods[ability] + includedDamage }
     : text
   const damageBreakdown = (p: ParsedDamage): GuideBreakdownItem[] => [
-    ...(p.count === 0 ? [{ label: attack.name, value: attack.fixedDamageBase ?? p.modifier - mods[ability] }] : []),
+    ...(p.count === 0 ? [{ label: attack.name, value: attack.fixedDamageBase ?? p.modifier - mods[ability] - includedDamage }] : []),
     { label: attack.ability, value: mods[ability] },
+    ...included.damage.map(b => ({ label: b.label, value: b.value })),
   ]
   const damage = parsed
     ? damageEntry({
@@ -753,8 +758,11 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
   const cannotSpeak = effects.cannotSpeak.active
     ? [`Não pode falar (${labels(effects.cannotSpeak.sources)}): sem o componente verbal, a magia que o exige não pode ser conjurada (pág. 205).`]
     : []
-  // Em fúria não se conjura (pág. 48): a ficha não sabe se você está em fúria, então é nota.
-  const castingRestrictions = getCastingRestrictions(draft, session).map(formatCastingRestriction)
+  // Em fúria não se conjura (pág. 48): desligada, é nota; ligada (a sessão), está em vigor e vai às
+  // notas que valem agora — a caixa vermelha da aba Magia.
+  const restrictions = getCastingRestrictions(draft, session)
+  const castingRestrictions = restrictions.filter(r => !r.active).map(formatCastingRestriction)
+  const activeCastingRestrictions = restrictions.filter(r => r.active).map(formatCastingRestriction)
 
   // Testes de atributo puros: modificador + meia proficiência quando a ficha a tem (Versatilidade).
   const halfSources = getHalfProficiencySources(draft)
@@ -882,6 +890,7 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
           ...cannotAct,
           ...cannotSpeak,
           ...cannotCast,
+          ...activeCastingRestrictions,
           ...castingRestrictions,
           critNote(20),
           ...linesFor(lines, 'attack'),
@@ -964,8 +973,9 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
 
   return {
     checks, saves, skills, initiative, passivePerception, attacks, spellcasting, deathSave, hitDice,
-    notes: [...cannotAct, ...cannotSpeak, ...cannotCast],
+    notes: [...cannotAct, ...cannotSpeak, ...cannotCast, ...activeCastingRestrictions],
     castingRestrictions,
+    activeCastingRestrictions,
   }
 }
 
@@ -975,7 +985,7 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
  * contando o que os PV temporários absorveram (assumido E, `regras-rolagens-e-concentracao.md`).
  * Conjurador de Guerra (pág. 169) entra como vantagem — aqui o efeito vale sempre. A restrição de
  * conjuração vira nota: em fúria não se concentra (pág. 48), e entrar em fúria encerra a
- * concentração (decisão de 2026-10-29) — o estado "em fúria" só chega com os efeitos ativos.
+ * concentração (decisão de 2026-10-29); com a fúria ligada, a nota diz que ela está em vigor.
  */
 export function getConcentrationGuide(draft: CharacterDraft, state: PlayState, damage: number): RollGuideEntry {
   const scores = getFinalAbilityScores(draft)

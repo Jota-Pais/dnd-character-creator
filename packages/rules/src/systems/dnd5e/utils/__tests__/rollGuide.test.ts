@@ -971,6 +971,81 @@ describe('getRollGuide — em fúria não se conjura (pág. 48)', () => {
   })
 })
 
+// Ligada a fúria (o estado de jogo), a condição do Dano de Fúria e a da restrição de conjuração são
+// satisfeitas: o bônus entra no número e a restrição fica em vigor. Desligar é um ciclo exato.
+describe('getRollGuide — em fúria (efeito ligado)', () => {
+  const RAGE_ON = 'Em fúria agora (Fúria): você não pode conjurar magias nem se concentrar nelas (pág. 48); entrar em fúria encerra a concentração.'
+  const RAGE = 'Fúria: em fúria, você não pode conjurar magias nem se concentrar nelas (pág. 48); entrar em fúria encerra a concentração.'
+  const raging = (patch: Partial<PlayState> = {}) => play({ activeEffects: [{ id: 'rage', startedAt: 1 }], ...patch })
+  // Bárbaro 3 sem raça: FOR 16 (+3), DES 14 (+2).
+  const barbarian = (...items: string[]) => draft({ class: 'barbarian', level: 3, abilityScores: SCORES, ...carrying(...items) })
+  const attack = (guide: RollGuide, key: string) => guide.attacks.find(a => a.key === key)!
+
+  it('bárbaro 3: machado grande 1d12+5, com a parcela Dano de Fúria +2 no "de onde vem"', () => {
+    const damage = attack(getRollGuide(barbarian('greataxe'), raging()), 'greataxe').damage!
+    expect(damage.formula).toBe('1d12 + 5 cortante')
+    expect(damage.breakdown).toEqual([{ label: 'Força', value: 3 }, { label: 'Dano de Fúria', value: 2 }])
+    expect(damage.notes).toEqual([])
+    expect(damage.crit?.formula).toBe('2d12 + 5 cortante')
+  })
+
+  it('rapieira com a Destreza maior: continua nota', () => {
+    const d = draft({ class: 'barbarian', level: 3, abilityScores: { ...SCORES, STR: 10, DEX: 16 }, ...carrying('rapier') })
+    const damage = attack(getRollGuide(d, raging()), 'rapier').damage!
+    expect(damage.formula).toBe('1d8 + 3 perfurante')
+    expect(damage.notes).toContain('+2 de dano em fúria, sem armadura pesada, atacando com Força em vez de Destreza (Dano de Fúria)')
+  })
+
+  it('machadinha corpo a corpo: soma, com a nota de arremesso', () => {
+    const line = attack(getRollGuide(barbarian('handaxe'), raging()), 'handaxe')
+    expect(line.damage?.formula).toBe('1d6 + 5 cortante')
+    expect(line.notes).toEqual(['arremessando, sem o Dano de Fúria'])
+  })
+
+  it('golpe desarmado com FOR 6 em fúria: 1, com a conta inteira no "de onde vem"', () => {
+    const d = draft({ class: 'barbarian', level: 3, abilityScores: { ...SCORES, STR: 6 } })
+    const damage = attack(getRollGuide(d, raging()), 'unarmed').damage!
+    expect(damage.formula).toBe('1 concussão')
+    expect(damage.breakdown).toEqual([
+      { label: 'Golpe desarmado', value: 1 }, { label: 'Força', value: -2 }, { label: 'Dano de Fúria', value: 2 },
+    ])
+    // Desligada, a linha mostra 0 e a nota diz quanto causaria em fúria.
+    expect(attack(getRollGuide(d, play()), 'unarmed').damage?.formula).toBe('0 concussão')
+  })
+
+  it('de Placas: a nota diz que não vale agora, e o número fica', () => {
+    const line = attack(getRollGuide(barbarian('greataxe', 'plate'), raging()), 'greataxe')
+    expect(line.damage?.formula).toBe('1d12 + 3 cortante')
+    expect(line.notes).toContain('+2 de dano em fúria, sem armadura pesada (Dano de Fúria) — não vale agora: você está de Placas')
+  })
+
+  it('a Arquearia continua parcela, sem a nota', () => {
+    const d = draft({ class: 'fighter', level: 1, abilityScores: SCORES, classChoices: choices({ fightingStyle: 'archery' }), ...carrying('longbow') })
+    const bow = attack(getRollGuide(d, play()), 'longbow')
+    expect(bow.attack.breakdown).toEqual([{ label: 'Destreza', value: 2 }, { label: 'Proficiência', value: 2 }, { label: 'Arquearia', value: 2 }])
+    expect(bow.notes.some(n => n.includes('Arquearia'))).toBe(false)
+  })
+
+  it('desligar a fúria devolve o guia de antes', () => {
+    const d = barbarian('greataxe', 'handaxe', 'rapier')
+    expect(getRollGuide(d, raging())).not.toEqual(getRollGuide(d, play()))
+    expect(getRollGuide(d, raging({ activeEffects: [] }))).toEqual(getRollGuide(d, play()))
+  })
+
+  it('a restrição sai das condicionais e entra nas notas em vigor, no ataque de magia e na concentração', () => {
+    const d = draft({ class: 'barbarian', level: 3, abilityScores: SCORES, multiclass: true, additionalClasses: [extraClass('wizard', 1)] })
+    const guide = getRollGuide(d, raging())
+    expect(guide.castingRestrictions).toEqual([])
+    expect(guide.activeCastingRestrictions).toEqual([RAGE_ON])
+    expect(guide.notes).toEqual([RAGE_ON])
+    expect(guide.spellcasting[0].attack.notes).toContain(RAGE_ON)
+    expect(getConcentrationGuide(d, raging(), 10).notes[0]).toBe(RAGE_ON)
+    // Desligada, como antes.
+    expect(getRollGuide(d, play()).castingRestrictions).toEqual([RAGE])
+    expect(getRollGuide(d, play()).activeCastingRestrictions).toEqual([])
+  })
+})
+
 describe('getRollGuide — fixture completa', () => {
   it('meio-orc bárbaro: números da ficha e d12', () => {
     const guide = getRollGuide(COMPLETE_DRAFT, play())

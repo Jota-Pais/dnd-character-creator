@@ -3,6 +3,8 @@ import { useCharacterStore } from '../../stores/characterStore'
 import { usePlayStore, type PlayOperation, type RunOptions } from '../../stores/playStore'
 import type { CharacterDraft } from '@rpg/rules/systems/dnd5e/types/character'
 import type { PlayResult, PlaySheet, PlayState } from '@rpg/rules/systems/dnd5e/types/playState'
+import { NO_SESSION, type SheetSession } from '@rpg/rules/systems/dnd5e/types/session'
+import { getSheetSession } from '@rpg/rules/systems/dnd5e/utils/activeEffects'
 import type { ArmorClassResult } from '@rpg/rules/systems/dnd5e/utils/armorClassUtils'
 import { getFinalAbilityScores } from '@rpg/rules/systems/dnd5e/utils/asiUtils'
 import { getClass, getSubclass } from '@rpg/rules/systems/dnd5e/utils/classUtils'
@@ -23,6 +25,11 @@ export type PlayView = {
   characterName: string
   sheet: PlaySheet
   state: PlayState
+  /**
+   * Os efeitos ligados do estado, resolvidos contra a ficha (`getSheetSession`): a porta das funções
+   * só de ficha que a tela chama (a aba Regras). O guia deriva a mesma sessão do estado.
+   */
+  session: SheetSession
   guide: RollGuide
   armorClass: ArmorClassResult
   /** Preferência "Usar os dados do app" (desligada por padrão). */
@@ -51,10 +58,11 @@ export function usePlayView(): PlayView | null {
   const run = usePlayStore(s => s.run)
 
   const guide = useMemo(() => (state ? getRollGuide(draft, state) : null), [draft, state])
+  const session = useMemo(() => (state ? getSheetSession(draft, state) : NO_SESSION), [draft, state])
   const armorClass = useMemo(() => getSheetArmorClass(draft, getFinalAbilityScores(draft)), [draft])
 
   if (!sheet || !state || !guide) return null
-  return { draft, characterName, sheet, state, guide, armorClass, appDice, run }
+  return { draft, characterName, sheet, state, session, guide, armorClass, appDice, run }
 }
 
 /** "Meio-Orc · Bárbaro · nível 3"; na multiclasse, "Humano · Guerreiro 3º / Mago 2º — nível 5". */

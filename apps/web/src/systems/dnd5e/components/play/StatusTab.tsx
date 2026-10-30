@@ -123,7 +123,8 @@ function DefensesSection({ lines }: { lines: string[] }) {
 
 /**
  * Concentração: iniciar com o nome da magia (texto livre) e encerrar. Uma por vez (pág. 205). A
- * restrição de conjuração (em fúria não se concentra, pág. 48) fica embaixo, nos dois estados.
+ * restrição de conjuração (em fúria não se concentra, pág. 48) fica embaixo, nos dois estados — em
+ * vigor (a fúria ligada), em vermelho, como a caixa da aba Magia.
  * Iniciar e encerrar trocam o formulário pelo botão (e vice-versa): o foco vai ao "Encerrar" que
  * aparece, ou ao título da seção (`titleRef`), e não cai no body. Ao encerrar, o título e não o
  * campo: o foco no campo abriria o teclado do celular a cada toque.
@@ -133,9 +134,10 @@ function ConcentrationSection({ state, guide, run, titleRef }: PlayTabProps & {
 }) {
   const [label, setLabel] = useState('')
   const endRef = useRef<HTMLButtonElement>(null)
-  const restrictions = guide.castingRestrictions.map((r, i) => (
-    <p key={i} className="text-xs text-amber-200 leading-snug">{r}</p>
-  ))
+  const restrictions = [
+    ...guide.activeCastingRestrictions.map(r => <p key={r} className="text-xs text-red-200 leading-snug">{r}</p>),
+    ...guide.castingRestrictions.map(r => <p key={r} className="text-xs text-amber-200 leading-snug">{r}</p>),
+  ]
 
   // Síncrono (flushSync): o controle que entra no lugar já existe para receber o foco. Recusado (o
   // aviso diz por quê), o foco fica onde estava.

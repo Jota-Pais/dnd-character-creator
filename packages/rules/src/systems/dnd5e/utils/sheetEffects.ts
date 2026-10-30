@@ -272,8 +272,16 @@ export function getCastingRestrictions(draft: CharacterDraft, session: SheetSess
   return out.length > 0 && canCastSpells(draft) ? out : []
 }
 
-/** "Fúria: em fúria, você não pode conjurar magias nem se concentrar nelas (pág. 48); entrar em fúria encerra a concentração." */
+/**
+ * "Fúria: em fúria, você não pode conjurar magias nem se concentrar nelas (pág. 48); entrar em fúria
+ * encerra a concentração." Em vigor (`active`, a fúria ligada): "Em fúria agora (Fúria): você não
+ * pode conjurar…".
+ */
 export function formatCastingRestriction(restriction: SheetCastingRestriction): string {
+  if (restriction.active) {
+    const when = restriction.when.charAt(0).toUpperCase() + restriction.when.slice(1)
+    return `${when} agora (${restriction.source}): ${restriction.text}`
+  }
   return `${restriction.source}: ${restriction.when}, ${restriction.text}`
 }
 

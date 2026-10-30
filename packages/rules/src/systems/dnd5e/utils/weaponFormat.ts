@@ -216,17 +216,37 @@ function formatConditionalDamage(bonus: ResolvedConditionalDamage, caveat: strin
 /**
  * As notas dos efeitos que alcançam a linha, da arma ou do golpe desarmado: a `note` e o bônus de
  * dano condicional, com a ressalva do que a linha não cumpre do escopo (`scopeCaveat`). `fixed`: o
- * dano da linha sem dado, para a conta do bônus quando o piso 0 cortou.
+ * dano da linha sem dado, para a conta do bônus quando o piso 0 cortou. O bônus que a linha já somou
+ * (`included`) não vira nota: na arma de arremesso fica só a ressalva, porque arremessada ela é
+ * ataque à distância (p. 149 e 197).
  */
 function pushEffectNotes(
   notes: string[], effects: SourcedAttackEffect[], useDex: boolean, thrown: boolean, fixed?: FixedDamage,
+  included: readonly SourcedAttackEffect[] = [],
 ) {
-  for (const { source, value, conditionalDamage } of effects) {
+  for (const effect of effects) {
+    const { source, value, conditionalDamage } = effect
     const caveat = scopeCaveat(value.weapons, useDex, thrown)
     if (value.note) notes.push(`${value.note}${caveat} (${source})`)
-    if (conditionalDamage) notes.push(formatConditionalDamage(conditionalDamage, caveat, fixed))
+    if (!conditionalDamage) continue
+    if (!included.includes(effect)) notes.push(formatConditionalDamage(conditionalDamage, caveat, fixed))
+    else if (caveat) notes.push(`arremessando, sem o ${conditionalDamage.name}`)
   }
 }
+
+/**
+ * O bônus de dano condicional que a linha SOMA agora: a condição satisfeita pelo estado (em fúria,
+ * `met`), sem bloqueio do equipamento e com a linha cumprindo o escopo — a de Força, no Dano de
+ * Fúria; a de Destreza (acuidade, Artes Marciais) continua nota. A arma de arremesso soma na linha
+ * corpo a corpo, com a ressalva de que arremessada não soma.
+ */
+function getIncludedDamage(effects: SourcedAttackEffect[], useDex: boolean): SourcedAttackEffect[] {
+  return effects.filter(({ value, conditionalDamage: d }) =>
+    d?.met && !d.blockedBy && scopeCaveat(value.weapons, useDex, false) === '')
+}
+
+/** Um bônus que a linha JÁ somou, com quem o dá — o "de onde vem" do guia — e a nota que o diz, se houver. */
+export type IncludedBonus = { label: string; value: number; note?: string }
 
 /** Artes Marciais em vigor — quem chama já conferiu o equipamento. */
 export type ActiveMartialArts = { source: string; die: number; condition: string }
@@ -290,6 +310,30 @@ export type WeaponAttack = {
    * da outra mão), e o que já foi somado nele, pra o jogador saber de onde veio.
    */
   notes: string[]
+  /**
+   * O que a linha JÁ somou, estruturado: no ataque, a Arquearia (com a nota "inclui +2 no ataque",
+   * que a Revisão e o PDF mostram); no dano, o Dano de Fúria ligado no jogo. O guia de rolagens lê
+   * daqui o "de onde vem". Ausente quando nada foi somado.
+   */
+  includedBonuses?: { attack: IncludedBonus[]; damage: IncludedBonus[] }
+}
+
+/** O `includedBonuses` da linha, só quando há algo somado (a linha sem bônus fica como era). */
+function includedBonusesOf(attack: IncludedBonus[], damage: IncludedBonus[]): Pick<WeaponAttack, 'includedBonuses'> {
+  return attack.length > 0 || damage.length > 0 ? { includedBonuses: { attack, damage } } : {}
+}
+
+/** O bônus de ataque incondicional dos efeitos (Arquearia): no número, com a nota e a parcela. */
+function addAttackBonuses(effects: SourcedAttackEffect[], notes: string[], included: IncludedBonus[]): number {
+  let total = 0
+  for (const { source, value } of effects) {
+    if (!value.attackBonus) continue
+    const note = `inclui ${signed(value.attackBonus)} no ataque (${source})`
+    total += value.attackBonus
+    notes.push(note)
+    included.push({ label: source, value: value.attackBonus, note })
+  }
+  return total
 }
 
 /** "1d8+3 cortante (1d10+3 a duas mãos)": o dano da linha, com o versátil quando houver. */
@@ -308,8 +352,9 @@ export function formatAttackDamage(attack: WeaponAttack): string {
  * Aplica a regra de ouro dos efeitos: o que vale SEMPRE com aquela arma entra no número
  * (Arquearia numa arma à distância; Artes Marciais numa arma de monge, com o dado maior); o que
  * depende de como ela é empunhada ou da situação vira nota com a condição (Duelismo, Armas
- * Grandes, o ataque da outra mão, o Dano de Fúria). Arma versátil leva o dano a duas mãos como
- * segundo valor.
+ * Grandes, o ataque da outra mão, o Dano de Fúria). A situação que o estado de jogo cumpre (em
+ * fúria, `met`) entra no número, com a parcela em `includedBonuses`. Arma versátil leva o dano a
+ * duas mãos como segundo valor.
  *
  * O bônus de proficiência só entra se `proficient` — "Se você realizar uma jogada de ataque
  * utilizando uma arma com a qual não tenha proficiência, não adiciona seu bônus de proficiência
@@ -325,21 +370,19 @@ export function getWeaponAttack(weapon: Weapon, ctx: AttackContext): WeaponAttac
   const mod = useDex ? dexMod : strMod
   const notes: string[] = []
 
-  let attackBonus = (proficient ? proficiencyBonus : 0) + mod
-  for (const { source, value } of effects) {
-    if (!value.attackBonus) continue
-    attackBonus += value.attackBonus
-    notes.push(`inclui ${signed(value.attackBonus)} no ataque (${source})`)
-  }
+  const includedAttack: IncludedBonus[] = []
+  const attackBonus = (proficient ? proficiencyBonus : 0) + mod + addAttackBonuses(effects, notes, includedAttack)
+  const includedDamage = getIncludedDamage(effects, useDex)
+  const damageBonus = includedDamage.reduce((sum, e) => sum + (e.conditionalDamage?.value ?? 0), 0)
 
   const type = weapon.damageType ? ` ${DAMAGE_TYPE_PT[weapon.damageType]}` : ''
   const roll = weapon.damage ? withMartialArtsDie(weapon.damage, martialArts?.die) : null
-  const damage = roll ? `${formatRoll(roll, mod)}${type}` : '—'
+  const damage = roll ? `${formatRoll(roll, mod + damageBonus)}${type}` : '—'
 
   const versatile = weapon.properties.find(p => p.kind === 'versatile')
   const versatileRoll = versatile ? withMartialArtsDie(versatile.alternateDamage, martialArts?.die) : null
   const versatileDamage = versatileRoll && roll && formatDamageRoll(versatileRoll) !== formatDamageRoll(roll)
-    ? formatRoll(versatileRoll, mod)
+    ? formatRoll(versatileRoll, mod + damageBonus)
     : undefined
 
   // Artes Marciais só ganha nota quando mudou alguma coisa: a Destreza no lugar da Força numa arma
@@ -349,7 +392,7 @@ export function getWeaponAttack(weapon: Weapon, ctx: AttackContext): WeaponAttac
   }
 
   const fixed = roll && !('dice' in roll && roll.dice) ? { base: roll.flat ?? 0, mod } : undefined
-  pushEffectNotes(notes, effects, useDex, hasProperty(weapon, 'thrown'), fixed)
+  pushEffectNotes(notes, effects, useDex, hasProperty(weapon, 'thrown'), fixed, includedDamage)
 
   const attacksPerAction = getWeaponAttacksPerAction(weapon, ctx, notes)
 
@@ -376,8 +419,13 @@ export function getWeaponAttack(weapon: Weapon, ctx: AttackContext): WeaponAttac
     properties: formatWeaponProperties(weapon.properties),
     attacksPerAction,
     notes,
+    ...includedBonusesOf(includedAttack, includedDamage.map(damageIncluded)),
   }
 }
+
+/** O bônus de dano condicional que a linha somou, como parcela do "de onde vem". */
+const damageIncluded = ({ conditionalDamage: d }: SourcedAttackEffect): IncludedBonus =>
+  ({ label: d?.name ?? '', value: d?.value ?? 0 })
 
 /**
  * Os ataques da ação de Atacar com esta arma. Arma de recarga dispara "apenas uma peça de munição
@@ -423,16 +471,16 @@ export function getUnarmedStrike(ctx: UnarmedStrikeContext): WeaponAttack {
   const die = Math.max(martialArts?.die ?? 0, unarmedDie?.value ?? 0)
   const roll: DamageRoll = die > 0 ? { dice: 1, sides: die } : { flat: 1 }
   const notes: string[] = []
-  let attackBonus = proficiencyBonus + mod
 
   if (martialArts) notes.push(`inclui ${martialArts.source} (${martialArts.condition})`)
   else if (unarmedDie) notes.push(`inclui o d${unarmedDie.value} de ${unarmedDie.source}`)
-  for (const { source, value } of effects) {
-    if (!value.attackBonus) continue
-    attackBonus += value.attackBonus
-    notes.push(`inclui ${signed(value.attackBonus)} no ataque (${source})`)
-  }
-  pushEffectNotes(notes, effects, useDex, false, die > 0 ? undefined : { base: 1, mod })
+  const includedAttack: IncludedBonus[] = []
+  const attackBonus = proficiencyBonus + mod + addAttackBonuses(effects, notes, includedAttack)
+  // Em fúria, o Dano de Fúria soma ao total do dano fixo, e o piso 0 vale sobre o total (decisões
+  // 25 e 27 de `regras-dano-e-morte.md`): com Força 6, 1 − 2 + 2 = 1.
+  const includedDamage = getIncludedDamage(effects, useDex)
+  const damageBonus = includedDamage.reduce((sum, e) => sum + (e.conditionalDamage?.value ?? 0), 0)
+  pushEffectNotes(notes, effects, useDex, false, die > 0 ? undefined : { base: 1, mod }, includedDamage)
   if (martialArts) {
     notes.push(`depois de atacar com golpe desarmado ou arma de monge na ação de Atacar, um golpe desarmado como ação bônus (${martialArts.source})`)
   }
@@ -442,10 +490,11 @@ export function getUnarmedStrike(ctx: UnarmedStrikeContext): WeaponAttack {
     ability: useDex ? 'Destreza' : 'Força',
     attackBonus: signed(attackBonus),
     proficient: true,
-    damage: `${formatRoll(roll, mod)} ${DAMAGE_TYPE_PT.bludgeoning}`,
+    damage: `${formatRoll(roll, mod + damageBonus)} ${DAMAGE_TYPE_PT.bludgeoning}`,
     ...(die > 0 ? {} : { fixedDamageBase: 1 }),
     properties: '',
     attacksPerAction: ctx.attacksPerAction?.value ?? 1,
     notes,
+    ...includedBonusesOf(includedAttack, includedDamage.map(damageIncluded)),
   }
 }

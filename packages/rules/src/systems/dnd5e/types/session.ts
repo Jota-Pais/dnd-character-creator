@@ -1,4 +1,4 @@
-import type { ActiveEffect, EquipmentRequirement, ToggleEnd, ToggleOption } from './effects'
+import type { ActiveEffect, EquipmentRequirement, ToggleEnd, ToggleOption, ZeroHpSave } from './effects'
 
 /**
  * A sessão de jogo como as funções da ficha a enxergam: os efeitos ligados agora, já resolvidos.
@@ -36,6 +36,8 @@ export type SheetToggle = {
   /** O lembrete do fim prematuro; ausente quando outra característica o tira (Fúria Persistente). */
   earlyEndReminder?: string
   options: SheetToggleOption[]
+  /** O teste para ficar com 1 PV em vez de cair a 0, com quem o dá (a Fúria Implacável). */
+  zeroHpSave?: ZeroHpSave & { source: string }
 }
 
 /** Um efeito ligado no estado e o que ele faz agora (`resolveActiveEffects`). */

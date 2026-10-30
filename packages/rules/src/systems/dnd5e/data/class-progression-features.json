@@ -86,7 +86,10 @@
       {
         "level": 11,
         "name": "Fúria Implacável",
-        "description": "Se você cair a 0 pontos de vida enquanto estiver em fúria e não morrer, pode fazer um teste de resistência de Constituição CD 10; se passar, fica com 1 ponto de vida em vez disso. Cada uso após o primeiro aumenta a CD em 5; ela volta a 10 quando você termina um descanso curto ou longo."
+        "description": "Se você cair a 0 pontos de vida enquanto estiver em fúria e não morrer, pode fazer um teste de resistência de Constituição CD 10; se passar, fica com 1 ponto de vida em vez disso. Cada uso após o primeiro aumenta a CD em 5; ela volta a 10 quando você termina um descanso curto ou longo.",
+        "effects": {
+          "toggleModifiers": [{ "toggle": "rage", "zeroHpSave": { "counter": "relentless-rage", "ability": "CON", "dc": 10, "dcStep": 5, "resetsOn": "short", "page": 49 } }]
+        }
       },
       {
         "level": 15,

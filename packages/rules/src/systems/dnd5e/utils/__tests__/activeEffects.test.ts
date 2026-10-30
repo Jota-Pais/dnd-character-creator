@@ -62,6 +62,13 @@ describe('getSheetToggles: a Fúria com o que a modifica', () => {
     ])
   })
 
+  it('a Fúria Implacável (11) dá à Fúria o teste para ficar com 1 PV, com quem o dá', () => {
+    expect(getSheetToggles(barbarian(10))[0].zeroHpSave).toBeUndefined()
+    expect(getSheetToggles(barbarian(11))[0].zeroHpSave).toEqual({
+      counter: 'relentless-rage', ability: 'CON', dc: 10, dcStep: 5, resetsOn: 'short', page: 49, source: 'Fúria Implacável',
+    })
+  })
+
   it('a Fúria Persistente (15) tira o lembrete do fim prematuro', () => {
     expect(getSheetToggles(barbarian(14))[0].earlyEndReminder).toBeDefined()
     expect('earlyEndReminder' in getSheetToggles(barbarian(15))[0]).toBe(false)

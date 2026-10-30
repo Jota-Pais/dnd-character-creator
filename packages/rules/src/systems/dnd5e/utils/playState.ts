@@ -11,8 +11,9 @@ import {
   applyConditionSpeed, damageTypeSetHas, halveSpeedOnGrid, withConditionApplied,
   type ActiveConditionEffects, type ConditionState, type SheetDamageDefense,
 } from './sheetEffects'
-import type { ResolvedToggle } from '../types/session'
-import { formatMeters } from './abilityScoreUtils'
+import type { ZeroHpSave } from '../types/effects'
+import type { ResolvedToggle, SheetToggle } from '../types/session'
+import { ABILITY_LABELS, formatMeters } from './abilityScoreUtils'
 import type { SheetResource } from './classResourceUtils'
 import { resolveActiveEffects } from './activeEffects'
 import { getDamageLabel, getDamageTypeName } from './damageTypes'
@@ -75,6 +76,7 @@ export function createPlayState(characterId: string, now = 0): PlayState {
     exhaustionLevel: 0,
     concentration: null,
     activeEffects: [],
+    restCounters: {},
     inspiration: false,
     note: '',
     rolls: [],
@@ -376,6 +378,28 @@ function availableDropToOneHp(state: PlayState, sheet: PlaySheet): PlaySheet['dr
   return available === 'unlimited' || (typeof available === 'number' && available > 0) ? drop : null
 }
 
+/** O teste para ficar com 1 PV (a Fúria Implacável), com o efeito ligado que ele pede. */
+type ZeroHpSaveOffer = { toggle: SheetToggle; save: NonNullable<SheetToggle['zeroHpSave']> }
+
+/**
+ * A CD de agora do teste para ficar com 1 PV: a de partida mais `dcStep` por uso desde o último
+ * descanso (a Fúria Implacável, pág. 49: 10, depois 15, 20…).
+ */
+export function getZeroHpSaveDc(state: PlayState, save: ZeroHpSave): number {
+  return save.dc + save.dcStep * (state.restCounters[save.counter] ?? 0)
+}
+
+/**
+ * O teste para ficar com 1 PV que vale agora: o efeito que o dá está ligado (em fúria, mesmo de
+ * armadura pesada: ele não está entre os benefícios) e o máximo efetivo é de pelo menos 1. `null`
+ * sem a característica ou fora do efeito.
+ */
+function availableZeroHpSave(state: PlayState, sheet: PlaySheet): ZeroHpSaveOffer | null {
+  if (getEffectiveMaxHp(state, sheet) < 1) return null
+  const toggle = sheet.toggles.find(t => t.zeroHpSave && state.activeEffects.some(a => a.id === t.id))
+  return toggle?.zeroHpSave ? { toggle, save: toggle.zeroHpSave } : null
+}
+
 /**
  * As defesas contra dano em vigor: as da ficha (`PlaySheet.defenses`), as dos efeitos ligados (a
  * Fúria: concussão, cortante e perfurante) e as das condições, no mesmo formato — o Petrificado dá
@@ -525,24 +549,40 @@ function applyDamageDefenses(input: DamageInput, defenses: SheetDamageDefense[],
  * (assumido F).
  *
  * Quem cai a 0 PV sem morrer e tem a Resistência Implacável com uso recebe também o aviso
- * `dropToOneHp`, com o dano: a tela desfaz e reaplica por `applyDamageDroppingToOneHp`.
+ * `dropToOneHp`, com o dano: a tela desfaz e reaplica por `applyDamageDroppingToOneHp`. Quem cai em
+ * fúria com a Fúria Implacável recebe o `dropToOneHpSave`, com a CD do teste e o dano: quem passa, a
+ * tela desfaz e reaplica por `applyDamageDroppingToOneHp(…, 'save')`.
  */
 export function applyDamage(state0: PlayState, sheet: PlaySheet, input: DamageInput): PlayResult {
-  return damagePipeline(state0, sheet, input, false)
+  return damagePipeline(state0, sheet, input, null)
 }
 
 /**
- * O mesmo evento de dano de `applyDamage`, usando a Resistência Implacável (pág. 41): quando ele
- * deixaria o personagem a 0 PV sem matar, ele fica com 1 PV e gasta um uso do recurso — sem cair
- * inconsciente, sem o Caído e sem perder a concentração (o TR de Constituição continua). Parte do
- * estado ANTERIOR ao dano (a tela desfaz antes). Se o traço não se aplica (sem uso, o dano não
- * leva a 0 PV ou mata na hora), aplica o dano normal e avisa — o dano nunca se perde.
+ * De onde vem o 1 PV: o traço que gasta um uso (a Resistência Implacável) ou o teste de resistência
+ * em que o jogador passou (a Fúria Implacável).
  */
-export function applyDamageDroppingToOneHp(state0: PlayState, sheet: PlaySheet, input: DamageInput): PlayResult {
-  return damagePipeline(state0, sheet, input, true)
+export type DropToOneHpBy = 'trait' | 'save'
+
+/**
+ * O mesmo evento de dano de `applyDamage`, terminando em 1 PV quando ele deixaria o personagem a 0
+ * PV sem matar — sem cair inconsciente, sem o Caído e sem perder a concentração (o TR de
+ * Constituição continua). Parte do estado ANTERIOR ao dano (a tela desfaz antes).
+ * - `'trait'`: a Resistência Implacável (pág. 41), que gasta um uso do recurso;
+ * - `'save'`: a Fúria Implacável (pág. 49), em fúria, com o teste em que o jogador passou: conta um
+ *   uso (a próxima CD sobe 5), e a fúria continua, porque ele não caiu.
+ * Se não se aplica (sem uso, fora da fúria, o dano não leva a 0 PV ou mata na hora), aplica o dano
+ * normal e avisa — o dano nunca se perde.
+ */
+export function applyDamageDroppingToOneHp(
+  state0: PlayState,
+  sheet: PlaySheet,
+  input: DamageInput,
+  by: DropToOneHpBy = 'trait',
+): PlayResult {
+  return damagePipeline(state0, sheet, input, by)
 }
 
-function damagePipeline(state0: PlayState, sheet: PlaySheet, input: DamageInput, dropToOneHp: boolean): PlayResult {
+function damagePipeline(state0: PlayState, sheet: PlaySheet, input: DamageInput, dropBy: DropToOneHpBy | null): PlayResult {
   const amounts = input.parts?.length ? input.parts.map(p => p.amount) : [input.amount]
   if (!amounts.every(Number.isFinite)) return refuse(state0, 'Valor de dano inválido.')
   if (state0.lifeState === 'dead') return refuse(state0, 'O personagem está morto: o dano não tem efeito.')
@@ -565,6 +605,7 @@ function damagePipeline(state0: PlayState, sheet: PlaySheet, input: DamageInput,
   if (absorbed > 0) notices.push(note('tempHpAbsorbed', `Os PV temporários absorveram ${absorbed}.`))
 
   const drop = availableDropToOneHp(state, sheet)
+  const zeroHpSave = availableZeroHpSave(state, sheet)
   let dropped = false
   if (state.lifeState === 'conscious') {
     const current = getCurrentHp(state, sheet)
@@ -575,7 +616,16 @@ function damagePipeline(state0: PlayState, sheet: PlaySheet, input: DamageInput,
       next.damageTaken = sheetMax
       if (overflow >= effMax) {
         toDead(next, sheet, notices, `Morte instantânea: o dano que sobrou (${overflow}) é igual ou maior que o PV máximo (${effMax}) (pág. 199).`)
-      } else if (dropToOneHp && drop) {
+      } else if (dropBy === 'save' && zeroHpSave) {
+        // "Se você for bem sucedido, você volta para 1 ponto de vida ao invés disso" (pág. 49): ele
+        // não caiu, então nada do que a queda faz acontece, e a fúria continua.
+        dropped = true
+        const { toggle, save } = zeroHpSave
+        const dc = getZeroHpSaveDc(state, save)
+        next.damageTaken = sheetMax - 1
+        next.restCounters = { ...next.restCounters, [save.counter]: (next.restCounters[save.counter] ?? 0) + 1 }
+        notices.push(note('info', `${save.source}: passou no teste de resistência de ${ABILITY_LABELS[save.ability].long} (CD ${dc}) e ficou com 1 PV em vez de cair a 0; continua ${lowerFirst(toggle.label)}. A próxima CD é ${dc + save.dcStep} (pág. ${save.page}).`))
+      } else if (dropBy === 'trait' && drop) {
         // "Reduzido a 0 pontos de vida mas não é completamente morto": volta para 1 PV (pág. 41).
         dropped = true
         next.damageTaken = sheetMax - 1
@@ -590,6 +640,17 @@ function damagePipeline(state0: PlayState, sheet: PlaySheet, input: DamageInput,
           notices.push({
             kind: 'dropToOneHp',
             text: `${drop.source}: em vez de cair a 0 PV, você pode ficar com 1 PV (gasta 1 uso).`,
+            damage: { ...input },
+          })
+        }
+        // A fúria já acabou com a queda (toZeroHp); quem passa no teste não caiu, e a tela reaplica.
+        if (zeroHpSave) {
+          const { toggle, save } = zeroHpSave
+          const dc = getZeroHpSaveDc(state, save)
+          notices.push({
+            kind: 'dropToOneHpSave',
+            text: `${save.source}: você caiu a 0 PV ${lowerFirst(toggle.label)}. Faça um teste de resistência de ${ABILITY_LABELS[save.ability].long} CD ${dc}: se passar, fica com 1 PV em vez disso e continua ${lowerFirst(toggle.label)} (pág. ${save.page}).`,
+            dc,
             damage: { ...input },
           })
         }
@@ -608,9 +669,12 @@ function damagePipeline(state0: PlayState, sheet: PlaySheet, input: DamageInput,
     notices.push(note('deathSaveFailure', `${added === 2 ? '2 fracassos (crítico)' : '1 fracasso'} no teste contra a morte por sofrer dano a 0 PV: ${failures}/3.`))
     if (failures >= 3) toDead(next, sheet, notices, 'Três fracassos no teste contra a morte (pág. 199).')
   }
-  if (dropToOneHp && !dropped) {
-    const source = sheet.dropToOneHp?.source ?? 'Ficar com 1 PV'
-    notices.push(note('warning', `${source} não se aplica a este dano: só quando ele deixaria você a 0 PV sem matar na hora, e com um uso disponível. O dano foi aplicado normalmente.`))
+  if (dropBy && !dropped) {
+    const declared = sheet.toggles.find(t => t.zeroHpSave)
+    const [source, need] = dropBy === 'trait'
+      ? [sheet.dropToOneHp?.source ?? 'Ficar com 1 PV', 'com um uso disponível']
+      : [declared?.zeroHpSave?.source ?? 'O teste para ficar com 1 PV', declared ? lowerFirst(declared.label) : 'com o efeito ligado']
+    notices.push(note('warning', `${source} não se aplica a este dano: só quando ele deixaria você a 0 PV sem matar na hora, e ${need}. O dano foi aplicado normalmente.`))
   }
 
   checkConcentration(next, sheet, notices)
@@ -1401,6 +1465,21 @@ export function getShortRestSlotRecovery(state0: PlayState, sheet: PlaySheet): S
 const SONG_OF_REST_ID = 'song-of-rest'
 
 /**
+ * Os contadores que o descanso zera, com aviso (a Fúria Implacável: "assim que você terminar um
+ * descanso curto ou longo a CD volta para 10", pág. 49). `resetsOn` 'short' zera nos dois; 'long',
+ * só no longo. Devolve os contadores de depois.
+ */
+function resetRestCounters(state: PlayState, sheet: PlaySheet, rest: 'short' | 'long', notices: PlayNotice[]): Record<string, number> {
+  const restCounters = { ...state.restCounters }
+  for (const { zeroHpSave: save } of sheet.toggles) {
+    if (!save || (restCounters[save.counter] ?? 0) === 0 || (rest === 'short' && save.resetsOn !== 'short')) continue
+    delete restCounters[save.counter]
+    notices.push(note('info', `${save.source}: a CD volta a ${save.dc} (pág. ${save.page}).`))
+  }
+  return restCounters
+}
+
+/**
  * Conclui o descanso curto: voltam os espaços de Pacto (pág. 58) e os recursos de recarga
  * `'short'`. O pool combinado só volta no longo (`regras-descanso.md`, 6.3). Os Dados de Vida
  * gastos com `spendHitDie` já estão no estado e não voltam aqui. Os efeitos ligados que acabam no
@@ -1427,12 +1506,13 @@ export function completeShortRest(state0: PlayState, sheet: PlaySheet, options: 
     ...ending.notices,
     ...(recovered.length > 0 ? [note('recovered', `Descanso curto concluído. De volta: ${recovered.join(', ')}.`)] : []),
   ]
+  const restCounters = resetRestCounters(state, sheet, 'short', notices)
   const song = sheet.resources.find(r => r.id === SONG_OF_REST_ID)
   if (song && (options.hitDiceSpent ?? 0) > 0) {
     const die = song.die ? ` (${song.die})` : ''
     notices.push(note('warning', `${song.name}${die} não está automatizada: como gastou Dados de Vida neste descanso, role o dado uma vez e aplique como cura (pág. 54).`))
   }
-  return done({ ...state, pactSlotsSpent: 0, resourcesSpent }, notices)
+  return done({ ...state, pactSlotsSpent: 0, resourcesSpent, restCounters }, notices)
 }
 
 // ── Descanso longo ──────────────────────────────────────────────────────────
@@ -1595,6 +1675,8 @@ export function completeLongRest(state0: PlayState, sheet: PlaySheet, options: L
   }
   const resourcesSpent = { ...state.resourcesSpent }
   for (const r of preview.resources) delete resourcesSpent[r.id]
+  const counterNotices: PlayNotice[] = []
+  const restCounters = resetRestCounters(state, sheet, 'long', counterNotices)
 
   const next: PlayState = {
     ...state,
@@ -1608,6 +1690,7 @@ export function completeLongRest(state0: PlayState, sheet: PlaySheet, options: L
     spellSlotsSpent: Array(SPELL_LEVELS).fill(0),
     pactSlotsSpent: 0,
     resourcesSpent,
+    restCounters,
     deathSaves: { ...ZERO_SAVES },
     ...(options.now !== undefined ? { lastLongRestAt: options.now } : {}),
   }
@@ -1618,7 +1701,7 @@ export function completeLongRest(state0: PlayState, sheet: PlaySheet, options: L
     ...(preview.maxHpAdjustmentEnds !== 0 ? [`o ajuste do PV máximo (${formatHpAdjustment(preview.maxHpAdjustmentEnds)}) acabou`] : []),
     ...(preview.exhaustion.after < preview.exhaustion.before ? [`exaustão ${preview.exhaustion.before} → ${preview.exhaustion.after}`] : []),
   ]
-  return done(next, [...ending.notices, note('recovered', `Descanso longo: ${parts.join('; ')}.`)])
+  return done(next, [...ending.notices, note('recovered', `Descanso longo: ${parts.join('; ')}.`), ...counterNotices])
 }
 
 // ── Sanitizador ─────────────────────────────────────────────────────────────
@@ -1651,6 +1734,20 @@ function sanitizeConcentration(x: unknown): Concentration | null {
     label: x.label.trim(),
     startedAt: typeof x.startedAt === 'number' && Number.isFinite(x.startedAt) ? x.startedAt : 0,
   }
+}
+
+/**
+ * Contagem por id (os usos gastos de cada recurso, os contadores do descanso): inteiros positivos; o
+ * zero e o que não é número saem.
+ */
+function sanitizeCounts(x: unknown): Record<string, number> {
+  const out: Record<string, number> = {}
+  if (!isRecord(x)) return out
+  for (const [id, value] of Object.entries(x)) {
+    const n = nonNegInt(value)
+    if (id && n > 0) out[id] = n
+  }
+  return out
 }
 
 /**
@@ -1732,13 +1829,6 @@ export function sanitizePlayState(raw: unknown, characterId: string): PlayState 
   }
 
   const slots = Array.isArray(raw.spellSlotsSpent) ? raw.spellSlotsSpent : []
-  const resourcesSpent: Record<string, number> = {}
-  if (isRecord(raw.resourcesSpent)) {
-    for (const [id, value] of Object.entries(raw.resourcesSpent)) {
-      const n = nonNegInt(value)
-      if (id && n > 0) resourcesSpent[id] = n
-    }
-  }
 
   const sheetSnapshot = sanitizeSheetSnapshot(raw.sheetSnapshot)
 
@@ -1768,12 +1858,13 @@ export function sanitizePlayState(raw: unknown, characterId: string): PlayState 
     hitDiceSpent,
     spellSlotsSpent: Array.from({ length: SPELL_LEVELS }, (_, i) => nonNegInt(slots[i])),
     pactSlotsSpent: nonNegInt(raw.pactSlotsSpent),
-    resourcesSpent,
+    resourcesSpent: sanitizeCounts(raw.resourcesSpent),
     conditions,
     ...(Object.keys(conditionNotes).length > 0 ? { conditionNotes } : {}),
     exhaustionLevel,
     concentration: lifeState === 'conscious' ? sanitizeConcentration(raw.concentration) : null,
     activeEffects: sanitizeActiveEffects(raw.activeEffects),
+    restCounters: sanitizeCounts(raw.restCounters),
     inspiration: raw.inspiration === true,
     note: typeof raw.note === 'string' ? raw.note : '',
     rolls: Array.isArray(raw.rolls) ? raw.rolls.filter(isRollRecord).slice(-ROLL_HISTORY_LIMIT) : [],

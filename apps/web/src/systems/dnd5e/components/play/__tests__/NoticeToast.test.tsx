@@ -5,8 +5,9 @@ import { useCharacterStore } from '../../../stores/characterStore'
 import { usePlayStore } from '../../../stores/playStore'
 import type { SheetSnapshot } from '@rpg/rules/systems/dnd5e/types/playState'
 import { loadPlayState, savePlayState } from '../../../utils/playStorage'
-import { createPlayState, grantTempHp, stabilize, startConcentration } from '@rpg/rules/systems/dnd5e/utils/playState'
-import { openKrusk, resetPlay } from './openPlay'
+import { createPlayState, grantTempHp, performAction, stabilize, startConcentration } from '@rpg/rules/systems/dnd5e/utils/playState'
+import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
+import { openDraft, openKrusk, resetPlay } from './openPlay'
 
 beforeEach(resetPlay)
 afterEach(() => {
@@ -106,6 +107,36 @@ describe('desfazer e avisos', () => {
     damage('5')
     expect(usePlayStore.getState().state?.lifeState).toBe('dying')
     expect(screen.queryByRole('button', { name: /Usar Resistência Implacável/ })).toBeNull()
+  })
+
+  // Fúria Implacável (pág. 49): quem passa no TR não caiu, então a fúria continua.
+  it('bárbaro 11 cai a 0 PV em fúria: a CD, o que rolar e o "Passei", que volta a 1 PV ainda em fúria', () => {
+    openDraft({ ...structuredClone(COMPLETE_DRAFT), level: 11 })
+    usePlayStore.getState().run((st, sh) => performAction(st, sh, 'rage-enter', { now: 1 }))
+    render(<PlayScreen />)
+    damage(screen.getByTestId('hp-current').textContent ?? '')
+    const toast = screen.getByRole('status')
+    expect(toast).toHaveTextContent('Fúria Implacável: você caiu a 0 PV em fúria. Faça um teste de resistência de Constituição CD 10')
+    // CON 14 (+2) e a proficiência do bárbaro 11 (+4) no TR de Constituição.
+    expect(toast).toHaveTextContent('Role 1d20 + 6: precisa de 10 ou mais.')
+    fireEvent.click(within(toast).getByRole('button', { name: 'Ver o que rolar' }))
+    expect(screen.getByRole('dialog')).toHaveTextContent('Fúria Implacável — TR de Constituição')
+    expect(screen.getByRole('dialog')).toHaveTextContent('CD 10')
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar' }))
+
+    const pass = within(screen.getByRole('status')).getByRole('button', { name: 'Passei: fico com 1 PV' })
+    pass.focus()
+    fireEvent.click(pass)
+    const st = usePlayStore.getState().state!
+    expect(st.lifeState).toBe('conscious')
+    expect(st.activeEffects.map(a => a.id)).toEqual(['rage'])
+    expect(st.restCounters).toEqual({ 'relentless-rage': 1 })
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('1')
+    // O botão some com a ação: o foco vai ao "Desfazer" do aviso novo, que desfaz tudo de uma vez.
+    expect(within(screen.getByRole('status')).getByRole('button', { name: '↶ Desfazer' })).toHaveFocus()
+    // A próxima queda pede CD 15.
+    damage('1')
+    expect(screen.getByRole('status')).toHaveTextContent('Constituição CD 15')
   })
 
   it('dano com concentração mostra a CD e o que rolar, e "Falhei: encerrar" encerra', () => {

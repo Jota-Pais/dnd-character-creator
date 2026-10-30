@@ -402,9 +402,25 @@ export type ToggleDeclaration = {
 }
 
 /**
+ * Um teste de resistência que, com o efeito ligado, deixa ficar com 1 PV em vez de cair a 0 sem
+ * morrer (a Fúria Implacável, p. 49: Constituição CD 10). A CD sobe `dcStep` a cada uso depois do
+ * primeiro, contado em `PlayState.restCounters[counter]`, e volta à de partida no descanso
+ * (`resetsOn`: 'short' é o curto ou o longo, como a recarga dos recursos).
+ */
+export type ZeroHpSave = {
+  counter: string
+  ability: AbilityScore
+  dc: number
+  dcStep: number
+  resetsOn: 'short' | 'long'
+  page: number
+}
+
+/**
  * O que outra característica acrescenta a um efeito ligado (`toggle`), sem repetir a declaração
- * dele: os totens do Guerreiro Totêmico, a Fúria Inconsciente, o Frenesi (`options`) e a Fúria
- * Persistente, que tira o fim prematuro (`suppressEarlyEnd`).
+ * dele: os totens do Guerreiro Totêmico, a Fúria Inconsciente, o Frenesi (`options`), a Fúria
+ * Persistente, que tira o fim prematuro (`suppressEarlyEnd`), e a Fúria Implacável, o teste para
+ * ficar com 1 PV (`zeroHpSave`).
  */
 export type ToggleModifier = {
   toggle: string
@@ -412,6 +428,7 @@ export type ToggleModifier = {
   benefits?: ToggleBenefits
   options?: ToggleOption[]
   suppressEarlyEnd?: true
+  zeroHpSave?: ZeroHpSave
 }
 
 export type FeatureEffects = {

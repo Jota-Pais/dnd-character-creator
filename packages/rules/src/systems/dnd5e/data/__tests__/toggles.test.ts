@@ -92,6 +92,19 @@ describe('efeitos ligados nos dados', () => {
       .toMatchObject({ id: 'frenzy', onEnd: { exhaustion: 1 } })
   })
 
+  // "Teste de resistência de Constituição CD 10 [...] a CD aumenta em 5. Assim que você terminar um
+  // descanso curto ou longo a CD volta para 10" (linhas 3733-3741).
+  it('a Fúria Implacável modifica a Fúria com o teste: CON, CD 10, +5 a cada uso, volta no descanso curto', () => {
+    const relentless = FEATURES.find(h => h.where === 'classe barbarian' && h.name === 'Fúria Implacável')
+    expect(relentless?.effects.toggleModifiers).toEqual([{
+      toggle: 'rage',
+      zeroHpSave: { counter: 'relentless-rage', ability: 'CON', dc: 10, dcStep: 5, resetsOn: 'short', page: 49 },
+    }])
+    // O contador é de quem o declara: dois testes não dividem a mesma contagem.
+    const counters = HOLDERS.flatMap(h => (h.effects.toggleModifiers ?? []).flatMap(m => (m.zeroHpSave ? [m.zeroHpSave.counter] : [])))
+    expect(new Set(counters).size).toBe(counters.length)
+  })
+
   it('os totens modificam a Fúria pela tabela das opções: o Urso resiste a tudo menos psíquico, sem cláusula de armadura', () => {
     const bear = OPTIONS.find(h => h.where === 'opção totem-spirits' && h.name === 'Urso')
     expect(bear?.effects.toggleModifiers).toEqual([{

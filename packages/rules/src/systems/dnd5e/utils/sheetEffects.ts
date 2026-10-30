@@ -294,7 +294,7 @@ const sourced = (source: string, effects: ActiveEffect[] | undefined): SourcedAc
  * Os efeitos que a ficha pode ligar em jogo (`toggle`: a Fúria), das features de classe e subclasse
  * no nível NA classe dona, com o que as outras características acrescentam (`toggleModifiers`, das
  * features e das opções escolhidas em slot de progressão: o Frenesi, a Fúria Inconsciente, a Fúria
- * Persistente, os totens) já fundido. A opção leva o nome do slot ("Totem Espiritual — Urso"): o
+ * Persistente, a Fúria Implacável, os totens) já fundido. A opção leva o nome do slot ("Totem Espiritual — Urso"): o
  * mesmo animal pode estar em duas características.
  *
  * O bloqueio dos benefícios pelo equipamento é avaliado aqui, com a armadura da ficha — o mesmo
@@ -334,6 +334,7 @@ export function getSheetToggles(draft: CharacterDraft): SheetToggle[] {
     if (m.benefits) t.benefits.push(benefitsOf(source, m.benefits))
     t.options.push(...(m.options ?? []).map(o => ({ ...o, source })))
     if (m.suppressEarlyEnd) delete t.earlyEndReminder
+    if (m.zeroHpSave) t.zeroHpSave = { ...m.zeroHpSave, source }
   }
   for (const r of getCastingRestrictions(draft)) {
     const t = r.toggle ? toggles.find(o => o.id === r.toggle) : undefined

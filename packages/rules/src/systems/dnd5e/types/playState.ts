@@ -109,6 +109,12 @@ export type PlayState = {
    * A Nova sessão não os desliga — tempo de jogo não é tempo de relógio.
    */
   activeEffects: ActiveToggle[]
+  /**
+   * Usos desde o último descanso do que fica mais difícil a cada uso, pelo id do contador (a Fúria
+   * Implacável: a CD sobe 5 a cada uso e volta a 10 no descanso curto ou longo, pág. 49). Zero não
+   * entra.
+   */
+  restCounters: Record<string, number>
   /** Inspiração do PHB 2014: tem ou não tem (pág. 127). */
   inspiration: boolean
   /** Anotação livre do jogador. */
@@ -242,6 +248,12 @@ export type PlayNoticeKind =
    * (`damage`) para a tela desfazer e reaplicá-lo com `applyDamageDroppingToOneHp`.
    */
   | 'dropToOneHp'
+  /**
+   * Caiu a 0 PV com um efeito ligado que dá um teste para ficar com 1 PV (a Fúria Implacável): o
+   * aviso traz a CD (`dc`) e o dano (`damage`); quem passa, a tela desfaz e reaplica com
+   * `applyDamageDroppingToOneHp(…, 'save')`.
+   */
+  | 'dropToOneHpSave'
   | 'droppedItems'
   | 'deathSaveSuccess'
   | 'deathSaveFailure'
@@ -254,8 +266,8 @@ export type PlayNoticeKind =
   | 'sheetCorrected'
 
 /**
- * Aviso para a UI. `dc` acompanha o `concentrationCheck`; `damage`, o `dropToOneHp` (o mesmo dano,
- * para reaplicar terminando em 1 PV).
+ * Aviso para a UI. `dc` acompanha o `concentrationCheck` e o `dropToOneHpSave`; `damage`, o
+ * `dropToOneHp` e o `dropToOneHpSave` (o mesmo dano, para reaplicar terminando em 1 PV).
  */
 export type PlayNotice = { kind: PlayNoticeKind; text: string; dc?: number; damage?: DamageInput }
 

@@ -1313,6 +1313,15 @@ describe('sanitizePlayState', () => {
     expect(sanitizePlayState({ activeEffects: 'rage' }, 'c').activeEffects).toEqual([])
   })
 
+  it('os contadores do descanso: sem o campo, {}; ficam só os inteiros positivos', () => {
+    const old: Partial<PlayState> = createPlayState('c', 5)
+    delete old.restCounters
+    expect(sanitizePlayState(old, 'c').restCounters).toEqual({})
+    expect(sanitizePlayState({ restCounters: { 'relentless-rage': 2.7, zero: 0, neg: -1, text: 'x', '': 3 } }, 'c').restCounters)
+      .toEqual({ 'relentless-rage': 2 })
+    expect(sanitizePlayState({ restCounters: [1] }, 'c').restCounters).toEqual({})
+  })
+
   it('concentração limpa e mantida quando consciente', () => {
     const s = sanitizePlayState({ concentration: { label: '  Bênção ', spellId: 5 } }, 'c')
     expect(s.lifeState).toBe('conscious')
@@ -1743,6 +1752,77 @@ describe('efeitos ligados: a Fúria pela ação que a liga', () => {
         expect(r.state).toBe(frenzy)
         expect(r.notices).toEqual([{ kind: 'refused', text: reason }])
       }
+    })
+  })
+
+  // "Se você cair para 0 pontos de vida enquanto estiver em fúria e não morrer, você pode realizar
+  // um teste de resistência de Constituição CD 10. [...] Cada vez que você utilizar essa
+  // característica após a primeira, a CD aumenta em 5" (Fúria Implacável, pág. 49).
+  describe('Fúria Implacável (bárbaro 11)', () => {
+    const OFFER = (dc: number) => `Fúria Implacável: você caiu a 0 PV em fúria. Faça um teste de resistência de Constituição CD ${dc}: se passar, fica com 1 PV em vez disso e continua em fúria (pág. 49).`
+    const RESET = 'Fúria Implacável: a CD volta a 10 (pág. 49).'
+    const offerOf = (r: { notices: { kind: string; dc?: number }[] }) => r.notices.find(n => n.kind === 'dropToOneHpSave')
+
+    it('cair a 0 PV em fúria oferece o teste, com a CD e o dano, ao lado da Resistência Implacável', () => {
+      const sh = barbarian(11)
+      const r = applyDamage(enter(state(), sh).state, sh, { amount: sh.maxHp })
+      // A queda acontece: a fúria acaba, como em quem não tem a característica.
+      expect(r.state.lifeState).toBe('dying')
+      expect(r.state.activeEffects).toEqual([])
+      expect(offerOf(r)).toEqual({ kind: 'dropToOneHpSave', text: OFFER(10), dc: 10, damage: { amount: sh.maxHp } })
+      // O meio-orc também tem a Resistência Implacável: as duas, à escolha.
+      expect(r.notices.some(n => n.kind === 'dropToOneHp')).toBe(true)
+      // De Placas, a fúria liga sem os benefícios, e a Fúria Implacável não é um deles.
+      const plated = barbarian(11, plate)
+      expect(offerOf(applyDamage(enter(state(), plated).state, plated, { amount: plated.maxHp }))?.dc).toBe(10)
+    })
+
+    it('quem passa fica com 1 PV e em fúria, sem a exaustão do Frenesi; a CD sobe 5 a cada uso', () => {
+      const sh = barbarian(11, {}, 'berserker')
+      const raging = enter(state(), sh, 'frenzy').state
+      const r = applyDamageDroppingToOneHp(raging, sh, { amount: sh.maxHp }, 'save')
+      expect(getCurrentHp(r.state, sh)).toBe(1)
+      expect(r.state.lifeState).toBe('conscious')
+      expect(r.state.conditions).toEqual([])
+      expect(r.state.activeEffects).toEqual([{ id: 'rage', startedAt: 5, option: 'frenzy' }])
+      expect(r.state.exhaustionLevel).toBe(0)
+      expect(r.state.restCounters).toEqual({ 'relentless-rage': 1 })
+      // A Resistência Implacável fica com o uso dela.
+      expect(r.state.resourcesSpent).toEqual({ rage: 1 })
+      expect(r.notices).toEqual([{
+        kind: 'info',
+        text: 'Fúria Implacável: passou no teste de resistência de Constituição (CD 10) e ficou com 1 PV em vez de cair a 0; continua em fúria. A próxima CD é 15 (pág. 49).',
+      }])
+      expect(offerOf(applyDamage(r.state, sh, { amount: 1 }))?.dc).toBe(15)
+      const twice = applyDamageDroppingToOneHp(r.state, sh, { amount: 1 }, 'save')
+      expect(twice.state.restCounters).toEqual({ 'relentless-rage': 2 })
+      expect(offerOf(applyDamage(twice.state, sh, { amount: 1 }))?.dc).toBe(20)
+    })
+
+    it('o descanso curto ou longo volta a CD a 10, com aviso; sem uso, sem aviso', () => {
+      const sh = barbarian(11)
+      const used = { ...state(), restCounters: { 'relentless-rage': 2 } }
+      for (const r of [completeShortRest(used, sh), completeLongRest(used, sh)]) {
+        expect(r.state.restCounters).toEqual({})
+        expect(r.notices.map(n => n.text)).toContain(RESET)
+        expect(offerOf(applyDamage(enter(r.state, sh).state, sh, { amount: sh.maxHp }))?.dc).toBe(10)
+      }
+      expect(completeShortRest(state(), sh).notices.map(n => n.text)).not.toContain(RESET)
+    })
+
+    it('fora da fúria, antes do 11º nível ou na morte instantânea, nada; o "passei" fora da fúria aplica o dano e avisa', () => {
+      const sh = barbarian(11)
+      expect(offerOf(applyDamage(state(), sh, { amount: sh.maxHp }))).toBeUndefined()
+      const sh10 = barbarian(10)
+      expect(offerOf(applyDamage(enter(state(), sh10).state, sh10, { amount: sh10.maxHp }))).toBeUndefined()
+      expect(offerOf(applyDamage(enter(state(), sh).state, sh, { amount: sh.maxHp * 2 }))).toBeUndefined()
+      const calm = applyDamageDroppingToOneHp(state(), sh, { amount: sh.maxHp }, 'save')
+      expect(calm.state.lifeState).toBe('dying')
+      expect(calm.state.restCounters).toEqual({})
+      expect(calm.notices).toContainEqual({
+        kind: 'warning',
+        text: 'Fúria Implacável não se aplica a este dano: só quando ele deixaria você a 0 PV sem matar na hora, e em fúria. O dano foi aplicado normalmente.',
+      })
     })
   })
 

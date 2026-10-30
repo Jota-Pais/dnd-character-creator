@@ -53,7 +53,7 @@ export type RollGuideEntry = {
   /**
    * `check:STR` | `save:DEX` | `skill:stealth` | `initiative` | `attack:<key>` | `damage:<key>` |
    * `damage:<key>:versatile` | `spell-attack:<classId>` | `spell-attack:feat:<featId>` |
-   * `death-save` | `concentration` | `hit-die:<faces>`.
+   * `death-save` | `concentration` | `zero-hp-save` | `hit-die:<faces>`.
    */
   id: string
   kind: GuideKind
@@ -1007,6 +1007,20 @@ export function getConcentrationGuide(draft: CharacterDraft, state: PlayState, d
     notes: [...getCastingRestrictions(draft, session).map(formatCastingRestriction), ...(input.notes ?? [])],
     dc: Math.max(10, Math.floor(amount / 2)),
   }, state.inspiration)
+}
+
+/**
+ * A receita do teste para ficar com 1 PV (a Fúria Implacável, pág. 49): o TR do atributo dele, o
+ * mesmo da aba Testes, com a CD do aviso e o nome de quem o dá. O id é próprio, como o da
+ * concentração: a folha aberta não o troca pela entrada do TR sem a CD.
+ */
+export function getZeroHpSaveGuide(guide: RollGuide, save: { ability: AbilityScore; source: string }, dc: number): RollGuideEntry {
+  return {
+    ...guide.saves[save.ability],
+    id: 'zero-hp-save',
+    label: `${save.source} — TR de ${ABILITY_LABELS[save.ability].long}`,
+    dc,
+  }
 }
 
 /** Acha uma entrada pelo `id` em qualquer parte do guia (a UI guarda só o id da jogada aberta). */

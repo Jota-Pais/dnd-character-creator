@@ -2,8 +2,8 @@ import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type
 import { flushSync } from 'react-dom'
 import { usePlayStore } from '../../stores/playStore'
 import type { DamageInput, PlayNotice, PlayNoticeKind } from '@rpg/rules/systems/dnd5e/types/playState'
-import { applyDamageDroppingToOneHp, endConcentration, standUp } from '@rpg/rules/systems/dnd5e/utils/playState'
-import { describeRollGuide, getConcentrationGuide, type RollGuideEntry } from '@rpg/rules/systems/dnd5e/utils/rollGuide'
+import { applyDamageDroppingToOneHp, endConcentration, standUp, type DropToOneHpBy } from '@rpg/rules/systems/dnd5e/utils/playState'
+import { describeRollGuide, getConcentrationGuide, getZeroHpSaveGuide, type RollGuideEntry } from '@rpg/rules/systems/dnd5e/utils/rollGuide'
 import type { PlayView } from './usePlayView'
 
 /** Destaque por tipo: recusa e regra em aberto chamam atenção; o resto é informação. */
@@ -14,13 +14,14 @@ const KIND_STYLE: Partial<Record<PlayNoticeKind, { prefix: string; className: st
   fellUnconscious: { prefix: '', className: 'border-red-900 bg-red-950/20 text-red-200' },
   concentrationCheck: { prefix: '', className: 'border-violet-800 bg-violet-950/40 text-violet-100' },
   dropToOneHp: { prefix: '', className: 'border-emerald-800 bg-emerald-950/30 text-emerald-100' },
+  dropToOneHpSave: { prefix: '', className: 'border-emerald-800 bg-emerald-950/30 text-emerald-100' },
 }
 const DEFAULT_STYLE = { prefix: '', className: 'border-parchment-800 bg-surface-base text-parchment-200' }
 
 const NO_NOTICES: PlayNotice[] = []
 
 /** Avisos que pedem uma escolha agora vêm primeiro: com a lista rolando, o botão nunca fica escondido. */
-const ACTION_KINDS: PlayNoticeKind[] = ['dropToOneHp', 'concentrationCheck']
+const ACTION_KINDS: PlayNoticeKind[] = ['dropToOneHp', 'dropToOneHpSave', 'concentrationCheck']
 const sortByAction = (notices: PlayNotice[]) => [
   ...notices.filter(n => ACTION_KINDS.includes(n.kind)),
   ...notices.filter(n => !ACTION_KINDS.includes(n.kind)),
@@ -33,7 +34,8 @@ export type NoticeToastHandle = { focus: () => boolean }
  * Os avisos da última ação do modo de jogo (ou da abertura, se a ficha mudou), presos ao pé da
  * tela, com o "Desfazer" quando a ação mudou algo; a correção da ficha fica entre eles até o OK.
  * O aviso de concentração traz a CD e a receita do TR de Constituição (`getConcentrationGuide`),
- * com atalho para a folha e para encerrar.
+ * com atalho para a folha e para encerrar; o da Fúria Implacável, a CD e a receita do teste
+ * (`getZeroHpSaveGuide`), com o "Passei", que reaplica o dano terminando em 1 PV.
  */
 export function NoticeToast({ view, onOpenRecipe, onHeightChange, onFocusAway, ref }: {
   view: PlayView
@@ -167,10 +169,16 @@ function NoticeLine({ notice, view, onOpenRecipe, canUndo, act }: {
   const style = KIND_STYLE[notice.kind] ?? DEFAULT_STYLE
   // Resistência Implacável: desfaz o dano que derrubou e o reaplica terminando em 1 PV.
   const dropDamage = notice.kind === 'dropToOneHp' && canUndo ? notice.damage : undefined
-  function dropToOneHp(damage: DamageInput) {
+  function dropToOneHp(damage: DamageInput, by: DropToOneHpBy = 'trait') {
     undo()
-    view.run((st, sh) => applyDamageDroppingToOneHp(st, sh, damage))
+    view.run((st, sh) => applyDamageDroppingToOneHp(st, sh, damage, by))
   }
+  // Fúria Implacável: a receita do TR com a CD do aviso; quem passou, desfaz e reaplica em 1 PV,
+  // ainda em fúria. A ficha diz o atributo e quem dá o teste.
+  const zeroHpSave = view.sheet.toggles.find(t => t.zeroHpSave)?.zeroHpSave
+  const saveOffer = notice.kind === 'dropToOneHpSave' && canUndo && notice.damage && notice.dc !== undefined && zeroHpSave
+    ? { damage: notice.damage, entry: getZeroHpSaveGuide(view.guide, zeroHpSave, notice.dc) }
+    : null
   // A CD vem do aviso (o dano já com resistência, contando o absorvido); o guia dá o resto da receita.
   const concentration = notice.kind === 'concentrationCheck' && notice.dc !== undefined && view.state.concentration
     ? { ...getConcentrationGuide(view.draft, view.state, 0), dc: notice.dc }
@@ -202,6 +210,27 @@ function NoticeLine({ notice, view, onOpenRecipe, canUndo, act }: {
             Usar {view.sheet.dropToOneHp?.source ?? 'Resistência Implacável'} (fica com 1 PV)
           </button>
         </div>
+      )}
+      {saveOffer && (
+        <>
+          <p className="mt-1 text-xs">
+            Role {describeRollGuide(saveOffer.entry)}: precisa de {saveOffer.entry.dc} ou mais.
+          </p>
+          <div className="mt-1.5 flex flex-wrap gap-2">
+            <button
+              onClick={() => onOpenRecipe(saveOffer.entry)}
+              className="min-h-10 rounded-lg border border-emerald-700 px-3 text-xs text-emerald-200 hover:border-emerald-400"
+            >
+              Ver o que rolar
+            </button>
+            <button
+              onClick={() => act(() => dropToOneHp(saveOffer.damage, 'save'))}
+              className="min-h-10 rounded-lg border border-emerald-700 px-3 text-xs text-emerald-200 hover:border-emerald-400"
+            >
+              Passei: fico com 1 PV
+            </button>
+          </div>
+        </>
       )}
       {concentration && (
         <>

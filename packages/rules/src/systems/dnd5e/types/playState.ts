@@ -1,5 +1,6 @@
 import type { RollRecord } from '../../../core/dice'
 import type { SheetResource } from '../utils/classResourceUtils'
+import type { SheetDamageDefense } from '../utils/sheetEffects'
 import type { ConditionId, ExhaustionLevel } from './condition'
 import type { DamageTypeId } from './damage'
 import type { AbilityScore } from './race'
@@ -161,23 +162,37 @@ export type PlaySheet = {
    * pág. 41): o recurso que ele gasta e o nome (`getDropToOneHp`).
    */
   dropToOneHp?: { resourceId: string; source: string }
+  /**
+   * As defesas contra dano da ficha (`getDamageDefenses`): resistências, imunidades, redução fixa,
+   * com a condição de equipamento já avaliada. O painel de PV as aplica ao dano do tipo informado.
+   */
+  defenses: SheetDamageDefense[]
 }
+
+/** Uma parcela de um dano de vários tipos (o golpe com Auxílio Divino, a coluna de chamas). */
+export type DamagePart = { amount: number; damageType?: DamageTypeId }
 
 /** Um evento de dano, como a tela o informa (`applyDamage`). */
 export type DamageInput = {
-  /** Dano total do evento, já com os modificadores (o app não soma parcelas aqui). */
+  /** Dano total do evento, já com os modificadores (com `parts`, a soma delas). */
   amount: number
-  /** O personagem tem resistência a este dano (metade, arredondada para baixo). */
+  /** O jogador marcou resistência a este dano (metade, arredondada para baixo), em toda parcela. */
   resisted?: boolean
   /** Dano de acerto crítico: a 0 PV conta 2 fracassos. */
   critical?: boolean
   /** O atacante escolheu nocautear (só ataque corpo-a-corpo, pág. 200). */
   knockout?: boolean
   /**
-   * O tipo do dano, quando a tela o pergunta: só para as imunidades das condições (Petrificado:
-   * veneno vira 0). Sem ele, nenhuma imunidade se aplica.
+   * O tipo do dano, quando a tela o pergunta: as defesas da ficha e das condições a ele se aplicam
+   * sozinhas. Sem tipo, só a resistência a todo dano (Petrificado) e a marcada.
    */
   damageType?: DamageTypeId
+  /** O dano separado por tipo. Com parcelas, o evento são elas, e `damageType` fica sem uso. */
+  parts?: DamagePart[]
+  /** As situações das defesas condicionais que o jogador confirmou ("de magia"): essas valem. */
+  conditionalDefenses?: string[]
+  /** As exceções que o jogador marcou ("arma mágica ou de prata"): as defesas delas não valem. */
+  exceptions?: string[]
 }
 
 export type PlayNoticeKind =

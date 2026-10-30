@@ -1,18 +1,19 @@
 import type { RollRecord } from '../../../core/dice'
 import type { ConditionId, ExhaustionLevel } from '../types/condition'
+import type { DamageTypeId } from '../types/damage'
 import {
   CONDITION_NOTE_MAX_LENGTH, HIT_DIE_SIZES, PLAY_STATE_VERSION, ROLL_HISTORY_LIMIT,
-  type Concentration, type DamageInput, type DeathSaveCount, type LifeState, type PlayNotice, type PlayNoticeKind,
+  type Concentration, type DamageInput, type DamagePart, type DeathSaveCount, type LifeState, type PlayNotice, type PlayNoticeKind,
   type PlayResult, type PlaySheet, type PlayState, type SheetSnapshot, type SheetSnapshotSpellcasting,
 } from '../types/playState'
 import {
   getActiveConditionEffects, getCondition, getEffectiveConditions, getEffectiveHpMax,
-  applyConditionSpeed, halveSpeedOnGrid, withConditionApplied,
-  type ActiveConditionEffects, type ConditionState,
+  applyConditionSpeed, damageTypeSetHas, halveSpeedOnGrid, withConditionApplied,
+  type ActiveConditionEffects, type ConditionState, type SheetDamageDefense,
 } from './sheetEffects'
 import { formatMeters } from './abilityScoreUtils'
-import { getDamageLabel } from './damageTypes'
-import { countLabel } from './textUtils'
+import { getDamageLabel, getDamageTypeName } from './damageTypes'
+import { countLabel, joinPt } from './textUtils'
 
 /**
  * Operações do estado de jogo: funções puras que recebem (estado, PlaySheet, …) e devolvem
@@ -314,13 +315,131 @@ function availableDropToOneHp(state: PlayState, sheet: PlaySheet): PlaySheet['dr
 }
 
 /**
- * Um evento de dano (`regras-dano-e-morte.md`, "Ordem de aplicação de um dano recebido"):
- * imunidade de condição ao tipo informado (Petrificado: veneno → 0); piso 0; resistência informada
- * ou do Petrificado (uma só, metade para baixo); PV temporários
- * absorvem primeiro; consciente → 0 PV com morte instantânea pelo máximo EFETIVO (assumido C),
- * nocaute → estável; já a 0 PV → +1 fracasso (2 se crítico), mesmo se os temporários absorvem
- * tudo (decisão 5), e o estável volta a morrer (assumido D). Concentração: aviso de TR de CON com
- * CD max(10, ⌊total/2⌋), contando o absorvido (assumido E); 0 PV e morte a encerram (assumido F).
+ * As defesas contra dano em vigor: as da ficha (`PlaySheet.defenses`) e as das condições, no mesmo
+ * formato — o Petrificado dá resistência a todo dano e imunidade a veneno (pág. 293). O pipeline de
+ * dano e a aba Estado leem daqui.
+ */
+export function getPlayDamageDefenses(state: PlayState, sheet: PlaySheet): SheetDamageDefense[] {
+  const effects = getPlayConditionEffects(state)
+  return [
+    ...sheet.defenses,
+    ...effects.resistAllDamage.sources.map((s): SheetDamageDefense => ({ source: s.label, kind: 'resistance', types: 'all' })),
+    ...effects.damageImmunities.flatMap(i => i.sources.map((s): SheetDamageDefense =>
+      ({ source: s.label, kind: 'immunity', types: [i.damageType] }))),
+  ]
+}
+
+/** A defesa vale neste dano: não impedida pelo equipamento, com a situação confirmada e sem a exceção marcada. */
+function defenseApplies(d: SheetDamageDefense, input: DamageInput): boolean {
+  if (d.blockedBy) return false
+  if (d.condition && !(input.conditionalDefenses ?? []).includes(d.condition)) return false
+  return !(d.exceptWhen && (input.exceptions ?? []).includes(d.exceptWhen))
+}
+
+/**
+ * A defesa alcança a parcela? Com tipo, pelo conjunto dela; sem tipo, só a de todo dano — o app não
+ * chuta o tipo (o Urso, "exceto psíquico", precisa saber qual é).
+ */
+const defenseCovers = (d: SheetDamageDefense, type: DamageTypeId | undefined) =>
+  type ? damageTypeSetHas(d.types, type) : d.types === 'all'
+
+const sourcesOf = (defenses: SheetDamageDefense[]) => [...new Set(defenses.map(d => d.source))].join(', ')
+
+/**
+ * As parcelas do evento, já somadas por tipo e com piso 0 (decisão 3): a resistência arredonda por
+ * tipo, somando antes as parcelas do mesmo tipo (decisão de 2026-10-30, item 12). Sem `parts`, o
+ * evento é uma parcela só, com o tipo informado ou sem tipo.
+ */
+function groupDamageParts(input: DamageInput): DamagePart[] {
+  const parts = input.parts?.length ? input.parts : [{ amount: input.amount, damageType: input.damageType }]
+  const groups: DamagePart[] = []
+  for (const part of parts) {
+    const amount = Math.max(0, Math.floor(part.amount))
+    const group = groups.find(g => g.damageType === part.damageType)
+    if (group) group.amount += amount
+    else groups.push(part.damageType ? { amount, damageType: part.damageType } : { amount })
+  }
+  return groups
+}
+
+/**
+ * O dano depois das defesas (p. 199, decisões de 2026-10-30), parcela por parcela, com um aviso
+ * por passo que mudou algo:
+ * 1. redução fixa (Maestria em Armadura Pesada), uma vez por evento, sobre as parcelas do tipo que
+ *    ela alcança;
+ * 2. imunidade, da ficha ou de condição: a parcela vira 0;
+ * 3. resistência — a da ficha, a de condição, a marcada no painel e as condicionais confirmadas
+ *    contam como uma só: metade, para baixo;
+ * 4. vulnerabilidade, só sem resistência ao mesmo tipo (decisão 10): o dobro.
+ * Depois soma as parcelas.
+ *
+ * O livro não diz de qual parcela sai a redução que alcança mais de uma (`regras-dano-e-morte.md`,
+ * Ponto em aberto 28). Sem outra defesa nelas, a ordem não muda o total, e ela sai na ordem em que
+ * as parcelas vieram; com outra defesa (a metade arredonda por parcela), a ordem muda o resultado: o
+ * app não a aplica e avisa (`unresolvedRule`), sem chutar.
+ */
+function applyDamageDefenses(input: DamageInput, defenses: SheetDamageDefense[], notices: PlayNotice[]): number {
+  const active = defenses.filter(d => defenseApplies(d, input))
+  const groups = groupDamageParts(input)
+  const changesLater = (type: DamageTypeId | undefined) => !!input.resisted
+    || active.some(d => d.kind !== 'reduction' && d.kind !== 'conditionImmunity' && defenseCovers(d, type))
+  const reductions = active.filter(d => d.kind === 'reduction').filter(d => {
+    const reached = groups.filter(g => g.amount > 0 && defenseCovers(d, g.damageType))
+    if (reached.length < 2 || !reached.some(g => changesLater(g.damageType))) return true
+    const names = joinPt(reached.map(g => (g.damageType ? getDamageTypeName(g.damageType) : 'sem tipo')))
+    notices.push(note('unresolvedRule', `${d.source}: a redução de ${d.amount ?? 0} alcança mais de uma parcela (${names}), e o livro não diz de qual ela sai; com as outras defesas, isso muda o resultado. O app não a aplicou: combine com o Mestre e, se for o caso, desfaça e digite as parcelas já com a redução.`))
+    return false
+  })
+  const reductionLeft = new Map(reductions.map(d => [d, d.amount ?? 0]))
+  const results: number[] = []
+  for (const { amount: raw, damageType } of groups) {
+    const typeName = damageType ? getDamageTypeName(damageType) : undefined
+    let amount = raw
+    for (const [d, left] of reductionLeft) {
+      if (left <= 0 || amount <= 0 || !defenseCovers(d, damageType)) continue
+      const taken = Math.min(left, amount)
+      reductionLeft.set(d, left - taken)
+      notices.push(note('resisted', `Redução de ${taken}${typeName ? ` em ${typeName}` : ''} (${d.source}): ${amount} → ${amount - taken}.`))
+      amount -= taken
+    }
+
+    const immune = damageType ? active.filter(d => d.kind === 'immunity' && defenseCovers(d, damageType)) : []
+    if (damageType && immune.length > 0) {
+      notices.push(note('resisted', `Imune a ${getDamageLabel(damageType)} (${sourcesOf(immune)}): o dano vira 0.`))
+      results.push(0)
+      continue
+    }
+
+    const resisted = active.filter(d => d.kind === 'resistance' && defenseCovers(d, damageType))
+    const resistedBy = [...(input.resisted ? ['você marcou'] : []), ...new Set(resisted.map(d => d.source))]
+    const vulnerable = damageType ? active.filter(d => d.kind === 'vulnerability' && defenseCovers(d, damageType)) : []
+    let after = amount
+    if (resistedBy.length > 0) {
+      after = Math.floor(amount / 2)
+      notices.push(note('resisted', `Resistência${typeName ? ` a ${typeName}` : ''} (${resistedBy.join(', ')}): ${amount} → ${after}.`))
+      if (vulnerable.length > 0) {
+        notices.push(note('info', `Vulnerabilidade a ${typeName} (${sourcesOf(vulnerable)}) junto da resistência: vale só a resistência.`))
+      }
+    } else if (vulnerable.length > 0) {
+      after = amount * 2
+      notices.push(note('warning', `Vulnerabilidade a ${typeName} (${sourcesOf(vulnerable)}): ${amount} → ${after}.`))
+    }
+    results.push(after)
+  }
+  const total = results.reduce((sum, n) => sum + n, 0)
+  if (results.length > 1) notices.push(note('info', `Dano somado: ${results.join(' + ')} = ${total}.`))
+  return total
+}
+
+/**
+ * Um evento de dano (`regras-dano-e-morte.md`, "Ordem de aplicação de um dano recebido"): as
+ * defesas da ficha e das condições, parcela por parcela (`applyDamageDefenses`: redução, imunidade,
+ * resistência, vulnerabilidade; sem tipo informado, só a resistência a todo dano e a marcada); PV
+ * temporários absorvem primeiro; consciente → 0 PV com morte instantânea pelo máximo EFETIVO
+ * (assumido C), nocaute → estável; já a 0 PV → +1 fracasso (2 se crítico), mesmo se os temporários
+ * absorvem tudo (decisão 5), e o estável volta a morrer (assumido D). Concentração: aviso de TR de
+ * CON com CD max(10, ⌊total/2⌋), contando o absorvido (assumido E); 0 PV e morte a encerram
+ * (assumido F).
  *
  * Quem cai a 0 PV sem morrer e tem a Resistência Implacável com uso recebe também o aviso
  * `dropToOneHp`, com o dano: a tela desfaz e reaplica por `applyDamageDroppingToOneHp`.
@@ -341,29 +460,12 @@ export function applyDamageDroppingToOneHp(state0: PlayState, sheet: PlaySheet, 
 }
 
 function damagePipeline(state0: PlayState, sheet: PlaySheet, input: DamageInput, dropToOneHp: boolean): PlayResult {
-  if (!Number.isFinite(input.amount)) return refuse(state0, 'Valor de dano inválido.')
+  const amounts = input.parts?.length ? input.parts.map(p => p.amount) : [input.amount]
+  if (!amounts.every(Number.isFinite)) return refuse(state0, 'Valor de dano inválido.')
   if (state0.lifeState === 'dead') return refuse(state0, 'O personagem está morto: o dano não tem efeito.')
   const state = reconcilePlayState(state0, sheet)
   const notices: PlayNotice[] = []
-  const effects = getPlayConditionEffects(state)
-
-  // Imunidade de condição ao tipo informado (Petrificado: veneno, decisão de 2026-10-25): o dano
-  // vira 0 e, como dano 0, não muda nada (abaixo).
-  const immunity = input.damageType
-    ? effects.damageImmunities.find(i => i.damageType === input.damageType)
-    : undefined
-  if (immunity) {
-    notices.push(note('resisted', `Imune a ${getDamageLabel(immunity.damageType)} (${immunity.sources.map(s => s.label).join(', ')}): o dano vira 0.`))
-  }
-
-  // Piso 0 (decisão 3) e resistência: várias contam como uma (pág. 199).
-  const raw = immunity ? 0 : Math.max(0, Math.floor(input.amount))
-  const resistedBy = immunity ? [] : [
-    ...(input.resisted ? ['resistência'] : []),
-    ...effects.resistAllDamage.sources.map(s => s.label),
-  ]
-  const total = resistedBy.length > 0 ? Math.floor(raw / 2) : raw
-  if (resistedBy.length > 0) notices.push(note('resisted', `Resistência (${resistedBy.join(', ')}): ${raw} → ${total}.`))
+  const total = applyDamageDefenses(input, getPlayDamageDefenses(state, sheet), notices)
 
   // Dano 0 não é dano (decisão de 2026-10-25, Ponto em aberto 19): sem fracasso a 0 PV e sem TR de
   // concentração.

@@ -8,7 +8,7 @@ import { buildPlaySheet } from '../playSheet'
 import {
   addCondition, adjustMaxHp, applyDamage, applyDamageDroppingToOneHp, applyHealing, clearRollHistory, clearTempHp, completeLongRest, completeShortRest,
   createPlayState, describeHpMaxImmunity, endConcentration, getBaseMaxHp, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable,
-  getLongRestHitDiceRecoverable, getPactSlotsAvailable, getPlayConditionEffects, getPlayConditionState, getPlaySpeed,
+  getLongRestHitDiceRecoverable, getPactSlotsAvailable, getPlayConditionEffects, getPlayConditionState, getPlayDamageDefenses, getPlaySpeed,
   getResourceAvailable, getShortRestSlotRecovery, getSpellSlotsAvailable, grantTempHp, previewLongRest, previewShortRest, reconcileLoadedPlayState,
   reconcilePlayState,
   recordDeathSave, recordRoll, recoverPactSlot, regainHpWhileStable, recoverResource, recoverSpellSlot, removeCondition,
@@ -61,6 +61,7 @@ function sheet(overrides: Partial<PlaySheet> = {}): PlaySheet {
       { ...resource('lay-on-hands', 20, 'long'), unit: 'hp' },
     ],
     featIds: [],
+    defenses: [],
     ...overrides,
   }
 }
@@ -1342,5 +1343,169 @@ describe('sanitizePlayState', () => {
     const s = completeLongRest(applyDamage(state({ tempHp: 2 }), S, { amount: 9 }).state, S, { now: 5 }).state
     const withRoll = recordRoll(s, roll('2d6+1', { roller: sequenceRoller([2, 5]), id: 'x', at: 3 })).state
     expect(sanitizePlayState(JSON.parse(JSON.stringify(withRoll)), withRoll.characterId)).toEqual(withRoll)
+  })
+})
+
+// ── Tipos de dano e defesas (p. 199; decisões de 2026-10-30) ─────────────────
+
+describe('applyDamage — o tipo do dano e as defesas da ficha', () => {
+  const SCORES = { STR: 15, DEX: 10, CON: 14, INT: 10, WIS: 10, CHA: 10 }
+  /** A ficha de jogo de um personagem de verdade (guerreiro 5 com CON 14, salvo o que vier). */
+  const sheetOf = (overrides: Partial<CharacterDraft>) => buildPlaySheet({
+    ...structuredClone(EMPTY_DRAFT), level: 5, class: 'fighter', race: 'human', abilityScores: SCORES, ...overrides,
+  })
+  const sub = (classId: string, level: number, subclass: string) =>
+    ({ class: classId, level, classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), subclass } })
+  /** Quanto o evento tirou do PV. */
+  const lost = (sh: PlaySheet, input: Parameters<typeof applyDamage>[2], s = state()) =>
+    getCurrentHp(s, sh) - getCurrentHp(applyDamage(s, sh, input).state, sh)
+  const texts = (r: { notices: { text: string }[] }) => r.notices.map(n => n.text)
+
+  const TIEFLING = sheetOf({ race: 'tiefling' })
+
+  it('tiefling, 13 de fogo: 6, com o aviso da origem', () => {
+    const r = applyDamage(state(), TIEFLING, { amount: 13, damageType: 'fire' })
+    expect(getCurrentHp(state(), TIEFLING) - getCurrentHp(r.state, TIEFLING)).toBe(6)
+    expect(texts(r)).toEqual(['Resistência a fogo (Resistência Infernal): 13 → 6.'])
+  })
+
+  it('sem tipo informado, nada é automático; outro tipo, também', () => {
+    expect(lost(TIEFLING, { amount: 13 })).toBe(13)
+    expect(lost(TIEFLING, { amount: 13, damageType: 'cold' })).toBe(13)
+  })
+
+  it('anão, 9 de veneno: 4', () => {
+    expect(lost(sheetOf({ race: 'dwarf', subrace: 'hill-dwarf' }), { amount: 9, damageType: 'poison' })).toBe(4)
+  })
+
+  it('monge 10, veneno: 0, sem TR de concentração', () => {
+    const monk = sheetOf({ class: 'monk', level: 10 })
+    const s = state({ concentration: { label: 'Bênção', startedAt: 1 } })
+    const r = applyDamage(s, monk, { amount: 12, damageType: 'poison' })
+    expect(r.state).toBe(s)
+    expect(texts(r)).toEqual([
+      'Imune a dano de veneno (Pureza Corporal): o dano vira 0.',
+      'Dano total 0: não conta como dano. Nada foi alterado.',
+    ])
+    expect(kinds(r)).not.toContain('concentrationCheck')
+  })
+
+  it('tiefling, 10 cortante + 7 fogo: 13 (a resistência só na parcela de fogo)', () => {
+    const r = applyDamage(state(), TIEFLING, {
+      amount: 17, parts: [{ amount: 10, damageType: 'slashing' }, { amount: 7, damageType: 'fire' }],
+    })
+    expect(getCurrentHp(state(), TIEFLING) - getCurrentHp(r.state, TIEFLING)).toBe(13)
+    expect(texts(r)).toEqual(['Resistência a fogo (Resistência Infernal): 7 → 3.', 'Dano somado: 10 + 3 = 13.'])
+  })
+
+  it('parcelas do mesmo tipo somam antes da metade: 7 + 7 de fogo dão 7, não 6 (item 12)', () => {
+    expect(lost(TIEFLING, { amount: 14, parts: [{ amount: 7, damageType: 'fire' }, { amount: 7, damageType: 'fire' }] })).toBe(7)
+  })
+
+  it('resistência e vulnerabilidade ao mesmo tipo: só a metade (decisão 10); só a vulnerabilidade: o dobro', () => {
+    const vulnerable = { source: 'Maldição', kind: 'vulnerability', types: ['fire'] } as const
+    const both = sheet({ defenses: [...TIEFLING.defenses, { ...vulnerable, types: [...vulnerable.types] }] })
+    const r = applyDamage(state(), both, { amount: 13, damageType: 'fire' })
+    expect(getCurrentHp(state(), both) - getCurrentHp(r.state, both)).toBe(6)
+    expect(texts(r)).toContain('Vulnerabilidade a fogo (Maldição) junto da resistência: vale só a resistência.')
+    expect(lost(sheet({ defenses: [{ ...vulnerable, types: ['fire'] }] }), { amount: 6, damageType: 'fire' })).toBe(12)
+  })
+
+  it('condicional sem confirmação não reduz; confirmada, reduz: Aura de Vigilância (paladino dos Anciões 7)', () => {
+    const paladin = sheetOf(sub('paladin', 7, 'oath-of-the-ancients'))
+    expect(lost(paladin, { amount: 10, damageType: 'fire' })).toBe(10)
+    expect(lost(paladin, { amount: 10 })).toBe(10)
+    // "De magia" alcança todo tipo, e também o dano sem tipo informado.
+    expect(lost(paladin, { amount: 10, damageType: 'fire', conditionalDefenses: ['de magia'] })).toBe(5)
+    expect(lost(paladin, { amount: 10, conditionalDefenses: ['de magia'] })).toBe(5)
+    // Outra situação confirmada não liga esta.
+    expect(lost(paladin, { amount: 10, conditionalDefenses: ['de ataque não mágico'] })).toBe(10)
+  })
+
+  it('a condicional confirmada e a da ficha contam como uma só: metade, não um quarto', () => {
+    const tieflingPaladin = sheetOf({ race: 'tiefling', ...sub('paladin', 7, 'oath-of-the-ancients') })
+    const r = applyDamage(state(), tieflingPaladin, { amount: 13, damageType: 'fire', conditionalDefenses: ['de magia'] })
+    expect(getCurrentHp(state(), tieflingPaladin) - getCurrentHp(r.state, tieflingPaladin)).toBe(6)
+    expect(texts(r)).toEqual(['Resistência a fogo (Resistência Infernal, Aura de Vigilância): 13 → 6.'])
+  })
+
+  describe('Maestria em Armadura Pesada (p. 170)', () => {
+    const wearing = (...itemIds: string[]) => ({
+      ...structuredClone(EMPTY_DRAFT.equipment), method: 'wealth' as const,
+      purchasedItems: itemIds.map(itemId => ({ itemId, quantity: 1, source: 'purchased' as const })),
+    })
+    const master = (...armor: string[]) =>
+      sheetOf({ raceChoices: { feat: 'maestria-em-armadura-pesada' }, equipment: wearing(...armor) })
+    const NON_MAGICAL = { conditionalDefenses: ['de ataque não mágico'] }
+
+    it('8 cortante de ataque não mágico: 5 de Placas; 8 sem armadura pesada ou sem confirmar', () => {
+      const r = applyDamage(state(), master('plate'), { amount: 8, damageType: 'slashing', ...NON_MAGICAL })
+      expect(getCurrentHp(state(), master('plate')) - getCurrentHp(r.state, master('plate'))).toBe(5)
+      expect(texts(r)).toEqual(['Redução de 3 em cortante (Maestria em Armadura Pesada): 8 → 5.'])
+      expect(lost(master('half-plate'), { amount: 8, damageType: 'slashing', ...NON_MAGICAL })).toBe(8)
+      expect(lost(master('plate'), { amount: 8, damageType: 'slashing' })).toBe(8)
+      expect(lost(master('plate'), { amount: 8, damageType: 'fire', ...NON_MAGICAL })).toBe(8)
+    })
+
+    it('a redução vem antes da resistência (p. 199) e vale uma vez por evento, nas parcelas que alcança', () => {
+      // Petrificado: 8 − 3 = 5, metade 2 (o exemplo da aura de 5 no livro, p. 199).
+      const petrified = state({ conditions: ['petrified'] })
+      expect(lost(master('plate'), { amount: 8, damageType: 'slashing', ...NON_MAGICAL }, petrified)).toBe(2)
+      // 2 cortante + 5 perfurante, sem outra defesa: a ordem não muda o total; tira 3 do evento.
+      expect(lost(master('plate'), {
+        amount: 7, parts: [{ amount: 2, damageType: 'slashing' }, { amount: 5, damageType: 'piercing' }], ...NON_MAGICAL,
+      })).toBe(4)
+    })
+
+    it('alcançando duas parcelas com outra defesa, a ordem muda o resultado: não aplica e avisa (Ponto em aberto 28)', () => {
+      const petrified = state({ conditions: ['petrified'] })
+      const r = applyDamage(petrified, master('plate'), {
+        amount: 9, parts: [{ amount: 4, damageType: 'slashing' }, { amount: 5, damageType: 'piercing' }], ...NON_MAGICAL,
+      })
+      // Só a resistência do Petrificado: 2 + 2.
+      expect(getCurrentHp(petrified, master('plate')) - getCurrentHp(r.state, master('plate'))).toBe(4)
+      expect(kinds(r)).toContain('unresolvedRule')
+      expect(texts(r)[0]).toBe('Maestria em Armadura Pesada: a redução de 3 alcança mais de uma parcela (cortante e perfurante), e o livro não diz de qual ela sai; com as outras defesas, isso muda o resultado. O app não a aplicou: combine com o Mestre e, se for o caso, desfaça e digite as parcelas já com a redução.')
+      // Numa parcela só, a regra está decidida: aplica.
+      expect(lost(master('plate'), { amount: 9, parts: [{ amount: 4, damageType: 'slashing' }, { amount: 5, damageType: 'fire' }], ...NON_MAGICAL }, petrified))
+        .toBe(2) // cortante: 4 − 3 = 1, metade 0; fogo: metade de 5, 2
+    })
+  })
+
+  it('exceção marcada cancela a defesa ("arma mágica ou de prata")', () => {
+    const fiend = sheet({ defenses: [{ source: 'Resistência Demoníaca', kind: 'resistance', types: ['slashing'], exceptWhen: 'arma mágica ou de prata' }] })
+    expect(lost(fiend, { amount: 9, damageType: 'slashing' })).toBe(4)
+    expect(lost(fiend, { amount: 9, damageType: 'slashing', exceptions: ['arma mágica ou de prata'] })).toBe(9)
+  })
+
+  it('a Resistência Demoníaca sem escolha não se aplica a tipo nenhum', () => {
+    const fiend = sheetOf(sub('warlock', 10, 'the-fiend'))
+    expect(fiend.defenses).toHaveLength(1)
+    expect(lost(fiend, { amount: 9, damageType: 'fire' })).toBe(9)
+  })
+
+  it('o Petrificado continua zerando o veneno e as defesas dele somam às da ficha', () => {
+    const s = state({ conditions: ['petrified'] })
+    expect(lost(TIEFLING, { amount: 9, damageType: 'poison' }, s)).toBe(0)
+    expect(getPlayDamageDefenses(s, TIEFLING)).toEqual([
+      { source: 'Resistência Infernal', kind: 'resistance', types: ['fire'] },
+      { source: 'Petrificado', kind: 'resistance', types: 'all' },
+      { source: 'Petrificado', kind: 'immunity', types: ['poison'] },
+    ])
+  })
+
+  it('o estado de antes fica intacto: o desfazer do playStore volta o PV', () => {
+    const s = state({ damageTaken: 2 })
+    const r = applyDamage(s, TIEFLING, { amount: 13, damageType: 'fire' })
+    expect(r.state).not.toBe(s)
+    expect(s.damageTaken).toBe(2)
+    expect(getCurrentHp(s, TIEFLING) - getCurrentHp(r.state, TIEFLING)).toBe(6)
+  })
+
+  it('parcela com valor inválido recusa o evento inteiro', () => {
+    const s = state()
+    const r = applyDamage(s, TIEFLING, { amount: 5, parts: [{ amount: 5, damageType: 'fire' }, { amount: Number.NaN }] })
+    expect(r.state).toBe(s)
+    expect(kinds(r)).toEqual(['refused'])
   })
 })

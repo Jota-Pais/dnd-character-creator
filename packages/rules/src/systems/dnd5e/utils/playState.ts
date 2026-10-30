@@ -935,6 +935,34 @@ function endTogglesOnUnconscious(next: PlayState, sheet: PlaySheet, notices: Pla
 }
 
 /**
+ * O começo do descanso: os efeitos que declaram acabar nele (`endsOn` 'shortRest'/'longRest': a
+ * Fúria, de 1 minuto, num descanso de pelo menos 1 hora, pág. 48 e 188) terminam, com aviso e com o
+ * que a opção custa ao acabar (o Frenesi: um nível de exaustão) — ANTES do que o descanso devolve,
+ * porque acabaram no começo dele: a exaustão do Frenesi vem antes do −1 do descanso longo, e os
+ * Dados de Vida do curto, gastos no fim (pág. 188), já veem o PV máximo depois dela.
+ *
+ * O descanso não dá benefícios a quem morre: se o fim leva à exaustão 6 (pág. 292), recusa e diz
+ * para encerrar o efeito antes, na seção Efeitos ativos. Sem efeito a encerrar, devolve o estado
+ * reconciliado e nenhum aviso; morto também, porque não descansa. As prévias e as duas conclusões
+ * passam por aqui.
+ */
+export function endTogglesOnRest(state0: PlayState, sheet: PlaySheet, rest: 'shortRest' | 'longRest'): PlayResult {
+  const state = reconcilePlayState(state0, sheet)
+  if (state.lifeState === 'dead') return done(state)
+  const next: PlayState = { ...state }
+  const notices: PlayNotice[] = []
+  for (const toggle of sheet.toggles) {
+    if (!toggle.endsOn.includes(rest) || !next.activeEffects.some(a => a.id === toggle.id)) continue
+    notices.push(note('info', `${toggle.source}: acaba durante o descanso (pág. ${toggle.page}).`))
+    endToggleInto(next, sheet, toggle.id, notices)
+  }
+  if (next.lifeState === 'dead') {
+    return refuse(state0, `${notices.map(n => n.text).join(' ')} O descanso não dá benefícios a quem morre: se for o caso, encerre o efeito antes, na seção Efeitos ativos.`)
+  }
+  return done(next, notices)
+}
+
+/**
  * Liga um efeito (em fúria), sem custo: quem paga é a ação que liga (`performAction`), e o efeito
  * recebido de um aliado liga de graça. Recusa morto ou inconsciente, o efeito já ligado (a mesma
  * magia não acumula, pág. 207) e a opção que a ficha não tem. Os efeitos colaterais vêm com aviso,
@@ -1287,19 +1315,28 @@ export type ShortRestPreview = {
   pactSlots: number
   /** Recursos de recarga `'short'` com usos gastos, que voltam inteiros. */
   resources: { id: string; name: string; amount: number }[]
+  /** Os avisos dos efeitos ligados que acabam no descanso (`endTogglesOnRest`): a Fúria, o Frenesi. */
+  effectsEnding: string[]
+  /** Por que o descanso não pode ser concluído: o fim de um efeito leva à exaustão 6. */
+  blockReason?: string
 }
 
 /**
  * Prévia pura do que o descanso curto devolve além dos Dados de Vida (`regras-descanso.md`, 6.2):
- * os espaços de Pacto e os recursos `'short'`. É a mesma conta do `completeShortRest`.
+ * os espaços de Pacto e os recursos `'short'`, e os efeitos ligados que acabam nele. É a mesma
+ * conta do `completeShortRest`.
  */
 export function previewShortRest(state0: PlayState, sheet: PlaySheet): ShortRestPreview {
-  const state = reconcilePlayState(state0, sheet)
+  const ending = endTogglesOnRest(state0, sheet, 'shortRest')
+  const refusal = ending.notices.find(n => n.kind === 'refused')
+  const state = refusal ? reconcilePlayState(state0, sheet) : ending.state
   return {
     pactSlots: state.pactSlotsSpent,
     resources: sheet.resources
       .filter(r => r.recharge === 'short' && (state.resourcesSpent[r.id] ?? 0) > 0)
       .map(r => ({ id: r.id, name: r.name, amount: state.resourcesSpent[r.id] })),
+    effectsEnding: refusal ? [] : ending.notices.map(n => n.text),
+    ...(refusal ? { blockReason: refusal.text } : {}),
   }
 }
 
@@ -1339,14 +1376,18 @@ const SONG_OF_REST_ID = 'song-of-rest'
 /**
  * Conclui o descanso curto: voltam os espaços de Pacto (pág. 58) e os recursos de recarga
  * `'short'`. O pool combinado só volta no longo (`regras-descanso.md`, 6.3). Os Dados de Vida
- * gastos com `spendHitDie` já estão no estado e não voltam aqui.
+ * gastos com `spendHitDie` já estão no estado e não voltam aqui. Os efeitos ligados que acabam no
+ * descanso (a Fúria) terminam antes, com aviso (`endTogglesOnRest`); a tela os encerra antes dos
+ * Dados de Vida, e aqui nada sobra para encerrar.
  *
  * Canção de Descanso (bardo 2+): o dado extra não está automatizado — vira UM aviso, só se algum
  * Dado de Vida foi gasto neste descanso (`regras-descanso.md`, 6.2 e 6.4; pág. 54).
  */
 export function completeShortRest(state0: PlayState, sheet: PlaySheet, options: ShortRestOptions = {}): PlayResult {
   if (state0.lifeState === 'dead') return refuse(state0, 'O personagem está morto.')
-  const state = reconcilePlayState(state0, sheet)
+  const ending = endTogglesOnRest(state0, sheet, 'shortRest')
+  if (ending.notices.some(n => n.kind === 'refused')) return ending
+  const state = ending.state
   const preview = previewShortRest(state, sheet)
   const recovered: string[] = []
   if (preview.pactSlots > 0) recovered.push(countLabel(preview.pactSlots, 'espaço de Pacto', 'espaços de Pacto'))
@@ -1355,7 +1396,10 @@ export function completeShortRest(state0: PlayState, sheet: PlaySheet, options: 
     recovered.push(r.name)
     delete resourcesSpent[r.id]
   }
-  const notices = recovered.length > 0 ? [note('recovered', `Descanso curto concluído. De volta: ${recovered.join(', ')}.`)] : []
+  const notices = [
+    ...ending.notices,
+    ...(recovered.length > 0 ? [note('recovered', `Descanso curto concluído. De volta: ${recovered.join(', ')}.`)] : []),
+  ]
   const song = sheet.resources.find(r => r.id === SONG_OF_REST_ID)
   if (song && (options.hitDiceSpent ?? 0) > 0) {
     const die = song.die ? ` (${song.die})` : ''
@@ -1405,7 +1449,10 @@ export type LongRestPreview = {
   tempHpLost: number
   /** O ajuste temporário do PV máximo que acaba com o descanso (0 sem ajuste). */
   maxHpAdjustmentEnds: number
+  /** Antes já conta a exaustão que o fim de um efeito ligado dá no começo do descanso (o Frenesi). */
   exhaustion: { before: ExhaustionLevel; after: ExhaustionLevel }
+  /** Os avisos dos efeitos ligados que acabam no descanso (`endTogglesOnRest`): a Fúria, o Frenesi. */
+  effectsEnding: string[]
   /** Avisos fixos da prévia (24 horas, interrupção). */
   notices: PlayNotice[]
 }
@@ -1416,11 +1463,15 @@ const LONG_REST_RECHARGES = new Set(['short', 'long', 'day'])
  * Prévia pura do descanso longo (pág. 188): o que volta e o que não. PV até o máximo efetivo
  * DEPOIS do −1 de exaustão (`regras-descanso.md`, 6.1 e Ponto em aberto 12), metade dos Dados de
  * Vida, todos os espaços, recursos `'short'`/`'long'`/`'day'` (assumido B), fim dos PV
- * temporários. Com 0 PV no início, nenhum benefício (assumido A).
+ * temporários. Com 0 PV no início, nenhum benefício (assumido A). Os efeitos ligados que acabam no
+ * descanso (a Fúria) terminam no começo dele (`endTogglesOnRest`), e a conta parte do estado de
+ * depois: a exaustão do Frenesi vem antes do −1; se ela matar, nenhum benefício.
  */
 export function previewLongRest(state0: PlayState, sheet: PlaySheet, options: LongRestOptions = {}): LongRestPreview {
   const ateAndDrank = options.ateAndDrank ?? true
-  const state = reconcilePlayState(state0, sheet)
+  const ending = endTogglesOnRest(state0, sheet, 'longRest')
+  const endingRefusal = ending.notices.find(n => n.kind === 'refused')
+  const state = endingRefusal ? reconcilePlayState(state0, sheet) : ending.state
   const current = getCurrentHp(state, sheet)
   const notices = [
     note('info', 'Só um descanso longo a cada 24 horas no jogo (pág. 188).'),
@@ -1430,7 +1481,7 @@ export function previewLongRest(state0: PlayState, sheet: PlaySheet, options: Lo
     ? 'O personagem está morto: o descanso longo não dá benefícios.'
     : current === 0
       ? 'É preciso ter pelo menos 1 PV no início do descanso longo para obter seus benefícios (pág. 188). Quem está estável recupera 1 PV depois de 1d4 horas (pág. 200).'
-      : undefined
+      : endingRefusal?.text
   const effMax = getEffectiveMaxHp(state, sheet)
 
   if (blockReason) {
@@ -1445,6 +1496,7 @@ export function previewLongRest(state0: PlayState, sheet: PlaySheet, options: Lo
       tempHpLost: 0,
       maxHpAdjustmentEnds: 0,
       exhaustion: { before: state.exhaustionLevel, after: state.exhaustionLevel },
+      effectsEnding: [],
       notices,
     }
   }
@@ -1469,6 +1521,7 @@ export function previewLongRest(state0: PlayState, sheet: PlaySheet, options: Lo
     tempHpLost: state.tempHp,
     maxHpAdjustmentEnds: state.maxHpAdjustment,
     exhaustion: { before: state.exhaustionLevel, after: exhaustionAfter },
+    effectsEnding: ending.notices.map(n => n.text),
     notices,
   }
 }
@@ -1484,11 +1537,15 @@ export type LongRestCompletion = LongRestOptions & {
  * Conclui o descanso longo com a escolha do jogador. Recusa quando a prévia bloqueia e quando a
  * escolha de Dados de Vida é inválida (tipo fora do poço, mais que os gastos daquele tipo, ou mais
  * que o total que volta). Escolher menos que o máximo vale: o livro diz que ele "pode" recuperar.
+ * Os efeitos ligados que acabam no descanso (a Fúria) terminam primeiro, com os avisos deles, no
+ * mesmo passo do desfazer.
  */
 export function completeLongRest(state0: PlayState, sheet: PlaySheet, options: LongRestCompletion = {}): PlayResult {
   const preview = previewLongRest(state0, sheet, options)
   if (preview.blocked) return refuse(state0, preview.blockReason ?? 'Descanso longo sem benefícios.')
-  const state = reconcilePlayState(state0, sheet)
+  // A prévia não bloqueou: o fim dos efeitos não foi recusado.
+  const ending = endTogglesOnRest(state0, sheet, 'longRest')
+  const state = ending.state
 
   const choice = options.hitDice ?? preview.hitDice.suggestion
   const pool = getHitDiceAvailable(state, sheet)
@@ -1534,7 +1591,7 @@ export function completeLongRest(state0: PlayState, sheet: PlaySheet, options: L
     ...(preview.maxHpAdjustmentEnds !== 0 ? [`o ajuste do PV máximo (${formatHpAdjustment(preview.maxHpAdjustmentEnds)}) acabou`] : []),
     ...(preview.exhaustion.after < preview.exhaustion.before ? [`exaustão ${preview.exhaustion.before} → ${preview.exhaustion.after}`] : []),
   ]
-  return done(next, [note('recovered', `Descanso longo: ${parts.join('; ')}.`)])
+  return done(next, [...ending.notices, note('recovered', `Descanso longo: ${parts.join('; ')}.`)])
 }
 
 // ── Sanitizador ─────────────────────────────────────────────────────────────

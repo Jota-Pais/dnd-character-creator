@@ -353,8 +353,13 @@ export type ActiveEffect =
   | StateEffect
   | NoticeEffect
 
-/** O que encerra sozinho um efeito ligado: cair inconsciente (a Fúria, p. 48). */
-export type ToggleEnd = 'unconscious'
+/**
+ * O que encerra sozinho um efeito ligado: cair inconsciente (a Fúria, p. 48) e o descanso que dura
+ * mais que ele — o curto tem pelo menos 1 hora, e o longo, 8 (p. 188); a Fúria dura 1 minuto. O app
+ * não conta o tempo de jogo, mas o descanso é tempo de jogo declarado: o efeito acaba nele, antes do
+ * que o descanso devolve.
+ */
+export type ToggleEnd = 'unconscious' | 'shortRest' | 'longRest'
 
 /** Efeitos que só valem com o equipamento certo (a Fúria: "se você não estiver vestindo uma armadura pesada"). */
 export type ToggleBenefits = { requires: EquipmentRequirement; effects: ActiveEffect[] }

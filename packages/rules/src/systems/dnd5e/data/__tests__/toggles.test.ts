@@ -37,7 +37,7 @@ const TOGGLE_IDS = new Set(TOGGLES.map(t => t.toggle.id))
 describe('efeitos ligados nos dados', () => {
   it('a Fúria declara o efeito, as duas ações e as chaves dos condicionais', () => {
     const rage = FEATURES.find(h => h.where === 'classe barbarian' && h.name === 'Fúria')?.effects
-    expect(rage?.toggle).toMatchObject({ id: 'rage', label: 'Em fúria', page: 48, endsOn: ['unconscious'] })
+    expect(rage?.toggle).toMatchObject({ id: 'rage', label: 'Em fúria', page: 48, endsOn: ['unconscious', 'shortRest', 'longRest'] })
     expect(rage?.toggle?.benefits?.requires).toBe('noHeavyArmor')
     expect(rage?.actions?.map(a => [a.id, a.timing])).toEqual([['rage-enter', 'bonusAction'], ['rage-end', 'bonusAction']])
     expect(rage?.weaponAttacks?.[0].conditionalDamage?.toggle).toBe('rage')

@@ -25,7 +25,7 @@
                 { "kind": "damageDefenses", "defenses": { "resistances": ["bludgeoning", "piercing", "slashing"] }, "scope": "sheet" }
               ]
             },
-            "endsOn": ["unconscious"],
+            "endsOn": ["unconscious", "shortRest", "longRest"],
             "earlyEndReminder": "A fúria acaba no fim do seu turno se, desde o seu último turno, você não atacou nenhuma criatura hostil nem sofreu dano (pág. 48)."
           },
           "actions": [

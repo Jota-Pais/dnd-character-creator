@@ -955,14 +955,14 @@ describe('previewShortRest', () => {
     const sh = sheet({ pactSlots: { slots: 2, slotLevel: 2 } })
     const s = state({ pactSlotsSpent: 1, resourcesSpent: { 'second-wind': 1, rage: 2 } })
     const preview = previewShortRest(s, sh)
-    expect(preview).toEqual({ pactSlots: 1, resources: [{ id: 'second-wind', name: 'second-wind', amount: 1 }] })
+    expect(preview).toEqual({ pactSlots: 1, resources: [{ id: 'second-wind', name: 'second-wind', amount: 1 }], effectsEnding: [] })
     const done = completeShortRest(s, sh).state
     expect(done.pactSlotsSpent).toBe(0)
     expect(done.resourcesSpent).toEqual({ rage: 2 })
   })
 
   it('nada gasto: nada a voltar; gasto acima do máximo é lido já reconciliado', () => {
-    expect(previewShortRest(state(), S)).toEqual({ pactSlots: 0, resources: [] })
+    expect(previewShortRest(state(), S)).toEqual({ pactSlots: 0, resources: [], effectsEnding: [] })
     expect(previewShortRest(state({ resourcesSpent: { 'second-wind': 9 } }), S).resources[0].amount).toBe(1)
   })
 })
@@ -1650,6 +1650,53 @@ describe('efeitos ligados: a Fúria pela ação que a liga', () => {
     // Sem frenesi, nada; opção que a ficha não tem, recusa.
     expect(end(enter(state(), sh).state, sh).state.exhaustionLevel).toBe(0)
     expect(enter(state(), barbarian(3), 'frenzy').notices[0]).toEqual({ kind: 'refused', text: 'Em fúria: opção desconhecida (frenzy).' })
+  })
+
+  // A Fúria dura 1 minuto (pág. 48); o descanso curto, pelo menos 1 hora, e o longo, 8 (pág. 188).
+  describe('o descanso encerra a fúria, antes do que ele devolve', () => {
+    const ENDS = 'Fúria: acaba durante o descanso (pág. 48).'
+    const FRENZY = 'Frenesi: ao terminar, você sofre um nível de exaustão (0 → 1, pág. 292).'
+
+    it('descanso curto: a fúria acaba, com o Frenesi, e a prévia já diz', () => {
+      const sh = barbarian(3, {}, 'berserker')
+      const frenzy = enter(state(), sh, 'frenzy').state
+      expect(previewShortRest(frenzy, sh).effectsEnding).toEqual([ENDS, FRENZY])
+      const r = completeShortRest(frenzy, sh)
+      expect(r.state.activeEffects).toEqual([])
+      expect(r.state.exhaustionLevel).toBe(1)
+      expect(r.notices.map(n => n.text)).toEqual([ENDS, FRENZY])
+      // A Fúria é de descanso longo: o uso continua gasto.
+      expect(r.state.resourcesSpent).toEqual({ rage: 1 })
+      // Sem o Frenesi, só acaba.
+      expect(completeShortRest(enter(state(), sh).state, sh).notices.map(n => n.text)).toEqual([ENDS])
+    })
+
+    it('descanso longo: a exaustão do Frenesi vem antes do −1, e os usos voltam', () => {
+      const sh = barbarian(3, {}, 'berserker')
+      const frenzy = enter(state(), sh, 'frenzy').state
+      const p = previewLongRest(frenzy, sh)
+      expect(p.effectsEnding).toEqual([ENDS, FRENZY])
+      expect(p.exhaustion).toEqual({ before: 1, after: 0 })
+      const r = completeLongRest(frenzy, sh)
+      expect(r.state.activeEffects).toEqual([])
+      expect(r.state.exhaustionLevel).toBe(0)
+      expect(r.state.resourcesSpent).toEqual({})
+      expect(r.notices.map(n => n.text)).toEqual([ENDS, FRENZY, `Descanso longo: PV ${sh.maxHp} → ${sh.maxHp}; exaustão 1 → 0.`])
+      // Sem comer e beber, o nível do Frenesi fica.
+      expect(completeLongRest(frenzy, sh, { ateAndDrank: false }).state.exhaustionLevel).toBe(1)
+    })
+
+    it('se o fim do Frenesi levar à exaustão 6, o descanso não conclui e diz o que fazer', () => {
+      const sh = barbarian(3, {}, 'berserker')
+      const frenzy = { ...enter(state(), sh, 'frenzy').state, exhaustionLevel: 5 as const }
+      const reason = 'Fúria: acaba durante o descanso (pág. 48). Frenesi: ao terminar, você sofre um nível de exaustão (5 → 6, pág. 292). Exaustão 6: morte, com 0 PV (pág. 292). O descanso não dá benefícios a quem morre: se for o caso, encerre o efeito antes, na seção Efeitos ativos.'
+      expect(previewLongRest(frenzy, sh)).toMatchObject({ blocked: true, blockReason: reason, effectsEnding: [] })
+      expect(previewShortRest(frenzy, sh)).toMatchObject({ blockReason: reason, effectsEnding: [] })
+      for (const r of [completeLongRest(frenzy, sh), completeShortRest(frenzy, sh)]) {
+        expect(r.state).toBe(frenzy)
+        expect(r.notices).toEqual([{ kind: 'refused', text: reason }])
+      }
+    })
   })
 
   it('de Placas: gasta o uso, liga e avisa que não há benefícios', () => {

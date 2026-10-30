@@ -37,7 +37,7 @@ const kindsOf = (effects: { effect: { kind: string } }[]) => effects.map(e => e.
 describe('getSheetToggles: a Fúria com o que a modifica', () => {
   it('bárbaro 1: o efeito, os benefícios sem armadura pesada e o lembrete do fim prematuro', () => {
     const [rage] = getSheetToggles(barbarian(1))
-    expect(rage).toMatchObject({ id: 'rage', label: 'Em fúria', source: 'Fúria', page: 48, endsOn: ['unconscious'], options: [] })
+    expect(rage).toMatchObject({ id: 'rage', label: 'Em fúria', source: 'Fúria', page: 48, endsOn: ['unconscious', 'shortRest', 'longRest'], options: [] })
     expect(rage.benefits).toHaveLength(1)
     expect(rage.benefits[0].blockedBy).toBeUndefined()
     expect(kindsOf(rage.benefits[0].effects)).toEqual(['rollMode', 'damageDefenses'])

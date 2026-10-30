@@ -5,6 +5,8 @@ import { useAppStore } from '../core/stores/appStore'
 import { useCharacterStore } from '../systems/dnd5e/stores/characterStore'
 import { useOrdemStore } from '../systems/ordem/stores/characterStore'
 import { useAppUpdateStore } from '../core/pwa/serviceWorker'
+import { useNativeVersionStore } from '../core/native/appVersion'
+import { startNativeApp } from '../core/native/nativeApp'
 import { useDeviceStore } from '../core/stores/deviceStore'
 import { DEFAULT_DEVICE_STATE, loadDeviceState } from '../core/utils/deviceStorage'
 import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
@@ -14,6 +16,7 @@ const INSTALL_HINT = /Adicionar à Tela de Início/
 const SHEETS_STAY_IN_BROWSER = /As fichas deste navegador não passam sozinhas para o app/
 const BACKUP_REMINDER = /Guarde uma cópia em arquivo/
 const BACKUP_REMINDER_AGAIN = /Sua última cópia das fichas é de \d\d\/\d\d\/\d{4}\. Guarde uma nova\./
+const APK_OUTDATED = 'Tem uma versão nova do app: peça o APK no grupo.'
 
 /** O navegador do teste se passando por outro (o userAgent e o navigator.standalone do iPhone). */
 function pretend(props: { userAgent?: string; standalone?: boolean }) {
@@ -32,6 +35,7 @@ beforeEach(() => {
   useOrdemStore.setState({ library: [] })
   useAppStore.getState().setActiveSystem(null)
   useAppUpdateStore.setState({ updateReady: false })
+  useNativeVersionStore.setState({ outdated: false })
   useDeviceStore.setState(DEFAULT_DEVICE_STATE)
 })
 afterEach(() => {
@@ -55,6 +59,23 @@ describe('aviso de versão nova', () => {
     render(<App />)
     fireEvent.click(screen.getByText('Atualizar agora'))
     expect(screen.queryByText(/Versão nova do app pronta/)).toBeNull()
+  })
+})
+
+describe('aviso de APK velho (docs/app-android.md)', () => {
+  it('no navegador nunca aparece: nem a conferência roda', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+    render(<App />)
+    await act(() => startNativeApp())
+    expect(screen.queryByText(APK_OUTDATED)).toBeNull()
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it('aparece quando a conferência do APK volta da rede com a galeria aberta, numa região viva que já existia', () => {
+    render(<App />)
+    act(() => useNativeVersionStore.setState({ outdated: true }))
+    const notice = screen.getByText(APK_OUTDATED)
+    expect(notice.closest('[aria-live="polite"]')).not.toBeNull()
   })
 })
 

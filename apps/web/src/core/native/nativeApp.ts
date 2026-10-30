@@ -1,6 +1,7 @@
 import { Capacitor } from '@capacitor/core'
 import { App } from '@capacitor/app'
 import { handleBack } from '../navigation/back'
+import { checkNativeVersion } from './appVersion'
 
 /**
  * O APK do Android (apps/mobile; docs/app-android.md) abre este mesmo site publicado, e o
@@ -12,12 +13,13 @@ export function isNativeApp(): boolean {
 }
 
 /** O que este arquivo usa do plugin App (os testes passam um de mentira). */
-export type NativeAppPlugin = Pick<typeof App, 'addListener' | 'minimizeApp'>
+export type NativeAppPlugin = Pick<typeof App, 'addListener' | 'minimizeApp' | 'getInfo'>
 
 /**
  * O comportamento de app do APK, ligado uma vez ao abrir. O voltar do Android fecha a folha aberta
  * e volta a tela (`handleBack`); na galeria, sem para onde voltar, minimiza o app, como o botão de
- * início: nada se perde, e ele reabre onde estava.
+ * início: nada se perde, e ele reabre onde estava. Depois, confere se o APK é velho demais para o
+ * site publicado (o aviso da galeria).
  */
 export async function startNativeApp(app: NativeAppPlugin = App, native: boolean = isNativeApp()): Promise<void> {
   if (!native) return
@@ -26,4 +28,5 @@ export async function startNativeApp(app: NativeAppPlugin = App, native: boolean
   await app.addListener('backButton', () => {
     if (!handleBack()) void app.minimizeApp()
   })
+  await checkNativeVersion(() => app.getInfo())
 }

@@ -21,5 +21,5 @@ void startServiceWorker({
   doc: document,
 })
 
-// O APK do Android (docs/app-android.md): o voltar do aparelho. No navegador, nada.
+// O APK do Android (docs/app-android.md): o voltar do aparelho e o aviso de APK velho. No navegador, nada.
 void startNativeApp()

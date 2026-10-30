@@ -1,12 +1,14 @@
 import { useState, type ReactNode } from 'react'
 import { applyUpdate, useAppUpdateStore } from './core/pwa/serviceWorker'
+import { useNativeVersionStore } from './core/native/appVersion'
 import { shouldShowInstallHint } from './core/pwa/platform'
 import { useDeviceStore } from './core/stores/deviceStore'
 import { BACKUP_SNOOZE_MS, shouldRemindBackup } from './core/utils/backupReminder'
 
 /**
  * Os avisos discretos da galeria, do app instalável (docs/app-instalavel.md): a versão nova pronta,
- * a dica de instalar no iPhone e o lembrete de cópia de segurança. Moram só na galeria, onde não há
+ * o APK velho demais (só no APK do Android; docs/app-android.md), a dica de instalar no iPhone e o
+ * lembrete de cópia de segurança. Moram só na galeria, onde não há
  * jogo aberto. A dica e o lembrete não aparecem juntos: a dica (que também fala de guardar as
  * fichas e, com ficha aqui, oferece a cópia para levá-las ao app) vem primeiro, e o lembrete espera
  * ela ser dispensada.
@@ -17,6 +19,7 @@ export function GalleryNotices({ latestChangeAt, onExportAll }: {
   onExportAll: () => void
 }) {
   const updateReady = useAppUpdateStore(s => s.updateReady)
+  const nativeOutdated = useNativeVersionStore(s => s.outdated)
   const device = useDeviceStore()
   // A hora de quando a galeria abriu: o lembrete não aparece nem some com o relógio andando.
   const [now] = useState(() => Date.now())
@@ -32,13 +35,16 @@ export function GalleryNotices({ latestChangeAt, onExportAll }: {
 
   return (
     <>
-      {/* A versão nova termina de baixar com a galeria já aberta: região viva montada vazia. */}
+      {/* A versão nova termina de baixar, e a conferência do APK volta da rede, com a galeria já
+          aberta: região viva montada vazia. */}
       <div aria-live="polite">
         {updateReady && (
           <Notice actions={<NoticeButton onClick={() => { if (!applyUpdate()) useAppUpdateStore.setState({ updateReady: false }) }}>Atualizar agora</NoticeButton>}>
             Versão nova do app pronta: ela entra na próxima vez que você abrir o app.
           </Notice>
         )}
+        {/* O APK só muda com a parte nativa, e quem o distribui é o grupo: o app não baixa nada. */}
+        {nativeOutdated && <Notice>Tem uma versão nova do app: peça o APK no grupo.</Notice>}
       </div>
 
       {installHint && (
@@ -75,11 +81,11 @@ export function GalleryNotices({ latestChangeAt, onExportAll }: {
   )
 }
 
-function Notice({ children, actions }: { children: ReactNode; actions: ReactNode }) {
+function Notice({ children, actions }: { children: ReactNode; actions?: ReactNode }) {
   return (
     <div className="mb-4 rounded-lg px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2" style={{ border: '1px solid #3a332b', backgroundColor: '#131110' }}>
       <p className="flex-1 basis-60 text-[13px] leading-relaxed" style={{ color: '#cbbfae' }}>{children}</p>
-      <div className="flex flex-wrap gap-2">{actions}</div>
+      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
     </div>
   )
 }

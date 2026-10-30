@@ -1422,6 +1422,14 @@ describe('applyDamage — o tipo do dano e as defesas da ficha', () => {
     expect(lost(paladin, { amount: 10, conditionalDefenses: ['de ataque não mágico'] })).toBe(10)
   })
 
+  it('mago abjurador 14, 20 de fogo de uma bola de fogo: 10 com "de magia" confirmada (Resistência à Magia, p. 98)', () => {
+    const abjurer = sheetOf(sub('wizard', 14, 'abjuration'))
+    expect(lost(abjurer, { amount: 20, damageType: 'fire' })).toBe(20)
+    const r = applyDamage(state(), abjurer, { amount: 20, damageType: 'fire', conditionalDefenses: ['de magia'] })
+    expect(getCurrentHp(state(), abjurer) - getCurrentHp(r.state, abjurer)).toBe(10)
+    expect(texts(r)).toEqual(['Resistência a fogo (Resistência à Magia): 20 → 10.'])
+  })
+
   it('a condicional confirmada e a da ficha contam como uma só: metade, não um quarto', () => {
     const tieflingPaladin = sheetOf({ race: 'tiefling', ...sub('paladin', 7, 'oath-of-the-ancients') })
     const r = applyDamage(state(), tieflingPaladin, { amount: 13, damageType: 'fire', conditionalDefenses: ['de magia'] })

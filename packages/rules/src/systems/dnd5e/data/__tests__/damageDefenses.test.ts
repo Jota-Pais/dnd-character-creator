@@ -33,8 +33,11 @@ const ENTRIES: Entry[] = [
   ...optionLists.flatMap(id => (getProgressionOptions(id) as Described[]).map(toEntry(`opção ${id}`))),
 ]
 
-/** O texto fala de defesa contra dano ou de imunidade. */
-const MENTIONS_DEFENSE = /resist[êe]ncia (?:a|ao|à|contra) (?:todo |todos os tipos de |esse tipo de |o tipo de )?dano|imunes? a/i
+/**
+ * O texto fala de defesa contra dano ou de imunidade. As formas do livro e dos dados: "resistência a
+ * dano de fogo", "resistência contra o dano causado por magias" (Resistência à Magia, p. 98).
+ */
+const MENTIONS_DEFENSE = /resist[êe]ncia (?:a|ao|à|contra) (?:o |todo |todos os tipos de |esse tipo de |o tipo de )?dano|imunes? a/i
 
 /**
  * O texto fala de defesa, mas a defesa não é da ficha a toda hora: fica com o motivo. Quando a onda
@@ -59,6 +62,12 @@ describe('defesas contra dano nos dados (p. 199)', () => {
     expect(ENTRIES.some(e => e.name === 'Avatar da Batalha')).toBe(true)
     expect(ENTRIES.some(e => e.name === 'Maestria em Armadura Pesada')).toBe(true)
     expect(ENTRIES.some(e => e.where === 'opção hunter-superior-defense')).toBe(true)
+  })
+
+  it('a procura reconhece as formas do texto: a Resistência à Magia passava em silêncio', () => {
+    const magic = ENTRIES.find(e => e.where === 'subclasse abjuration' && e.name === 'Resistência à Magia')
+    expect(MENTIONS_DEFENSE.test(magic?.text ?? '')).toBe(true)
+    expect(magic?.defenses).toEqual({ resistances: 'all', condition: 'de magia' })
   })
 
   it('todo id de tipo de dano existe em damage-types.json, e toda condição em conditions.json', () => {

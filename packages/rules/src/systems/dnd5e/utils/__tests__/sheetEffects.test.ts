@@ -1095,6 +1095,14 @@ describe('getDamageDefenses e describeDamageDefenses', () => {
     ])
   })
 
+  it('mago abjurador 14: resistência ao dano de magia, a mesma situação da Aura de Vigilância (p. 98)', () => {
+    expect(getDamageDefenses(sub('wizard', 14, 'abjuration'))).toEqual([
+      { source: 'Resistência à Magia', kind: 'resistance', types: 'all', condition: 'de magia' },
+    ])
+    expect(lines(sub('wizard', 14, 'abjuration'))).toEqual(['Resistência a todo dano de magia (Resistência à Magia)'])
+    expect(lines(sub('wizard', 13, 'abjuration'))).toEqual([])
+  })
+
   describe('Maestria em Armadura Pesada (p. 170): só vestindo armadura pesada', () => {
     const wearing = (...itemIds: string[]) => ({
       ...structuredClone(EMPTY_DRAFT.equipment),

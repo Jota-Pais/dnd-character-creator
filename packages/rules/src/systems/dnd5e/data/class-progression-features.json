@@ -1619,7 +1619,8 @@
       {
         "level": 14,
         "name": "Resistência à Magia",
-        "description": "Você ganha vantagem em testes de resistência contra magias e recebe resistência contra o dano causado por magias."
+        "description": "Você ganha vantagem em testes de resistência contra magias e recebe resistência contra o dano causado por magias.",
+        "effects": { "damageDefenses": { "resistances": "all", "condition": "de magia" } }
       }
     ],
     "divination": [

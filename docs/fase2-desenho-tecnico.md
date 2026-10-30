@@ -1652,7 +1652,7 @@ Ficam jogáveis:
 - magias inatas com contador;
 - Fúria Implacável e Sobrecarga;
 - Curandeiro e Líder Inspirador;
-- Resistência Demoníaca e Afinidade Elemental;
+- Resistência Demoníaca, Pedra de Transmutador e Afinidade Elemental;
 - Proteção Arcana e Prodígio;
 - as recuperações ao rolar iniciativa.
 
@@ -1690,6 +1690,7 @@ Sobrecarga (8776-8789):
 - Curandeiro (15076-15088): gasta 1 uso do kit; cura 1d6 + 4 + o total de Dados de Vida do alvo; estabilizar dá 1 PV. Em si, uma vez por descanso (restCounters).
 - Líder Inspirador (15170-15181): PV temporários de nível + CAR por grantTempHp, uma vez por descanso para você.
 - Resistência Demoníaca (4821-4827): escolha do tipo depois de descanso curto ou longo, em sessionPicks.
+- Pedra de Transmutador (mago transmutador 6, pág. 101, linhas 8939-8959): escolha de sessão, junto da Resistência Demoníaca (decisão do dono, 2026-10-30). O benefício escolhido ao criar a pedra e, na resistência, o tipo (ácido, frio, fogo, elétrico ou trovejante) vão a sessionPicks, e valem enquanto a pedra estiver com você. Trocar o benefício vem com magia de transmutação de 1º nível ou mais (o inglês; lista pt-BR × inglês do CLAUDE.md). Hoje ela está nas exceções de `damageDefenses.test.ts`, de onde sai quando a onda a declarar; o que os outros benefícios (visão no escuro, +3 m de deslocamento, proficiência em TR de Constituição) fazem no número se decide na onda, pela regra de ouro.
 - Afinidade Elemental (6857-6864): 1 ponto de feitiçaria liga a resistência ao tipo do ancestral, como opção do SpellCastSheet.
 - Proteção Arcana (8522-8540):
   - PlayState.arcaneWard, criada por castSpell numa abjuração de 1º nível ou mais, com 2 × nível de mago + INT;

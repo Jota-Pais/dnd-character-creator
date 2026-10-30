@@ -175,16 +175,18 @@ export function HpPanel({ view }: { view: PlayView }) {
   // A linha diz o que o tipo vai fazer com as caixas como estão, pelo mesmo critério do pipeline.
   const typeLines = describeDamageDefenses(getDefensesForTypes(defenses, chosenTypes, { conditionalDefenses, exceptions }))
 
-  // O que impede o "Aplicar": texto que não é número, ou número sem sinal e sem botão escolhido (no
-  // iPhone, o teclado numérico não tem sinal, e o caminho são os botões), ou a 2ª parcela com texto
-  // que não é número. Vai a uma região viva.
-  const problem = !entry
+  // O que impede o "Aplicar", numa região viva só: no campo principal, texto que não é número, ou
+  // número sem sinal e sem botão escolhido (no iPhone, o teclado numérico não tem sinal, e o caminho
+  // são os botões); na 2ª parcela, texto que não é número. Cada impedimento descreve o campo dele, e o
+  // principal, sem impedimento seu, fica com a ajuda.
+  const mainProblem = !entry
     ? texts.invalid
     : amount !== null && action === null
       ? `Para aplicar o ${amount}, escolha Dano, Cura ou PV temporários.`
-      : secondPart && secondPart.text.trim() !== '' && secondAmount === null
-        ? 'Na 2ª parcela, digite só o número.'
-        : null
+      : null
+  const secondInvalid = !!secondPart && secondPart.text.trim() !== '' && secondAmount === null
+  const secondProblem = secondInvalid ? 'Na 2ª parcela, digite só o número.' : null
+  const problem = mainProblem ?? secondProblem
   const canApply = amount !== null && action !== null && (!secondPart || secondAmount !== null)
   // A ajuda da ação, lida ao focar o campo: fora da região viva, não fala a cada toque nos botões.
   const hint = current?.help ?? texts.hint
@@ -311,7 +313,7 @@ export function HpPanel({ view }: { view: PlayView }) {
             value={text}
             onChange={e => setText(e.target.value)}
             aria-label={current?.field ?? texts.label}
-            aria-describedby={problem ? problemId : hintId}
+            aria-describedby={mainProblem ? problemId : hintId}
             placeholder={current ? '0' : texts.placeholder}
             className="min-h-10 w-full min-w-0 rounded-lg border border-parchment-800 bg-surface-base px-3 text-lg text-parchment-100 outline-none focus:border-gold-600"
           />
@@ -328,13 +330,14 @@ export function HpPanel({ view }: { view: PlayView }) {
             </button>
           )}
         </div>
-        {/* Uma linha só: o impedimento no lugar da ajuda. A região viva existe antes dele: inserida
-            já com o texto, pode não ser anunciada. */}
+        {/* O impedimento do campo principal fica no lugar da ajuda; o da 2ª parcela, acima dela, que
+            continua descrevendo o principal. A região viva existe antes dele: inserida já com o
+            texto, pode não ser anunciada. */}
         <div>
           <div aria-live="polite">
             {problem && <p id={problemId} className="text-xs leading-snug text-amber-300">{problem}</p>}
           </div>
-          {!problem && <p id={hintId} className="text-xs leading-snug text-parchment-500">{hint}</p>}
+          {!mainProblem && <p id={hintId} className="text-xs leading-snug text-parchment-500">{hint}</p>}
         </div>
 
         {action === 'damage' && (
@@ -361,6 +364,8 @@ export function HpPanel({ view }: { view: PlayView }) {
                         setSecond(s => (s ? { ...s, text: value } : s))
                       }}
                       aria-label="Quanto de dano da 2ª parcela"
+                      aria-describedby={!mainProblem && secondProblem ? problemId : undefined}
+                      aria-invalid={secondInvalid || undefined}
                       placeholder="0"
                       className="min-h-10 w-full min-w-0 rounded-lg border border-parchment-800 bg-surface-base px-3 text-lg text-parchment-100 outline-none focus:border-gold-600"
                     />

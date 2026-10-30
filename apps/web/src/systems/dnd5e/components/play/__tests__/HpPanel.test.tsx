@@ -379,6 +379,22 @@ describe('HpPanel — o tipo do dano', () => {
     expect(screen.getByTestId('hp-current')).toHaveTextContent('13')
   })
 
+  it('o impedimento da 2ª parcela descreve o campo dela, que fica inválido; o principal continua com a ajuda', () => {
+    openTiefling()
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
+    fireEvent.change(screen.getByLabelText('Quanto de dano'), { target: { value: '4' } })
+    fireEvent.click(screen.getByRole('button', { name: '+ outra parcela' }))
+    const second = screen.getByLabelText('Quanto de dano da 2ª parcela')
+    fireEvent.change(second, { target: { value: 'três' } })
+    expect(second).toHaveAccessibleDescription('Na 2ª parcela, digite só o número.')
+    expect(second).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByLabelText('Quanto de dano')).toHaveAccessibleDescription(/^O dano total que você sofreu/)
+    fireEvent.change(second, { target: { value: '3' } })
+    expect(second).not.toHaveAttribute('aria-invalid')
+    expect(second).not.toHaveAccessibleDescription('Na 2ª parcela, digite só o número.')
+  })
+
   it('Petrificado sem defesa da ficha continua oferecendo o veneno: imune, não tira PV', () => {
     openKrusk()
     render(<PlayScreen />)

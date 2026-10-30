@@ -82,16 +82,24 @@ export function getProgressionOptions(optionsListId: string): ProgressionOption[
   }
 }
 
-/** Um animal do Guerreiro Totêmico com o benefício de cada característica (p. 50). */
-type TotemAnimal = { id: string; name: string; tier3: string; tier6: string; tier14: string }
+type TotemTier = 'tier3' | 'tier6' | 'tier14'
+
+/**
+ * Um animal do Guerreiro Totêmico com o benefício de cada característica (p. 50) e, por
+ * característica, o que ele faz na Fúria (`effects`: o Urso resiste a todo dano menos psíquico).
+ */
+type TotemAnimal = Record<TotemTier, string> & { id: string; name: string; effects?: Partial<Record<TotemTier, FeatureEffects>> }
 
 /**
  * Os animais do Guerreiro Totêmico numa das três escolhas: Totem Espiritual (3º, `tier3`),
  * Aspecto da Besta (6º, `tier6`) e Sintonia Totêmica (14º, `tier14`). São escolhas independentes
- * — "o mesmo animal ou um diferente" (p. 50) —, cada uma com o benefício do animal nela.
+ * — "o mesmo animal ou um diferente" (p. 50) —, cada uma com o benefício e os efeitos do animal nela.
  */
-function totemOptions(tier: 'tier3' | 'tier6' | 'tier14'): ProgressionOption[] {
-  return (totemWarriorTotems as TotemAnimal[]).map(a => ({ id: a.id, name: a.name, description: a[tier] }))
+function totemOptions(tier: TotemTier): ProgressionOption[] {
+  return (totemWarriorTotems as TotemAnimal[]).map(a => {
+    const effects = a.effects?.[tier]
+    return { id: a.id, name: a.name, description: a[tier], ...(effects ? { effects } : {}) }
+  })
 }
 
 /** As classes da lista da magia pelo nome ("Bardo, Bruxo"), não pelo id dos dados. */

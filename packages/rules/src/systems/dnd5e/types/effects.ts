@@ -361,9 +361,10 @@ export type ToggleBenefits = { requires: EquipmentRequirement; effects: ActiveEf
 
 /**
  * Uma escolha feita ao ligar o efeito (o Frenesi, p. 49: "você pode entrar num frenesi"), com o que
- * ela custa quando o efeito acaba (`onEnd`: um nível de exaustão).
+ * ela faz enquanto ligado (`effects`) e o que custa quando o efeito acaba (`onEnd`: um nível de
+ * exaustão).
  */
-export type ToggleOption = { id: string; label: string; onEnd?: { exhaustion: 1 } }
+export type ToggleOption = { id: string; label: string; effects?: ActiveEffect[]; onEnd?: { exhaustion: 1 } }
 
 /**
  * Um efeito que o jogador liga em jogo (a Fúria), declarado na característica dona. Não repete o

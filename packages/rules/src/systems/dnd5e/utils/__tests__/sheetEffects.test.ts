@@ -1195,6 +1195,7 @@ describe('getDamageDefenses e describeDamageDefenses', () => {
 describe('getCastingRestrictions (Fúria)', () => {
   const rage = {
     source: 'Fúria', when: 'em fúria', text: 'você não pode conjurar magias nem se concentrar nelas (pág. 48); entrar em fúria encerra a concentração.',
+    toggle: 'rage', blocks: ['cast', 'concentrate'],
   }
   const MAGIC_INITIATE = 'iniciado-em-magia'
 
@@ -1277,7 +1278,7 @@ describe('getCastingRestrictions (Fúria)', () => {
   it('integridade dos dados: a Fúria declara o efeito', () => {
     const fury = progressionFeatures.classes.barbarian.find(f => f.name === 'Fúria') as
       { effects?: { castingRestriction?: unknown } } | undefined
-    expect(fury?.effects?.castingRestriction).toEqual({ when: rage.when, text: rage.text })
+    expect(fury?.effects?.castingRestriction).toEqual({ when: rage.when, text: rage.text, toggle: 'rage', blocks: ['cast', 'concentrate'] })
   })
 
   it('integridade dos dados: quem conjura sem ser fonte de magia declara castsSpells', () => {

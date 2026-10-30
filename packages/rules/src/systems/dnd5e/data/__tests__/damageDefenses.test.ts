@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import type { DamageDefenses } from '../../types/effects'
+import type { ActiveEffect, DamageDefenses, FeatureEffects } from '../../types/effects'
 import type { ConditionId } from '../../types/condition'
 import { DAMAGE_TYPES, isDamageTypeId } from '../../utils/damageTypes'
 import { CONDITIONS } from '../../utils/sheetEffects'
@@ -9,12 +9,24 @@ import progressionChoices from '../progression-choices.json'
 import featsData from '../feats.json'
 import racesData from '../races.json'
 
-/** Tudo que pode declarar defesa, com onde está: traços, features de classe e subclasse, talentos e opções. */
-type Entry = { where: string; name: string; text: string; defenses?: DamageDefenses }
-type Described = { name: string; description?: string; effects?: { damageDefenses?: DamageDefenses } }
+/**
+ * Tudo que pode declarar defesa, com onde está: traços, features de classe e subclasse, talentos e
+ * opções. `toggled`: as defesas que valem só com um efeito ligado (a Fúria, o Urso, a Fúria
+ * Inconsciente), declaradas no efeito ou no que o modifica.
+ */
+type Entry = { where: string; name: string; text: string; defenses?: DamageDefenses; toggled: ActiveEffect[] }
+type Described = { name: string; description?: string; effects?: FeatureEffects }
+
+/** As defesas de efeito ligado: as de dano e as de condição, onde quer que estejam na declaração. */
+function toggledDefenses(effects: FeatureEffects | undefined): ActiveEffect[] {
+  const groups = [effects?.toggle, ...(effects?.toggleModifiers ?? [])].flatMap(t => (t
+    ? [t.effects ?? [], t.benefits?.effects ?? [], ...('options' in t ? (t.options ?? []).map(o => o.effects ?? []) : [])]
+    : []))
+  return groups.flat().filter(e => e.kind === 'damageDefenses' || e.kind === 'conditionImmunity')
+}
 
 const toEntry = (where: string) => (x: Described): Entry =>
-  ({ where, name: x.name, text: x.description ?? '', defenses: x.effects?.damageDefenses })
+  ({ where, name: x.name, text: x.description ?? '', defenses: x.effects?.damageDefenses, toggled: toggledDefenses(x.effects) })
 
 const races = racesData as unknown as (Described & { id: string; traits: Described[]; subraces: (Described & { id: string; traits: Described[] })[] })[]
 const features = progressionFeatures as unknown as Record<'classes' | 'subclasses', Record<string, Described[]>>
@@ -61,9 +73,7 @@ const MENTIONS_DEFENSE = new RegExp(
  * que a liga chegar, ela sai daqui (e o teste cobra a declaração).
  */
 const EXCEPTIONS: Record<string, string> = {
-  'classe barbarian: Fúria': 'só em fúria: efeito ligado (onda efeitos-ativos)',
-  'subclasse totem-warrior: Totem Espiritual': 'o Urso resiste só em fúria: efeito ligado (onda efeitos-ativos)',
-  'opção totem-spirits: Urso': 'resiste só em fúria: efeito ligado (onda efeitos-ativos)',
+  'subclasse totem-warrior: Totem Espiritual': 'o texto resume os três animais: a resistência do Urso está na opção (totem-spirits: Urso), como efeito ligado',
   'opção totem-attunements: Urso': '"imune a esse efeito" é o inimigo',
   'classe monk: Corpo Vazio': 'só durante o efeito da ação (onda de ações)',
   'subclasse draconic-bloodline: Afinidade Elemental': 'gasta 1 ponto de feitiçaria para resistir por 1 hora: ação (onda de ações)',
@@ -71,7 +81,6 @@ const EXCEPTIONS: Record<string, string> = {
   'subclasse circle-of-the-land: Santuário Natural': 'a imunidade é da criatura que ataca',
   'subclasse oath-of-vengeance: Canalizar Divindade': '"imunes a amedrontado" são os alvos',
   'talento: Adepto Elemental': 'fala das magias que você conjura, não de uma defesa sua',
-  'subclasse berserker: Fúria Inconsciente': 'só em fúria: efeito ligado (onda efeitos-ativos)',
   'subclasse light-domain: Truque Adicional e Labareda Protetora': 'a imunidade é do atacante que não pode ser cegado',
   'subclasse enchantment: Encanto Instintivo': 'a imunidade é do atacante que não pode ser enfeitiçado',
   'classe paladin: Aura de Coragem': 'só enquanto você estiver consciente, e vale para os aliados: levada ao dono',
@@ -86,6 +95,19 @@ describe('defesas contra dano nos dados (p. 199)', () => {
     expect(ENTRIES.some(e => e.name === 'Avatar da Batalha')).toBe(true)
     expect(ENTRIES.some(e => e.name === 'Maestria em Armadura Pesada')).toBe(true)
     expect(ENTRIES.some(e => e.where === 'opção hunter-superior-defense')).toBe(true)
+  })
+
+  it('as defesas de efeito ligado contam como declaradas: a Fúria, o Urso e a Fúria Inconsciente', () => {
+    const toggled = (where: string, name: string) => ENTRIES.find(e => e.where === where && e.name === name)?.toggled
+    expect(toggled('classe barbarian', 'Fúria')).toEqual([
+      { kind: 'damageDefenses', defenses: { resistances: ['bludgeoning', 'piercing', 'slashing'] }, scope: 'sheet' },
+    ])
+    expect(toggled('opção totem-spirits', 'Urso')).toEqual([
+      { kind: 'damageDefenses', defenses: { resistances: { allExcept: ['psychic'] } }, scope: 'sheet' },
+    ])
+    expect(toggled('subclasse berserker', 'Fúria Inconsciente')).toEqual([
+      { kind: 'conditionImmunity', conditions: ['charmed', 'frightened'], scope: 'gameState' },
+    ])
   })
 
   it('a procura reconhece as formas do texto: a Resistência à Magia passava em silêncio', () => {
@@ -111,8 +133,17 @@ describe('defesas contra dano nos dados (p. 199)', () => {
 
   it('todo id de tipo de dano existe em damage-types.json, e toda condição em conditions.json', () => {
     const conditions = new Set<ConditionId>(CONDITIONS.map(c => c.id))
-    for (const { where, name, defenses: d } of ENTRIES) {
-      if (!d) continue
+    const declared = ENTRIES.flatMap(e => [
+      ...(e.defenses ? [{ ...e, d: e.defenses }] : []),
+      ...e.toggled.flatMap(t => (t.kind === 'damageDefenses' ? [{ ...e, d: t.defenses }] : [])),
+    ])
+    for (const { where, name, toggled } of ENTRIES) {
+      for (const t of toggled) {
+        if (t.kind !== 'conditionImmunity') continue
+        for (const id of t.conditions) expect(conditions.has(id), `${where}: ${name}: ${id}`).toBe(true)
+      }
+    }
+    for (const { where, name, d } of declared) {
       const label = `${where}: ${name}`
       const set = d.resistances
       const listed = [
@@ -126,7 +157,7 @@ describe('defesas contra dano nos dados (p. 199)', () => {
 
   it('toda característica que fala de resistência a dano ou de imunidade declara a defesa, ou está nas exceções com o motivo', () => {
     const forgotten = ENTRIES
-      .filter(e => MENTIONS_DEFENSE.test(e.text) && !e.defenses && !EXCEPTIONS[`${e.where}: ${e.name}`])
+      .filter(e => MENTIONS_DEFENSE.test(e.text) && !e.defenses && e.toggled.length === 0 && !EXCEPTIONS[`${e.where}: ${e.name}`])
       .map(e => `${e.where}: ${e.name}`)
     expect(forgotten).toEqual([])
   })
@@ -136,6 +167,7 @@ describe('defesas contra dano nos dados (p. 199)', () => {
       const entry = ENTRIES.find(e => `${e.where}: ${e.name}` === key)
       expect(entry, key).toBeDefined()
       expect(entry?.defenses, key).toBeUndefined()
+      expect(entry?.toggled, key).toEqual([])
       expect(MENTIONS_DEFENSE.test(entry?.text ?? ''), key).toBe(true)
     }
   })

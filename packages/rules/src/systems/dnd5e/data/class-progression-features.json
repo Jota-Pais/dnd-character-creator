@@ -11,9 +11,27 @@
             { "id": "rage-damage", "name": "Dano de Fúria", "amount": { "value": { "byLevel": [{ "from": 1, "value": 2 }, { "from": 9, "value": 3 }, { "from": 16, "value": 4 }] }, "unit": "bonus" } }
           ],
           "weaponAttacks": [
-            { "weapons": "melee-strength", "conditionalDamage": { "resource": "rage-damage", "condition": "em fúria, sem armadura pesada", "requires": "noHeavyArmor" } }
+            { "weapons": "melee-strength", "conditionalDamage": { "resource": "rage-damage", "condition": "em fúria, sem armadura pesada", "requires": "noHeavyArmor", "toggle": "rage" } }
           ],
-          "castingRestriction": { "when": "em fúria", "text": "você não pode conjurar magias nem se concentrar nelas (pág. 48); entrar em fúria encerra a concentração." }
+          "castingRestriction": { "when": "em fúria", "text": "você não pode conjurar magias nem se concentrar nelas (pág. 48); entrar em fúria encerra a concentração.", "toggle": "rage", "blocks": ["cast", "concentrate"] },
+          "toggle": {
+            "id": "rage",
+            "label": "Em fúria",
+            "page": 48,
+            "benefits": {
+              "requires": "noHeavyArmor",
+              "effects": [
+                { "kind": "rollMode", "rolls": ["abilityCheck", "save"], "abilities": ["STR"], "mode": "advantage", "scope": "sheet" },
+                { "kind": "damageDefenses", "defenses": { "resistances": ["bludgeoning", "piercing", "slashing"] }, "scope": "sheet" }
+              ]
+            },
+            "endsOn": ["unconscious"],
+            "earlyEndReminder": "A fúria acaba no fim do seu turno se, desde o seu último turno, você não atacou nenhuma criatura hostil nem sofreu dano (pág. 48)."
+          },
+          "actions": [
+            { "id": "rage-enter", "name": "Entrar em fúria", "timing": "bonusAction", "cost": [{ "kind": "resource", "resource": "rage", "amount": 1 }], "outcomes": [{ "kind": "toggleOn", "toggle": "rage" }], "page": 48 },
+            { "id": "rage-end", "name": "Encerrar a fúria", "timing": "bonusAction", "requiresToggle": "rage", "outcomes": [{ "kind": "toggleOff", "toggle": "rage" }], "page": 48 }
+          ]
         }
       },
       {
@@ -73,7 +91,8 @@
       {
         "level": 15,
         "name": "Fúria Persistente",
-        "description": "Sua fúria só termina prematuramente se você cair inconsciente ou decidir terminá-la."
+        "description": "Sua fúria só termina prematuramente se você cair inconsciente ou decidir terminá-la.",
+        "effects": { "toggleModifiers": [{ "toggle": "rage", "suppressEarlyEnd": true }] }
       },
       {
         "level": 18,
@@ -696,12 +715,26 @@
       {
         "level": 3,
         "name": "Frenesi",
-        "description": "Ao entrar em fúria, você pode escolher entrar em frenesi: pela duração da fúria, em cada um dos seus turnos seguintes você pode fazer um único ataque corpo-a-corpo com arma como ação bônus. Quando a fúria acabar, você sofre um nível de exaustão."
+        "description": "Ao entrar em fúria, você pode escolher entrar em frenesi: pela duração da fúria, em cada um dos seus turnos seguintes você pode fazer um único ataque corpo-a-corpo com arma como ação bônus. Quando a fúria acabar, você sofre um nível de exaustão.",
+        "effects": {
+          "toggleModifiers": [{
+            "toggle": "rage",
+            "options": [{
+              "id": "frenzy",
+              "label": "Frenesi",
+              "effects": [{ "kind": "notice", "scope": "notice", "text": "Em cada um dos seus turnos seguintes, você pode fazer um único ataque corpo-a-corpo com arma como ação bônus.", "page": 49 }],
+              "onEnd": { "exhaustion": 1 }
+            }]
+          }]
+        }
       },
       {
         "level": 6,
         "name": "Fúria Inconsciente",
-        "description": "Você não pode ser enfeitiçado nem amedrontado enquanto estiver em fúria; efeitos assim ficam suspensos durante ela."
+        "description": "Você não pode ser enfeitiçado nem amedrontado enquanto estiver em fúria; efeitos assim ficam suspensos durante ela.",
+        "effects": {
+          "toggleModifiers": [{ "toggle": "rage", "effects": [{ "kind": "conditionImmunity", "conditions": ["charmed", "frightened"], "scope": "gameState" }] }]
+        }
       },
       {
         "level": 10,

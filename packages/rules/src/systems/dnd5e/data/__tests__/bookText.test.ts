@@ -182,6 +182,18 @@ describe('características de classe que seguem o inglês', () => {
     expect(text).not.toMatch(/ataques? corpo-a-corpo/)
   })
 
+  // Inglês: "if your turn ends and you haven't attacked a hostile creature since your last turn or
+  // taken damage since then" — só termina sem ataque E sem dano. O pt-BR ("não tiver atacado [...] ou
+  // não tiver sofrido dano") se lê como "falta qualquer um dos dois" (decisão de 2026-10-30).
+  it('a Fúria só termina antes sem ataque E sem dano (pt-BR: "não tiver atacado [...] ou não tiver sofrido dano")', () => {
+    const [text] = featureText('Fúria')
+    expect(text).toContain('sem que você tenha atacado uma criatura hostil nem sofrido dano desde o seu último turno')
+    expect(text).not.toContain('ou não tiver sofrido dano')
+    const rage = groups.classes.barbarian.find(f => f.name === 'Fúria') as Feature & { effects?: { toggle?: { earlyEndReminder?: string } } }
+    expect(rage.effects?.toggle?.earlyEndReminder)
+      .toBe('A fúria acaba no fim do seu turno se, desde o seu último turno, você não atacou nenhuma criatura hostil nem sofreu dano (pág. 48).')
+  })
+
   it.each([
     ['cleric', 'as magias de clérigo com o descritor ritual que tiver preparadas'],
     ['druid', 'as magias de druida preparadas que tenham o descritor ritual'],

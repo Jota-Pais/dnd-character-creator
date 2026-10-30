@@ -135,6 +135,7 @@ const SCOPE_TEXT: Record<AttackScope, string> = {
   'unarmed': 'no golpe desarmado',
   'weapon-attack': 'nos ataques com arma',
   'melee-weapon-attack': 'nos ataques corpo a corpo com arma',
+  'melee-weapon': 'nos ataques com arma corpo a corpo',
 }
 
 /** "Vantagem em testes e testes de resistência de Força". */

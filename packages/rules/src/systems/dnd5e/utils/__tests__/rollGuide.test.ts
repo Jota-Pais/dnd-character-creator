@@ -1220,3 +1220,33 @@ describe('getRollGuide — dano extra na arma (Auxílio Divino)', () => {
     expect(sword.damage?.extraDice).toBeUndefined()
   })
 })
+
+// Destruição Divina Aprimorada (paladino 11, linhas 9984-9991): "sempre que você atingir uma
+// criatura com uma arma corpo-a-corpo [...] 1d8 de dano radiante extra" — incondicional, entra no
+// número na Revisão, no PDF e no jogo. Só arma: o golpe desarmado fica de fora (decisão c).
+describe('getRollGuide — Destruição Divina Aprimorada no número', () => {
+  const paladin = (level: number) => draft({ class: 'paladin', level, abilityScores: SCORES, ...carrying('longsword', 'javelin') })
+  const attack = (level: number, key: string) => getRollGuide(paladin(level), play()).attacks.find(a => a.key === key)!
+
+  it('espada longa: +1d8 radiante, nas duas empunhaduras', () => {
+    expect(attack(11, 'longsword').damage?.formula).toBe('1d8 + 3 cortante + 1d8 radiante')
+    expect(attack(11, 'longsword').versatile?.formula).toBe('1d10 + 3 cortante + 1d8 radiante')
+    expect(attack(11, 'longsword').damage?.extraDice?.[0].label).toBe('Destruição Divina Aprimorada')
+  })
+
+  it('crítico: 2d8 + 2d8', () => {
+    expect(attack(11, 'longsword').damage?.crit?.formula).toBe('2d8 + 3 cortante + 2d8 radiante')
+    expect(attack(11, 'longsword').damage?.crit?.notation).toBe('2d8+3+2d8')
+  })
+
+  it('golpe desarmado: sem; azagaia arremessada: sem, com a nota', () => {
+    expect(attack(11, 'unarmed').damage?.extraDice).toBeUndefined()
+    const javelin = attack(11, 'javelin')
+    expect(javelin.damage?.formula).toBe('1d6 + 3 perfurante + 1d8 radiante')
+    expect(javelin.notes).toContain('arremessando, sem o 1d8 radiante (Destruição Divina Aprimorada)')
+  })
+
+  it('paladino 10: sem', () => {
+    expect(attack(10, 'longsword').damage?.formula).toBe('1d8 + 3 cortante')
+  })
+})

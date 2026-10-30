@@ -1,8 +1,10 @@
 import { canonicalJson, jsonFingerprint } from '../../../core/utils/canonicalJson'
 import type { CharacterDraft } from '../types/character'
-import type { PlayNotice, PlayResult, PlaySheet, PlayState, SheetSnapshot } from '../types/playState'
+import type { PlayNotice, PlayResult, PlaySheet, PlayState, SheetSnapshot, SheetSnapshotAttack } from '../types/playState'
 import { formatModifier } from './abilityScoreUtils'
 import { getFinalAbilityScores } from './asiUtils'
+import { getSheetAttacks } from './attackUtils'
+import { formatAttackDamage } from './weaponFormat'
 import { createPlayState } from './playState'
 import { getRollGuide } from './rollGuide'
 import { getSheetArmorClass } from './sheetEffects'
@@ -20,23 +22,40 @@ import { getSheetArmorClass } from './sheetEffects'
 
 /**
  * Os números da ficha como o jogo os mostra, com as mesmas fontes: o PV máximo do `PlaySheet`, a
- * CA de `getSheetArmorClass` (a dos vitais) e a CD e o ataque de cada conjuração do guia de
- * rolagens (a aba Magia). O guia sai de um estado de jogo vazio: o retrato é da ficha, não da
- * sessão (condições e efeitos ligados não entram).
+ * CA de `getSheetArmorClass` (a dos vitais), a CD e o ataque de cada conjuração do guia de
+ * rolagens (a aba Magia) e o dano de cada linha de ataque (`getSheetAttacks`, o texto da Revisão).
+ * O guia sai de um estado de jogo vazio: o retrato é da ficha, não da sessão (condições e efeitos
+ * ligados não entram).
  */
 export function takeSheetSnapshot(draft: CharacterDraft, sheet: PlaySheet, sheetUpdatedAt: number): SheetSnapshot {
   const guide = getRollGuide(draft, createPlayState(''))
+  const scores = getFinalAbilityScores(draft)
   return {
     sheetUpdatedAt,
     draftFingerprint: jsonFingerprint(draft),
     maxHp: sheet.maxHp,
-    armorClass: getSheetArmorClass(draft, getFinalAbilityScores(draft)).value,
+    armorClass: getSheetArmorClass(draft, scores).value,
     spellcasting: guide.spellcasting.map(sc => ({
       key: sc.key, label: sc.label, saveDc: sc.saveDc, attackBonus: sc.attack.modifier,
     })),
     spellSlots: [...sheet.spellSlots],
     pactSlots: sheet.pactSlots ? { ...sheet.pactSlots } : null,
+    attacks: getSheetAttacks(draft, scores).map(({ extraDamage, ...attack }) => {
+      const full = formatAttackDamage({ ...attack, ...(extraDamage ? { extraDamage } : {}) })
+      const damage = formatAttackDamage(attack)
+      return { key: attack.key, label: attack.name, damage, extraDamage: full.slice(damage.length) }
+    }),
   }
+}
+
+/**
+ * Os ataques do retrato de antes. O retrato tirado antes de os ataques entrarem nele não os tem, e
+ * naquele app nenhuma linha tinha dano extra de outro tipo: o "antes" é o mesmo dano, sem o extra
+ * (a Destruição Divina Aprimorada do paladino 11, que entrou no número junto com os ataques no
+ * retrato, aparece no aviso).
+ */
+function attacksBefore(before: SheetSnapshot, after: SheetSnapshot): SheetSnapshotAttack[] {
+  return before.attacks ?? (after.attacks ?? []).map(a => ({ ...a, extraDamage: '' }))
 }
 
 /**
@@ -75,6 +94,15 @@ export function describeSheetChanges(before: SheetSnapshot, after: SheetSnapshot
   after.spellSlots.forEach((slots, i) => change(`espaços de ${i + 1}º nível`, String(before.spellSlots[i] ?? 0), String(slots)))
   const pact = (p: SheetSnapshot['pactSlots']) => (p ? `${p.slots} de ${p.slotLevel}º nível` : NONE)
   change('espaços de Pacto', pact(before.pactSlots), pact(after.pactSlots))
+
+  const wasAttacks = attacksBefore(before, after)
+  const nowAttacks = after.attacks ?? []
+  for (const key of [...new Set([...nowAttacks, ...wasAttacks].map(a => a.key))]) {
+    const was = wasAttacks.find(a => a.key === key)
+    const now = nowAttacks.find(a => a.key === key)
+    const text = (a: SheetSnapshotAttack | undefined) => (a ? `${a.damage}${a.extraDamage}` : NONE)
+    change(`${(now ?? was)?.label ?? key}, dano`, text(was), text(now))
+  }
   return parts
 }
 

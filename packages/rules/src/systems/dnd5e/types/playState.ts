@@ -146,9 +146,20 @@ export type SheetSnapshot = {
   /** Espaços do pool combinado por nível (9 posições). */
   spellSlots: number[]
   pactSlots: { slots: number; slotLevel: number } | null
+  /**
+   * O dano de cada linha de ataque, como a Revisão o escreve. Ausente no retrato tirado antes de os
+   * ataques entrarem nele (2026-10-30): aí o app ainda não somava dano extra a arma nenhuma.
+   */
+  attacks?: SheetSnapshotAttack[]
 }
 
 export type SheetSnapshotSpellcasting = { key: string; label: string; saveDc: number; attackBonus: number }
+
+/**
+ * O dano de uma linha de ataque no retrato: o da arma ("1d8+3 cortante (1d10+3 a duas mãos)") e o
+ * extra de outro tipo à parte (" + 1d8 radiante", ou vazio) — o retrato de antes não tem o extra.
+ */
+export type SheetSnapshotAttack = { key: string; label: string; damage: string; extraDamage: string }
 
 /**
  * Os números da ficha que o jogo usa, derivados do `CharacterDraft` pelas funções que já existem

@@ -104,6 +104,7 @@ export function isWeaponInScope(weapon: Weapon, scope: AttackScope): boolean {
     case 'melee-strength': return melee
     case 'weapon-attack': return true
     case 'melee-weapon-attack': return melee
+    case 'melee-weapon': return melee
     case 'unarmed': return false
   }
 }
@@ -113,7 +114,8 @@ export function isWeaponInScope(weapon: Weapon, scope: AttackScope): boolean {
  * (Arquearia, Duelismo, Armas Grandes, duas armas) não o pegam; mas é ataque corpo a corpo com
  * arma — "melee weapon attack" no inglês, que os dados seguem (decisão do dono de 2026-10-29) —,
  * e os escopos que falam do ataque, não da arma (`melee-strength`, o Dano de Fúria;
- * `weapon-attack`, a margem do Campeão; `melee-weapon-attack`, o Crítico Brutal), o alcançam.
+ * `weapon-attack`, a margem do Campeão; `melee-weapon-attack`, o Crítico Brutal), o alcançam. O
+ * `melee-weapon` fala da arma (a Destruição Divina Aprimorada, decisão c): não.
  */
 export function isUnarmedStrikeInScope(scope: AttackScope): boolean {
   switch (scope) {
@@ -124,7 +126,8 @@ export function isUnarmedStrikeInScope(scope: AttackScope): boolean {
     case 'ranged':
     case 'melee-one-handed':
     case 'melee-two-handed':
-    case 'melee-light': return false
+    case 'melee-light':
+    case 'melee-weapon': return false
   }
 }
 
@@ -133,11 +136,12 @@ export function isUnarmedStrikeInScope(scope: AttackScope): boolean {
  * Força", p. 48), dito depois da condição: a linha que usa Destreza (acuidade, Artes Marciais na
  * arma de monge e no golpe desarmado) vale atacando com Força, e a arma de arremesso só sem
  * arremessar — arremessar é ataque à distância (p. 149 e 197). No `melee-weapon-attack` (o
- * crítico do Crítico Brutal e dos Ataques Selvagens) só o arremesso fica de fora: a acuidade com
- * Destreza continua corpo a corpo. Vazio nos outros escopos e quando a linha já cumpre.
+ * crítico do Crítico Brutal e dos Ataques Selvagens) e no `melee-weapon` (a Destruição Divina
+ * Aprimorada) só o arremesso fica de fora: a acuidade com Destreza continua corpo a corpo. Vazio
+ * nos outros escopos e quando a linha já cumpre.
  */
 export function scopeCaveat(scope: AttackScope, useDex: boolean, thrown: boolean): string {
-  if (scope === 'melee-weapon-attack') return thrown ? ', sem arremessar' : ''
+  if (scope === 'melee-weapon-attack' || scope === 'melee-weapon') return thrown ? ', sem arremessar' : ''
   if (scope !== 'melee-strength') return ''
   if (!useDex && !thrown) return ''
   const how = [thrown ? 'corpo a corpo' : '', useDex ? 'com Força em vez de Destreza' : ''].filter(Boolean).join(' ')

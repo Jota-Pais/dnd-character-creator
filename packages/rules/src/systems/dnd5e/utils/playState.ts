@@ -4,7 +4,7 @@ import type { DamageTypeId } from '../types/damage'
 import {
   CONDITION_NOTE_MAX_LENGTH, HIT_DIE_SIZES, PLAY_STATE_VERSION, ROLL_HISTORY_LIMIT,
   type ActiveToggle, type Concentration, type DamageInput, type DamagePart, type DeathSaveCount, type LifeState, type PlayNotice, type PlayNoticeKind,
-  type PlayResult, type PlaySheet, type PlayState, type SheetSnapshot, type SheetSnapshotSpellcasting,
+  type PlayResult, type PlaySheet, type PlayState, type SheetSnapshot, type SheetSnapshotAttack, type SheetSnapshotSpellcasting,
 } from '../types/playState'
 import {
   getActiveConditionEffects, getCondition, getEffectiveConditions, getEffectiveHpMax,
@@ -1817,7 +1817,7 @@ function sanitizeActiveEffects(x: unknown): ActiveToggle[] {
  */
 function sanitizeSheetSnapshot(x: unknown): SheetSnapshot | null {
   if (!isRecord(x)) return null
-  const { sheetUpdatedAt, draftFingerprint, maxHp, armorClass, spellcasting, spellSlots, pactSlots } = x
+  const { sheetUpdatedAt, draftFingerprint, maxHp, armorClass, spellcasting, spellSlots, pactSlots, attacks } = x
   if (typeof sheetUpdatedAt !== 'number' || !Number.isFinite(sheetUpdatedAt)) return null
   if (typeof draftFingerprint !== 'string' || !isInt(maxHp) || !isInt(armorClass)) return null
   if (!Array.isArray(spellcasting) || !Array.isArray(spellSlots) || spellSlots.length !== SPELL_LEVELS) return null
@@ -1826,6 +1826,11 @@ function sanitizeSheetSnapshot(x: unknown): SheetSnapshot | null {
     isRecord(c) && typeof c.key === 'string' && typeof c.label === 'string' && isInt(c.saveDc) && isInt(c.attackBonus))
   if (casting.length !== spellcasting.length) return null
   if (pactSlots !== null && !(isRecord(pactSlots) && isInt(pactSlots.slots) && isInt(pactSlots.slotLevel))) return null
+  // Os ataques entraram depois (2026-10-30): o retrato de antes não os tem, e vale assim.
+  if (attacks !== undefined && !Array.isArray(attacks)) return null
+  const lines = (attacks ?? []).filter((a): a is SheetSnapshotAttack =>
+    isRecord(a) && typeof a.key === 'string' && typeof a.label === 'string' && typeof a.damage === 'string' && typeof a.extraDamage === 'string')
+  if (attacks !== undefined && lines.length !== attacks.length) return null
   return {
     sheetUpdatedAt,
     draftFingerprint,
@@ -1834,6 +1839,9 @@ function sanitizeSheetSnapshot(x: unknown): SheetSnapshot | null {
     spellcasting: casting.map(({ key, label, saveDc, attackBonus }) => ({ key, label, saveDc, attackBonus })),
     spellSlots: [...spellSlots],
     pactSlots: pactSlots === null ? null : { slots: pactSlots.slots as number, slotLevel: pactSlots.slotLevel as number },
+    ...(attacks !== undefined
+      ? { attacks: lines.map(({ key, label, damage, extraDamage }) => ({ key, label, damage, extraDamage })) }
+      : {}),
   }
 }
 

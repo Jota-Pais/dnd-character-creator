@@ -211,11 +211,14 @@ export type EquipmentSpeedBonus = {
  *   é ataque com arma sem ser arma (decisão 20 de `regras-dano-e-morte.md`, revista em 2026-10-29);
  * - `melee-weapon-attack`: todo ataque corpo a corpo com arma, o crítico do Crítico Brutal e dos
  *   Ataques Selvagens (p. 41 e 49) — toda arma corpo a corpo e o golpe desarmado (decisão 21,
- *   revista em 2026-10-29).
+ *   revista em 2026-10-29);
+ * - `melee-weapon`: toda ARMA corpo a corpo, sem o golpe desarmado — a Destruição Divina
+ *   Aprimorada, "com uma arma corpo-a-corpo" pelo inglês (p. 111; decisão c, de 2026-10-29). A de
+ *   arremesso só sem arremessar: arremessada, o ataque é à distância (p. 149 e 197).
  */
 export type AttackScope =
   | 'ranged' | 'melee-one-handed' | 'melee-two-handed' | 'melee-light' | 'melee-strength' | 'unarmed'
-  | 'weapon-attack' | 'melee-weapon-attack'
+  | 'weapon-attack' | 'melee-weapon-attack' | 'melee-weapon'
 
 /**
  * Bônus nas jogadas de dano que só vale numa situação, com o valor de um recurso calculado da

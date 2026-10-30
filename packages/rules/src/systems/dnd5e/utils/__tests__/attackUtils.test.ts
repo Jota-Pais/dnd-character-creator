@@ -5,6 +5,7 @@ import {
   getWeaponAttackEffects, getSheetFightingStyles, getTakenFightingStyles, hasRepeatedFightingStyle,
 } from '../sheetEffects'
 import { isStepComplete } from '../draftValidation'
+import { formatAttackDamage } from '../weaponFormat'
 import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
 import type { ClassChoiceSelections } from '../../types/class'
 
@@ -394,5 +395,35 @@ describe('isSheetAttackInScope', () => {
     expect(isSheetAttackInScope(row('longsword'), 'ranged')).toBe(false)
     expect(isSheetAttackInScope(row('longsword'), 'melee-two-handed')).toBe(true)
     expect(isSheetAttackInScope(row('unarmed'), 'melee-one-handed')).toBe(false)
+  })
+})
+
+// Destruição Divina Aprimorada (paladino 11, p. 111): dano extra incondicional nas ARMAS corpo a
+// corpo, a mesma linha na Revisão, no PDF e no jogo (decisão c: o golpe desarmado fica de fora).
+describe('Destruição Divina Aprimorada nas linhas de ataque', () => {
+  const paladin = (level: number) => draft({ class: 'paladin', level, ...carrying('longsword', 'javelin', 'longbow') })
+  const row = (level: number, key: string) => getSheetAttacks(paladin(level), scores({ STR: 16 })).find(a => a.key === key)!
+
+  it('melee-weapon: as armas corpo a corpo, sem as de ataque à distância nem o golpe desarmado', () => {
+    expect(['longsword', 'javelin', 'longbow', 'unarmed'].map(k => isSheetAttackInScope(row(11, k), 'melee-weapon')))
+      .toEqual([true, true, false, false])
+  })
+
+  it('paladino 11: espada longa com +1d8 radiante, no texto da Revisão e do PDF', () => {
+    const sword = row(11, 'longsword')
+    expect(sword.damage).toBe('1d8+3 cortante')
+    expect(sword.extraDamage).toEqual([{ label: 'Destruição Divina Aprimorada', count: 1, sides: 8, damageType: 'radiant' }])
+    expect(formatAttackDamage(sword)).toBe('1d8+3 cortante (1d10+3 a duas mãos) + 1d8 radiante')
+  })
+
+  it('golpe desarmado e arco: sem; azagaia: na linha corpo a corpo, arremessada sem', () => {
+    expect(row(11, 'unarmed').extraDamage).toBeUndefined()
+    expect(row(11, 'longbow').extraDamage).toBeUndefined()
+    expect(formatAttackDamage(row(11, 'javelin'))).toBe('1d6+3 perfurante + 1d8 radiante')
+    expect(row(11, 'javelin').notes).toContain('arremessando, sem o 1d8 radiante (Destruição Divina Aprimorada)')
+  })
+
+  it('paladino 10: sem', () => {
+    expect(formatAttackDamage(row(10, 'longsword'))).toBe('1d8+3 cortante (1d10+3 a duas mãos)')
   })
 })

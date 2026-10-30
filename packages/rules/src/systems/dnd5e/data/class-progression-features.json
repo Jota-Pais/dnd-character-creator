@@ -643,7 +643,8 @@
       {
         "level": 11,
         "name": "Destruição Divina Aprimorada",
-        "description": "Sempre que você atingir uma criatura com uma arma corpo-a-corpo, ela sofre 1d8 de dano radiante extra (somado ao dano da Destruição Divina quando você a usar)."
+        "description": "Sempre que você atingir uma criatura com uma arma corpo-a-corpo, ela sofre 1d8 de dano radiante extra (somado ao dano da Destruição Divina quando você a usar).",
+        "effects": { "weaponAttacks": [{ "weapons": "melee-weapon", "extraDamage": { "dice": { "count": 1, "sides": 8 }, "damageType": "radiant" } }] }
       },
       {
         "level": 14,

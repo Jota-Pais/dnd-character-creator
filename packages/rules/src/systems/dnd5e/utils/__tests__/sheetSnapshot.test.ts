@@ -52,6 +52,7 @@ describe('takeSheetSnapshot', () => {
       spellcasting: guide.spellcasting.map(sc => ({ key: sc.key, label: sc.label, saveDc: sc.saveDc, attackBonus: sc.attack.modifier })),
       spellSlots: sheet.spellSlots,
       pactSlots: null,
+      attacks: [{ key: 'unarmed', label: 'Golpe desarmado', damage: '0 concussão', extraDamage: '' }],
     })
     expect(shot.spellcasting.map(sc => [sc.key, sc.saveDc, sc.attackBonus])).toEqual([['class:wizard', 14, 6], ['class:cleric', 13, 5]])
     expect(shot.spellSlots.slice(0, 4)).toEqual([4, 3, 2, 0])
@@ -138,5 +139,47 @@ describe('syncSheetSnapshot', () => {
     const result = syncSheetSnapshot(state(snapshot()), snapshot({ sheetUpdatedAt: 20 }))
     expect(result.state.sheetSnapshot?.sheetUpdatedAt).toBe(20)
     expect(result.notices).toEqual([])
+  })
+})
+
+// Decisão 10.2.23: a Destruição Divina Aprimorada muda o dano das armas corpo a corpo do paladino
+// 11+ na ficha salva, e o aviso de correção o diz. O retrato de antes não tinha os ataques; naquele
+// app nenhuma linha tinha dano extra de outro tipo.
+describe('aviso de correção: o dano dos ataques', () => {
+  const paladin: CharacterDraft = {
+    ...structuredClone(EMPTY_DRAFT), race: 'human', class: 'paladin', level: 11,
+    abilityScores: { STR: 15, DEX: 10, CON: 14, INT: 8, WIS: 10, CHA: 14 },
+    equipment: {
+      ...structuredClone(EMPTY_DRAFT.equipment), method: 'wealth',
+      purchasedItems: [{ itemId: 'longsword', quantity: 1, source: 'purchased' }],
+    },
+  }
+
+  it('o retrato de antes dos ataques (o paladino 11 salvo): avisa o 1d8 radiante a mais', () => {
+    const now = takeSheetSnapshot(paladin, buildPlaySheet(paladin), 10)
+    const legacy: SheetSnapshot = { ...now }
+    delete legacy.attacks
+    // Guardado sem os ataques, volta inteiro do armazenamento.
+    const stored = JSON.parse(JSON.stringify({ ...createPlayState('c1'), sheetSnapshot: legacy }))
+    expect(sanitizePlayState(stored, 'c1').sheetSnapshot).toEqual(legacy)
+    expect(syncSheetSnapshot(sanitizePlayState(stored, 'c1'), now).notices).toEqual([{
+      kind: 'sheetCorrected',
+      text: 'O app corrigiu sua ficha: Espada Longa, dano 1d8+3 cortante (1d10+3 a duas mãos) → 1d8+3 cortante (1d10+3 a duas mãos) + 1d8 radiante.',
+    }])
+  })
+
+  it('quem não tem dano extra não ganha aviso, e o retrato passa a ter os ataques', () => {
+    const now = takeSheetSnapshot(caster, buildPlaySheet(caster), 10)
+    const legacy: SheetSnapshot = { ...now }
+    delete legacy.attacks
+    const result = syncSheetSnapshot({ ...createPlayState('c1'), sheetSnapshot: legacy }, now)
+    expect(result.notices).toEqual([])
+    expect(result.state.sheetSnapshot?.attacks).toEqual(now.attacks)
+  })
+
+  it('o ataque torto no retrato guardado: o retrato some inteiro', () => {
+    const shot = takeSheetSnapshot(paladin, buildPlaySheet(paladin), 10)
+    const stored = JSON.parse(JSON.stringify({ ...createPlayState('c1'), sheetSnapshot: { ...shot, attacks: [{ key: 'x' }] } }))
+    expect(sanitizePlayState(stored, 'c1').sheetSnapshot).toBeUndefined()
   })
 })

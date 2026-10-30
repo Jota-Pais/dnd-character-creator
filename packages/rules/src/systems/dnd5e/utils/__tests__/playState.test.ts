@@ -1810,6 +1810,21 @@ describe('efeitos ligados: a Fúria pela ação que a liga', () => {
       expect(completeShortRest(state(), sh).notices.map(n => n.text)).not.toContain(RESET)
     })
 
+    // O descanso só zera os contadores que a ficha declara: o que ficou sem dono voltaria com a CD
+    // de antes do descanso.
+    it('a ficha que perde a característica perde o contador: descansa no 10 e, de volta ao 11, a CD é 10', () => {
+      const sh11 = barbarian(11)
+      const sh10 = barbarian(10)
+      const used = { ...state(), restCounters: { 'relentless-rage': 2 } }
+      expect(reconcilePlayState(used, sh11).restCounters).toEqual({ 'relentless-rage': 2 })
+      expect(reconcilePlayState(used, sh10).restCounters).toEqual({})
+      // Na abertura, sem aviso, como o gasto do recurso que a ficha não tem.
+      expect(reconcileLoadedPlayState(used, sh10)).toEqual({ state: { ...used, restCounters: {} }, notices: [] })
+      const rested = completeLongRest(used, sh10).state
+      expect(rested.restCounters).toEqual({})
+      expect(offerOf(applyDamage(enter(rested, sh11).state, sh11, { amount: sh11.maxHp }))?.dc).toBe(10)
+    })
+
     it('fora da fúria, antes do 11º nível ou na morte instantânea, nada; o "passei" fora da fúria aplica o dano e avisa', () => {
       const sh = barbarian(11)
       expect(offerOf(applyDamage(state(), sh, { amount: sh.maxHp }))).toBeUndefined()

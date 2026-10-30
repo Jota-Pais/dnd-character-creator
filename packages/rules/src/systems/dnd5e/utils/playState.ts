@@ -214,9 +214,10 @@ export function getResourceAvailable(state: PlayState, sheet: PlaySheet, id: str
 // ── Reconciliação com a ficha ───────────────────────────────────────────────
 
 /**
- * Encaixa o estado nos máximos da ficha atual: gasto nunca acima do máximo, tipos de Dado de Vida
- * e recursos que a ficha não tem mais saem, a 0 PV e morto o dano é o máximo, e vale o invariante
- * `máx. da ficha − damageTaken ≤ máx. efetivo` (o corte da exaustão 4, decisão 4).
+ * Encaixa o estado nos máximos da ficha atual: gasto nunca acima do máximo, tipos de Dado de Vida,
+ * recursos e contadores do descanso que a ficha não tem mais saem, a 0 PV e morto o dano é o
+ * máximo, e vale o invariante `máx. da ficha − damageTaken ≤ máx. efetivo` (o corte da exaustão 4,
+ * decisão 4).
  *
  * Exceção: com máximo efetivo 0 (ficha com 1 PV na exaustão 4) o corte não é aplicado a quem
  * está consciente — o livro não trata do caso (`regras-dano-e-morte.md`, Ponto em aberto 17).
@@ -255,6 +256,11 @@ export function reconcilePlayState(state: PlayState, sheet: PlaySheet): PlayStat
       clampInt(state.spellSlotsSpent[i] ?? 0, 0, sheet.spellSlots[i] ?? 0)),
     pactSlotsSpent: clampInt(state.pactSlotsSpent, 0, sheet.pactSlots?.slots ?? 0),
     resourcesSpent,
+    // O contador que nenhum teste da ficha declara mais (a Fúria Implacável saiu no criador) sai,
+    // como o gasto do recurso que ela não tem: o descanso só zera os da ficha, e a CD voltaria alta
+    // com a característica de volta.
+    restCounters: Object.fromEntries(Object.entries(state.restCounters)
+      .filter(([id]) => getRestCounterSaves(sheet).some(s => s.counter === id))),
     // O efeito ligado que a ficha não tem mais (a característica saiu no criador) sai; a opção que
     // ela não tem mais também.
     activeEffects: state.activeEffects.flatMap(a => {
@@ -380,6 +386,15 @@ function availableDropToOneHp(state: PlayState, sheet: PlaySheet): PlaySheet['dr
 
 /** O teste para ficar com 1 PV (a Fúria Implacável), com o efeito ligado que ele pede. */
 type ZeroHpSaveOffer = { toggle: SheetToggle; save: NonNullable<SheetToggle['zeroHpSave']> }
+
+/**
+ * Os testes da ficha cujos usos moram em `PlayState.restCounters` (hoje, o da Fúria Implacável).
+ * Quem lê os contadores pela ficha lê daqui: o descanso, que os zera, e a reconciliação, que tira
+ * os que a ficha não declara mais.
+ */
+function getRestCounterSaves(sheet: PlaySheet): NonNullable<SheetToggle['zeroHpSave']>[] {
+  return sheet.toggles.flatMap(t => (t.zeroHpSave ? [t.zeroHpSave] : []))
+}
 
 /**
  * A CD de agora do teste para ficar com 1 PV: a de partida mais `dcStep` por uso desde o último
@@ -1471,8 +1486,8 @@ const SONG_OF_REST_ID = 'song-of-rest'
  */
 function resetRestCounters(state: PlayState, sheet: PlaySheet, rest: 'short' | 'long', notices: PlayNotice[]): Record<string, number> {
   const restCounters = { ...state.restCounters }
-  for (const { zeroHpSave: save } of sheet.toggles) {
-    if (!save || (restCounters[save.counter] ?? 0) === 0 || (rest === 'short' && save.resetsOn !== 'short')) continue
+  for (const save of getRestCounterSaves(sheet)) {
+    if ((restCounters[save.counter] ?? 0) === 0 || (rest === 'short' && save.resetsOn !== 'short')) continue
     delete restCounters[save.counter]
     notices.push(note('info', `${save.source}: a CD volta a ${save.dc} (pág. ${save.page}).`))
   }

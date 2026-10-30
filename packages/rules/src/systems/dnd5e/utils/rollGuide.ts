@@ -1011,12 +1011,20 @@ export function getConcentrationGuide(draft: CharacterDraft, state: PlayState, d
 
 /**
  * A receita do teste para ficar com 1 PV (a Fúria Implacável, pág. 49): o TR do atributo dele, o
- * mesmo da aba Testes, com a CD do aviso e o nome de quem o dá. O id é próprio, como o da
- * concentração: a folha aberta não o troca pela entrada do TR sem a CD.
+ * mesmo da aba Testes, com a CD do aviso e o nome de quem o dá. O estado é o de ANTES do dano, o
+ * mesmo de onde o "Passei" o reaplica: quem passa não caiu, então o teste é feito ainda em fúria e
+ * sem o que a queda traz — a exaustão do Frenesi, que no estado de depois daria a desvantagem da
+ * exaustão 3 a quem estava na 2. O id é próprio, como o da concentração: a folha aberta não o
+ * troca pela entrada do TR sem a CD.
  */
-export function getZeroHpSaveGuide(guide: RollGuide, save: { ability: AbilityScore; source: string }, dc: number): RollGuideEntry {
+export function getZeroHpSaveGuide(
+  draft: CharacterDraft,
+  stateBefore: PlayState,
+  save: { ability: AbilityScore; source: string },
+  dc: number,
+): RollGuideEntry {
   return {
-    ...guide.saves[save.ability],
+    ...getRollGuide(draft, stateBefore).saves[save.ability],
     id: 'zero-hp-save',
     label: `${save.source} — TR de ${ABILITY_LABELS[save.ability].long}`,
     dc,

@@ -11,8 +11,8 @@ import { getFinalAbilityScores } from '../asiUtils'
 import { getPassiveScore, getSavingThrowChecks, getSkillChecks } from '../proficiencyUtils'
 import { getFeatSpellBlocks } from '../spellUtils'
 import {
-  describeRollGuide, findRollGuideEntry, formatGuideFormula, getConcentrationGuide, getRollGuide, parseDamageText,
-  withInspirationSpent, withTableMode, type RollGuide, type RollGuideEntry,
+  describeRollGuide, findRollGuideEntry, formatGuideFormula, getConcentrationGuide, getRollGuide, getZeroHpSaveGuide,
+  parseDamageText, withInspirationSpent, withTableMode, type RollGuide, type RollGuideEntry,
 } from '../rollGuide'
 
 function draft(overrides: Partial<CharacterDraft>): CharacterDraft {
@@ -1082,6 +1082,28 @@ describe('getConcentrationGuide', () => {
     const save = getRollGuide(d, play()).saves.CON
     expect(save.mode).toBe('normal')
     expect(save.notes.some(n => n.startsWith('Conjurador de Guerra'))).toBe(true)
+  })
+})
+
+// "Se você cair para 0 pontos de vida enquanto estiver em fúria e não morrer, você pode realizar
+// um teste de resistência de Constituição CD 10" (Fúria Implacável, pág. 49).
+describe('getZeroHpSaveGuide', () => {
+  const save = { ability: 'CON' as const, source: 'Fúria Implacável' }
+  const berserker = draft({ class: 'barbarian', level: 11, abilityScores: SCORES, classChoices: choices({ subclass: 'berserker' }) })
+
+  it('o TR de Constituição da ficha, com a CD do aviso, o nome de quem dá e o id próprio', () => {
+    const before = play({ activeEffects: [{ id: 'rage', startedAt: 1, option: 'frenzy' }] })
+    expect(getZeroHpSaveGuide(berserker, before, save, 15)).toMatchObject({
+      id: 'zero-hp-save', label: 'Fúria Implacável — TR de Constituição', dc: 15, ability: 'CON', formula: '1d20 + 6', mode: 'normal',
+    })
+  })
+
+  // Quem passa não caiu: a exaustão que o Frenesi daria na queda (2 → 3) não entra no teste.
+  it('lê o estado que recebe, o de antes do dano: na exaustão 2 sem desvantagem, na 3 com', () => {
+    const before = play({ exhaustionLevel: 2, activeEffects: [{ id: 'rage', startedAt: 1, option: 'frenzy' }] })
+    expect(getZeroHpSaveGuide(berserker, before, save, 10).mode).toBe('normal')
+    const after = play({ exhaustionLevel: 3, lifeState: 'dying' })
+    expect(labelsOf(getZeroHpSaveGuide(berserker, after, save, 10).disadvantage)).toEqual(['Exaustão 3'])
   })
 })
 

@@ -5,7 +5,7 @@ import { useCharacterStore } from '../../../stores/characterStore'
 import { usePlayStore } from '../../../stores/playStore'
 import type { SheetSnapshot } from '@rpg/rules/systems/dnd5e/types/playState'
 import { loadPlayState, savePlayState } from '../../../utils/playStorage'
-import { createPlayState, grantTempHp, performAction, stabilize, startConcentration } from '@rpg/rules/systems/dnd5e/utils/playState'
+import { createPlayState, grantTempHp, performAction, setExhaustion, stabilize, startConcentration } from '@rpg/rules/systems/dnd5e/utils/playState'
 import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
 import { openDraft, openKrusk, resetPlay } from './openPlay'
 
@@ -137,6 +137,28 @@ describe('desfazer e avisos', () => {
     // A próxima queda pede CD 15.
     damage('1')
     expect(screen.getByRole('status')).toHaveTextContent('Constituição CD 15')
+  })
+
+  // Quem passa não caiu: o teste é feito ainda em fúria, antes da exaustão que o Frenesi dá na queda.
+  it('Furioso 11 com exaustão 2 cai em Frenesi: a receita do TR sai de antes da queda, sem a desvantagem da exaustão 3', () => {
+    const berserker = { ...structuredClone(COMPLETE_DRAFT), level: 11, race: 'human', classChoices: { ...COMPLETE_DRAFT.classChoices, subclass: 'berserker' } }
+    openDraft(berserker)
+    usePlayStore.getState().run((st, sh) => setExhaustion(st, sh, 2))
+    usePlayStore.getState().run((st, sh) => performAction(st, sh, 'rage-enter', { option: 'frenzy', now: 1 }))
+    render(<PlayScreen />)
+    damage(screen.getByTestId('hp-current').textContent ?? '')
+    // A queda encerrou a fúria, e o Frenesi subiu a exaustão.
+    expect(usePlayStore.getState().state!.exhaustionLevel).toBe(3)
+    const toast = screen.getByRole('status')
+    expect(toast).toHaveTextContent('Role 1d20 + 6: precisa de 10 ou mais.')
+    expect(toast).not.toHaveTextContent('desvantagem')
+    fireEvent.click(within(toast).getByRole('button', { name: 'Ver o que rolar' }))
+    expect(screen.getByRole('dialog')).toHaveTextContent('Fúria Implacável — TR de Constituição')
+    expect(screen.getByRole('dialog')).not.toHaveTextContent('Exaustão 3')
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar' }))
+    // Quem passa fica com 1 PV, em fúria e na exaustão 2: a mesma de onde a receita saiu.
+    fireEvent.click(within(screen.getByRole('status')).getByRole('button', { name: 'Passei: fico com 1 PV' }))
+    expect(usePlayStore.getState().state).toMatchObject({ exhaustionLevel: 2, lifeState: 'conscious' })
   })
 
   it('dano com concentração mostra a CD e o que rolar, e "Falhei: encerrar" encerra', () => {

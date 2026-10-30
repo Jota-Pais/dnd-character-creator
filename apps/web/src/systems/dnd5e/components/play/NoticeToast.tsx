@@ -174,10 +174,13 @@ function NoticeLine({ notice, view, onOpenRecipe, canUndo, act }: {
     view.run((st, sh) => applyDamageDroppingToOneHp(st, sh, damage, by))
   }
   // Fúria Implacável: a receita do TR com a CD do aviso; quem passou, desfaz e reaplica em 1 PV,
-  // ainda em fúria. A ficha diz o atributo e quem dá o teste.
+  // ainda em fúria. A ficha diz o atributo e quem dá o teste. A receita sai do estado de antes do
+  // dano (o topo do desfazer, de onde o "Passei" reaplica), e não do `view.guide`: a queda já
+  // encerrou a fúria e, com o Frenesi, subiu a exaustão, e o teste é feito antes dela.
+  const before = usePlayStore(s => s.undoStack.at(-1))
   const zeroHpSave = view.sheet.toggles.find(t => t.zeroHpSave)?.zeroHpSave
-  const saveOffer = notice.kind === 'dropToOneHpSave' && canUndo && notice.damage && notice.dc !== undefined && zeroHpSave
-    ? { damage: notice.damage, entry: getZeroHpSaveGuide(view.guide, zeroHpSave, notice.dc) }
+  const saveOffer = notice.kind === 'dropToOneHpSave' && canUndo && before && notice.damage && notice.dc !== undefined && zeroHpSave
+    ? { damage: notice.damage, entry: getZeroHpSaveGuide(view.draft, before, zeroHpSave, notice.dc) }
     : null
   // A CD vem do aviso (o dano já com resistência, contando o absorvido); o guia dá o resto da receita.
   const concentration = notice.kind === 'concentrationCheck' && notice.dc !== undefined && view.state.concentration

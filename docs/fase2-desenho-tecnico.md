@@ -491,6 +491,8 @@ Revisão e PDF ganham a mesma linha só se o dono aprovar (dúvida de produto), 
 
 ### PWA: instalável e offline (`pwa`)
 
+**Feita fora da Fase 2, em 2026-10-29 e 2026-10-30:** o que ficou e o que foi conferido está em `docs/app-instalavel.md`. O desenho abaixo fica como registro.
+
 - **Tamanho:** M
 - **Depende de:** nada
 

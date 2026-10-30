@@ -21,6 +21,7 @@ Toda decisão de produto e design serve a esse objetivo: guiar o iniciante sem t
 - **Sistemas Multi-RPG (Arquitetura Modular):** O núcleo da aplicação (`core/`) é completamente agnóstico de regras de negócio. Todos os dados, regras e telas específicas ficam isolados nos seus respectivos módulos de sistema (ex: `systems/dnd5e`) — as regras no motor (`packages/rules`), as telas no site (`apps/web`).
 - Deploy estático na Vercel (`vercel.json` na raiz), com CI de lint, testes e build no GitHub Actions
 - Sem servidor por enquanto: não sugerir API routes, server actions ou arquitetura com servidor próprio. O servidor (conta e sincronização) é plano do dono para depois, e o motor de regras já fica pronto para ele
+- App instalável e sem rede (iPhone pela tela de início, Android pelo APK que abre o site publicado): service worker que guarda só o que é do site, versão nova só na próxima abertura (nunca recarrega no meio do jogo), margens de área segura no que fica fixo nas bordas. Ver `docs/app-instalavel.md`
 
 ## Versão de D&D
 

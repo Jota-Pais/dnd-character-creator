@@ -5,7 +5,7 @@ import {
   buildCharacterFile, parseCharacterFile, exportCharacter, CHARACTER_FILE_FORMAT, CHARACTER_FILE_VERSION,
 } from '../storage'
 import { EMPTY_DRAFT, type CharacterDraft } from '@rpg/rules/systems/dnd5e/types/character'
-import { PLAY_STATE_VERSION } from '@rpg/rules/systems/dnd5e/types/playState'
+import { PLAY_STATE_VERSION, type PlayState } from '@rpg/rules/systems/dnd5e/types/playState'
 import { sanitizeImportedDraft } from '@rpg/rules/systems/dnd5e/utils/draftValidation'
 import { createPlayState } from '@rpg/rules/systems/dnd5e/utils/playState'
 import { savePlayState } from '../playStorage'
@@ -184,6 +184,15 @@ describe('arquivo de ficha com o estado de jogo (decisão 10.2.3)', () => {
     const back = parseCharacterFile(file)
     expect(back?.playState).toMatchObject({ damageTaken: 0, tempHp: 2, conditions: ['poisoned'], rolls: [] })
     expect(parseCharacterFile({ ...file, playState: 'lixo' })?.playState).toBeNull()
+  })
+
+  it('os efeitos ligados do arquivo passam pelo sanitizador; o arquivo da Fase 0, sem o campo, abre com []', () => {
+    const base = buildCharacterFile(structuredClone(COMPLETE_DRAFT), null)
+    const bad = parseCharacterFile({ ...base, playState: { activeEffects: [{ id: 'rage', startedAt: 3 }, { option: 'x' }, 'rage'] } })
+    expect(bad?.playState?.activeEffects).toEqual([{ id: 'rage', startedAt: 3 }])
+    const phase0: Partial<PlayState> = createPlayState('c1', 5)
+    delete phase0.activeEffects
+    expect(parseCharacterFile({ ...base, playState: phase0 })?.playState?.activeEffects).toEqual([])
   })
 
   it('envelope sem ficha válida é recusado', () => {

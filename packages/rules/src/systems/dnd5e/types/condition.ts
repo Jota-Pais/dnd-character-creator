@@ -72,9 +72,12 @@ export type DamageResistanceEffect = { kind: 'damageResistance'; types: 'all'; s
  */
 export type DamageImmunityEffect = { kind: 'damageImmunity'; damageType: DamageTypeId; scope: 'sheet' }
 
-/** Efeitos que mexem no estado de jogo, sem número. */
+/**
+ * Efeitos que mexem no estado de jogo, sem número. `cannotCast` (não pode conjurar) não vem de
+ * condição: é o da restrição de conjuração de um efeito ligado (em fúria, pág. 48).
+ */
 export type StateEffect = {
-  kind: 'noActions' | 'noReactions' | 'cannotSpeak' | 'endsConcentration' | 'death'
+  kind: 'noActions' | 'noReactions' | 'cannotSpeak' | 'endsConcentration' | 'death' | 'cannotCast'
   scope: 'gameState'
   /** Página da regra quando ela não está no Apêndice A (concentração: pág. 205). */
   page?: number

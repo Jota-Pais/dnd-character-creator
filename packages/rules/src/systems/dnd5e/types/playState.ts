@@ -38,6 +38,18 @@ export type DeathSaveCount = 0 | 1 | 2 | 3
 
 export type DeathSaves = { successes: DeathSaveCount; failures: DeathSaveCount }
 
+/**
+ * Um efeito ligado (`ToggleDeclaration.id`: 'rage'). O que ele faz vem da ficha
+ * (`resolveActiveEffects`); aqui fica só que está ligado, desde quando e a escolha feita ao ligar.
+ */
+export type ActiveToggle = {
+  id: string
+  /** Momento em que ligou, em ms desde a época (mesma unidade de `RollRecord.at`). */
+  startedAt: number
+  /** A opção escolhida ao ligar (`ToggleOption.id`: o Frenesi). */
+  option?: string
+}
+
 /** Magia (ou efeito) em que o personagem se concentra. `spellId` quando vem de `spells.json`. */
 export type Concentration = {
   spellId?: string
@@ -90,6 +102,11 @@ export type PlayState = {
   exhaustionLevel: ExhaustionLevel
 
   concentration: Concentration | null
+  /**
+   * Os efeitos ligados (em fúria). Um id liga uma vez só: a mesma magia não acumula (pág. 207).
+   * A Nova sessão não os desliga — tempo de jogo não é tempo de relógio.
+   */
+  activeEffects: ActiveToggle[]
   /** Inspiração do PHB 2014: tem ou não tem (pág. 127). */
   inspiration: boolean
   /** Anotação livre do jogador. */

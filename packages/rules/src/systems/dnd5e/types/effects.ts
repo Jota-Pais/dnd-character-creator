@@ -1,5 +1,6 @@
+import type { ActionDeclaration } from './actions'
 import type { ArmorProficiency } from './class'
-import type { ConditionId, RollCategory } from './condition'
+import type { ConditionId, NoticeEffect, RollCategory, RollModeEffect, StateEffect } from './condition'
 import type { DamageTypeId } from './damage'
 import type { AbilityScore } from './race'
 
@@ -7,9 +8,11 @@ import type { AbilityScore } from './race'
  * Efeitos mecânicos estruturados de uma característica — talentos, features de classe e (por ora só
  * `resources` e `hpPerLevel`) traços raciais. Espelha `src/systems/ordem/types/effects.ts`.
  *
- * Só entra aqui o que é PERMANENTE e automático: o que o jogador ativa em jogo ("gaste um ponto
- * de sorte para...") fica só na descrição, porque a ficha não tem como aplicar sozinha. A exceção
- * são os `resources`: a ficha não os gasta, mas conta quantos usos há e quando voltam.
+ * Entra aqui o que a ficha aplica sozinha e também o que o jogador liga em jogo (Fase 2): o efeito
+ * ligado (`toggle`: em fúria) e as ações que o ligam e desligam (`actions`). A condição desses é
+ * satisfeita pelo ESTADO de jogo: ligado, o efeito entra no número; a Revisão e o PDF, que não têm
+ * estado, continuam com a nota. Os `resources` a ficha não gasta, mas conta quantos usos há e
+ * quando voltam.
  *
  * Regra de ouro, a mesma do Ordem: efeito INCONDICIONAL entra no número da ficha; efeito
  * CONDICIONAL vira linha própria com a condição — somar o +1 do Ambidestro na CA seria mentir,
@@ -57,18 +60,25 @@ export type ConditionalRollNote = {
 }
 
 /**
- * O que uma característica proíbe na conjuração numa situação que a ficha não conhece — a Fúria
- * (p. 48): "Se você for capaz de conjurar magias, você não poderá conjurá-las ou se concentrar
- * nelas enquanto estiver em fúria" — e entrar em fúria encerra a concentração (decisão de
- * 2026-10-29, que o `text` diz). O modo de jogo não tem o estado "em fúria" (efeitos ativos são
- * da Fase 2): nunca bloqueia nem muda número — vira nota onde se conjura (a CD e o ataque de
- * magia, a concentração, as magias da aba Regras), inclusive nas magias inatas da raça.
+ * O que uma característica proíbe na conjuração numa situação — a Fúria (p. 48): "Se você for
+ * capaz de conjurar magias, você não poderá conjurá-las ou se concentrar nelas enquanto estiver em
+ * fúria" — e entrar em fúria encerra a concentração (decisão de 2026-10-29, que o `text` diz). Sem
+ * o estado de jogo (Revisão, PDF, o efeito desligado), é nota onde se conjura (a CD e o ataque de
+ * magia, a concentração, as magias da aba Regras), inclusive nas magias inatas da raça. Com o
+ * efeito `toggle` ligado, ela está em vigor: `blocks` diz o que o estado proíbe.
  */
 export type CastingRestriction = {
   /** A situação, em português, que abre a nota ("em fúria"). */
   when: string
   /** A regra, em português, com a página — exibida depois da situação. */
   text: string
+  /** O efeito ligado que É a situação ('rage'): ligado, a restrição está em vigor. */
+  toggle?: string
+  /**
+   * O que ela proíbe em vigor: conjurar (`cast`) e se concentrar (`concentrate`) — ligar o efeito
+   * encerra a concentração, e o `startConcentration` recusa.
+   */
+  blocks?: ('cast' | 'concentrate')[]
 }
 
 /** Bônus de CA que só vale numa situação (ex.: Ambidestro, "empunhando duas armas"). */
@@ -201,8 +211,10 @@ export type AttackScope =
 /**
  * Bônus nas jogadas de dano que só vale numa situação, com o valor de um recurso calculado da
  * MESMA característica — o Dano de Fúria (p. 48): +2, +3 no 9º e +4 no 16º nível de bárbaro, em
- * fúria e sem armadura pesada. A ficha não sabe se você está em fúria: é sempre nota na linha de
- * ataque, nunca o número. Um valor só, nos dados: o da caixa de Recursos é o mesmo da nota.
+ * fúria e sem armadura pesada. A ficha sozinha (Revisão, PDF) não sabe se você está em fúria: é
+ * nota na linha de ataque. No jogo, com o efeito `toggle` ligado, a condição é satisfeita pelo
+ * estado e o bônus entra no número da linha que cumpre o escopo. Um valor só, nos dados: o da
+ * caixa de Recursos é o mesmo da nota e do número.
  */
 export type ConditionalDamageBonus = {
   /** Id do recurso, declarado na mesma característica, cujo `amount` é o bônus (no nível NA classe dona). */
@@ -211,6 +223,8 @@ export type ConditionalDamageBonus = {
   condition: string
   /** Parte da condição que a ficha confere pelo equipamento: descumprida, a nota diz o que a impede. */
   requires?: EquipmentRequirement
+  /** O efeito ligado que cumpre o resto da condição ('rage'). */
+  toggle?: string
 }
 
 /**
@@ -309,6 +323,82 @@ export type FeatureChoices = {
    * reaproveita o atributo que já recebe o +1 do talento (`abilityIncrease`).
    */
   savingThrowFromAbilityChoice?: boolean
+}
+
+// ── Efeitos ligados (Fase 2) ───────────────────────────────────────────────────
+
+/** Defesas que valem enquanto o efeito está ligado (Fúria: concussão, cortante e perfurante). */
+export type ToggleDamageDefenses = { kind: 'damageDefenses'; defenses: DamageDefenses; scope: 'sheet' }
+
+/**
+ * "Não pode ser enfeitiçado ou amedrontado" enquanto ligado (Fúria Inconsciente, p. 49): aplicar
+ * a condição é recusado, e a que já estava gravada fica suspensa até o efeito acabar.
+ */
+export type ConditionImmunityEffect = { kind: 'conditionImmunity'; conditions: ConditionId[]; scope: 'gameState' }
+
+/** Deslocamento de voo igual ao de caminhada (Sintonia Totêmica da Águia, p. 50). */
+export type FlySpeedEffect = { kind: 'flySpeed'; feet: 'walking'; scope: 'sheet' }
+
+/**
+ * O que um efeito LIGADO faz, no vocabulário das condições (`types/condition.ts`): `sheet` muda o
+ * número ou o modo, `gameState` mexe no estado, `notice` é linha que nunca muda número. Os de
+ * estado `cannotCast` e `endsConcentration` não se declaram aqui: vêm da restrição de conjuração
+ * da característica (`CastingRestriction.blocks`), a fonte única dela.
+ */
+export type ActiveEffect =
+  | RollModeEffect
+  | ToggleDamageDefenses
+  | ConditionImmunityEffect
+  | FlySpeedEffect
+  | StateEffect
+  | NoticeEffect
+
+/** O que encerra sozinho um efeito ligado: cair inconsciente (a Fúria, p. 48). */
+export type ToggleEnd = 'unconscious'
+
+/** Efeitos que só valem com o equipamento certo (a Fúria: "se você não estiver vestindo uma armadura pesada"). */
+export type ToggleBenefits = { requires: EquipmentRequirement; effects: ActiveEffect[] }
+
+/**
+ * Uma escolha feita ao ligar o efeito (o Frenesi, p. 49: "você pode entrar num frenesi"), com o que
+ * ela custa quando o efeito acaba (`onEnd`: um nível de exaustão).
+ */
+export type ToggleOption = { id: string; label: string; onEnd?: { exhaustion: 1 } }
+
+/**
+ * Um efeito que o jogador liga em jogo (a Fúria), declarado na característica dona. Não repete o
+ * que mora em outro lugar: o texto e a duração são os da característica (`description`), e o custo
+ * de ligar é o da ação que liga (`effects.actions`). O "ligado" mora no estado de jogo
+ * (`PlayState.activeEffects`), nunca na ficha.
+ */
+export type ToggleDeclaration = {
+  id: string
+  /** Só o rótulo do estado ("Em fúria"): o chip dos vitais e a seção da aba Estado. */
+  label: string
+  page: number
+  /** Valem sempre que ligado. */
+  effects?: ActiveEffect[]
+  /** Valem ligado e com o equipamento: sem ele, o efeito liga mas fica sem eles (p. 48). */
+  benefits?: ToggleBenefits
+  endsOn?: ToggleEnd[]
+  /**
+   * O lembrete de quando o efeito acaba antes (a Fúria: o turno acabou sem ataque nem dano, pelo
+   * inglês), para o jogador desligar na mesa; o app não conta turnos.
+   */
+  earlyEndReminder?: string
+}
+
+/**
+ * O que outra característica acrescenta a um efeito ligado (`toggle`), sem repetir a declaração
+ * dele: os totens do Guerreiro Totêmico, a Fúria Inconsciente, o Frenesi (`options`) e a Fúria
+ * Persistente, que tira o fim prematuro (`suppressEarlyEnd`).
+ */
+export type ToggleModifier = {
+  toggle: string
+  effects?: ActiveEffect[]
+  benefits?: ToggleBenefits
+  options?: ToggleOption[]
+  suppressEarlyEnd?: true
 }
 
 export type FeatureEffects = {
@@ -447,6 +537,22 @@ export type FeatureEffects = {
    * `getDamageDefenses`.
    */
   damageDefenses?: DamageDefenses
+  /**
+   * O efeito que o jogador liga em jogo (a Fúria). Lido em features de classe e subclasse, no nível
+   * NA classe dona (`getSheetToggles`).
+   */
+  toggle?: ToggleDeclaration
+  /**
+   * O que a característica acrescenta a um efeito ligado de outra (Frenesi, Fúria Inconsciente,
+   * Fúria Persistente, totens). Lido em features de classe e subclasse e nas opções escolhidas em
+   * slot de progressão.
+   */
+  toggleModifiers?: ToggleModifier[]
+  /**
+   * As ações da característica, com o custo e o que causam (entrar em fúria, encerrá-la). Lidas em
+   * features de classe e subclasse, no nível NA classe dona (`getSheetActions`).
+   */
+  actions?: ActionDeclaration[]
   /**
    * Recursos que a característica dá: usos que se gastam e voltam no descanso (Fúria, Surto de
    * Ação), poços (Chi, Cura pelas Mãos) e dados que crescem com o nível (Ataque Furtivo). A ficha

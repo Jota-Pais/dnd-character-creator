@@ -3,7 +3,7 @@ import type { ConditionId, ExhaustionLevel } from '../types/condition'
 import type { DamageTypeId } from '../types/damage'
 import {
   CONDITION_NOTE_MAX_LENGTH, HIT_DIE_SIZES, PLAY_STATE_VERSION, ROLL_HISTORY_LIMIT,
-  type Concentration, type DamageInput, type DamagePart, type DeathSaveCount, type LifeState, type PlayNotice, type PlayNoticeKind,
+  type ActiveToggle, type Concentration, type DamageInput, type DamagePart, type DeathSaveCount, type LifeState, type PlayNotice, type PlayNoticeKind,
   type PlayResult, type PlaySheet, type PlayState, type SheetSnapshot, type SheetSnapshotSpellcasting,
 } from '../types/playState'
 import {
@@ -71,6 +71,7 @@ export function createPlayState(characterId: string, now = 0): PlayState {
     conditions: [],
     exhaustionLevel: 0,
     concentration: null,
+    activeEffects: [],
     inspiration: false,
     note: '',
     rolls: [],
@@ -1383,6 +1384,24 @@ function sanitizeConcentration(x: unknown): Concentration | null {
 }
 
 /**
+ * Os efeitos ligados: entrada sem id ou com tipo errado sai, e o mesmo id fica uma vez só (a
+ * primeira). Se a ficha ainda tem o efeito, quem confere é a reconciliação, que conhece a ficha.
+ */
+function sanitizeActiveEffects(x: unknown): ActiveToggle[] {
+  if (!Array.isArray(x)) return []
+  const out: ActiveToggle[] = []
+  for (const item of x) {
+    if (!isRecord(item) || typeof item.id !== 'string' || !item.id || out.some(t => t.id === item.id)) continue
+    out.push({
+      id: item.id,
+      startedAt: typeof item.startedAt === 'number' && Number.isFinite(item.startedAt) ? item.startedAt : 0,
+      ...(typeof item.option === 'string' && item.option ? { option: item.option } : {}),
+    })
+  }
+  return out
+}
+
+/**
  * O retrato da ficha só vale inteiro: torto em qualquer parte, sai (a próxima abertura tira outro,
  * sem aviso — melhor calar uma correção do que inventar uma).
  */
@@ -1484,6 +1503,7 @@ export function sanitizePlayState(raw: unknown, characterId: string): PlayState 
     ...(Object.keys(conditionNotes).length > 0 ? { conditionNotes } : {}),
     exhaustionLevel,
     concentration: lifeState === 'conscious' ? sanitizeConcentration(raw.concentration) : null,
+    activeEffects: sanitizeActiveEffects(raw.activeEffects),
     inspiration: raw.inspiration === true,
     note: typeof raw.note === 'string' ? raw.note : '',
     rolls: Array.isArray(raw.rolls) ? raw.rolls.filter(isRollRecord).slice(-ROLL_HISTORY_LIMIT) : [],

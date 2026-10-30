@@ -1304,6 +1304,35 @@ describe('sanitizePlayState', () => {
     expect('lastLongRestAt' in s).toBe(false)
   })
 
+  it('os efeitos ligados: estado salvo sem o campo carrega com [], sem aviso nem versão nova', () => {
+    const old: Partial<PlayState> = createPlayState('c', 5)
+    delete old.activeEffects
+    const s = sanitizePlayState(old, 'c')
+    expect(s.activeEffects).toEqual([])
+    expect(s.version).toBe(PLAY_STATE_VERSION)
+    expect(reconcileLoadedPlayState(s, S).notices).toEqual([])
+  })
+
+  it('os efeitos ligados: entrada sem id ou com tipo errado sai; o mesmo id fica uma vez', () => {
+    const s = sanitizePlayState({
+      activeEffects: [
+        { id: 'rage', startedAt: 7, option: 'frenzy' },
+        { id: 'rage', startedAt: 9 },
+        { startedAt: 3 },
+        { id: '', startedAt: 1 },
+        { id: 42 },
+        'rage',
+        null,
+        { id: 'spell:bless', startedAt: 'ontem', option: 3 },
+      ],
+    }, 'c')
+    expect(s.activeEffects).toEqual([
+      { id: 'rage', startedAt: 7, option: 'frenzy' },
+      { id: 'spell:bless', startedAt: 0 },
+    ])
+    expect(sanitizePlayState({ activeEffects: 'rage' }, 'c').activeEffects).toEqual([])
+  })
+
   it('concentração limpa e mantida quando consciente', () => {
     const s = sanitizePlayState({ concentration: { label: '  Bênção ', spellId: 5 } }, 'c')
     expect(s.lifeState).toBe('conscious')

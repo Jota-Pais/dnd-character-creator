@@ -26,9 +26,15 @@ export function isIos(nav: NavigatorLike): boolean {
   return /Macintosh/.test(nav.userAgent) && (nav.maxTouchPoints ?? 0) > 1
 }
 
-/** Android, em qualquer navegador (e no WebView do APK). */
+/**
+ * Android, em qualquer navegador (e no WebView do APK). O Chrome em modo computador (o padrão nos
+ * tablets grandes, e o "Site para computador" do celular) se apresenta como Linux de mesa, sem o
+ * "Android"; como no iPad que se diz Mac, o que o separa do Linux de verdade é a tela de toque. O
+ * Linux de mesa com tela de toque passa por Android (o Chromebook se diz CrOS, não Linux).
+ */
 export function isAndroid(nav: NavigatorLike): boolean {
-  return /Android/.test(nav.userAgent)
+  if (/Android/.test(nav.userAgent)) return true
+  return /\bLinux\b/.test(nav.userAgent) && (nav.maxTouchPoints ?? 0) > 1
 }
 
 /**
@@ -58,9 +64,10 @@ export function shouldShowInstallHint(win: WindowLike, dismissedAt: number | nul
  * No Android, o app é o APK (docs/app-android.md). Sozinho, o Chrome ofereceria instalar o site (a
  * barrinha de instalar, pelo `beforeinstallprompt`), e o que ele instala é um segundo "Forja", que
  * guarda as fichas à parte das do APK: a turma se confundiria. Recusar o evento tira a oferta
- * automática. O "Instalar app" do menu do Chrome continua, como escolha de quem o procura: a página
- * não tem como tirá-lo. No computador e no iPhone (que nem tem o evento), nada muda, e o manifesto
- * fica, porque o iPhone precisa dele. Devolve se passou a recusar.
+ * automática, também no Chrome em modo computador do tablet (`isAndroid`). O "Instalar app" do menu
+ * do Chrome continua, como escolha de quem o procura: a página não tem como tirá-lo. No computador e
+ * no iPhone (que nem tem o evento), nada muda, e o manifesto fica, porque o iPhone precisa dele.
+ * Devolve se passou a recusar.
  */
 export function refuseAutomaticInstallOffer(win: WindowLike & Pick<Window, 'addEventListener'>, native: boolean): boolean {
   if (native || !isAndroid(win.navigator)) return false

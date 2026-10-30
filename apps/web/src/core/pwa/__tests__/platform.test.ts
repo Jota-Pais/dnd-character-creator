@@ -9,6 +9,9 @@ const UA = {
   android: 'Mozilla/5.0 (Linux; Android 15; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36',
   // O WebView do APK: o texto do Chrome do Android, com o "wv".
   apkWebView: 'Mozilla/5.0 (Linux; Android 13; Pixel 6; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/109.0.0.0 Mobile Safari/537.36',
+  // O Chrome do Android em modo computador (tablet grande, "Site para computador"): o texto do Linux de mesa.
+  linuxDesktop: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
+  chromebook: 'Mozilla/5.0 (X11; CrOS x86_64 14541.0.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
   windows: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0',
 }
 
@@ -70,13 +73,21 @@ describe('isAndroid', () => {
     expect(isAndroid({ userAgent: UA.iphoneChrome })).toBe(false)
     expect(isAndroid({ userAgent: UA.windows })).toBe(false)
   })
+
+  it('o Chrome em modo computador do tablet (Linux de mesa) é Android pela tela de toque; o Linux de verdade e o Chromebook, não', () => {
+    expect(isAndroid({ userAgent: UA.linuxDesktop, maxTouchPoints: 5 })).toBe(true)
+    expect(isAndroid({ userAgent: UA.linuxDesktop, maxTouchPoints: 0 })).toBe(false)
+    expect(isAndroid({ userAgent: UA.linuxDesktop })).toBe(false)
+    expect(isAndroid({ userAgent: UA.chromebook, maxTouchPoints: 10 })).toBe(false)
+    expect(isAndroid({ userAgent: UA.windows, maxTouchPoints: 10 })).toBe(false)
+  })
 })
 
 // O Chrome instalaria um segundo "Forja", com as fichas à parte das do APK.
 describe('refuseAutomaticInstallOffer: a oferta automática do Chrome', () => {
   /** A janela de mentira, e a oferta que o Chrome faria nela: true quando a página a recusou. */
-  function page(userAgent: string) {
-    return Object.assign(new EventTarget(), { navigator: { userAgent } })
+  function page(userAgent: string, maxTouchPoints = 0) {
+    return Object.assign(new EventTarget(), { navigator: { userAgent, maxTouchPoints } })
   }
   function chromeOffers(win: EventTarget): boolean {
     const offer = new Event('beforeinstallprompt', { cancelable: true })
@@ -86,6 +97,12 @@ describe('refuseAutomaticInstallOffer: a oferta automática do Chrome', () => {
 
   it('no Android, fora do APK, é recusada (o "Instalar app" do menu do Chrome continua)', () => {
     const win = page(UA.android)
+    expect(refuseAutomaticInstallOffer(win, false)).toBe(true)
+    expect(chromeOffers(win)).toBe(true)
+  })
+
+  it('no tablet Android com o Chrome em modo computador, também', () => {
+    const win = page(UA.linuxDesktop, 5)
     expect(refuseAutomaticInstallOffer(win, false)).toBe(true)
     expect(chromeOffers(win)).toBe(true)
   })

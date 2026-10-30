@@ -245,6 +245,20 @@ function getIncludedDamage(effects: SourcedAttackEffect[], useDex: boolean): Sou
     d?.met && !d.blockedBy && scopeCaveat(value.weapons, useDex, false) === '')
 }
 
+const sumIncluded = (effects: SourcedAttackEffect[]) => effects.reduce((sum, e) => sum + (e.conditionalDamage?.value ?? 0), 0)
+
+/**
+ * A linha que pode escolher (acuidade, p. 148; Artes Marciais, p. 104) usa a Destreza quando ela é
+ * maior. No empate, o ataque e o dano da arma são os mesmos com os dois, e fica a Força só se ela
+ * soma agora um bônus que a Destreza não somaria — em fúria, o Dano de Fúria, "usando Força"
+ * (p. 48): escolher a Força aí não custa nada, então o bônus é incondicional e vai ao número. Sem o
+ * estado de jogo (Revisão, PDF), nada é somado, e o empate continua com a Destreza.
+ */
+function choosesDex(strMod: number, dexMod: number, effects: SourcedAttackEffect[]): boolean {
+  if (dexMod !== strMod) return dexMod > strMod
+  return sumIncluded(getIncludedDamage(effects, true)) >= sumIncluded(getIncludedDamage(effects, false))
+}
+
 /** Um bônus que a linha JÁ somou, com quem o dá — o "de onde vem" do guia — e a nota que o diz, se houver. */
 export type IncludedBonus = { label: string; value: number; note?: string }
 
@@ -345,7 +359,8 @@ export function formatAttackDamage(attack: WeaponAttack): string {
 
 /**
  * Ataque de uma arma. Escolhe o atributo — o melhor dos dois para arma de acuidade (p. 148), mesmo
- * à distância como o dardo, e, com Artes Marciais, para arma de monge; fora disso Destreza para
+ * à distância como o dardo, e, com Artes Marciais, para arma de monge (no empate, `choosesDex`:
+ * a Força quando só ela soma o bônus ligado, o Dano de Fúria); fora disso Destreza para
  * arma à distância e Força para corpo a corpo, inclusive as de arremesso (p. 196: "Acuidade ou
  * Arremesso quebram essa regra") — e soma o modificador no ataque e no dano.
  *
@@ -366,14 +381,14 @@ export function getWeaponAttack(weapon: Weapon, ctx: AttackContext): WeaponAttac
   const martialArts = ctx.martialArts && isMonkWeapon(weapon) ? ctx.martialArts : undefined
 
   const finesse = hasProperty(weapon, 'finesse')
-  const useDex = finesse || martialArts !== undefined ? dexMod >= strMod : weapon.weaponType === 'ranged'
+  const useDex = finesse || martialArts !== undefined ? choosesDex(strMod, dexMod, effects) : weapon.weaponType === 'ranged'
   const mod = useDex ? dexMod : strMod
   const notes: string[] = []
 
   const includedAttack: IncludedBonus[] = []
   const attackBonus = (proficient ? proficiencyBonus : 0) + mod + addAttackBonuses(effects, notes, includedAttack)
   const includedDamage = getIncludedDamage(effects, useDex)
-  const damageBonus = includedDamage.reduce((sum, e) => sum + (e.conditionalDamage?.value ?? 0), 0)
+  const damageBonus = sumIncluded(includedDamage)
 
   const type = weapon.damageType ? ` ${DAMAGE_TYPE_PT[weapon.damageType]}` : ''
   const roll = weapon.damage ? withMartialArtsDie(weapon.damage, martialArts?.die) : null
@@ -466,7 +481,7 @@ export type UnarmedStrikeContext = Omit<AttackContext, 'proficient'> & {
 export function getUnarmedStrike(ctx: UnarmedStrikeContext): WeaponAttack {
   const { strMod, dexMod, proficiencyBonus, martialArts, unarmedDie } = ctx
   const effects = (ctx.effects ?? []).filter(e => isUnarmedStrikeInScope(e.value.weapons))
-  const useDex = martialArts !== undefined && dexMod >= strMod
+  const useDex = martialArts !== undefined && choosesDex(strMod, dexMod, effects)
   const mod = useDex ? dexMod : strMod
   const die = Math.max(martialArts?.die ?? 0, unarmedDie?.value ?? 0)
   const roll: DamageRoll = die > 0 ? { dice: 1, sides: die } : { flat: 1 }
@@ -479,7 +494,7 @@ export function getUnarmedStrike(ctx: UnarmedStrikeContext): WeaponAttack {
   // Em fúria, o Dano de Fúria soma ao total do dano fixo, e o piso 0 vale sobre o total (decisões
   // 25 e 27 de `regras-dano-e-morte.md`): com Força 6, 1 − 2 + 2 = 1.
   const includedDamage = getIncludedDamage(effects, useDex)
-  const damageBonus = includedDamage.reduce((sum, e) => sum + (e.conditionalDamage?.value ?? 0), 0)
+  const damageBonus = sumIncluded(includedDamage)
   pushEffectNotes(notes, effects, useDex, false, die > 0 ? undefined : { base: 1, mod }, includedDamage)
   if (martialArts) {
     notes.push(`depois de atacar com golpe desarmado ou arma de monge na ação de Atacar, um golpe desarmado como ação bônus (${martialArts.source})`)

@@ -319,6 +319,35 @@ describe('weaponFormat', () => {
         expect(atk.includedBonuses).toBeUndefined()
       })
 
+      // Acuidade: "você pode escolher usar seu modificador de Força ou de Destreza" (p. 148). No
+      // empate, a Força não custa nada e soma o Dano de Fúria: a regra de ouro o põe no número.
+      it('rapieira com FOR = DES: a linha fica na Força e soma; sem a fúria, o empate segue com a Destreza', () => {
+        const atk = getWeaponAttack(getWeaponById('rapier')!, ctx(3, 3, 2, true, raging(2)))
+        expect(atk.ability).toBe('Força')
+        expect(atk.attackBonus).toBe('+5')
+        expect(atk.damage).toBe('1d8+5 perfurante')
+        expect(atk.notes).toEqual([])
+        expect(atk.includedBonuses).toEqual({ attack: [], damage: [{ label: 'Dano de Fúria', value: 2 }] })
+        // Sem a fúria ligada (a Revisão, o PDF) ou de Placas, nada muda: Destreza e a nota.
+        for (const off of [rage(2), raging(2, 'Placas')]) {
+          const atRest = getWeaponAttack(getWeaponById('rapier')!, ctx(3, 3, 2, true, off))
+          expect(atRest.ability).toBe('Destreza')
+          expect(atRest.damage).toBe('1d8+3 perfurante')
+        }
+        // Adaga: a linha corpo a corpo soma, e arremessada não.
+        const dagger = getWeaponAttack(getWeaponById('dagger')!, ctx(3, 3, 2, true, raging(2)))
+        expect(dagger.damage).toBe('1d4+5 perfurante')
+        expect(dagger.notes).toEqual(['arremessando, sem o Dano de Fúria'])
+      })
+
+      it('golpe desarmado com Artes Marciais e FOR = DES: fica na Força e soma', () => {
+        const MONK = { source: 'Artes Marciais', die: 4, condition: 'sem armadura nem escudo' }
+        const atk = getUnarmedStrike({ strMod: 3, dexMod: 3, proficiencyBonus: 2, martialArts: MONK, ...raging(2) })
+        expect(atk.ability).toBe('Força')
+        expect(atk.damage).toBe('1d4+5 concussão')
+        expect(getUnarmedStrike({ strMod: 3, dexMod: 3, proficiencyBonus: 2, martialArts: MONK, ...rage(2) }).ability).toBe('Destreza')
+      })
+
       it('machadinha: a linha corpo a corpo soma, com a nota de que arremessando não soma', () => {
         const atk = getWeaponAttack(getWeaponById('handaxe')!, ctx(3, 1, 2, true, raging(2)))
         expect(atk.damage).toBe('1d6+5 cortante')

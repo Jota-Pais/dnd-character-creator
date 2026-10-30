@@ -13,4 +13,14 @@ describe('index.css', () => {
     expect(block).toBeDefined()
     expect(block).toMatch(/font-family:\s*(sans-serif|serif|system-ui|monospace);/)
   })
+
+  // O <main> do criador anima a troca de etapa, e o rodapé fixo (StepNav, Voltar/Próximo) mora dentro
+  // dele. Transform, filtro ou perspectiva no quadro final, que o `forwards` mantém, viram o bloco de
+  // contenção do `position: fixed`: o rodapé descia para o fim da página, e no celular o "Próximo"
+  // só aparecia depois de rolar a etapa inteira.
+  it('a animação de troca de etapa (fadeIn) não deixa o rodapé fixo preso no <main>', () => {
+    const keyframes = appCss.match(/@keyframes fadeIn\s*\{([\s\S]*?)\n {2}\}/)?.[1]
+    expect(keyframes).toBeDefined()
+    expect(keyframes).not.toMatch(/\b(transform|translate|scale|rotate|filter|perspective)\s*:/)
+  })
 })

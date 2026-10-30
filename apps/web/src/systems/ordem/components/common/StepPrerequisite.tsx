@@ -22,8 +22,7 @@ export function StepPrerequisite({ dependsOn, needs, emoji = '🔒' }: Props) {
   const prevStep = useOrdemStore(state => state.prevStep)
   const label = STEP_LABELS[dependsOn]
 
-  // Sem `animate-fade-in` no container: o transform que ela deixa aplicado criaria um containing
-  // block e prenderia o rodapé fixo aqui dentro. O <main> do wizard já anima a troca de etapa.
+  // Sem `animate-fade-in` no container: o <main> do wizard já anima a troca de etapa.
   return (
     <div className="max-w-lg mx-auto text-center pb-20">
       <div className="text-5xl mb-3">{emoji}</div>

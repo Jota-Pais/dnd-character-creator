@@ -1917,7 +1917,8 @@
       {
         "level": 10,
         "name": "Defesa Sedutora",
-        "description": "Você não pode ser enfeitiçado. Quando outra criatura tentar enfeitiçá-lo, use sua reação para forçá-la a um teste de Sabedoria contra sua CD de bruxo; se falhar, ela fica enfeitiçada por você por 1 minuto ou até sofrer dano."
+        "description": "Você não pode ser enfeitiçado. Quando outra criatura tentar enfeitiçá-lo, use sua reação para forçá-la a um teste de Sabedoria contra sua CD de bruxo; se falhar, ela fica enfeitiçada por você por 1 minuto ou até sofrer dano.",
+        "effects": { "damageDefenses": { "conditionImmunities": ["charmed"] } }
       },
       {
         "level": 14,

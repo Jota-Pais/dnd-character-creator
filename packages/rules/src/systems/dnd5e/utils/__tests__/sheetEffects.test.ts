@@ -1082,6 +1082,14 @@ describe('getDamageDefenses e describeDamageDefenses', () => {
     expect(lines(sub('druid', 10, 'circle-of-the-land'))).toEqual(['Imunidade a veneno e à condição Envenenado (Proteção Natural)'])
   })
 
+  it('bruxo da Arquifada 10: imune à condição Enfeitiçado, sem defesa contra dano (Defesa Sedutora, p. 60)', () => {
+    expect(getDamageDefenses(sub('warlock', 10, 'the-archfey'))).toEqual([
+      { source: 'Defesa Sedutora', kind: 'conditionImmunity', types: [], conditions: ['charmed'] },
+    ])
+    expect(lines(sub('warlock', 10, 'the-archfey'))).toEqual(['Imunidade à condição Enfeitiçado (Defesa Sedutora)'])
+    expect(lines(sub('warlock', 9, 'the-archfey'))).toEqual([])
+  })
+
   it('paladino dos Anciões 7 e clérigo da Guerra 17: condicionais, com a situação (p. 113 e 68)', () => {
     expect(getDamageDefenses(sub('paladin', 7, 'oath-of-the-ancients'))).toEqual([
       { source: 'Aura de Vigilância', kind: 'resistance', types: 'all', condition: 'de magia' },

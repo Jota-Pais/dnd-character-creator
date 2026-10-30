@@ -358,7 +358,7 @@ FeatureEffects.spellHealingBonus?: { base: number; perSpellLevel: number }   // 
 
 Correções da revisão (2026-10-30):
 - A Resistência à Magia do abjurador 14 entrou ('de magia', a mesma caixa da Aura de Vigilância), e a Defesa Sedutora declara a imunidade a Enfeitiçado. A cobertura passou a ver "contra o dano", a lista de tipos sem "dano" e "não pode(m) ser" + condição.
-- Ficam nas exceções, levadas ao dono: a Pedra de Transmutador (a resistência é de quem está com a pedra, ao tipo escolhido ao criá-la) e as Auras de Coragem e de Devoção (só enquanto você estiver consciente, e alcançam os aliados).
+- Ficam nas exceções, levadas ao dono: a Pedra de Transmutador (a resistência é de quem está com a pedra, ao tipo escolhido ao criá-la) e as Auras de Coragem e de Devoção (só enquanto você estiver consciente, e alcançam os aliados). Decididas em 2026-10-30: as auras declaram a imunidade a condição do paladino, só consciente (leva `ajustes-leva-1`), e a pedra vira escolha de sessão na onda `recursos-completos`.
 - O Avatar da Batalha segue o texto dos dados ('de ataque com arma não mágica', do inglês); o pt-BR diz 'de ataques não-mágicos', como a Maestria, e o mesmo golpe pede duas caixas. Levado ao dono.
 - A imunidade a condição da ficha (Pureza Corporal, Proteção Natural, Defesa Sedutora) é só a linha Defesas: o `addCondition` não recusa nem avisa. A recusa do item 4 de `efeitos-ativos` cobre também a da ficha.
 - `getDamageDefenses` lê as opções de progressão, como `getConditionalRollNotes`.
@@ -575,7 +575,7 @@ Avaliar vite-plugin-pwa (MIT) com Vite 8 e rolldown. Se não servir, usar um SW 
   - o "Já acabou" (sem gastar ação, `deactivateToggle`) é o fim que não é ação, também para quem não pode agir: a ação bônus "Encerrar a fúria" recusa o Atordoado;
   - a reconciliação avisa a opção perdida (o Frenesi), e não só o efeito;
   - no empate de FOR e DES, a linha que escolhe fica na Força quando só ela soma o Dano de Fúria ligado (`choosesDex`).
-- Fica com o dono (`regras-efeitos-ativos.md`, seção 6): a fúria na morte que não passa pelo Inconsciente (a instantânea e a da exaustão 6), antecipar a Fúria Implacável (o desenho a põe em `recursos-completos`) e as Auras de Coragem e de Devoção como imunidade a condição do paladino.
+- Fica com o dono (`regras-efeitos-ativos.md`, seção 6): a fúria na morte que não passa pelo Inconsciente (a instantânea e a da exaustão 6), antecipar a Fúria Implacável (o desenho a põe em `recursos-completos`) e as Auras de Coragem e de Devoção como imunidade a condição do paladino. Decididos em 2026-10-30 e feitos na leva `ajustes-leva-1` (seção abaixo).
 
 - **Tamanho:** G
 - **Depende de:** `defesas`
@@ -761,6 +761,22 @@ O que muda só no número é anunciado pelo ChangeAnnouncer.
 - **Arquivos:** `CLAUDE.md`, `docs/regras-efeitos-ativos.md`
 - **Testes:** Sem teste novo.
 - **Aceite:** Commit docs: dedicado.
+
+### Ajustes da leva 1 (`ajustes-leva-1`)
+
+**Feita em 2026-10-30.** Fecha o que as ondas `defesas` e `efeitos-ativos` deixaram com o dono, pelas respostas dele de 2026-10-30 (resposta clara pelo texto do livro). A leva não tinha seção no desenho; os itens:
+- (a) A morte que não passa pelo Inconsciente encerra a fúria: a instantânea (pág. 199) e a da exaustão 6 (pág. 292). O `toDead` encerra o que declara `endsOn: 'unconscious'`, pelo mesmo `endToggleInto`, com o aviso ("Fúria: terminou com a morte.") e a exaustão do Frenesi; o "Fui revivido" volta sem a fúria.
+- (b) As Auras de Coragem (paladino 10, pág. 111) e de Devoção (Juramento de Devoção 7, pág. 112) declaram a imunidade a condição do próprio paladino, com `DamageDefenses.whileConscious`: a linha Defesas diz "enquanto você estiver consciente" (aba Estado, Revisão, PDF), e o `getPlayConditionState` só as conta consciente — a 0 PV, com o Inconsciente gravado ou morto, o `addCondition` aplica. Os aliados ficam fora. Saíram das exceções do teste de cobertura, que agora cobra o `whileConscious` só na imunidade a condição (o painel de PV não pergunta se você está consciente).
+- (c) A Fúria Implacável (bárbaro 11, pág. 49) entrou antes da onda `recursos-completos`, com o fluxo do item 2 dela. O que mudou em relação a ele:
+  - é modificador da Fúria, `ToggleModifier.zeroHpSave` (contador, atributo, CD, quanto sobe, o descanso que a volta e a página), e não `ResourceEffect.counter`: ela só vale em fúria, o modificador já diz o efeito que ela pede, e um recurso a mais apareceria na Revisão e no PDF;
+  - `PlayState.restCounters` nasce aqui (`{}` por padrão, sem subir a versão), contando os usos pelo id do contador; o descanso curto ou longo o zera, com aviso;
+  - o aviso é `dropToOneHpSave` (no lugar do `relentlessRage`, para o código não levar o nome da característica), com a CD (`getZeroHpSaveDc`) e o dano; o `NoticeToast` mostra a receita do TR (`getZeroHpSaveGuide`, id próprio para a folha aberta não trocar pela entrada do TR sem a CD) e o "Passei: fico com 1 PV", que desfaz e reaplica por `applyDamageDroppingToOneHp(…, 'save')`;
+  - a queda acontece como sempre (a fúria acaba a 0 PV, com o Frenesi); quem passa no TR não caiu, então a fúria continua, sem a exaustão;
+  - conferido no Edge a 390 e a 360 px: alvos de 45 px, o foco no "Desfazer" depois do "Passei", sem rolagem lateral e o console sem erros.
+- (d) A resistência do Urso em fúria mantém os chips por tipo no painel de PV: nada mudou.
+- (e) A Pedra de Transmutador vira escolha de sessão na onda `recursos-completos`, junto da Resistência Demoníaca (registrada no item 3 dela).
+- Nenhum número de ficha salva muda: a linha das auras é texto, e o retrato do aviso de migração não tem defesas nem efeitos ligados.
+- Fica com o dono: se a falha no TR da Fúria Implacável conta como uso (o app só conta quem passa; `regras-efeitos-ativos.md`, seção 6). A ordem da redução da Maestria em Armadura Pesada entre duas parcelas (Ponto em aberto 28 de `regras-dano-e-morte.md`) e a redação do Avatar da Batalha continuam com ele, sem mudança.
 
 ### Bênção, Escudo Arcano, Armadura Arcana e dano extra na arma (`efeitos-recebidos`)
 
@@ -1650,7 +1666,7 @@ Cada um com página e linha.
 
 Ficam jogáveis:
 - magias inatas com contador;
-- Fúria Implacável e Sobrecarga;
+- Sobrecarga (a Fúria Implacável entrou antes, na leva `ajustes-leva-1`);
 - Curandeiro e Líder Inspirador;
 - Resistência Demoníaca, Pedra de Transmutador e Afinidade Elemental;
 - Proteção Arcana e Prodígio;
@@ -1671,7 +1687,7 @@ describeInnateSpellUsage e o PDF passam a ler o dado, sem o '1×/descanso longo'
 
 ResourceEffect ganha counter, guardado em PlayState.restCounters.
 
-Fúria Implacável (3733-3741):
+Fúria Implacável (3733-3741): **feita antes, na leva `ajustes-leva-1` (2026-10-30)**, como modificador da Fúria (`zeroHpSave`), com `PlayState.restCounters` e o aviso `dropToOneHpSave`; ver a seção da leva. A Sobrecarga usa o mesmo `restCounters`.
 - ao cair a 0 PV com a Fúria ligada, aviso relentlessRage com CD 10 + 5 × usos;
 - a tela pergunta o resultado do TR e reaplica o dano, como na Resistência Implacável.
 

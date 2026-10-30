@@ -291,11 +291,12 @@ O livro não decide os ataques com vários tipos; o Ponto em aberto 12 foi **dec
      - senão, `knockout` → `stable`; caso contrário → `dying` com contadores zerados. Nos dois casos, disparam os efeitos da transição para 0 PV (Caído gravado, aviso de largar o que segura, fim da concentração; seção anterior).
      - A morte instantânea é avaliada **antes** do nocaute, então o dano massivo vence o nocaute. O texto do nocaute (linhas 17937-17941) não trata dessa interação; **decidido** assim (Ponto em aberto 13).
      - `tempHp` restante **não** é zerado ao cair a 0 (decisão 6).
+     - **Ficar com 1 PV em vez de cair:** quem cai a 0 PV sem morrer recebe a oferta da Resistência Implacável do meio-orc (pág. 41, com uso: `dropToOneHp`) e, em fúria, a da Fúria Implacável do bárbaro 11 (pág. 49, o teste de Constituição com a CD: `dropToOneHpSave`; `docs/regras-efeitos-ativos.md`, 2.4). Aceita, a tela desfaz a queda e reaplica o mesmo dano terminando em 1 PV (`applyDamageDroppingToOneHp`, `'trait'` ou `'save'`): sem os efeitos da transição para 0 PV, e o TR de concentração continua.
 7. Se `lifeState` é `dying` ou `stable` (já a 0 PV):
    - `rest ≥ effectiveMaxHp` → `dead` (mesmo máximo do passo 6);
    - senão, `failures += isCritical ? 2 : 1` (limitado a 3; 3 → `dead`), e `stable` vira `dying` (assumido (D)).
    - **Inclusive com `rest === 0`** (tudo absorvido pelos temporários): conta o fracasso, porque a regra fala em "qualquer dano" (decisão 5). Já um evento com `total === 0` depois do piso e da resistência **não** é dano: não conta fracasso nem pede TR de concentração (decidido, Ponto em aberto 19).
-8. Toda transição para `dead` (passos 6 e 7, terceiro fracasso, exaustão 6) encerra a concentração no mesmo evento (assumido (F)).
+8. Toda transição para `dead` (passos 6 e 7, terceiro fracasso, exaustão 6) encerra a concentração no mesmo evento (assumido (F)) e o efeito ligado que acaba ao cair inconsciente (a Fúria, com a exaustão do Frenesi): a morte instantânea e a da exaustão 6 não passam pelo Inconsciente, mas o morto não continua em fúria (decidido em 2026-10-30; `docs/regras-efeitos-ativos.md`, seção 1).
 9. Tudo vira um **evento de log desfazível** (o estado anterior é guardado), coerente com o "desfazer" do crítico.
 
 **Cura:** `dead` → sem efeito (só "fui revivido"). Caso contrário, `novo = min(effectiveMaxHp, currentHp + heal)` e `damageTaken = sheetMaxHp - novo`, com `heal` de **piso 0** (decisão 3). O excedente se perde. Se estava a 0 e `heal > 0` → `conscious`, contadores zerados, e o Caído gravado continua (decisão 14). Cura **não** toca `tempHp`.
@@ -313,6 +314,7 @@ Segue a regra de ouro dos efeitos:
 - **Exceção** (`exceptWhen`) → vale sempre, e a caixa desligada a cancela: Resistência Demoníaca ("arma mágica ou de prata"). A escolha do tipo dela, ao terminar um descanso, chega com os recursos que faltam (onda `recursos-completos`); até lá, a ficha mostra só a linha que pede a escolha.
 - A **resistência da Fúria** (concussão, cortante e perfurante, só em fúria e sem armadura pesada) é **efeito ligado** (onda `efeitos-ativos`, 2026-10-30; `docs/regras-efeitos-ativos.md`): ligada a Fúria, ela entra como as outras, no pipeline e no bloco Defesas. A do Urso (todo dano, exceto psíquico, sem cláusula de armadura) também; ela precisa do tipo, e o painel de PV mostra um chip por tipo que ela alcança.
 - A **imunidade a condição** da ficha (Envenenado da Pureza Corporal e da Proteção Natural, Enfeitiçado da Defesa Sedutora) e a de um efeito ligado (a Fúria Inconsciente: Enfeitiçado e Amedrontado) fazem o `addCondition` recusar a condição, e a já gravada fica suspensa, com linha (onda `efeitos-ativos`, 2026-10-30).
+- **"Enquanto você estiver consciente"** (`whileConscious`): a Aura de Coragem (paladino 10, pág. 111, linhas 9978-9981: Amedrontado) e a Aura de Devoção (Juramento de Devoção 7, pág. 112, linhas 10105-10108: Enfeitiçado) são imunidade a condição do próprio paladino, só consciente (decidido em 2026-10-30): a 0 PV, com o Inconsciente gravado ou morto, a condição se aplica. A linha diz a situação ("Imunidade à condição Amedrontado, enquanto você estiver consciente (Aura de Coragem)"). As criaturas amigáveis que a aura também alcança ficam fora: o app é a ficha de quem joga.
 
 ### Cobertura do personagem
 

@@ -4,6 +4,7 @@ import {
   applyUpdateOnReturn,
   AUTO_APPLY_MIN_AWAY_MS,
   checkForUpdateOnReturn,
+  isGalleryAtRest,
   SKIP_WAITING_MESSAGE,
   startServiceWorker,
   SW_URL,
@@ -223,18 +224,43 @@ describe('checkForUpdateOnReturn: o app que volta do segundo plano', () => {
   })
 })
 
-describe('applyUpdateOnReturn: no APK, a versão que espera entra sozinha na volta à galeria', () => {
+describe('isGalleryAtRest: a galeria parada', () => {
   const removers: (() => void)[] = []
 
   beforeEach(() => {
     useAppStore.setState({ activeSystemId: null })
-    takeOwnTrip()
   })
   afterEach(() => {
     removers.splice(0).forEach(remove => remove())
   })
 
-  /** O APK com uma versão esperando, e a ida ao segundo plano com o relógio andando. */
+  it('a galeria aberta, sem nada registrado no voltar', () => {
+    expect(isGalleryAtRest()).toBe(true)
+  })
+
+  it('o criador e o jogo (um sistema aberto) não são a galeria', () => {
+    useAppStore.setState({ activeSystemId: 'dnd5e' })
+    expect(isGalleryAtRest()).toBe(false)
+  })
+
+  it('o menu "Novo personagem" e o "Excluir?" abertos registram o voltar: não está parada', () => {
+    const closeMenu = registerBackHandler('overlay', () => {})
+    removers.push(closeMenu)
+    expect(isGalleryAtRest()).toBe(false)
+    closeMenu()
+    expect(isGalleryAtRest()).toBe(true)
+  })
+})
+
+describe('applyUpdateOnReturn: no APK, a versão que espera entra sozinha na volta à galeria', () => {
+  beforeEach(() => {
+    takeOwnTrip()
+  })
+
+  /**
+   * O APK com uma versão esperando, e a ida ao segundo plano com o relógio andando. A galeria parada
+   * é a de `atRest` (a de verdade, `isGalleryAtRest`, tem os testes dela).
+   */
   function waitingVersion() {
     const reg = new FakeRegistration()
     const container = new FakeContainer(reg)
@@ -244,13 +270,14 @@ describe('applyUpdateOnReturn: no APK, a versão que espera entra sozinha na vol
     const doc = fakeDoc()
     let now = 0
     const reload = vi.fn()
-    applyUpdateOnReturn(asReg(reg), asContainer(container), doc, { now: () => now, reload })
+    const gallery = { atRest: true }
+    applyUpdateOnReturn(asReg(reg), asContainer(container), doc, { now: () => now, reload, isAtRest: () => gallery.atRest })
     const away = (ms: number) => {
       turn(doc, 'hidden')
       now += ms
       turn(doc, 'visible')
     }
-    return { reg, container, worker, reload, away }
+    return { reg, container, worker, reload, away, gallery }
   }
 
   it('volta à galeria parada depois de um minuto fora: o SW novo assume, e a página recarrega quando ele está no controle', () => {
@@ -278,23 +305,12 @@ describe('applyUpdateOnReturn: no APK, a versão que espera entra sozinha na vol
     expect(worker.postMessage).toHaveBeenCalledTimes(1)
   })
 
-  it('nunca no criador nem no jogo: a versão espera a volta que dê na galeria', () => {
-    const { worker, away } = waitingVersion()
-    useAppStore.setState({ activeSystemId: 'dnd5e' })
+  it('nunca fora da galeria parada (o criador, o jogo, algo aberto nela): a versão espera a volta que dê nela', () => {
+    const { worker, away, gallery } = waitingVersion()
+    gallery.atRest = false
     away(60 * 60 * 1000)
     expect(worker.postMessage).not.toHaveBeenCalled()
-    useAppStore.setState({ activeSystemId: null })
-    away(AUTO_APPLY_MIN_AWAY_MS)
-    expect(worker.postMessage).toHaveBeenCalledTimes(1)
-  })
-
-  it('nunca com algo aberto na galeria (o menu "Novo personagem", o "Excluir?")', () => {
-    const { worker, away } = waitingVersion()
-    const closeMenu = registerBackHandler('overlay', () => {})
-    removers.push(closeMenu)
-    away(60 * 60 * 1000)
-    expect(worker.postMessage).not.toHaveBeenCalled()
-    closeMenu()
+    gallery.atRest = true
     away(AUTO_APPLY_MIN_AWAY_MS)
     expect(worker.postMessage).toHaveBeenCalledTimes(1)
   })

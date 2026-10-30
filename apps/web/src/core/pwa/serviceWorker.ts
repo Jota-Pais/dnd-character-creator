@@ -104,9 +104,9 @@ export const AUTO_APPLY_MIN_AWAY_MS = 60 * 1000
  * A galeria parada: é a tela aberta (os sistemas não têm galeria na tela; o "Meus personagens" deles
  * volta a esta, `activeSystemId` nulo) e nada está aberto nela. O menu "Novo personagem" e o
  * "Excluir?" registram o voltar do Android enquanto abertos (core/navigation/back.ts), e a galeria
- * sem nada aberto não registra nenhum.
+ * sem nada aberto não registra nenhum. É o padrão do `applyUpdateOnReturn`.
  */
-function isGalleryAtRest(): boolean {
+export function isGalleryAtRest(): boolean {
   return useAppStore.getState().activeSystemId === null && !hasOpenLayer()
 }
 
@@ -123,6 +123,8 @@ function shouldApplyOnReturn(trip: Trip, atRest: boolean): boolean {
 export type ApplyOnReturnOptions = {
   now?: () => number
   reload?: () => void
+  /** Se a galeria está parada; por padrão, a do app (`isGalleryAtRest`). Os testes a controlam direto. */
+  isAtRest?: () => boolean
 }
 
 /**
@@ -136,10 +138,10 @@ export function applyUpdateOnReturn(
   reg: SwRegistration,
   container: SwContainer,
   doc: VisibilityDoc,
-  { now = Date.now, reload = () => window.location.reload() }: ApplyOnReturnOptions = {},
+  { now = Date.now, reload = () => window.location.reload(), isAtRest = isGalleryAtRest }: ApplyOnReturnOptions = {},
 ): void {
   watchTrips(doc, trip => {
-    if (!useAppUpdateStore.getState().updateReady || !shouldApplyOnReturn(trip, isGalleryAtRest())) return
+    if (!useAppUpdateStore.getState().updateReady || !shouldApplyOnReturn(trip, isAtRest())) return
     // Sem versão esperando (outra aba já aplicou), o aviso sai, como no toque.
     if (!applyUpdateNow(reg, container, reload)) useAppUpdateStore.setState({ updateReady: false })
   }, now)

@@ -4,7 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "sync": "cap sync android"
+    "sync": "cap sync android",
+    "apk:debug": "node scripts/apk.mjs debug",
+    "apk:release": "node scripts/apk.mjs release"
   },
   "dependencies": {
     "@capacitor/android": "^8.6.0",

@@ -26,5 +26,13 @@ docs/_book-extracts/
 *.sln
 *.sw?
 
+# APK do Android (docs/app-android.md): a chave de assinatura, as senhas e os APKs gerados moram
+# fora do repositório, em qualquer pasta
+*.jks
+*.keystore
+*.p12
+*.apk
+*.aab
+
 # Claude Code (config local de máquina)
 .claude/

@@ -10,6 +10,35 @@ apply plugin: 'com.android.application'
 def forjaVersionCode = 1
 def forjaVersionName = '0.1.0'
 
+// O local.properties (ignorado pelo git) é desta máquina: o SDK e, se quiser, o caminho da chave.
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withInputStream { localProperties.load(it) }
+}
+
+// A assinatura do release mora fora do repositório: um arquivo de propriedades (storeFile,
+// storePassword, keyAlias, keyPassword; o storeFile relativo a ele) cujo caminho vem da variável
+// FORJA_SIGNING_PROPERTIES ou da chave forja.signingProperties do local.properties. Sem ele, o
+// release não sai (abaixo): APK sem a chave de sempre não instala por cima do que a turma já tem.
+def signingPropertiesPath = System.getenv('FORJA_SIGNING_PROPERTIES') ?: localProperties.getProperty('forja.signingProperties')
+def releaseSigning = null
+if (signingPropertiesPath) {
+    def signingFile = file(signingPropertiesPath)
+    if (!signingFile.exists()) {
+        throw new GradleException("Arquivo da assinatura não encontrado: ${signingFile} (FORJA_SIGNING_PROPERTIES ou forja.signingProperties)")
+    }
+    def signing = new Properties()
+    signingFile.withInputStream { signing.load(it) }
+    def storeFile = new File(signing.getProperty('storeFile'))
+    releaseSigning = [
+        storeFile: storeFile.absolute ? storeFile : new File(signingFile.parentFile, signing.getProperty('storeFile')),
+        storePassword: signing.getProperty('storePassword'),
+        keyAlias: signing.getProperty('keyAlias'),
+        keyPassword: signing.getProperty('keyPassword'),
+    ]
+}
+
 android {
     namespace = "io.github.jotapais.forja"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -25,6 +54,16 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (releaseSigning) {
+            release {
+                storeFile = releaseSigning.storeFile
+                storePassword = releaseSigning.storePassword
+                keyAlias = releaseSigning.keyAlias
+                keyPassword = releaseSigning.keyPassword
+            }
+        }
+    }
     buildTypes {
         debug {
             // A variante de teste se instala ao lado do APK da turma, com o próprio nome.
@@ -35,7 +74,17 @@ android {
         release {
             minifyEnabled = false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (releaseSigning) {
+                signingConfig = signingConfigs.release
+            }
         }
+    }
+}
+
+gradle.taskGraph.whenReady { graph ->
+    def buildsRelease = graph.allTasks.any { it.project == project && it.name ==~ /(assemble|bundle|package)Release/ }
+    if (buildsRelease && !releaseSigning) {
+        throw new GradleException('O release precisa da chave: defina FORJA_SIGNING_PROPERTIES ou forja.signingProperties no local.properties (docs/app-android.md).')
     }
 }
 

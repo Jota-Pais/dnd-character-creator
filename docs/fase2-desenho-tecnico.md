@@ -474,7 +474,7 @@ Seguir as regras de foco, região viva montada vazia e alvos de 45 px do CLAUDE.
 
 A StatusTab ganha 'Defesas', o bloco informativo da seção 9 do plano. Ele usa describeDamageDefenses e mostra também as defesas das condições.
 
-Revisão e PDF ganham a mesma linha só se o dono aprovar (dúvida de produto), pela mesma função.
+Revisão e PDF ganham a mesma linha, pela mesma função (aprovado em 2026-10-30).
 
 - **Arquivos:** `apps/web/src/systems/dnd5e/components/play/StatusTab.tsx`
 - **Testes:** StatusTab.test.tsx: o tiefling mostra 'Resistência a fogo (Resistência Infernal)'; a ficha sem defesa não ganha o bloco.
@@ -1781,6 +1781,14 @@ O spellGuide aplica cada um como parcela nomeada.
 
 ## Dúvidas de regra
 
+**Decididas em 2026-10-30, todas pela recomendação.** O dono pediu para levar a ele só o que não tem resposta clara. Os motivos:
+- Esquivar e o fim da Fúria são erros claros de tradução que mudam a regra. Seguem o inglês pela regra "pt-BR × inglês" do CLAUDE.md. A onda que os implementa os registra na lista e em bookText.test.ts.
+- A ordem da magia de ação bônus, a Proteção Arcana e a Armadura Arcana com escudo seguem os esclarecimentos oficiais do livro em inglês (Sage Advice):
+  - a restrição vale nas duas ordens;
+  - a resistência entra antes de a proteção absorver;
+  - o escudo não encerra a magia.
+- O dano de vários tipos e a Conjuração Flexível acima do teto seguem o precedente do app. A conta da p. 199 sai por tipo, e o app avisa em vez de impedir, como na cura acima do máximo.
+
 - Esquivar. O pt-BR diz 'vantagem em testes de Destreza', que são testes de habilidade. O inglês diz 'Dexterity saving throws', testes de resistência. Isso muda a regra e alcança também a Defesa Paciente do monge, que remete ao Esquivar. Hoje o app não aplica a vantagem do Esquivar em jogada nenhuma (item 1 de regras-acoes-em-combate.md). *(docs/_book-extracts/dnd-phb.txt, linhas 17408-17414 (Esquivar, p. 192))* **Recomendação:** Seguir o inglês: vantagem em TR de Destreza. O efeito 'action:dodge' é declarado assim. Registrar o caso na lista pt-BR × inglês do CLAUDE.md e em bookText.test.ts.
 - Fim prematuro da Fúria. O pt-BR diz 'se seu turno acabar e você não tiver atacado nenhuma criatura hostil desde seu último turno ou não tiver sofrido dano nesse período', o que se lê como 'termina se faltar qualquer um dos dois'. O inglês ('haven't attacked ... or taken damage since then') quer dizer 'termina se não fez nenhum dos dois'. O texto dos dados já usa 'nem' (a leitura do inglês), mas o caso não está na lista pt-BR × inglês. O lembrete do Novo turno depende dessa leitura. *(docs/_book-extracts/dnd-phb.txt, linhas 3662-3667 (Fúria, p. 48))* **Recomendação:** Seguir o inglês: só termina sem ataque E sem dano. Registrar no CLAUDE.md e em bookText.test.ts, e prender o lembrete do Novo turno em teste. A Fúria Persistente (bárbaro 15) desliga o lembrete.
 - Ordem da magia de ação bônus. 'Você não pode conjurar outra magia durante o mesmo turno' vem depois de conjurar a de ação bônus. Quem já conjurou com a ação uma magia de 1º nível ou mais pode conjurar, depois, uma de ação bônus no mesmo turno? A decisão de 2026-10-29 fixou o 'só um truque de 1 ação', mas o doc deixou a ordem em aberto (regras-conjuracao.md, Ponto em aberto 2), e o aviso do castSpell depende disso. *(docs/_book-extracts/dnd-phb.txt, linhas 18204-18210 (Ação Bônus, p. 204))* **Recomendação:** O turno inteiro, em qualquer ordem: a mesma restrição antes e depois. Só aviso, nunca recusa.
@@ -1790,6 +1798,14 @@ O spellGuide aplica cada um como parcela nomeada.
 - Armadura Arcana com escudo. A magia vale para quem 'não esteja vestindo armadura' e acaba 'se o alvo colocar uma armadura'. A tabela 'Vestindo e Despindo uma Armadura' lista o escudo junto das armaduras. Pegar um escudo encerra a magia, ou ele soma +2? *(docs/_book-extracts/dnd-phb.txt, linhas 20244-20255 (Armadura Arcana) e 13327-13332 (tabela que inclui o Escudo))* **Recomendação:** O escudo não encerra a magia e soma +2, como na Defesa sem Armadura do bárbaro. 'Colocar uma armadura' é a armadura de corpo.
 
 ## Dúvidas de produto
+
+**Decididas em 2026-10-30, todas pela recomendação** (pelo mesmo pedido do dono):
+- 6 abas;
+- checklist no topo de Ações;
+- Defesas também na Revisão e no PDF;
+- itens novos de catálogo e texto livre no jogo, e arma ou armadura nova pelo criador.
+
+Se o dono mudar alguma, ajusta-se a onda que a usa.
 
 - Onde ficam as ações, o grimório, a bolsa e o equipamento vestido? No celular, as abas têm uma palavra cada e dividem 360 px. **Recomendação:** Manter as 6 abas:
 - 'Ataques' vira 'Ações', com os ataques no grupo Ação;

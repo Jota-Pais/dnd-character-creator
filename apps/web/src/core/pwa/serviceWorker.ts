@@ -112,10 +112,14 @@ export const AUTO_APPLY_MIN_AWAY_MS = 60 * 1000
  * A galeria parada: é a tela aberta (os sistemas não têm galeria na tela; o "Meus personagens" deles
  * volta a esta, `activeSystemId` nulo) e nada está aberto nela. O menu "Novo personagem" e o
  * "Excluir?" registram o voltar do Android enquanto abertos (core/navigation/back.ts), e a galeria
- * sem nada aberto não registra nenhum. É o padrão do `applyUpdateOnReturn`.
+ * sem nada aberto não registra nenhum. A lista do "Agrupar" e do "Ordenar" é do próprio WebView (um
+ * diálogo do Android, que fica aberto na volta e não registra o voltar): o `<select>` com o foco
+ * conta como aberto. Escolhida a opção, ele segura o foco até o próximo toque fora dele, e a versão
+ * espera mais uma volta. É o padrão do `applyUpdateOnReturn`.
  */
 export function isGalleryAtRest(): boolean {
   return useAppStore.getState().activeSystemId === null && !hasOpenLayer()
+    && !(document.activeElement instanceof HTMLSelectElement)
 }
 
 /**

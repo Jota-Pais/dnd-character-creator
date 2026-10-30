@@ -251,6 +251,17 @@ describe('isGalleryAtRest: a galeria parada', () => {
     closeMenu()
     expect(isGalleryAtRest()).toBe(true)
   })
+
+  // A lista do Agrupar/Ordenar é um diálogo do WebView: fica aberta na volta, sem registrar o voltar.
+  it('o "Agrupar" ou o "Ordenar" com o foco (a lista aberta) não está parada', () => {
+    const picker = document.createElement('select')
+    document.body.appendChild(picker)
+    removers.push(() => picker.remove())
+    picker.focus()
+    expect(isGalleryAtRest()).toBe(false)
+    picker.blur()
+    expect(isGalleryAtRest()).toBe(true)
+  })
 })
 
 describe('applyUpdateOnReturn: no APK, a versão que espera entra sozinha na volta à galeria', () => {

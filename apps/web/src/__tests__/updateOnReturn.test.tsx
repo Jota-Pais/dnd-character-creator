@@ -68,6 +68,22 @@ describe('a versão nova entra sozinha na volta à galeria (APK), só com ela pa
     expect(applied()).toBe(true)
   })
 
+  // A lista do Ordenar é um diálogo do WebView: fica aberta na volta, sem registrar o voltar.
+  it('com a lista do "Ordenar" aberta (o foco nela), não; fechada e fora dela, sim', () => {
+    const sheet = { draft: structuredClone(COMPLETE_DRAFT), playState: null }
+    useCharacterStore.getState().restoreCharacters([sheet, structuredClone(sheet)])
+    render(<App />)
+    const { away, applied } = waitingVersion()
+    const sortBy = screen.getByLabelText(/^Ordenar/)
+    sortBy.focus()
+    away(HOUR)
+    expect(applied()).toBe(false)
+
+    sortBy.blur()
+    away(AUTO_APPLY_MIN_AWAY_MS)
+    expect(applied()).toBe(true)
+  })
+
   // A volta do seletor traz o arquivo: recarregar ali perderia a importação.
   it('o "Importar" marca a ida do seletor de arquivo: a volta dela não aplica, a seguinte sim', () => {
     render(<App />)

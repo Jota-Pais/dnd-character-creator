@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { render, screen, fireEvent, cleanup, act, within } from '@testing-library/react'
+import { render, screen, fireEvent, cleanup, act, within, waitFor } from '@testing-library/react'
 import { Capacitor } from '@capacitor/core'
+import { saveTextFileNative } from '../core/native/nativeShell'
 import App from '../App'
 import { useAppStore } from '../core/stores/appStore'
 import { useCharacterStore } from '../systems/dnd5e/stores/characterStore'
@@ -18,6 +19,12 @@ const SHEETS_STAY_IN_BROWSER = /As fichas deste navegador não passam sozinhas p
 const BACKUP_REMINDER = /Guarde uma cópia em arquivo/
 const BACKUP_REMINDER_AGAIN = /Sua última cópia das fichas é de \d\d\/\d\d\/\d{4}\. Guarde uma nova\./
 const APK_OUTDATED = 'Tem uma versão nova do app: peça o APK no grupo.'
+
+// O "Salvar como" da casca do APK, de mentira (no jsdom não há casca); no navegador nunca é chamado.
+vi.mock('../core/native/nativeShell', async importOriginal => ({
+  ...await importOriginal<typeof import('../core/native/nativeShell')>(),
+  saveTextFileNative: vi.fn(),
+}))
 
 /** O navegador do teste se passando por outro (o userAgent e o navigator.standalone do iPhone). */
 function pretend(props: { userAgent?: string; standalone?: boolean }) {
@@ -42,6 +49,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
+  vi.mocked(saveTextFileNative).mockReset()
   delete (navigator as { userAgent?: string }).userAgent
   delete (navigator as { standalone?: boolean }).standalone
 })
@@ -111,6 +119,28 @@ describe('no APK do Android', () => {
     expect(screen.queryByText(/próxima vez que você abrir/)).toBeNull()
     expect(screen.getAllByText(/versão nova do app/i)).toHaveLength(1)
     expect(screen.getByText(APK_OUTDATED)).toBeInTheDocument()
+  })
+
+  // O WebView ignora o link de download: o "Exportar todas" vai pelo "Salvar como" da casca, e a
+  // cópia só conta (o lembrete some por 14 dias) com o arquivo gravado.
+  it('"Exportar todas" vai pelo "Salvar como" do Android; cancelado, o lembrete continua', async () => {
+    pretendNative()
+    withSheet()
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    vi.mocked(saveTextFileNative).mockResolvedValueOnce(false)
+    render(<App />)
+    fireEvent.click(screen.getByText('Exportar todas'))
+    await waitFor(() => expect(saveTextFileNative).toHaveBeenCalledTimes(1))
+    expect(vi.mocked(saveTextFileNative).mock.calls[0][0]).toMatch(/^forja-de-herois-fichas-\d{4}-\d\d-\d\d\.json$/)
+    expect(click).not.toHaveBeenCalled()
+    await act(() => Promise.resolve())
+    expect(loadDeviceState().lastBackupAt).toBeNull()
+    expect(screen.getByText(BACKUP_REMINDER)).toBeInTheDocument()
+
+    vi.mocked(saveTextFileNative).mockResolvedValueOnce(true)
+    fireEvent.click(screen.getByText('Exportar todas'))
+    await waitFor(() => expect(screen.queryByText(BACKUP_REMINDER)).toBeNull())
+    expect(loadDeviceState().lastBackupAt).not.toBeNull()
   })
 
   it('no navegador, nada muda: "neste navegador" e sem a dica do APK', () => {

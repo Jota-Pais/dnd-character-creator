@@ -1,3 +1,6 @@
+import { isNativeApp } from '../native/nativeApp'
+import { saveTextFileNative } from '../native/nativeShell'
+
 /**
  * Quanto o endereço do arquivo baixado vive depois do clique. O Safari do iPhone lê o arquivo depois
  * que o clique volta, e soltar o endereço na hora é a causa conhecida do download que falha lá
@@ -5,7 +8,24 @@
  */
 export const BLOB_URL_LIFETIME_MS = 60_000
 
-/** Baixa `data` como um arquivo JSON legível: o exportar de cada ficha e o de todas. */
+/**
+ * Guarda `data` como um arquivo JSON legível: o exportar de cada ficha e o de todas. No navegador,
+ * o download (`downloadJsonFile`), que sai na hora e conta como salvo: a página não sabe se a
+ * pessoa o guardou. No APK do Android, onde o WebView ignora esse download, o "Salvar como" da casca
+ * (core/native/nativeShell.ts), e `onSaved` só roda se o arquivo foi gravado.
+ */
+export function saveJsonFile(fileName: string, data: unknown, onSaved?: () => void, native: boolean = isNativeApp()): void {
+  if (!native) {
+    downloadJsonFile(fileName, data)
+    onSaved?.()
+    return
+  }
+  void saveTextFileNative(fileName, 'application/json', JSON.stringify(data, null, 2)).then(saved => {
+    if (saved) onSaved?.()
+  })
+}
+
+/** Baixa `data` como um arquivo JSON legível, pelo link de download do navegador. */
 export function downloadJsonFile(fileName: string, data: unknown): void {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
   const url = URL.createObjectURL(blob)

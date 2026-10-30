@@ -33,6 +33,21 @@ describe('o APK abre o site publicado', () => {
     expect(retryPath).toBeDefined()
     expect(page).toContain(`window.location.href = '${retryPath}'`)
   })
+
+  // O site chama a casca pelo nome do método (core/native/nativeShell.ts): método que só existe de
+  // um lado é o "não implementado" que o APK velho dá, agora no APK novo também.
+  it('todo método da casca que o site chama existe no NativeShellPlugin.java', () => {
+    const site = read(web, 'src/core/native/nativeShell.ts')
+    const contract = /export interface NativeShellPlugin \{([\s\S]*?)\n\}/.exec(site)?.[1] ?? ''
+    const methods = [...contract.matchAll(/^ {2}(\w+)\(/gm)].map(m => m[1])
+    expect(methods).toEqual(['saveFile', 'print'])
+    const shell = read(androidMain, 'java/io/github/jotapais/forja/NativeShellPlugin.java')
+    expect(shell).toContain('@CapacitorPlugin(name = "NativeShell")')
+    expect(site).toContain("registerPlugin<NativeShellPlugin>('NativeShell')")
+    for (const method of methods) {
+      expect(shell).toMatch(new RegExp(`@PluginMethod\\s+public void ${method}\\(PluginCall call\\)`))
+    }
+  })
 })
 
 describe('o APK tem a cara do app instalável', () => {

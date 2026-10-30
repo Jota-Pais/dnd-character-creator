@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useAppStore } from '../../core/stores/appStore'
 import { useBackHandler, useStepPath } from '../../core/navigation/back'
+import { printPage } from '../../core/utils/print'
 import { useCharacterStore } from './stores/characterStore'
 import { WizardShell } from '../../components/wizard/WizardShell'
 import { getMissingSteps } from '@rpg/rules/systems/dnd5e/utils/draftValidation'
@@ -94,7 +95,7 @@ export function Dnd5eApp() {
             ← Voltar
           </button>
           <button
-            onClick={() => window.print()}
+            onClick={() => printPage()}
             className="px-5 py-2 rounded-xl font-fantasy font-bold text-sm bg-gold-500 text-parchment-950 hover:bg-gold-400 transition-colors"
           >
             🖨 Imprimir / Salvar PDF

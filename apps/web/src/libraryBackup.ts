@@ -12,7 +12,7 @@ import {
 } from './systems/dnd5e/utils/storage'
 import { listPlayStateIds, loadPlayState } from './systems/dnd5e/utils/playStorage'
 import { loadLibrary as loadOrdemLibrary, type SavedCharacter as OrdemSaved } from './systems/ordem/utils/storage'
-import { downloadJsonFile } from './core/utils/download'
+import { saveJsonFile } from './core/utils/download'
 import { useDeviceStore } from './core/stores/deviceStore'
 
 /**
@@ -158,9 +158,14 @@ function localDate(ms: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-/** Baixa a cópia de todas as fichas deste navegador e anota a data (o lembrete da galeria lê). */
+/**
+ * Guarda a cópia de todas as fichas deste aparelho e anota a data (o lembrete da galeria lê). A
+ * data só entra com o arquivo gravado: no APK, cancelado o "Salvar como" (ou sem o APK novo), o
+ * lembrete continua.
+ */
 export function exportAllCharacters(now = Date.now()): void {
   const file = buildBackupFile(loadDndLibrary(), loadOrdemLibrary(), loadPlayState, now)
-  downloadJsonFile(`forja-de-herois-fichas-${localDate(now)}.json`, file)
-  useDeviceStore.getState().update({ lastBackupAt: now })
+  saveJsonFile(`forja-de-herois-fichas-${localDate(now)}.json`, file, () => {
+    useDeviceStore.getState().update({ lastBackupAt: now })
+  })
 }

@@ -8,7 +8,8 @@ import { BACKUP_SNOOZE_MS, shouldRemindBackup } from './core/utils/backupReminde
  * Os avisos discretos da galeria, do app instalável (docs/app-instalavel.md): a versão nova pronta,
  * a dica de instalar no iPhone e o lembrete de cópia de segurança. Moram só na galeria, onde não há
  * jogo aberto. A dica e o lembrete não aparecem juntos: a dica (que também fala de guardar as
- * fichas) vem primeiro, e o lembrete espera ela ser dispensada.
+ * fichas e, com ficha aqui, oferece a cópia para levá-las ao app) vem primeiro, e o lembrete espera
+ * ela ser dispensada.
  */
 export function GalleryNotices({ latestChangeAt, onExportAll }: {
   /** A última mudança nas fichas e nos estados de jogo deste navegador; null sem ficha. */
@@ -20,6 +21,7 @@ export function GalleryNotices({ latestChangeAt, onExportAll }: {
   // A hora de quando a galeria abriu: o lembrete não aparece nem some com o relógio andando.
   const [now] = useState(() => Date.now())
 
+  const hasSheets = latestChangeAt !== null
   const installHint = shouldShowInstallHint(window, device.installHintDismissedAt)
   const backupReminder = !installHint && shouldRemindBackup({
     latestChangeAt,
@@ -40,9 +42,18 @@ export function GalleryNotices({ latestChangeAt, onExportAll }: {
       </div>
 
       {installHint && (
-        <Notice actions={<NoticeButton onClick={() => device.update({ installHintDismissedAt: Date.now() })}>Entendi</NoticeButton>}>
+        <Notice
+          actions={
+            <>
+              {hasSheets && <NoticeButton onClick={onExportAll}>Exportar todas</NoticeButton>}
+              <NoticeButton subtle={hasSheets} onClick={() => device.update({ installHintDismissedAt: Date.now() })}>Entendi</NoticeButton>
+            </>
+          }
+        >
           <strong className="font-semibold" style={{ color: '#ede2d6' }}>Instale no iPhone:</strong> toque em Compartilhar e
           em “Adicionar à Tela de Início”. Instalado, o app abre sem internet e guarda as fichas com mais segurança.
+          {/* No iPhone, o app da tela de início guarda à parte do navegador: começa sem as fichas daqui. */}
+          {hasSheets && ' As fichas deste navegador não passam sozinhas para o app: antes de instalar, toque em Exportar todas e, no app, em Importar.'}
         </Notice>
       )}
 

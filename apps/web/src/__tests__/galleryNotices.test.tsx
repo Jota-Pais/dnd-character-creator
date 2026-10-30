@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { render, screen, fireEvent, cleanup, act } from '@testing-library/react'
+import { render, screen, fireEvent, cleanup, act, within } from '@testing-library/react'
 import App from '../App'
 import { useAppStore } from '../core/stores/appStore'
 import { useCharacterStore } from '../systems/dnd5e/stores/characterStore'
@@ -11,6 +11,7 @@ import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
 
 const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1'
 const INSTALL_HINT = /Adicionar à Tela de Início/
+const SHEETS_STAY_IN_BROWSER = /As fichas deste navegador não passam sozinhas para o app/
 const BACKUP_REMINDER = /Guarde uma cópia em arquivo/
 const BACKUP_REMINDER_AGAIN = /Sua última cópia das fichas é de \d\d\/\d\d\/\d{4}\. Guarde uma nova\./
 
@@ -79,6 +80,30 @@ describe('dica de instalar no iPhone', () => {
   it('fora do iPhone não aparece', () => {
     render(<App />)
     expect(screen.queryByText(INSTALL_HINT)).toBeNull()
+  })
+
+  it('com fichas aqui, avisa que elas não vão sozinhas para o app e oferece a cópia', () => {
+    pretend({ userAgent: IPHONE, standalone: false })
+    withSheet()
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:x')
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    render(<App />)
+    const hint = screen.getByText(INSTALL_HINT)
+    expect(hint).toHaveTextContent(SHEETS_STAY_IN_BROWSER)
+    fireEvent.click(within(hint.parentElement!).getByText('Exportar todas'))
+    expect(click).toHaveBeenCalledTimes(1)
+    expect(loadDeviceState().lastBackupAt).not.toBeNull()
+    // A cópia não dispensa a dica: falta instalar.
+    expect(screen.getByText(INSTALL_HINT)).toBeInTheDocument()
+  })
+
+  it('sem ficha, a dica não fala de cópia', () => {
+    pretend({ userAgent: IPHONE, standalone: false })
+    render(<App />)
+    const hint = screen.getByText(INSTALL_HINT)
+    expect(hint).not.toHaveTextContent(SHEETS_STAY_IN_BROWSER)
+    expect(within(hint.parentElement!).queryByText('Exportar todas')).toBeNull()
   })
 })
 

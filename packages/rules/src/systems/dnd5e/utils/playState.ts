@@ -268,11 +268,21 @@ export function reconcilePlayState(state: PlayState, sheet: PlaySheet): PlayStat
 export function reconcileLoadedPlayState(state: PlayState, sheet: PlaySheet): PlayResult {
   const next = reconcilePlayState(state, sheet)
   const gone = state.activeEffects.filter(a => !next.activeEffects.some(n => n.id === a.id))
-  const toggleNotices = gone.length > 0
-    ? [note('info', gone.length === 1
-      ? 'A ficha mudou: 1 efeito ligado deixou de valer e foi desligado, porque a ficha não o tem mais.'
-      : `A ficha mudou: ${gone.length} efeitos ligados deixaram de valer e foram desligados, porque a ficha não os tem mais.`)]
-    : []
+  // A opção que caiu também avisa: o que ela fazia, inclusive ao terminar (o nível de exaustão do
+  // Frenesi), deixa de valer.
+  const optionLost = next.activeEffects.flatMap(n => {
+    const before = state.activeEffects.find(a => a.id === n.id)
+    const toggle = sheet.toggles.find(t => t.id === n.id)
+    return before?.option && !n.option && toggle ? [toggle] : []
+  })
+  const toggleNotices = [
+    ...(gone.length > 0
+      ? [note('info', gone.length === 1
+        ? 'A ficha mudou: 1 efeito ligado deixou de valer e foi desligado, porque a ficha não o tem mais.'
+        : `A ficha mudou: ${gone.length} efeitos ligados deixaram de valer e foram desligados, porque a ficha não os tem mais.`)]
+      : []),
+    ...optionLost.map(t => note('info', `A ficha mudou: continua ${lowerFirst(t.label)}, sem a opção escolhida ao ligar, porque a ficha não a tem mais; o que ela fazia, inclusive ao terminar, deixa de valer.`)),
+  ]
   if (state.lifeState !== 'conscious') return done(next, toggleNotices)
   const sheetMax = getBaseMaxHp(state, sheet)
   const before = Math.max(0, sheetMax - state.damageTaken)

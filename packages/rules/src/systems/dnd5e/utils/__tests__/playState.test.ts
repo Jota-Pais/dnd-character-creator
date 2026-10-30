@@ -1722,14 +1722,20 @@ describe('efeitos ligados: a Fúria pela ação que a liga', () => {
     expect(r.notices).toEqual([{ kind: 'refused', text: 'Em fúria você não pode se concentrar (pág. 48).' }])
   })
 
-  it('a reconciliação tira o efeito que a ficha não tem mais, com aviso; a opção perdida cai sozinha', () => {
+  it('a reconciliação tira o efeito que a ficha não tem mais, com aviso; a opção perdida também avisa', () => {
     const raging = enter(state(), barbarian(3, {}, 'berserker'), 'frenzy').state
     const fighter = buildPlaySheet({ ...structuredClone(EMPTY_DRAFT), class: 'fighter', level: 3 })
     const r = reconcileLoadedPlayState(raging, fighter)
     expect(r.state.activeEffects).toEqual([])
     expect(r.notices).toEqual([{ kind: 'info', text: 'A ficha mudou: 1 efeito ligado deixou de valer e foi desligado, porque a ficha não o tem mais.' }])
-    // Trocou de caminho: a fúria fica, sem o Frenesi.
-    expect(reconcilePlayState(raging, barbarian(3)).activeEffects).toEqual([{ id: 'rage', startedAt: 5 }])
+    // Trocou de caminho (ou baixou do 3º nível): a fúria fica, sem o Frenesi, e o aviso diz que a
+    // exaustão do fim não vem mais.
+    for (const sh of [barbarian(3), barbarian(2, {}, 'berserker')]) {
+      const lost = reconcileLoadedPlayState(raging, sh)
+      expect(lost.state.activeEffects).toEqual([{ id: 'rage', startedAt: 5 }])
+      expect(lost.notices).toEqual([{ kind: 'info', text: 'A ficha mudou: continua em fúria, sem a opção escolhida ao ligar, porque a ficha não a tem mais; o que ela fazia, inclusive ao terminar, deixa de valer.' }])
+      expect(end(lost.state, sh).state.exhaustionLevel).toBe(0)
+    }
     expect(reconcileLoadedPlayState(raging, barbarian(3, {}, 'berserker')).notices).toEqual([])
   })
 

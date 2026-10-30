@@ -1,13 +1,17 @@
 import { useId, useRef, useState, useSyncExternalStore, type FormEvent } from 'react'
 import { flushSync } from 'react-dom'
 import type { DamageTypeId } from '@rpg/rules/systems/dnd5e/types/damage'
-import type { PlayResult } from '@rpg/rules/systems/dnd5e/types/playState'
+import type { DamageInput, PlayResult } from '@rpg/rules/systems/dnd5e/types/playState'
 import {
-  adjustMaxHp, applyDamage, applyHealing, formatHpAdjustment, getPlayConditionEffects, grantTempHp, isAtZeroHp,
+  adjustMaxHp, applyDamage, applyHealing, formatHpAdjustment, getPlayDamageDefenses, grantTempHp, isAtZeroHp,
   suggestTempHpChoice,
 } from '@rpg/rules/systems/dnd5e/utils/playState'
-import { getDamageLabel } from '@rpg/rules/systems/dnd5e/utils/damageTypes'
-import { parseHpEntry, resolveHpAction, stripHpSign, type HpAction } from './hpEntry'
+import { getDamageType } from '@rpg/rules/systems/dnd5e/utils/damageTypes'
+import { describeDamageDefenses } from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
+import {
+  choiceToDamageType, getDefendedDamageTypes, getDefenseQuestions, getDefensesForTypes, parseHpEntry, resolveHpAction,
+  stripHpSign, type DamageTypeChoice, type HpAction,
+} from './hpEntry'
 import type { PlayView } from './usePlayView'
 
 /** `sign`: o sinal que faz a mesma coisa no campo ("−7", "+5"), mostrado no botão para ensinar o atalho. */
@@ -65,19 +69,69 @@ function parseAmount(text: string): number | null {
   return Number(text.trim())
 }
 
+/** A 2ª parcela do dano: o valor digitado e o tipo escolhido. */
+type SecondPart = { text: string; type: DamageTypeChoice | null }
+
+const firstUpper = (text: string) => text.charAt(0).toUpperCase() + text.slice(1)
+
+/**
+ * Os chips de tipo de uma parcela: os tipos com defesa, depois o "Outro tipo". Tocar no escolhido o
+ * desmarca (o dano fica sem tipo, como na Fase 1). Os chips não somem com o toque: o foco fica neles.
+ */
+function DamageTypeChips({ label, types, value, onChange }: {
+  label: string
+  types: DamageTypeId[]
+  value: DamageTypeChoice | null
+  onChange: (next: DamageTypeChoice | null) => void
+}) {
+  const choices: { id: DamageTypeChoice; name: string }[] = [
+    ...types.map(id => ({ id, name: getDamageType(id).name })),
+    { id: 'other', name: 'Outro tipo' },
+  ]
+  return (
+    <div role="group" aria-label={label} className="flex flex-wrap gap-1.5">
+      {choices.map(c => (
+        <button
+          key={c.id}
+          type="button"
+          onClick={() => onChange(value === c.id ? null : c.id)}
+          aria-pressed={value === c.id}
+          className={[
+            'min-h-10 rounded-lg border px-3 text-sm transition-colors',
+            value === c.id
+              ? 'border-gold-500 bg-gold-900 text-gold-300'
+              : 'border-parchment-800 text-parchment-300 hover:border-parchment-600',
+          ].join(' ')}
+        >
+          {c.name}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 /**
  * Ações de PV: dano, cura e PV temporários, com o número digitado pelo jogador (o dano vem do
  * inimigo: nada de rolar aqui, mesmo com os dados do app). O campo fica sempre à mão e aceita o
  * atalho "−7" / "+5" sem escolher o botão antes (`hpEntry.ts`); o teclado do celular é o numérico,
  * que no iPhone não tem sinal, e por isso os botões Dano e Cura levam o "−" e o "+" e, com ponteiro
  * grosso, o campo ensina os botões em vez do sinal (`ENTRY_TEXT`).
+ *
+ * No Dano, quem tem defesa por tipo (da ficha ou de condição: Resistência Infernal, Petrificado) vê
+ * os chips do tipo, e a defesa se aplica sozinha; "+ outra parcela" separa um dano de dois tipos.
+ * A defesa condicional vira caixa desligada ("Dano de magia?"), e a exceção, caixa que a cancela
+ * ("Arma mágica ou de prata?"). Sem defesa nenhuma, o painel fica como na Fase 1.
+ *
  * As regras ficam nas funções puras de `utils/playState.ts`; os avisos (resistência,
  * concentração, queda a 0 PV) saem pelo playStore.
  */
 export function HpPanel({ view }: { view: PlayView }) {
-  const { state, run } = view
+  const { state, sheet, run } = view
+  const rootRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const submitRef = useRef<HTMLButtonElement>(null)
+  const addPartRef = useRef<HTMLButtonElement>(null)
+  const removePartRef = useRef<HTMLButtonElement>(null)
   const texts = useSyncExternalStore(subscribeCoarsePointer, isCoarsePointer) ? ENTRY_TEXT.coarse : ENTRY_TEXT.fine
   const hintId = useId()
   const problemId = useId()
@@ -86,34 +140,59 @@ export function HpPanel({ view }: { view: PlayView }) {
   const [text, setText] = useState('')
   const [resisted, setResisted] = useState(false)
   const [critical, setCritical] = useState(false)
-  const [immuneTo, setImmuneTo] = useState<DamageTypeId | null>(null)
   const [knockout, setKnockout] = useState(false)
+  const [damageType, setDamageType] = useState<DamageTypeChoice | null>(null)
+  const [second, setSecond] = useState<SecondPart | null>(null)
+  const [confirmed, setConfirmed] = useState<string[]>([])
+  const [excepted, setExcepted] = useState<string[]>([])
   const atZero = isAtZeroHp(state)
   // Nocaute (pág. 200): só faz sentido para quem ainda está de pé — é o golpe que levaria a 0 PV.
   const canBeKnockedOut = state.lifeState === 'conscious'
-  // Imunidades das condições em vigor (Petrificado: veneno): o jogador marca quando o dano é desse tipo.
-  const immunities = getPlayConditionEffects(state).damageImmunities
   const entry = parseHpEntry(text)
   const action = resolveHpAction(entry, selected)
   const amount = entry?.amount ?? null
   const current = ACTIONS.find(a => a.id === action)
   // PV temporários já presentes: o jogador escolhe manter ou trocar (pág. 200).
   const askTempChoice = action === 'temp' && state.tempHp > 0 && amount !== null && amount > 0
+
+  // As defesas em vigor (da ficha e das condições): os chips e as caixas do dano saem delas.
+  const defenses = getPlayDamageDefenses(state, sheet)
+  const defendedTypes = getDefendedDamageTypes(defenses)
+  const askType = action === 'damage' && defendedTypes.length > 0
+  // Sem chips não há tipo nem 2ª parcela: o dano é um só, sem tipo, como na Fase 1.
+  const secondPart = askType ? second : null
+  const secondAmount = secondPart ? parseAmount(secondPart.text) : null
+  const partTypes = askType
+    ? [choiceToDamageType(damageType), ...(secondPart ? [choiceToDamageType(secondPart.type)] : [])]
+    : [undefined]
+  const questions = action === 'damage'
+    ? getDefenseQuestions(defenses, partTypes)
+    : { conditions: [], exceptions: [] }
+  const chosenTypes = partTypes.filter((t): t is DamageTypeId => t !== undefined)
+  const typeLines = describeDamageDefenses(getDefensesForTypes(defenses, chosenTypes))
+
   // O que impede o "Aplicar": texto que não é número, ou número sem sinal e sem botão escolhido (no
-  // iPhone, o teclado numérico não tem sinal, e o caminho são os botões). Vai a uma região viva.
+  // iPhone, o teclado numérico não tem sinal, e o caminho são os botões), ou a 2ª parcela com texto
+  // que não é número. Vai a uma região viva.
   const problem = !entry
     ? texts.invalid
     : amount !== null && action === null
       ? `Para aplicar o ${amount}, escolha Dano, Cura ou PV temporários.`
-      : null
+      : secondPart && secondPart.text.trim() !== '' && secondAmount === null
+        ? 'Na 2ª parcela, digite só o número.'
+        : null
+  const canApply = amount !== null && action !== null && (!secondPart || secondAmount !== null)
   // A ajuda da ação, lida ao focar o campo: fora da região viva, não fala a cada toque nos botões.
   const hint = current?.help ?? texts.hint
 
   function clearOptions() {
     setResisted(false)
     setCritical(false)
-    setImmuneTo(null)
     setKnockout(false)
+    setDamageType(null)
+    setSecond(null)
+    setConfirmed([])
+    setExcepted([])
   }
 
   function reset() {
@@ -132,29 +211,64 @@ export function HpPanel({ view }: { view: PlayView }) {
     inputRef.current?.focus()
   }
 
-  function apply(choice?: 'keep' | 'replace') {
-    if (amount === null || !action) return
-    let result: PlayResult | null
-    if (action === 'damage') {
-      const damageType = immuneTo && immunities.some(i => i.damageType === immuneTo) ? immuneTo : undefined
-      result = run((st, sh) => applyDamage(st, sh, {
-        amount, resisted, critical: atZero && critical, ...(damageType ? { damageType } : {}),
-        ...(canBeKnockedOut && knockout ? { knockout: true } : {}),
-      }))
-    } else if (action === 'heal') {
-      result = run((st, sh) => applyHealing(st, sh, amount))
-    } else {
-      result = run(st => grantTempHp(st, amount, choice))
+  function damageInput(value: number): DamageInput {
+    const firstType = askType ? choiceToDamageType(damageType) : undefined
+    const secondType = secondPart ? choiceToDamageType(secondPart.type) : undefined
+    const parts = secondPart && secondAmount !== null
+      ? [
+        { amount: value, ...(firstType ? { damageType: firstType } : {}) },
+        { amount: secondAmount, ...(secondType ? { damageType: secondType } : {}) },
+      ]
+      : null
+    // Só as caixas à vista: a de um tipo desmarcado depois não vale.
+    const conditions = questions.conditions.map(q => q.text).filter(q => confirmed.includes(q))
+    const exceptions = questions.exceptions.map(q => q.text).filter(q => excepted.includes(q))
+    return {
+      amount: value + (secondAmount ?? 0),
+      resisted,
+      critical: atZero && critical,
+      ...(parts ? { parts } : firstType ? { damageType: firstType } : {}),
+      ...(conditions.length > 0 ? { conditionalDefenses: conditions } : {}),
+      ...(exceptions.length > 0 ? { exceptions } : {}),
+      ...(canBeKnockedOut && knockout ? { knockout: true } : {}),
     }
-    if (!wasRefused(result)) reset()
   }
 
-  // "Manter" e "Ficar com" somem ao aplicar: síncrono (flushSync), o foco passa ao "Aplicar", que
-  // volta no lugar deles. Recusado, eles ficam, e o foco também.
-  function applyTempChoice(choice: 'keep' | 'replace') {
-    flushSync(() => apply(choice))
-    submitRef.current?.focus()
+  // Aplicar tira do painel o que valia só para este dano (chips, 2ª parcela, caixas) e os botões dos
+  // PV temporários: síncrono (flushSync), e o foco que estava num deles vai ao "Aplicar", que fica.
+  // Recusado, nada some, e o foco também fica.
+  function apply(choice?: 'keep' | 'replace') {
+    if (!canApply || amount === null) return
+    const result = flushSync(() => {
+      let r: PlayResult | null
+      if (action === 'damage') {
+        const input = damageInput(amount)
+        r = run((st, sh) => applyDamage(st, sh, input))
+      } else if (action === 'heal') {
+        r = run((st, sh) => applyHealing(st, sh, amount))
+      } else {
+        r = run(st => grantTempHp(st, amount, choice))
+      }
+      if (!wasRefused(r)) reset()
+      return r
+    })
+    if (!wasRefused(result) && !rootRef.current?.contains(document.activeElement)) submitRef.current?.focus()
   }
+
+  // "+ outra parcela" e "Tirar a 2ª parcela" trocam de lugar: o foco passa de um ao outro, nunca ao
+  // campo da parcela (abriria o teclado do celular).
+  function addPart() {
+    flushSync(() => setSecond({ text: '', type: null }))
+    removePartRef.current?.focus()
+  }
+
+  function removePart() {
+    flushSync(() => setSecond(null))
+    addPartRef.current?.focus()
+  }
+
+  const toggleIn = (list: string[], item: string, on: boolean) =>
+    on ? [...list.filter(x => x !== item), item] : list.filter(x => x !== item)
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -164,7 +278,7 @@ export function HpPanel({ view }: { view: PlayView }) {
   const suggested = askTempChoice ? suggestTempHpChoice(state, amount) : null
 
   return (
-    <div id={HP_PANEL_ID} className="rounded-xl border border-parchment-900 bg-surface-raised p-3">
+    <div id={HP_PANEL_ID} ref={rootRef} className="rounded-xl border border-parchment-900 bg-surface-raised p-3">
       <div className="grid grid-cols-3 gap-1.5" role="group" aria-label="Pontos de vida">
         {ACTIONS.map(a => (
           <button
@@ -206,7 +320,7 @@ export function HpPanel({ view }: { view: PlayView }) {
             <button
               ref={submitRef}
               type="submit"
-              aria-disabled={amount === null || action === null}
+              aria-disabled={!canApply}
               className="min-h-10 shrink-0 rounded-lg bg-gold-500 px-4 font-fantasy font-bold text-sm text-on-accent aria-disabled:opacity-40 hover:bg-gold-400 transition-colors"
             >
               Aplicar
@@ -224,21 +338,95 @@ export function HpPanel({ view }: { view: PlayView }) {
 
         {action === 'damage' && (
           <div className="space-y-1">
+            {askType && (
+              <div className="space-y-1.5">
+                <p className="text-xs text-parchment-500">{secondPart ? 'Tipo da 1ª parcela' : 'Tipo do dano'}</p>
+                <DamageTypeChips
+                  label={secondPart ? 'Tipo da 1ª parcela' : 'Tipo do dano'}
+                  types={defendedTypes}
+                  value={damageType}
+                  onChange={setDamageType}
+                />
+                {secondPart && (
+                  <div className="space-y-1.5 pt-1">
+                    <p className="text-xs text-parchment-500">2ª parcela</p>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="off"
+                      value={secondPart.text}
+                      onChange={e => {
+                        const value = e.target.value
+                        setSecond(s => (s ? { ...s, text: value } : s))
+                      }}
+                      aria-label="Quanto de dano da 2ª parcela"
+                      placeholder="0"
+                      className="min-h-10 w-full min-w-0 rounded-lg border border-parchment-800 bg-surface-base px-3 text-lg text-parchment-100 outline-none focus:border-gold-600"
+                    />
+                    <DamageTypeChips
+                      label="Tipo da 2ª parcela"
+                      types={defendedTypes}
+                      value={secondPart.type}
+                      onChange={type => setSecond(s => (s ? { ...s, type } : s))}
+                    />
+                  </div>
+                )}
+                {secondPart ? (
+                  <button
+                    ref={removePartRef}
+                    type="button"
+                    onClick={removePart}
+                    className="min-h-10 text-xs text-parchment-400 underline hover:text-parchment-200"
+                  >
+                    Tirar a 2ª parcela
+                  </button>
+                ) : (
+                  <button
+                    ref={addPartRef}
+                    type="button"
+                    onClick={addPart}
+                    className="min-h-10 text-xs text-parchment-400 underline hover:text-parchment-200"
+                  >
+                    + outra parcela
+                  </button>
+                )}
+                {typeLines.map(line => (
+                  <p key={line} className="text-xs leading-snug text-emerald-300">{line}</p>
+                ))}
+              </div>
+            )}
+            {questions.conditions.map(q => (
+              <label key={`condition:${q.text}`} className="flex items-center gap-2 min-h-10 text-sm text-parchment-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={confirmed.includes(q.text)}
+                  onChange={e => {
+                    const on = e.target.checked
+                    setConfirmed(list => toggleIn(list, q.text, on))
+                  }}
+                  className="w-5 h-5 shrink-0 accent-gold-500"
+                />
+                Dano {q.text}? ({q.sources.join(', ')})
+              </label>
+            ))}
+            {questions.exceptions.map(q => (
+              <label key={`exception:${q.text}`} className="flex items-center gap-2 min-h-10 text-sm text-parchment-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={excepted.includes(q.text)}
+                  onChange={e => {
+                    const on = e.target.checked
+                    setExcepted(list => toggleIn(list, q.text, on))
+                  }}
+                  className="w-5 h-5 shrink-0 accent-gold-500"
+                />
+                {firstUpper(q.text)}? (anula {q.sources.join(', ')})
+              </label>
+            ))}
             <label className="flex items-center gap-2 min-h-10 text-sm text-parchment-300 cursor-pointer">
               <input type="checkbox" checked={resisted} onChange={e => setResisted(e.target.checked)} className="w-5 h-5 shrink-0 accent-gold-500" />
               Tenho resistência a esse dano (sofro a metade)
             </label>
-            {immunities.map(i => (
-              <label key={i.damageType} className="flex items-center gap-2 min-h-10 text-sm text-parchment-300 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={immuneTo === i.damageType}
-                  onChange={e => setImmuneTo(e.target.checked ? i.damageType : null)}
-                  className="w-5 h-5 shrink-0 accent-gold-500"
-                />
-                É {getDamageLabel(i.damageType)} ({i.sources.map(s => s.label).join(', ')}: imune, não sofre nada)
-              </label>
-            ))}
             {atZero && (
               <label className="flex items-center gap-2 min-h-10 text-sm text-parchment-300 cursor-pointer">
                 <input type="checkbox" checked={critical} onChange={e => setCritical(e.target.checked)} className="w-5 h-5 shrink-0 accent-gold-500" />
@@ -263,14 +451,14 @@ export function HpPanel({ view }: { view: PlayView }) {
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => applyTempChoice('keep')}
+                onClick={() => apply('keep')}
                 className={`min-h-10 rounded-lg border px-3 text-sm text-parchment-200 hover:border-gold-600 ${suggested === 'keep' ? 'border-gold-700' : 'border-parchment-700'}`}
               >
                 Manter {state.tempHp}{state.tempHp > amount ? ' (maior)' : ''}
               </button>
               <button
                 type="button"
-                onClick={() => applyTempChoice('replace')}
+                onClick={() => apply('replace')}
                 className={`min-h-10 rounded-lg border px-3 text-sm text-parchment-200 hover:border-gold-600 ${suggested === 'replace' ? 'border-gold-700' : 'border-parchment-700'}`}
               >
                 Ficar com {amount}{amount > state.tempHp ? ' (maior)' : ''}

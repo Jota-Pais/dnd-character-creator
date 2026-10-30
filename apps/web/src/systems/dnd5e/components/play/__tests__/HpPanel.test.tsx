@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { render, screen, fireEvent, cleanup } from '@testing-library/react'
+import { render, screen, fireEvent, cleanup, within } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { usePlayStore } from '../../../stores/playStore'
 import { addCondition } from '@rpg/rules/systems/dnd5e/utils/playState'
-import { liveRegions, openKrusk, resetPlay } from './openPlay'
+import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
+import { liveRegions, openDraft, openKrusk, resetPlay } from './openPlay'
 
 beforeEach(resetPlay)
 afterEach(() => cleanup())
@@ -176,23 +177,6 @@ describe('HpPanel', () => {
     expect(usePlayStore.getState().state?.lifeState).toBe('dead')
   })
 
-  it('Petrificado: a caixa do dano de veneno só aparece com ele, e o veneno marcado não tira PV', () => {
-    openKrusk()
-    render(<PlayScreen />)
-    fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
-    expect(screen.queryByLabelText(/dano de veneno/)).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
-    usePlayStore.getState().run(st => addCondition(st, 'petrified'))
-    fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
-    fireEvent.change(screen.getByLabelText('Quanto de dano'), { target: { value: '9' } })
-    fireEvent.click(screen.getByLabelText(/É dano de veneno \(Petrificado/))
-    fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
-    expect(screen.getByTestId('hp-current')).toHaveTextContent('14')
-    // Sem marcar: a resistência do Petrificado, metade.
-    act('Dano', 'Quanto de dano', '9')
-    expect(screen.getByTestId('hp-current')).toHaveTextContent('10')
-  })
-
   it('± PV máximo: Ajuda +5 sobe o máximo e o atual, "encerrar" volta, e o desfazer devolve', () => {
     openKrusk()
     render(<PlayScreen />)
@@ -305,5 +289,192 @@ describe('HpPanel — o campo no celular e no computador', () => {
     expect(field).toHaveAccessibleDescription('Escolha Dano ou Cura, ou digite com o sinal: −7 é dano, +5 é cura.')
     fireEvent.change(field, { target: { value: 'sete' } })
     expect(screen.getByText('Digite só o número, com − na frente para dano ou + para cura.')).toBeInTheDocument()
+  })
+})
+// ── O tipo do dano e as defesas (p. 199) ─────────────────────────────────────
+
+describe('HpPanel — o tipo do dano', () => {
+  /** Tielle: a ficha completa de tiefling (Resistência Infernal, p. 43), 13 PV. */
+  const openTiefling = () => openDraft({ ...structuredClone(COMPLETE_DRAFT), name: 'Tielle', race: 'tiefling' })
+  const typeGroup = (name = 'Tipo do dano') => within(screen.getByRole('group', { name }))
+
+  it('o tiefling vê os chips (Fogo e Outro tipo); quem não tem defesa, não', () => {
+    openKrusk()
+    const { unmount } = render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
+    expect(screen.queryByRole('group', { name: 'Tipo do dano' })).toBeNull()
+    expect(screen.queryByRole('button', { name: '+ outra parcela' })).toBeNull()
+    unmount()
+    resetPlay()
+
+    openTiefling()
+    render(<PlayScreen />)
+    expect(screen.queryByRole('group', { name: 'Tipo do dano' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
+    expect(typeGroup().getAllByRole('button').map(b => b.textContent)).toEqual(['Fogo', 'Outro tipo'])
+  })
+
+  it('Fogo + 13: 6, com o aviso da origem; o desfazer volta o PV', () => {
+    openTiefling()
+    render(<PlayScreen />)
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('13')
+    fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
+    fireEvent.change(screen.getByLabelText('Quanto de dano'), { target: { value: '13' } })
+    fireEvent.click(typeGroup().getByRole('button', { name: 'Fogo' }))
+    expect(typeGroup().getByRole('button', { name: 'Fogo' })).toHaveAttribute('aria-pressed', 'true')
+    // A linha embaixo dos chips diz o que o tipo vai fazer.
+    expect(screen.getByText('Resistência a fogo (Resistência Infernal)')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('7')
+    expect(screen.getByText(/Resistência a fogo \(Resistência Infernal\): 13 → 6\./)).toBeInTheDocument()
+    // Aplicado, o tipo não fica marcado para o próximo dano.
+    fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
+    expect(typeGroup().getByRole('button', { name: 'Fogo' })).toHaveAttribute('aria-pressed', 'false')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Desfazer a última mudança' }))
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('13')
+  })
+
+  it('sem chip escolhido ou com "Outro tipo", nada é automático', () => {
+    openTiefling()
+    render(<PlayScreen />)
+    act('Dano', 'Quanto de dano', '4')
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('9')
+    fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
+    fireEvent.change(screen.getByLabelText('Quanto de dano'), { target: { value: '4' } })
+    fireEvent.click(typeGroup().getByRole('button', { name: 'Outro tipo' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('5')
+  })
+
+  it('duas parcelas somam certo: 4 de outro tipo + 7 de fogo tiram 7 (4 + 3)', () => {
+    openTiefling()
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
+    fireEvent.change(screen.getByLabelText('Quanto de dano'), { target: { value: '4' } })
+    fireEvent.click(typeGroup().getByRole('button', { name: 'Outro tipo' }))
+    fireEvent.click(screen.getByRole('button', { name: '+ outra parcela' }))
+    fireEvent.change(screen.getByLabelText('Quanto de dano da 2ª parcela'), { target: { value: '7' } })
+    fireEvent.click(typeGroup('Tipo da 2ª parcela').getByRole('button', { name: 'Fogo' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('6')
+    expect(screen.getByText(/Dano somado: 4 \+ 3 = 7\./)).toBeInTheDocument()
+    expect(screen.getByText(/Resistência a fogo \(Resistência Infernal\): 7 → 3\./)).toBeInTheDocument()
+  })
+
+  it('a 2ª parcela com texto que não é número apaga o "Aplicar" e diz por quê, numa região viva montada vazia', () => {
+    openTiefling()
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
+    fireEvent.change(screen.getByLabelText('Quanto de dano'), { target: { value: '4' } })
+    fireEvent.click(screen.getByRole('button', { name: '+ outra parcela' }))
+    const regions = liveRegions()
+    expect(regions.every(r => r.textContent === '')).toBe(true)
+    // Vazia, só não aplica (como o campo principal vazio).
+    expect(screen.getByRole('button', { name: 'Aplicar' })).toHaveAttribute('aria-disabled', 'true')
+    fireEvent.change(screen.getByLabelText('Quanto de dano da 2ª parcela'), { target: { value: 'três' } })
+    const problem = screen.getByText('Na 2ª parcela, digite só o número.')
+    expect(regions.some(r => r.contains(problem))).toBe(true)
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('13')
+  })
+
+  it('Petrificado sem defesa da ficha continua oferecendo o veneno: imune, não tira PV', () => {
+    openKrusk()
+    render(<PlayScreen />)
+    usePlayStore.getState().run(st => addCondition(st, 'petrified'))
+    fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
+    expect(typeGroup().getAllByRole('button').map(b => b.textContent)).toEqual(['Veneno', 'Outro tipo'])
+    fireEvent.change(screen.getByLabelText('Quanto de dano'), { target: { value: '9' } })
+    fireEvent.click(typeGroup().getByRole('button', { name: 'Veneno' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('14')
+    // Sem o tipo: a resistência do Petrificado, metade.
+    act('Dano', 'Quanto de dano', '9')
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('10')
+  })
+
+  it('defesa condicional vira caixa desligada ("Dano de magia?"), mesmo sem chips quando vale para todo dano', () => {
+    openKrusk()
+    usePlayStore.setState(s => ({
+      sheet: s.sheet && { ...s.sheet, defenses: [{ source: 'Aura de Vigilância', kind: 'resistance', types: 'all', condition: 'de magia' }] },
+    }))
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
+    expect(screen.queryByRole('group', { name: 'Tipo do dano' })).toBeNull()
+    const box = screen.getByLabelText('Dano de magia? (Aura de Vigilância)')
+    expect(box).not.toBeChecked()
+    fireEvent.change(screen.getByLabelText('Quanto de dano'), { target: { value: '6' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('8')
+    fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
+    fireEvent.change(screen.getByLabelText('Quanto de dano'), { target: { value: '6' } })
+    fireEvent.click(screen.getByLabelText('Dano de magia? (Aura de Vigilância)'))
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('5')
+  })
+
+  it('exceção vira caixa desligada que cancela, só com o tipo que ela alcança', () => {
+    openKrusk()
+    usePlayStore.setState(s => ({
+      sheet: s.sheet && {
+        ...s.sheet,
+        defenses: [{ source: 'Resistência Demoníaca', kind: 'resistance', types: ['slashing'], exceptWhen: 'arma mágica ou de prata' }],
+      },
+    }))
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
+    expect(screen.queryByLabelText(/Arma mágica ou de prata/)).toBeNull()
+    fireEvent.change(screen.getByLabelText('Quanto de dano'), { target: { value: '8' } })
+    fireEvent.click(typeGroup().getByRole('button', { name: 'Cortante' }))
+    fireEvent.click(screen.getByLabelText('Arma mágica ou de prata? (anula Resistência Demoníaca)'))
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('6')
+  })
+})
+
+describe('HpPanel — o foco com as parcelas', () => {
+  const openTiefling = () => openDraft({ ...structuredClone(COMPLETE_DRAFT), name: 'Tielle', race: 'tiefling' })
+
+  it('"+ outra parcela" e "Tirar a 2ª parcela" passam o foco um ao outro, nunca ao campo', () => {
+    openTiefling()
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
+    const add = screen.getByRole('button', { name: '+ outra parcela' })
+    add.focus()
+    fireEvent.click(add)
+    const remove = screen.getByRole('button', { name: 'Tirar a 2ª parcela' })
+    expect(remove).toHaveFocus()
+    fireEvent.click(remove)
+    expect(screen.queryByLabelText('Quanto de dano da 2ª parcela')).toBeNull()
+    expect(screen.getByRole('button', { name: '+ outra parcela' })).toHaveFocus()
+  })
+
+  it('aplicado pelo Enter na 2ª parcela (que some), o foco vai ao "Aplicar"', () => {
+    openTiefling()
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
+    fireEvent.change(screen.getByLabelText('Quanto de dano'), { target: { value: '2' } })
+    fireEvent.click(screen.getByRole('button', { name: '+ outra parcela' }))
+    const second = screen.getByLabelText('Quanto de dano da 2ª parcela')
+    fireEvent.change(second, { target: { value: '3' } })
+    second.focus()
+    fireEvent.submit(second)
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('8')
+    expect(screen.queryByLabelText('Quanto de dano da 2ª parcela')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Aplicar' })).toHaveFocus()
+  })
+
+  it('o chip que some com o aplicar também passa o foco ao "Aplicar"', () => {
+    openTiefling()
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
+    fireEvent.change(screen.getByLabelText('Quanto de dano'), { target: { value: '9' } })
+    const fire = within(screen.getByRole('group', { name: 'Tipo do dano' })).getByRole('button', { name: 'Fogo' })
+    fire.focus()
+    fireEvent.click(fire)
+    fireEvent.submit(fire)
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('9')
+    expect(screen.getByRole('button', { name: 'Aplicar' })).toHaveFocus()
   })
 })

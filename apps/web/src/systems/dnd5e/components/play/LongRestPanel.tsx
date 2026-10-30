@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { completeLongRest, formatHpAdjustment, getHitDiceAvailable, previewLongRest } from '@rpg/rules/systems/dnd5e/utils/playState'
 import { countLabel } from '@rpg/rules/systems/dnd5e/utils/textUtils'
 import { ordinal } from './playFormat'
+import { RestEffectsEnding } from './RestEffectsEnding'
 import type { PlayTabProps } from './usePlayView'
 
 /**
@@ -26,7 +27,8 @@ function fitHitDiceChoice(
 /**
  * Descanso longo (pág. 188): a prévia do que volta (`previewLongRest`) e o "Confirmar"
  * (`completeLongRest`). A caixa "comeu e bebeu" vem marcada (decisão 14); na multiclasse o
- * jogador escolhe quais tipos de Dado de Vida voltam, com os maiores sugeridos (decisão 2).
+ * jogador escolhe quais tipos de Dado de Vida voltam, com os maiores sugeridos (decisão 2). O
+ * efeito ligado que acaba no descanso (a Fúria) vem antes, com o que custa ao acabar.
  */
 export function LongRestPanel({ view, onClose }: { view: PlayTabProps; onClose: () => void }) {
   const { state, sheet, run } = view
@@ -68,6 +70,8 @@ export function LongRestPanel({ view, onClose }: { view: PlayTabProps; onClose: 
   return (
     <div className="rounded-xl border border-parchment-800 bg-surface-raised p-3 space-y-3" aria-label="Descanso longo" role="group">
       {preview.notices.map((n, i) => <p key={i} className="text-xs text-parchment-400 leading-snug">{n.text}</p>)}
+
+      <RestEffectsEnding lines={preview.effectsEnding} />
 
       {preview.blocked ? (
         <p className="rounded-lg border border-red-900 bg-red-950/30 px-3 py-2 text-sm text-red-200">{preview.blockReason}</p>

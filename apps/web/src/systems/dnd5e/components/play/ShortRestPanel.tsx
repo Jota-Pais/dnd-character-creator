@@ -4,13 +4,14 @@ import type { RollRecord } from '@rpg/rules/core/dice'
 import { usePlayStore, type ShortRestSpend } from '../../stores/playStore'
 import type { PlayNotice, PlaySheet, PlayState } from '@rpg/rules/systems/dnd5e/types/playState'
 import {
-  completeShortRest, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable, getShortRestSlotRecovery, isAtZeroHp,
+  completeShortRest, endTogglesOnRest, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable, getShortRestSlotRecovery, isAtZeroHp,
   previewShortRest, recordRoll, spendHitDie,
 } from '@rpg/rules/systems/dnd5e/utils/playState'
 import type { RollGuideEntry } from '@rpg/rules/systems/dnd5e/utils/rollGuide'
 import { countLabel, pluralize } from '@rpg/rules/systems/dnd5e/utils/textUtils'
 import { ChangeAnnouncer } from './ChangeAnnouncer'
 import { rollGuideEntry } from './playDice'
+import { RestEffectsEnding } from './RestEffectsEnding'
 import type { PlayTabProps } from './usePlayView'
 
 type Simulation = { state: PlayState; lines: string[]; warnings: string[]; refused: string | null }
@@ -132,7 +133,8 @@ function HitDieInput({ die, available, entry, appDice, onAdd, lineRef }: {
  * Dados de Vida um a um, vê a conta e o PV parcial, pode desfazer o último dado, e nada é gravado
  * até o "Concluir" — que aplica tudo (dados, Pacto, recursos de recarga curta) numa operação só,
  * com um passo só no desfazer geral. Cancelar descarta o rascunho. O rascunho mora no playStore
- * (`shortRestDraft`): trocar de aba no meio do descanso não perde os dados já gastos.
+ * (`shortRestDraft`): trocar de aba no meio do descanso não perde os dados já gastos. O efeito
+ * ligado que acaba no descanso (a Fúria) termina no começo dele, antes dos dados, e o painel o diz.
  */
 export function ShortRestPanel({ view, onClose }: { view: PlayTabProps; onClose: () => void }) {
   const { state, sheet, guide, appDice, run } = view
@@ -140,17 +142,22 @@ export function ShortRestPanel({ view, onClose }: { view: PlayTabProps; onClose:
   const setSpends = usePlayStore(s => s.setShortRestDraft)
   const [error, setError] = useState<string | null>(null)
 
-  const sim = simulate(state, sheet, spends)
+  // O efeito que acaba no descanso (a Fúria) termina no começo dele: os Dados de Vida, gastos no
+  // fim (pág. 188), partem do estado de depois — com a exaustão do Frenesi já no PV máximo.
+  const ending = endTogglesOnRest(state, sheet, 'shortRest')
+  const start = isRefused(ending.notices) ? state : ending.state
+  const sim = simulate(start, sheet, spends)
   const preview = previewShortRest(state, sheet)
   // Recuperação Arcana (e afins) com uso: só o lembrete; a escolha é nas bolinhas da aba Magia.
   const slotRecovery = getShortRestSlotRecovery(state, sheet)
   const pool = getHitDiceAvailable(sim.state, sheet)
-  const hpBefore = getCurrentHp(state, sheet)
+  const hpBefore = getCurrentHp(start, sheet)
   const hpAfter = getCurrentHp(sim.state, sheet)
-  // A 0 PV não se gastam Dados de Vida (decisão de 2026-10-25): o texto vem da própria recusa.
-  const blocked = isAtZeroHp(state) && sheet.hitDice[0]
+  // A 0 PV não se gastam Dados de Vida (decisão de 2026-10-25): o texto vem da própria recusa. O fim
+  // de um efeito que levaria à exaustão 6 impede o descanso inteiro.
+  const blocked = preview.blockReason ?? (isAtZeroHp(state) && sheet.hitDice[0]
     ? spendHitDie(state, sheet, { die: sheet.hitDice[0].die, value: 1 }).notices.find(n => n.kind === 'refused')?.text ?? null
-    : null
+    : null)
   const comesBack = [
     ...(preview.pactSlots > 0 ? [countLabel(preview.pactSlots, 'espaço de Pacto', 'espaços de Pacto')] : []),
     ...preview.resources.map(r => r.name),
@@ -162,7 +169,7 @@ export function ShortRestPanel({ view, onClose }: { view: PlayTabProps; onClose:
 
   function add(die: number, value: number, record: RollRecord | null): boolean {
     const next = [...spends, { die, value, record }]
-    const trial = simulate(state, sheet, next)
+    const trial = simulate(start, sheet, next)
     if (trial.refused) {
       setError(trial.refused)
       return false
@@ -189,7 +196,10 @@ export function ShortRestPanel({ view, onClose }: { view: PlayTabProps; onClose:
 
   function confirm() {
     const result = run((st, sh) => {
-      let current = st
+      // O efeito que acaba no descanso termina antes dos dados, como no rascunho.
+      const ending = endTogglesOnRest(st, sh, 'shortRest')
+      if (isRefused(ending.notices)) return { state: st, notices: ending.notices }
+      let current = ending.state
       const notices: PlayNotice[] = []
       for (const s of spends) {
         const r = spendHitDie(current, sh, { die: s.die, value: s.value })
@@ -203,7 +213,7 @@ export function ShortRestPanel({ view, onClose }: { view: PlayTabProps; onClose:
         }
       }
       if (spends.length > 0) {
-        const before = getCurrentHp(st, sh)
+        const before = getCurrentHp(ending.state, sh)
         const after = getCurrentHp(current, sh)
         notices.unshift({
           kind: 'healed',
@@ -212,7 +222,7 @@ export function ShortRestPanel({ view, onClose }: { view: PlayTabProps; onClose:
       }
       const rest = completeShortRest(current, sh, { hitDiceSpent: spends.length })
       if (isRefused(rest.notices)) return { state: st, notices: rest.notices }
-      const all = [...notices, ...rest.notices]
+      const all = [...ending.notices, ...notices, ...rest.notices]
       return { state: rest.state, notices: all.length > 0 ? all : [{ kind: 'info', text: 'Descanso curto concluído.' }] }
     })
     if (result && !isRefused(result.notices)) onClose()
@@ -223,6 +233,8 @@ export function ShortRestPanel({ view, onClose }: { view: PlayTabProps; onClose:
       <p className="text-xs text-parchment-400 leading-snug">
         Pelo menos 1 hora sem atividade extenuante (pág. 188). Gaste os Dados de Vida que quiser, um de cada vez, e conclua quando o descanso terminar.
       </p>
+
+      <RestEffectsEnding lines={preview.effectsEnding} />
 
       <p className="text-sm text-parchment-300">
         Ao concluir, voltam: {comesBack.length > 0 ? comesBack.join(', ') : 'nada além do que os Dados de Vida curarem'}.
@@ -281,7 +293,7 @@ export function ShortRestPanel({ view, onClose }: { view: PlayTabProps; onClose:
       <div className="flex flex-wrap gap-2">
         <button
           onClick={confirm}
-          disabled={sim.refused !== null}
+          disabled={sim.refused !== null || preview.blockReason !== undefined}
           className="min-h-10 rounded-lg bg-gold-500 px-4 font-fantasy font-bold text-sm text-on-accent disabled:opacity-40 hover:bg-gold-400 transition-colors"
         >
           Concluir descanso curto

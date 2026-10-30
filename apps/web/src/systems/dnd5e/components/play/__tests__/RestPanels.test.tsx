@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { act, render, screen, fireEvent, cleanup } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { usePlayStore } from '../../../stores/playStore'
-import { applyDamage, spendResource } from '@rpg/rules/systems/dnd5e/utils/playState'
+import { applyDamage, performAction, spendResource } from '@rpg/rules/systems/dnd5e/utils/playState'
 import { EMPTY_DRAFT } from '@rpg/rules/systems/dnd5e/types/character'
 import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
 import { liveRegions, openDraft, openKrusk, resetPlay } from './openPlay'
@@ -250,6 +250,50 @@ describe('Descanso longo', () => {
     expect(screen.getByText('Exaustão 2 → 2')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar descanso longo' }))
     expect(playState().exhaustionLevel).toBe(2)
+  })
+})
+
+// A Fúria dura 1 minuto (pág. 48); o descanso curto, pelo menos 1 hora (pág. 188).
+describe('o descanso encerra a fúria', () => {
+  const ENDS = 'Fúria: acaba durante o descanso (pág. 48).'
+  const FRENZY = 'Frenesi: ao terminar, você sofre um nível de exaustão (0 → 1, pág. 292).'
+
+  /** Krusk Furioso 3, ferido, em fúria com o Frenesi, na aba Estado. */
+  function openRagingKrusk() {
+    const d = structuredClone(COMPLETE_DRAFT)
+    openDraft({ ...d, level: 3, classChoices: { ...d.classChoices, subclass: 'berserker' } })
+    store().run((st, sh) => applyDamage(st, sh, { amount: 8 }))
+    store().run((st, sh) => performAction(st, sh, 'rage-enter', { option: 'frenzy', now: 1 }))
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Estado' }))
+  }
+
+  it('descanso curto: o painel diz que a fúria acaba, e concluir a encerra com o Frenesi, num passo só', () => {
+    openRagingKrusk()
+    fireEvent.click(screen.getByRole('button', { name: 'Descanso curto' }))
+    expect(screen.getByTestId('rest-effects-ending').textContent).toBe(`${ENDS}${FRENZY}`)
+    const undoBefore = store().undoStack.length
+    spendDie('3')
+    fireEvent.click(screen.getByRole('button', { name: 'Concluir descanso curto' }))
+    expect(playState().activeEffects).toEqual([])
+    expect(playState().exhaustionLevel).toBe(1)
+    expect(playState().hitDiceSpent).toEqual({ 12: 1 })
+    expect(screen.queryByTestId('vitals-toggle-rage')).toBeNull()
+    // Os avisos na ordem do descanso: a fúria acaba no começo, os dados no fim.
+    expect(store().notices.map(n => n.text).slice(0, 3)).toEqual([ENDS, FRENZY, '1 Dado de Vida: +5 PV (24 → 29).'])
+    expect(store().undoStack.length).toBe(undoBefore + 1)
+  })
+
+  it('descanso longo: a exaustão do Frenesi entra antes do −1, e a prévia já mostra', () => {
+    openRagingKrusk()
+    fireEvent.click(screen.getByRole('button', { name: 'Descanso longo' }))
+    expect(screen.getByTestId('rest-effects-ending').textContent).toBe(`${ENDS}${FRENZY}`)
+    expect(screen.getByLabelText(/Comeu e bebeu/)).toBeChecked()
+    expect(screen.getByText('Exaustão 1 → 0')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar descanso longo' }))
+    expect(playState().activeEffects).toEqual([])
+    expect(playState().exhaustionLevel).toBe(0)
+    expect(playState().resourcesSpent).toEqual({})
   })
 })
 

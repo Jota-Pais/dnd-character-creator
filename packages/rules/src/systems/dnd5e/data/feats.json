@@ -132,7 +132,10 @@
     "id": "explorador-de-cavernas",
     "name": "Explorador de Cavernas",
     "prerequisite": null,
-    "description": "Alerta às armadilhas escondidas e portas secretas encontradas em muitas masmorras, você ganha os seguintes benefícios:\n- Você tem vantagem em testes de Sabedoria (Percepção) e de Inteligência (Investigação) feitos para detectar a presença de portas secretas.\n- Você tem vantagem em testes de resistência feitos para evitar ou resistir a armadilhas.\n- Você tem resistência ao dano causado por armadilhas.\n- Você pode procurar armadilhas enquanto viaja a um ritmo normal, ao invés de metade do ritmo."
+    "description": "Alerta às armadilhas escondidas e portas secretas encontradas em muitas masmorras, você ganha os seguintes benefícios:\n- Você tem vantagem em testes de Sabedoria (Percepção) e de Inteligência (Investigação) feitos para detectar a presença de portas secretas.\n- Você tem vantagem em testes de resistência feitos para evitar ou resistir a armadilhas.\n- Você tem resistência ao dano causado por armadilhas.\n- Você pode procurar armadilhas enquanto viaja a um ritmo normal, ao invés de metade do ritmo.",
+    "effects": {
+      "damageDefenses": { "resistances": "all", "condition": "de armadilha" }
+    }
   },
   {
     "id": "imobilizador",
@@ -185,7 +188,10 @@
     "description": "Você pode usar sua armadura para defletir ataques potencialmente fatais a outros. Você ganha os seguintes benefícios:\n- Aumente seu valor de Força em 1, até o máximo de 20.\n- Quando você estiver vestindo uma armadura pesada, dano de concussão, cortante e perfurante que você receba de ataques não-mágicos será reduzido em 3.",
     "abilityIncrease": [
       "STR"
-    ]
+    ],
+    "effects": {
+      "damageDefenses": { "reduction": { "amount": 3, "types": ["bludgeoning", "piercing", "slashing"] }, "condition": "de ataque não mágico", "requires": "heavyArmor" }
+    }
   },
   {
     "id": "matador-de-conjuradores",

@@ -34,6 +34,8 @@ import {
   getMeleeCritExtraWeaponDice,
   getCastingRestrictions,
   formatCastingRestriction,
+  getDamageDefenses,
+  describeDamageDefenses,
 } from '../sheetEffects'
 import {
   getArmorProficiencies, hasArmorProficiency, hasWeaponProficiency,
@@ -1010,6 +1012,144 @@ describe('getConditionalRollNotes', () => {
 
   it('sem raça nem classe, nada', () => {
     expect(getConditionalRollNotes(draft({}))).toEqual([])
+  })
+
+  // Evasão: ladino 7 (p. 91), monge 7 (p. 105) e a Defesa Superior do Caçador 15 (p. 121).
+  it('Evasão: nota no TR de Destreza, do ladino, do monge e da opção do Caçador', () => {
+    const evasion = (page: number) => ({
+      source: 'Evasão', rolls: ['save'], abilities: ['DEX'],
+      text: `em efeito que pede o teste de Destreza para sofrer metade do dano, você não sofre dano se passar e sofre só a metade se falhar (pág. ${page}).`,
+    })
+    expect(getConditionalRollNotes(draft({ level: 6, class: 'rogue' }))).toEqual([])
+    expect(getConditionalRollNotes(draft({ level: 7, class: 'rogue' }))).toEqual([evasion(91)])
+    expect(getConditionalRollNotes(draft({ level: 7, class: 'monk' }))).toEqual([evasion(105)])
+    const hunter = draft({
+      level: 15, class: 'ranger',
+      classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), subclass: 'hunter', progressionChoices: { 'hunter-superior-defense-15': ['evasion'] } },
+    })
+    expect(getConditionalRollNotes(hunter)).toEqual([evasion(121)])
+  })
+
+  it('a mesma característica de duas classes entra uma vez: ladino 7 / monge 7 tem uma Evasão', () => {
+    const d = draft({ level: 14, multiclass: true, class: 'rogue', additionalClasses: [extraClass('monk', 7)] })
+    expect(getConditionalRollNotes(d).filter(n => n.source === 'Evasão')).toHaveLength(1)
+  })
+})
+
+// ── Defesas contra dano (p. 199) ─────────────────────────────────────────────
+
+describe('getDamageDefenses e describeDamageDefenses', () => {
+  const lines = (d: CharacterDraft) => describeDamageDefenses(getDamageDefenses(d))
+  const sub = (classId: string, level: number, subclass: string, overrides: Partial<CharacterDraft> = {}) =>
+    draft({ level, class: classId, classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), subclass }, ...overrides })
+
+  it('tiefling: resistência a fogo (Resistência Infernal, p. 43)', () => {
+    const d = draft({ race: 'tiefling' })
+    expect(getDamageDefenses(d)).toEqual([{ source: 'Resistência Infernal', kind: 'resistance', types: ['fire'] }])
+    expect(lines(d)).toEqual(['Resistência a fogo (Resistência Infernal)'])
+  })
+
+  it('anão da colina e halfling robusto: veneno (p. 20 e 28)', () => {
+    expect(lines(draft({ race: 'dwarf', subrace: 'hill-dwarf' }))).toEqual(['Resistência a veneno (Resiliência Anã)'])
+    expect(lines(draft({ race: 'halfling', subrace: 'stout-halfling' }))).toEqual(['Resistência a veneno (Resiliência dos Robustos)'])
+    expect(lines(draft({ race: 'halfling', subrace: 'lightfoot-halfling' }))).toEqual([])
+  })
+
+  it('draconato azul: elétrico, o tipo do ancestral da sub-raça (p. 34); sem sub-raça, nada', () => {
+    expect(getDamageDefenses(draft({ race: 'dragonborn', subrace: 'blue-dragonborn' }))).toEqual([
+      { source: 'Resistência a Dano', kind: 'resistance', types: ['lightning'] },
+    ])
+    expect(lines(draft({ race: 'dragonborn', subrace: 'red-dragonborn' }))).toEqual(['Resistência a fogo (Resistência a Dano)'])
+    expect(getDamageDefenses(draft({ race: 'dragonborn' }))).toEqual([])
+  })
+
+  it('necromante 10: necrótico; pelo nível NA classe (p. 101)', () => {
+    expect(lines(sub('wizard', 10, 'necromancy'))).toEqual(['Resistência a necrótico (Acostumado à Morte-Vida)'])
+    expect(lines(sub('wizard', 9, 'necromancy'))).toEqual([])
+  })
+
+  it('bruxo do Grande Antigo 10: psíquico (p. 61)', () => {
+    expect(lines(sub('warlock', 10, 'the-great-old-one'))).toEqual(['Resistência a psíquico (Escudo de Pensamentos)'])
+  })
+
+  it('monge 10: imune ao dano de veneno e à condição Envenenado, numa linha (p. 105)', () => {
+    const d = draft({ level: 10, class: 'monk' })
+    expect(getDamageDefenses(d)).toEqual([
+      { source: 'Pureza Corporal', kind: 'immunity', types: ['poison'] },
+      { source: 'Pureza Corporal', kind: 'conditionImmunity', types: [], conditions: ['poisoned'] },
+    ])
+    expect(lines(d)).toEqual(['Imunidade a veneno e à condição Envenenado (Pureza Corporal)'])
+    expect(lines(sub('druid', 10, 'circle-of-the-land'))).toEqual(['Imunidade a veneno e à condição Envenenado (Proteção Natural)'])
+  })
+
+  it('paladino dos Anciões 7 e clérigo da Guerra 17: condicionais, com a situação (p. 113 e 68)', () => {
+    expect(getDamageDefenses(sub('paladin', 7, 'oath-of-the-ancients'))).toEqual([
+      { source: 'Aura de Vigilância', kind: 'resistance', types: 'all', condition: 'de magia' },
+    ])
+    expect(lines(sub('paladin', 7, 'oath-of-the-ancients'))).toEqual(['Resistência a todo dano de magia (Aura de Vigilância)'])
+    expect(getDamageDefenses(sub('cleric', 17, 'war-domain'))).toEqual([
+      { source: 'Avatar da Batalha', kind: 'resistance', types: ['bludgeoning', 'piercing', 'slashing'], condition: 'de ataque com arma não mágica' },
+    ])
+    expect(lines(sub('cleric', 17, 'war-domain'))).toEqual([
+      'Resistência a concussão, cortante e perfurante de ataque com arma não mágica (Avatar da Batalha)',
+    ])
+  })
+
+  describe('Maestria em Armadura Pesada (p. 170): só vestindo armadura pesada', () => {
+    const wearing = (...itemIds: string[]) => ({
+      ...structuredClone(EMPTY_DRAFT.equipment),
+      method: 'wealth' as const,
+      purchasedItems: itemIds.map(itemId => ({ itemId, quantity: 1, source: 'purchased' as const })),
+    })
+    const fighter = (...armor: string[]) => draft({
+      level: 1, class: 'fighter', race: 'human', raceChoices: { feat: 'maestria-em-armadura-pesada' }, equipment: wearing(...armor),
+    })
+
+    it('de placas: a redução de 3, condicional', () => {
+      expect(getDamageDefenses(fighter('plate'))).toEqual([{
+        source: 'Maestria em Armadura Pesada', kind: 'reduction', types: ['bludgeoning', 'piercing', 'slashing'], amount: 3,
+        condition: 'de ataque não mágico', requires: 'heavyArmor',
+      }])
+      expect(lines(fighter('plate'))).toEqual([
+        'Redução de 3 contra concussão, cortante e perfurante de ataque não mágico, vestindo armadura pesada (Maestria em Armadura Pesada)',
+      ])
+    })
+
+    it('de armadura média ou sem armadura: a linha diz que não vale agora', () => {
+      for (const d of [fighter('half-plate'), fighter()]) {
+        expect(getDamageDefenses(d)[0].blockedBy).toBe('sem armadura pesada')
+        expect(lines(d)).toEqual([
+          'Redução de 3 contra concussão, cortante e perfurante de ataque não mágico, vestindo armadura pesada (Maestria em Armadura Pesada) — sem efeito agora: você não está de armadura pesada',
+        ])
+      }
+    })
+  })
+
+  it('Explorador de Cavernas: resistência ao dano de armadilha (p. 169)', () => {
+    const d = draft({ level: 1, race: 'human', raceChoices: { feat: 'explorador-de-cavernas' } })
+    expect(lines(d)).toEqual(['Resistência a todo dano de armadilha (Explorador de Cavernas)'])
+  })
+
+  it('bruxo Corruptor 10 sem escolha feita: só a linha que pede a escolha (p. 60)', () => {
+    const d = sub('warlock', 10, 'the-fiend')
+    expect(getDamageDefenses(d)).toEqual([{
+      source: 'Resistência Demoníaca', kind: 'resistance', types: [], sessionPick: 'fiendish-resilience', exceptWhen: 'arma mágica ou de prata',
+    }])
+    expect(lines(d)).toEqual([
+      'Resistência a um tipo de dano à sua escolha, salvo arma mágica ou de prata: escolha o tipo ao terminar um descanso curto ou longo (Resistência Demoníaca)',
+    ])
+  })
+
+  it('sem defesa, nada: humano guerreiro, meio-orc bárbaro', () => {
+    expect(getDamageDefenses(draft({ level: 5, class: 'fighter', race: 'human' }))).toEqual([])
+    expect(getDamageDefenses(draft({ level: 5, class: 'barbarian', race: 'half-orc' }))).toEqual([])
+  })
+
+  it('várias fontes ficam lado a lado: tiefling necromante 10', () => {
+    expect(lines(sub('wizard', 10, 'necromancy', { race: 'tiefling' }))).toEqual([
+      'Resistência a fogo (Resistência Infernal)',
+      'Resistência a necrótico (Acostumado à Morte-Vida)',
+    ])
   })
 })
 

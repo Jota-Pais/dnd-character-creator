@@ -203,20 +203,27 @@ export function getInitiativeAdvantageSources(draft: CharacterDraft): string[] {
 /** Uma linha condicional de jogada d20, com quem a dá (o nome da feature, do talento ou do traço). */
 export type SheetConditionalRoll = ConditionalRollNote & { source: string }
 
+/** As mesmas jogadas: o mesmo `rolls` e o mesmo `abilities`. */
+const sameRolls = (a: ConditionalRollNote, b: ConditionalRollNote) =>
+  a.rolls.join() === b.rolls.join() && (a.abilities ?? []).join() === (b.abilities ?? []).join()
+
 /**
  * As linhas condicionais das jogadas d20 (`conditionalRolls`): features de classe no nível que se
- * tem NELA (Sentido de Perigo), talentos e traços raciais (Resiliência Anã, Bravura, Sortudo). A
- * mesma característica vinda de duas classes entra uma vez. Nunca mudam número nem modo — quem as
- * põe nas receitas é o guia de rolagens.
+ * tem NELA (Sentido de Perigo, Evasão), opções escolhidas em slot de progressão (a Evasão da Defesa
+ * Superior do Caçador), talentos e traços raciais (Resiliência Anã, Bravura, Sortudo). A mesma
+ * característica — o mesmo nome nas mesmas jogadas — vinda de duas fontes entra uma vez: a Evasão
+ * do ladino e a do monge são a mesma regra, cada uma com a sua página. Nunca mudam número nem modo
+ * — quem as põe nas receitas é o guia de rolagens.
  */
 export function getConditionalRollNotes(draft: CharacterDraft): SheetConditionalRoll[] {
   const out: SheetConditionalRoll[] = []
   const add = (source: string, notes: ConditionalRollNote[] | undefined) => {
     for (const n of notes ?? []) {
-      if (!out.some(o => o.source === source && o.text === n.text)) out.push({ ...n, source })
+      if (!out.some(o => o.source === source && sameRolls(o, n))) out.push({ ...n, source })
     }
   }
   for (const feature of getOwnedClassFeatures(draft)) add(feature.name, feature.effects?.conditionalRolls)
+  for (const { option } of getOwnedProgressionOptions(draft)) add(option.name, option.effects?.conditionalRolls)
   for (const feat of getOwnedFeats(draft)) add(feat.name, feat.effects?.conditionalRolls)
   for (const trait of getOwnedRacialTraits(draft)?.traits ?? []) add(trait.name, trait.effects?.conditionalRolls)
   return out
@@ -282,11 +289,17 @@ export type SheetSpeedBonus = SheetEffect<number> & {
   blockedBy?: string
 }
 
-/** O que, no equipamento atual, impede a condição — `undefined` quando ela está cumprida. */
+/**
+ * O que, no equipamento atual, impede a condição — `undefined` quando ela está cumprida. Na que
+ * pede armadura pesada, é o que falta: "sem armadura pesada".
+ */
 function equipmentBlocker(
   requires: EquipmentRequirement,
   { bodyArmor, hasShield }: ReturnType<typeof getEquippedArmor>,
 ): string | undefined {
+  if (requires === 'heavyArmor') {
+    return bodyArmor?.category === 'heavy' ? undefined : 'sem armadura pesada'
+  }
   if (requires === 'noHeavyArmor') {
     return bodyArmor?.category === 'heavy' ? bodyArmor.name : undefined
   }
@@ -1558,4 +1571,174 @@ export function applyConditionSpeed(speedFeet: number, effects: Pick<ActiveCondi
 /** PV máximo efetivo: metade, arredondada para baixo, a partir da Exaustão 4 (págs. 7, 292). */
 export function getEffectiveHpMax(hpMax: number, effects: Pick<ActiveConditionEffects, 'hpMax'>): number {
   return Math.floor(hpMax * effects.hpMax.multiplier)
+}
+
+// ── Defesas contra dano (p. 199) ─────────────────────────────────────────────
+//
+// Resistência, imunidade, vulnerabilidade e redução fixa de dano, e imunidade a condição, como os
+// dados as declaram (`damageDefenses`). Fonte única: o painel de PV aplica estas linhas (pelo
+// `PlaySheet`), e a aba Estado, a Revisão e o PDF as mostram com o mesmo texto.
+
+import type { DamageDefenses, DamageTypeSet } from '../types/effects'
+import { getDragonAncestor } from './dragonAncestors'
+import { DAMAGE_TYPES, getDamageTypeName } from './damageTypes'
+import { joinPt } from './textUtils'
+
+/** O que a linha faz com o dano do tipo (p. 199), ou a condição que ela barra. */
+export type DamageDefenseKind = 'resistance' | 'immunity' | 'vulnerability' | 'reduction' | 'conditionImmunity'
+
+/**
+ * Uma defesa da ficha, com quem a dá (o nome do traço, da característica ou do talento).
+ * - `types`: os tipos que ela alcança; vazio na imunidade a condição e na resistência de tipo
+ *   escolhido que ainda não tem escolha;
+ * - `condition` / `exceptWhen`: a situação que a liga ou a cancela (caixas do painel de PV);
+ * - `blockedBy`: o que, no equipamento, a impede agora (`requires`); impedida, não se aplica;
+ * - `sessionPick`: o tipo é escolha de sessão (Resistência Demoníaca); sem escolha, `types` vazio.
+ */
+export type SheetDamageDefense = {
+  source: string
+  kind: DamageDefenseKind
+  types: DamageTypeSet
+  conditions?: ConditionId[]
+  amount?: number
+  condition?: string
+  exceptWhen?: string
+  requires?: EquipmentRequirement
+  blockedBy?: string
+  sessionPick?: string
+}
+
+/** As declarações de defesa, com quem as dá: traços raciais, features de classe (nível NA classe) e talentos. */
+function getDeclaredDamageDefenses(draft: CharacterDraft): { source: string; defenses: DamageDefenses }[] {
+  const out: { source: string; defenses: DamageDefenses }[] = []
+  for (const trait of getOwnedRacialTraits(draft)?.traits ?? []) {
+    if (trait.effects?.damageDefenses) out.push({ source: trait.name, defenses: trait.effects.damageDefenses })
+  }
+  for (const feature of getOwnedClassFeatures(draft)) {
+    if (feature.effects?.damageDefenses) out.push({ source: feature.name, defenses: feature.effects.damageDefenses })
+  }
+  for (const feat of getOwnedFeats(draft)) {
+    if (feat.effects?.damageDefenses) out.push({ source: feat.name, defenses: feat.effects.damageDefenses })
+  }
+  return out
+}
+
+/** O tipo do ancestral dracônico da sub-raça (p. 34); sem sub-raça escolhida, nenhum. */
+function getAncestorDamageType(draft: CharacterDraft): DamageTypeId | undefined {
+  const race = draft.race ? getRace(draft.race) : undefined
+  const subrace = race && draft.subrace ? getSubrace(race, draft.subrace) : undefined
+  return subrace?.dragonAncestor ? getDragonAncestor(subrace.dragonAncestor)?.damageType : undefined
+}
+
+const sameTypes = (a: DamageTypeSet, b: DamageTypeSet) => JSON.stringify(a) === JSON.stringify(b)
+
+/**
+ * As defesas da ficha (`damageDefenses`), uma linha por efeito: a Pureza Corporal dá a imunidade
+ * ao dano de veneno e a imunidade à condição Envenenado. A de `requires` é avaliada com o
+ * equipamento da ficha, o mesmo da CA (`blockedBy` quando não vale). A Resistência a Dano do
+ * draconato toma o tipo do ancestral da sub-raça; a Resistência Demoníaca, sem escolha de sessão,
+ * fica só com a linha que pede a escolha. A mesma característica vinda de duas fontes entra uma vez.
+ */
+export function getDamageDefenses(draft: CharacterDraft): SheetDamageDefense[] {
+  const equipped = getDraftEquippedArmor(draft)
+  const ancestor = getAncestorDamageType(draft)
+  const out: SheetDamageDefense[] = []
+  const push = (d: SheetDamageDefense) => {
+    if (!out.some(o => o.source === d.source && o.kind === d.kind && sameTypes(o.types, d.types))) out.push(d)
+  }
+  for (const { source, defenses: d } of getDeclaredDamageDefenses(draft)) {
+    const blockedBy = d.requires ? equipmentBlocker(d.requires, equipped) : undefined
+    const common = {
+      source,
+      ...(d.condition ? { condition: d.condition } : {}),
+      ...(d.exceptWhen ? { exceptWhen: d.exceptWhen } : {}),
+      ...(d.requires ? { requires: d.requires } : {}),
+      ...(blockedBy ? { blockedBy } : {}),
+    }
+    if (d.fromSessionPick) push({ ...common, kind: 'resistance', types: [], sessionPick: d.fromSessionPick })
+    const resistances = d.fromAncestor ? (ancestor ? [ancestor] : undefined) : d.resistances
+    if (resistances) push({ ...common, kind: 'resistance', types: resistances })
+    if (d.immunities) push({ ...common, kind: 'immunity', types: d.immunities })
+    if (d.vulnerabilities) push({ ...common, kind: 'vulnerability', types: d.vulnerabilities })
+    if (d.reduction) push({ ...common, kind: 'reduction', types: d.reduction.types, amount: d.reduction.amount })
+    if (d.conditionImmunities) push({ ...common, kind: 'conditionImmunity', types: [], conditions: d.conditionImmunities })
+  }
+  return out
+}
+
+/** A defesa alcança o tipo? 'all' alcança todos; `allExcept`, todos menos os da lista. */
+export function damageTypeSetHas(set: DamageTypeSet, type: DamageTypeId): boolean {
+  if (set === 'all') return true
+  if (Array.isArray(set)) return set.includes(type)
+  return !set.allExcept.includes(type)
+}
+
+const DAMAGE_TYPE_ORDER = new Map(DAMAGE_TYPES.map((t, i) => [t.id, i]))
+
+/** Os tipos em minúsculas, na ordem do livro: "concussão, cortante e perfurante"; "todo dano". */
+function describeDamageTypeSet(set: DamageTypeSet): string {
+  const names = (ids: DamageTypeId[]) => joinPt(
+    [...ids].sort((a, b) => (DAMAGE_TYPE_ORDER.get(a) ?? 0) - (DAMAGE_TYPE_ORDER.get(b) ?? 0)).map(getDamageTypeName),
+  )
+  if (set === 'all') return 'todo dano'
+  if (Array.isArray(set)) return names(set)
+  return `todo dano, exceto ${names(set.allExcept)}`
+}
+
+/** "à condição Envenenado", "às condições Enfeitiçado e Amedrontado". */
+function describeConditionList(ids: ConditionId[]): string {
+  const names = joinPt(ids.map(id => getCondition(id)?.name ?? id))
+  return ids.length > 1 ? `às condições ${names}` : `à condição ${names}`
+}
+
+/** A condição de equipamento na linha e, quando ela não está cumprida, o que falta. */
+const REQUIREMENT_TEXT: Record<EquipmentRequirement, { when: string; blocked: (by: string) => string }> = {
+  heavyArmor: { when: 'vestindo armadura pesada', blocked: () => 'você não está de armadura pesada' },
+  noHeavyArmor: { when: 'sem armadura pesada', blocked: by => `você está de ${by}` },
+  noArmorNoShield: { when: 'sem armadura nem escudo', blocked: by => `você está de ${by}` },
+}
+
+function describeDamageDefense(d: SheetDamageDefense, all: readonly SheetDamageDefense[]): string {
+  const condition = d.condition ? ` ${d.condition}` : ''
+  const except = d.exceptWhen ? `, salvo ${d.exceptWhen}` : ''
+  let text: string
+  switch (d.kind) {
+    case 'resistance':
+      text = d.sessionPick && Array.isArray(d.types) && d.types.length === 0
+        ? `Resistência a um tipo de dano à sua escolha${except}: escolha o tipo ao terminar um descanso curto ou longo`
+        : `Resistência a ${describeDamageTypeSet(d.types)}${condition}${except}`
+      break
+    case 'immunity': {
+      // A imunidade à condição da mesma característica entra na mesma linha (Pureza Corporal).
+      const conditions = all.find(o => o.kind === 'conditionImmunity' && o.source === d.source && o.condition === d.condition)
+      const alsoConditions = conditions?.conditions?.length ? ` e ${describeConditionList(conditions.conditions)}` : ''
+      text = `Imunidade a ${describeDamageTypeSet(d.types)}${alsoConditions}${condition}${except}`
+      break
+    }
+    case 'vulnerability':
+      text = `Vulnerabilidade a ${describeDamageTypeSet(d.types)}${condition}`
+      break
+    case 'reduction':
+      text = `Redução de ${d.amount ?? 0} contra ${describeDamageTypeSet(d.types)}${condition}`
+      break
+    case 'conditionImmunity':
+      text = `Imunidade ${describeConditionList(d.conditions ?? [])}${condition}`
+      break
+  }
+  const requires = d.requires ? `, ${REQUIREMENT_TEXT[d.requires].when}` : ''
+  const blocked = d.requires && d.blockedBy ? ` — sem efeito agora: ${REQUIREMENT_TEXT[d.requires].blocked(d.blockedBy)}` : ''
+  return `${text}${requires} (${d.source})${blocked}`
+}
+
+/**
+ * As linhas das defesas, o mesmo texto no jogo (aba Estado), na Revisão e no PDF:
+ * "Resistência a fogo (Resistência Infernal)", "Resistência a todo dano de magia (Aura de
+ * Vigilância)", "Imunidade a veneno e à condição Envenenado (Pureza Corporal)". Recebe a lista —
+ * a da ficha (`getDamageDefenses`) ou, no jogo, a da ficha com as das condições.
+ */
+export function describeDamageDefenses(defenses: readonly SheetDamageDefense[]): string[] {
+  return defenses
+    .filter(d => !(d.kind === 'conditionImmunity'
+      && defenses.some(o => o.kind === 'immunity' && o.source === d.source && o.condition === d.condition)))
+    .map(d => describeDamageDefense(d, defenses))
 }

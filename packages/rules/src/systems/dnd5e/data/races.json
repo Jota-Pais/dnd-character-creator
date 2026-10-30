@@ -30,7 +30,8 @@
         "effects": {
           "conditionalRolls": [
             { "rolls": ["save"], "text": "vantagem se o teste de resistência for contra veneno (pág. 20)." }
-          ]
+          ],
+          "damageDefenses": { "resistances": ["poison"] }
         }
       },
       {
@@ -253,7 +254,8 @@
         "traits": [
           {
             "name": "Resiliência dos Robustos",
-            "description": "Você tem vantagem em testes de resistência contra veneno e resistência contra dano de veneno."
+            "description": "Você tem vantagem em testes de resistência contra veneno e resistência contra dano de veneno.",
+            "effects": { "damageDefenses": { "resistances": ["poison"] } }
           }
         ],
         "overrides": {}
@@ -360,7 +362,8 @@
       },
       {
         "name": "Resistência a Dano",
-        "description": "Você possui resistência ao tipo de dano associado ao seu ancestral dracônico."
+        "description": "Você possui resistência ao tipo de dano associado ao seu ancestral dracônico.",
+        "effects": { "damageDefenses": { "fromAncestor": true } }
       }
     ],
     "subraces": [
@@ -632,7 +635,8 @@
     "traits": [
       {
         "name": "Resistência Infernal",
-        "description": "Você possui resistência a dano de fogo."
+        "description": "Você possui resistência a dano de fogo.",
+        "effects": { "damageDefenses": { "resistances": ["fire"] } }
       },
       {
         "name": "Legado Infernal",

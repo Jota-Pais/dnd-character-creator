@@ -163,7 +163,12 @@
       {
         "level": 7,
         "name": "Evasão",
-        "description": "Em efeitos que pedem resistência de Destreza por metade do dano, você não sofre dano se passar e sofre metade se falhar."
+        "description": "Em efeitos que pedem resistência de Destreza por metade do dano, você não sofre dano se passar e sofre metade se falhar.",
+        "effects": {
+          "conditionalRolls": [
+            { "rolls": ["save"], "abilities": ["DEX"], "text": "em efeito que pede o teste de Destreza para sofrer metade do dano, você não sofre dano se passar e sofre só a metade se falhar (pág. 91)." }
+          ]
+        }
       },
       {
         "level": 11,
@@ -267,7 +272,12 @@
       {
         "level": 7,
         "name": "Evasão",
-        "description": "Em efeitos que pedem resistência de Destreza por metade do dano, você não sofre dano se passar e sofre metade se falhar."
+        "description": "Em efeitos que pedem resistência de Destreza por metade do dano, você não sofre dano se passar e sofre metade se falhar.",
+        "effects": {
+          "conditionalRolls": [
+            { "rolls": ["save"], "abilities": ["DEX"], "text": "em efeito que pede o teste de Destreza para sofrer metade do dano, você não sofre dano se passar e sofre só a metade se falhar (pág. 105)." }
+          ]
+        }
       },
       {
         "level": 7,
@@ -282,7 +292,8 @@
       {
         "level": 10,
         "name": "Pureza Corporal",
-        "description": "Você é imune a doenças e venenos."
+        "description": "Você é imune a doenças e venenos.",
+        "effects": { "damageDefenses": { "immunities": ["poison"], "conditionImmunities": ["poisoned"] } }
       },
       {
         "level": 13,
@@ -835,7 +846,8 @@
       {
         "level": 17,
         "name": "Avatar da Batalha",
-        "description": "Você adquire resistência a dano de concussão, cortante e perfurante proveniente de ataques com armas não-mágicas."
+        "description": "Você adquire resistência a dano de concussão, cortante e perfurante proveniente de ataques com armas não-mágicas.",
+        "effects": { "damageDefenses": { "resistances": ["bludgeoning", "piercing", "slashing"], "condition": "de ataque com arma não mágica" } }
       }
     ],
     "light-domain": [
@@ -1005,7 +1017,13 @@
       {
         "level": 10,
         "name": "Proteção Natural",
-        "description": "Você não pode ser enfeitiçado ou amedrontado por elementais ou fadas e torna-se imune a venenos e doenças."
+        "description": "Você não pode ser enfeitiçado ou amedrontado por elementais ou fadas e torna-se imune a venenos e doenças.",
+        "effects": {
+          "damageDefenses": { "immunities": ["poison"], "conditionImmunities": ["poisoned"] },
+          "conditionalRolls": [
+            { "rolls": ["save"], "text": "elementais e fadas não podem deixar você enfeitiçado nem amedrontado (pág. 76)." }
+          ]
+        }
       },
       {
         "level": 14,
@@ -1267,7 +1285,8 @@
       {
         "level": 7,
         "name": "Aura de Vigilância",
-        "description": "Você e as criaturas amistosas a até 3 metros (ou 9 metros no 18° nível) têm resistência a dano de magias."
+        "description": "Você e as criaturas amistosas a até 3 metros (ou 9 metros no 18° nível) têm resistência a dano de magias.",
+        "effects": { "damageDefenses": { "resistances": "all", "condition": "de magia" } }
       },
       {
         "level": 15,
@@ -1778,7 +1797,7 @@
         "level": 10,
         "name": "Acostumado à Morte-Vida",
         "description": "Você recebe resistência a dano necrótico e seu máximo de pontos de vida não pode mais ser reduzido.",
-        "effects": { "hpMaxCannotBeReduced": true }
+        "effects": { "hpMaxCannotBeReduced": true, "damageDefenses": { "resistances": ["necrotic"] } }
       },
       {
         "level": 14,
@@ -1934,7 +1953,8 @@
       {
         "level": 10,
         "name": "Resistência Demoníaca",
-        "description": "Ao terminar um descanso curto ou longo, escolha um tipo de dano e ganhe resistência a ele até escolher outro tipo com essa característica. Armas mágicas ou de prata ignoram essa resistência."
+        "description": "Ao terminar um descanso curto ou longo, escolha um tipo de dano e ganhe resistência a ele até escolher outro tipo com essa característica. Armas mágicas ou de prata ignoram essa resistência.",
+        "effects": { "damageDefenses": { "fromSessionPick": "fiendish-resilience", "exceptWhen": "arma mágica ou de prata" } }
       },
       {
         "level": 14,
@@ -1971,7 +1991,8 @@
       {
         "level": 10,
         "name": "Escudo de Pensamentos",
-        "description": "Seus pensamentos não podem ser lidos por telepatia ou outros meios, a menos que você permita. Você ganha resistência a dano psíquico e, sempre que uma criatura causar dano psíquico a você, ela sofre a mesma quantidade de dano."
+        "description": "Seus pensamentos não podem ser lidos por telepatia ou outros meios, a menos que você permita. Você ganha resistência a dano psíquico e, sempre que uma criatura causar dano psíquico a você, ela sofre a mesma quantidade de dano.",
+        "effects": { "damageDefenses": { "resistances": ["psychic"] } }
       },
       {
         "level": 14,

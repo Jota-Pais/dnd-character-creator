@@ -10,6 +10,7 @@ import { getKnownColumnSecretIds, getProgressionSlotsUpToLevel, getProgressionSp
 import { getRace, getSubrace, getAllChoices, getAvailableInnateSpells } from './raceUtils'
 import { getGrantedSpellGroups } from './progressionOptions'
 import { getOwnedFeats } from './ownedFeats'
+import { joinPt } from './textUtils'
 import spellsData from '../data/spells.json'
 import progressionData from '../data/progression.json'
 
@@ -637,10 +638,6 @@ export function getRepeatedSpells(draft: CharacterDraft): RepeatedSpell[] {
   return [...where]
     .filter(([, sources]) => sources.length > 1)
     .map(([spellId, sources]) => ({ spellId, name: getSpell(spellId)?.name ?? spellId, sources }))
-}
-
-function joinPt(items: string[]): string {
-  return items.length > 1 ? `${items.slice(0, -1).join(', ')} e ${items[items.length - 1]}` : items.join('')
 }
 
 /** Linha da Revisão, da ficha e da etapa Magias: onde a magia aparece e o que fazer. */

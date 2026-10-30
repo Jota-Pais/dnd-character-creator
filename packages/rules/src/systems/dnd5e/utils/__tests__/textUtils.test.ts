@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { countLabel, pluralize } from '../textUtils'
+import { countLabel, joinPt, pluralize } from '../textUtils'
 
 describe('textUtils', () => {
   it('singular só com exatamente 1', () => {
@@ -11,5 +11,12 @@ describe('textUtils', () => {
   it('número com a palavra concordando', () => {
     expect(countLabel(1, 'Dado de Vida', 'Dados de Vida')).toBe('1 Dado de Vida')
     expect(countLabel(3, 'espaço de Pacto', 'espaços de Pacto')).toBe('3 espaços de Pacto')
+  })
+
+  it('lista com vírgulas e o "e" antes do último', () => {
+    expect(joinPt([])).toBe('')
+    expect(joinPt(['fogo'])).toBe('fogo')
+    expect(joinPt(['fogo', 'frio'])).toBe('fogo e frio')
+    expect(joinPt(['concussão', 'cortante', 'perfurante'])).toBe('concussão, cortante e perfurante')
   })
 })

@@ -1,5 +1,6 @@
 import type { ArmorProficiency } from './class'
 import type { ConditionId, RollCategory } from './condition'
+import type { DamageTypeId } from './damage'
 import type { AbilityScore } from './race'
 
 /**
@@ -107,9 +108,51 @@ export type ConditionalSaveBonus = {
  * Condição de equipamento que a ficha confere sozinha, pelo que está equipado — o mesmo critério
  * da CA (`getEquippedArmor`):
  * - `noHeavyArmor`: sem armadura pesada (Movimento Rápido, p. 49);
- * - `noArmorNoShield`: sem armadura nenhuma e sem escudo (Movimento sem Armadura, p. 104).
+ * - `noArmorNoShield`: sem armadura nenhuma e sem escudo (Movimento sem Armadura, p. 104);
+ * - `heavyArmor`: vestindo armadura pesada (Maestria em Armadura Pesada, p. 170).
  */
-export type EquipmentRequirement = 'noHeavyArmor' | 'noArmorNoShield'
+export type EquipmentRequirement = 'noHeavyArmor' | 'noArmorNoShield' | 'heavyArmor'
+
+/** Os tipos que uma defesa alcança: uma lista, todo dano ou todo dano menos alguns. */
+export type DamageTypeSet = DamageTypeId[] | 'all' | { allExcept: DamageTypeId[] }
+
+/**
+ * Resistência, imunidade e vulnerabilidade a dano, e imunidade a condição (p. 199). A regra de
+ * ouro decide o caminho no painel de PV: a defesa INCONDICIONAL se aplica sozinha ao dano do tipo
+ * informado; a de `condition` vira caixa desligada que o jogador marca quando o dano é daquela
+ * situação; a de `exceptWhen` vale sempre, e a caixa desligada a cancela. Quem lê é
+ * `getDamageDefenses` (sheetEffects), a fonte única das defesas da ficha.
+ */
+export type DamageDefenses = {
+  resistances?: DamageTypeSet
+  immunities?: DamageTypeId[]
+  vulnerabilities?: DamageTypeId[]
+  /** "Imune a venenos" vale também para a condição Envenenado (Pureza Corporal; `regras-condicoes.md`, item 5). */
+  conditionImmunities?: ConditionId[]
+  /**
+   * Redução fixa, aplicada antes da resistência (p. 199): a Maestria em Armadura Pesada tira 3 do
+   * dano de concussão, cortante e perfurante (p. 170).
+   */
+  reduction?: { amount: number; types: DamageTypeId[] }
+  /**
+   * Só vale nesta situação, que vem depois de "dano" na linha e na caixa: "de magia" (Aura de
+   * Vigilância), "de ataque não mágico" (Maestria em Armadura Pesada).
+   */
+  condition?: string
+  /**
+   * Vale sempre, salvo nesta situação: "arma mágica ou de prata" (Resistência Demoníaca, p. 60).
+   * A caixa que a cancela começa desligada.
+   */
+  exceptWhen?: string
+  requires?: EquipmentRequirement
+  /** A resistência é ao tipo do ancestral dracônico da sub-raça (Resistência a Dano, p. 34). */
+  fromAncestor?: true
+  /**
+   * A resistência é ao tipo escolhido na sessão, pelo id da escolha (Resistência Demoníaca: ao
+   * terminar um descanso). Sem a escolha, a ficha mostra só a linha que a pede.
+   */
+  fromSessionPick?: string
+}
 
 /**
  * Bônus de deslocamento que vale só com o equipamento certo. Diferente da CA condicional, a ficha
@@ -397,6 +440,12 @@ export type FeatureEffects = {
   unarmedDamageDie?: number
   /** Ignora a recarga destas armas (Especialista em Besta, p. 169). Lido em talentos e features. */
   ignoresLoading?: LoadingOverride
+  /**
+   * Defesas contra dano e condição (Resistência Infernal, Pureza Corporal, Aura de Vigilância,
+   * Maestria em Armadura Pesada). Lidas de features de classe e subclasse (no nível NA classe
+   * dona), talentos e traços raciais, por `getDamageDefenses`.
+   */
+  damageDefenses?: DamageDefenses
   /**
    * Recursos que a característica dá: usos que se gastam e voltam no descanso (Fúria, Surto de
    * Ação), poços (Chi, Cura pelas Mãos) e dados que crescem com o nível (Ataque Furtivo). A ficha

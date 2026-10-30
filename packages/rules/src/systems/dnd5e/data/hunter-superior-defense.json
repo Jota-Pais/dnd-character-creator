@@ -2,7 +2,12 @@
   {
     "id": "evasion",
     "name": "Evasão",
-    "description": "Você pode esquivar-se agilmente de certos efeitos em área, como o sopro de fogo de um dragão vermelho ou uma magia relâmpago. Quando você for alvo de um efeito que exige um teste de resistência de Destreza para sofrer metade do dano, você não sofre dano algum se passar, e somente metade do dano se falhar."
+    "description": "Você pode esquivar-se agilmente de certos efeitos em área, como o sopro de fogo de um dragão vermelho ou uma magia relâmpago. Quando você for alvo de um efeito que exige um teste de resistência de Destreza para sofrer metade do dano, você não sofre dano algum se passar, e somente metade do dano se falhar.",
+    "effects": {
+      "conditionalRolls": [
+        { "rolls": ["save"], "abilities": ["DEX"], "text": "em efeito que pede o teste de Destreza para sofrer metade do dano, você não sofre dano se passar e sofre só a metade se falhar (pág. 121)." }
+      ]
+    }
   },
   {
     "id": "stand-against-the-tide",

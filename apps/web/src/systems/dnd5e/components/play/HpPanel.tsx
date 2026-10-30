@@ -3,8 +3,8 @@ import { flushSync } from 'react-dom'
 import type { DamageTypeId } from '@rpg/rules/systems/dnd5e/types/damage'
 import type { DamageInput, PlayResult } from '@rpg/rules/systems/dnd5e/types/playState'
 import {
-  adjustMaxHp, applyDamage, applyHealing, formatHpAdjustment, getPlayDamageDefenses, grantTempHp, isAtZeroHp,
-  suggestTempHpChoice,
+  adjustMaxHp, applyDamage, applyHealing, formatDefenseConditionQuestion, formatHpAdjustment, getPlayDamageDefenses,
+  grantTempHp, isAtZeroHp, suggestTempHpChoice,
 } from '@rpg/rules/systems/dnd5e/utils/playState'
 import { getDamageType } from '@rpg/rules/systems/dnd5e/utils/damageTypes'
 import { describeDamageDefenses } from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
@@ -406,7 +406,7 @@ export function HpPanel({ view }: { view: PlayView }) {
                   }}
                   className="w-5 h-5 shrink-0 accent-gold-500"
                 />
-                Dano {q.text}? ({q.sources.join(', ')})
+                {formatDefenseConditionQuestion(q.text)} ({q.sources.join(', ')})
               </label>
             ))}
             {questions.exceptions.map(q => (

@@ -329,6 +329,14 @@ export function getPlayDamageDefenses(state: PlayState, sheet: PlaySheet): Sheet
   ]
 }
 
+/**
+ * A pergunta da caixa de uma defesa condicional no painel de PV, a mesma nos avisos que a citam:
+ * "Dano de magia?", "Dano de ataque não mágico?".
+ */
+export function formatDefenseConditionQuestion(condition: string): string {
+  return `Dano ${condition}?`
+}
+
 /** A defesa vale neste dano: não impedida pelo equipamento, com a situação confirmada e sem a exceção marcada. */
 function defenseApplies(d: SheetDamageDefense, input: DamageInput): boolean {
   if (d.blockedBy) return false
@@ -389,7 +397,10 @@ function applyDamageDefenses(input: DamageInput, defenses: SheetDamageDefense[],
     const reached = groups.filter(g => g.amount > 0 && defenseCovers(d, g.damageType))
     if (reached.length < 2 || !reached.some(g => changesLater(g.damageType))) return true
     const names = joinPt(reached.map(g => (g.damageType ? getDamageTypeName(g.damageType) : 'sem tipo')))
-    notices.push(note('unresolvedRule', `${d.source}: a redução de ${d.amount ?? 0} alcança mais de uma parcela (${names}), e o livro não diz de qual ela sai; com as outras defesas, isso muda o resultado. O app não a aplicou: combine com o Mestre e, se for o caso, desfaça e digite as parcelas já com a redução.`))
+    // Digitadas já com a redução, as parcelas não podem passar por ela de novo: com uma parcela só,
+    // ela se aplicaria. Por isso o aviso manda deixar a caixa da situação desmarcada.
+    const uncheck = d.condition ? `, sem marcar "${formatDefenseConditionQuestion(d.condition)}"` : ''
+    notices.push(note('unresolvedRule', `${d.source}: a redução de ${d.amount ?? 0} alcança mais de uma parcela (${names}), e o livro não diz de qual ela sai; com as outras defesas, isso muda o resultado. O app não a aplicou: combine com o Mestre e, se for o caso, desfaça e digite as parcelas já com a redução${uncheck}.`))
     return false
   })
   const reductionLeft = new Map(reductions.map(d => [d, d.amount ?? 0]))

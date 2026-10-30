@@ -13,6 +13,7 @@ import {
 } from './sheetEffects'
 import type { ResolvedToggle } from '../types/session'
 import { formatMeters } from './abilityScoreUtils'
+import type { SheetResource } from './classResourceUtils'
 import { resolveActiveEffects } from './activeEffects'
 import { getDamageLabel, getDamageTypeName } from './damageTypes'
 import { countLabel, joinPt } from './textUtils'
@@ -248,6 +249,13 @@ export function reconcilePlayState(state: PlayState, sheet: PlaySheet): PlayStat
       clampInt(state.spellSlotsSpent[i] ?? 0, 0, sheet.spellSlots[i] ?? 0)),
     pactSlotsSpent: clampInt(state.pactSlotsSpent, 0, sheet.pactSlots?.slots ?? 0),
     resourcesSpent,
+    // O efeito ligado que a ficha não tem mais (a característica saiu no criador) sai; a opção que
+    // ela não tem mais também.
+    activeEffects: state.activeEffects.flatMap(a => {
+      const toggle = sheet.toggles.find(t => t.id === a.id)
+      if (!toggle) return []
+      return a.option && !toggle.options.some(o => o.id === a.option) ? [{ id: a.id, startedAt: a.startedAt }] : [a]
+    }),
   }
 }
 
@@ -259,7 +267,13 @@ export function reconcilePlayState(state: PlayState, sheet: PlaySheet): PlayStat
  */
 export function reconcileLoadedPlayState(state: PlayState, sheet: PlaySheet): PlayResult {
   const next = reconcilePlayState(state, sheet)
-  if (state.lifeState !== 'conscious') return done(next)
+  const gone = state.activeEffects.filter(a => !next.activeEffects.some(n => n.id === a.id))
+  const toggleNotices = gone.length > 0
+    ? [note('info', gone.length === 1
+      ? 'A ficha mudou: 1 efeito ligado deixou de valer e foi desligado, porque a ficha não o tem mais.'
+      : `A ficha mudou: ${gone.length} efeitos ligados deixaram de valer e foram desligados, porque a ficha não os tem mais.`)]
+    : []
+  if (state.lifeState !== 'conscious') return done(next, toggleNotices)
   const sheetMax = getBaseMaxHp(state, sheet)
   const before = Math.max(0, sheetMax - state.damageTaken)
   const after = Math.max(0, sheetMax - next.damageTaken)
@@ -272,7 +286,7 @@ export function reconcileLoadedPlayState(state: PlayState, sheet: PlaySheet): Pl
   } else if (before === 0 && after > 0) {
     notices.push(note('info', `A ficha mudou: o PV máximo (${sheetMax}) ficou abaixo do dano sofrido. O personagem fica com ${after} PV — reduzir o máximo não leva a 0 PV sozinho.`))
   }
-  return done(next, notices)
+  return done(next, [...notices, ...toggleNotices])
 }
 
 // ── Transições de vida (internas, mutam o rascunho `next` da operação) ─────────
@@ -294,7 +308,7 @@ function toDead(next: PlayState, notices: PlayNotice[], why: string): void {
  * Inconsciente dos 0 PV não é "aplicado" (`regras-condicoes.md`, 6.4): grava o Caído, avisa de
  * largar o que segura e encerra a concentração.
  */
-function toZeroHp(next: PlayState, notices: PlayNotice[], lifeState: 'dying' | 'stable'): void {
+function toZeroHp(next: PlayState, sheet: PlaySheet, notices: PlayNotice[], lifeState: 'dying' | 'stable'): void {
   next.lifeState = lifeState
   next.deathSaves = { ...ZERO_SAVES }
   notices.push(note('fellUnconscious', lifeState === 'stable'
@@ -306,6 +320,7 @@ function toZeroHp(next: PlayState, notices: PlayNotice[], lifeState: 'dying' | '
   }
   if (onApply?.dropHeldItems) notices.push(note('droppedItems', 'Largou o que estava segurando (pág. 292).'))
   endConcentrationInto(next, notices, 'ficou inconsciente (pág. 205)')
+  endTogglesOnUnconscious(next, sheet, notices)
 }
 
 /**
@@ -548,7 +563,7 @@ function damagePipeline(state0: PlayState, sheet: PlaySheet, input: DamageInput,
         }
         notices.push(note('info', `${drop.source}: em vez de cair a 0 PV, ficou com 1 PV (gastou 1 uso).`))
       } else {
-        toZeroHp(next, notices, input.knockout ? 'stable' : 'dying')
+        toZeroHp(next, sheet, notices, input.knockout ? 'stable' : 'dying')
         if (drop) {
           notices.push({
             kind: 'dropToOneHp',
@@ -860,11 +875,7 @@ function resourceChange(state0: PlayState, sheet: PlaySheet, id: string, delta: 
   const resourcesSpent = { ...state.resourcesSpent }
   if (after === 0) delete resourcesSpent[id]
   else resourcesSpent[id] = after
-  const next: PlayState = { ...state, resourcesSpent }
-  const notices: PlayNotice[] = []
-  // Gastar a Fúria é entrar nela, e em fúria não se concentra (pág. 48): o motivo vem dos dados.
-  if (delta > 0 && r.spendEndsConcentration) endConcentrationInto(next, notices, r.spendEndsConcentration)
-  return done(next, notices)
+  return done({ ...state, resourcesSpent })
 }
 
 /** Gasta `amount` usos (ou PV, pontos, dados) de um recurso pelo `id`. Ilimitado não rastreia. */
@@ -877,6 +888,143 @@ export function spendResource(state: PlayState, sheet: PlaySheet, id: string, am
 export function recoverResource(state: PlayState, sheet: PlaySheet, id: string, amount = 1): PlayResult {
   if (!isInt(amount) || amount < 1) return refuse(state, 'Quantidade inválida.')
   return resourceChange(state, sheet, id, -amount)
+}
+
+// ── Efeitos ligados e ações ─────────────────────────────────────────────────
+
+/** "Em fúria" → "em fúria", no meio da frase. */
+const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1)
+
+/** Quando os usos voltam, para o aviso de quem não tem mais nenhum. */
+const RECHARGE_TEXT: Record<NonNullable<SheetResource['recharge']>, string> = {
+  short: 'voltam num descanso curto ou longo',
+  long: 'voltam num descanso longo',
+  day: 'voltam uma vez por dia',
+}
+
+/** O que a tela passa ao ligar: a opção escolhida (o Frenesi) e o momento, para o `startedAt`. */
+export type ToggleOn = { option?: string; now: number }
+
+/**
+ * Tira um efeito ligado do rascunho `next` da operação, com o que a opção dele custa ao acabar (o
+ * Frenesi: um nível de exaustão, pelo caminho do `setExhaustion`, com os avisos dele).
+ */
+function endToggleInto(next: PlayState, sheet: PlaySheet, id: string, notices: PlayNotice[]): void {
+  const active = next.activeEffects.find(a => a.id === id)
+  if (!active) return
+  next.activeEffects = next.activeEffects.filter(a => a.id !== id)
+  const option = active.option ? sheet.toggles.find(t => t.id === id)?.options.find(o => o.id === active.option) : undefined
+  const exhaustion = option?.onEnd?.exhaustion ?? 0
+  if (!option || exhaustion === 0) return
+  const before = next.exhaustionLevel
+  const r = setExhaustion(next, sheet, before + exhaustion)
+  if (r.state.exhaustionLevel !== before) {
+    notices.push(note('warning', `${option.label}: ao terminar, você sofre um nível de exaustão (${before} → ${r.state.exhaustionLevel}, pág. 292).`))
+  }
+  Object.assign(next, r.state)
+  notices.push(...r.notices)
+}
+
+/** Cair inconsciente encerra o que declara `endsOn: 'unconscious'` (a Fúria, pág. 48), com aviso. */
+function endTogglesOnUnconscious(next: PlayState, sheet: PlaySheet, notices: PlayNotice[]): void {
+  for (const toggle of sheet.toggles) {
+    if (!toggle.endsOn.includes('unconscious') || !next.activeEffects.some(a => a.id === toggle.id)) continue
+    notices.push(note('info', `${toggle.source}: terminou ao cair inconsciente (pág. ${toggle.page}).`))
+    endToggleInto(next, sheet, toggle.id, notices)
+  }
+}
+
+/**
+ * Liga um efeito (em fúria), sem custo: quem paga é a ação que liga (`performAction`), e o efeito
+ * recebido de um aliado liga de graça. Recusa morto ou inconsciente, o efeito já ligado (a mesma
+ * magia não acumula, pág. 207) e a opção que a ficha não tem. Os efeitos colaterais vêm com aviso,
+ * no mesmo passo do desfazer: a restrição em vigor encerra a concentração (decisão (e), pág. 48),
+ * as condições de que agora você está imune ficam suspensas, e de armadura pesada o efeito liga sem
+ * os benefícios (pág. 48).
+ */
+export function activateToggle(state0: PlayState, sheet: PlaySheet, id: string, { option, now }: ToggleOn): PlayResult {
+  const toggle = sheet.toggles.find(t => t.id === id)
+  if (!toggle) return refuse(state0, `Efeito desconhecido: ${id}.`)
+  if (state0.lifeState === 'dead') return refuse(state0, `${toggle.label}: o personagem está morto.`)
+  if (getPlayConditionState(state0).conditions.includes('unconscious')) {
+    return refuse(state0, `${toggle.label}: o personagem está inconsciente.`)
+  }
+  if (state0.activeEffects.some(a => a.id === id)) return refuse(state0, `Já está ${lowerFirst(toggle.label)}.`)
+  if (option && !toggle.options.some(o => o.id === option)) return refuse(state0, `${toggle.label}: opção desconhecida (${option}).`)
+
+  const state = reconcilePlayState(state0, sheet)
+  const next: PlayState = { ...state, activeEffects: [...state.activeEffects, { id, startedAt: now, ...(option ? { option } : {}) }] }
+  const notices: PlayNotice[] = []
+  const resolved = getPlayToggles(next, sheet).find(t => t.id === id)
+  if (resolved?.blockedBy) {
+    notices.push(note('warning', `${toggle.source} sem os benefícios: você está de ${resolved.blockedBy} (pág. ${toggle.page}).`))
+  }
+  if (resolved?.effects.some(e => e.effect.kind === 'endsConcentration')) {
+    endConcentrationInto(next, notices, `entrar ${lowerFirst(toggle.label)} (pág. ${toggle.page})`)
+  }
+  const wasSuspended = new Set(getPlayEffects(state, sheet).conditions.filter(c => c.immuneBy).map(c => c.id))
+  for (const c of getPlayEffects(next, sheet).conditions) {
+    if (c.immuneBy && !wasSuspended.has(c.id)) {
+      notices.push(note('info', `${c.name} fica suspenso: você está imune (${c.immuneBy.join(', ')}).`))
+    }
+  }
+  return done(next, notices)
+}
+
+/** Desliga um efeito ligado, com o que a opção dele custa ao acabar (o Frenesi: +1 de exaustão). */
+export function deactivateToggle(state0: PlayState, sheet: PlaySheet, id: string): PlayResult {
+  const toggle = sheet.toggles.find(t => t.id === id)
+  if (!state0.activeEffects.some(a => a.id === id)) {
+    return refuse(state0, toggle ? `Não está ${lowerFirst(toggle.label)}.` : `Efeito desconhecido: ${id}.`)
+  }
+  const next: PlayState = { ...reconcilePlayState(state0, sheet) }
+  const notices: PlayNotice[] = []
+  endToggleInto(next, sheet, id, notices)
+  return done(next, notices)
+}
+
+/**
+ * Usa uma ação da ficha (`sheet.actions`), na versão mínima: confere e gasta o custo e liga ou
+ * desliga o efeito, tudo num passo só do desfazer. Recusa morto, quem não pode agir (Incapacitado,
+ * pág. 292), a ação que pede um efeito ligado que não está, e o custo sem usos — sem gastar nada.
+ * O que a ação liga recusa como `activateToggle` (já em fúria), também sem gastar.
+ */
+export function performAction(state0: PlayState, sheet: PlaySheet, actionId: string, on: ToggleOn): PlayResult {
+  const action = sheet.actions.find(a => a.id === actionId)
+  if (!action) return refuse(state0, `Ação desconhecida: ${actionId}.`)
+  if (state0.lifeState === 'dead') return refuse(state0, `${action.name}: o personagem está morto.`)
+  const noActions = getPlayEffects(state0, sheet).noActions
+  if (noActions.active) {
+    return refuse(state0, `${action.name}: ${noActions.sources.map(s => s.label).join(', ')}, sem ações nem reações (pág. 292).`)
+  }
+  if (action.requiresToggle && !state0.activeEffects.some(a => a.id === action.requiresToggle)) {
+    const toggle = sheet.toggles.find(t => t.id === action.requiresToggle)
+    return refuse(state0, `${action.name}: só ${toggle ? lowerFirst(toggle.label) : 'com o efeito ligado'}.`)
+  }
+
+  let next = reconcilePlayState(state0, sheet)
+  const notices: PlayNotice[] = []
+  for (const cost of action.cost ?? []) {
+    const r = sheet.resources.find(x => x.id === cost.resource)
+    const available = getResourceAvailable(next, sheet, cost.resource)
+    if (!r || available === null) return refuse(state0, `${action.name}: recurso desconhecido (${cost.resource}).`)
+    if (available === 'unlimited') continue
+    if (available < cost.amount) {
+      const back = r.recharge ? `: eles ${RECHARGE_TEXT[r.recharge]}` : ''
+      return refuse(state0, `${action.name}: sem usos de ${r.name}${back}.`)
+    }
+    next = { ...next, resourcesSpent: { ...next.resourcesSpent, [r.id]: (next.resourcesSpent[r.id] ?? 0) + cost.amount } }
+  }
+  for (const outcome of action.outcomes) {
+    const r = outcome.kind === 'toggleOn'
+      ? activateToggle(next, sheet, outcome.toggle, on)
+      : deactivateToggle(next, sheet, outcome.toggle)
+    const refused = r.notices.find(n => n.kind === 'refused')
+    if (refused) return refuse(state0, refused.text)
+    next = r.state
+    notices.push(...r.notices)
+  }
+  return done(next, notices)
 }
 
 // ── Condições e exaustão ────────────────────────────────────────────────────
@@ -906,6 +1054,7 @@ export function addCondition(state: PlayState, sheet: PlaySheet, id: ConditionId
   const next: PlayState = { ...state, conditions: withConditionApplied(state.conditions, id) }
   if (cond.onApply?.dropHeldItems) notices.push(note('droppedItems', 'Largou o que estava segurando (pág. 292).'))
   checkConcentration(next, sheet, notices)
+  if (id === 'unconscious') endTogglesOnUnconscious(next, sheet, notices)
   return done(next, notices)
 }
 

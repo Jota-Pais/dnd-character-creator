@@ -5,11 +5,12 @@ import { CONDITION_NOTE_MAX_LENGTH, PLAY_STATE_VERSION, ROLL_HISTORY_LIMIT } fro
 import type { SheetResource } from '../classResourceUtils'
 import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
 import { buildPlaySheet } from '../playSheet'
+import { COMPLETE_DRAFT } from '../../../../test/fixtures'
 import {
-  addCondition, adjustMaxHp, applyDamage, applyDamageDroppingToOneHp, applyHealing, clearRollHistory, clearTempHp, completeLongRest, completeShortRest,
+  activateToggle, addCondition, adjustMaxHp, applyDamage, applyDamageDroppingToOneHp, applyHealing, clearRollHistory, clearTempHp, completeLongRest, completeShortRest,
   createPlayState, describeHpMaxImmunity, endConcentration, getBaseMaxHp, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable,
   getLongRestHitDiceRecoverable, getPactSlotsAvailable, getPlayEffects, getPlayConditionState, getPlayDamageDefenses, getPlaySpeed,
-  getResourceAvailable, getShortRestSlotRecovery, getSpellSlotsAvailable, grantTempHp, previewLongRest, previewShortRest, reconcileLoadedPlayState,
+  getResourceAvailable, getShortRestSlotRecovery, performAction, getSpellSlotsAvailable, grantTempHp, previewLongRest, previewShortRest, reconcileLoadedPlayState,
   reconcilePlayState,
   recordDeathSave, recordRoll, recoverPactSlot, regainHpWhileStable, recoverResource, recoverSpellSlot, removeCondition,
   revive, sanitizePlayState, setConditionNote, setExhaustion, setInspiration, setNote, spendHitDie, spendPactSlot,
@@ -556,29 +557,6 @@ describe('recursos', () => {
     expect(spendResource(s, S, 'rage').state).toBe(s)
     expect(recoverResource(s, S, 'rage', 3).state.resourcesSpent).toEqual({})
     expect(recoverResource(state(), S, 'rage').notices[0].kind).toBe('refused')
-  })
-
-  it('gastar o recurso que encerra a concentração (entrar em fúria, decisão (e) de 2026-10-29) a encerra, com o motivo', () => {
-    const sh = sheet({
-      resources: [{ ...resource('rage', 3, 'long'), spendEndsConcentration: 'entrar em fúria (pág. 48)' }, resource('second-wind', 1, 'short')],
-    })
-    const concentrating = startConcentration(state(), S, { label: 'Bênção' }, 0).state
-    const r = spendResource(concentrating, sh, 'rage')
-    expect(r.state.concentration).toBeNull()
-    expect(r.state.resourcesSpent).toEqual({ rage: 1 })
-    expect(r.notices).toEqual([{ kind: 'concentrationEnded', text: 'A concentração em Bênção terminou: entrar em fúria (pág. 48).' }])
-    // Sem concentração, só gasta; recuperar não encerra; outro recurso não encerra; recusado não mexe.
-    expect(spendResource(state(), sh, 'rage').notices).toEqual([])
-    expect(recoverResource({ ...concentrating, resourcesSpent: { rage: 1 } }, sh, 'rage').state.concentration).not.toBeNull()
-    expect(spendResource(concentrating, sh, 'second-wind').state.concentration).not.toBeNull()
-    const empty = { ...concentrating, resourcesSpent: { rage: 3 } }
-    expect(spendResource(empty, sh, 'rage').state).toBe(empty)
-  })
-
-  it('a Fúria do bárbaro declara nos dados que gastá-la encerra a concentração', () => {
-    const barbarian: CharacterDraft = { ...structuredClone(EMPTY_DRAFT), race: 'human', class: 'barbarian', level: 1 }
-    const rage = buildPlaySheet(barbarian).resources.find(r => r.id === 'rage')
-    expect(rage?.spendEndsConcentration).toBe('entrar em fúria (pág. 48)')
   })
 
   it('poço de PV gasta aos poucos', () => {
@@ -1569,5 +1547,150 @@ describe('applyDamage — o tipo do dano e as defesas da ficha', () => {
     const r = applyDamage(s, TIEFLING, { amount: 5, parts: [{ amount: 5, damageType: 'fire' }, { amount: Number.NaN }] })
     expect(r.state).toBe(s)
     expect(kinds(r)).toEqual(['refused'])
+  })
+})
+
+// ── Efeitos ligados e ações (Fase 2, onda efeitos-ativos) ─────────────────────
+
+describe('efeitos ligados: a Fúria pela ação que a liga', () => {
+  /** Bárbaro meio-orc (Krusk) no nível dado, com um caminho e o que carrega. */
+  const barbarian = (level: number, patch: Partial<CharacterDraft> = {}, subclass: string | null = null): PlaySheet => {
+    const base = structuredClone(COMPLETE_DRAFT)
+    return buildPlaySheet({ ...base, level, ...patch, classChoices: { ...base.classChoices, subclass } })
+  }
+  const plate = {
+    equipment: {
+      ...structuredClone(EMPTY_DRAFT.equipment),
+      method: 'wealth' as const,
+      purchasedItems: [{ itemId: 'plate', quantity: 1, source: 'purchased' as const }],
+    },
+  }
+  const enter = (s: PlayState, sh: PlaySheet, option?: string) => performAction(s, sh, 'rage-enter', { now: 5, ...(option ? { option } : {}) })
+  const end = (s: PlayState, sh: PlaySheet) => performAction(s, sh, 'rage-end', { now: 6 })
+
+  it('entrar em fúria gasta 1 uso, liga o efeito e encerra a concentração, com o motivo (decisão (e), pág. 48)', () => {
+    const sh = barbarian(3, { race: 'tiefling' })
+    const concentrating = startConcentration(state(), sh, { label: 'Bênção' }, 0).state
+    const r = enter(concentrating, sh)
+    expect(r.state.activeEffects).toEqual([{ id: 'rage', startedAt: 5 }])
+    expect(r.state.resourcesSpent).toEqual({ rage: 1 })
+    expect(r.state.concentration).toBeNull()
+    expect(r.notices).toEqual([{ kind: 'concentrationEnded', text: 'A concentração em Bênção terminou: entrar em fúria (pág. 48).' }])
+    // O de antes não muda: um passo só do desfazer volta a fúria, o uso e a concentração.
+    expect(concentrating.concentration?.label).toBe('Bênção')
+    expect(concentrating.activeEffects).toEqual([])
+  })
+
+  it('sem usos, recusa sem gastar nada; já em fúria, também', () => {
+    const sh = barbarian(1)
+    const spent = { ...state(), resourcesSpent: { rage: 2 } }
+    const r = enter(spent, sh)
+    expect(r.state).toBe(spent)
+    expect(r.notices).toEqual([{ kind: 'refused', text: 'Entrar em fúria: sem usos de Fúria: eles voltam num descanso longo.' }])
+    const raging = enter(state(), sh).state
+    const again = enter(raging, sh)
+    expect(again.state).toBe(raging)
+    expect(again.notices).toEqual([{ kind: 'refused', text: 'Já está em fúria.' }])
+  })
+
+  it('no 20º nível os usos são ilimitados: liga sem gastar e ainda encerra a concentração de quem conjura', () => {
+    const sh = barbarian(20, { race: 'tiefling' })
+    const r = enter(startConcentration(state(), sh, { label: 'Escuridão' }, 0).state, sh)
+    expect(r.state.resourcesSpent).toEqual({})
+    expect(r.state.activeEffects.map(a => a.id)).toEqual(['rage'])
+    expect(r.state.concentration).toBeNull()
+  })
+
+  it('morto, inconsciente ou incapacitado não entra em fúria', () => {
+    const sh = barbarian(1)
+    expect(enter({ ...state(), lifeState: 'dead' }, sh).notices[0]).toEqual({ kind: 'refused', text: 'Entrar em fúria: o personagem está morto.' })
+    expect(enter({ ...state(), conditions: ['stunned'] }, sh).notices[0].kind).toBe('refused')
+    expect(enter({ ...state(), lifeState: 'dying', damageTaken: sh.maxHp }, sh).notices[0].text)
+      .toBe('Entrar em fúria: Incapacitado (por Inconsciente), sem ações nem reações (pág. 292).')
+    // O liga direto (o efeito sem custo) recusa o inconsciente gravado também.
+    expect(activateToggle({ ...state(), conditions: ['unconscious'] }, sh, 'rage', { now: 1 }).notices[0])
+      .toEqual({ kind: 'refused', text: 'Em fúria: o personagem está inconsciente.' })
+  })
+
+  it('encerrar pede estar em fúria; em fúria, desliga sem custo', () => {
+    const sh = barbarian(1)
+    expect(end(state(), sh).notices).toEqual([{ kind: 'refused', text: 'Encerrar a fúria: só em fúria.' }])
+    const raging = enter(state(), sh).state
+    const r = end(raging, sh)
+    expect(r.state.activeEffects).toEqual([])
+    expect(r.state.resourcesSpent).toEqual({ rage: 1 })
+    expect(r.notices).toEqual([])
+  })
+
+  it('cair a 0 PV encerra a fúria, com aviso; aplicar o Inconsciente também', () => {
+    const sh = barbarian(1)
+    const raging = enter(state(), sh).state
+    const down = applyDamage(raging, sh, { amount: sh.maxHp })
+    expect(down.state.lifeState).toBe('dying')
+    expect(down.state.activeEffects).toEqual([])
+    expect(down.notices.map(n => n.text)).toContain('Fúria: terminou ao cair inconsciente (pág. 48).')
+    const asleep = addCondition(raging, sh, 'unconscious')
+    expect(asleep.state.activeEffects).toEqual([])
+    expect(asleep.notices.map(n => n.text)).toContain('Fúria: terminou ao cair inconsciente (pág. 48).')
+    // Outra condição não encerra.
+    expect(addCondition(raging, sh, 'prone').state.activeEffects).toHaveLength(1)
+  })
+
+  it('o Frenesi: escolhido ao entrar, ao terminar dá +1 de exaustão pelo caminho do setExhaustion, num passo só', () => {
+    const sh = barbarian(3, {}, 'berserker')
+    const frenzy = enter(state(), sh, 'frenzy').state
+    expect(frenzy.activeEffects).toEqual([{ id: 'rage', startedAt: 5, option: 'frenzy' }])
+    const r = end(frenzy, sh)
+    expect(r.state.activeEffects).toEqual([])
+    expect(r.state.exhaustionLevel).toBe(1)
+    expect(r.notices).toEqual([{ kind: 'warning', text: 'Frenesi: ao terminar, você sofre um nível de exaustão (0 → 1, pág. 292).' }])
+    // Cair inconsciente também acaba a fúria: a exaustão vem junto.
+    const down = applyDamage(frenzy, sh, { amount: sh.maxHp })
+    expect(down.state.exhaustionLevel).toBe(1)
+    // Sem frenesi, nada; opção que a ficha não tem, recusa.
+    expect(end(enter(state(), sh).state, sh).state.exhaustionLevel).toBe(0)
+    expect(enter(state(), barbarian(3), 'frenzy').notices[0]).toEqual({ kind: 'refused', text: 'Em fúria: opção desconhecida (frenzy).' })
+  })
+
+  it('de Placas: gasta o uso, liga e avisa que não há benefícios', () => {
+    const sh = barbarian(1, plate)
+    const r = enter(state(), sh)
+    expect(r.state.resourcesSpent).toEqual({ rage: 1 })
+    expect(r.state.activeEffects.map(a => a.id)).toEqual(['rage'])
+    expect(r.notices).toEqual([{ kind: 'warning', text: 'Fúria sem os benefícios: você está de Placas (pág. 48).' }])
+  })
+
+  it('Fúria Inconsciente: entrar suspende o Amedrontado gravado, com aviso', () => {
+    const sh = barbarian(6, {}, 'berserker')
+    const r = enter({ ...state(), conditions: ['frightened'] }, sh)
+    expect(r.state.conditions).toEqual(['frightened'])
+    expect(r.notices).toEqual([{ kind: 'info', text: 'Amedrontado fica suspenso: você está imune (Fúria Inconsciente).' }])
+  })
+
+  it('em fúria não se concentra: startConcentration recusa, com a página', () => {
+    const sh = barbarian(3, { race: 'tiefling' })
+    const raging = enter(state(), sh).state
+    const r = startConcentration(raging, sh, { label: 'Escuridão' }, 9)
+    expect(r.state).toBe(raging)
+    expect(r.notices).toEqual([{ kind: 'refused', text: 'Em fúria você não pode se concentrar (pág. 48).' }])
+  })
+
+  it('a reconciliação tira o efeito que a ficha não tem mais, com aviso; a opção perdida cai sozinha', () => {
+    const raging = enter(state(), barbarian(3, {}, 'berserker'), 'frenzy').state
+    const fighter = buildPlaySheet({ ...structuredClone(EMPTY_DRAFT), class: 'fighter', level: 3 })
+    const r = reconcileLoadedPlayState(raging, fighter)
+    expect(r.state.activeEffects).toEqual([])
+    expect(r.notices).toEqual([{ kind: 'info', text: 'A ficha mudou: 1 efeito ligado deixou de valer e foi desligado, porque a ficha não o tem mais.' }])
+    // Trocou de caminho: a fúria fica, sem o Frenesi.
+    expect(reconcilePlayState(raging, barbarian(3)).activeEffects).toEqual([{ id: 'rage', startedAt: 5 }])
+    expect(reconcileLoadedPlayState(raging, barbarian(3, {}, 'berserker')).notices).toEqual([])
+  })
+
+  it('gastar a Fúria pela bolinha do recurso só gasta: quem encerra a concentração é entrar em fúria', () => {
+    const sh = barbarian(3, { race: 'tiefling' })
+    const concentrating = startConcentration(state(), sh, { label: 'Bênção' }, 0).state
+    const r = spendResource(concentrating, sh, 'rage')
+    expect(r.state.concentration?.label).toBe('Bênção')
+    expect(r.notices).toEqual([])
   })
 })

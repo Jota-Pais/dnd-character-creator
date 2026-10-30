@@ -146,6 +146,9 @@
      dela. Sem barra por cima (o navegador, o iPhone com a barra preta), a altura é 0. */
   body::before {
     content: '';
+    /* Sem texto, mas o content abre uma linha, e a linha pede a fonte: com a do body (Lora), o
+       navegador a baixava junto com o JS, antes de haver texto na tela. A genérica não desce. */
+    font-family: sans-serif;
     position: fixed;
     inset: 0 0 auto 0;
     height: env(safe-area-inset-top);

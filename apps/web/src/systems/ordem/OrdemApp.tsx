@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useAppStore } from '../../core/stores/appStore'
+import { useBackHandler } from '../../core/navigation/back'
 import { useOrdemStore } from './stores/characterStore'
 import { WizardShell } from '../../components/wizard/WizardShell'
 import { ordemSystem } from './index'
@@ -57,6 +58,14 @@ export function OrdemApp() {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [prevStep, view])
+
+  // O voltar do Android (core/navigation/back.ts): a impressão volta à ficha; o criador, à etapa
+  // anterior, como o Esc e o "← Voltar" do rodapé, e da primeira etapa à galeria.
+  useBackHandler(() => {
+    if (view === 'print') exitPrint()
+    else if (currentStep === steps[0]?.id) goToGallery()
+    else prevStep()
+  })
 
   if (view === 'print') {
     return (

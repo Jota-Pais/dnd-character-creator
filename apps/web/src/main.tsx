@@ -3,6 +3,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import { startServiceWorker } from './core/pwa/serviceWorker'
+import { startNativeApp } from './core/native/nativeApp'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -19,3 +20,6 @@ void startServiceWorker({
     : new Promise(resolve => window.addEventListener('load', resolve, { once: true })),
   doc: document,
 })
+
+// O APK do Android (docs/app-android.md): o voltar do aparelho. No navegador, nada.
+void startNativeApp()

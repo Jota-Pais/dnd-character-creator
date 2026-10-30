@@ -1,14 +1,15 @@
 import { useEffect, useLayoutEffect, useRef, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react'
 import { getOpener } from './pressedControl'
+import { useBackHandler } from '../../../../core/navigation/back'
 
 /** O que recebe o foco dentro da folha (para prender o Tab). */
 const FOCUSABLE = 'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
 /**
  * A folha modal do modo de jogo: sobe do pé da tela no celular, centralizada no desktop. Fecha no
- * ✕, no fundo escuro e no Esc; o foco entra nela ao abrir, circula dentro dela no Tab e volta para
- * quem a abriu ao fechar — ou, se ele sumiu enquanto ela estava aberta, a `onFocusAway`. O
- * conteúdo (`children`) vem logo abaixo do título.
+ * ✕, no fundo escuro, no Esc e no voltar do Android (antes de a tela voltar); o foco entra nela ao
+ * abrir, circula dentro dela no Tab e volta para quem a abriu ao fechar — ou, se ele sumiu enquanto
+ * ela estava aberta, a `onFocusAway`. O conteúdo (`children`) vem logo abaixo do título.
  */
 export function PlayDialog({ title, titleId, onClose, onFocusAway, children }: {
   title: ReactNode
@@ -36,6 +37,7 @@ export function PlayDialog({ title, titleId, onClose, onFocusAway, children }: {
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
   }, [onClose])
+  useBackHandler(onClose, 'overlay')
 
   // Diálogo modal: o foco entra na folha ao abrir e volta para quem a abriu ao fechar. A limpeza
   // roda depois da tela já atualizada: o que a tela oferece no lugar de quem abriu já existe.

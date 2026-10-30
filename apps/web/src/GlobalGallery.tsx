@@ -6,6 +6,7 @@ import { exportAllCharacters, formatRestoreResult, getLatestChangeAt, isBackupFi
 import { GalleryNotices } from './GalleryNotices'
 import { readJsonFile } from './core/utils/download'
 import { useAppStore } from './core/stores/appStore'
+import { useBackHandler } from './core/navigation/back'
 import {
   filterByName,
   groupGalleryCharacters,
@@ -90,6 +91,9 @@ export function GlobalGallery() {
   const [restored, setRestored] = useState<RestorePlan | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [showSystemSelect, setShowSystemSelect] = useState(false)
+  // O voltar do Android fecha o menu de sistema aberto (core/navigation/back.ts). Fechado, a
+  // galeria não registra nada: é a raiz, e o APK minimiza o app.
+  useBackHandler(showSystemSelect ? () => setShowSystemSelect(false) : null, 'overlay')
 
   // Como encontrar as fichas: busca por nome + agrupamento + ordenação (só nesta sessão de tela).
   const [query, setQuery] = useState('')
@@ -445,6 +449,8 @@ function CharacterRow({ char, entry, onOpen, onPlay, onDuplicate, onExport, onDe
   onDelete: () => void
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false)
+  // O voltar do Android cancela a exclusão pedida, como o ✕ ao lado do "Excluir?".
+  useBackHandler(confirmDelete ? () => setConfirmDelete(false) : null, 'overlay')
   const [hover, setHover] = useState(false)
   const ui = SYSTEM_UI[char.system]
   const { name, facets } = entry

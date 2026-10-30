@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/core": "^8.6.0",
     "@fontsource-variable/cinzel": "^5.3.0",
     "@fontsource-variable/lora": "^5.3.0",
     "@rpg/rules": "*",

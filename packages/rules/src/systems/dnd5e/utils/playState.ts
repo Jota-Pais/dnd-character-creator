@@ -307,10 +307,18 @@ function endConcentrationInto(next: PlayState, notices: PlayNotice[], reason: st
   next.concentration = null
 }
 
-function toDead(next: PlayState, notices: PlayNotice[], why: string): void {
+/**
+ * A morte, por qualquer caminho: encerra a concentração (assumido F) e o que acaba ao cair
+ * inconsciente (a Fúria). A morte instantânea (pág. 199) e a da exaustão 6 (pág. 292) não deixam o
+ * personagem inconsciente, e o morto não continua em fúria (decisão de 2026-10-30): o efeito acaba
+ * aqui, com o aviso e a exaustão do Frenesi, e o "Fui revivido" volta sem ele. Na morte a 0 PV, ele
+ * já tinha acabado na queda.
+ */
+function toDead(next: PlayState, sheet: PlaySheet, notices: PlayNotice[], why: string): void {
   next.lifeState = 'dead'
   notices.push(note('died', why))
   endConcentrationInto(next, notices, 'morte (pág. 205)')
+  endTogglesOnUnconscious(next, sheet, notices, 'death')
 }
 
 /**
@@ -562,7 +570,7 @@ function damagePipeline(state0: PlayState, sheet: PlaySheet, input: DamageInput,
       const overflow = rest - current
       next.damageTaken = sheetMax
       if (overflow >= effMax) {
-        toDead(next, notices, `Morte instantânea: o dano que sobrou (${overflow}) é igual ou maior que o PV máximo (${effMax}) (pág. 199).`)
+        toDead(next, sheet, notices, `Morte instantânea: o dano que sobrou (${overflow}) é igual ou maior que o PV máximo (${effMax}) (pág. 199).`)
       } else if (dropToOneHp && drop) {
         // "Reduzido a 0 pontos de vida mas não é completamente morto": volta para 1 PV (pág. 41).
         dropped = true
@@ -584,7 +592,7 @@ function damagePipeline(state0: PlayState, sheet: PlaySheet, input: DamageInput,
       }
     }
   } else if (rest >= effMax) {
-    toDead(next, notices, `Morte instantânea: ${rest} de dano a 0 PV é igual ou maior que o PV máximo (${effMax}) (pág. 199).`)
+    toDead(next, sheet, notices, `Morte instantânea: ${rest} de dano a 0 PV é igual ou maior que o PV máximo (${effMax}) (pág. 199).`)
   } else {
     const added = input.critical ? 2 : 1
     const failures = toCount(state.deathSaves.failures + added)
@@ -594,7 +602,7 @@ function damagePipeline(state0: PlayState, sheet: PlaySheet, input: DamageInput,
       notices.push(note('lostStability', 'Sofreu dano estável: deixa de estar estável e volta aos testes contra a morte (pág. 200).'))
     }
     notices.push(note('deathSaveFailure', `${added === 2 ? '2 fracassos (crítico)' : '1 fracasso'} no teste contra a morte por sofrer dano a 0 PV: ${failures}/3.`))
-    if (failures >= 3) toDead(next, notices, 'Três fracassos no teste contra a morte (pág. 199).')
+    if (failures >= 3) toDead(next, sheet, notices, 'Três fracassos no teste contra a morte (pág. 199).')
   }
   if (dropToOneHp && !dropped) {
     const source = sheet.dropToOneHp?.source ?? 'Ficar com 1 PV'
@@ -779,7 +787,7 @@ export function recordDeathSave(state0: PlayState, sheet: PlaySheet, input: Deat
   next.deathSaves = { successes, failures }
 
   if (failures >= 3) {
-    toDead(next, notices, 'Três fracassos no teste contra a morte (pág. 199).')
+    toDead(next, sheet, notices, 'Três fracassos no teste contra a morte (pág. 199).')
   } else if (successes >= 3) {
     next.lifeState = 'stable'
     next.deathSaves = { ...ZERO_SAVES }
@@ -935,11 +943,16 @@ function endToggleInto(next: PlayState, sheet: PlaySheet, id: string, notices: P
   notices.push(...r.notices)
 }
 
-/** Cair inconsciente encerra o que declara `endsOn: 'unconscious'` (a Fúria, pág. 48), com aviso. */
-function endTogglesOnUnconscious(next: PlayState, sheet: PlaySheet, notices: PlayNotice[]): void {
+/**
+ * Cair inconsciente encerra o que declara `endsOn: 'unconscious'` (a Fúria, pág. 48), com aviso; a
+ * morte também (`toDead`), com o aviso dela.
+ */
+function endTogglesOnUnconscious(next: PlayState, sheet: PlaySheet, notices: PlayNotice[], by: 'unconscious' | 'death' = 'unconscious'): void {
   for (const toggle of sheet.toggles) {
     if (!toggle.endsOn.includes('unconscious') || !next.activeEffects.some(a => a.id === toggle.id)) continue
-    notices.push(note('info', `${toggle.source}: terminou ao cair inconsciente (pág. ${toggle.page}).`))
+    notices.push(note('info', by === 'death'
+      ? `${toggle.source}: terminou com a morte.`
+      : `${toggle.source}: terminou ao cair inconsciente (pág. ${toggle.page}).`))
     endToggleInto(next, sheet, toggle.id, notices)
   }
 }
@@ -1179,7 +1192,7 @@ export function setExhaustion(state0: PlayState, sheet: PlaySheet, level: number
 
   const sheetMax = getBaseMaxHp(state, sheet)
   if (target === 6) {
-    if (state.lifeState !== 'dead') toDead(next, notices, 'Exaustão 6: morte, com 0 PV (pág. 292).')
+    if (state.lifeState !== 'dead') toDead(next, sheet, notices, 'Exaustão 6: morte, com 0 PV (pág. 292).')
     // Quem morre por Exaustão 6 fica com 0 PV (decisão de 2026-10-25); o desfazer volta o de antes.
     next.damageTaken = sheetMax
     return done(next, notices)

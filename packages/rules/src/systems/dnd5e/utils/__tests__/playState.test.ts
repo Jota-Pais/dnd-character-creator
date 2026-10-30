@@ -1650,6 +1650,39 @@ describe('efeitos ligados: a Fúria pela ação que a liga', () => {
     expect(addCondition(raging, sh, 'prone').state.activeEffects).toHaveLength(1)
   })
 
+  // A morte instantânea (pág. 199) e a da exaustão 6 (pág. 292) não passam pelo Inconsciente; o
+  // morto não continua em fúria (decisão de 2026-10-30).
+  it('a morte instantânea encerra a fúria, com a exaustão do Frenesi, e o "Fui revivido" volta sem ela', () => {
+    const sh = barbarian(3, {}, 'berserker')
+    const frenzy = enter(state(), sh, 'frenzy').state
+    const dead = applyDamage(frenzy, sh, { amount: sh.maxHp * 2 })
+    expect(dead.state.lifeState).toBe('dead')
+    expect(dead.state.activeEffects).toEqual([])
+    expect(dead.state.exhaustionLevel).toBe(1)
+    expect(dead.notices.map(n => n.text)).toEqual([
+      `Morte instantânea: o dano que sobrou (${sh.maxHp}) é igual ou maior que o PV máximo (${sh.maxHp}) (pág. 199).`,
+      'Fúria: terminou com a morte.',
+      'Frenesi: ao terminar, você sofre um nível de exaustão (0 → 1, pág. 292).',
+    ])
+    const back = revive(dead.state, sh)
+    expect(back.state.lifeState).toBe('conscious')
+    expect(back.state.activeEffects).toEqual([])
+  })
+
+  it('a exaustão 6 encerra a fúria; com o Frenesi, a exaustão fica na 6', () => {
+    const sh = barbarian(3, {}, 'berserker')
+    const raging = { ...enter(state(), sh).state, exhaustionLevel: 5 as const }
+    const r = setExhaustion(raging, sh, 6)
+    expect(r.state.lifeState).toBe('dead')
+    expect(r.state.activeEffects).toEqual([])
+    expect(r.notices.map(n => n.text)).toEqual(['Exaustão 6: morte, com 0 PV (pág. 292).', 'Fúria: terminou com a morte.'])
+    const frenzy = { ...enter(state(), sh, 'frenzy').state, exhaustionLevel: 5 as const }
+    const f = setExhaustion(frenzy, sh, 6)
+    expect(f.state.activeEffects).toEqual([])
+    expect(f.state.exhaustionLevel).toBe(6)
+    expect(f.notices.map(n => n.text)).toEqual(['Exaustão 6: morte, com 0 PV (pág. 292).', 'Fúria: terminou com a morte.'])
+  })
+
   it('o Frenesi: escolhido ao entrar, ao terminar dá +1 de exaustão pelo caminho do setExhaustion, num passo só', () => {
     const sh = barbarian(3, {}, 'berserker')
     const frenzy = enter(state(), sh, 'frenzy').state

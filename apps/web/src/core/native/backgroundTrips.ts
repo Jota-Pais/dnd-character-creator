@@ -20,6 +20,14 @@ export function markOwnTrip(): void {
   ownTripPending = true
 }
 
+/**
+ * Há marca esperando a ida, sem gastá-la: o app acabou de pedir uma tela de fora (o seletor, o
+ * "Salvar como") que ainda não o tirou da frente. A recarga da versão nova confere antes de sair.
+ */
+export function isOwnTripPending(): boolean {
+  return ownTripPending
+}
+
 /** Lê e apaga a marca: true quando a ida que começa agora é do próprio app. */
 export function takeOwnTrip(): boolean {
   const own = ownTripPending

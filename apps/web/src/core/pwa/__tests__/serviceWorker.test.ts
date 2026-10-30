@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
+  applyUpdate,
   applyUpdateNow,
   applyUpdateOnReturn,
   AUTO_APPLY_MIN_AWAY_MS,
@@ -71,7 +72,7 @@ const turn = (doc: FakeDoc, state: DocumentVisibilityState) => {
 }
 
 beforeEach(() => {
-  useAppUpdateStore.setState({ updateReady: false })
+  useAppUpdateStore.setState({ updateReady: false, reloadPending: false })
 })
 
 describe('startServiceWorker: o registro', () => {
@@ -277,15 +278,67 @@ describe('applyUpdateOnReturn: no APK, a versão que espera entra sozinha na vol
       now += ms
       turn(doc, 'visible')
     }
-    return { reg, container, worker, reload, away, gallery }
+    /** O SW novo recebeu a mensagem e assumiu a página. */
+    const takeOver = () => container.dispatchEvent(new Event('controllerchange'))
+    return { reg, worker, reload, away, gallery, doc, takeOver }
   }
 
   it('volta à galeria parada depois de um minuto fora: o SW novo assume, e a página recarrega quando ele está no controle', () => {
-    const { container, worker, reload, away } = waitingVersion()
+    const { worker, reload, away, takeOver } = waitingVersion()
     away(AUTO_APPLY_MIN_AWAY_MS)
     expect(worker.postMessage).toHaveBeenCalledWith(SKIP_WAITING_MESSAGE)
     expect(reload).not.toHaveBeenCalled()
-    container.dispatchEvent(new Event('controllerchange'))
+    takeOver()
+    expect(reload).toHaveBeenCalledTimes(1)
+  })
+
+  // O SW novo leva de dezenas de ms a perto de 1 s para assumir, e a galeria responde ao toque nesse meio.
+  it('o toque logo na volta que tira a galeria do lugar (o "Abrir", o "Jogar", um menu): não recarrega, e a recarga fica para a próxima volta à galeria parada', () => {
+    const { worker, reload, away, gallery, takeOver } = waitingVersion()
+    away(AUTO_APPLY_MIN_AWAY_MS)
+    gallery.atRest = false
+    takeOver()
+    expect(reload).not.toHaveBeenCalled()
+    expect(useAppUpdateStore.getState()).toEqual({ updateReady: true, reloadPending: true })
+
+    away(60 * 60 * 1000)
+    expect(reload).not.toHaveBeenCalled()
+    gallery.atRest = true
+    away(AUTO_APPLY_MIN_AWAY_MS)
+    expect(reload).toHaveBeenCalledTimes(1)
+    // O SW novo já estava no controle: a volta só recarrega, sem pedir de novo.
+    expect(worker.postMessage).toHaveBeenCalledTimes(1)
+  })
+
+  it('o "Importar" ou o "Exportar" tocado logo na volta: a marca pedida segura a recarga, e a volta do seletor também não recarrega', () => {
+    const { reload, away, takeOver } = waitingVersion()
+    away(AUTO_APPLY_MIN_AWAY_MS)
+    markOwnTrip()
+    takeOver()
+    expect(reload).not.toHaveBeenCalled()
+    away(5 * 60 * 1000)
+    expect(reload).not.toHaveBeenCalled()
+    away(AUTO_APPLY_MIN_AWAY_MS)
+    expect(reload).toHaveBeenCalledTimes(1)
+  })
+
+  it('o seletor já aberto quando o SW novo assume (a página escondida, a marca gasta na ida): não recarrega por trás dele', () => {
+    const { reload, away, doc, takeOver } = waitingVersion()
+    away(AUTO_APPLY_MIN_AWAY_MS)
+    markOwnTrip()
+    turn(doc, 'hidden')
+    takeOver()
+    expect(reload).not.toHaveBeenCalled()
+    turn(doc, 'visible')
+    expect(reload).not.toHaveBeenCalled()
+    away(AUTO_APPLY_MIN_AWAY_MS)
+    expect(reload).toHaveBeenCalledTimes(1)
+  })
+
+  it('com a recarga pendente, o "Atualizar agora" só recarrega (não há mais versão esperando)', () => {
+    useAppUpdateStore.setState({ updateReady: true, reloadPending: true })
+    const reload = vi.fn()
+    expect(applyUpdate(reload)).toBe(true)
     expect(reload).toHaveBeenCalledTimes(1)
   })
 

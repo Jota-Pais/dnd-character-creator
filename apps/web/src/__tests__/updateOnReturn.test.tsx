@@ -24,12 +24,13 @@ const HOUR = 60 * 60 * 1000
 function waitingVersion() {
   const postMessage = vi.fn()
   const reg = { waiting: { postMessage } } as unknown as SwRegistration
-  const container = new EventTarget() as unknown as SwContainer
-  useAppUpdateStore.setState({ updateReady: true })
+  const container = new EventTarget()
+  useAppUpdateStore.setState({ updateReady: true, reloadPending: false })
   const doc = new EventTarget() as EventTarget & { visibilityState: DocumentVisibilityState }
   doc.visibilityState = 'visible'
   let now = 0
-  applyUpdateOnReturn(reg, container, doc, { now: () => now, reload: () => {} })
+  const reload = vi.fn()
+  applyUpdateOnReturn(reg, container as unknown as SwContainer, doc, { now: () => now, reload })
   const turn = (state: DocumentVisibilityState) => {
     doc.visibilityState = state
     doc.dispatchEvent(new Event('visibilitychange'))
@@ -40,7 +41,9 @@ function waitingVersion() {
     turn('visible')
   }
   const applied = () => postMessage.mock.calls.some(([message]) => message === SKIP_WAITING_MESSAGE)
-  return { away, applied }
+  /** O SW novo recebeu a mensagem e assumiu a página. */
+  const takeOver = () => container.dispatchEvent(new Event('controllerchange'))
+  return { away, applied, reload, takeOver }
 }
 
 beforeEach(() => {
@@ -75,6 +78,19 @@ describe('a versão nova entra sozinha na volta à galeria (APK), só com ela pa
 
     away(AUTO_APPLY_MIN_AWAY_MS)
     expect(applied()).toBe(true)
+  })
+
+  // A recarga só vem quando o SW novo assume, e a galeria responde ao toque nesse meio.
+  it('o "Abrir" tocado logo na volta, antes de o SW novo assumir: o criador fica, sem recarregar', () => {
+    useCharacterStore.getState().restoreCharacters([{ draft: structuredClone(COMPLETE_DRAFT), playState: null }])
+    render(<App />)
+    const { away, applied, reload, takeOver } = waitingVersion()
+    away(AUTO_APPLY_MIN_AWAY_MS)
+    expect(applied()).toBe(true)
+    fireEvent.click(screen.getByText('Abrir'))
+    takeOver()
+    expect(reload).not.toHaveBeenCalled()
+    expect(useAppStore.getState().activeSystemId).toBe('dnd5e')
   })
 
   it('com a ficha aberta no criador, nunca', () => {

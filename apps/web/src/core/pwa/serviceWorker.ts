@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { watchTrips, type Trip } from '../native/backgroundTrips'
+import { isOwnTripPending, watchTrips, type Trip } from '../native/backgroundTrips'
 import { hasOpenLayer } from '../navigation/back'
 import { useAppStore } from '../stores/appStore'
 
@@ -17,8 +17,16 @@ import { useAppStore } from '../stores/appStore'
  * navegador e no iPhone, só o toque.
  */
 
-/** Há versão nova baixada, esperando a próxima abertura (ou, no APK, a volta à galeria). */
-export const useAppUpdateStore = create<{ updateReady: boolean }>(() => ({ updateReady: false }))
+/**
+ * `updateReady`: há versão nova baixada, esperando a próxima abertura (ou, no APK, a volta à
+ * galeria). `reloadPending`: só no APK, a versão nova já assumiu numa volta, mas a página não
+ * recarregou, porque a galeria deixou de estar parada antes (`applyUpdateOnReturn`); falta só
+ * recarregar, na próxima volta à galeria parada ou no toque.
+ */
+export const useAppUpdateStore = create<{ updateReady: boolean; reloadPending: boolean }>(() => ({
+  updateReady: false,
+  reloadPending: false,
+}))
 
 /** O que este arquivo usa do registro e do `navigator.serviceWorker` (os testes os simulam). */
 export type SwRegistration = Pick<ServiceWorkerRegistration, 'waiting' | 'installing' | 'update' | 'addEventListener'>
@@ -133,6 +141,15 @@ export type ApplyOnReturnOptions = {
  * Ali, tudo o que importa já está gravado (as fichas, os avisos dispensados); só a busca digitada e o
  * agrupar/ordenar, que valem para a tela aberta, voltam ao começo. No criador e no jogo, nunca: a
  * versão espera a volta seguinte que dê na galeria.
+ *
+ * A decisão é da volta, mas a recarga só vem quando o SW novo assume: ele precisa subir e receber a
+ * mensagem, de dezenas de milissegundos a perto de 1 s no aparelho fraco que acaba de voltar. Nesse
+ * meio a galeria responde ao toque, e o toque logo na volta é o uso de quem volta para a mesa: o
+ * "Importar" já abriu o seletor, o "Abrir" já levou ao criador. Por isso a recarga confere de novo:
+ * a página na frente, a galeria parada e nenhuma tela de fora pedida pelo app (a marca ainda não
+ * gasta). Se mudou, o SW novo fica no controle (ele não volta atrás), a página segue com o código que
+ * já carregou (o JS é um arquivo só) e a recarga fica pendente (`reloadPending`) para a próxima volta
+ * que aplicaria ou para o toque no aviso, que continua na tela.
  */
 export function applyUpdateOnReturn(
   reg: SwRegistration,
@@ -140,10 +157,20 @@ export function applyUpdateOnReturn(
   doc: VisibilityDoc,
   { now = Date.now, reload = () => window.location.reload(), isAtRest = isGalleryAtRest }: ApplyOnReturnOptions = {},
 ): void {
+  const stillAtRest = () => doc.visibilityState === 'visible' && isAtRest() && !isOwnTripPending()
   watchTrips(doc, trip => {
-    if (!useAppUpdateStore.getState().updateReady || !shouldApplyOnReturn(trip, isAtRest())) return
+    const { updateReady, reloadPending } = useAppUpdateStore.getState()
+    if (!updateReady || !shouldApplyOnReturn(trip, isAtRest())) return
+    if (reloadPending) {
+      reload()
+      return
+    }
+    const applying = applyUpdateNow(reg, container, () => {
+      if (stillAtRest()) reload()
+      else useAppUpdateStore.setState({ reloadPending: true })
+    })
     // Sem versão esperando (outra aba já aplicou), o aviso sai, como no toque.
-    if (!applyUpdateNow(reg, container, reload)) useAppUpdateStore.setState({ updateReady: false })
+    if (!applying) useAppUpdateStore.setState({ updateReady: false })
   }, now)
 }
 
@@ -180,8 +207,15 @@ export async function startServiceWorker({ isProd, container, whenLoaded, doc, n
   }
 }
 
-/** O toque "Atualizar agora" da galeria. */
+/**
+ * O toque "Atualizar agora" da galeria. Com a versão nova já no controle e a recarga pendente (no
+ * APK, `applyUpdateOnReturn`), não há versão esperando: só falta recarregar.
+ */
 export function applyUpdate(reload: () => void = () => window.location.reload()): boolean {
+  if (useAppUpdateStore.getState().reloadPending) {
+    reload()
+    return true
+  }
   if (!registration || !activeContainer) return false
   return applyUpdateNow(registration, activeContainer, reload)
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { markOwnTrip, takeOwnTrip, watchTrips, type Trip } from '../backgroundTrips'
+import { isOwnTripPending, markOwnTrip, takeOwnTrip, watchTrips, type Trip } from '../backgroundTrips'
 
 // O documento simulado: a página que some (outro app na frente, a tela apagada) e volta.
 const fakeDoc = () => {
@@ -71,5 +71,14 @@ describe('watchTrips: as idas ao segundo plano, contadas na volta', () => {
     markOwnTrip()
     expect(takeOwnTrip()).toBe(true)
     expect(takeOwnTrip()).toBe(false)
+  })
+
+  it('isOwnTripPending lê a marca sem gastá-la', () => {
+    expect(isOwnTripPending()).toBe(false)
+    markOwnTrip()
+    expect(isOwnTripPending()).toBe(true)
+    expect(isOwnTripPending()).toBe(true)
+    takeOwnTrip()
+    expect(isOwnTripPending()).toBe(false)
   })
 })

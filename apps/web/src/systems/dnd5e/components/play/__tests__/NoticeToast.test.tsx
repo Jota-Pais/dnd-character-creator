@@ -245,6 +245,25 @@ describe('desfazer e avisos', () => {
     // O aviso que pede escolha (Resistência Implacável) vem primeiro, fora da parte que rola.
     expect(list?.querySelector('li')).toHaveTextContent('Resistência Implacável')
   })
+
+  // Conferido no Edge: a 360 x 780, com as duas ofertas, o "Passei" ia de 690 a 735 e a lista
+  // terminava em 694. Presa ao pé da lista, a escolha fica à vista também a 360 x 740 e a 375 x 667.
+  it('meio-orc bárbaro 11 cai em fúria: a escolha das duas ofertas fica presa ao pé da lista, e o par de botões numa linha', () => {
+    openDraft({ ...structuredClone(COMPLETE_DRAFT), level: 11 })
+    usePlayStore.getState().run((st, sh) => performAction(st, sh, 'rage-enter', { now: 1 }))
+    render(<PlayScreen />)
+    damage(screen.getByTestId('hp-current').textContent ?? '')
+    const toast = screen.getByRole('status')
+    const bar = (name: string | RegExp) => within(toast).getByRole('button', { name }).closest('.sticky.bottom-0')
+    for (const name of [/Usar Resistência Implacável/, 'Ver o que rolar', 'Passei: fico com 1 PV']) {
+      expect(bar(name)?.parentElement?.tagName, String(name)).toBe('LI')
+    }
+    // A receita vai junto dos botões; o par não desce para a linha de baixo.
+    expect(bar('Passei: fico com 1 PV')).toHaveTextContent('Role 1d20 + 6: precisa de 10 ou mais.')
+    const row = within(toast).getByRole('button', { name: 'Passei: fico com 1 PV' }).parentElement
+    expect(row).toHaveClass('flex')
+    expect(row).not.toHaveClass('flex-wrap')
+  })
 })
 
 // O botão do aviso some com a própria ação: o foco vai ao "Desfazer" do aviso que ficou ou, com o

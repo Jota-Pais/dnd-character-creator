@@ -1,4 +1,4 @@
-import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type Ref } from 'react'
+import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type ReactNode, type Ref } from 'react'
 import { flushSync } from 'react-dom'
 import { usePlayStore } from '../../stores/playStore'
 import type { DamageInput, PlayNotice, PlayNoticeKind } from '@rpg/rules/systems/dnd5e/types/playState'
@@ -6,21 +6,29 @@ import { applyDamageDroppingToOneHp, endConcentration, standUp, type DropToOneHp
 import { describeRollGuide, getConcentrationGuide, getZeroHpSaveGuide, type RollGuideEntry } from '@rpg/rules/systems/dnd5e/utils/rollGuide'
 import type { PlayView } from './usePlayView'
 
-/** Destaque por tipo: recusa e regra em aberto chamam atenção; o resto é informação. */
-const KIND_STYLE: Partial<Record<PlayNoticeKind, { prefix: string; className: string }>> = {
-  refused: { prefix: 'Não foi feito: ', className: 'border-red-800 bg-red-950/40 text-red-200' },
-  unresolvedRule: { prefix: 'Regra em aberto: ', className: 'border-amber-700 bg-amber-950/40 text-amber-200' },
-  died: { prefix: '', className: 'border-red-800 bg-red-950/40 text-red-200' },
-  fellUnconscious: { prefix: '', className: 'border-red-900 bg-red-950/20 text-red-200' },
-  concentrationCheck: { prefix: '', className: 'border-violet-800 bg-violet-950/40 text-violet-100' },
-  dropToOneHp: { prefix: '', className: 'border-emerald-800 bg-emerald-950/30 text-emerald-100' },
-  dropToOneHpSave: { prefix: '', className: 'border-emerald-800 bg-emerald-950/30 text-emerald-100' },
+/**
+ * Destaque por tipo: recusa e regra em aberto chamam atenção; o resto é informação. O fundo (`bg`)
+ * vai à parte: a barra de escolha do aviso de ação (`ActionBar`) o repete.
+ */
+type KindStyle = { prefix: string; className: string; bg: string }
+const KIND_STYLE: Partial<Record<PlayNoticeKind, KindStyle>> = {
+  refused: { prefix: 'Não foi feito: ', className: 'border-red-800 text-red-200', bg: 'bg-red-950/40' },
+  unresolvedRule: { prefix: 'Regra em aberto: ', className: 'border-amber-700 text-amber-200', bg: 'bg-amber-950/40' },
+  died: { prefix: '', className: 'border-red-800 text-red-200', bg: 'bg-red-950/40' },
+  fellUnconscious: { prefix: '', className: 'border-red-900 text-red-200', bg: 'bg-red-950/20' },
+  concentrationCheck: { prefix: '', className: 'border-violet-800 text-violet-100', bg: 'bg-violet-950/40' },
+  dropToOneHp: { prefix: '', className: 'border-emerald-800 text-emerald-100', bg: 'bg-emerald-950/30' },
+  dropToOneHpSave: { prefix: '', className: 'border-emerald-800 text-emerald-100', bg: 'bg-emerald-950/30' },
 }
-const DEFAULT_STYLE = { prefix: '', className: 'border-parchment-800 bg-surface-base text-parchment-200' }
+const DEFAULT_STYLE: KindStyle = { prefix: '', className: 'border-parchment-800 text-parchment-200', bg: 'bg-surface-base' }
 
 const NO_NOTICES: PlayNotice[] = []
 
-/** Avisos que pedem uma escolha agora vêm primeiro: com a lista rolando, o botão nunca fica escondido. */
+/**
+ * Avisos que pedem uma escolha agora vêm primeiro, e a escolha de cada um (a receita e os botões)
+ * fica presa ao pé da lista quando ela rola (`ActionBar`): com dois deles, o segundo passava da
+ * altura da lista, e o botão ficava escondido.
+ */
 const ACTION_KINDS: PlayNoticeKind[] = ['dropToOneHp', 'dropToOneHpSave', 'concentrationCheck']
 const sortByAction = (notices: PlayNotice[]) => [
   ...notices.filter(n => ACTION_KINDS.includes(n.kind)),
@@ -191,7 +199,7 @@ function NoticeLine({ notice, view, onOpenRecipe, canUndo, act }: {
     && view.state.conditions.includes('prone')
 
   return (
-    <li className={`rounded-lg border px-3 py-2 text-sm leading-snug ${style.className}`}>
+    <li className={`rounded-lg border px-3 py-2 text-sm leading-snug ${style.className} ${style.bg}`}>
       {style.prefix && <span className="font-bold">{style.prefix}</span>}
       {notice.text}
       {canStandUp && (
@@ -205,57 +213,73 @@ function NoticeLine({ notice, view, onOpenRecipe, canUndo, act }: {
         </div>
       )}
       {dropDamage && (
-        <div className="mt-1.5">
+        <ActionBar bg={style.bg}>
           <button
             onClick={() => act(() => dropToOneHp(dropDamage))}
             className="min-h-10 rounded-lg border border-emerald-700 px-3 text-xs text-emerald-200 hover:border-emerald-400"
           >
             Usar {view.sheet.dropToOneHp?.source ?? 'Resistência Implacável'} (fica com 1 PV)
           </button>
-        </div>
+        </ActionBar>
       )}
       {saveOffer && (
-        <>
-          <p className="mt-1 text-xs">
+        <ActionBar bg={style.bg}>
+          <p className="text-xs">
             Role {describeRollGuide(saveOffer.entry)}: precisa de {saveOffer.entry.dc} ou mais.
           </p>
-          <div className="mt-1.5 flex flex-wrap gap-2">
+          {/* Numa linha só: a 360 px, o "Passei" quebra o texto dentro dele (o "1 PV" junto) em vez de descer. */}
+          <div className="mt-1.5 flex gap-2">
             <button
               onClick={() => onOpenRecipe(saveOffer.entry)}
-              className="min-h-10 rounded-lg border border-emerald-700 px-3 text-xs text-emerald-200 hover:border-emerald-400"
+              className="min-h-10 shrink-0 rounded-lg border border-emerald-700 px-3 text-xs text-emerald-200 hover:border-emerald-400"
             >
               Ver o que rolar
             </button>
             <button
               onClick={() => act(() => dropToOneHp(saveOffer.damage, 'save'))}
-              className="min-h-10 rounded-lg border border-emerald-700 px-3 text-xs text-emerald-200 hover:border-emerald-400"
+              className="min-h-10 min-w-0 rounded-lg border border-emerald-700 px-3 text-xs text-emerald-200 hover:border-emerald-400"
             >
-              Passei: fico com 1 PV
+              Passei: fico com <span className="whitespace-nowrap">1 PV</span>
             </button>
           </div>
-        </>
+        </ActionBar>
       )}
       {concentration && (
-        <>
-          <p className="mt-1 text-xs">
+        <ActionBar bg={style.bg}>
+          <p className="text-xs">
             Role {describeRollGuide(concentration)}: precisa de {concentration.dc} ou mais.
           </p>
-          <div className="mt-1.5 flex flex-wrap gap-2">
+          <div className="mt-1.5 flex gap-2">
             <button
               onClick={() => onOpenRecipe(concentration)}
-              className="min-h-10 rounded-lg border border-violet-700 px-3 text-xs hover:border-violet-400"
+              className="min-h-10 shrink-0 rounded-lg border border-violet-700 px-3 text-xs hover:border-violet-400"
             >
               Ver o que rolar
             </button>
             <button
               onClick={() => act(() => view.run(st => endConcentration(st)))}
-              className="min-h-10 rounded-lg border border-violet-700 px-3 text-xs hover:border-violet-400"
+              className="min-h-10 min-w-0 rounded-lg border border-violet-700 px-3 text-xs hover:border-violet-400"
             >
               Falhei: encerrar
             </button>
           </div>
-        </>
+        </ActionBar>
       )}
     </li>
+  )
+}
+
+/**
+ * A escolha de um aviso de ação (a receita e os botões), presa ao pé da lista quando ela rola: o
+ * meio-orc bárbaro 11 que cai em fúria recebe as duas ofertas (Resistência Implacável e Fúria
+ * Implacável), e a 360 px o "Passei" ficava abaixo da parte visível. Presa, ela cobre o fim do
+ * texto do próprio aviso, que se lê rolando. O fundo é opaco — o do cartão com o tom do aviso por
+ * cima, a mesma cor da linha —, para o texto não aparecer por trás.
+ */
+function ActionBar({ bg, children }: { bg: string; children: ReactNode }) {
+  return (
+    <div className="sticky bottom-0 -mx-3 bg-surface-raised">
+      <div className={`px-3 pt-1.5 ${bg}`}>{children}</div>
+    </div>
   )
 }

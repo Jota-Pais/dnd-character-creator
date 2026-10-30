@@ -86,6 +86,24 @@ describe('App (smoke) — galeria global', () => {
     expect(useCharacterStore.getState().view).toBe('wizard')
     expect(useCharacterStore.getState().draft.name).toBe('')
   })
+
+  // No celular, o botão quebra a linha e fica encostado à esquerda (x 27–222 a 360 px): alinhado à
+  // direita dele, o menu de 14rem começava em x = −30, com os ícones cortados pela borda.
+  it('o menu "Novo personagem" abre para dentro da tela quando o botão está à esquerda', () => {
+    render(<App />)
+    const button = screen.getByText('＋ Novo personagem')
+    button.getBoundingClientRect = () => DOMRect.fromRect({ x: 27, y: 120, width: 195, height: 42 })
+    fireEvent.click(button)
+    const menu = screen.getByText('🐉 D&D 5e').parentElement!
+    expect(menu).toHaveClass('left-0')
+    expect(menu).not.toHaveClass('right-0')
+
+    // No desktop, o botão fecha a linha: o menu continua alinhado à direita dele.
+    fireEvent.click(button)
+    button.getBoundingClientRect = () => DOMRect.fromRect({ x: 820, y: 40, width: 195, height: 42 })
+    fireEvent.click(button)
+    expect(screen.getByText('🐉 D&D 5e').parentElement).toHaveClass('right-0')
+  })
 })
 
 describe('App (smoke) — D&D 5e', () => {

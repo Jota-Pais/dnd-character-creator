@@ -49,6 +49,19 @@ function toRow(char: UnifiedCharacter): Row {
   }
 }
 
+/** A largura do menu "Novo personagem" (o `w-56`), em rem. */
+const SYSTEM_MENU_WIDTH_REM = 14
+
+/**
+ * O menu "Novo personagem" abre alinhado à direita do botão, que no desktop fecha a linha. No
+ * celular (360 px; 390 px com o "Exportar todas" à vista), o botão quebra a linha e fica encostado à
+ * esquerda: alinhado à direita dele, o menu começaria fora da tela. Aí ele abre alinhado à esquerda.
+ */
+function menuOpensLeftAligned(button: HTMLElement): boolean {
+  const rootFontPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
+  return button.getBoundingClientRect().right < SYSTEM_MENU_WIDTH_REM * rootFontPx
+}
+
 /** Paleta por sistema nas linhas da galeria (handoff "Redesign Ordem": chrome neutro, acento por seção). */
 const SYSTEM_UI = {
   ordem: {
@@ -91,6 +104,13 @@ export function GlobalGallery() {
   const [restored, setRestored] = useState<RestorePlan | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [showSystemSelect, setShowSystemSelect] = useState(false)
+  // De que lado do botão o menu abre: ver menuOpensLeftAligned.
+  const [menuLeftAligned, setMenuLeftAligned] = useState(false)
+  const newButtonRef = useRef<HTMLButtonElement>(null)
+  function toggleSystemSelect() {
+    if (!showSystemSelect && newButtonRef.current) setMenuLeftAligned(menuOpensLeftAligned(newButtonRef.current))
+    setShowSystemSelect(!showSystemSelect)
+  }
   // O voltar do Android fecha o menu de sistema aberto (core/navigation/back.ts). Fechado, a
   // galeria não registra nada: é a raiz, e o APK minimiza o app.
   useBackHandler(showSystemSelect ? () => setShowSystemSelect(false) : null, 'overlay')
@@ -233,7 +253,8 @@ export function GlobalGallery() {
             )}
             <div className="relative">
               <button
-                onClick={() => setShowSystemSelect(!showSystemSelect)}
+                ref={newButtonRef}
+                onClick={toggleSystemSelect}
                 className="px-5 py-2.5 rounded-lg font-fantasy font-bold text-[13.5px] transition-colors"
                 style={{ backgroundColor: '#e8d5b7', color: '#1a1510' }}
                 onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#f5e8cc' }}
@@ -242,7 +263,7 @@ export function GlobalGallery() {
                 ＋ Novo personagem
               </button>
               {showSystemSelect && (
-                <div className="absolute right-0 top-full mt-2 w-56 rounded-lg shadow-xl z-50 overflow-hidden" style={{ backgroundColor: '#171310', border: '1px solid #3a332b' }}>
+                <div className={`absolute ${menuLeftAligned ? 'left-0' : 'right-0'} top-full mt-2 w-56 rounded-lg shadow-xl z-50 overflow-hidden`} style={{ backgroundColor: '#171310', border: '1px solid #3a332b' }}>
                   <button onClick={() => handleCreate('ordem')} className="w-full text-left px-4 py-3 font-fantasy text-sm" style={{ color: '#fca5a5', borderBottom: '1px solid #3a332b' }}>
                     👁️ Ordem Paranormal
                   </button>

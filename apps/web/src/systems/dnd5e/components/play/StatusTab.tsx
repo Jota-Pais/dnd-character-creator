@@ -6,7 +6,6 @@ import {
 } from '@rpg/rules/systems/dnd5e/utils/playState'
 import { describeDamageDefenses, EXHAUSTION } from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
 import { ACTIVE_EFFECTS_SECTION_ID, ActiveEffectsSection } from './ActiveEffectsSection'
-import { getShownToggles } from './effectToggles'
 import { ConditionsSection } from './ConditionsSection'
 import { LongRestPanel } from './LongRestPanel'
 import { ShortRestPanel } from './ShortRestPanel'
@@ -153,7 +152,7 @@ function ConcentrationSection({ state, guide, run, titleRef }: PlayTabProps & {
   }
 
   function end() {
-    const result = flushSync(() => run(st => endConcentration(st)))
+    const result = flushSync(() => run((st, sh) => endConcentration(st, sh)))
     if (result && !result.state.concentration) titleRef.current?.focus()
   }
 
@@ -249,9 +248,9 @@ function RestSection(view: PlayTabProps) {
 }
 
 /**
- * Aba "Estado": os efeitos ativos (só quem tem o que ligar: a Fúria), as condições (liga/desliga,
- * regra a um toque, nota de duração), as defesas contra dano (só quem tem), a exaustão, a
- * concentração e os descansos.
+ * Aba "Estado": os efeitos ativos (a Fúria de quem a tem, as magias recebidas e o "Recebeu uma
+ * magia?", que toda ficha tem), as condições (liga/desliga, regra a um toque, nota de duração), as
+ * defesas contra dano (só quem tem), a exaustão, a concentração e os descansos.
  */
 export function StatusTab(view: PlayTabProps) {
   const concentrationTitle = useRef<HTMLHeadingElement>(null)
@@ -259,11 +258,9 @@ export function StatusTab(view: PlayTabProps) {
   const defenseLines = describeDamageDefenses(getPlayDamageDefenses(view.state, view.sheet))
   return (
     <div className="space-y-6">
-      {getShownToggles(view.state, view.sheet).length > 0 && (
-        <Section title="Efeitos ativos" id={ACTIVE_EFFECTS_SECTION_ID} headingRef={effectsTitle}>
-          <ActiveEffectsSection {...view} titleRef={effectsTitle} />
-        </Section>
-      )}
+      <Section title="Efeitos ativos" id={ACTIVE_EFFECTS_SECTION_ID} headingRef={effectsTitle}>
+        <ActiveEffectsSection {...view} titleRef={effectsTitle} />
+      </Section>
       <Section title="Condições">
         <ConditionsSection {...view} />
       </Section>

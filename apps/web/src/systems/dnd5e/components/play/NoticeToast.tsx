@@ -257,7 +257,7 @@ function NoticeLine({ notice, view, onOpenRecipe, canUndo, act }: {
               Ver o que rolar
             </button>
             <button
-              onClick={() => act(() => view.run(st => endConcentration(st)))}
+              onClick={() => act(() => view.run((st, sh) => endConcentration(st, sh)))}
               className="min-h-10 min-w-0 rounded-lg border border-violet-700 px-3 text-xs hover:border-violet-400"
             >
               Falhei: encerrar

@@ -28,14 +28,17 @@ function openStatus(draft: CharacterDraft = krusk()) {
 const section = () => screen.getByRole('heading', { name: 'Efeitos ativos' }).closest('section')!
 
 describe('ActiveEffectsSection — ligar a Fúria é um toque', () => {
-  it('mostra a ação com o momento, o custo e o saldo; quem não tem o que ligar não ganha a seção', () => {
+  it('mostra a ação com o momento, o custo e o saldo; quem não tem o que ligar só tem o "Recebeu uma magia?"', () => {
     openStatus()
     expect(within(section()).getByRole('button', { name: 'Entrar em fúria' })).toBeInTheDocument()
     expect(section()).toHaveTextContent('ação bônus · gasta 1 Fúria — restam 2')
     cleanup()
     resetPlay()
     openStatus({ ...krusk(), class: 'fighter' })
-    expect(screen.queryByRole('heading', { name: 'Efeitos ativos' })).toBeNull()
+    expect(within(section()).queryByRole('button', { name: 'Entrar em fúria' })).toBeNull()
+    expect(within(section()).getByRole('button', { name: 'Recebeu uma magia?' })).toBeInTheDocument()
+    // As magias do catálogo, desligadas, não ganham cartão.
+    expect(within(section()).queryByTestId('toggle-spell:bless')).toBeNull()
   })
 
   it('ligar mostra o que está fazendo, o chip nos vitais e o dano novo na aba Ataques; o foco vai ao "Encerrar"', () => {

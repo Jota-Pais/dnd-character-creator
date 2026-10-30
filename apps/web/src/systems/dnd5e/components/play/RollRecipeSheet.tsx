@@ -133,7 +133,7 @@ export function RollRecipeSheet({
   // A folha fecha, e quem a abriu (o "Ver o que rolar" do aviso) some junto: o foco vai aonde a
   // tela disser (`onFocusAway`).
   function endFailedConcentration() {
-    run(st => endConcentration(st))
+    run((st, sh) => endConcentration(st, sh))
     onClose()
   }
 

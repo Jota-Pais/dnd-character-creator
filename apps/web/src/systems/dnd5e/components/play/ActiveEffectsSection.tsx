@@ -6,7 +6,8 @@ import type { SheetToggle } from '@rpg/rules/systems/dnd5e/types/session'
 import { describeToggleEffects } from '@rpg/rules/systems/dnd5e/utils/activeEffects'
 import { deactivateToggle, getPlaySpeed, getPlayToggles, getResourceAvailable, performAction } from '@rpg/rules/systems/dnd5e/utils/playState'
 import { ChangeAnnouncer } from './ChangeAnnouncer'
-import { getShownToggles, togglingActions } from './effectToggles'
+import { describeReceivedEnd, getReceivableToggles, getShownToggles, togglingActions } from './effectToggles'
+import { ReceivedEffectSheet } from './ReceivedEffectSheet'
 import type { PlayTabProps } from './usePlayView'
 
 /** A seção dos efeitos ativos na aba Estado: o chip dos vitais leva até ela. */
@@ -97,6 +98,9 @@ function ToggleCard({ toggle, view, titleRef }: {
           </ul>
         )}
         {toggle.earlyEndReminder && <p className="text-xs text-amber-200 leading-snug">{toggle.earlyEndReminder}</p>}
+        {describeReceivedEnd(toggle, state.activeEffects.find(a => a.id === toggle.id)).map(line => (
+          <p key={line} className="text-xs text-amber-200 leading-snug">{line}</p>
+        ))}
         {resolved.option?.onEnd?.exhaustion && (
           <p className="text-xs text-amber-200 leading-snug">
             {resolved.option.label}: ao terminar, você sofre um nível de exaustão.
@@ -174,16 +178,30 @@ function describeForAnnouncement(state: PlayState, sheet: PlaySheet): string {
 
 /**
  * Efeitos ativos (Fase 2): os efeitos que a ficha liga em jogo (`sheet.toggles`: a Fúria), cada um
- * com o botão que roda a ação que o liga ou o encerra (`performAction`), na aba Estado. Ligado, o
- * efeito muda os números das outras abas (o dano das armas, a vantagem em Força, as defesas do
- * painel de PV); o chip nos vitais traz até aqui.
+ * com o botão que roda a ação que o liga ou o encerra (`performAction`), e as magias recebidas
+ * ligadas, na aba Estado; no fim, o "Recebeu uma magia?", que abre o catálogo (`ReceivedEffectSheet`).
+ * Ligado, o efeito muda os números das outras abas (o dano das armas, a vantagem em Força, a CA, as
+ * defesas do painel de PV); o chip nos vitais traz até aqui.
  */
 export function ActiveEffectsSection({ titleRef, ...view }: PlayTabProps & { titleRef: RefObject<HTMLHeadingElement | null> }) {
+  const [receiving, setReceiving] = useState(false)
   return (
     <div className="space-y-2">
       {/* Primeiro filho: no fim, o space-y daria margem a ele. */}
       <ChangeAnnouncer text={describeForAnnouncement(view.state, view.sheet)} />
       {getShownToggles(view.state, view.sheet).map(t => <ToggleCard key={t.id} toggle={t} view={view} titleRef={titleRef} />)}
+      {getReceivableToggles(view.sheet).length > 0 && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <button
+            onClick={() => setReceiving(true)}
+            className="min-h-10 rounded-lg border border-sky-800 px-3 text-sm text-sky-200 hover:border-sky-500"
+          >
+            Recebeu uma magia?
+          </button>
+          <span className="text-[11px] text-parchment-500 leading-snug">Bênção, Escudo da Fé…: marque e os números mudam.</span>
+        </div>
+      )}
+      {receiving && <ReceivedEffectSheet view={view} onClose={() => setReceiving(false)} />}
     </div>
   )
 }

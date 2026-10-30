@@ -50,6 +50,11 @@ export type ActiveToggle = {
   startedAt: number
   /** A opção escolhida ao ligar (`ToggleOption.id`: o Frenesi). */
   option?: string
+  /**
+   * A magia que você mesmo conjurou e sustenta (a Bênção em você): acaba junto com a sua
+   * concentração, por qualquer motivo. A recebida de um aliado não tem: só sai à mão.
+   */
+  sustainedByConcentration?: true
 }
 
 /** Magia (ou efeito) em que o personagem se concentra. `spellId` quando vem de `spells.json`. */

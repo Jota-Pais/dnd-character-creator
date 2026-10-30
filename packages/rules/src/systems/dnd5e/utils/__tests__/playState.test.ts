@@ -764,7 +764,7 @@ describe('concentração', () => {
     r = startConcentration(r.state, S, { label: 'Raio de Luar' }, 6)
     expect(kinds(r)).toEqual(['concentrationReplaced'])
     expect(r.state.concentration?.label).toBe('Raio de Luar')
-    expect(endConcentration(r.state).state.concentration).toBeNull()
+    expect(endConcentration(r.state, S).state.concentration).toBeNull()
   })
 
   it('recusa quem está incapacitado ou a 0 PV, e rótulo vazio', () => {
@@ -1959,5 +1959,85 @@ describe('efeitos recebidos: o deslocamento ao vivo (getPlaySpeed)', () => {
   it('o Agarrado zera mesmo com Passos Longos: não se beneficia de bônus (pág. 291)', () => {
     const grappled = on(state({ conditions: ['grappled'] }), 'spell:longstrider', 'spell:haste')
     expect(getPlaySpeed(grappled, human)).toBe(0)
+  })
+})
+
+// "Recebeu uma magia?": quem conjura é quem mantém a concentração. A magia que você conjurou em si e
+// sustenta acaba junto com a sua concentração; a de um aliado só sai à mão.
+describe('efeitos recebidos: a magia sustentada pela sua concentração', () => {
+  const cleric = buildPlaySheet({ ...structuredClone(EMPTY_DRAFT), race: 'human', class: 'cleric', level: 3 })
+  const self = (s: PlayState, id: string) => activateToggle(s, cleric, id, { now: 5, sustainedByConcentration: true })
+  const ally = (s: PlayState, id: string) => activateToggle(s, cleric, id, { now: 5 })
+  const ids = (s: PlayState) => s.activeEffects.map(a => a.id)
+
+  it('conjurar em si começa a concentração na magia, e a de antes termina', () => {
+    const before = startConcentration(state(), cleric, { label: 'Raio de Luar' }, 1).state
+    const r = self(before, 'spell:bless')
+    expect(r.state.concentration).toEqual({ spellId: 'bless', label: 'Bênção', startedAt: 5 })
+    expect(r.state.activeEffects).toEqual([{ id: 'spell:bless', startedAt: 5, sustainedByConcentration: true }])
+    expect(kinds(r)).toEqual(['concentrationReplaced'])
+  })
+
+  it('perder a concentração desliga a Bênção própria e mantém a de aliado', () => {
+    const both = ally(self(state(), 'spell:bless').state, 'spell:shield-of-faith').state
+    const ended = endConcentration(both, cleric)
+    expect(ids(ended.state)).toEqual(['spell:shield-of-faith'])
+    expect(ended.notices).toEqual([
+      { kind: 'concentrationEnded', text: 'A concentração em Bênção terminou: encerrada.' },
+      { kind: 'info', text: 'Bênção: terminou com a sua concentração.' },
+    ])
+    // Pelo dano que deixa inconsciente, pela incapacitação e por outra concentração, igual.
+    expect(ids(applyDamage(both, cleric, { amount: 30 }).state)).toEqual(['spell:shield-of-faith'])
+    expect(ids(addCondition(both, cleric, 'stunned').state)).toEqual(['spell:shield-of-faith'])
+    expect(ids(startConcentration(both, cleric, { label: 'Raio de Luar' }, 9).state)).toEqual(['spell:shield-of-faith'])
+    // A de aliado não depende da concentração de ninguém aqui.
+    const allyBless = ally(state(), 'spell:bless').state
+    expect(ids(endConcentration(startConcentration(allyBless, cleric, { label: 'Raio de Luar' }, 9).state, cleric).state)).toEqual(['spell:bless'])
+  })
+
+  it('o "Já acabou" da magia própria encerra a concentração nela', () => {
+    const blessed = self(state(), 'spell:bless').state
+    const r = deactivateToggle(blessed, cleric, 'spell:bless')
+    expect(r.state.concentration).toBeNull()
+    expect(r.notices).toEqual([{ kind: 'concentrationEnded', text: 'A concentração em Bênção terminou: Bênção acabou.' }])
+  })
+
+  it('a Velocidade própria que acaba com a concentração avisa a letargia', () => {
+    const wizard = buildPlaySheet({ ...structuredClone(EMPTY_DRAFT), race: 'human', class: 'wizard', level: 5 })
+    const hasted = activateToggle(state(), wizard, 'spell:haste', { now: 1, sustainedByConcentration: true }).state
+    expect(endConcentration(hasted, wizard).notices.map(n => n.text)).toContain(
+      'Velocidade acabou: você não pode se mover nem realizar ações até depois do seu próximo turno (pág. 289).')
+  })
+
+  it('quem não pode se concentrar não conjura em si: inconsciente, incapacitado', () => {
+    const dying = state({ lifeState: 'dying', damageTaken: 99 })
+    expect(self(dying, 'spell:bless').notices).toEqual([{ kind: 'refused', text: 'Só um personagem consciente pode se concentrar.' }])
+    // Recebida de um aliado, a mesma Bênção liga (vale nos testes contra a morte).
+    expect(ids(ally(dying, 'spell:bless').state)).toEqual(['spell:bless'])
+    const stunned = state({ conditions: ['stunned'] })
+    expect(self(stunned, 'spell:bless').state).toBe(stunned)
+  })
+
+  it('o Auxílio Divino (Pessoal, concentração) é sempre seu: sustentado sem pedir', () => {
+    const paladin = buildPlaySheet({
+      ...structuredClone(EMPTY_DRAFT), race: 'human', class: 'paladin', level: 2,
+      spellChoices: { cantrips: [], spells: ['divine-favor'] },
+    })
+    const r = activateToggle(state(), paladin, 'spell:divine-favor', { now: 1 })
+    expect(r.state.activeEffects).toEqual([{ id: 'spell:divine-favor', startedAt: 1, sustainedByConcentration: true }])
+    expect(r.state.concentration?.label).toBe('Auxílio Divino')
+  })
+
+  it('a magia sem concentração ignora o "conjurei em mim"', () => {
+    const r = self(state(), 'spell:longstrider')
+    expect(r.state.activeEffects).toEqual([{ id: 'spell:longstrider', startedAt: 5 }])
+    expect(r.state.concentration).toBeNull()
+  })
+
+  it('volta do armazenamento; a sustentada sem concentração não fica', () => {
+    const blessed = self(state(), 'spell:bless').state
+    const stored = JSON.parse(JSON.stringify(blessed))
+    expect(sanitizePlayState(stored, 'char-1').activeEffects).toEqual(blessed.activeEffects)
+    expect(sanitizePlayState({ ...stored, concentration: null }, 'char-1').activeEffects).toEqual([])
   })
 })

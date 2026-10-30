@@ -160,6 +160,16 @@ describe('getCatalogToggles: as magias e ações recebidas', () => {
     expect(ids(paladin)).toContain('spell:divine-favor')
   })
 
+  it('a concentração e o alcance vêm de spells.json; a ficha que conhece a magia pode tê-la conjurado em si', () => {
+    const byId = (d: CharacterDraft) => Object.fromEntries(getCatalogToggles(d).map(t => [t.id, t]))
+    const paladin = byId(human({ class: 'paladin', level: 2, spellChoices: { cantrips: [], spells: ['divine-favor', 'bless'] } }))
+    expect(paladin['spell:divine-favor']).toMatchObject({ concentration: true, selfOnly: true, known: true })
+    expect(paladin['spell:bless']).toMatchObject({ concentration: true, known: true })
+    expect(paladin['spell:bless'].selfOnly).toBeUndefined()
+    expect(paladin['spell:mage-armor'].concentration).toBeUndefined()
+    expect(byId(human())['spell:bless'].known).toBeUndefined()
+  })
+
   it('a fonte é o nome da magia (spells.json) ou o da ação; o rótulo e a página são os da declaração', () => {
     const [bless] = getCatalogToggles(human())
     expect(bless).toMatchObject({ id: 'spell:bless', label: 'Sob a Bênção', source: 'Bênção', page: 223, spellId: 'bless' })

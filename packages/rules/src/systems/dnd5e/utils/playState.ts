@@ -313,10 +313,26 @@ export function reconcileLoadedPlayState(state: PlayState, sheet: PlaySheet): Pl
 
 // ── Transições de vida (internas, mutam o rascunho `next` da operação) ─────────
 
-function endConcentrationInto(next: PlayState, notices: PlayNotice[], reason: string): void {
+/**
+ * Encerra a concentração, com o motivo, e o que ela sustenta: a magia que você mesmo conjurou em si
+ * (`sustainedByConcentration`: a Bênção, o Auxílio Divino) acaba junto, por qualquer motivo — fim
+ * voluntário, dano, incapacitação, outra concentração —, com o aviso e o que vem ao acabar (a
+ * letargia da Velocidade). A recebida de um aliado fica: quem a mantém é ele.
+ */
+function endConcentrationInto(next: PlayState, sheet: PlaySheet, notices: PlayNotice[], reason: string): void {
   if (!next.concentration) return
   notices.push(note('concentrationEnded', `A concentração em ${next.concentration.label} terminou: ${reason}.`))
   next.concentration = null
+  endSustainedToggles(next, sheet, notices)
+}
+
+/** As magias que a concentração que acabou sustentava acabam junto, com aviso. */
+function endSustainedToggles(next: PlayState, sheet: PlaySheet, notices: PlayNotice[]): void {
+  for (const active of next.activeEffects.filter(a => a.sustainedByConcentration)) {
+    const toggle = sheet.toggles.find(t => t.id === active.id)
+    notices.push(note('info', `${toggle?.source ?? active.id}: terminou com a sua concentração.`))
+    endToggleInto(next, sheet, active.id, notices)
+  }
 }
 
 /**
@@ -329,7 +345,7 @@ function endConcentrationInto(next: PlayState, notices: PlayNotice[], reason: st
 function toDead(next: PlayState, sheet: PlaySheet, notices: PlayNotice[], why: string): void {
   next.lifeState = 'dead'
   notices.push(note('died', why))
-  endConcentrationInto(next, notices, 'morte (pág. 205)')
+  endConcentrationInto(next, sheet, notices, 'morte (pág. 205)')
   endTogglesOnUnconscious(next, sheet, notices, 'death')
 }
 
@@ -349,7 +365,7 @@ function toZeroHp(next: PlayState, sheet: PlaySheet, notices: PlayNotice[], life
     if (!next.conditions.includes(id)) next.conditions = [...next.conditions, id]
   }
   if (onApply?.dropHeldItems) notices.push(note('droppedItems', 'Largou o que estava segurando (pág. 292).'))
-  endConcentrationInto(next, notices, 'ficou inconsciente (pág. 205)')
+  endConcentrationInto(next, sheet, notices, 'ficou inconsciente (pág. 205)')
   endTogglesOnUnconscious(next, sheet, notices)
 }
 
@@ -1003,8 +1019,12 @@ const RECHARGE_TEXT: Record<NonNullable<SheetResource['recharge']>, string> = {
   day: 'voltam uma vez por dia',
 }
 
-/** O que a tela passa ao ligar: a opção escolhida (o Frenesi) e o momento, para o `startedAt`. */
-export type ToggleOn = { option?: string; now: number }
+/**
+ * O que a tela passa ao ligar: a opção escolhida (o Frenesi), o momento, para o `startedAt`, e se a
+ * magia de concentração foi você que conjurou em si (`sustainedByConcentration`: começa a sua
+ * concentração nela, e ela acaba junto com a concentração).
+ */
+export type ToggleOn = { option?: string; now: number; sustainedByConcentration?: true }
 
 /**
  * Tira um efeito ligado do rascunho `next` da operação, com o que vem quando ele acaba: o que o app
@@ -1102,7 +1122,8 @@ export function endTogglesOnRest(state0: PlayState, sheet: PlaySheet, rest: 'sho
  * as condições de que agora você está imune ficam suspensas, e de armadura pesada o efeito liga sem
  * os benefícios (pág. 48).
  */
-export function activateToggle(state0: PlayState, sheet: PlaySheet, id: string, { option, now }: ToggleOn): PlayResult {
+export function activateToggle(state0: PlayState, sheet: PlaySheet, id: string, on: ToggleOn): PlayResult {
+  const { option, now } = on
   const toggle = sheet.toggles.find(t => t.id === id)
   if (!toggle) return refuse(state0, `Efeito desconhecido: ${id}.`)
   if (state0.lifeState === 'dead') return refuse(state0, `${toggle.label}: o personagem está morto.`)
@@ -1111,16 +1132,31 @@ export function activateToggle(state0: PlayState, sheet: PlaySheet, id: string, 
   }
   if (state0.activeEffects.some(a => a.id === id)) return refuse(state0, `Já está ${lowerFirst(toggle.label)}.`)
   if (option && !toggle.options.some(o => o.id === option)) return refuse(state0, `${toggle.label}: opção desconhecida (${option}).`)
+  // A de alcance Pessoal com concentração (o Auxílio Divino) é sempre sua: quem conjura sustenta.
+  const sustained = toggle.concentration && (on.sustainedByConcentration || toggle.selfOnly)
 
-  const state = reconcilePlayState(state0, sheet)
-  const next: PlayState = { ...state, activeEffects: [...state.activeEffects, { id, startedAt: now, ...(option ? { option } : {}) }] }
+  let state = reconcilePlayState(state0, sheet)
   const notices: PlayNotice[] = []
+  // Já concentrado nela (começada na aba Magia), a concentração fica a mesma.
+  if (sustained && !(toggle.spellId && state.concentration?.spellId === toggle.spellId)) {
+    // Começar a concentração recusa como sempre (inconsciente, incapacitado, em fúria), e a de
+    // antes termina, com o que ela sustentava.
+    const r = startConcentration(state, sheet, { ...(toggle.spellId ? { spellId: toggle.spellId } : {}), label: toggle.source }, now)
+    const refused = r.notices.find(n => n.kind === 'refused')
+    if (refused) return refuse(state0, refused.text)
+    state = r.state
+    notices.push(...r.notices)
+  }
+  const next: PlayState = {
+    ...state,
+    activeEffects: [...state.activeEffects, { id, startedAt: now, ...(option ? { option } : {}), ...(sustained ? { sustainedByConcentration: true as const } : {}) }],
+  }
   const resolved = getPlayToggles(next, sheet).find(t => t.id === id)
   if (resolved?.blockedBy) {
     notices.push(note('warning', `${toggle.source} sem os benefícios: você está de ${resolved.blockedBy} (pág. ${toggle.page}).`))
   }
   if (resolved?.effects.some(e => e.effect.kind === 'endsConcentration')) {
-    endConcentrationInto(next, notices, `entrar ${lowerFirst(toggle.label)} (pág. ${toggle.page})`)
+    endConcentrationInto(next, sheet, notices, `entrar ${lowerFirst(toggle.label)} (pág. ${toggle.page})`)
   }
   const wasSuspended = new Set(getPlayEffects(state, sheet).conditions.filter(c => c.immuneBy).map(c => c.id))
   for (const c of getPlayEffects(next, sheet).conditions) {
@@ -1131,15 +1167,22 @@ export function activateToggle(state0: PlayState, sheet: PlaySheet, id: string, 
   return done(next, notices)
 }
 
-/** Desliga um efeito ligado, com o que a opção dele custa ao acabar (o Frenesi: +1 de exaustão). */
+/**
+ * Desliga um efeito ligado, com o que a opção dele custa ao acabar (o Frenesi: +1 de exaustão). A
+ * magia que você conjurou em si e sustentava acabou: a concentração nela também.
+ */
 export function deactivateToggle(state0: PlayState, sheet: PlaySheet, id: string): PlayResult {
   const toggle = sheet.toggles.find(t => t.id === id)
-  if (!state0.activeEffects.some(a => a.id === id)) {
+  const active = state0.activeEffects.find(a => a.id === id)
+  if (!active) {
     return refuse(state0, toggle ? `Não está ${lowerFirst(toggle.label)}.` : `Efeito desconhecido: ${id}.`)
   }
   const next: PlayState = { ...reconcilePlayState(state0, sheet) }
   const notices: PlayNotice[] = []
   endToggleInto(next, sheet, id, notices)
+  if (active.sustainedByConcentration && next.concentration && next.concentration.spellId === toggle?.spellId) {
+    endConcentrationInto(next, sheet, notices, `${toggle?.source ?? id} acabou`)
+  }
   return done(next, notices)
 }
 
@@ -1193,7 +1236,7 @@ export function performAction(state0: PlayState, sheet: PlaySheet, actionId: str
 function checkConcentration(next: PlayState, sheet: PlaySheet, notices: PlayNotice[]): void {
   if (!next.concentration) return
   const ends = getPlayEffects(next, sheet).endsConcentration
-  if (ends.active) endConcentrationInto(next, notices, `${ends.sources.map(s => s.label).join(', ')} (pág. 205)`)
+  if (ends.active) endConcentrationInto(next, sheet, notices, `${ends.sources.map(s => s.label).join(', ')} (pág. 205)`)
 }
 
 /**
@@ -1352,19 +1395,24 @@ export function startConcentration(
   const ends = getPlayEffects(state, sheet).endsConcentration
   if (ends.active) return refuse(state, `Não é possível se concentrar: ${ends.sources.map(s => s.label).join(', ')}.`)
   const notices: PlayNotice[] = []
+  const next: PlayState = { ...state }
   if (state.concentration) {
     notices.push(note('concentrationReplaced', `A concentração em ${state.concentration.label} termina: não dá para se concentrar em duas magias (pág. 205).`))
+    endSustainedToggles(next, sheet, notices)
   }
-  const concentration: Concentration = { ...(spell.spellId ? { spellId: spell.spellId } : {}), label, startedAt: now }
-  return done({ ...state, concentration }, notices)
+  next.concentration = { ...(spell.spellId ? { spellId: spell.spellId } : {}), label, startedAt: now }
+  return done(next, notices)
 }
 
-/** Encerra a concentração (voluntário, ou fracasso no TR de Constituição). */
-export function endConcentration(state: PlayState): PlayResult {
+/**
+ * Encerra a concentração (voluntário, ou fracasso no TR de Constituição), com a magia que você
+ * conjurou em si e ela sustentava (a Bênção própria).
+ */
+export function endConcentration(state: PlayState, sheet: PlaySheet): PlayResult {
   if (!state.concentration) return done(state)
   const notices: PlayNotice[] = []
   const next = { ...state }
-  endConcentrationInto(next, notices, 'encerrada')
+  endConcentrationInto(next, sheet, notices, 'encerrada')
   return done(next, notices)
 }
 
@@ -1806,6 +1854,7 @@ function sanitizeActiveEffects(x: unknown): ActiveToggle[] {
       id: item.id,
       startedAt: typeof item.startedAt === 'number' && Number.isFinite(item.startedAt) ? item.startedAt : 0,
       ...(typeof item.option === 'string' && item.option ? { option: item.option } : {}),
+      ...(item.sustainedByConcentration === true ? { sustainedByConcentration: true as const } : {}),
     })
   }
   return out
@@ -1914,7 +1963,10 @@ export function sanitizePlayState(raw: unknown, characterId: string): PlayState 
     ...(Object.keys(conditionNotes).length > 0 ? { conditionNotes } : {}),
     exhaustionLevel,
     concentration: lifeState === 'conscious' ? sanitizeConcentration(raw.concentration) : null,
-    activeEffects: sanitizeActiveEffects(raw.activeEffects),
+    // A magia sustentada pela sua concentração não fica sem ela (quem não está consciente não se
+    // concentra, acima).
+    activeEffects: sanitizeActiveEffects(raw.activeEffects)
+      .filter(a => !a.sustainedByConcentration || (lifeState === 'conscious' && sanitizeConcentration(raw.concentration) !== null)),
     restCounters: sanitizeCounts(raw.restCounters),
     inspiration: raw.inspiration === true,
     note: typeof raw.note === 'string' ? raw.note : '',

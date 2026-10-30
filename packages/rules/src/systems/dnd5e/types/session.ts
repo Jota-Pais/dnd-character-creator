@@ -31,6 +31,12 @@ export type SheetToggle = {
   page: number
   /** A magia do efeito do catálogo (`spells.json`): a duração e a concentração vêm dela. */
   spellId?: string
+  /** A magia pede concentração de quem a conjura (`spells.json`). */
+  concentration?: true
+  /** Alcance Pessoal: só quem a conhece a tem, e ela é sempre conjurada por você (o Auxílio Divino). */
+  selfOnly?: true
+  /** A ficha conhece a magia (`getKnownSpells`): pode tê-la conjurado em si mesma. */
+  known?: true
   /** O que vem quando ele acaba e o app não aplica (a letargia da Velocidade). */
   onEnd?: { notice: string }
   /** Valem sempre que ligado. */

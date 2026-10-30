@@ -68,11 +68,17 @@ export function getCatalogToggles(draft: CharacterDraft): SheetToggle[] {
   const known = new Set(listKnownSpells(getKnownSpells(draft)).map(s => s.id))
   return ACTIVE_EFFECT_CATALOG.flatMap(declaration => {
     const { spellId } = declaration
-    if (spellId && isSelfOnly(spellId) && !known.has(spellId)) return []
-    const source = (spellId ? getSpell(spellId)?.name : declaration.name) ?? declaration.id
-    const toggle = getDeclaredToggle(draft, declaration, source)
+    const selfOnly = spellId !== undefined && isSelfOnly(spellId)
+    if (spellId && selfOnly && !known.has(spellId)) return []
+    const spell = spellId ? getSpell(spellId) : undefined
+    const toggle = getDeclaredToggle(draft, declaration, spell?.name ?? declaration.name ?? declaration.id)
     for (const rest of restEnds(declaration)) if (!toggle.endsOn.includes(rest)) toggle.endsOn.push(rest)
-    return [toggle]
+    return [{
+      ...toggle,
+      ...(spell?.concentration ? { concentration: true as const } : {}),
+      ...(selfOnly ? { selfOnly: true as const } : {}),
+      ...(spellId && known.has(spellId) ? { known: true as const } : {}),
+    }]
   })
 }
 

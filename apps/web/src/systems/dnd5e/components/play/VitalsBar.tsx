@@ -130,7 +130,7 @@ export function VitalsBar({ view, onOpenRecipe, onOpenSource, onOpenRests, onOpe
   // O "encerrar" some com a concentração: síncrono (flushSync), o foco vai à inspiração, a vizinha
   // que fica na mesma faixa.
   function endConcentrationHere() {
-    const result = flushSync(() => run(st => endConcentration(st)))
+    const result = flushSync(() => run((st, sh) => endConcentration(st, sh)))
     if (result && !result.state.concentration) inspirationRef.current?.focus()
   }
 

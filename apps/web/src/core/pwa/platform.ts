@@ -1,6 +1,7 @@
 /**
- * Onde o app está rodando, para os avisos do app instalável (docs/app-instalavel.md): no iPhone (que
- * só instala pelo "Adicionar à Tela de Início") e se foi aberto pela tela de início.
+ * Onde o app está rodando, para os avisos e a instalação do app instalável (docs/app-instalavel.md):
+ * no iPhone (que só instala pelo "Adicionar à Tela de Início"), no Android (onde o app é o APK) e se
+ * foi aberto pela tela de início.
  */
 
 /** O que estas funções leem do `navigator` (os testes passam um de mentira). */
@@ -25,6 +26,11 @@ export function isIos(nav: NavigatorLike): boolean {
   return /Macintosh/.test(nav.userAgent) && (nav.maxTouchPoints ?? 0) > 1
 }
 
+/** Android, em qualquer navegador (e no WebView do APK). */
+export function isAndroid(nav: NavigatorLike): boolean {
+  return /Android/.test(nav.userAgent)
+}
+
 /**
  * Aberto como app instalado (tela cheia, sem a barra do navegador): o modo standalone do manifesto,
  * no Android e no Chrome, ou o `navigator.standalone` do iPhone.
@@ -46,4 +52,18 @@ export function sheetsPlace(win: WindowLike, native: boolean): 'neste app' | 'ne
 /** A dica "Adicionar à Tela de Início" da galeria: no iPhone, fora do app instalado, até ser dispensada. */
 export function shouldShowInstallHint(win: WindowLike, dismissedAt: number | null): boolean {
   return dismissedAt === null && isIos(win.navigator) && !isInstalled(win)
+}
+
+/**
+ * No Android, o app é o APK (docs/app-android.md). Sozinho, o Chrome ofereceria instalar o site (a
+ * barrinha de instalar, pelo `beforeinstallprompt`), e o que ele instala é um segundo "Forja", que
+ * guarda as fichas à parte das do APK: a turma se confundiria. Recusar o evento tira a oferta
+ * automática. O "Instalar app" do menu do Chrome continua, como escolha de quem o procura: a página
+ * não tem como tirá-lo. No computador e no iPhone (que nem tem o evento), nada muda, e o manifesto
+ * fica, porque o iPhone precisa dele. Devolve se passou a recusar.
+ */
+export function refuseAutomaticInstallOffer(win: WindowLike & Pick<Window, 'addEventListener'>, native: boolean): boolean {
+  if (native || !isAndroid(win.navigator)) return false
+  win.addEventListener('beforeinstallprompt', event => event.preventDefault())
+  return true
 }

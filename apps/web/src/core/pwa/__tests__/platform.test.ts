@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isInstalled, isIos, shouldShowInstallHint, type NavigatorLike, type WindowLike } from '../platform'
+import { isAndroid, isInstalled, isIos, refuseAutomaticInstallOffer, shouldShowInstallHint, type NavigatorLike, type WindowLike } from '../platform'
 
 const UA = {
   iphoneSafari: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1',
@@ -7,6 +7,8 @@ const UA = {
   // O iPad desde o iPadOS 13: o mesmo texto do Safari do Mac.
   ipadOrMac: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Safari/605.1.15',
   android: 'Mozilla/5.0 (Linux; Android 15; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36',
+  // O WebView do APK: o texto do Chrome do Android, com o "wv".
+  apkWebView: 'Mozilla/5.0 (Linux; Android 13; Pixel 6; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/109.0.0.0 Mobile Safari/537.36',
   windows: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0',
 }
 
@@ -55,8 +57,44 @@ describe('shouldShowInstallHint', () => {
     expect(shouldShowInstallHint(win({ userAgent: UA.iphoneSafari }, true), null)).toBe(false)
   })
 
-  it('fora do iOS não aparece (o Android instala pelo APK ou pelo próprio Chrome)', () => {
+  it('fora do iOS não aparece (no Android, o app é o APK)', () => {
     expect(shouldShowInstallHint(win({ userAgent: UA.android }), null)).toBe(false)
     expect(shouldShowInstallHint(win({ userAgent: UA.windows }), null)).toBe(false)
+  })
+})
+
+describe('isAndroid', () => {
+  it('o Chrome do Android e o WebView do APK; o iPhone e o computador, não', () => {
+    expect(isAndroid({ userAgent: UA.android })).toBe(true)
+    expect(isAndroid({ userAgent: UA.apkWebView })).toBe(true)
+    expect(isAndroid({ userAgent: UA.iphoneChrome })).toBe(false)
+    expect(isAndroid({ userAgent: UA.windows })).toBe(false)
+  })
+})
+
+// O Chrome instalaria um segundo "Forja", com as fichas à parte das do APK.
+describe('refuseAutomaticInstallOffer: a oferta automática do Chrome', () => {
+  /** A janela de mentira, e a oferta que o Chrome faria nela: true quando a página a recusou. */
+  function page(userAgent: string) {
+    return Object.assign(new EventTarget(), { navigator: { userAgent } })
+  }
+  function chromeOffers(win: EventTarget): boolean {
+    const offer = new Event('beforeinstallprompt', { cancelable: true })
+    win.dispatchEvent(offer)
+    return offer.defaultPrevented
+  }
+
+  it('no Android, fora do APK, é recusada (o "Instalar app" do menu do Chrome continua)', () => {
+    const win = page(UA.android)
+    expect(refuseAutomaticInstallOffer(win, false)).toBe(true)
+    expect(chromeOffers(win)).toBe(true)
+  })
+
+  it('no computador, no iPhone e no APK, nada muda', () => {
+    for (const [userAgent, native] of [[UA.windows, false], [UA.iphoneSafari, false], [UA.apkWebView, true]] as const) {
+      const win = page(userAgent)
+      expect(refuseAutomaticInstallOffer(win, native)).toBe(false)
+      expect(chromeOffers(win)).toBe(false)
+    }
   })
 })

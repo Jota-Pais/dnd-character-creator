@@ -3,6 +3,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import { startServiceWorker } from './core/pwa/serviceWorker'
+import { refuseAutomaticInstallOffer } from './core/pwa/platform'
 import { isNativeApp, startNativeApp } from './core/native/nativeApp'
 
 createRoot(document.getElementById('root')!).render(
@@ -22,6 +23,9 @@ void startServiceWorker({
   doc: document,
   native: isNativeApp(),
 })
+
+// No Android, o app é o APK: o Chrome não oferece sozinho instalar o site como um segundo app.
+refuseAutomaticInstallOffer(window, isNativeApp())
 
 // O APK do Android (docs/app-android.md): o voltar do aparelho e o aviso de APK velho. No navegador, nada.
 void startNativeApp()

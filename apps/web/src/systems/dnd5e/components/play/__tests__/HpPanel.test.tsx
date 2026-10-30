@@ -362,21 +362,31 @@ describe('HpPanel — o tipo do dano', () => {
     expect(screen.getByText(/Resistência a fogo \(Resistência Infernal\): 7 → 3\./)).toBeInTheDocument()
   })
 
-  it('a 2ª parcela com texto que não é número apaga o "Aplicar" e diz por quê, numa região viva montada vazia', () => {
+  it('a 2ª parcela vazia ou com texto que não é número apaga o "Aplicar" e diz por quê, numa região viva montada vazia', () => {
     openTiefling()
     render(<PlayScreen />)
     fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
-    fireEvent.change(screen.getByLabelText('Quanto de dano'), { target: { value: '4' } })
-    fireEvent.click(screen.getByRole('button', { name: '+ outra parcela' }))
+    const main = screen.getByLabelText('Quanto de dano')
+    fireEvent.change(main, { target: { value: '4' } })
     const regions = liveRegions()
     expect(regions.every(r => r.textContent === '')).toBe(true)
-    // Vazia, só não aplica (como o campo principal vazio).
+    fireEvent.click(screen.getByRole('button', { name: '+ outra parcela' }))
+    // Vazia, com o valor principal digitado: quem a abriu por engano fica sabendo como seguir.
     expect(screen.getByRole('button', { name: 'Aplicar' })).toHaveAttribute('aria-disabled', 'true')
-    fireEvent.change(screen.getByLabelText('Quanto de dano da 2ª parcela'), { target: { value: 'três' } })
+    const empty = screen.getByText('Digite a 2ª parcela ou toque em "Tirar a 2ª parcela".')
+    expect(regions.some(r => r.contains(empty))).toBe(true)
+    const second = screen.getByLabelText('Quanto de dano da 2ª parcela')
+    expect(second).toHaveAccessibleDescription('Digite a 2ª parcela ou toque em "Tirar a 2ª parcela".')
+    expect(second).not.toHaveAttribute('aria-invalid')
+    fireEvent.change(second, { target: { value: 'três' } })
     const problem = screen.getByText('Na 2ª parcela, digite só o número.')
     expect(regions.some(r => r.contains(problem))).toBe(true)
     fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
     expect(screen.getByTestId('hp-current')).toHaveTextContent('13')
+    // Os dois vazios: nada a dizer, como o campo principal vazio.
+    fireEvent.change(second, { target: { value: '' } })
+    fireEvent.change(main, { target: { value: '' } })
+    expect(regions.every(r => r.textContent === '')).toBe(true)
   })
 
   it('o impedimento da 2ª parcela descreve o campo dela, que fica inválido; o principal continua com a ajuda', () => {

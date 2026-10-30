@@ -177,15 +177,20 @@ export function HpPanel({ view }: { view: PlayView }) {
 
   // O que impede o "Aplicar", numa região viva só: no campo principal, texto que não é número, ou
   // número sem sinal e sem botão escolhido (no iPhone, o teclado numérico não tem sinal, e o caminho
-  // são os botões); na 2ª parcela, texto que não é número. Cada impedimento descreve o campo dele, e o
-  // principal, sem impedimento seu, fica com a ajuda.
+  // são os botões); na 2ª parcela, texto que não é número, ou ela vazia com o valor principal já
+  // digitado (quem a abriu por engano não sabe que precisa tirá-la). Cada impedimento descreve o
+  // campo dele, e o principal, sem impedimento seu, fica com a ajuda.
   const mainProblem = !entry
     ? texts.invalid
     : amount !== null && action === null
       ? `Para aplicar o ${amount}, escolha Dano, Cura ou PV temporários.`
       : null
   const secondInvalid = !!secondPart && secondPart.text.trim() !== '' && secondAmount === null
-  const secondProblem = secondInvalid ? 'Na 2ª parcela, digite só o número.' : null
+  const secondProblem = secondInvalid
+    ? 'Na 2ª parcela, digite só o número.'
+    : secondPart && secondAmount === null && amount !== null
+      ? 'Digite a 2ª parcela ou toque em "Tirar a 2ª parcela".'
+      : null
   const problem = mainProblem ?? secondProblem
   const canApply = amount !== null && action !== null && (!secondPart || secondAmount !== null)
   // A ajuda da ação, lida ao focar o campo: fora da região viva, não fala a cada toque nos botões.

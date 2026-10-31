@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { render, screen, fireEvent, cleanup, within } from '@testing-library/react'
+import { render, screen, fireEvent, cleanup, within, act } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { usePlayStore } from '../../../stores/playStore'
-import { addCondition } from '@rpg/rules/systems/dnd5e/utils/playState'
+import { activateToggle, addCondition } from '@rpg/rules/systems/dnd5e/utils/playState'
 import type { CharacterDraft } from '@rpg/rules/systems/dnd5e/types/character'
 import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
 import { liveRegions, openDraft, openKrusk, resetPlay } from './openPlay'
@@ -98,6 +98,17 @@ describe('WornEquipmentSection — vestir e tirar pela tela do jogo', () => {
     expect(playState().wornArmor?.bodyArmorId).toBe('plate')
     expect(screen.getByRole('status')).toHaveTextContent('Tirar Placas: Incapacitado (por Atordoado), sem ações nem reações (pág. 292).')
     expect(doff).toHaveFocus()
+  })
+
+  it('a região viva da seção fala só a troca: a CA que um efeito muda (o Escudo da Fé) não diz "Vestido:"', () => {
+    openStatus(character('fighter', 'chain-mail', 'shield'))
+    const region = () => within(section()).getAllByText((_, el) => el?.getAttribute('aria-live') === 'polite')[0]
+    act(() => { usePlayStore.getState().run((st, sh) => activateToggle(st, sh, 'spell:shield-of-faith', { now: 1 })) })
+    expect(vitalsAc()).toHaveAccessibleName('Classe de Armadura 20, era 18: de onde vem')
+    expect(region()).toHaveTextContent(/^$/)
+    // Tirar o escudo é troca: a região fala o vestido e a CA de agora (16 + 2 do Escudo da Fé).
+    fireEvent.click(within(section()).getByRole('button', { name: 'Tirar o escudo' }))
+    expect(region()).toHaveTextContent('Vestido: Cota de Malha. CA 18.')
   })
 
   it('com a Maestria em Armadura Média, a linha da armadura média diz a regra da CA (pág. 170)', () => {

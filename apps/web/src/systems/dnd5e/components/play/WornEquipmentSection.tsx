@@ -1,4 +1,4 @@
-import { type RefObject } from 'react'
+import { useState, type RefObject } from 'react'
 import { flushSync } from 'react-dom'
 import type { ArmorCategory } from '@rpg/rules/systems/dnd5e/types/equipment'
 import type { CarriedArmor } from '@rpg/rules/systems/dnd5e/types/session'
@@ -81,6 +81,11 @@ export function WornEquipmentSection({ titleRef, ...view }: PlayTabProps & { tit
   const shield = sheet.carriedArmor.find(a => a.category === 'shield')
   const speedLines = describeSpeedBonuses(draft, getFinalAbilityScores(draft), session)
   const changed = state.wornArmor !== undefined
+  // A região viva fala a troca: o vestido e a CA de então. A CA que só um efeito muda (o Escudo da
+  // Fé, a Armadura Arcana) não é troca de armadura e fica com o fluxo do efeito, sem "Vestido:".
+  const wornText = describeArmorSetup(worn)
+  const [announced, setAnnounced] = useState({ worn: wornText, text: `Vestido: ${wornText}. CA ${armorClass.value}.` })
+  if (announced.worn !== wornText) setAnnounced({ worn: wornText, text: `Vestido: ${wornText}. CA ${armorClass.value}.` })
 
   function reset() {
     const result = flushSync(() => run((st, sh) => resetWornArmor(st, sh)))
@@ -90,7 +95,7 @@ export function WornEquipmentSection({ titleRef, ...view }: PlayTabProps & { tit
   return (
     <div className="space-y-2">
       {/* Primeiro filho: no fim, o space-y daria margem a ele. A CA nova sai no número, sem aviso. */}
-      <ChangeAnnouncer text={`Vestido: ${describeArmorSetup(worn)}. CA ${armorClass.value}.`} />
+      <ChangeAnnouncer text={announced.text} />
       <p className="text-sm text-parchment-200 leading-snug" data-testid="worn-ac">
         <span className="font-fantasy text-parchment-100">CA {armorClass.value}</span>
         {armorClass.value !== baseArmorClass.value && <span className="text-amber-300"> (era {baseArmorClass.value})</span>}

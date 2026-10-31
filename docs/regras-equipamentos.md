@@ -2222,3 +2222,54 @@ Não faz parte da regra do livro.
 ## 6.4 Pontos em aberto (decidir com o dono)
 
 1. **Tradução, "Puxar, Arrastar e Levantar"** (linhas 15822-15824). O título e a primeira frase do pt-BR trocam "empurrar" por "puxar" ("Você pode arrastar, puxar ou erguer"); o original diz *push, drag, or lift*. A frase seguinte ("Ao empurrar ou arrastar") e o parágrafo do tamanho ("empurrar, puxar ou levantar") têm o empurrar. Não muda conta nenhuma da ficha (o limite é o mesmo para as três ações). Sem decisão. Segue a proposta (empurrar, arrastar e levantar, como o original) até decisão em contrário.
+
+# 7. Vestir e tirar armadura em jogo
+
+> **Fonte:** Livro do Jogador pt-BR, Cap. 5, "Armaduras e Escudos" (pág. 146, linhas 13188-13213 do extrato `docs/_book-extracts/dnd-phb.txt`: proficiência, Força, Furtividade e escudo) e "Entrando e Saindo de uma Armadura" (pág. 148, linhas 13318-13332); o talento Maestria em Armadura Média (pág. 170, linhas 15195-15202); a magia Armadura Arcana (pág. 220, linhas 20244-20255). Regras do equipamento vestido da Fase 2 do modo de jogo (onda `armadura`, 2026-10-31; decisão 10.2.4: vestir e tirar pela tela do jogo, com desfazer). O desenho citava a tabela como "p. 146", a página do original em inglês; aqui a página é a impressa no pt-BR.
+
+## 7.1 Proficiência, Força, Furtividade e escudo (pág. 146, linhas 13188-13213)
+
+- **Qualquer um pode vestir** uma armadura ou amarrar um escudo no braço; só quem tem proficiência sabe usá-la de forma eficaz. **Sem proficiência**, desvantagem em qualquer teste de habilidade, teste de resistência ou jogada de ataque que envolva Força ou Destreza, e **não pode conjurar magias**.
+- **Força:** a armadura com "For 13" ou "For 15" na tabela reduz o deslocamento em **3 metros** de quem não tem a Força listada.
+- **Furtividade:** a armadura com "Desvantagem" na coluna Furtividade dá desvantagem em testes de Destreza (Furtividade).
+- **Escudo:** usado com uma mão, soma **+2** à CA; só se beneficia de um escudo por vez.
+
+## 7.2 Vestir e tirar (pág. 148, linhas 13318-13332)
+
+- **Vestir:** o tempo de colocar a armadura. **Você se beneficia da CA da armadura só se despender o tempo integral** para vestir o conjunto.
+- **Remover:** o tempo de despir. **Com ajuda, a metade.**
+
+| Categoria | Vestir | Remover |
+|---|---|---|
+| Armadura leve | 1 minuto | 1 minuto |
+| Armadura média | 5 minutos | 1 minuto |
+| Armadura pesada | 10 minutos | 5 minutos |
+| Escudo | 1 ação | 1 ação |
+
+- Sem divergência entre o pt-BR e o original nestas regras.
+
+## 7.3 Maestria em Armadura Média (pág. 170, linhas 15195-15202)
+
+- Vestir armadura média **não impõe desvantagem** em testes de Destreza (Furtividade).
+- Com armadura média, "você pode adicionar 3, ao invés de 2, à sua CA, se você tiver Destreza 16 ou maior". O teto 3 só muda a conta a partir do modificador +3, que é a Destreza 16: a condição do livro já está na conta. Sempre benéfico, o "pode" entra no número (regra de ouro do CLAUDE.md).
+
+## 7.4 Armadura Arcana (pág. 220, linhas 20244-20255)
+
+- "A magia acaba se o alvo colocar uma armadura." **Decidido (2026-10-30):** "colocar uma armadura" é a armadura de corpo; o escudo não encerra a magia e soma +2 (`docs/regras-efeitos-ativos.md`, 7.4).
+
+## 7.5 Notas de implementação (mapeamento pro app)
+
+Não faz parte da regra do livro.
+
+- **Sessão, nunca a ficha.** A troca mora no estado de jogo (`PlayState.wornArmor`), com a base: o que o criador tinha equipado quando a troca foi feita. Base diferente da de agora, o criador mudou o equipamento e manda (a troca cai, com aviso); base igual, a peça vestida que saiu do inventário sai também, com aviso. O criador e o PDF mostram a ficha.
+- **O que se veste** é o que o personagem carrega (o inventário da ficha): armadura ou escudo novo entra pelo criador (decisão de 2026-10-30).
+- **O tempo** da tabela vai no aviso; o app não conta o tempo de jogo, então a CA muda no toque, com a regra do tempo integral no aviso. O escudo leva uma ação e marca a casa da ação no checklist do turno (a ação já usada só avisa, como todo o checklist). Na troca de uma armadura por outra, o aviso diz o tempo de tirar uma e o de vestir a outra.
+- **Vestir a armadura de corpo** encerra a Armadura Arcana (`endsOn: 'donArmor'`); o escudo não. Voltar ao equipamento da ficha também é pôr a armadura dela.
+- **Avisos no mesmo passo do desfazer:** a peça sem proficiência (7.1) e o efeito ligado que perde os benefícios (a Fúria de armadura pesada, pág. 48) ou os ganha de volta.
+- **Recusas:** a peça fora do inventário, a já vestida ou já tirada, o morto e quem não pode agir (Incapacitado, pág. 292: o escudo leva uma ação, e a armadura, minutos delas). Voltar ao da ficha é correção e não recusa.
+- **Os números:** a CA, o deslocamento (Movimento sem Armadura, Movimento Rápido, a Força de 7.1), as Artes Marciais, os benefícios da Fúria, as defesas (Maestria em Armadura Pesada), a desvantagem em Furtividade e a da falta de proficiência passam a ser os da armadura vestida, pelas mesmas funções da Revisão, com a sessão. O "era N" dos vitais é o número da ficha.
+
+## 7.6 Pontos em aberto (decidir com o dono)
+
+1. **A página da regra da armadura sem proficiência.** O app cita "pág. 144" (o original em inglês) no aviso de não conjurar, na desvantagem e nos docs; no pt-BR, a regra está na pág. 146 (linhas 13188-13199). Não muda regra. Sem decisão: os textos novos desta onda seguem o "pág. 144" de todo o app, para a mesma regra não aparecer com duas páginas.
+2. **Tirar ou vestir a armadura de quem não pode agir.** O livro dá o tempo de quem veste e tira (com ajuda, a metade), sem falar de vestir ou despir um personagem inconsciente. O app recusa a quem está Incapacitado, pelo precedente das ações. Sem decisão.

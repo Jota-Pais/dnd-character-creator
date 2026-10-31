@@ -140,7 +140,7 @@ O catálogo `data/active-effects.json` traz as magias e ações que se marcam em
 > "Você toca uma criatura voluntária que não esteja vestindo armadura [...]. A CA base do alvo se torna 13 + o modificador de Destreza dele. A magia acaba se o alvo colocar uma armadura [...]."
 
 - **13 + DES** como fórmula de CA sem armadura: disputa a base com as das características, e fica a maior (pág. 14, "você escolhe qual usar").
-- **Decidido (2026-10-30):** o escudo não encerra a magia e soma +2, como na Defesa sem Armadura do bárbaro; "colocar uma armadura" é a armadura de corpo (a tabela "Vestindo e Despindo uma Armadura", linhas 13327-13332, lista o escudo à parte). Com armadura vestida na ficha, a magia fica sem os benefícios (`requires: 'noArmor'`); vestir no jogo é da onda `armadura` (`endsOn: 'donArmor'`).
+- **Decidido (2026-10-30):** o escudo não encerra a magia e soma +2, como na Defesa sem Armadura do bárbaro; "colocar uma armadura" é a armadura de corpo (a tabela "Vestindo e Despindo uma Armadura", linhas 13327-13332, lista o escudo à parte). Com armadura vestida na ficha, a magia fica sem os benefícios (`requires: 'noArmor'`); vestir a armadura de corpo no jogo a encerra (`endsOn: 'donArmor'`, onda `armadura`, 2026-10-31: a seção Equipamento vestido da aba Estado e o "Voltar ao da ficha" que põe a armadura dela; o escudo não; `docs/regras-equipamentos.md`, seção 7).
 - Dura 8 horas: o descanso longo a encerra; o curto, não.
 
 ### 7.5 Escudo da Fé (págs. 243-244, linhas 23204-23216)

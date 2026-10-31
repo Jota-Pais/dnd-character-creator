@@ -1,10 +1,9 @@
-import { Suspense, useEffect } from 'react'
+import { useEffect } from 'react'
 import { useAppStore } from '../../core/stores/appStore'
 import { useBackHandler, useStepPath } from '../../core/navigation/back'
-import { printPage } from '../../core/utils/print'
 import { useCharacterStore } from './stores/characterStore'
 import { WizardShell } from '../../components/wizard/WizardShell'
-import { Loading } from '../../components/common/Loading'
+import { PrintScreen } from '../../components/common/PrintScreen'
 import { getMissingSteps } from '@rpg/rules/systems/dnd5e/utils/draftValidation'
 import { getClass } from '@rpg/rules/systems/dnd5e/utils/classUtils'
 import { dnd5eSystem } from './index'
@@ -86,35 +85,7 @@ export function Dnd5eApp() {
   // Modo de jogo: tela própria, fora do WizardShell (a ficha não é editada aqui).
   if (view === 'play') return <PlayScreen />
 
-  if (view === 'print') {
-    return (
-      <div className="min-h-screen py-6 px-4">
-        <div className="no-print max-w-[820px] mx-auto mb-4 flex justify-between items-center">
-          <button
-            onClick={exitPrint}
-            className="px-4 py-2 text-parchment-400 hover:text-parchment-200 text-sm font-fantasy transition-colors"
-          >
-            ← Voltar
-          </button>
-          <button
-            onClick={() => printPage()}
-            className="px-5 py-2 rounded-xl font-fantasy font-bold text-sm bg-gold-500 text-parchment-950 hover:bg-gold-400 transition-colors"
-          >
-            🖨 Imprimir / Salvar PDF
-          </button>
-        </div>
-        <div className="overflow-x-auto print:overflow-visible">
-          {/* A ficha desce sob demanda (core/utils/lazyScreen.ts); a barra acima não espera por ela. */}
-          <Suspense fallback={<Loading className="py-16" />}>
-            <PrintableSheet />
-          </Suspense>
-        </div>
-        <p className="no-print max-w-[820px] mx-auto mt-4 text-center text-parchment-700 text-xs">
-          Dica: na janela de impressão, escolha "Salvar como PDF" como destino.
-        </p>
-      </div>
-    )
-  }
+  if (view === 'print') return <PrintScreen Sheet={PrintableSheet} onBack={exitPrint} />
 
   return (
     <WizardShell

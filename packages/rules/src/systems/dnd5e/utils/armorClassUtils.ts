@@ -28,6 +28,11 @@ export type ArmorClassParams = {
   bonuses?: AcComponent[]
   /** O piso da CA final (Pele de Árvore: 16). */
   minimum?: { value: number; source: string }
+  /**
+   * O que muda na armadura média (Maestria em Armadura Média, p. 170): o teto da DES (3, no lugar
+   * do +2) e a Furtividade sem desvantagem.
+   */
+  mediumArmor?: { maxDex: number; noStealthDisadvantage: boolean }
 }
 
 /** O cálculo padrão de quem não veste armadura: 10 + DES (p. 14). */
@@ -49,8 +54,10 @@ const sum = (components: AcComponent[]) => components.reduce((s, c) => s + c.val
 /**
  * Calcula a Classe de Armadura pelo PHB 2014.
  *
- * - Com armadura: base da armadura + DES (leve: total; média: teto +2; pesada: 0);
- *   Estilo de Luta Defesa soma +1 (só vale vestindo armadura). As fórmulas sem armadura não valem.
+ * - Com armadura: base da armadura + DES (leve: total; média: teto +2, ou o da Maestria em Armadura
+ *   Média; pesada: 0); Estilo de Luta Defesa soma +1 (só vale vestindo armadura). As fórmulas sem
+ *   armadura não valem. A desvantagem em Furtividade é a da tabela, salvo a armadura média com a
+ *   Maestria.
  * - Sem armadura: 10 + DES ou uma das fórmulas alternativas (Defesa sem Armadura, Resiliência
  *   Dracônica). Elas não se somam — "você escolhe qual usar" (p. 14) —, então a ficha mostra a
  *   maior. A que proíbe escudo (monge) sai da disputa quando há escudo.
@@ -68,6 +75,7 @@ export function calculateArmorClass(params: ArmorClassParams): ArmorClassResult 
     hasDefenseFightingStyle = false,
     bonuses = [],
     minimum,
+    mediumArmor,
   } = params
 
   let components: AcComponent[] = []
@@ -75,16 +83,17 @@ export function calculateArmorClass(params: ArmorClassParams): ArmorClassResult 
 
   if (bodyArmor) {
     const dexMod = mods.DEX
+    const medium = bodyArmor.category === 'medium' ? mediumArmor : undefined
     const dexBonus =
       bodyArmor.dexModifier === 'full'
         ? dexMod
         : bodyArmor.dexModifier === 'max-2'
-          ? Math.min(dexMod, 2)
+          ? Math.min(dexMod, medium?.maxDex ?? 2)
           : 0
     components.push({ label: bodyArmor.name, value: bodyArmor.acBase })
     if (dexBonus !== 0) components.push({ label: 'DES', value: dexBonus })
     if (hasDefenseFightingStyle) components.push({ label: 'Estilo Defesa', value: 1 })
-    stealthDisadvantage = bodyArmor.stealthDisadvantage
+    stealthDisadvantage = bodyArmor.stealthDisadvantage && !medium?.noStealthDisadvantage
   } else {
     // As das características primeiro: no empate, a ficha mostra a característica.
     const candidates = [

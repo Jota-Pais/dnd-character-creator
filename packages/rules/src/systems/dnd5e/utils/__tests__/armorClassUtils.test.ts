@@ -166,6 +166,46 @@ describe('calculateArmorClass — com armadura', () => {
   })
 })
 
+// Maestria em Armadura Média (p. 170, linhas 15195-15202): com armadura média, a DES soma até 3,
+// "se você tiver Destreza 16 ou maior" (o modificador +3), e a Furtividade fica sem desvantagem.
+describe('calculateArmorClass — Maestria em Armadura Média', () => {
+  const halfPlate: Armor = {
+    id: 'half-plate', name: 'Meia-Armadura', category: 'medium', cost: 75000,
+    acBase: 15, dexModifier: 'max-2', strengthRequirement: null, stealthDisadvantage: true, weight: 20,
+  }
+  const mastery = { maxDex: 3, noStealthDisadvantage: true }
+
+  it('Meia-Armadura, DES 16, com o talento: 15 + 3', () => {
+    const r = calculateArmorClass({ mods: mods({ DEX: 3 }), bodyArmor: halfPlate, mediumArmor: mastery })
+    expect(r.value).toBe(18)
+    expect(formatArmorClassBreakdown(r)).toBe('15 (Meia-Armadura) + 3 (DES)')
+  })
+
+  it('sem o talento: 15 + 2', () => {
+    const r = calculateArmorClass({ mods: mods({ DEX: 3 }), bodyArmor: halfPlate })
+    expect(r.value).toBe(17)
+    expect(r.stealthDisadvantage).toBe(true)
+  })
+
+  it('sem desvantagem de Furtividade', () => {
+    expect(calculateArmorClass({ mods: mods({ DEX: 3 }), bodyArmor: halfPlate, mediumArmor: mastery }).stealthDisadvantage).toBe(false)
+  })
+
+  it('o teto é 3: DES 18 continua somando 3; abaixo de 16, a DES de sempre', () => {
+    expect(calculateArmorClass({ mods: mods({ DEX: 4 }), bodyArmor: halfPlate, mediumArmor: mastery }).value).toBe(18)
+    expect(calculateArmorClass({ mods: mods({ DEX: 2 }), bodyArmor: halfPlate, mediumArmor: mastery }).value).toBe(17)
+  })
+
+  it('só vale na armadura média: na leve e na pesada nada muda', () => {
+    const light = calculateArmorClass({ mods: mods({ DEX: 4 }), bodyArmor: { ...leather, stealthDisadvantage: true }, mediumArmor: mastery })
+    expect(light.value).toBe(15)
+    expect(light.stealthDisadvantage).toBe(true)
+    const heavy = calculateArmorClass({ mods: mods({ DEX: 4 }), bodyArmor: plate, mediumArmor: mastery })
+    expect(heavy.value).toBe(18)
+    expect(heavy.stealthDisadvantage).toBe(true)
+  })
+})
+
 describe('formatArmorClassBreakdown', () => {
   it('a base padrão sai sem rótulo e o negativo com sinal de menos', () => {
     const r = calculateArmorClass({ mods: mods({ DEX: -1 }) })

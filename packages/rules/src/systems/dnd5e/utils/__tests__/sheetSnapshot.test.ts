@@ -236,6 +236,26 @@ describe('aviso de correção: a CD e o ataque das magias de fora da classe', ()
   })
 })
 
+// A Maestria em Armadura Média (p. 170) entrou na CA depois: a ficha salva com armadura média, o
+// talento e Destreza 16 ou mais ganha +1 de CA, e o aviso de correção o diz (decisão 10.2.23).
+describe('aviso de correção: a Maestria em Armadura Média', () => {
+  const fighter: CharacterDraft = {
+    ...structuredClone(EMPTY_DRAFT), race: 'human', class: 'fighter', level: 1, raceChoices: { feat: 'maestria-em-armadura-media' },
+    abilityScores: { STR: 14, DEX: 16, CON: 14, INT: 10, WIS: 12, CHA: 8 },
+    equipment: { ...structuredClone(EMPTY_DRAFT.equipment), method: 'wealth', purchasedItems: [{ itemId: 'half-plate', quantity: 1, source: 'purchased' }] },
+  }
+
+  it('a CA de antes (15 + 2) vira 15 + 3, com o aviso', () => {
+    const now = takeSheetSnapshot(fighter, buildPlaySheet(fighter), 10)
+    expect(now.armorClass).toBe(18)
+    const before: SheetSnapshot = { ...now, armorClass: 17 }
+    expect(syncSheetSnapshot({ ...createPlayState('c1'), sheetSnapshot: before }, now).notices).toEqual([{
+      kind: 'sheetCorrected',
+      text: 'O app corrigiu sua ficha: CA 17 → 18.',
+    }])
+  })
+})
+
 // O Ilusionista Nato do gnomo da floresta (pág. 37, linhas 2854-2856) entrou nos dados como magia
 // inata depois: a ficha salva ganha a conjuração da raça, e o retrato de antes avisa, sem o nome
 // (a única conjuração da ficha), pelo mesmo precedente.

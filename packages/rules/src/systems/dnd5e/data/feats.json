@@ -188,7 +188,11 @@
     "id": "maestria-em-armadura-media",
     "name": "Maestria em Armadura Média",
     "prerequisite": "Proficiência em armadura média",
-    "description": "Você praticou seus movimentos usando armaduras pesadas para ganhar os seguintes benefícios:\n- Vestir uma armadura média não lhe impõe desvantagem em testes de Destreza (Furtividade).\n- Quando você estiver vestindo uma armadura média, você pode adicionar 3, ao invés de 2, à sua CA, se você tiver Destreza 16 ou maior."
+    "description": "Você praticou seus movimentos usando armaduras pesadas para ganhar os seguintes benefícios:\n- Vestir uma armadura média não lhe impõe desvantagem em testes de Destreza (Furtividade).\n- Quando você estiver vestindo uma armadura média, você pode adicionar 3, ao invés de 2, à sua CA, se você tiver Destreza 16 ou maior.",
+    "effects": {
+      "mediumArmorMaxDex": 3,
+      "mediumArmorNoStealthDisadvantage": true
+    }
   },
   {
     "id": "maestria-em-armadura-pesada",

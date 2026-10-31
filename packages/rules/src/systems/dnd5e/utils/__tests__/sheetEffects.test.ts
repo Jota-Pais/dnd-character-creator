@@ -469,6 +469,33 @@ describe('getUnarmoredAcOptions', () => {
   })
 })
 
+// A Maestria em Armadura Média (p. 170) é efeito do talento: a Revisão, o PDF e o jogo leem a mesma
+// CA (`getSheetArmorClass`), e a desvantagem em Furtividade sai do mesmo resultado.
+describe('getSheetArmorClass — Maestria em Armadura Média', () => {
+  const fighter = (feat: string | null, armorId = 'half-plate') => draft({
+    level: 1, class: 'fighter', race: 'human', raceChoices: feat ? { feat } : {},
+    equipment: { ...structuredClone(EMPTY_DRAFT.equipment), method: 'wealth' as const, purchasedItems: [{ itemId: armorId, quantity: 1, source: 'purchased' as const }] },
+  })
+
+  it('Meia-Armadura, DES 16, com o talento: 15 + 3, sem desvantagem em Furtividade', () => {
+    const ac = getSheetArmorClass(fighter('maestria-em-armadura-media'), scores({ DEX: 16 }))
+    expect(ac.value).toBe(18)
+    expect(ac.stealthDisadvantage).toBe(false)
+  })
+
+  it('sem o talento: 15 + 2, com a desvantagem da tabela', () => {
+    const ac = getSheetArmorClass(fighter(null), scores({ DEX: 16 }))
+    expect(ac.value).toBe(17)
+    expect(ac.stealthDisadvantage).toBe(true)
+  })
+
+  it('a armadura pesada não muda com o talento', () => {
+    const ac = getSheetArmorClass(fighter('maestria-em-armadura-media', 'plate'), scores({ DEX: 16 }))
+    expect(ac.value).toBe(18)
+    expect(ac.stealthDisadvantage).toBe(true)
+  })
+})
+
 describe('getSheetArmorClass', () => {
   const sorcererDraft = (overrides: Partial<CharacterDraft> = {}) => draft({
     level: 1, class: 'sorcerer',

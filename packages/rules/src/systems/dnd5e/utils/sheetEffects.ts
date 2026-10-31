@@ -18,7 +18,7 @@ import {
 } from './abilityScoreUtils'
 import { getEquippedArmor } from './equipmentUtils'
 import {
-  calculateArmorClass, type AcComponent, type ArmorClassResult, type UnarmoredAcOption,
+  calculateArmorClass, type AcComponent, type ArmorClassParams, type ArmorClassResult, type UnarmoredAcOption,
 } from './armorClassUtils'
 import {
   evaluateQuantity, evaluateResource, stepValue, type FinalScores, type ResourceSource, type SheetResource,
@@ -713,7 +713,8 @@ export function getUnarmoredAcOptions(draft: CharacterDraft): UnarmoredAcOption[
 
 /**
  * A CA da ficha — a Revisão e o PDF chamam só isto. Junta a armadura e o escudo equipados, as
- * fórmulas sem armadura das features e o Estilo de Luta Defesa de qualquer classe.
+ * fórmulas sem armadura das features, o Estilo de Luta Defesa de qualquer classe e a Maestria em
+ * Armadura Média (o teto da DES e a Furtividade da armadura média).
  *
  * Com a sessão de jogo, os efeitos ligados entram com o nome de quem os dá: a fórmula sem armadura
  * na mesma disputa das features (a Armadura Arcana, p. 14), os bônus como parcela (Escudo Arcano,
@@ -734,6 +735,7 @@ export function getSheetArmorClass(draft: CharacterDraft, finalScores: FinalScor
     if (effect.kind === 'acBonus') bonuses.push({ label: source, value: effect.value })
     if (effect.kind === 'acMinimum' && (!minimum || effect.value > minimum.value)) minimum = { value: effect.value, source }
   }
+  const mediumArmor = getMediumArmorMastery(draft)
   return calculateArmorClass({
     mods,
     bodyArmor,
@@ -742,7 +744,20 @@ export function getSheetArmorClass(draft: CharacterDraft, finalScores: FinalScor
     hasDefenseFightingStyle: getOwnedFightingStyleIds(draft).includes('defense'),
     bonuses,
     ...(minimum ? { minimum } : {}),
+    ...(mediumArmor ? { mediumArmor } : {}),
   })
+}
+
+/**
+ * O que os talentos mudam na armadura média (`mediumArmorMaxDex`, `mediumArmorNoStealthDisadvantage`:
+ * a Maestria em Armadura Média, p. 170): o maior teto da DES e a Furtividade sem desvantagem. `null`
+ * sem nenhum.
+ */
+function getMediumArmorMastery(draft: CharacterDraft): ArmorClassParams['mediumArmor'] | null {
+  const effects = getOwnedFeats(draft).flatMap(f => (f.effects ? [f.effects] : []))
+  const maxDex = Math.max(2, ...effects.map(e => e.mediumArmorMaxDex ?? 2))
+  const noStealthDisadvantage = effects.some(e => e.mediumArmorNoStealthDisadvantage)
+  return maxDex > 2 || noStealthDisadvantage ? { maxDex, noStealthDisadvantage } : null
 }
 
 // ── Classe de Armadura condicional ─────────────────────────────────────────────

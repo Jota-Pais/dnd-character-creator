@@ -606,6 +606,15 @@ export type FeatureEffects = {
   passiveScoreBonus?: { skills: string[]; value: number }
   /** Bônus de CA condicionais — nunca somados no total da ficha. */
   conditionalAcBonus?: ConditionalAcBonus[]
+  /**
+   * O teto da DES na CA de quem veste armadura média, no lugar do +2 da tabela (Maestria em
+   * Armadura Média, p. 170: "você pode adicionar 3, ao invés de 2, à sua CA, se você tiver Destreza
+   * 16 ou maior"). O teto 3 só muda a conta a partir do modificador +3, que é a Destreza 16: a
+   * condição do livro já está na conta. Sempre benéfico, entra no número (`calculateArmorClass`).
+   */
+  mediumArmorMaxDex?: number
+  /** A armadura média vestida não dá desvantagem em Furtividade (Maestria em Armadura Média, p. 170). */
+  mediumArmorNoStealthDisadvantage?: true
   /** Proficiências de armadura concedidas (Proteção Leve / Moderada / Pesada). */
   grantedArmorProficiencies?: ArmorProficiency[]
   /**

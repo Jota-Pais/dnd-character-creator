@@ -16,7 +16,7 @@ import {
   type ActiveConditionEffects, type ConditionState, type SheetDamageDefense,
 } from './sheetEffects'
 import type { ZeroHpSave } from '../types/effects'
-import type { ResolvedToggle, SheetToggle } from '../types/session'
+import type { ArmorSetup, ResolvedToggle, SheetToggle, WornArmor } from '../types/session'
 import { ABILITY_LABELS, formatMeters } from './abilityScoreUtils'
 import type { SheetResource } from './classResourceUtils'
 import { resolveActiveEffects } from './activeEffects'
@@ -26,6 +26,8 @@ import { countLabel, joinPt } from './textUtils'
 import { findSpellbookEntry } from './spellbook'
 import { getSpellMechanics } from './spellMechanics'
 import { castingTimeKind, getSpell, hasVerbalComponent } from './spellUtils'
+import { getArmorById } from './equipmentUtils'
+import { resolveWornArmor } from './wornArmor'
 
 /**
  * Operações do estado de jogo: funções puras que recebem (estado, PlaySheet, …) e devolvem
@@ -196,6 +198,15 @@ export function describeHpMaxImmunity(state: PlayState, sheet: PlaySheet): strin
  */
 export function getCurrentHp(state: PlayState, sheet: PlaySheet): number {
   return Math.max(0, getBaseMaxHp(state, sheet) - reconcilePlayState(state, sheet).damageTaken)
+}
+
+/**
+ * A armadura e o escudo vestidos agora: a troca feita no jogo (`wornArmor`), conferida com a base e
+ * com o que o personagem carrega (`resolveWornArmor`), ou os do criador. A mesma conta com que o
+ * `buildPlaySheet` monta o sheet: diferente de `sheet.wornArmor`, o sheet é de outra armadura.
+ */
+export function getWornArmor(state: PlayState, sheet: PlaySheet): ArmorSetup {
+  return resolveWornArmor(sheet.equippedArmor, sheet.carriedArmor, state.wornArmor)
 }
 
 /** Deslocamento efetivo em pés, com as condições e a exaustão. */
@@ -2433,6 +2444,25 @@ function sanitizeActiveEffects(x: unknown): ActiveToggle[] {
   return out
 }
 
+/** A armadura de corpo (o id de uma do catálogo, ou nenhuma) e o escudo gravados; torto, null. */
+function sanitizeArmorSetup(x: unknown): ArmorSetup | null {
+  if (!isRecord(x) || typeof x.shield !== 'boolean') return null
+  if (x.bodyArmorId === null) return { bodyArmorId: null, shield: x.shield }
+  const armor = typeof x.bodyArmorId === 'string' ? getArmorById(x.bodyArmorId) : undefined
+  return armor && armor.category !== 'shield' ? { bodyArmorId: armor.id, shield: x.shield } : null
+}
+
+/**
+ * A armadura vestida no jogo, com a base: torta em qualquer parte, sai, e vale a do criador. Se a
+ * ficha ainda a carrega e se a base bate, quem confere é a reconciliação, que conhece a ficha.
+ */
+function sanitizeWornArmor(x: unknown): WornArmor | null {
+  if (!isRecord(x)) return null
+  const worn = sanitizeArmorSetup(x)
+  const basis = sanitizeArmorSetup(x.basis)
+  return worn && basis ? { ...worn, basis } : null
+}
+
 /** O turno gravado: casa que não é `true` fica livre, contagem que não é número fica 0. */
 function sanitizeTurn(x: unknown): TurnState {
   if (!isRecord(x)) return emptyTurn()
@@ -2532,6 +2562,7 @@ export function sanitizePlayState(raw: unknown, characterId: string): PlayState 
   const slots = Array.isArray(raw.spellSlotsSpent) ? raw.spellSlotsSpent : []
 
   const sheetSnapshot = sanitizeSheetSnapshot(raw.sheetSnapshot)
+  const wornArmor = sanitizeWornArmor(raw.wornArmor)
 
   const conditions = Array.isArray(raw.conditions)
     ? [...new Set(raw.conditions.filter((c): c is ConditionId => typeof c === 'string' && getCondition(c as ConditionId) !== undefined))]
@@ -2569,6 +2600,7 @@ export function sanitizePlayState(raw: unknown, characterId: string): PlayState 
     activeEffects: sanitizeActiveEffects(raw.activeEffects)
       .filter(a => !a.sustainedByConcentration || (lifeState === 'conscious' && sanitizeConcentration(raw.concentration) !== null)),
     turn: sanitizeTurn(raw.turn),
+    ...(wornArmor ? { wornArmor } : {}),
     restCounters: sanitizeCounts(raw.restCounters),
     inspiration: raw.inspiration === true,
     note: typeof raw.note === 'string' ? raw.note : '',

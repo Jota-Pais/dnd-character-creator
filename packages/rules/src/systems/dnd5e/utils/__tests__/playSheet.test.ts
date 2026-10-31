@@ -7,6 +7,7 @@ import { getCombinedSpellSlots, getPactSlots } from '../spellUtils'
 import { getHitDicePool } from '../multiclassUtils'
 import { calculateModifier } from '../abilityScoreUtils'
 import { getSavingThrowChecks } from '../proficiencyUtils'
+import type { WornArmor } from '../../types/session'
 
 function draft(overrides: Partial<CharacterDraft>): CharacterDraft {
   return { ...structuredClone(EMPTY_DRAFT), ...overrides }
@@ -102,6 +103,52 @@ describe('buildPlaySheet', () => {
     expect(sheet.maxHp).toBe(0)
     expect(sheet.hitDice).toEqual([])
     expect(sheet.speed).toBe(0)
+  })
+
+  // A armadura vestida no jogo (onda `armadura`): o sheet sai com ela, conferida com a base e com o
+  // que o personagem carrega; o criador manda quando o equipamento dele mudou.
+  describe('a armadura vestida', () => {
+    const barbarian = draft({
+      class: 'barbarian', race: 'human', level: 5, abilityScores: SCORES,
+      equipment: {
+        ...structuredClone(EMPTY_DRAFT.equipment), method: 'wealth',
+        purchasedItems: ['hide', 'plate', 'shield'].map(itemId => ({ itemId, quantity: 1, source: 'purchased' as const })),
+      },
+    })
+    const basis = { bodyArmorId: 'hide', shield: true }
+    const inPlate: WornArmor = { bodyArmorId: 'plate', shield: false, basis }
+
+    it('sem troca: o equipado no criador, e o que se carrega, com a proficiência', () => {
+      const sheet = buildPlaySheet(barbarian)
+      expect(sheet.equippedArmor).toEqual(basis)
+      expect(sheet.wornArmor).toEqual(basis)
+      expect(sheet.carriedArmor).toEqual([
+        { id: 'hide', name: 'Gibão de Peles', category: 'medium', proficient: true },
+        { id: 'plate', name: 'Placas', category: 'heavy', proficient: false },
+        { id: 'shield', name: 'Escudo', category: 'shield', proficient: true },
+      ])
+      expect(sheet.speed).toBe(40)
+      expect(sheet.unproficientArmor).toEqual([])
+    })
+
+    it('de Placas: o Movimento Rápido sai, a Fúria fica sem os benefícios e a proficiência avisa', () => {
+      const sheet = buildPlaySheet(barbarian, inPlate)
+      expect(sheet.wornArmor).toEqual({ bodyArmorId: 'plate', shield: false })
+      expect(sheet.speed).toBe(30)
+      expect(sheet.toggles.find(t => t.id === 'rage')?.benefits[0].blockedBy).toBe('Placas')
+      expect(sheet.unproficientArmor).toEqual(['Placas'])
+    })
+
+    it('a base que não bate com o criador: a troca não vale', () => {
+      const sheet = buildPlaySheet(barbarian, { ...inPlate, basis: { bodyArmorId: 'hide', shield: false } })
+      expect(sheet.wornArmor).toEqual(basis)
+      expect(sheet).toEqual(buildPlaySheet(barbarian))
+    })
+
+    it('o que deixou de ser carregado sai do vestido', () => {
+      const noPlate = { ...barbarian, equipment: { ...barbarian.equipment, purchasedItems: barbarian.equipment.purchasedItems.filter(i => i.itemId !== 'plate') } }
+      expect(buildPlaySheet(noPlate, { bodyArmorId: 'plate', shield: true, basis }).wornArmor).toEqual({ bodyArmorId: null, shield: true })
+    })
   })
 
   it('é cópia: mexer no snapshot não alcança o draft nem as tabelas do app', () => {

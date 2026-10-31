@@ -16,7 +16,7 @@ const searchable = (text: string) => text.normalize('NFD').replace(/\p{Diacritic
  */
 function previewLines(view: PlayTabProps, toggle: SheetToggle): string[] {
   const [resolved] = resolveActiveEffects([{ id: toggle.id, startedAt: 0 }], [toggle])
-  return resolved ? describeToggleEffects(view.draft, resolved, getPlaySpeed(view.state, view.sheet)) : []
+  return resolved ? describeToggleEffects(view.draft, resolved, getPlaySpeed(view.state, view.sheet), view.session) : []
 }
 
 /**

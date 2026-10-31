@@ -16,7 +16,7 @@ import { getRace, getSubrace, getEffectiveTraits, getEffectiveSpeed } from './ra
 import {
   getProficiencyBonus, calculateModifier, formatMeters, formatModifier, ALL_ABILITY_SCORES,
 } from './abilityScoreUtils'
-import { getEquippedArmor } from './equipmentUtils'
+import { getArmor, getEquippedArmor } from './equipmentUtils'
 import {
   calculateArmorClass, type AcComponent, type ArmorClassParams, type ArmorClassResult, type UnarmoredAcOption,
 } from './armorClassUtils'
@@ -311,11 +311,17 @@ function declaredToggle(t: ToggleDeclaration, source: string, equipped: ReturnTy
 
 /**
  * Um efeito do catálogo (a magia ou a ação recebida, `getCatalogToggles`) como a ficha o liga: com
- * quem o dá (o nome da magia ou da ação) e o bloqueio dos benefícios pela armadura da ficha — o
- * mesmo critério dos efeitos das características (a Armadura Arcana, só sem armadura vestida).
+ * quem o dá (o nome da magia ou da ação) e o bloqueio dos benefícios pela armadura — a da ficha, ou
+ * a vestida no jogo (`session.worn`) —, o mesmo critério dos efeitos das características (a
+ * Armadura Arcana, só sem armadura vestida).
  */
-export function getDeclaredToggle(draft: CharacterDraft, declaration: ToggleDeclaration, source: string): SheetToggle {
-  return declaredToggle(declaration, source, getDraftEquippedArmor(draft))
+export function getDeclaredToggle(
+  draft: CharacterDraft,
+  declaration: ToggleDeclaration,
+  source: string,
+  session: SheetSession = NO_SESSION,
+): SheetToggle {
+  return declaredToggle(declaration, source, getSessionArmor(draft, session))
 }
 
 /**
@@ -325,13 +331,13 @@ export function getDeclaredToggle(draft: CharacterDraft, declaration: ToggleDecl
  * Persistente, a Fúria Implacável, os totens) já fundido. A opção leva o nome do slot ("Totem Espiritual — Urso"): o
  * mesmo animal pode estar em duas características.
  *
- * O bloqueio dos benefícios pelo equipamento é avaliado aqui, com a armadura da ficha — o mesmo
- * critério da CA e das defesas (`blockedBy`). A restrição de conjuração da mesma situação
+ * O bloqueio dos benefícios pelo equipamento é avaliado aqui, com a armadura da ficha ou a vestida
+ * no jogo (`session.worn`) — o mesmo critério da CA e das defesas (`blockedBy`). A restrição de conjuração da mesma situação
  * (`CastingRestriction.toggle`) entra como efeito de estado (`cannotCast`, `endsConcentration`),
  * fora dos benefícios: vale também de armadura pesada (p. 48), e só para quem conjura.
  */
-export function getSheetToggles(draft: CharacterDraft): SheetToggle[] {
-  const equipped = getDraftEquippedArmor(draft)
+export function getSheetToggles(draft: CharacterDraft, session: SheetSession = NO_SESSION): SheetToggle[] {
+  const equipped = getSessionArmor(draft, session)
   const features = getOwnedClassFeatures(draft)
   const toggles: SheetToggle[] = []
   for (const feature of features) {
@@ -364,8 +370,17 @@ export function getSheetToggles(draft: CharacterDraft): SheetToggle[] {
 
 // ── Deslocamento ───────────────────────────────────────────────────────────────
 
-/** A armadura e o escudo equipados — o mesmo critério para a CA e para o deslocamento. */
-function getDraftEquippedArmor(draft: CharacterDraft): ReturnType<typeof getEquippedArmor> {
+/**
+ * A armadura e o escudo vestidos — o mesmo critério para a CA, o deslocamento, as Artes Marciais, os
+ * benefícios da Fúria, as defesas e os avisos de proficiência. Sem sessão (a Revisão, o PDF), os
+ * equipados no criador; com a armadura vestida no jogo (`session.worn`, já conferida com o que o
+ * personagem carrega), ela.
+ */
+export function getSessionArmor(draft: CharacterDraft, session: SheetSession = NO_SESSION): ReturnType<typeof getEquippedArmor> {
+  if (session.worn) {
+    const bodyArmor = session.worn.bodyArmorId ? getArmor(session.worn.bodyArmorId) : undefined
+    return { bodyArmor, hasShield: session.worn.shield }
+  }
   const cls = draft.class ? getClass(draft.class) : undefined
   return getEquippedArmor(draft.equipment, cls?.startingEquipment)
 }
@@ -405,12 +420,12 @@ function equipmentBlocker(
  * Todos os bônus de deslocamento: os de talento e os de feature de classe com condição de
  * equipamento (Movimento Rápido, Movimento sem Armadura), estes no nível NA classe dona — um
  * guerreiro 5 / monge 2 ganha os +10 pés do monge 2. A condição é avaliada com o equipamento
- * da ficha, do mesmo jeito que a CA lê a armadura vestida.
+ * da ficha (o vestido no jogo, com a sessão), do mesmo jeito que a CA lê a armadura vestida.
  */
-export function getSpeedBonuses(draft: CharacterDraft): SheetSpeedBonus[] {
+export function getSpeedBonuses(draft: CharacterDraft, session: SheetSession = NO_SESSION): SheetSpeedBonus[] {
   const out: SheetSpeedBonus[] = collect(draft, f => f.effects?.speedBonus)
     .map(e => ({ ...e, active: true }))
-  const equipped = getDraftEquippedArmor(draft)
+  const equipped = getSessionArmor(draft, session)
   for (const { entry, features } of getOwnedClassFeaturesByEntry(draft)) {
     for (const feature of features) {
       const bonus = feature.effects?.equipmentSpeedBonus
@@ -427,8 +442,8 @@ export function getSpeedBonuses(draft: CharacterDraft): SheetSpeedBonus[] {
 }
 
 /** Bônus de deslocamento em PÉS, a unidade da raça: só os ativos (Mobilidade +10 pés). */
-export function getSpeedBonusTotal(draft: CharacterDraft): number {
-  return getSpeedBonuses(draft).reduce((sum, e) => (e.active ? sum + e.value : sum), 0)
+export function getSpeedBonusTotal(draft: CharacterDraft, session: SheetSession = NO_SESSION): number {
+  return getSpeedBonuses(draft, session).reduce((sum, e) => (e.active ? sum + e.value : sum), 0)
 }
 
 /** Quanto a armadura pesada tira sem a Força da tabela: 3 m = 10 pés (p. 146). */
@@ -452,8 +467,9 @@ export type ArmorSpeedPenalty = {
 export function getArmorSpeedPenalty(
   draft: CharacterDraft,
   finalScores: FinalScores,
+  session: SheetSession = NO_SESSION,
 ): ArmorSpeedPenalty | null {
-  const { bodyArmor } = getDraftEquippedArmor(draft)
+  const { bodyArmor } = getSessionArmor(draft, session)
   const requirement = bodyArmor?.strengthRequirement
   if (!bodyArmor || !requirement || finalScores.STR >= requirement) return null
   const racial = bodyArmor.category === 'heavy' ? getOwnedRacialTraits(draft) : null
@@ -470,15 +486,16 @@ export function getArmorSpeedPenalty(
 /**
  * O Deslocamento da ficha, em pés — a Revisão e o PDF chamam só isto: o da raça (sub-raça já
  * aplicada) mais os bônus ativos, menos a redução da armadura pesada sem a Força mínima (quando
- * nada a anula). `null` sem raça escolhida.
+ * nada a anula). `null` sem raça escolhida. Com a armadura vestida no jogo (`session.worn`), o
+ * deslocamento com ela: o `buildPlaySheet` o monta assim.
  */
-export function getSheetSpeed(draft: CharacterDraft, finalScores: FinalScores): number | null {
+export function getSheetSpeed(draft: CharacterDraft, finalScores: FinalScores, session: SheetSession = NO_SESSION): number | null {
   const race = draft.race ? getRace(draft.race) : undefined
   if (!race) return null
   const subrace = draft.subrace ? getSubrace(race, draft.subrace) ?? null : null
-  const penalty = getArmorSpeedPenalty(draft, finalScores)
+  const penalty = getArmorSpeedPenalty(draft, finalScores, session)
   const reduction = penalty && !penalty.ignoredBy ? penalty.value : 0
-  return getEffectiveSpeed(race, subrace) + getSpeedBonusTotal(draft) - reduction
+  return getEffectiveSpeed(race, subrace) + getSpeedBonusTotal(draft, session) - reduction
 }
 
 /**
@@ -488,9 +505,9 @@ export function getSheetSpeed(draft: CharacterDraft, finalScores: FinalScores): 
  * anão. Os incondicionais (Mobilidade) não ganham linha: já estão no número, sem ressalva.
  * Sem raça não há número (`getSheetSpeed` dá `null`, a ficha mostra "—"), então nem linha.
  */
-export function describeSpeedBonuses(draft: CharacterDraft, finalScores: FinalScores): string[] {
+export function describeSpeedBonuses(draft: CharacterDraft, finalScores: FinalScores, session: SheetSession = NO_SESSION): string[] {
   if (!draft.race || !getRace(draft.race)) return []
-  const lines = getSpeedBonuses(draft)
+  const lines = getSpeedBonuses(draft, session)
     .filter(b => b.condition)
     .map(b => {
       const text = `+${formatMeters(b.value)} ${b.condition} (${b.source})`
@@ -498,7 +515,7 @@ export function describeSpeedBonuses(draft: CharacterDraft, finalScores: FinalSc
         ? `Deslocamento inclui ${text}.`
         : `Não somado: ${text} — você está de ${b.blockedBy}.`
     })
-  const penalty = getArmorSpeedPenalty(draft, finalScores)
+  const penalty = getArmorSpeedPenalty(draft, finalScores, session)
   if (penalty) {
     const why = `${penalty.armor} pede Força ${penalty.strengthRequirement} e você tem ${penalty.strength}`
     lines.push(penalty.ignoredBy
@@ -716,13 +733,14 @@ export function getUnarmoredAcOptions(draft: CharacterDraft): UnarmoredAcOption[
  * fórmulas sem armadura das features, o Estilo de Luta Defesa de qualquer classe e a Maestria em
  * Armadura Média (o teto da DES e a Furtividade da armadura média).
  *
- * Com a sessão de jogo, os efeitos ligados entram com o nome de quem os dá: a fórmula sem armadura
+ * Com a sessão de jogo, a armadura e o escudo são os vestidos no jogo (`session.worn`), e os efeitos
+ * ligados entram com o nome de quem os dá: a fórmula sem armadura
  * na mesma disputa das features (a Armadura Arcana, p. 14), os bônus como parcela (Escudo Arcano,
  * Escudo da Fé, Velocidade: magias diferentes somam, p. 207) e o piso sobre a CA final (Pele de
  * Árvore; com dois, vale o maior).
  */
 export function getSheetArmorClass(draft: CharacterDraft, finalScores: FinalScores, session: SheetSession = NO_SESSION): ArmorClassResult {
-  const { bodyArmor, hasShield } = getDraftEquippedArmor(draft)
+  const { bodyArmor, hasShield } = getSessionArmor(draft, session)
   const mods = Object.fromEntries(
     ALL_ABILITY_SCORES.map(ab => [ab, calculateModifier(finalScores[ab])]),
   ) as Record<AbilityScore, number>
@@ -1070,7 +1088,7 @@ export function getSheetFightingStyles(draft: CharacterDraft): SheetFightingStyl
  * O bônus de dano condicional (`conditionalDamage`) sai daqui calculado: o `amount` do recurso que
  * a MESMA característica declara, no nível NA classe dona (bárbaro 9 / guerreiro 3 tem o Dano de
  * Fúria +3; talento, no de personagem), com os atributos finais, e o equipamento que descumpre a
- * condição — a armadura vestida, o mesmo critério da CA. Com a sessão, o bônus cujo efeito
+ * condição — a armadura vestida (a do jogo, com a sessão), o mesmo critério da CA. Com a sessão, o bônus cujo efeito
  * (`toggle`) está ligado vem `met`: a linha que cumpre o escopo o põe no número; e o dano extra de
  * um efeito ligado (`weaponDamage`: o Auxílio Divino) entra como `extraDamage`, com o nome da magia.
  */
@@ -1081,7 +1099,7 @@ export function getWeaponAttackEffects(
 ): SourcedAttackEffect[] {
   const charLevel = draft.level ?? 1
   const prof = getProficiencyBonus(charLevel)
-  const equipped = getDraftEquippedArmor(draft)
+  const equipped = getSessionArmor(draft, session)
   const out: SourcedAttackEffect[] = []
   const seen = new Set<string>()
   const add = (source: string, effects: FeatureEffects | undefined, level: number) => {
@@ -1125,8 +1143,8 @@ export function getWeaponAttackEffects(
 
 /**
  * Artes Marciais na ficha: o dado (lados) no nível de monge e se o equipamento deixa usá-la
- * agora. Como o Movimento sem Armadura, a ficha confere a armadura e o escudo equipados; quando
- * algo impede, `blockedBy` diz o quê. `null` para quem não tem.
+ * agora. Como o Movimento sem Armadura, a ficha confere a armadura e o escudo equipados (os vestidos
+ * no jogo, com a sessão); quando algo impede, `blockedBy` diz o quê. `null` para quem não tem.
  */
 export type SheetMartialArts = {
   source: string
@@ -1136,7 +1154,7 @@ export type SheetMartialArts = {
   blockedBy?: string
 }
 
-export function getMartialArts(draft: CharacterDraft, finalScores: FinalScores): SheetMartialArts | null {
+export function getMartialArts(draft: CharacterDraft, finalScores: FinalScores, session: SheetSession = NO_SESSION): SheetMartialArts | null {
   let best: SheetMartialArts | null = null
   for (const { entry, features } of getOwnedClassFeaturesByEntry(draft)) {
     for (const feature of features) {
@@ -1145,7 +1163,7 @@ export function getMartialArts(draft: CharacterDraft, finalScores: FinalScores):
       const resource = feature.effects?.resources?.find(r => r.id === martialArts.dieResource)
       const die = resource?.die ? evaluateQuantity(resource.die.size, entry.level, finalScores) : 0
       if (die <= 0 || (best && best.die >= die)) continue
-      const blockedBy = equipmentBlocker(martialArts.requires, getDraftEquippedArmor(draft))
+      const blockedBy = equipmentBlocker(martialArts.requires, getSessionArmor(draft, session))
       best = {
         source: feature.name, die, condition: martialArts.condition, active: !blockedBy,
         ...(blockedBy ? { blockedBy } : {}),
@@ -1925,12 +1943,12 @@ const sameTypes = (a: DamageTypeSet, b: DamageTypeSet) => JSON.stringify(a) === 
 /**
  * As defesas da ficha (`damageDefenses`), uma linha por efeito: a Pureza Corporal dá a imunidade
  * ao dano de veneno e a imunidade à condição Envenenado. A de `requires` é avaliada com o
- * equipamento da ficha, o mesmo da CA (`blockedBy` quando não vale). A Resistência a Dano do
+ * equipamento da ficha (o vestido no jogo, com a sessão), o mesmo da CA (`blockedBy` quando não vale). A Resistência a Dano do
  * draconato toma o tipo do ancestral da sub-raça; a Resistência Demoníaca, sem escolha de sessão,
  * fica só com a linha que pede a escolha. A mesma característica vinda de duas fontes entra uma vez.
  */
-export function getDamageDefenses(draft: CharacterDraft): SheetDamageDefense[] {
-  const equipped = getDraftEquippedArmor(draft)
+export function getDamageDefenses(draft: CharacterDraft, session: SheetSession = NO_SESSION): SheetDamageDefense[] {
+  const equipped = getSessionArmor(draft, session)
   const ancestor = getAncestorDamageType(draft)
   const out: SheetDamageDefense[] = []
   for (const { source, defenses: d } of getDeclaredDamageDefenses(draft)) {

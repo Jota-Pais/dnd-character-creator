@@ -67,6 +67,9 @@ function sheet(overrides: Partial<PlaySheet> = {}): PlaySheet {
     actions: [],
     spellbook: [],
     unproficientArmor: [],
+    equippedArmor: { bodyArmorId: null, shield: false },
+    wornArmor: { bodyArmorId: null, shield: false },
+    carriedArmor: [],
     ...overrides,
   }
 }
@@ -1363,6 +1366,21 @@ describe('sanitizePlayState', () => {
     expect(kinds(revive(ex6, S))).toEqual(['unresolvedRule'])
     // A 0 PV também não há concentração (assumido F).
     expect(sanitizePlayState({ lifeState: 'stable', concentration: { label: 'X' } }, 'c').concentration).toBeNull()
+  })
+
+  it('a armadura vestida no jogo passa inteira; torta em qualquer parte, sai (vale a do criador)', () => {
+    const basis = { bodyArmorId: 'leather', shield: false }
+    const worn = { bodyArmorId: 'plate', shield: true, basis }
+    expect(sanitizePlayState({ wornArmor: worn }, 'c').wornArmor).toEqual(worn)
+    expect(sanitizePlayState({ wornArmor: { bodyArmorId: null, shield: false, basis } }, 'c').wornArmor)
+      .toEqual({ bodyArmorId: null, shield: false, basis })
+    for (const torn of [
+      'x', { bodyArmorId: 'plate', shield: true }, { ...worn, bodyArmorId: 'shield' }, { ...worn, bodyArmorId: 'mithral' },
+      { ...worn, shield: 'sim' }, { ...worn, basis: { bodyArmorId: 3, shield: false } },
+    ]) {
+      expect('wornArmor' in sanitizePlayState({ wornArmor: torn }, 'c')).toBe(false)
+    }
+    expect('wornArmor' in sanitizePlayState({}, 'c')).toBe(false)
   })
 
   it('um estado válido passa intacto', () => {

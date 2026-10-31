@@ -840,6 +840,39 @@ describe('getRollGuide — armadura sem proficiência (pág. 144)', () => {
   })
 })
 
+// A armadura vestida no jogo (onda `armadura`): o guia deriva a sessão do estado, com ela.
+describe('getRollGuide — a armadura vestida no jogo', () => {
+  // O anão da montanha tem proficiência em armadura leve e média (pág. 20), não na pesada. O criador
+  // equipa o Camisão de Malha (o primeiro); no jogo, a Cota de Malha.
+  const wizard = draft({
+    class: 'wizard', level: 1, race: 'dwarf', subrace: 'mountain-dwarf', abilityScores: SCORES,
+    ...carrying('chain-shirt', 'chain-mail', 'dagger'),
+  })
+  const basis = { bodyArmorId: 'chain-shirt', shield: false }
+  const inChainMail = play({ wornArmor: { bodyArmorId: 'chain-mail', shield: false, basis } })
+
+  it('sem a troca, o Camisão de Malha: sem desvantagem, e conjura', () => {
+    const guide = getRollGuide(wizard, play())
+    expect(guide.checks.STR.disadvantage).toEqual([])
+    expect(guide.skills.stealth.disadvantage).toEqual([])
+    expect(guide.notes).toEqual([])
+  })
+
+  it('mago de Cota de Malha vestida no jogo: desvantagem em FOR e DES, na Furtividade, e não conjura', () => {
+    const guide = getRollGuide(wizard, inChainMail)
+    expect(labelsOf(guide.checks.STR.disadvantage)).toEqual(['Cota de Malha sem proficiência'])
+    expect(labelsOf(guide.saves.DEX.disadvantage)).toEqual(['Cota de Malha sem proficiência'])
+    expect(guide.attacks.find(a => a.key === 'dagger')!.attack.mode).toBe('disadvantage')
+    expect(labelsOf(guide.skills.stealth.disadvantage)).toEqual(['Cota de Malha sem proficiência', 'Cota de Malha'])
+    expect(guide.notes).toEqual(['Usando Cota de Malha sem proficiência, você não pode conjurar magias (pág. 144).'])
+  })
+
+  it('a troca que o criador deixou para trás (outra base) não vale: o criador manda', () => {
+    const stale = play({ wornArmor: { bodyArmorId: 'chain-mail', shield: false, basis: { bodyArmorId: null, shield: false } } })
+    expect(getRollGuide(wizard, stale).notes).toEqual([])
+  })
+})
+
 describe('getRollGuide — meia proficiência, Especialização, Alerta', () => {
   it('Versatilidade (bardo 2): no teste de atributo, nas perícias sem proficiência e na iniciativa', () => {
     const bard = draft({ class: 'bard', level: 2, abilityScores: SCORES })

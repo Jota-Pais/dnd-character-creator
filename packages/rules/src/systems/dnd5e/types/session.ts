@@ -1,4 +1,5 @@
 import type { ActiveEffect, EquipmentRequirement, ToggleEnd, ToggleOption, ZeroHpSave } from './effects'
+import type { ArmorCategory } from './equipment'
 
 /**
  * A sessão de jogo como as funções da ficha a enxergam: os efeitos ligados agora, já resolvidos.
@@ -9,7 +10,24 @@ import type { ActiveEffect, EquipmentRequirement, ToggleEnd, ToggleOption, ZeroH
  * (`getSheetSession`: o guia de rolagens, o da concentração); as funções só de ficha recebem a
  * sessão como parâmetro opcional, `NO_SESSION` por padrão — a Revisão e o PDF não passam nada e
  * continuam com a nota.
+ *
+ * A sessão leva também a armadura vestida (`worn`): trocada pela tela do jogo, ela muda a CA, o
+ * deslocamento, as Artes Marciais, os benefícios da Fúria e os avisos de proficiência, pelas mesmas
+ * funções da ficha.
  */
+
+/** A armadura de corpo e o escudo, pelos ids do catálogo (`armors.json`): os do criador ou os vestidos no jogo. */
+export type ArmorSetup = { bodyArmorId: string | null; shield: boolean }
+
+/**
+ * A armadura vestida pela tela do jogo (`PlayState.wornArmor`), quando difere da do criador, com a
+ * base: a armadura e o escudo equipados no criador quando a troca foi feita. Com a base diferente
+ * da de agora, o jogador mudou o equipamento no criador, e o criador manda.
+ */
+export type WornArmor = ArmorSetup & { basis: ArmorSetup }
+
+/** Uma armadura ou escudo que o personagem carrega (o inventário da ficha), com a proficiência nela. */
+export type CarriedArmor = { id: string; name: string; category: ArmorCategory; proficient: boolean }
 
 /** Um efeito com quem o dá: a própria Fúria, ou quem a modifica ("Fúria Inconsciente", "Totem Espiritual — Urso"). */
 export type SourcedActiveEffect = { source: string; effect: ActiveEffect }
@@ -65,7 +83,11 @@ export type ResolvedToggle = {
   option?: SheetToggleOption
 }
 
-export type SheetSession = { readonly active: readonly ResolvedToggle[] }
+export type SheetSession = {
+  readonly active: readonly ResolvedToggle[]
+  /** A armadura vestida agora; ausente, a equipada no criador. */
+  readonly worn?: ArmorSetup
+}
 
 /** Sem estado de jogo: a ficha como a Revisão e o PDF a mostram. */
 export const NO_SESSION: SheetSession = Object.freeze({ active: Object.freeze([]) })

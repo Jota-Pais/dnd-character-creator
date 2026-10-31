@@ -11,7 +11,7 @@ import { allClassEntries } from './multiclassUtils'
 import { getBackground, resolveBackgroundItems, getSkillName, getToolName } from './backgroundUtils'
 import { getFeat } from './featUtils'
 import {
-  getEquippedArmor, getArmor, getWeaponById, ALL_WEAPONS, getCarriedToolIds, getToolEquivalent, getItemName,
+  getArmor, getWeaponById, ALL_WEAPONS, getCarriedToolIds, getToolEquivalent, getItemName,
   getToolById,
 } from './equipmentUtils'
 import {
@@ -19,8 +19,9 @@ import {
   getClassFeatureSavingThrows,
   getFeatSelectionsByFeat, getFeatGrantedLanguages,
   getCheckProficiencyBonus, getPassiveScoreBonus, type CheckProficiency,
-  getHalfProficiencySources, getBestHalfProficiencySource,
+  getHalfProficiencySources, getBestHalfProficiencySource, getSessionArmor,
 } from './sheetEffects'
+import { NO_SESSION, type SheetSession } from '../types/session'
 import {
   calculateModifier, getProficiencyBonus, ALL_ABILITY_SCORES, ABILITY_LABELS,
 } from './abilityScoreUtils'
@@ -776,17 +777,16 @@ export function hasWeaponProficiency(draft: CharacterDraft, weapon: Weapon): boo
 }
 
 /**
- * Armadura/escudo equipados sem a proficiência correspondente.
+ * Armadura/escudo equipados sem a proficiência correspondente — no jogo, os vestidos (`session.worn`).
  *
  * "Se você vestir uma armadura com a qual não tem proficiência, terá desvantagem em qualquer
  * teste de habilidade, teste de resistência ou jogada de ataque que envolva Força ou Destreza, e
  * não poderá conjurar magias" (p. 144). O análogo da penalidade em dados do Ordem: a ficha não
  * some com o número, mostra a condição.
  */
-export function getUnproficientArmor(draft: CharacterDraft): Armor[] {
-  const classEquipment = draft.class ? getClass(draft.class)?.startingEquipment : undefined
-  const { bodyArmor, hasShield } = getEquippedArmor(draft.equipment, classEquipment)
-  // getEquippedArmor devolve só um booleano pro escudo; o item vem do catálogo pra nomear o aviso.
+export function getUnproficientArmor(draft: CharacterDraft, session: SheetSession = NO_SESSION): Armor[] {
+  const { bodyArmor, hasShield } = getSessionArmor(draft, session)
+  // getSessionArmor devolve só um booleano pro escudo; o item vem do catálogo pra nomear o aviso.
   const shield = hasShield ? getArmor('shield') : undefined
   const worn = [bodyArmor, shield].filter((a): a is Armor => a !== undefined)
   return worn.filter(armor => !hasArmorProficiency(draft, armor))

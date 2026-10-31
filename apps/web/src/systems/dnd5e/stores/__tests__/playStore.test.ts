@@ -1,8 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { registerPendingEdit, usePlayStore, UNDO_LIMIT } from '../playStore'
 import {
-  applyDamage, applyHealing, castSpell, createPlayState, emptyTurn, getCurrentHp, markTurn, newTurn, performAction, setInspiration, setNote,
+  addCondition, applyDamage, applyHealing, castSpell, createPlayState, emptyTurn, getCurrentHp, getPlaySpeed, markTurn, newTurn, performAction,
+  setInspiration, setNote, standUp,
 } from '@rpg/rules/systems/dnd5e/utils/playState'
+import type { PlayOperation } from '../playStore'
+import type { WornArmor } from '@rpg/rules/systems/dnd5e/types/session'
 import { loadPlayPreferences, loadPlayState, savePlayState } from '../../utils/playStorage'
 import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
 import { roll, sequenceRoller } from '@rpg/rules/core/dice'
@@ -143,6 +146,40 @@ describe('usePlayStore', () => {
     expect(loadPlayState('c1')?.damageTaken).toBe(0)
     usePlayStore.getState().undo()
     expect(usePlayStore.getState().state?.damageTaken).toBe(0)
+  })
+
+  it('a armadura vestida que muda remonta o sheet: o deslocamento, o desfazer e o levantar-se leem o de agora', () => {
+    // Monge 6 humano de Couro no criador: sem o Movimento sem Armadura (+4,5 m) nem a Defesa sem Armadura.
+    const monk = {
+      ...draft(), race: 'human', class: 'monk', level: 6,
+      equipment: { ...draft().equipment, purchasedItems: [{ itemId: 'leather', quantity: 1, source: 'purchased' as const }] },
+    }
+    const doff: PlayOperation = st => {
+      const wornArmor: WornArmor = { bodyArmorId: null, shield: false, basis: { bodyArmorId: 'leather', shield: false } }
+      return { state: { ...st, wornArmor }, notices: [] }
+    }
+    usePlayStore.getState().open('c1', monk, 1)
+    const sheet = () => usePlayStore.getState().sheet!
+    expect(sheet().speed).toBe(30)
+    expect(sheet().wornArmor).toEqual({ bodyArmorId: 'leather', shield: false })
+
+    usePlayStore.getState().run(doff)
+    expect(sheet().speed).toBe(45)
+    expect(sheet().wornArmor).toEqual({ bodyArmorId: null, shield: false })
+    // A barra e as operações leem o mesmo número: levantar-se custa a metade do novo.
+    usePlayStore.getState().run((st, sh) => addCondition(st, sh, 'prone'))
+    expect(getPlaySpeed(usePlayStore.getState().state!, sheet())).toBe(45)
+    usePlayStore.getState().run((st, sh) => standUp(st, sh))
+    expect(usePlayStore.getState().state?.turn.movementSpent).toBe(20)
+
+    // A troca gravada vale na próxima abertura; o desfazer dela volta o sheet do Couro.
+    usePlayStore.getState().close()
+    usePlayStore.getState().open('c1', monk, 1)
+    expect(sheet().speed).toBe(45)
+    usePlayStore.getState().run(st => ({ state: { ...st, wornArmor: undefined }, notices: [] }))
+    expect(sheet().speed).toBe(30)
+    usePlayStore.getState().undo()
+    expect(sheet().speed).toBe(45)
   })
 
   it('o desfazer volta o turno: o Usar (uso, efeito e casa num passo só) e o Novo turno', () => {

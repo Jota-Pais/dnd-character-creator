@@ -545,7 +545,7 @@ function saveInput(
  * mesmas entradas tiradas da ficha em vez do `PlaySheet`.
  */
 function getGuideEffects(draft: CharacterDraft, state: PlayState, session: SheetSession): ActiveConditionEffects {
-  return getActiveConditionEffects(getPlayConditionState(state, session.active, getDamageDefenses(draft)))
+  return getActiveConditionEffects(getPlayConditionState(state, session.active, getDamageDefenses(draft, session)))
 }
 
 /** Uma conjuração (classe ou talento) com a CD e o bônus de ataque já calculados pela fonte dela. */
@@ -567,9 +567,9 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
   const lines = [...conditionLines, ...getSheetConditionalLines(draft, effects)]
   const inspiration = state.inspiration
 
-  // Fontes da ficha.
-  const unproficient = getUnproficientArmor(draft)
-  const ac = getSheetArmorClass(draft, scores)
+  // Fontes da ficha, com a armadura vestida no jogo (a da sessão): a proficiência e a Furtividade.
+  const unproficient = getUnproficientArmor(draft, session)
+  const ac = getSheetArmorClass(draft, scores, session)
   const sheet: SheetModeSources = {
     unproficientArmor: unproficient.map(a => ({ source: `armor:${a.id}`, label: `${a.name} sem proficiência` })),
     stealth: ac.stealthDisadvantage

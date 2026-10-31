@@ -1,6 +1,6 @@
 import type { RollRecord } from '../../../core/dice'
 import type { SheetAction } from './actions'
-import type { SheetToggle } from './session'
+import type { ArmorSetup, CarriedArmor, SheetToggle, WornArmor } from './session'
 import type { CastingTimeKind, SpellbookList } from './spellbook'
 import type { SheetResource } from '../utils/classResourceUtils'
 import type { SheetDamageDefense } from '../utils/sheetEffects'
@@ -174,6 +174,12 @@ export type PlayState = {
   /** O turno em curso (o checklist): vazio no começo, no Novo turno e na Nova sessão. */
   turn: TurnState
   /**
+   * A armadura e o escudo vestidos pela tela do jogo, quando diferem dos do criador, com a base (o
+   * equipado no criador quando a troca foi feita). Ausente, vale o do criador. O draft nunca muda: o
+   * criador e o PDF mostram a ficha.
+   */
+  wornArmor?: WornArmor
+  /**
    * Usos desde o último descanso do que fica mais difícil a cada uso, pelo id do contador (a Fúria
    * Implacável: a CD sobe 5 a cada uso e volta a 10 no descanso curto ou longo, pág. 49). Zero não
    * entra.
@@ -280,10 +286,20 @@ export type PlaySheet = {
    */
   spellbook: SpellbookList[]
   /**
-   * A armadura vestida sem proficiência, pelo nome (`getUnproficientArmor`): com ela não se conjura
-   * (pág. 144, `getCastingBlockers`). É a da ficha até a onda `armadura`.
+   * A armadura vestida sem proficiência, pelo nome (`getUnproficientArmor`, com a armadura vestida
+   * no jogo): com ela não se conjura (pág. 144, `getCastingBlockers`).
    */
   unproficientArmor: string[]
+  /** A armadura e o escudo equipados no criador: a base de toda troca feita no jogo. */
+  equippedArmor: ArmorSetup
+  /**
+   * A armadura e o escudo com que este `PlaySheet` foi montado (`buildPlaySheet(draft, worn)`): o
+   * deslocamento, as defesas, os benefícios dos efeitos e a proficiência acima são com eles. O
+   * playStore remonta o sheet quando o vestido do estado (`getWornArmor`) deixa de ser este.
+   */
+  wornArmor: ArmorSetup
+  /** As armaduras e escudos que o personagem carrega (`getCarriedArmor`): o que se veste no jogo. */
+  carriedArmor: CarriedArmor[]
 }
 
 /** Uma parcela de um dano de vários tipos (o golpe com Auxílio Divino, a coluna de chamas). */

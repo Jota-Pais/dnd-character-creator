@@ -80,7 +80,8 @@ export function isSheetAttackInScope(attack: SheetAttack, scope: AttackScope): b
  * (`attacksPerAction`): arma de recarga fica em 1 (p. 149), salvo Especialista em Besta.
  *
  * Com a sessão de jogo (`session`), o condicional cujo efeito está ligado (em fúria) entra no número
- * da linha que cumpre o escopo; a Revisão e o PDF não a passam e continuam com a nota.
+ * da linha que cumpre o escopo, e as Artes Marciais e o Dano de Fúria olham a armadura vestida no
+ * jogo; a Revisão e o PDF não a passam e continuam com a nota.
  */
 export function getSheetAttacks(draft: CharacterDraft, finalScores: FinalScores, session: SheetSession = NO_SESSION): SheetAttack[] {
   const base = {
@@ -92,7 +93,7 @@ export function getSheetAttacks(draft: CharacterDraft, finalScores: FinalScores,
     loadingOverrides: getLoadingOverrides(draft),
     twoWeaponFighting: getTwoWeaponFighting(draft),
   }
-  const ma = getMartialArts(draft, finalScores)
+  const ma = getMartialArts(draft, finalScores, session)
   const martialArts = ma?.active ? { source: ma.source, die: ma.die, condition: ma.condition } : undefined
 
   const weapons = getEquippedWeapons(draft).map((weapon): SheetAttack => ({

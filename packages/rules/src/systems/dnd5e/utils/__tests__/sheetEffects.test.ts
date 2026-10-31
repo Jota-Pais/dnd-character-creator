@@ -38,6 +38,9 @@ import {
   describeDamageDefenses,
   getSpellDamageBonuses,
   getCantripSaveHalfDamage,
+  getMartialArts,
+  getSheetToggles,
+  getWeaponAttackEffects,
 } from '../sheetEffects'
 import {
   getArmorProficiencies, hasArmorProficiency, hasWeaponProficiency,
@@ -50,6 +53,8 @@ import { getFinalAbilityScores } from '../asiUtils'
 import { getFeat } from '../featUtils'
 import { getProgressionOptions } from '../progressionOptions'
 import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
+import { NO_SESSION, type ArmorSetup, type SheetSession } from '../../types/session'
+import { getUnproficientArmor } from '../proficiencyUtils'
 import progressionFeatures from '../../data/class-progression-features.json'
 
 function draft(overrides: Partial<CharacterDraft>): CharacterDraft {
@@ -1409,5 +1414,87 @@ describe('getSpellDamageBonuses / getCantripSaveHalfDamage', () => {
       ])
       expect(bonuses(caster('cleric', 7, subclass))).toEqual([])
     }
+  })
+})
+
+// ── A armadura vestida no jogo (onda `armadura`) ──────────────────────────────
+
+// A armadura vestida pela tela do jogo chega às funções da ficha pela sessão (`session.worn`): a CA,
+// o deslocamento (Movimento sem Armadura, Movimento Rápido, a Força da tabela), as Artes Marciais,
+// os benefícios da Fúria e o Dano de Fúria, as defesas e a proficiência. Sem sessão, tudo como antes.
+describe('a armadura vestida no jogo (sessão)', () => {
+  const carrying = (...itemIds: string[]) => ({
+    equipment: {
+      ...structuredClone(EMPTY_DRAFT.equipment),
+      method: 'wealth' as const,
+      purchasedItems: itemIds.map(itemId => ({ itemId, quantity: 1, source: 'purchased' as const })),
+    },
+  })
+  const wearing = (bodyArmorId: string | null, shield = false): SheetSession => ({ active: [], worn: { bodyArmorId, shield } satisfies ArmorSetup })
+  const character = (classId: string, level: number, overrides: Partial<CharacterDraft> = {}) =>
+    draft({ level, class: classId, race: 'human', ...overrides })
+
+  it('monge que tira a armadura ganha a Defesa sem Armadura, o deslocamento e as Artes Marciais', () => {
+    // Humano: DES 15 e SAB 15 (+1 de cada atributo, pág. 31) = +2 e +2.
+    const monk = character('monk', 6, { ...carrying('leather'), abilityScores: { STR: 10, DEX: 14, CON: 10, INT: 10, WIS: 14, CHA: 10 } })
+    const scores = getFinalAbilityScores(monk)
+    expect(getSheetArmorClass(monk, scores).value).toBe(13)
+    expect(getSheetSpeed(monk, scores)).toBe(30)
+    expect(getMartialArts(monk, scores)?.active).toBe(false)
+
+    const unarmored = wearing(null)
+    const ac = getSheetArmorClass(monk, scores, unarmored)
+    expect(ac.value).toBe(14)
+    expect(ac.components[0].label).toBe('Defesa sem Armadura')
+    expect(getSheetSpeed(monk, scores, unarmored)).toBe(45)
+    expect(describeSpeedBonuses(monk, scores, unarmored)).toEqual(['Deslocamento inclui +4,5 m sem armadura nem escudo (Movimento sem Armadura).'])
+    expect(getMartialArts(monk, scores, unarmored)?.active).toBe(true)
+  })
+
+  it('bárbaro que veste Placas perde os benefícios da Fúria, o Dano de Fúria e o Movimento Rápido', () => {
+    // Gibão e Placas compradas: o criador equipa o Gibão (a primeira); no jogo, as Placas.
+    const barbarian = character('barbarian', 5, { ...carrying('hide', 'plate'), abilityScores: { STR: 15, DEX: 10, CON: 14, INT: 10, WIS: 10, CHA: 10 } })
+    const scores = getFinalAbilityScores(barbarian)
+    const rage = (session: SheetSession) => getSheetToggles(barbarian, session).find(t => t.id === 'rage')!
+    expect(rage(NO_SESSION).benefits[0].blockedBy).toBeUndefined()
+    const plate = wearing('plate')
+    expect(rage(plate).benefits[0].blockedBy).toBe('Placas')
+    const rageDamage = (session: SheetSession) => getWeaponAttackEffects(barbarian, scores, session).find(e => e.conditionalDamage)?.conditionalDamage
+    expect(rageDamage(NO_SESSION)?.blockedBy).toBeUndefined()
+    expect(rageDamage(plate)?.blockedBy).toBe('Placas')
+    // Força 16 final cumpre a das Placas (15): só o Movimento Rápido sai.
+    expect(getSheetSpeed(barbarian, scores)).toBe(40)
+    expect(getSheetSpeed(barbarian, scores, plate)).toBe(30)
+  })
+
+  it('a Força da tabela vale na armadura vestida no jogo: Placas com Força 13 tiram 3 m', () => {
+    const fighter = character('fighter', 1, { ...carrying('chain-mail', 'plate'), abilityScores: { STR: 12, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 } })
+    const scores = getFinalAbilityScores(fighter)
+    expect(getSheetSpeed(fighter, scores)).toBe(30)
+    expect(getSheetSpeed(fighter, scores, wearing('plate'))).toBe(20)
+    expect(describeSpeedBonuses(fighter, scores, wearing('plate'))).toEqual(['Deslocamento reduzido em 3 m: Placas pede Força 15 e você tem 13.'])
+  })
+
+  it('mago anão da montanha que veste a Cota de Malha: sem proficiência', () => {
+    // O anão da montanha tem proficiência em armadura leve e média (pág. 20), não na pesada.
+    const wizard = character('wizard', 1, { race: 'dwarf', subrace: 'mountain-dwarf', ...carrying('chain-shirt', 'chain-mail') })
+    expect(getUnproficientArmor(wizard)).toEqual([])
+    expect(getUnproficientArmor(wizard, wearing('chain-mail')).map(a => a.name)).toEqual(['Cota de Malha'])
+    expect(getUnproficientArmor(wizard, wearing('chain-shirt', true)).map(a => a.name)).toEqual(['Escudo'])
+  })
+
+  it('a Maestria em Armadura Pesada só reduz o dano com a armadura pesada vestida', () => {
+    const fighter = character('fighter', 1, { raceChoices: { feat: 'maestria-em-armadura-pesada' }, ...carrying('chain-mail') })
+    expect(getDamageDefenses(fighter)[0].blockedBy).toBeUndefined()
+    expect(getDamageDefenses(fighter, wearing(null))[0].blockedBy).toBe('sem armadura pesada')
+  })
+
+  it('a sessão sem armadura vestida é a ficha: os mesmos números de antes', () => {
+    const barbarian = character('barbarian', 5, carrying('hide', 'shield'))
+    const scores = getFinalAbilityScores(barbarian)
+    const same: SheetSession = { active: [], worn: { bodyArmorId: 'hide', shield: true } }
+    expect(getSheetArmorClass(barbarian, scores, same)).toEqual(getSheetArmorClass(barbarian, scores))
+    expect(getSheetSpeed(barbarian, scores, same)).toBe(getSheetSpeed(barbarian, scores))
+    expect(getSheetToggles(barbarian, same)).toEqual(getSheetToggles(barbarian))
   })
 })

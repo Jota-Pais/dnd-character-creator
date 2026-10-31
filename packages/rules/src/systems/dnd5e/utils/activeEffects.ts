@@ -2,7 +2,7 @@ import type { CharacterDraft } from '../types/character'
 import type { RollModeEffect } from '../types/condition'
 import type { AttackScope, RollDiceEffect, ToggleDeclaration, ToggleEnd } from '../types/effects'
 import type { ActiveToggle, PlayState } from '../types/playState'
-import type { ResolvedToggle, SheetSession, SheetToggle } from '../types/session'
+import { NO_SESSION, type ResolvedToggle, type SheetSession, type SheetToggle } from '../types/session'
 import catalogData from '../data/active-effects.json'
 import { ABILITY_LABELS, formatMeters } from './abilityScoreUtils'
 import { getFinalAbilityScores } from './asiUtils'
@@ -11,6 +11,7 @@ import { describeDamageDefenses, getDeclaredToggle, getSheetToggles, getWeaponAt
 import { getSpell } from './spellUtils'
 import { joinPt } from './textUtils'
 import { DAMAGE_TYPE_PT } from './weaponFormat'
+import { getDraftWornArmor } from './wornArmor'
 
 /**
  * Os efeitos ligados do estado de jogo, resolvidos contra a ficha: o que cada um faz AGORA. Uma
@@ -63,15 +64,16 @@ function restEnds(declaration: ToggleDeclaration): ToggleEnd[] {
  * Os efeitos do catálogo que a ficha pode ter ligados. Qualquer ficha liga os que um aliado conjura
  * nela (a Bênção, a Armadura Arcana); os de alcance Pessoal só quem conhece a magia
  * (`getKnownSpells`), porque ninguém mais os conjura nela. A fonte é o nome da magia, ou o da ação.
+ * O bloqueio dos benefícios olha a armadura da sessão (`session.worn`: a vestida no jogo).
  */
-export function getCatalogToggles(draft: CharacterDraft): SheetToggle[] {
+export function getCatalogToggles(draft: CharacterDraft, session: SheetSession = NO_SESSION): SheetToggle[] {
   const known = new Set(listKnownSpells(getKnownSpells(draft)).map(s => s.id))
   return ACTIVE_EFFECT_CATALOG.flatMap(declaration => {
     const { spellId } = declaration
     const selfOnly = spellId !== undefined && isSelfOnly(spellId)
     if (spellId && selfOnly && !known.has(spellId)) return []
     const spell = spellId ? getSpell(spellId) : undefined
-    const toggle = getDeclaredToggle(draft, declaration, spell?.name ?? declaration.name ?? declaration.id)
+    const toggle = getDeclaredToggle(draft, declaration, spell?.name ?? declaration.name ?? declaration.id, session)
     for (const rest of restEnds(declaration)) if (!toggle.endsOn.includes(rest)) toggle.endsOn.push(rest)
     return [{
       ...toggle,
@@ -84,10 +86,11 @@ export function getCatalogToggles(draft: CharacterDraft): SheetToggle[] {
 
 /**
  * Todos os efeitos que se ligam na sessão: os da ficha (`getSheetToggles`: a Fúria) e os do
- * catálogo (`getCatalogToggles`). É a lista do `PlaySheet` e a da sessão das funções da ficha.
+ * catálogo (`getCatalogToggles`). É a lista do `PlaySheet` e a da sessão das funções da ficha, com
+ * os benefícios avaliados com a armadura da sessão (`session.worn`; os efeitos ligados dela não contam).
  */
-export function getSessionToggles(draft: CharacterDraft): SheetToggle[] {
-  return [...getSheetToggles(draft), ...getCatalogToggles(draft)]
+export function getSessionToggles(draft: CharacterDraft, session: SheetSession = NO_SESSION): SheetToggle[] {
+  return [...getSheetToggles(draft, session), ...getCatalogToggles(draft, session)]
 }
 
 /**
@@ -117,10 +120,13 @@ export function resolveActiveEffects(active: readonly ActiveToggle[], toggles: r
 
 /**
  * A sessão para as funções da ficha, derivada do estado de jogo — a porta de quem já recebe o
- * estado (o guia de rolagens, o da concentração, a tela). A Revisão e o PDF não a têm.
+ * estado (o guia de rolagens, o da concentração, a tela): a armadura vestida (`getDraftWornArmor`,
+ * a mesma conta do `buildPlaySheet`) e os efeitos ligados, com os benefícios avaliados com ela. A
+ * Revisão e o PDF não a têm.
  */
 export function getSheetSession(draft: CharacterDraft, state: PlayState): SheetSession {
-  return { active: resolveActiveEffects(state.activeEffects, getSessionToggles(draft)) }
+  const worn = getDraftWornArmor(draft, state.wornArmor)
+  return { active: resolveActiveEffects(state.activeEffects, getSessionToggles(draft, { active: [], worn })), worn }
 }
 
 // ── O que o efeito ligado está fazendo, em texto ────────────────────────────
@@ -163,9 +169,15 @@ function describeRollDice(e: RollDiceEffect): string {
  * (`getWeaponAttackEffects` com a sessão), as defesas com o texto de `describeDamageDefenses`, o
  * voo pelo deslocamento de caminhada do jogo (`walkingFeet`, `getPlaySpeed`). Primeiro o que muda
  * número ou modo (o dado a mais nas jogadas, a CA, o deslocamento, o dano), depois os lembretes e,
- * no fim, o que fica proibido.
+ * no fim, o que fica proibido. A armadura é a da sessão (`session.worn`): o Dano de Fúria de Placas
+ * vestidas no jogo não soma.
  */
-export function describeToggleEffects(draft: CharacterDraft, toggle: ResolvedToggle, walkingFeet: number): string[] {
+export function describeToggleEffects(
+  draft: CharacterDraft,
+  toggle: ResolvedToggle,
+  walkingFeet: number,
+  session: SheetSession = NO_SESSION,
+): string[] {
   const modes: string[] = []
   const numbers: string[] = []
   const defenses: string[] = []
@@ -227,7 +239,7 @@ export function describeToggleEffects(draft: CharacterDraft, toggle: ResolvedTog
       }
     }
   }
-  const damage = getWeaponAttackEffects(draft, getFinalAbilityScores(draft), { active: [toggle] }).flatMap(({ value, conditionalDamage: d }) =>
+  const damage = getWeaponAttackEffects(draft, getFinalAbilityScores(draft), { ...session, active: [toggle] }).flatMap(({ value, conditionalDamage: d }) =>
     d?.met && !d.blockedBy && value.conditionalDamage?.toggle === toggle.id
       ? [`+${d.value} de dano ${SCOPE_TEXT[value.weapons]} (${d.name})`]
       : [])

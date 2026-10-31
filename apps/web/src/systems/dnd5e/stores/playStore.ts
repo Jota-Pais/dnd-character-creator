@@ -4,7 +4,8 @@ import { canonicalJson } from '@rpg/rules/core/utils/canonicalJson'
 import type { CharacterDraft } from '@rpg/rules/systems/dnd5e/types/character'
 import type { PlayNotice, PlayResult, PlaySheet, PlayState, SheetSnapshot } from '@rpg/rules/systems/dnd5e/types/playState'
 import { buildPlaySheet } from '@rpg/rules/systems/dnd5e/utils/playSheet'
-import { clearRollHistory, recordRoll } from '@rpg/rules/systems/dnd5e/utils/playState'
+import { clearRollHistory, getWornArmor, recordRoll } from '@rpg/rules/systems/dnd5e/utils/playState'
+import { sameArmorSetup } from '@rpg/rules/systems/dnd5e/utils/wornArmor'
 import { syncSheetSnapshot, takeSheetSnapshot } from '@rpg/rules/systems/dnd5e/utils/sheetSnapshot'
 import {
   loadPlayPreferences, loadPlayState, loadPlayStateFor, savePlayPreferences, savePlayState, type PlayPreferences,
@@ -32,7 +33,15 @@ export type RestPanel = 'short' | 'long'
 type PlayStoreState = {
   characterId: string | null
   characterName: string
-  /** Os números da ficha, montados ao abrir; o jogo nunca lê o draft depois disso. */
+  /**
+   * A ficha aberta, só leitura: o `PlaySheet` sai dela ao abrir e de novo quando a armadura vestida
+   * no jogo muda. O jogo nunca a reescreve.
+   */
+  draft: CharacterDraft | null
+  /**
+   * Os números da ficha, montados ao abrir com a armadura vestida do estado, e remontados quando ela
+   * muda (`syncSheet`: a operação, o desfazer); fora disso, o jogo nunca lê o draft.
+   */
   sheet: PlaySheet | null
   state: PlayState | null
   /** Estados anteriores, do mais antigo ao mais recente, no máximo `UNDO_LIMIT`. */
@@ -123,6 +132,7 @@ export function registerPendingEdit(flush: () => void): () => void {
 const CLOSED = {
   characterId: null,
   characterName: '',
+  draft: null,
   sheet: null,
   state: null,
   undoStack: [],
@@ -133,6 +143,17 @@ const CLOSED = {
   shortRestDraft: [],
 } satisfies Partial<PlayStoreState>
 
+/**
+ * O sheet que vale para este estado: o mesmo, ou, quando a armadura vestida do estado não é aquela com
+ * que ele foi montado (vestir, tirar, desfazer uma troca), um novo, com ela (`buildPlaySheet`). Assim
+ * a barra, as abas e a próxima operação leem o deslocamento, as defesas e os benefícios da armadura de
+ * agora.
+ */
+function syncSheet(draft: CharacterDraft | null, sheet: PlaySheet, state: PlayState): PlaySheet {
+  if (!draft || sameArmorSetup(getWornArmor(state, sheet), sheet.wornArmor)) return sheet
+  return buildPlaySheet(draft, state.wornArmor)
+}
+
 /** Mudou de verdade? Operações sem efeito devolvem o mesmo objeto; as demais, um novo. */
 function changed(before: PlayState, after: PlayState): boolean {
   return before !== after && JSON.stringify(before) !== JSON.stringify(after)
@@ -140,15 +161,18 @@ function changed(before: PlayState, after: PlayState): boolean {
 
 /**
  * Estado da tela do modo de jogo (a ficha viva de UM personagem). A ficha (`CharacterDraft`) só é
- * lida no `open`, para montar o `PlaySheet`; o jogo grava apenas o `PlayState`, sempre pelo
- * `playStorage` — nunca o localStorage direto (CLAUDE.md).
+ * lida para montar o `PlaySheet` — no `open` e quando a armadura vestida muda —; o jogo grava apenas
+ * o `PlayState`, sempre pelo `playStorage` — nunca o localStorage direto (CLAUDE.md).
  */
 export const usePlayStore = create<PlayStoreState>((set, get) => ({
   ...CLOSED,
   prefs: loadPlayPreferences(),
 
   open: (id, draft, sheetUpdatedAt) => {
-    const sheet = buildPlaySheet(draft)
+    // O sheet sai com a armadura vestida no estado salvo, conferida com a ficha de agora; a
+    // reconciliação tira do estado a troca que não vale mais, com a mesma conta.
+    const saved = loadPlayState(id)
+    const sheet = buildPlaySheet(draft, saved?.wornArmor)
     const loaded = loadPlayStateFor(id, sheet)
     const snapshot = takeSheetSnapshot(draft, sheet, sheetUpdatedAt)
     const synced = syncSheetSnapshot(loaded.state, snapshot)
@@ -158,7 +182,6 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
     // A abertura mudou o estado (reconciliado com a ficha mudada, ou com o retrato novo da ficha):
     // grava, para o aviso da reconciliação aparecer uma vez só (e não em toda abertura até a
     // primeira ação). A primeira abertura grava o retrato, para a próxima ter com o que comparar.
-    const saved = loadPlayState(id)
     const state = !saved || canonicalJson(saved) !== canonicalJson(opened)
       ? savePlayState(opened)
       : opened
@@ -166,7 +189,8 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
       ...CLOSED,
       characterId: id,
       characterName: draft.name.trim(),
-      sheet,
+      draft,
+      sheet: syncSheet(draft, sheet, state),
       state,
       undoStack: [],
       notices: loaded.notices,
@@ -177,7 +201,7 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
   },
 
   run: (op, options) => {
-    const { state, sheet, undoStack } = get()
+    const { state, sheet, undoStack, draft } = get()
     if (!state || !sheet) return null
     const background = options?.background === true
     const result = op(state, sheet)
@@ -188,6 +212,7 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
     const saved = savePlayState(result.state)
     set({
       state: saved,
+      sheet: syncSheet(draft, sheet, saved),
       undoStack: [...undoStack, state].slice(-UNDO_LIMIT),
       ...(background ? {} : { notices: result.notices }),
       lastActionChanged: !background,
@@ -210,11 +235,14 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
   },
 
   undo: () => {
-    const { undoStack, state } = get()
+    const { undoStack, state, sheet, draft } = get()
     const previous = undoStack.at(-1)
-    if (!previous || !state) return
-    const restored = { ...previous, rolls: state.rolls, sheetSnapshot: state.sheetSnapshot }
-    set({ state: savePlayState(restored), undoStack: undoStack.slice(0, -1), notices: [], lastActionChanged: false })
+    if (!previous || !state || !sheet) return
+    const restored = savePlayState({ ...previous, rolls: state.rolls, sheetSnapshot: state.sheetSnapshot })
+    set({
+      state: restored, sheet: syncSheet(draft, sheet, restored),
+      undoStack: undoStack.slice(0, -1), notices: [], lastActionChanged: false,
+    })
   },
 
   dismissNotices: () => {

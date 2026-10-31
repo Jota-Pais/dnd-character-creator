@@ -60,7 +60,7 @@ function ToggleCard({ toggle, view, titleRef }: {
   }
 
   if (resolved) {
-    const lines = describeToggleEffects(draft, resolved, getPlaySpeed(state, sheet))
+    const lines = describeToggleEffects(draft, resolved, getPlaySpeed(state, sheet), view.session)
     return (
       <div className="rounded-xl border border-amber-700 bg-amber-950/30 p-3 space-y-2" data-testid={`toggle-${toggle.id}`}>
         <p className="font-fantasy text-amber-200">

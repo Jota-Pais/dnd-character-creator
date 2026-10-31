@@ -123,7 +123,7 @@ export type ConditionalSaveBonus = {
 
 /**
  * Condição de equipamento que a ficha confere sozinha, pelo que está equipado — o mesmo critério
- * da CA (`getEquippedArmor`):
+ * da CA (`getSessionArmor`: o equipado no criador, ou o vestido no jogo):
  * - `noHeavyArmor`: sem armadura pesada (Movimento Rápido, p. 49);
  * - `noArmorNoShield`: sem armadura nenhuma e sem escudo (Movimento sem Armadura, p. 104);
  * - `noArmor`: sem armadura vestida; o escudo não conta, porque não é o que se veste (Armadura

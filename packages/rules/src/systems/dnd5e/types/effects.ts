@@ -620,8 +620,8 @@ export type FeatureEffects = {
    * A capacidade de carga multiplicada (Aspecto da Besta do Urso, Guerreiro Totêmico 6, p. 50: "Sua
    * capacidade de carga (incluindo carga máxima e capacidade de erguer) é dobrada"). Incondicional:
    * entra na conta da carga da bolsa do jogo (`getCarryingCapacity`). Lido em features de classe e
-   * subclasse (no nível NA classe dona), nas opções escolhidas em slot de progressão, nos talentos e
-   * nos traços raciais.
+   * subclasse (no nível NA classe dona), nas opções escolhidas em slot de progressão e nos talentos
+   * (`getCarryingCapacityMultiplier`).
    */
   carryingCapacityMultiplier?: number
   /** Proficiências de armadura concedidas (Proteção Leve / Moderada / Pesada). */

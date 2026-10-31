@@ -15,8 +15,9 @@ import {
   recordDeathSave, recordRoll, recoverPactSlot, regainHpWhileStable, recoverResource, recoverSpellSlot, removeCondition,
   revive, sanitizePlayState, setConditionNote, setExhaustion, setInspiration, setNote, spendHitDie, spendPactSlot,
   spendResource, spendSpellSlot, stabilize, standUp, startConcentration, suggestLongRestHitDice,
-  suggestTempHpChoice,
+  suggestTempHpChoice, spendAmmo, recoverAmmo, adjustItem, adjustCoins, useItem, addCustomItem, adjustCustomItem,
 } from '../playState'
+import { getCarriedWeight, getItemQuantity } from '../inventoryPlay'
 
 // ── Montagem ─────────────────────────────────────────────────────────────────
 
@@ -70,6 +71,9 @@ function sheet(overrides: Partial<PlaySheet> = {}): PlaySheet {
     equippedArmor: { bodyArmorId: null, shield: false },
     wornArmor: { bodyArmorId: null, shield: false },
     carriedArmor: [],
+    inventory: [],
+    startingCoins: { pp: 0, gp: 0, ep: 0, sp: 0, cp: 0 },
+    carryingCapacity: { kg: 75, strength: 10, multiplier: null },
     ...overrides,
   }
 }
@@ -3003,5 +3007,237 @@ describe('a armadura vestida: vestir, tirar, o escudo e a reconciliação', () =
     const same = state({ wornArmor: { bodyArmorId: 'leather', shield: false, basis: { bodyArmorId: 'leather', shield: false } } })
     expect(reconcilePlayState(same, sh).wornArmor).toBeUndefined()
     expect(reconcileLoadedPlayState(same, sh).notices).toEqual([])
+  })
+})
+
+describe('a bolsa: munição, moedas, consumíveis e carga', () => {
+  // Humano: +1 em tudo, Força final 8 (capacidade de carga 60 kg).
+  const SCORES = { STR: 7, DEX: 13, CON: 13, INT: 9, WIS: 9, CHA: 9 }
+  /** Um personagem que compra (método riqueza, 100 po) o que carrega. */
+  const buyer = (items: [string, number][], patch: Partial<CharacterDraft> = {}): CharacterDraft => ({
+    ...structuredClone(EMPTY_DRAFT), level: 3, class: 'fighter', race: 'human', abilityScores: SCORES,
+    equipment: {
+      ...structuredClone(EMPTY_DRAFT.equipment), method: 'wealth', rolledGold: 100,
+      purchasedItems: items.map(([itemId, quantity]) => ({ itemId, quantity, source: 'purchased' as const })),
+    },
+    ...patch,
+  })
+  const texts = (r: { notices: { text: string }[] }) => r.notices.map(n => n.text)
+  const archer = buildPlaySheet(buyer([['longbow', 1], ['arrows', 1]]))
+  const quantity = (s: PlayState, sh: PlaySheet, id: string) => getItemQuantity(s, sh, id)
+
+  // "Cada vez que você atacar com a arma, você gasta uma peça de munição [...] No fim da batalha,
+  // você pode recuperar metade de sua munição gasta" (pág. 149, linhas 13412-13421); a metade
+  // arredonda para baixo (pág. 7).
+  it('gastar 5 flechas e recuperar 2: o tiro marca o ataque do turno', () => {
+    let s = state()
+    for (let i = 0; i < 5; i++) s = spendAmmo(s, archer, 'arrows', 'longbow').state
+    expect(quantity(s, archer, 'arrows')).toBe(15)
+    expect(s.inventory.ammoSpentSinceRecovery).toEqual({ arrows: 5 })
+    expect(s.turn.attacked).toBe(true)
+    const r = recoverAmmo(s, archer, 'arrows')
+    expect(quantity(r.state, archer, 'arrows')).toBe(17)
+    expect(r.state.inventory.ammoSpentSinceRecovery).toEqual({})
+    expect(texts(r)).toEqual(['Flechas: 2 de volta, a metade das 5 gastas, para baixo. É no fim da batalha, com 1 minuto procurando pelo campo (pág. 149).'])
+    // Recuperado, não há o que recuperar até gastar de novo.
+    expect(recoverAmmo(r.state, archer, 'arrows').notices).toEqual([{ kind: 'refused', text: 'Flechas: nada gasto desde a última recuperação.' }])
+  })
+
+  it('a peça gasta pela bolsa conta para a recuperação, mas não é ataque', () => {
+    const r = spendAmmo(state(), archer, 'arrows')
+    expect(quantity(r.state, archer, 'arrows')).toBe(19)
+    expect(r.state.inventory.ammoSpentSinceRecovery).toEqual({ arrows: 1 })
+    expect(r.state.turn.attacked).toBe(false)
+  })
+
+  // "Você pode usar uma arma que tenha a propriedade munição para realizar um ataque à distância,
+  // apenas se possuir munição para disparar a arma" (linhas 13412-13414).
+  it('sem munição, a arma não ataca: recusa sem gastar nem marcar nada', () => {
+    const empty = state({ inventory: { itemDelta: { arrows: -20 }, coinDelta: {}, ammoSpentSinceRecovery: { arrows: 20 }, customItems: [] } })
+    const r = spendAmmo(empty, archer, 'arrows', 'longbow')
+    expect(r.state).toBe(empty)
+    expect(r.notices).toEqual([{ kind: 'refused', text: 'Arco Longo: sem flechas, a arma não ataca — o ataque à distância com ela pede munição para disparar (pág. 149).' }])
+    // A última avisa que acabou.
+    const last = state({ inventory: { itemDelta: { arrows: -19 }, coinDelta: {}, ammoSpentSinceRecovery: {}, customItems: [] } })
+    expect(texts(spendAmmo(last, archer, 'arrows', 'longbow'))).toEqual(['Flechas: não sobrou nada na bolsa.'])
+    // A arma que não dispara essa munição, e quem não pode atacar.
+    expect(spendAmmo(state(), archer, 'crossbow-bolts', 'longbow').notices[0].kind).toBe('refused')
+    expect(spendAmmo(state({ lifeState: 'dead' }), archer, 'arrows', 'longbow').notices).toEqual([{ kind: 'refused', text: 'Atacar com Arco Longo: o personagem está morto.' }])
+    expect(spendAmmo(state({ conditions: ['stunned'] }), archer, 'arrows', 'longbow').notices[0].kind).toBe('refused')
+  })
+
+  // "Um personagem que beber o líquido [...] recupera 2d4+2 pontos de vida. Beber ou administrar uma
+  // poção exige uma ação" (linhas 13895-13897). A mesa rola e o jogador digita.
+  it('a Poção de Cura cura 2d4 + 2 com o valor digitado, gasta a poção e a ação (Usar um Objeto)', () => {
+    const sh = buildPlaySheet(buyer([['potion-of-healing', 2]]))
+    const hurt = state({ damageTaken: 10 })
+    const r = useItem(hurt, sh, 'potion-of-healing', { now: 1, self: true, heal: 7 })
+    expect(getCurrentHp(r.state, sh) - getCurrentHp(hurt, sh)).toBe(7)
+    expect(quantity(r.state, sh, 'potion-of-healing')).toBe(1)
+    expect(r.state.turn).toMatchObject({ action: true, used: ['use-an-object'] })
+    expect(texts(r)[0]).toBe('Poção de Cura: resta 1.')
+    expect(r.notices.some(n => n.kind === 'healed')).toBe(true)
+    // Sem o número, recusa sem gastar.
+    expect(useItem(hurt, sh, 'potion-of-healing', { now: 1, self: true }).notices)
+      .toEqual([{ kind: 'refused', text: 'Poção de Cura: diga quanto curou (2d4 + 2).' }])
+    // Dada a outra criatura: gasta a poção e a ação, e a cura é dela.
+    const given = useItem(hurt, sh, 'potion-of-healing', { now: 1 })
+    expect(given.state.damageTaken).toBe(10)
+    expect(quantity(given.state, sh, 'potion-of-healing')).toBe(1)
+    // A segunda ação do turno só avisa, como todo o checklist.
+    const twice = useItem(r.state, sh, 'potion-of-healing', { now: 2 })
+    expect(texts(twice)).toContain('Poção de Cura: você já usou a ação deste turno (pág. 191). Se já é outro turno, toque em Novo turno.')
+    // Acabou: recusa.
+    const none = useItem(twice.state, sh, 'potion-of-healing', { now: 3 })
+    expect(none.notices).toEqual([{ kind: 'refused', text: 'Poção de Cura: não há na bolsa.' }])
+  })
+
+  // O Antídoto liga o efeito do catálogo em quem bebe (vantagem nos TR contra veneno, nota). O livro
+  // não diz quanto tempo leva beber: o app não marca o turno.
+  it('o Antídoto liga a nota de vantagem contra veneno, sem marcar o turno', () => {
+    const sh = buildPlaySheet(buyer([['antitoxin', 2]]))
+    const r = useItem(state(), sh, 'antitoxin', { now: 5, self: true })
+    expect(r.state.activeEffects).toEqual([{ id: 'item:antitoxin', startedAt: 5 }])
+    expect(r.state.turn).toEqual(emptyTurn())
+    expect(quantity(r.state, sh, 'antitoxin')).toBe(1)
+    // Já bebido, o segundo não acumula: recusa sem gastar.
+    const again = useItem(r.state, sh, 'antitoxin', { now: 6, self: true })
+    expect(again.state).toBe(r.state)
+    expect(again.notices[0].kind).toBe('refused')
+  })
+
+  // "Você deve realizar um ataque à distância" (o ácido, linhas 13498-13504): o arremesso é ataque
+  // seu (o fim prematuro da Fúria), e o dano é a receita da mesa.
+  it('o ácido arremessado gasta o vidro, a ação e conta como ataque', () => {
+    const sh = buildPlaySheet(buyer([['acid-vial', 1]]))
+    const r = useItem(state(), sh, 'acid-vial', { now: 1 })
+    expect(r.state.turn).toMatchObject({ action: true, attacked: true, used: ['use-an-object'] })
+    expect(texts(r)).toEqual(['Ácido (Vidro): não sobrou nada na bolsa.'])
+    expect(r.state.damageTaken).toBe(0)
+  })
+
+  it('o Kit de Primeiros-Socorros gasta um uso dos dez', () => {
+    const sh = buildPlaySheet(buyer([['healers-kit', 1]]))
+    const r = useItem(state(), sh, 'healers-kit', { now: 1 })
+    expect(quantity(r.state, sh, 'healers-kit')).toBe(9)
+    expect(texts(r)).toEqual(['Kit de Primeiros-Socorros: restam 9 usos.'])
+  })
+
+  it('usar recusa o item sem "Usar", o morto e quem não pode agir, sem gastar', () => {
+    const sh = buildPlaySheet(buyer([['potion-of-healing', 1], ['torch', 1]]))
+    expect(useItem(state(), sh, 'torch', { now: 1 }).notices[0]).toEqual({ kind: 'refused', text: 'Tocha: o app não tem o "Usar" deste item.' })
+    expect(useItem(state({ lifeState: 'dead' }), sh, 'potion-of-healing', { now: 1, self: true, heal: 5 }).notices[0])
+      .toEqual({ kind: 'refused', text: 'Usar Poção de Cura: o personagem está morto.' })
+    const stunned = state({ conditions: ['stunned'] })
+    expect(useItem(stunned, sh, 'potion-of-healing', { now: 1, self: true, heal: 5 }).state).toBe(stunned)
+  })
+
+  it('moeda abaixo de 0: recusa; o gasto vira delta por moeda', () => {
+    const sh = buildPlaySheet(buyer([]))
+    expect(sh.startingCoins).toEqual({ pp: 0, gp: 100, ep: 0, sp: 0, cp: 0 })
+    const spent = adjustCoins(state(), sh, 'gp', -30)
+    expect(spent.state.inventory.coinDelta).toEqual({ gp: -30 })
+    const found = adjustCoins(spent.state, sh, 'sp', 15)
+    expect(found.state.inventory.coinDelta).toEqual({ gp: -30, sp: 15 })
+    const r = adjustCoins(found.state, sh, 'gp', -71)
+    expect(r.state).toBe(found.state)
+    expect(r.notices).toEqual([{ kind: 'refused', text: 'Você tem 70 po: não dá para gastar 71 po. O troco entre as moedas é com a mesa (pág. 145).' }])
+    expect(adjustCoins(state(), sh, 'cp', -1).notices[0].kind).toBe('refused')
+    // De volta ao da ficha, o delta não fica guardado.
+    expect(adjustCoins(spent.state, sh, 'gp', 30).state.inventory.coinDelta).toEqual({})
+  })
+
+  // "Sua capacidade de carga máxima é igual a 7,5 vezes o seu valor de Força" (pág. 178, linhas
+  // 15817-15821); 100 moedas pesam 1 kg (pág. 145). Só aviso, na passagem.
+  it('aviso de carga com Força 8: 60 kg, só ao passar', () => {
+    const sh = buildPlaySheet(buyer([]))
+    expect(sh.carryingCapacity).toEqual({ kg: 60, strength: 8, multiplier: null })
+    let s = state()
+    // As 100 po pesam 1 kg; três aríetes portáteis (17,5 kg cada), 53,5 kg.
+    for (let i = 0; i < 3; i++) s = adjustItem(s, sh, 'portable-ram', 1).state
+    expect(getCarriedWeight(s, sh)).toBe(53.5)
+    const over = adjustItem(s, sh, 'portable-ram', 1)
+    expect(over.notices).toEqual([{
+      kind: 'warning',
+      text: 'Você carrega 71 kg, acima da sua capacidade de carga, 60 kg (7,5 × Força 8): é o máximo que você carrega. Acima dela, você só arrasta, empurra ou ergue o peso, até 120 kg, e o deslocamento cai para 1,5 metro ao empurrar ou arrastar (pág. 178).',
+    }])
+    // Já acima, não repete; o deslocamento não muda sozinho (a regra padrão, sem a variante Sobrecarga).
+    expect(adjustItem(over.state, sh, 'portable-ram', 1).notices).toEqual([])
+    expect(getPlaySpeed(over.state, sh)).toBe(getPlaySpeed(state(), sh))
+  })
+
+  it('a bolsa põe e tira os consumíveis, a munição e os itens gerais do catálogo; arma e armadura, não', () => {
+    const r = adjustItem(state(), archer, 'potion-of-healing', 1)
+    expect(r.state.inventory.itemDelta).toEqual({ 'potion-of-healing': 1 })
+    expect(adjustItem(r.state, archer, 'potion-of-healing', -1).state.inventory.itemDelta).toEqual({})
+    expect(adjustItem(state(), archer, 'longbow', -1).notices).toEqual([{ kind: 'refused', text: 'Arco Longo: arma e armadura entram e saem pelo criador.' }])
+    expect(adjustItem(state(), archer, 'longsword', 1).notices[0].kind).toBe('refused')
+    expect(adjustItem(state(), archer, 'potion-of-healing', -1).notices).toEqual([{ kind: 'refused', text: 'Poção de Cura: só há 0 na bolsa.' }])
+  })
+
+  it('o item de texto livre: sem mecânica, o mesmo nome soma, a 0 sai', () => {
+    const one = addCustomItem(state(), '  Mapa   do tesouro ')
+    expect(one.state.inventory.customItems).toEqual([{ name: 'Mapa do tesouro', quantity: 1 }])
+    const two = addCustomItem(one.state, 'mapa do tesouro')
+    expect(two.state.inventory.customItems).toEqual([{ name: 'Mapa do tesouro', quantity: 2 }])
+    expect(adjustCustomItem(two.state, 'Mapa do tesouro', -2).state.inventory.customItems).toEqual([])
+    expect(adjustCustomItem(two.state, 'Mapa do tesouro', -3).notices[0].kind).toBe('refused')
+    expect(addCustomItem(state(), '   ').notices).toEqual([{ kind: 'refused', text: 'Escreva o nome do item.' }])
+    // Sem peso: não entra na carga.
+    expect(getCarriedWeight(two.state, archer)).toBe(getCarriedWeight(state(), archer))
+  })
+
+  // O aceite do desenho: os deltas sobrevivem à ficha mudada no criador; o item que saiu da ficha sai
+  // do delta, com aviso.
+  it('os deltas sobrevivem à ficha mudada no criador; o que saiu da ficha sai do delta, com aviso', () => {
+    const before = buildPlaySheet(buyer([['longbow', 1], ['arrows', 1], ['explorers-pack', 1]]))
+    const s = state({
+      inventory: {
+        itemDelta: { 'arrows': -5, 'rations': -3, 'torch': -8, 'potion-of-healing': 1 },
+        coinDelta: { gp: -20 },
+        ammoSpentSinceRecovery: { arrows: 5 },
+        customItems: [{ name: 'Mapa do tesouro', quantity: 1 }],
+      },
+    })
+    expect(reconcileLoadedPlayState(s, before).state.inventory).toEqual(s.inventory)
+    // No criador, as flechas saíram e o Pacote de Explorador (10 rações, 10 tochas) deu lugar a 5
+    // rações e 5 tochas avulsas.
+    const after = buildPlaySheet(buyer([['longbow', 1], ['torch', 5], ['rations', 5]]))
+    const r = reconcileLoadedPlayState(s, after)
+    expect(r.state.inventory).toEqual({
+      itemDelta: { 'rations': -3, 'torch': -5, 'potion-of-healing': 1 },
+      coinDelta: { gp: -20 },
+      ammoSpentSinceRecovery: {},
+      customItems: [{ name: 'Mapa do tesouro', quantity: 1 }],
+    })
+    expect(texts(r)).toEqual([
+      'A ficha mudou: a ficha não tem mais Flechas, e o que o jogo gastou saiu da bolsa junto.',
+      'A ficha mudou: Tocha — 5 na ficha agora, menos do que o jogo já gastou (8); na bolsa, ficam 0.',
+    ])
+  })
+
+  it('as moedas da ficha a menos do que o jogo gastou ficam em 0, com aviso', () => {
+    const s = state({ inventory: { itemDelta: {}, coinDelta: { gp: -90 }, ammoSpentSinceRecovery: {}, customItems: [] } })
+    const r = reconcileLoadedPlayState(s, buildPlaySheet(buyer([['longbow', 1]])))
+    expect(r.state.inventory.coinDelta).toEqual({ gp: -50 })
+    expect(texts(r)).toEqual(['A ficha mudou: o dinheiro dela agora é 50 po, menos do que o jogo já gastou em po; essa moeda fica em 0.'])
+  })
+
+  it('o sanitizador: só o que a bolsa mexe, inteiro e diferente de 0', () => {
+    const s = sanitizePlayState({
+      inventory: {
+        itemDelta: { 'arrows': -3, 'longbow': -1, 'nada': 2, 'potion-of-healing': 0, 'torch': 1.5, 'rations': 4 },
+        coinDelta: { gp: -5, xx: 3, sp: 'dez', cp: 0 },
+        ammoSpentSinceRecovery: { arrows: 3, torch: 2, 'crossbow-bolts': -1 },
+        customItems: [{ name: ' Anel ', quantity: 2 }, { name: 'anel', quantity: 1 }, { name: '', quantity: 1 }, { name: 'Mapa', quantity: 0 }, 'x'],
+      },
+    }, 'c')
+    expect(s.inventory).toEqual({
+      itemDelta: { arrows: -3, rations: 4 },
+      coinDelta: { gp: -5 },
+      ammoSpentSinceRecovery: { arrows: 3 },
+      customItems: [{ name: 'Anel', quantity: 2 }],
+    })
+    expect(sanitizePlayState({}, 'c').inventory).toEqual({ itemDelta: {}, coinDelta: {}, ammoSpentSinceRecovery: {}, customItems: [] })
   })
 })

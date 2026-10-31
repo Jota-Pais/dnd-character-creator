@@ -114,6 +114,50 @@ export type TurnState = {
 /** Uma magia conjurada no turno: qual, em que nível (0 no truque) e com que tempo de conjuração. */
 export type SpellCastRecord = { spellId: string; level: number; timing: CastingTimeKind }
 
+/**
+ * As cinco moedas (pág. 145): cobre, prata, electro, ouro e platina — no código, as siglas do
+ * original (cp, sp, ep, gp, pp); na tela, as do livro (pc, pp, pe, po, pl), de `COINS`.
+ */
+export type CoinId = 'cp' | 'sp' | 'ep' | 'gp' | 'pp'
+
+/** Teto do nome de um item de texto livre da bolsa: um nome, não uma descrição. */
+export const CUSTOM_ITEM_NAME_MAX_LENGTH = 60
+
+/** Um item de texto livre da bolsa (o saque, a compra que não está no catálogo): só o nome e quantos, sem mecânica. */
+export type CustomItem = { name: string; quantity: number }
+
+/**
+ * A bolsa da sessão (Fase 2, onda `inventario`): o que mudou no jogo sobre o inventário da ficha,
+ * nunca a ficha. Deltas, não a lista inteira: a ficha mudada no criador continua valendo por baixo
+ * (as rações a mais compradas lá chegam à bolsa), e o gasto do jogo continua por cima. O que saiu da
+ * ficha sai do delta, com aviso (`reconcilePlayState`).
+ */
+export type SessionInventory = {
+  /**
+   * Peças a mais ou a menos de cada item, pelo id do catálogo (−3 rações, +2 Poções de Cura): na
+   * munição, flechas, não pacotes de 20. O item novo do catálogo entra aqui, com o delta positivo.
+   */
+  itemDelta: Record<string, number>
+  /** Moedas a mais ou a menos de cada tipo: o gasto vira delta sobre o dinheiro da ficha. */
+  coinDelta: Partial<Record<CoinId, number>>
+  /**
+   * A munição gasta desde a última recuperação, pelo id: no fim da batalha, a metade volta (pág. 149).
+   * Zero não entra.
+   */
+  ammoSpentSinceRecovery: Record<string, number>
+  /** Os itens de texto livre, na ordem em que entraram. */
+  customItems: CustomItem[]
+}
+
+/** Um item do inventário da ficha, em peças (`getSheetInventory`): 1 pacote de flechas são 20. */
+export type SheetInventoryItem = { id: string; quantity: number }
+
+/**
+ * A capacidade de carga da ficha (pág. 178: 7,5 × o valor de Força, em kg) e o que a multiplica (o
+ * Aspecto da Besta do Urso, pág. 50).
+ */
+export type CarryingCapacity = { kg: number; strength: number; multiplier: { value: number; source: string } | null }
+
 /** Magia (ou efeito) em que o personagem se concentra. `spellId` quando vem de `spells.json`. */
 export type Concentration = {
   spellId?: string
@@ -179,6 +223,8 @@ export type PlayState = {
    * criador e o PDF mostram a ficha.
    */
   wornArmor?: WornArmor
+  /** A bolsa da sessão: moedas, munição e itens, como deltas sobre o inventário da ficha. */
+  inventory: SessionInventory
   /**
    * Usos desde o último descanso do que fica mais difícil a cada uso, pelo id do contador (a Fúria
    * Implacável: a CD sobe 5 a cada uso e volta a 10 no descanso curto ou longo, pág. 49). Zero não
@@ -300,6 +346,15 @@ export type PlaySheet = {
   wornArmor: ArmorSetup
   /** As armaduras e escudos que o personagem carrega (`getCarriedArmor`): o que se veste no jogo. */
   carriedArmor: CarriedArmor[]
+  /**
+   * O inventário da ficha em peças, cada item uma vez, na ordem dela, com os pacotes abertos
+   * (`getSheetInventory`): a base da bolsa do jogo, que guarda só os deltas.
+   */
+  inventory: SheetInventoryItem[]
+  /** O dinheiro da ficha (`getStartingMoney`) em ouro, prata e cobre, como a ficha o escreve. */
+  startingCoins: Record<CoinId, number>
+  /** A capacidade de carga (`getCarryingCapacity`): o aviso da bolsa compara o peso com ela. */
+  carryingCapacity: CarryingCapacity
 }
 
 /** Uma parcela de um dano de vários tipos (o golpe com Auxílio Divino, a coluna de chamas). */

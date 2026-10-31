@@ -2,10 +2,10 @@ import type { RollRecord } from '../../../core/dice'
 import type { ConditionId, ExhaustionLevel } from '../types/condition'
 import type { DamageTypeId } from '../types/damage'
 import {
-  CONDITION_NOTE_MAX_LENGTH, HIT_DIE_SIZES, PLAY_STATE_VERSION, ROLL_HISTORY_LIMIT,
-  type ActiveToggle, type Concentration, type DamageInput, type DamagePart, type DeathSaveCount, type LifeState, type PlayNotice, type PlayNoticeKind,
-  type PlayResult, type PlaySheet, type PlayState, type SheetSnapshot, type SheetSnapshotAttack, type SheetSnapshotSpellcasting,
-  type SpellCastRecord, type TurnSlot, type TurnState,
+  CONDITION_NOTE_MAX_LENGTH, CUSTOM_ITEM_NAME_MAX_LENGTH, HIT_DIE_SIZES, PLAY_STATE_VERSION, ROLL_HISTORY_LIMIT,
+  type ActiveToggle, type CoinId, type Concentration, type CustomItem, type DamageInput, type DamagePart, type DeathSaveCount, type LifeState,
+  type PlayNotice, type PlayNoticeKind, type PlayResult, type PlaySheet, type PlayState, type SessionInventory, type SheetSnapshot,
+  type SheetSnapshotAttack, type SheetSnapshotSpellcasting, type SpellCastRecord, type TurnSlot, type TurnState,
 } from '../types/playState'
 import type { ActionTiming, SheetAction } from '../types/actions'
 import type { Spell } from '../types/spell'
@@ -27,8 +27,12 @@ import { countLabel, joinPt } from './textUtils'
 import { findSpellbookEntry } from './spellbook'
 import { getSpellMechanics } from './spellMechanics'
 import { castingTimeKind, getSpell, hasVerbalComponent } from './spellUtils'
-import { getArmorById } from './equipmentUtils'
+import { getArmorById, getWeaponById } from './equipmentUtils'
 import { resolveWornArmor, sameArmorSetup } from './wornArmor'
+import {
+  COIN_IDS, COINS, describeOverload, emptyInventory, formatBagQuantity, formatCoinPurse, formatDiceSpec, getBagItemInfo, getCoins,
+  getItemQuantity, isBagAdjustable, type BagItemInfo,
+} from './inventoryPlay'
 
 /**
  * Operações do estado de jogo: funções puras que recebem (estado, PlaySheet, …) e devolvem
@@ -97,6 +101,7 @@ export function createPlayState(characterId: string, now = 0): PlayState {
     concentration: null,
     activeEffects: [],
     turn: emptyTurn(),
+    inventory: emptyInventory(),
     restCounters: {},
     inspiration: false,
     note: '',
@@ -316,6 +321,7 @@ function reconcileInto(state: PlayState, sheet: PlaySheet, notices: PlayNotice[]
       if (!toggle) return []
       return a.option && !toggle.options.some(o => o.id === a.option) ? [{ id: a.id, startedAt: a.startedAt }] : [a]
     }),
+    inventory: reconcileInventory(state.inventory, sheet),
   }
   // A armadura vestida no jogo: com a base diferente do equipado no criador, o criador mudou o
   // equipamento e manda; com a base igual, fica o que ainda se carrega. Igual ao do criador, a troca
@@ -329,6 +335,53 @@ function reconcileInto(state: PlayState, sheet: PlaySheet, notices: PlayNotice[]
   const donned = getWornArmor(next, sheet).bodyArmorId
   if (state.wornArmor && donned && donned !== state.wornArmor.bodyArmorId) endTogglesOnDonArmor(next, sheet, donned, notices)
   return next
+}
+
+/**
+ * A bolsa contra a ficha de agora (`reconcilePlayState`). Os deltas sobrevivem à ficha mudada no
+ * criador: as rações a mais compradas lá chegam por baixo do gasto do jogo. O que o jogo gastou além
+ * do que a ficha tem agora encolhe até 0 — e, do item que saiu da ficha, o gasto sai inteiro; o item
+ * que entrou no jogo (delta positivo) fica. As moedas também não ficam abaixo de 0, e a munição gasta
+ * só fica lembrada com a munição na ficha ou no delta. Os avisos são de `describeInventoryReconciled`.
+ */
+function reconcileInventory(inventory: SessionInventory, sheet: PlaySheet): SessionInventory {
+  const itemDelta: Record<string, number> = {}
+  for (const [id, delta] of Object.entries(inventory.itemDelta)) {
+    const value = Math.max(delta, -sheetQuantity(sheet, id))
+    if (value !== 0) itemDelta[id] = value
+  }
+  const coinDelta: SessionInventory['coinDelta'] = {}
+  for (const id of COIN_IDS) {
+    const value = Math.max(inventory.coinDelta[id] ?? 0, -sheet.startingCoins[id])
+    if (value !== 0) coinDelta[id] = value
+  }
+  const ammoSpentSinceRecovery = Object.fromEntries(Object.entries(inventory.ammoSpentSinceRecovery)
+    .filter(([id]) => sheetQuantity(sheet, id) > 0 || itemDelta[id] !== undefined))
+  return { itemDelta, coinDelta, ammoSpentSinceRecovery, customItems: inventory.customItems }
+}
+
+/** Quantas peças do item a ficha tem (o inventário dela, em peças); 0 sem ele. */
+const sheetQuantity = (sheet: PlaySheet, id: string) => sheet.inventory.find(i => i.id === id)?.quantity ?? 0
+
+/**
+ * Os avisos da bolsa que a ficha mudada encolheu (`reconcileLoadedPlayState`): o item que saiu da
+ * ficha com o gasto do jogo, o que a ficha tem agora a menos do que o jogo gastou e as moedas.
+ */
+function describeInventoryReconciled(inventory: SessionInventory, sheet: PlaySheet): PlayNotice[] {
+  const notices: PlayNotice[] = []
+  for (const [id, delta] of Object.entries(inventory.itemDelta)) {
+    const base = sheetQuantity(sheet, id)
+    if (delta >= -base) continue
+    const name = getBagItemInfo(id)?.name ?? id
+    notices.push(note('info', base === 0
+      ? `A ficha mudou: a ficha não tem mais ${name}, e o que o jogo gastou saiu da bolsa junto.`
+      : `A ficha mudou: ${name} — ${base} na ficha agora, menos do que o jogo já gastou (${-delta}); na bolsa, ficam 0.`))
+  }
+  const short = COINS.filter(c => (inventory.coinDelta[c.id] ?? 0) < -sheet.startingCoins[c.id])
+  if (short.length > 0) {
+    notices.push(note('info', `A ficha mudou: o dinheiro dela agora é ${formatCoinPurse(sheet.startingCoins)}, menos do que o jogo já gastou em ${joinPt(short.map(c => c.abbr))}; ${short.length > 1 ? 'essas moedas ficam' : 'essa moeda fica'} em 0.`))
+  }
+  return notices
 }
 
 /** A troca de armadura que ainda vale contra a ficha (`reconcilePlayState`); `undefined`, nenhuma. */
@@ -365,6 +418,7 @@ export function reconcileLoadedPlayState(state: PlayState, sheet: PlaySheet): Pl
     ...optionLost.map(t => note('info', `A ficha mudou: continua ${lowerFirst(t.label)}, sem a opção escolhida ao ligar, porque a ficha não a tem mais; o que ela fazia, inclusive ao terminar, deixa de valer.`)),
     ...describeWornArmorReconciled(state.wornArmor, sheet),
     ...ended,
+    ...describeInventoryReconciled(state.inventory, sheet),
   ]
   if (state.lifeState !== 'conscious') return done(next, toggleNotices)
   const sheetMax = getBaseMaxHp(state, sheet)
@@ -1635,10 +1689,11 @@ const equippedOf = (setup: ArmorSetup) => ({
 })
 
 /**
- * O que veste e tira pede poder agir: o morto não veste nada, e quem está Incapacitado não faz ações
- * (pág. 292) — o escudo leva uma, e a armadura, minutos delas. A frase da recusa, ou null.
+ * O que veste e tira, e o que se usa da bolsa, pede poder agir: o morto não veste nada, e quem está
+ * Incapacitado não faz ações (pág. 292) — o escudo leva uma, a armadura, minutos delas, e o tiro e a
+ * poção, a do ataque e a de Usar um Objeto. A frase da recusa, ou null.
  */
-function describeCannotChangeArmor(state: PlayState, sheet: PlaySheet, what: string): string | null {
+function describeCannotAct(state: PlayState, sheet: PlaySheet, what: string): string | null {
   if (state.lifeState === 'dead') return `${what}: o personagem está morto.`
   const noActions = getPlayEffects(state, sheet).noActions
   return noActions.active ? `${what}: ${noActions.sources.map(s => s.label).join(', ')}, sem ações nem reações (pág. 292).` : null
@@ -1702,7 +1757,7 @@ export function donArmor(state0: PlayState, sheet: PlaySheet, armorId: string): 
   if (!armor) {
     return refuse(state0, `${armorName(armorId)} não está entre as armaduras que você carrega: armadura nova entra pelo criador.`)
   }
-  const cannot = describeCannotChangeArmor(state0, sheet, `Vestir ${armor.name}`)
+  const cannot = describeCannotAct(state0, sheet, `Vestir ${armor.name}`)
   if (cannot) return refuse(state0, cannot)
   const state = reconcilePlayState(state0, sheet)
   const before = getWornArmor(state, sheet)
@@ -1724,7 +1779,7 @@ export function doffArmor(state0: PlayState, sheet: PlaySheet): PlayResult {
   const before = getWornArmor(state, sheet)
   if (!before.bodyArmorId) return refuse(state0, 'Você não está vestindo armadura.')
   const name = armorName(before.bodyArmorId)
-  const cannot = describeCannotChangeArmor(state0, sheet, `Tirar ${name}`)
+  const cannot = describeCannotAct(state0, sheet, `Tirar ${name}`)
   if (cannot) return refuse(state0, cannot)
   const category = getArmorById(before.bodyArmorId)?.category ?? 'light'
   const next: PlayState = { ...state }
@@ -1744,7 +1799,7 @@ function changeShield(state0: PlayState, sheet: PlaySheet, on: boolean): PlayRes
   if (on && !sheet.carriedArmor.some(a => a.category === 'shield')) {
     return refuse(state0, 'Você não carrega escudo: escudo novo entra pelo criador.')
   }
-  const cannot = describeCannotChangeArmor(state0, sheet, name)
+  const cannot = describeCannotAct(state0, sheet, name)
   if (cannot) return refuse(state0, cannot)
   const state = reconcilePlayState(state0, sheet)
   const before = getWornArmor(state, sheet)
@@ -1776,6 +1831,223 @@ export function resetWornArmor(state0: PlayState, sheet: PlaySheet): PlayResult 
   const notices: PlayNotice[] = [note('info', `Equipamento vestido de volta ao da ficha: ${describeArmorSetup(sheet.equippedArmor)}.`)]
   wearInto(next, sheet, { ...sheet.equippedArmor }, notices)
   return done(next, notices)
+}
+
+// ── A bolsa (onda `inventario`) ──────────────────────────────────────────────
+
+/** A ação em combate pela qual sai o item que "exige a sua ação" (pág. 195): é ela que o turno marca. */
+const USE_AN_OBJECT = 'use-an-object'
+
+const withInventory = (state: PlayState, patch: Partial<SessionInventory>): PlayState =>
+  ({ ...state, inventory: { ...state.inventory, ...patch } })
+
+/** Os deltas da bolsa com `change` somado ao do item; o zero não fica guardado. */
+function addItemDelta(inventory: SessionInventory, id: string, change: number): Record<string, number> {
+  const next = { ...inventory.itemDelta }
+  const value = (next[id] ?? 0) + change
+  if (value === 0) delete next[id]
+  else next[id] = value
+  return next
+}
+
+/**
+ * O aviso de quem passou da capacidade de carga com esta mudança, só na passagem: a carga é aviso,
+ * nunca recusa nem número (a regra padrão, pág. 178; sem a variante Sobrecarga, decisão de 2026-10-29).
+ */
+function warnOverload(before: PlayState, after: PlayState, sheet: PlaySheet, notices: PlayNotice[]): void {
+  const over = describeOverload(after, sheet)
+  if (over && !describeOverload(before, sheet)) notices.push(note('warning', over))
+}
+
+/** "Flechas: restam 18.", "Poção de Cura: resta 1.", "Kit de Primeiros-Socorros: restam 9 usos.", "Ácido (Vidro): não sobrou nada na bolsa." */
+function describeLeft(info: BagItemInfo, left: number): string {
+  if (left === 0) return `${info.name}: não sobrou nada na bolsa.`
+  const count = info.category === 'ammunition' || info.piecesPerUnit === 1 ? `${left}` : formatBagQuantity(info, left)
+  return `${info.name}: ${left === 1 ? 'resta' : 'restam'} ${count}.`
+}
+
+/**
+ * Gasta uma peça de munição (pág. 149: "Cada vez que você atacar com a arma, você gasta uma peça de
+ * munição"), lembrada para a recuperação. Pelo cartão da arma (`weaponId`), o tiro é um ataque seu e
+ * marca o turno (`attacked`: o fim prematuro da Fúria pergunta por ele); pela bolsa, é só a peça gasta.
+ * Recusa sem munição — "apenas se possuir munição para disparar a arma" —, a arma que não a dispara,
+ * o morto e quem não pode agir.
+ */
+export function spendAmmo(state0: PlayState, sheet: PlaySheet, ammoId: string, weaponId?: string): PlayResult {
+  const info = getBagItemInfo(ammoId)
+  if (!info || info.category !== 'ammunition') return refuse(state0, `${info?.name ?? ammoId} não é munição.`)
+  const weapon = weaponId ? getWeaponById(weaponId) : undefined
+  if (weaponId && weapon?.ammunition !== ammoId) return refuse(state0, `${weapon?.name ?? weaponId} não dispara ${info.name.toLowerCase()}.`)
+  const cannot = describeCannotAct(state0, sheet, weapon ? `Atacar com ${weapon.name}` : `Gastar ${info.name.toLowerCase()}`)
+  if (cannot) return refuse(state0, cannot)
+  const state = reconcilePlayState(state0, sheet)
+  const quantity = getItemQuantity(state, sheet, ammoId)
+  if (quantity <= 0) {
+    return refuse(state0, weapon
+      ? `${weapon.name}: sem ${info.name.toLowerCase()}, a arma não ataca — o ataque à distância com ela pede munição para disparar (pág. 149).`
+      : `Sem ${info.name.toLowerCase()} na bolsa.`)
+  }
+  const spent = state.inventory.ammoSpentSinceRecovery
+  let next = withInventory(state, {
+    itemDelta: addItemDelta(state.inventory, ammoId, -1),
+    ammoSpentSinceRecovery: { ...spent, [ammoId]: (spent[ammoId] ?? 0) + 1 },
+  })
+  if (weapon) next = { ...next, turn: { ...next.turn, attacked: true } }
+  return done(next, quantity === 1 ? [note('info', describeLeft(info, 0))] : [])
+}
+
+/**
+ * Recupera a munição gasta desde a última recuperação: "No fim da batalha, você pode recuperar metade
+ * de sua munição gasta, se tiver um minuto para procurar pelo campo de batalha" (pág. 149), a metade
+ * arredondada para baixo (pág. 7). O contador zera. Recusa sem nada gasto e o morto.
+ */
+export function recoverAmmo(state0: PlayState, sheet: PlaySheet, ammoId: string): PlayResult {
+  const info = getBagItemInfo(ammoId)
+  if (!info || info.category !== 'ammunition') return refuse(state0, `${info?.name ?? ammoId} não é munição.`)
+  if (state0.lifeState === 'dead') return refuse(state0, `Recuperar ${info.name.toLowerCase()}: o personagem está morto.`)
+  const state = reconcilePlayState(state0, sheet)
+  const spent = state.inventory.ammoSpentSinceRecovery[ammoId] ?? 0
+  if (spent === 0) return refuse(state0, `${info.name}: nada gasto desde a última recuperação.`)
+  const back = Math.floor(spent / 2)
+  const next = withInventory(state, {
+    itemDelta: back > 0 ? addItemDelta(state.inventory, ammoId, back) : state.inventory.itemDelta,
+    ammoSpentSinceRecovery: Object.fromEntries(Object.entries(state.inventory.ammoSpentSinceRecovery).filter(([id]) => id !== ammoId)),
+  })
+  const notices: PlayNotice[] = [
+    note('info', `${info.name}: ${back} de volta, a metade das ${spent} gastas, para baixo. É no fim da batalha, com 1 minuto procurando pelo campo (pág. 149).`),
+  ]
+  warnOverload(state, next, sheet, notices)
+  return done(next, notices)
+}
+
+/**
+ * Tira ou põe peças de um item na bolsa (`change`, +1 ou −1 pela tela): o consumível gasto à mão, o
+ * saque, a compra. Entram os consumíveis, a munição e os itens gerais do catálogo (decisão de
+ * 2026-10-30, `isBagAdjustable`); arma e armadura, só pelo criador. Recusa abaixo de 0.
+ */
+export function adjustItem(state0: PlayState, sheet: PlaySheet, itemId: string, change: number): PlayResult {
+  const info = getBagItemInfo(itemId)
+  if (!info) return refuse(state0, `Item desconhecido: ${itemId}.`)
+  if (!Number.isInteger(change) || change === 0) return refuse(state0, `${info.name}: quantidade inválida.`)
+  if (!isBagAdjustable(sheet, itemId)) {
+    return refuse(state0, info.kind === 'weapon' || info.kind === 'armor'
+      ? `${info.name}: arma e armadura entram e saem pelo criador.`
+      : `${info.name} não entra pela bolsa: só os consumíveis, a munição e os itens gerais do catálogo, ou um item de texto livre.`)
+  }
+  const state = reconcilePlayState(state0, sheet)
+  const quantity = getItemQuantity(state, sheet, itemId)
+  if (quantity + change < 0) return refuse(state0, `${info.name}: só há ${quantity} na bolsa.`)
+  const next = withInventory(state, { itemDelta: addItemDelta(state.inventory, itemId, change) })
+  const notices: PlayNotice[] = []
+  warnOverload(state, next, sheet, notices)
+  return done(next, notices)
+}
+
+/**
+ * Ganha ou gasta moedas de um tipo (`change` positivo ou negativo): o gasto vira delta sobre o
+ * dinheiro da ficha. Recusa abaixo de 0: o app não troca uma moeda pela outra, o troco é da mesa
+ * (tabela de câmbio, pág. 145). As moedas pesam (100 por quilo): passar da capacidade de carga avisa.
+ */
+export function adjustCoins(state0: PlayState, sheet: PlaySheet, coin: CoinId, change: number): PlayResult {
+  const info = COINS.find(c => c.id === coin)
+  if (!info || !Number.isInteger(change) || change === 0) return refuse(state0, 'Quantidade de moedas inválida.')
+  const state = reconcilePlayState(state0, sheet)
+  const have = getCoins(state, sheet)[coin]
+  if (have + change < 0) {
+    return refuse(state0, `Você tem ${have} ${info.abbr}: não dá para gastar ${-change} ${info.abbr}. O troco entre as moedas é com a mesa (pág. 145).`)
+  }
+  const coinDelta = { ...state.inventory.coinDelta }
+  const value = (coinDelta[coin] ?? 0) + change
+  if (value === 0) delete coinDelta[coin]
+  else coinDelta[coin] = value
+  const next = withInventory(state, { coinDelta })
+  const notices: PlayNotice[] = []
+  warnOverload(state, next, sheet, notices)
+  return done(next, notices)
+}
+
+/**
+ * Como o item foi usado: em você (`self`: a Poção de Cura que você bebe, o Antídoto) ou em outra
+ * criatura — aí a cura e o efeito são dela, e a mesa os aplica. `heal`: quanto a poção curou, que a
+ * mesa rolou (a tela ensina a fórmula, decisão da Fase 2, como no Dado de Vida).
+ */
+export type ItemUseInput = { now: number; self?: boolean; heal?: number }
+
+/**
+ * Usa um item da bolsa (`GeneralItem.use`): tira uma peça e aplica o que ele causa, num passo só do
+ * desfazer — em você, a cura (`applyHealing`) e o efeito do catálogo (`activateToggle`: o Antídoto);
+ * o ataque do item arremessado conta como ataque seu (`attacked`); o dano é a receita da mesa. O que
+ * "exige a sua ação" sai pela ação Usar um Objeto (pág. 195), marcada no turno como o "Usar" das
+ * ações (`spendTurn`: a ação já usada só avisa); o que o livro não diz o tempo (o Antídoto), o app
+ * não marca. Recusa o item sem "Usar", o que acabou, o morto e quem não pode agir, a cura em você
+ * sem o número e o efeito que já está ligado — sem gastar nada.
+ */
+export function useItem(state0: PlayState, sheet: PlaySheet, itemId: string, input: ItemUseInput): PlayResult {
+  const info = getBagItemInfo(itemId)
+  const use = info?.use
+  if (!info || !use) return refuse(state0, `${info?.name ?? itemId}: o app não tem o "Usar" deste item.`)
+  const cannot = describeCannotAct(state0, sheet, `Usar ${info.name}`)
+  if (cannot) return refuse(state0, cannot)
+  let next = reconcilePlayState(state0, sheet)
+  const quantity = getItemQuantity(next, sheet, itemId)
+  if (quantity <= 0) return refuse(state0, `${info.name}: não há na bolsa.`)
+  next = withInventory(next, { itemDelta: addItemDelta(next.inventory, itemId, -1) })
+  const notices: PlayNotice[] = [note('info', describeLeft(info, quantity - 1))]
+  for (const outcome of use.outcomes ?? []) {
+    if (outcome.kind === 'attack') {
+      next = { ...next, turn: { ...next.turn, attacked: true } }
+      continue
+    }
+    // O dano é da mesa (a receita da bolsa); a cura e o efeito, só em você.
+    if (outcome.kind === 'roll' || !input.self) continue
+    const r = outcome.kind === 'heal'
+      ? (isInt(input.heal) && input.heal > 0
+        ? applyHealing(next, sheet, input.heal)
+        : refuse(next, `${info.name}: diga quanto curou (${formatDiceSpec(outcome.dice)}).`))
+      : activateToggle(next, sheet, outcome.toggle, { now: input.now })
+    const refused = r.notices.find(n => n.kind === 'refused')
+    if (refused) return refuse(state0, refused.text)
+    next = r.state
+    notices.push(...r.notices)
+  }
+  if (use.timing === 'action') {
+    next = { ...next, turn: spendTurn(next.turn, { id: USE_AN_OBJECT, name: info.name, timing: 'action', page: use.page }, sheet, getExtraTurnAction(next, sheet), notices) }
+  }
+  return done(next, notices)
+}
+
+/** O mesmo nome de item livre, sem olhar maiúsculas nem espaços: "corda élfica" é a "Corda Élfica". */
+const sameItemName = (a: string, b: string) => a.toLocaleLowerCase('pt-BR') === b.toLocaleLowerCase('pt-BR')
+
+/** O nome de um item livre como fica guardado: aparado, sem espaços repetidos, até o teto. */
+const cleanItemName = (name: string) => name.trim().replace(/\s+/g, ' ').slice(0, CUSTOM_ITEM_NAME_MAX_LENGTH).trim()
+
+/**
+ * Põe na bolsa um item de texto livre (o que não está no catálogo: um mapa, um anel achado), sem
+ * mecânica — nem peso (decisão de 2026-10-30). O mesmo nome soma ao que já está.
+ */
+export function addCustomItem(state: PlayState, name: string): PlayResult {
+  const clean = cleanItemName(name)
+  if (!clean) return refuse(state, 'Escreva o nome do item.')
+  const items = state.inventory.customItems
+  const found = items.find(c => sameItemName(c.name, clean))
+  const customItems: CustomItem[] = found
+    ? items.map(c => (c === found ? { ...c, quantity: c.quantity + 1 } : c))
+    : [...items, { name: clean, quantity: 1 }]
+  return done(withInventory(state, { customItems }))
+}
+
+/** Tira ou põe peças de um item de texto livre; a 0, ele sai da bolsa. Recusa abaixo de 0. */
+export function adjustCustomItem(state: PlayState, name: string, change: number): PlayResult {
+  const found = state.inventory.customItems.find(c => sameItemName(c.name, name))
+  if (!found) return refuse(state, `${name} não está na bolsa.`)
+  if (!Number.isInteger(change) || change === 0) return refuse(state, `${found.name}: quantidade inválida.`)
+  const quantity = found.quantity + change
+  if (quantity < 0) return refuse(state, `${found.name}: só há ${found.quantity} na bolsa.`)
+  const customItems = quantity === 0
+    ? state.inventory.customItems.filter(c => c !== found)
+    : state.inventory.customItems.map(c => (c === found ? { ...c, quantity } : c))
+  return done(withInventory(state, { customItems }))
 }
 
 // ── Conjurar pelo grimório ──────────────────────────────────────────────────
@@ -2690,6 +2962,37 @@ function sanitizeWornArmor(x: unknown): WornArmor | null {
   return worn && basis ? { ...worn, basis } : null
 }
 
+/**
+ * A bolsa gravada: delta de item só de um item do catálogo que a bolsa mexe (nunca arma nem
+ * armadura), inteiro e diferente de 0; o de moeda, das cinco; a munição gasta, só de munição; o item
+ * livre com nome e quantidade positiva, cada nome uma vez (o primeiro). O que a ficha ainda tem quem
+ * confere é a reconciliação, que conhece a ficha.
+ */
+function sanitizeInventory(x: unknown): SessionInventory {
+  if (!isRecord(x)) return emptyInventory()
+  const itemDelta: Record<string, number> = {}
+  for (const [id, value] of Object.entries(isRecord(x.itemDelta) ? x.itemDelta : {})) {
+    const info = getBagItemInfo(id)
+    if (info && info.kind !== 'weapon' && info.kind !== 'armor' && isInt(value) && value !== 0) itemDelta[id] = value
+  }
+  const coins = isRecord(x.coinDelta) ? x.coinDelta : {}
+  const coinDelta: SessionInventory['coinDelta'] = {}
+  for (const id of COIN_IDS) {
+    const value = coins[id]
+    if (isInt(value) && value !== 0) coinDelta[id] = value
+  }
+  const ammoSpentSinceRecovery = Object.fromEntries(Object.entries(sanitizeCounts(x.ammoSpentSinceRecovery))
+    .filter(([id]) => getBagItemInfo(id)?.category === 'ammunition'))
+  const customItems: CustomItem[] = []
+  for (const item of Array.isArray(x.customItems) ? x.customItems : []) {
+    if (!isRecord(item) || typeof item.name !== 'string') continue
+    const name = cleanItemName(item.name)
+    const quantity = nonNegInt(item.quantity)
+    if (name && quantity > 0 && !customItems.some(c => sameItemName(c.name, name))) customItems.push({ name, quantity })
+  }
+  return { itemDelta, coinDelta, ammoSpentSinceRecovery, customItems }
+}
+
 /** O turno gravado: casa que não é `true` fica livre, contagem que não é número fica 0. */
 function sanitizeTurn(x: unknown): TurnState {
   if (!isRecord(x)) return emptyTurn()
@@ -2828,6 +3131,7 @@ export function sanitizePlayState(raw: unknown, characterId: string): PlayState 
       .filter(a => !a.sustainedByConcentration || (lifeState === 'conscious' && sanitizeConcentration(raw.concentration) !== null)),
     turn: sanitizeTurn(raw.turn),
     ...(wornArmor ? { wornArmor } : {}),
+    inventory: sanitizeInventory(raw.inventory),
     restCounters: sanitizeCounts(raw.restCounters),
     inspiration: raw.inspiration === true,
     note: typeof raw.note === 'string' ? raw.note : '',

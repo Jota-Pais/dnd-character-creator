@@ -15,6 +15,7 @@ import {
 } from './sheetEffects'
 import { getCombinedSpellSlots, getPactSlots } from './spellUtils'
 import { getCarriedArmor, getEquippedArmorSetup, resolveWornArmor } from './wornArmor'
+import { getCarryingCapacity, getSheetInventory, getStartingCoins } from './inventoryPlay'
 
 const byAbility = <T>(make: (ability: AbilityScore) => T): Record<AbilityScore, T> =>
   Object.fromEntries(ALL_ABILITY_SCORES.map(a => [a, make(a)])) as Record<AbilityScore, T>
@@ -28,6 +29,9 @@ const byAbility = <T>(make: (ability: AbilityScore) => T): Record<AbilityScore, 
  * o que o personagem carrega (`resolveWornArmor`), ela entra no deslocamento, nas defesas, nos
  * benefícios dos efeitos (a Fúria) e na proficiência, pelas mesmas funções, com a sessão. O playStore
  * remonta o sheet quando ela muda (operação, desfazer, reconciliação).
+ *
+ * A bolsa do jogo lê daqui a base: o inventário da ficha em peças, o dinheiro em moedas e a
+ * capacidade de carga; o estado guarda só os deltas (`PlayState.inventory`).
  */
 export function buildPlaySheet(draft: CharacterDraft, worn?: WornArmor): PlaySheet {
   const abilityScores = getFinalAbilityScores(draft)
@@ -68,5 +72,8 @@ export function buildPlaySheet(draft: CharacterDraft, worn?: WornArmor): PlayShe
     equippedArmor,
     wornArmor,
     carriedArmor,
+    inventory: getSheetInventory(draft),
+    startingCoins: getStartingCoins(draft),
+    carryingCapacity: getCarryingCapacity(draft, abilityScores),
   }
 }

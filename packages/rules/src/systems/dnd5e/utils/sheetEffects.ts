@@ -2160,3 +2160,23 @@ export function getChosenDamageTypeSpellNotes(draft: CharacterDraft): ChosenDama
     return text && damageType ? [{ source: feat.name, damageType, text }] : []
   })
 }
+
+// ── Carga (onda `inventario`) ──────────────────────────────────────────────────
+
+/**
+ * O que multiplica a capacidade de carga (`carryingCapacityMultiplier`: o Aspecto da Besta do Urso,
+ * p. 50, "Sua capacidade de carga [...] é dobrada"), com quem o dá: features de classe e subclasse
+ * no nível NA classe dona, opções escolhidas em slot de progressão (o Urso é a opção do Aspecto da
+ * Besta, "Aspecto da Besta — Urso") e talentos. Fontes não somam: vale a maior, como as
+ * características repetidas (p. 166). `null` sem nenhuma.
+ */
+export function getCarryingCapacityMultiplier(draft: CharacterDraft): SheetEffect<number> | null {
+  const found: SheetEffect<number>[] = []
+  const add = (source: string, effects: FeatureEffects | undefined) => {
+    if (effects?.carryingCapacityMultiplier) found.push({ source, value: effects.carryingCapacityMultiplier })
+  }
+  for (const feature of getOwnedClassFeatures(draft)) add(feature.name, feature.effects)
+  for (const { slot, option } of getOwnedProgressionOptions(draft)) add(`${slot.label} — ${option.name}`, option.effects)
+  for (const feat of getOwnedFeats(draft)) add(feat.name, feat.effects)
+  return found.reduce<SheetEffect<number> | null>((best, e) => (!best || e.value > best.value ? e : best), null)
+}

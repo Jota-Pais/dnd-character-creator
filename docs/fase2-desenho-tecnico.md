@@ -1199,6 +1199,14 @@ Conjurar pela ficha:
 - Nenhum número de ficha salva muda no aviso de migração: o retrato não tem o grimório, e a CD, o ataque e os espaços não mudaram.
 - Conferido no Edge a 390 × 844, 360 × 740 e 360 × 640, também pelo teclado: o clérigo 3 / mago 1 conjura Curar Ferimentos no 2º nível em três toques (a bolinha de 2º apaga, o foco volta ao "Conjurar", o aviso do pé diz o gasto); a Bênção sem o ritual e com o "Em você?", e o Esc que fecha a folha e devolve o foco; Detectar Magia com o "Como ritual"; a Palavra Curativa na ação bônus da aba Ações (a casa marcada, o foco de volta) e, depois dela, o aviso da magia de ação bônus na folha dos Mísseis Mágicos e no pé; o bárbaro / mago em fúria sem as magias de reação e com a recusa na folha, o foco no "Conjurar"; o tiferino com as Outras magias e a repreensão infernal no 2º nível. Alvos de 45 px, sem rolagem lateral, o "Conjurar" da folha à vista pelo `elementFromPoint` e o console sem erros.
 - Com o dono: o Iniciado em Magia conjura a magia de 1º nível só pelo uso do talento, como diz o texto (pág. 170, linhas 15146-15155); se os espaços de quem conjura a mesma lista também servem a ela, é pergunta da revisão.
+- **Revisão (2026-10-31).** Corrigidos, um commit cada:
+  - a pág. do "espaço desse nível ou maior" é a 203 do pt-BR, não a 201 do inglês (linhas 18119-18146), na recusa, nos comentários, em `regras-conjuracao.md` e no CLAUDE.md;
+  - a prévia da folha de conjurar saiu da região viva: ela já nasce com a folha quando a Palavra Curativa ou a fúria vieram antes, e não era anunciada; agora é texto ligado ao "Conjurar" por `aria-describedby`, e a região viva nasce vazia e recebe só a resposta do toque, num parágrafo novo a cada toque (a recusa igual à da prévia não mudava o DOM). Os testes passaram a seguir a ordem em que se joga (a Palavra Curativa e a fúria pela tela, antes de abrir a folha), em vez de mudar o estado com a folha aberta;
+  - a prévia diz só os avisos de regra (`warning`, `concentrationReplaced`) e a recusa, sem os de resultado no passado ("Bênção: terminou com a sua concentração.", a cura); o "já está em você: não acumula" (pág. 207) passou a `warning`;
+  - a magia em duas conjurações leva a conjuração no nome do "Conjurar" (`castButtonLabel`);
+  - o comentário de `getCastingBlockers` diz quem usa a lista desde esta onda.
+  - Conferido no Edge a 390 × 844, 360 × 640 e 360 × 740: a região vazia ao abrir, a prévia no `aria-describedby`, a recusa escrita a cada toque (com o `MutationObserver`), uma vez só na folha, o foco no "Conjurar", os nomes das duas conjurações, alvos de 45 px, sem rolagem lateral e o console sem erros.
+- Ficaram com o dono (sem resposta registrada): o Iniciado em Magia com a classe do talento entre as do personagem (os espaços e o ritual da classe, Ponto em aberto 3 de `regras-conjuracao.md`) e quando as "Outras magias" (o truque da raça, o da subclasse, as inatas) ganham a CD e o ataque — o traço diz a habilidade (o tiferino, Carisma, pág. 43; o Alto Elfo, Inteligência, pág. 24), e o dado já a guarda (`InnateSpell.ability`, `CantripChoice.spellcastingAbility`), mas a conjuração no `RollGuide` muda o retrato do aviso de correção da ficha. Ficou com a `magias-lote-2`: a Ajuda conjurada de novo em você não pode somar ao PV máximo (ver lá).
 
 #### 1. Modelo do grimório
 
@@ -1861,9 +1869,12 @@ As magias de 2º nível jogáveis, como Raio Ardente, Arma Espiritual (+1d8 a ca
 
 Mesmo processo. perSlotAbove.every cobre 'a cada dois níveis', e maxHpIncrease cobre a Ajuda.
 
+Antes de fechar o lote (revisão da onda `grimorio`, 2026-10-31): a Ajuda conjurada de novo em você não soma ao PV máximo. Os efeitos da mesma magia não se somam, e vale o mais potente enquanto as durações se sobrepõem (pág. 207, linhas 18487-18498). Hoje o `castSpell` chama o `adjustMaxHp` a cada conjuração com o `self.maxHpIncrease`, e o `maxHpAdjustment` é um número só, sem a fonte: a Ajuda no 2º (+5) e depois no 3º (+10) daria +15. A Ajuda ganha uma fonte rastreável (um efeito do catálogo com o valor, ou o ajuste guardado com o `spellId`), e o `castSpell` aplica só a diferença para a mais potente, com o aviso da pág. 207, como no efeito ligado ("já está em você: a mesma magia não acumula"). Teste: Ajuda no 2º e depois no 3º dá +10.
+
 - **Arquivos:** `packages/rules/src/systems/dnd5e/data/spell-mechanics.json`, `docs/magias/mecanica-magias.md`
 - **Testes:** - spellMechanics.test.ts com o lote 2 fechado.
 - spellGuide.test.ts: Arma Espiritual no 4º nível dá 2d8 + mod; Ajuda no 3º, +10.
+- playState.test.ts: Ajuda no 2º e depois no 3º, em você, dá +10, não +15 (pág. 207).
 - **Aceite:** O lote está 100% coberto.
 
 ### Dano estruturado: magias de 3º nível (50) (`magias-lote-3`)

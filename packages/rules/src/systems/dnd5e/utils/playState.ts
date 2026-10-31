@@ -1168,9 +1168,10 @@ export function activateToggle(state0: PlayState, sheet: PlaySheet, id: string, 
   if (state0.activeEffects.some(a => a.id === id)) return refuse(state0, `Já está ${lowerFirst(toggle.label)}.`)
   if (option && !toggle.options.some(o => o.id === option)) return refuse(state0, `${toggle.label}: opção desconhecida (${option}).`)
   // O que se perde "se seu deslocamento cair para 0" (o Esquivar, pág. 194) com ele já em 0 (o
-  // Agarrado): o livro não diz se o benefício chega a valer. O app não chuta e avisa.
+  // Agarrado): o livro não diz se o benefício chega a valer. O app não chuta: não liga e diz como
+  // aplicar à mão, se o Mestre decidir que vale.
   if (toggle.endsOn.includes('speedZero') && getPlaySpeed(state0, sheet) === 0) {
-    return refuse(state0, `${toggle.source}: seu deslocamento já é 0, e o livro só diz que você perde o benefício se ele cair para 0 (pág. ${toggle.page}). O app não sabe se ele vale assim: decida com o Mestre; nada foi marcado.`, 'unresolvedRule')
+    return refuse(state0, `${toggle.source}: seu deslocamento já é 0, e o livro só diz que você perde o benefício se ele cair para 0 (pág. ${toggle.page}). O app não ligou o efeito: decida com o Mestre e, se valer, aplique-o à mão (a vantagem se marca na folha da jogada).`, 'unresolvedRule')
   }
   // A de alcance Pessoal com concentração (o Auxílio Divino) é sempre sua: quem conjura sustenta.
   const sustained = toggle.concentration && (on.sustainedByConcentration || toggle.selfOnly)
@@ -1350,7 +1351,8 @@ export function newTurn(state0: PlayState, sheet: PlaySheet): PlayResult {
  * turno (`spendTurn`), tudo num passo só do desfazer. Recusa morto, quem não pode agir (Incapacitado,
  * pág. 292; o levantar-se, que é movimento, fica com o deslocamento), a ação que pede um efeito
  * ligado que não está, e o custo sem usos — sem gastar nada. O que a ação liga recusa como
- * `activateToggle` (já em fúria), também sem gastar. O momento já usado no turno só avisa.
+ * `activateToggle` (já em fúria), também sem gastar; o que o livro não decide (o Esquivar com o
+ * deslocamento já em 0) não liga, mas a ação conta. O momento já usado no turno só avisa.
  */
 export function performAction(state0: PlayState, sheet: PlaySheet, actionId: string, on: ToggleOn): PlayResult {
   const action = sheet.actions.find(a => a.id === actionId)
@@ -1401,9 +1403,16 @@ export function performAction(state0: PlayState, sheet: PlaySheet, actionId: str
     const r = outcome.kind === 'toggleOn' ? activateToggle(next, sheet, outcome.toggle, on)
       : outcome.kind === 'toggleOff' ? deactivateToggle(next, sheet, outcome.toggle)
         : standUp(next, sheet)
-    // A recusa, e o caso que o livro não decide, voltam ao estado de antes, sem gastar nada.
-    const refused = r.notices.find(n => n.kind === 'refused' || n.kind === 'unresolvedRule')
-    if (refused) return refuse(state0, refused.text, refused.kind)
+    // A recusa volta ao estado de antes, sem gastar nada.
+    const refused = r.notices.find(n => n.kind === 'refused')
+    if (refused) return refuse(state0, refused.text)
+    // O caso que o livro não decide (o Esquivar com o deslocamento já em 0): a ação foi feita nas duas
+    // leituras, então gasta e marca o turno; o efeito fica desligado, com o aviso de como aplicá-lo.
+    const open = r.notices.find(n => n.kind === 'unresolvedRule')
+    if (open) {
+      notices.push(open)
+      continue
+    }
     next = r.state
     notices.push(...r.notices)
   }

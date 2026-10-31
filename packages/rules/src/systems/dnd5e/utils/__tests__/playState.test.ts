@@ -2310,14 +2310,19 @@ describe('o turno: as ações em combate', () => {
 
   // "Você perde esse benefício [...] se seu deslocamento cair para 0" (linhas 17413-17414): com ele
   // já em 0, o livro não diz se o benefício chega a valer.
-  it('Esquivar com o deslocamento já em 0 (Agarrado) não marca nada e diz que o livro não decide', () => {
+  it('Esquivar com o deslocamento já em 0 (Agarrado): a ação conta, o efeito não liga, e o aviso diz que o livro não decide', () => {
     const grappled = state({ conditions: ['grappled'] })
     const r = use(grappled, krusk, 'dodge')
-    expect(r.state).toBe(grappled)
+    expect(r.state.activeEffects).toEqual([])
+    expect(r.state.turn).toEqual({ ...emptyTurn(), action: true })
     expect(r.notices).toEqual([{
       kind: 'unresolvedRule',
-      text: 'Esquivar: seu deslocamento já é 0, e o livro só diz que você perde o benefício se ele cair para 0 (pág. 194). O app não sabe se ele vale assim: decida com o Mestre; nada foi marcado.',
+      text: 'Esquivar: seu deslocamento já é 0, e o livro só diz que você perde o benefício se ele cair para 0 (pág. 194). O app não ligou o efeito: decida com o Mestre e, se valer, aplique-o à mão (a vantagem se marca na folha da jogada).',
     }])
+    // Ligar o efeito sozinho, fora da ação, continua sem mudar nada.
+    expect(activateToggle(grappled, krusk, 'action:dodge', { now: 7 }).state).toBe(grappled)
+    // A ação segue na lista: o efeito não está ligado.
+    expect(turnIds(r.state, krusk)).toContain('dodge')
   })
 
   // "Levantar-se [...] custa metade do seu deslocamento. Por exemplo, se seu deslocamento é 9

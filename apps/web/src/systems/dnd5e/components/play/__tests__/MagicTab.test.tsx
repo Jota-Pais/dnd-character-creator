@@ -295,4 +295,28 @@ describe('MagicTab — o grimório (onda grimorio)', () => {
     expect(sheet).toHaveTextContent('No 2º nível, sem gastar espaço')
     expect(sheet).toHaveTextContent('1 uso por descanso longo, como magia de 2º nível (o app ainda não conta esse uso).')
   })
+
+  it('a mesma magia em duas conjurações (clérigo / mago): o nome de cada Conjurar diz qual, e a folha abre a dela', () => {
+    openMagic({
+      ...structuredClone(COMPLETE_DRAFT),
+      class: 'cleric',
+      level: 4,
+      abilityScores: { STR: 10, DEX: 12, CON: 14, INT: 14, WIS: 16, CHA: 10 },
+      spellChoices: { cantrips: ['sacred-flame', 'guidance', 'thaumaturgy'], spells: ['detect-magic', 'bless'] },
+      additionalClasses: [{
+        classId: 'wizard', level: 1, classChoices: structuredClone(EMPTY_DRAFT.classChoices),
+        spellChoices: { cantrips: ['fire-bolt', 'light', 'mage-hand'], spells: ['detect-magic', 'shield'] },
+        asiChoices: [], hpRolls: [],
+      }],
+      multiclass: true,
+    })
+    expect(screen.getAllByRole('button', { name: /^Conjurar: Detectar Magia/ }).map(b => b.getAttribute('aria-label'))).toEqual([
+      'Conjurar: Detectar Magia — Clérigo',
+      'Conjurar: Detectar Magia — Mago',
+    ])
+    // A que só está numa conjuração fica com o nome curto.
+    expect(screen.getByRole('button', { name: 'Conjurar: Bênção' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Conjurar: Detectar Magia — Mago' }))
+    expect(screen.getByRole('dialog', { name: 'Detectar Magia' })).toHaveTextContent('· Mago')
+  })
 })

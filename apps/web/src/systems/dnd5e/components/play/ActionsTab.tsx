@@ -9,7 +9,7 @@ import { findRollGuideEntry } from '@rpg/rules/systems/dnd5e/utils/rollGuide'
 import { describeActionCost, TIMING_LABEL } from './actionView'
 import { AttackList } from './AttacksTab'
 import { ChangeAnnouncer } from './ChangeAnnouncer'
-import { rollButtonLabel } from './playFormat'
+import { castButtonLabel, rollButtonLabel } from './playFormat'
 import { RollMarks } from './RollMarks'
 import { SpellCastSheet, type SpellCastTarget } from './SpellCastSheet'
 import { TurnChecklist } from './TurnChecklist'
@@ -165,9 +165,10 @@ function ActionItem({ action, view, onGone, nested = false, children }: {
  * Uma magia do grimório de ação bônus ou de reação (`getTurnSpells`): o nome, a conjuração de onde
  * vem, o gatilho da reação (o tempo de conjuração dela) e o "Conjurar", que abre a mesma folha da aba
  * Magia (`SpellCastSheet`). A folha conjura pelo `castSpell`, que marca a casa do turno; o foco volta
- * ao "Conjurar".
+ * ao "Conjurar". A mesma magia em duas conjurações (o Escudo Arcano do mago e do Iniciado em Magia)
+ * leva a conjuração no nome do botão (`castButtonLabel`).
  */
-function SpellItem({ spell, onCast }: { spell: TurnSpell; onCast: () => void }) {
+function SpellItem({ spell, sheet, onCast }: { spell: TurnSpell; sheet: PlaySheet; onCast: () => void }) {
   return (
     <li className="rounded-xl border border-parchment-900 bg-surface-raised p-3" data-testid={`spell-${spell.casterKey}-${spell.spellId}`}>
       <div className="flex items-start justify-between gap-2">
@@ -178,7 +179,7 @@ function SpellItem({ spell, onCast }: { spell: TurnSpell; onCast: () => void }) 
         </div>
         <button
           onClick={onCast}
-          aria-label={`Conjurar: ${spell.name}`}
+          aria-label={castButtonLabel(sheet.spellbook, spell.spellId, spell.name, spell.source)}
           className="min-h-10 shrink-0 rounded-lg border border-gold-800 px-3 text-sm text-gold-300 hover:border-gold-600"
         >
           Conjurar
@@ -255,7 +256,7 @@ export function ActionsTab(view: PlayTabProps) {
                     </ActionItem>
                   ))}
                   {groupSpells.map(spell => (
-                    <SpellItem key={`${spell.casterKey}:${spell.spellId}`} spell={spell} onCast={() => setCasting({ casterKey: spell.casterKey, spellId: spell.spellId })} />
+                    <SpellItem key={`${spell.casterKey}:${spell.spellId}`} spell={spell} sheet={sheet} onCast={() => setCasting({ casterKey: spell.casterKey, spellId: spell.spellId })} />
                   ))}
                 </ul>
               )}

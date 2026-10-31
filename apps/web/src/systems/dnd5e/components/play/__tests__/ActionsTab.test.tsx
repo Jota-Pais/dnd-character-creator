@@ -205,4 +205,23 @@ describe('ActionsTab — as magias de ação bônus e de reação do grimório (
     expect(button).toHaveFocus()
     expect(screen.getByRole('heading', { level: 2, name: /^Reação · usada neste turno/ })).toBeInTheDocument()
   })
+
+  it('a mesma magia em duas conjurações: o nome do Conjurar diz qual (o Escudo Arcano do mago e do Iniciado em Magia)', () => {
+    openActions({
+      ...caster,
+      asiChoices: [{ kind: 'feat', featId: 'iniciado-em-magia' }],
+      featSelections: { 'iniciado-em-magia': { spellClass: 'wizard', cantrips: ['light', 'mage-hand'], spells: ['shield'] } },
+    })
+    const reaction = group(/^Reação/)
+    expect(within(reaction).getAllByRole('button', { name: /^Conjurar: Escudo Arcano/ }).map(b => b.getAttribute('aria-label'))).toEqual([
+      'Conjurar: Escudo Arcano — Mago',
+      'Conjurar: Escudo Arcano — Iniciado em Magia (Mago)',
+    ])
+    // Cada um abre a folha da sua conjuração: a do talento sai pelo uso dele.
+    fireEvent.click(within(reaction).getByRole('button', { name: 'Conjurar: Escudo Arcano — Iniciado em Magia (Mago)' }))
+    expect(screen.getByRole('dialog', { name: 'Escudo Arcano' })).toHaveTextContent('O uso de Iniciado em Magia (Mago)')
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar' }))
+    // A que só está numa conjuração fica com o nome curto.
+    expect(within(group(/^Ação bônus/)).getByRole('button', { name: 'Conjurar: Palavra Curativa' })).toBeInTheDocument()
+  })
 })

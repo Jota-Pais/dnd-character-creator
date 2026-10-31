@@ -15,7 +15,7 @@ import { getCasterSpellGuides, type SpellGuide } from '@rpg/rules/systems/dnd5e/
 import { getSpellMechanics, scalesWithCharacterLevel } from '@rpg/rules/systems/dnd5e/utils/spellMechanics'
 import { getSpell } from '@rpg/rules/systems/dnd5e/utils/spellUtils'
 import { spellSaveDcSource } from './numberSources'
-import { ordinal, rollButtonLabel } from './playFormat'
+import { castButtonLabel, ordinal, rollButtonLabel } from './playFormat'
 import { RollMarks } from './RollMarks'
 import { SpellCastSheet, type SpellCastTarget } from './SpellCastSheet'
 import { SpellRecipe } from './SpellRecipe'
@@ -170,7 +170,7 @@ function SpellbookSpells({ list, guides, view, onCast }: {
                     </div>
                     <button
                       onClick={() => onCast({ casterKey: list.key, spellId: spell.id })}
-                      aria-label={`Conjurar: ${spell.name}`}
+                      aria-label={castButtonLabel(view.sheet.spellbook, spell.id, spell.name, list.label)}
                       className="min-h-10 shrink-0 rounded-lg border border-gold-800 px-3 text-sm text-gold-300 hover:border-gold-600"
                     >
                       Conjurar

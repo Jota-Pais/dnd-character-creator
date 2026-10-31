@@ -120,8 +120,15 @@ export function PlayScreen() {
 
   // Abre a aba, com o foco nela; rolado lá para baixo, a tela volta até a barra de abas: vê-se que
   // aba abriu e o começo dela. O deslizar e o "Abrir a aba Magia" da aba Ações passam por aqui.
-  function openTab(next: PlayTabId) {
+  // `sectionId`: abre a aba já na seção (o "Abrir a Bolsa" do Usar um Objeto), com o foco no título.
+  function openTab(next: PlayTabId, sectionId?: string) {
     flushSync(() => setTab(next))
+    const section = sectionId ? document.getElementById(sectionId) : null
+    if (section) {
+      section.querySelector('h2')?.focus({ preventScroll: true })
+      scrollBelowVitals(section)
+      return
+    }
     const tabButton = document.getElementById(`play-tab-${next}`)
     tabButton?.focus({ preventScroll: true })
     if (tabButton) scrollBelowVitals(tabButton, { onlyIfCovered: true })

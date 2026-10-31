@@ -8,6 +8,7 @@ import { getTurnActions, getTurnSpells, performAction, type TurnSpell } from '@r
 import { findRollGuideEntry } from '@rpg/rules/systems/dnd5e/utils/rollGuide'
 import { describeActionCost, TIMING_LABEL } from './actionView'
 import { AttackList } from './AttacksTab'
+import { BAG_SECTION_ID } from './BagSection'
 import { ChangeAnnouncer } from './ChangeAnnouncer'
 import { castButtonLabel, rollButtonLabel } from './playFormat'
 import { RollMarks } from './RollMarks'
@@ -48,6 +49,17 @@ function ActionLinks({ action, view }: { action: SheetAction; view: PlayTabProps
           className="min-h-10 rounded-lg border border-parchment-800 px-3 text-sm text-parchment-200 hover:border-gold-700"
         >
           Abrir a aba Magia
+        </button>
+      )]
+    }
+    if (link === 'bag') {
+      return [(
+        <button
+          key={link}
+          onClick={() => view.openTab('status', BAG_SECTION_ID)}
+          className="min-h-10 rounded-lg border border-parchment-800 px-3 text-sm text-parchment-200 hover:border-gold-700"
+        >
+          Abrir a Bolsa
         </button>
       )]
     }
@@ -243,7 +255,7 @@ export function ActionsTab(view: PlayTabProps) {
                     <ActionItem key={action.id} action={action} view={view} onGone={() => titles.current[group]?.focus()}>
                       {group === 'action' && action.links?.includes('attacks') && (
                         <div className="mt-3 space-y-2">
-                          <AttackList guide={view.guide} openRecipe={view.openRecipe} />
+                          <AttackList {...view} />
                           {parts.length > 0 && (
                             <ul className="space-y-2">
                               {parts.map(part => (

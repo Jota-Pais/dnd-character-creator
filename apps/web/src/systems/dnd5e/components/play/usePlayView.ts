@@ -54,7 +54,7 @@ export type PlayView = {
 export type PlayTabProps = PlayView & {
   openRecipe: (entry: RollGuideEntry, options?: { crit?: boolean }) => void
   openSource: (source: NumberSource) => void
-  openTab: (id: PlayTabId) => void
+  openTab: (id: PlayTabId, sectionId?: string) => void
 }
 
 /** A visão da tela de jogo, ou null sem ficha aberta no playStore. */

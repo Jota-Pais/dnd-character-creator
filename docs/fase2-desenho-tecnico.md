@@ -801,6 +801,7 @@ O que muda só no número é anunciado pelo ChangeAnnouncer.
 - O aviso de migração da Destruição Divina Aprimorada: o retrato da ficha ganhou o dano das linhas de ataque (`SheetSnapshot.attacks`, com o extra à parte), e o retrato de antes, sem ataques, é lido como o mesmo dano sem o extra.
 - Conferido no Edge a 390 e a 360 px, pelo teclado: a folha (busca, detalhe, "Outra magia", "Marcar em mim"), o cartão, os chips, o "+1d4" das abas, o d4 dos testes contra a morte; alvos de 45 px, sem rolagem lateral, console sem erros.
 - Fica com o dono (`regras-efeitos-ativos.md`, seção 6): o Auxílio Divino na Rede, que acerta sem dano, e o mínimo 0 do golpe desarmado com dano extra de outro tipo.
+- Correções da revisão (2026-10-30): o toque na magia já a marca, e só a de concentração que a ficha conhece abre o detalhe com o "Quem conjurou?" (o aceite de dois toques); a magia própria que acaba por qualquer caminho, o descanso inclusive, leva a concentração nela (`endToggleInto`); a concentração digitada com o nome da magia é a mesma do "Eu conjurei em mim"; o golpe de fixo 0 com o 1d4 radiante não diz "Não causa dano". A ordem bônus → dobro do deslocamento ficou com o dono (seção 6). O "conhece" das sempre preparadas é da onda `magias-concedidas` (abaixo).
 
 - **Tamanho:** M
 - **Depende de:** `efeitos-ativos`
@@ -953,7 +954,7 @@ data/combat-actions.json, a partir de regras-acoes-em-combate.md (seções 6 a 8
 - Atacar: link 'attacks'.
 - Conjurar uma Magia: link 'spellbook'.
 - Disparada, Desengajar, Ajudar.
-- Esquivar: toggleOn 'action:dodge'.
+- Esquivar: toggleOn 'action:dodge'. Quem está incapacitado não a usa (o performAction já recusa quem não age, pág. 292). Ligar com o deslocamento já em 0 (o Agarrado) faria o efeito acabar na hora pelo endsOn speedZero ("Você perde esse benefício [...] se seu deslocamento cair para 0", linhas 17413-17414): a onda decide se a ação recusa ou liga sem o benefício, e leva ao dono se o livro não responder (revisão da onda `efeitos-recebidos`).
 - Esconder: link skill:stealth.
 - Preparar: usa a reação.
 - Procurar: links de percepção e investigação.
@@ -1490,10 +1491,12 @@ getCasterEntries ganha alwaysPrepared e granted. getSpellSources passa a incluí
 - getMaxPreparedSpells não as conta.
 - A Revisão e o PDF as listam sob a classe.
 - getPlaySpellbook usa os mesmos dados.
+- getCatalogToggles (onda `efeitos-recebidos`) lê as sempre preparadas no "conhece": a de alcance Pessoal aparece no "Recebeu uma magia?" (o Auxílio Divino do clérigo da Guerra 1) e a de concentração pergunta quem conjurou (a Bênção do clérigo da Vida). Lacuna registrada em `regras-efeitos-ativos.md`, seção 7.
 
 - **Arquivos:** `packages/rules/src/systems/dnd5e/utils/spellUtils.ts`, `packages/rules/src/systems/dnd5e/utils/spellbook.ts`, `apps/web/src/systems/dnd5e/components/steps/ReviewStep.tsx`, `apps/web/src/systems/dnd5e/components/PrintableSheet.tsx`
 - **Testes:** - spellUtils.test.ts e repeatedSpells.test.ts.
 - ReviewStep.test.tsx: clérigo da Vida mostra Bênção e Curar Ferimentos como de domínio.
+- activeEffects.test.ts: o clérigo da Guerra 1 vê o Auxílio Divino; a Bênção do clérigo da Vida leva `known` (a pergunta "Quem conjurou?").
 - **Aceite:** A magia de domínio não conta nas preparadas, e a repetida avisa sem bloquear.
 
 ### Preparar magias pela tela do jogo (`preparar-magias`)
@@ -1518,6 +1521,8 @@ prepareSpells(state, sheet, casterKey, ids) valida:
 Fora do resumo do descanso longo, só avisa.
 
 resetPreparedSpells volta à ficha.
+
+As preparadas da sessão entram no "conhece" do getCatalogToggles: o paladino que preparou o Auxílio Divino no dia vê a magia no "Recebeu uma magia?" (onda `efeitos-recebidos`).
 
 Na reconciliação:
 - basis diferente da lista atual do draft: a sobreposição cai, com aviso;

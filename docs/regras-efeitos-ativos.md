@@ -95,6 +95,8 @@ A vantagem da Fúria entra na mesma escada das condições (pág. 175): várias 
 - **O Auxílio Divino na Rede** (linhas 20519-20521, "seus ataques com arma causam 1d4 de dano radiante extra ao atingirem"): a Rede acerta sem causar dano (pág. 150, linhas 13476-13488, e a tabela de armas, linha 13548). O 1d4 radiante vem assim mesmo? Hoje a linha da Rede continua sem dano, como antes da onda. Levado ao dono, com a recomendação: sim, a Rede é arma e o acerto causa o 1d4 radiante.
 - **O mínimo 0 com dano extra de outro tipo** (item 14 e decisões 25 e 27 de `regras-dano-e-morte.md`): o golpe desarmado com Força 6-7 dá 1 − 2 = −1 de concussão; com o Auxílio Divino, o piso 0 vale sobre o total (−1 + 1d4) ou por parcela (0 concussão + 1d4 radiante)? Hoje a linha fica como antes da onda — a concussão com o mínimo 0 dela — e o 1d4 radiante vem à parte. Levado ao dono, com a recomendação: por parcela, porque o pipeline aplica as defesas por tipo (item 12) e o painel de PV recebe as parcelas por tipo.
 
+- **A ordem do bônus e do dobro no deslocamento** (Velocidade, linhas 28211-28212, "o deslocamento do alvo é dobrado"; Passos Longos, linhas 25906-25907, "O deslocamento do alvo aumenta em 3 metros"): o livro não diz se o bônus entra antes ou depois do dobro. Com os dois, 9 m de base dão (9 + 3) × 2 = 24 m ou 9 × 2 + 3 = 21 m. A metade da Exaustão 2 vem por último pelo desenho ("getPlaySpeed aplica o deslocamento dos efeitos ligados antes das condições", onda `efeitos-ativos`), não pelo livro. Hoje o app soma o bônus antes do dobro, e o teste de `playState.test.ts` prende 80 pés (seção 7.7). Levado ao dono, com a recomendação: manter bônus → dobro → metade, porque o bônus de Passos Longos é do mesmo tipo dos que a ficha já soma ao deslocamento antes de tudo (o Movimento Rápido do bárbaro, o Movimento sem Armadura do monge), e a Velocidade dobra o deslocamento que o personagem tem.
+
 Decididos em 2026-10-30 (pelo texto do livro) e feitos na leva `ajustes-leva-1`:
 - **A fúria na morte que não passa pelo Inconsciente** (a instantânea e a da exaustão 6): acaba, como na queda (seção 1).
 - **A Fúria Implacável** entrou antes da onda `recursos-completos` (seções 2.4 e 5).
@@ -103,6 +105,8 @@ Decididos em 2026-10-30 (pelo texto do livro) e feitos na leva `ajustes-leva-1`:
 ## 7. Efeitos recebidos: magias e ações (onda `efeitos-recebidos`, 2026-10-30)
 
 O catálogo `data/active-effects.json` traz as magias e ações que se marcam em você. Cada entrada declara só o que o efeito faz, com a página e as linhas do extrato; o nome, o texto, a duração, o alcance e a concentração são os de `spells.json`. Qualquer ficha liga a que um aliado conjura nela; as de alcance Pessoal (Escudo Arcano, Auxílio Divino), só quem as conhece (decisão do desenho, "Respondidas no desenho").
+
+- **Lacuna conhecida até a onda `magias-concedidas`:** o "conhece" é o de `getKnownSpells`, que não traz as magias sempre preparadas das características ("Quando você ganha uma magia de domínio, você sempre a tem preparada", linhas 5313-5318). O clérigo do Domínio da Guerra 1 não vê o Auxílio Divino (linhas 5601-5603), e a magia de concentração que só a característica dá não pergunta quem conjurou: a Bênção do Domínio da Vida (linhas 5852-5854), o Escudo da Fé da Guerra, a Perdição do Juramento de Vingança 3 (linhas 10272-10274) e a Velocidade do Círculo da Terra (Pradaria) 5 (linhas 6349-6351) ficam gravadas como de aliado. A onda `magias-concedidas` faz o `getCatalogToggles` ler as sempre preparadas; a preparada no jogo (o paladino que preparou o Auxílio Divino no dia sem escolhê-lo no criador) espera a `preparar-magias`.
 
 ### 7.1 Bênção (pág. 223, linhas 20595-20607)
 
@@ -147,7 +151,7 @@ O catálogo `data/active-effects.json` traz as magias e ações que se marcam em
 
 ### 7.7 Passos Longos (pág. 267, linhas 25901-25907)
 
-- **+3 m** no deslocamento (10 pés), somados antes do dobro da Velocidade e da metade da Exaustão 2. O Agarrado e o Impedido zeram assim mesmo: "não pode se beneficiar de qualquer bônus em seu deslocamento" (pág. 291).
+- **+3 m** no deslocamento (10 pés). **Assumido, com o dono (seção 6):** somados antes do dobro da Velocidade; a metade da Exaustão 2 vem por último, pelo desenho (os efeitos ligados antes das condições). O livro não fixa a ordem. O Agarrado e o Impedido zeram assim mesmo: "não pode se beneficiar de qualquer bônus em seu deslocamento" (pág. 291).
 
 ### 7.8 Auxílio Divino (pág. 222, linhas 20514-20521)
 
@@ -182,7 +186,9 @@ O catálogo `data/active-effects.json` traz as magias e ações que se marcam em
 
 ### 7.13 Quem conjura mantém a concentração
 
-- A magia de concentração que você conjurou em si (`sustainedByConcentration`) começa a sua concentração nela e acaba junto com ela, por qualquer motivo: fim voluntário, dano, incapacitação, outra concentração (pág. 205). O "Já acabou" dela encerra a concentração.
+- A magia de concentração que você conjurou em si (`sustainedByConcentration`) começa a sua concentração nela e acaba junto com ela, por qualquer motivo: fim voluntário, dano, incapacitação, outra concentração (pág. 205). O contrário também vale, porque a concentração dura no máximo o que a magia dura ("Também é descrito na própria magia quanto tempo você pode manter sua concentração nela", linhas 18299-18302): a magia própria que acaba — o "Já acabou", o descanso — leva junto a concentração nela, com o aviso (correção da revisão, 2026-10-30).
+- A concentração começada pela seção Concentração com o nome da magia digitado ("Bênção"; sem acento e sem maiúscula, também) é a mesma do "Eu conjurei em mim": ganha o id da magia, sem o aviso de duas magias nem novo começo.
 - A recebida de um aliado não depende da sua concentração: quem a mantém é ele, e ela só sai à mão.
-- A magia recebida liga a 0 PV (a Bênção nos testes contra a morte): o app só registra o que a mesa já fez. A Fúria, que você liga, continua recusando o inconsciente.
+- A magia recebida liga a 0 PV (a Bênção nos testes contra a morte): o app só registra o que a mesa já fez. A Fúria, que você liga, continua recusando o inconsciente. A de alcance Pessoal sem concentração (o Escudo Arcano) também liga a 0 PV ou incapacitado: ela não acaba com a incapacitação, e a conjurada antes de cair (a reação ao ataque que derrubou) se registra depois. A de alcance Pessoal com concentração (o Auxílio Divino) começa a concentração, que recusa inconsciente, incapacitado e em fúria.
 - O descanso encerra a magia que dura no máximo ele, pela conta das durações de `spells.json` (a rodada tem 6 segundos, pág. 191): a Bênção nos dois descansos; a Armadura Arcana (8 horas) só no longo, que tem pelo menos 8 horas (pág. 188). É o mesmo raciocínio da Fúria (seção 1).
+- A reconciliação que tira a magia que a ficha não conhece mais (o Auxílio Divino desmarcado no criador) não encerra a concentração nela: a ficha mudou, a magia na mesa não acabou, e a concentração é só o rótulo, que a ficha continua mostrando.

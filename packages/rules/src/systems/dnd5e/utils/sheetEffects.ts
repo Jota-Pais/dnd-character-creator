@@ -1812,6 +1812,8 @@ export function halveSpeedOnGrid(speedFeet: number): number {
  * Deslocamento efetivo em pés, a partir do da ficha JÁ com os bônus dela: 0 se algo zera (o "sem
  * bônus" do Agarrado/Impedido dá no mesmo); senão, os bônus dos efeitos ligados (Passos Longos), o
  * dobro (Velocidade) e, por último, a metade na grade de 1,5 m da Exaustão 2 (`halveSpeedOnGrid`).
+ * A ordem é assumida, não do livro: os efeitos antes das condições vêm do desenho, e o bônus antes do
+ * dobro está com o dono (`regras-efeitos-ativos.md`, seção 6).
  */
 export function applyConditionSpeed(speedFeet: number, effects: Pick<ActiveConditionEffects, 'speed'>): number {
   const { speed } = effects

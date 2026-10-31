@@ -444,7 +444,6 @@ describe('weaponFormat', () => {
     })
   })
 
-  // p. 149: "Um valor de dano aparece entre parênteses [...] quando usada com as duas mãos".
   // Auxílio Divino (linhas 20519-20521): "seus ataques com arma causam 1d4 de dano radiante extra ao
   // atingirem". A Rede é arma e acerta sem causar dano (p. 150): o acerto causa só o 1d4 radiante
   // (decisão de 2026-10-30).
@@ -467,6 +466,7 @@ describe('weaponFormat', () => {
     })
   })
 
+  // p. 149: "Um valor de dano aparece entre parênteses [...] quando usada com as duas mãos".
   describe('arma versátil', () => {
     it('espada longa mostra o dano a duas mãos como segundo valor', () => {
       const atk = getWeaponAttack(getWeaponById('longsword')!, ctx(3, 0, 2, true))

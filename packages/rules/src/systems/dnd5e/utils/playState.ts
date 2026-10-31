@@ -64,7 +64,7 @@ const ZERO_SAVES = { successes: 0, failures: 0 } as const
 export function emptyTurn(): TurnState {
   return {
     action: false, bonusAction: false, movement: false, reaction: false,
-    extraActions: 0, dashes: 0, movementSpent: 0, attacked: false, afterTurn: false, beforeTurn: false, used: [],
+    extraActions: 0, extraTurnActionUsed: false, dashes: 0, movementSpent: 0, attacked: false, afterTurn: false, beforeTurn: false, used: [],
   }
 }
 
@@ -1238,13 +1238,35 @@ const TURN_SLOT_OF: Partial<Record<ActionTiming, TurnSlot>> = {
   action: 'action', bonusAction: 'bonusAction', reaction: 'reaction',
 }
 
+/** A ação a mais de cada turno que um efeito ligado dá (a Velocidade, pág. 289): para quais ações, e de quem. */
+type ExtraTurnAction = { actions: string[]; source: string; page: number }
+
+function getExtraTurnAction(state: PlayState, sheet: PlaySheet): ExtraTurnAction | null {
+  for (const t of getPlayToggles(state, sheet)) {
+    for (const { effect } of t.effects) {
+      if (effect.kind === 'extraTurnAction') return { actions: effect.actions, source: t.source, page: t.page }
+    }
+  }
+  return null
+}
+
+/**
+ * As ações a mais ainda por usar neste turno: as do Surto de Ação e a de cada turno de um efeito
+ * ligado (a Velocidade), enquanto não usada. O "+1" da casa da ação no checklist.
+ */
+export function getTurnExtraActions(state: PlayState, sheet: PlaySheet): number {
+  const perTurn = getExtraTurnAction(state, sheet) && !state.turn.extraTurnActionUsed ? 1 : 0
+  return state.turn.extraActions + perTurn
+}
+
 /**
  * Marca no turno o que a ação usou: o id dela (`used`) e a casa do momento. O que já foi usado só
  * avisa — o app não sabe se a mesa já passou ao turno seguinte sem o Novo turno, e o checklist nunca
  * impede de jogar —, e a ação que vem depois de outra (a outra mão, depois de Atacar) também só
- * avisa sem ela. A ação a mais do Surto de Ação cobre a segunda ação, sem aviso.
+ * avisa sem ela. A ação a mais do Surto de Ação cobre a segunda ação, sem aviso; a de cada turno da
+ * Velocidade também, quando ela ou a ação já feita no turno é uma das que essa ação a mais aceita.
  */
-function spendTurn(turn: TurnState, action: SheetAction, sheet: PlaySheet, notices: PlayNotice[]): TurnState {
+function spendTurn(turn: TurnState, action: SheetAction, sheet: PlaySheet, extraTurn: ExtraTurnAction | null, notices: PlayNotice[]): TurnState {
   if (action.oncePerTurn && turn.used.includes(action.id)) {
     notices.push(note('warning', `${action.name}: só uma vez por turno, e já foi usada neste (pág. ${action.page}).`))
   }
@@ -1257,7 +1279,17 @@ function spendTurn(turn: TurnState, action: SheetAction, sheet: PlaySheet, notic
   if (!slot) return next
   if (slot === 'action' && next.action) {
     if (next.extraActions > 0) return { ...next, extraActions: next.extraActions - 1 }
-    notices.push(note('warning', `${action.name}: você já usou a ação deste turno (pág. 191). Se já é outro turno, toque em Novo turno.`))
+    // Qualquer das duas pode ser a da Velocidade: a de agora, ou uma de ação já feita no turno.
+    const fits = (id: string) => extraTurn?.actions.includes(id) ?? false
+    const doneBefore = turn.used.filter(id => sheet.actions.find(a => a.id === id)?.timing === 'action')
+    if (extraTurn && !next.extraTurnActionUsed && (fits(action.id) || doneBefore.some(fits))) {
+      return { ...next, extraTurnActionUsed: true }
+    }
+    const names = joinPt((extraTurn?.actions ?? []).map(id => sheet.actions.find(a => a.id === id)?.name ?? id))
+    const why = !extraTurn ? ''
+      : next.extraTurnActionUsed ? `, e também a ação a mais de ${extraTurn.source}`
+        : `, e a ação a mais de ${extraTurn.source} só serve para ${names} (pág. ${extraTurn.page})`
+    notices.push(note('warning', `${action.name}: você já usou a ação deste turno (pág. 191)${why}. Se já é outro turno, toque em Novo turno.`))
   } else if (slot === 'bonusAction' && next.bonusAction) {
     notices.push(note('warning', `${action.name}: você já usou a ação bônus deste turno, e só há uma por turno (pág. 191).`))
   } else if (slot === 'reaction' && next.reaction) {
@@ -1417,7 +1449,7 @@ export function performAction(state0: PlayState, sheet: PlaySheet, actionId: str
     next = r.state
     notices.push(...r.notices)
   }
-  next = { ...next, turn: spendTurn(next.turn, action, sheet, notices) }
+  next = { ...next, turn: spendTurn(next.turn, action, sheet, getExtraTurnAction(next, sheet), notices) }
   return done(next, notices)
 }
 
@@ -2066,6 +2098,7 @@ function sanitizeTurn(x: unknown): TurnState {
     movement: x.movement === true,
     reaction: x.reaction === true,
     extraActions: nonNegInt(x.extraActions),
+    extraTurnActionUsed: x.extraTurnActionUsed === true,
     dashes: nonNegInt(x.dashes),
     movementSpent: nonNegInt(x.movementSpent),
     attacked: x.attacked === true,

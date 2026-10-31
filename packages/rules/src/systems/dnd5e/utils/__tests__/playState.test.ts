@@ -8,7 +8,7 @@ import { buildPlaySheet } from '../playSheet'
 import { COMPLETE_DRAFT } from '../../../../test/fixtures'
 import {
   activateToggle, addCondition, adjustMaxHp, applyDamage, applyDamageDroppingToOneHp, applyHealing, clearRollHistory, clearTempHp, completeLongRest, completeShortRest,
-  createPlayState, deactivateToggle, describeHpMaxImmunity, emptyTurn, endConcentration, getBaseMaxHp, getCastingBlockers, getTurnActions, getTurnMovement, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable,
+  createPlayState, deactivateToggle, describeHpMaxImmunity, emptyTurn, endConcentration, getBaseMaxHp, getCastingBlockers, getTurnActions, getTurnExtraActions, getTurnMovement, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable,
   getLongRestHitDiceRecoverable, getPactSlotsAvailable, getPlayEffects, getPlayConditionState, getPlayDamageDefenses, getPlaySpeed,
   getResourceAvailable, getShortRestSlotRecovery, performAction, getSpellSlotsAvailable, grantTempHp, previewLongRest, previewShortRest, reconcileLoadedPlayState,
   markTurn, newTurn, reconcilePlayState,
@@ -2175,7 +2175,7 @@ describe('o turno: o checklist, o Usar e o Novo turno', () => {
   // "A reação volta no início do seu próximo turno" (linhas 17130-17131).
   it('o Novo turno zera as quatro casas, a ação a mais e a uma vez por turno, com aviso', () => {
     const sh = fighter(2)
-    const busy = state({ turn: { action: true, bonusAction: true, movement: true, reaction: true, extraActions: 1, dashes: 1, movementSpent: 15, attacked: true, afterTurn: false, beforeTurn: true, used: ['action-surge'] } })
+    const busy = state({ turn: { action: true, bonusAction: true, movement: true, reaction: true, extraActions: 1, extraTurnActionUsed: true, dashes: 1, movementSpent: 15, attacked: true, afterTurn: false, beforeTurn: true, used: ['action-surge'] } })
     const r = newTurn(busy, sh)
     expect(r.state.turn).toEqual(emptyTurn())
     expect(r.notices).toEqual([{ kind: 'info', text: 'Novo turno: a ação, a ação bônus, o movimento e a reação estão de volta.' }])
@@ -2405,6 +2405,31 @@ describe('o turno: as ações em combate', () => {
     expect(afterAttack.notices).toEqual([])
     // O ataque de oportunidade não é a ação de Atacar.
     expect(kinds(use(use(state(), dual, 'opportunity-attack').state, dual, 'two-weapon-fighting'))).toEqual(['warning'])
+  })
+
+  // Velocidade: "ganha uma ação adicional em cada um dos turnos dele. A ação pode ser usada apenas
+  // para realizar as ações de Ataque (um ataque com arma, apenas), Disparada, Desengajar, Esconder ou
+  // Usar um Objeto" (linhas 28213-28217).
+  it('sob a Velocidade, a segunda ação do turno não avisa quando uma das duas é das que ela aceita', () => {
+    const wizard = buildPlaySheet(draftOf('wizard', 5))
+    const hasted = activateToggle(state(), wizard, 'spell:haste', { now: 1 }).state
+    expect(getTurnExtraActions(hasted, wizard)).toBe(1)
+    const attacked = use(hasted, wizard, 'attack').state
+    const dashed = use(attacked, wizard, 'dash')
+    expect(dashed.notices).toEqual([])
+    expect(dashed.state.turn).toMatchObject({ action: true, extraTurnActionUsed: true })
+    expect(getTurnExtraActions(dashed.state, wizard)).toBe(0)
+    // A terceira já não tem ação a mais.
+    expect(use(dashed.state, wizard, 'hide').notices).toEqual([{
+      kind: 'warning', text: 'Esconder: você já usou a ação deste turno (pág. 191), e também a ação a mais de Velocidade. Se já é outro turno, toque em Novo turno.',
+    }])
+    // Conjurar e depois Atacar: a de Atacar é a da Velocidade. Conjurar duas vezes, não.
+    expect(use(use(hasted, wizard, 'cast-a-spell').state, wizard, 'attack').notices).toEqual([])
+    expect(use(use(hasted, wizard, 'cast-a-spell').state, wizard, 'cast-a-spell').notices).toEqual([{
+      kind: 'warning', text: 'Conjurar uma Magia: você já usou a ação deste turno (pág. 191), e a ação a mais de Velocidade só serve para Atacar, Disparada, Desengajar, Esconder e Usar um Objeto (pág. 289). Se já é outro turno, toque em Novo turno.',
+    }])
+    // O Novo turno a devolve.
+    expect(getTurnExtraActions(newTurn(dashed.state, wizard).state, wizard)).toBe(1)
   })
 
   it('a Fúria: entrar some da lista em fúria, e encerrar só aparece nela', () => {

@@ -1736,6 +1736,9 @@ export function getActiveConditionEffects(state: ConditionState): ActiveConditio
       case 'flySpeed':
         // Não muda número nem modo: o voo é linha da seção Efeitos ativos (describeToggleEffects).
         break
+      case 'extraTurnAction':
+        // Do turno: o `performAction` a lê dos efeitos ligados, e o texto é o do aviso ao lado.
+        break
       case 'acBonus':
       case 'acFormula':
       case 'acMinimum':

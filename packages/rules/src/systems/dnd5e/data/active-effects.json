@@ -65,7 +65,8 @@
       { "kind": "acBonus", "value": 2, "scope": "sheet" },
       { "kind": "rollMode", "rolls": ["save"], "abilities": ["DEX"], "mode": "advantage", "scope": "sheet" },
       { "kind": "speedMultiplier", "factor": 2, "scope": "sheet" },
-      { "kind": "notice", "scope": "notice", "text": "Uma ação a mais em cada um dos seus turnos, só para Atacar (um ataque com arma, apenas), Disparada, Desengajar, Esconder ou Usar um Objeto." }
+      { "kind": "notice", "scope": "notice", "text": "Uma ação a mais em cada um dos seus turnos, só para Atacar (um ataque com arma, apenas), Disparada, Desengajar, Esconder ou Usar um Objeto." },
+      { "kind": "extraTurnAction", "actions": ["attack", "dash", "disengage", "hide", "use-an-object"], "scope": "gameState" }
     ],
     "onEnd": { "notice": "você não pode se mover nem realizar ações até depois do seu próximo turno" }
   },

@@ -209,6 +209,9 @@ export function describeToggleEffects(draft: CharacterDraft, toggle: ResolvedTog
       case 'flySpeed':
         notices.push(`Deslocamento de voo de ${formatMeters(walkingFeet)}, igual ao de caminhada (${source})`)
         break
+      case 'extraTurnAction':
+        // O texto é o do aviso ao lado ("um ataque com arma, apenas"); aqui, só o turno.
+        break
       case 'notice':
       case 'againstYou':
         // O texto dos dados é frase com ponto; a origem vem antes dele.

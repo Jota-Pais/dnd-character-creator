@@ -395,6 +395,14 @@ export type SpeedBonusEffect = { kind: 'speedBonus'; feet: number; scope: 'sheet
 export type SpeedMultiplierEffect = { kind: 'speedMultiplier'; factor: 2; scope: 'sheet' }
 
 /**
+ * Uma ação a mais em cada um dos seus turnos, só para estas ações (`ActionDeclaration.id`): a
+ * Velocidade (p. 289), para Atacar, Disparada, Desengajar, Esconder ou Usar um Objeto. O "Usar" da
+ * segunda ação do turno a gasta sem aviso (`TurnState.extraTurnActionUsed`), e o checklist mostra o
+ * "+1". O texto para o jogador, com o "um ataque com arma, apenas", é o `notice` ao lado.
+ */
+export type ExtraTurnActionEffect = { kind: 'extraTurnAction'; actions: string[]; scope: 'gameState' }
+
+/**
  * Dano extra nos ataques do escopo enquanto ligado (Auxílio Divino: 1d4 radiante "nos seus ataques
  * com arma", p. 222). Entra no dano da linha como parcela de outro tipo, e o crítico o dobra (p. 198).
  */
@@ -421,6 +429,7 @@ export type ActiveEffect =
   | AcMinimumEffect
   | SpeedBonusEffect
   | SpeedMultiplierEffect
+  | ExtraTurnActionEffect
   | WeaponDamageEffect
   | ToggleDamageDefenses
   | ConditionImmunityEffect

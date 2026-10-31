@@ -73,6 +73,11 @@ export type TurnState = {
   reaction: boolean
   /** Ações a mais ainda por usar neste turno (o Surto de Ação, p. 85). */
   extraActions: number
+  /**
+   * A ação a mais de cada turno que um efeito ligado dá (a Velocidade, p. 289:
+   * `ExtraTurnActionEffect`) já foi usada neste turno.
+   */
+  extraTurnActionUsed: boolean
   /** Disparadas neste turno: cada uma soma o deslocamento já modificado (p. 194). */
   dashes: number
   /**

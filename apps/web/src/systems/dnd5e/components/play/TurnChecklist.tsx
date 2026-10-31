@@ -1,6 +1,6 @@
 import type { TurnSlot } from '@rpg/rules/systems/dnd5e/types/playState'
 import { formatMeters } from '@rpg/rules/systems/dnd5e/utils/abilityScoreUtils'
-import { getTurnMovement, markTurn, newTurn } from '@rpg/rules/systems/dnd5e/utils/playState'
+import { getTurnExtraActions, getTurnMovement, markTurn, newTurn } from '@rpg/rules/systems/dnd5e/utils/playState'
 import type { PlayTabProps } from './usePlayView'
 
 /** O título do checklist: dá nome ao grupo das quatro casas. */
@@ -26,16 +26,18 @@ const SLOTS: { slot: TurnSlot; label: string; name: string }[] = [
 export function TurnChecklist({ state, sheet, run }: PlayTabProps) {
   const { turn } = state
   const movement = formatMeters(getTurnMovement(state, sheet))
-  // A segunda linha da casa: o que resta do deslocamento do turno no movimento; nas outras, livre ou usada, e a
-  // ação a mais do Surto de Ação na da ação. O nome acessível diz o mesmo por extenso.
+  const extraActions = getTurnExtraActions(state, sheet)
+  // A segunda linha da casa: o que resta do deslocamento do turno no movimento; nas outras, livre ou
+  // usada, e a ação a mais (o Surto de Ação, a de cada turno da Velocidade) na da ação. O nome
+  // acessível diz o mesmo por extenso.
   const shown = (slot: TurnSlot): string => {
     if (slot === 'movement') return movement
-    const extra = slot === 'action' ? turn.extraActions : 0
+    const extra = slot === 'action' ? extraActions : 0
     return `${turn[slot] ? 'usada' : 'livre'}${extra > 0 ? ` +${extra}` : ''}`
   }
   const spoken = (slot: TurnSlot): string => {
     if (slot === 'movement') return turn.dashes > 0 ? `${movement}, com Disparada` : movement
-    const extra = slot === 'action' ? turn.extraActions : 0
+    const extra = slot === 'action' ? extraActions : 0
     const more = extra > 0 ? `, mais ${extra} ${extra === 1 ? 'ação' : 'ações'} neste turno` : ''
     return `${turn[slot] ? 'usada' : 'livre'}${more}`
   }

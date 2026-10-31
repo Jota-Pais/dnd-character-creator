@@ -60,6 +60,18 @@ describe('TurnChecklist — as quatro casas e o Novo turno', () => {
     expect(box(/^Ação:/)).toHaveAccessibleName('Ação: usada')
   })
 
+  it('sob a Velocidade, a casa da ação mostra a ação a mais, e Atacar e Disparada no mesmo turno não avisam', () => {
+    openKrusk()
+    openActions()
+    act(() => { usePlayStore.getState().run((st, sh) => activateToggle(st, sh, 'spell:haste', { now: 1 })) })
+    expect(box(/^Ação:/)).toHaveAccessibleName('Ação: livre, mais 1 ação neste turno')
+    fireEvent.click(screen.getByRole('button', { name: 'Usar: Atacar' }))
+    expect(box(/^Ação:/)).toHaveTextContent('usada +1')
+    fireEvent.click(screen.getByRole('button', { name: 'Usar: Disparada' }))
+    expect(screen.queryByRole('status')).not.toHaveTextContent('já usou')
+    expect(box(/^Ação:/)).toHaveAccessibleName('Ação: usada')
+  })
+
   it('Novo turno limpa as casas e anuncia no aviso do pé; o Escudo da Fé fica, o Esquivar acaba', () => {
     openKrusk()
     openActions()

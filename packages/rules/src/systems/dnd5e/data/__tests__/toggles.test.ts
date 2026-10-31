@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import type { FeatureEffects } from '../../types/effects'
 import type { LevelFeature } from '../../types/class'
 import { EMPTY_DRAFT } from '../../types/character'
+import { COMBAT_ACTIONS } from '../../utils/actionUtils'
 import { ACTIVE_EFFECT_CATALOG } from '../../utils/activeEffects'
 import { buildPlaySheet } from '../../utils/playSheet'
 import { activateToggle, createPlayState } from '../../utils/playState'
@@ -196,7 +197,7 @@ describe('catálogo de efeitos de magia e de ação', () => {
       'spell:shield': ['acBonus', 'notice'],
       'spell:mage-armor': ['acFormula'],
       'spell:shield-of-faith': ['acBonus'],
-      'spell:haste': ['acBonus', 'rollMode', 'speedMultiplier', 'notice'],
+      'spell:haste': ['acBonus', 'rollMode', 'speedMultiplier', 'notice', 'extraTurnAction'],
       'spell:longstrider': ['speedBonus'],
       'spell:divine-favor': ['weaponDamage'],
       'spell:barkskin': ['acMinimum'],
@@ -221,6 +222,21 @@ describe('catálogo de efeitos de magia e de ação', () => {
     expect(mageArmor?.benefits?.effects).toEqual([
       { kind: 'acFormula', formula: { id: 'mage-armor', base: 13, abilities: ['DEX'] }, scope: 'sheet' },
     ])
+  })
+
+  // "ganha uma ação adicional em cada um dos turnos dele. A ação pode ser usada apenas para realizar
+  // as ações de Ataque (um ataque com arma, apenas), Disparada, Desengajar, Esconder ou Usar um
+  // Objeto" (linhas 28213-28217).
+  it('a ação a mais da Velocidade aponta para as ações em combate que o aviso dela nomeia', () => {
+    const haste = ACTIVE_EFFECT_CATALOG.find(t => t.id === 'spell:haste')
+    const extra = haste?.effects?.find(e => e.kind === 'extraTurnAction')
+    const notice = haste?.effects?.find(e => e.kind === 'notice')
+    expect(extra && 'actions' in extra ? extra.actions : []).toEqual(['attack', 'dash', 'disengage', 'hide', 'use-an-object'])
+    for (const id of extra && 'actions' in extra ? extra.actions : []) {
+      const action = COMBAT_ACTIONS.find(a => a.id === id)
+      expect(action, id).toBeDefined()
+      expect(notice && 'text' in notice ? notice.text : '', id).toContain(action?.name ?? id)
+    }
   })
 
   it('a mesma magia não liga duas vezes: um id, um efeito (pág. 207)', () => {

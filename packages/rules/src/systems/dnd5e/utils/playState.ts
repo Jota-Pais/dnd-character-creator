@@ -1324,7 +1324,8 @@ export function newTurn(state0: PlayState, sheet: PlaySheet): PlayResult {
 /**
  * Usa uma ação da ficha (`sheet.actions`): confere e gasta o custo, aplica o que ela causa (liga ou
  * desliga o efeito, a ação a mais do Surto de Ação, a Disparada, o ataque, o levantar-se) e marca o
- * turno (`spendTurn`), tudo num passo só do desfazer. Recusa morto, quem não pode agir (Incapacitado, pág. 292), a ação que pede um efeito
+ * turno (`spendTurn`), tudo num passo só do desfazer. Recusa morto, quem não pode agir (Incapacitado,
+ * pág. 292; o levantar-se, que é movimento, fica com o deslocamento), a ação que pede um efeito
  * ligado que não está, e o custo sem usos — sem gastar nada. O que a ação liga recusa como
  * `activateToggle` (já em fúria), também sem gastar. O momento já usado no turno só avisa.
  */
@@ -1332,8 +1333,10 @@ export function performAction(state0: PlayState, sheet: PlaySheet, actionId: str
   const action = sheet.actions.find(a => a.id === actionId)
   if (!action) return refuse(state0, `Ação desconhecida: ${actionId}.`)
   if (state0.lifeState === 'dead') return refuse(state0, `${action.name}: o personagem está morto.`)
+  // Levantar-se é movimento, não ação (pág. 192): quem decide é o deslocamento (`standUp`), como no
+  // "Levantar" da condição Caído.
   const noActions = getPlayEffects(state0, sheet).noActions
-  if (noActions.active) {
+  if (noActions.active && action.timing !== 'movement') {
     return refuse(state0, `${action.name}: ${noActions.sources.map(s => s.label).join(', ')}, sem ações nem reações (pág. 292).`)
   }
   if (action.requiresToggle && !state0.activeEffects.some(a => a.id === action.requiresToggle)) {

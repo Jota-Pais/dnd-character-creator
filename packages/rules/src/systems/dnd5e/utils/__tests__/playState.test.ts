@@ -2333,6 +2333,21 @@ describe('o turno: as ações em combate', () => {
     expect(refused.notices).toEqual([{ kind: 'refused', text: 'Com deslocamento 0 não é possível se levantar (pág. 193).' }])
   })
 
+  // "Uma criatura incapacitada não pode realizar ações ou reações" (pág. 292); levantar-se "custa
+  // metade do seu deslocamento" (linhas 17223-17231): é movimento, e o deslocamento decide.
+  it('Levantar-se é movimento: Incapacitado, com deslocamento, levanta como o "Levantar" do Caído; as ações recusam', () => {
+    const dazed = state({ conditions: ['prone', 'incapacitated'] })
+    expect(turnIds(dazed, krusk)).toContain('stand-up')
+    const up = use(dazed, krusk, 'stand-up')
+    expect(up.state.conditions).toEqual(['incapacitated'])
+    expect(up.state.conditions).toEqual(standUp(dazed, krusk).state.conditions)
+    expect(kinds(up)).toEqual(['info'])
+    expect(use(dazed, krusk, 'dash').notices).toEqual([{ kind: 'refused', text: 'Disparada: Incapacitado, sem ações nem reações (pág. 292).' }])
+    // Paralisado também incapacita, mas zera o deslocamento: quem recusa é o standUp.
+    const paralyzed = state({ conditions: ['prone', 'paralyzed'] })
+    expect(use(paralyzed, krusk, 'stand-up').notices).toEqual([{ kind: 'refused', text: 'Com deslocamento 0 não é possível se levantar (pág. 193).' }])
+  })
+
   it('a Fúria: entrar some da lista em fúria, e encerrar só aparece nela', () => {
     expect(turnIds(state(), krusk)).toEqual(expect.arrayContaining(['rage-enter']))
     expect(turnIds(state(), krusk)).not.toContain('rage-end')

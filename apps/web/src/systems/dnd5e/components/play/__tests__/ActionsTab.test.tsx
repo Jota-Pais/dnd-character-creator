@@ -84,14 +84,14 @@ describe('ActionsTab — o que fazer em cada momento do turno', () => {
     expect(enter).toHaveFocus()
   })
 
-  it('Esquivar Agarrado: a regra em aberto vem no aviso, a ação fica marcada sem o efeito, e o foco fica', () => {
+  it('Esquivar Agarrado: o aviso diz que o benefício não vem, a ação fica marcada sem o efeito, e o foco fica', () => {
     openActions()
     act(() => { usePlayStore.getState().run((st, sh) => addCondition(st, sh, 'grappled')) })
     const dodge = screen.getByRole('button', { name: 'Usar: Esquivar' })
     dodge.focus()
     fireEvent.click(dodge)
-    expect(screen.getByRole('status')).toHaveTextContent('Regra em aberto: Esquivar: seu deslocamento já é 0')
-    expect(screen.getByRole('status')).toHaveTextContent('aplique-o à mão (a vantagem se marca na folha da jogada).')
+    expect(screen.getByRole('status')).toHaveTextContent('Esquivar sem o benefício: seu deslocamento está em 0, e o benefício se perde com o deslocamento em 0 (pág. 194). A ação conta.')
+    expect(screen.getByRole('status')).not.toHaveTextContent('Regra em aberto')
     expect(playState().activeEffects).toEqual([])
     expect(playState().turn.action).toBe(true)
     expect(dodge).toHaveFocus()

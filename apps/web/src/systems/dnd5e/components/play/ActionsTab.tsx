@@ -102,7 +102,7 @@ function ActionItem({ action, view, onGone, nested = false, children }: {
 
   function use() {
     const result = flushSync(() => run((st, sh) => performAction(st, sh, action.id, { now: Date.now(), ...(option ? { option } : {}) })))
-    if (!result || result.notices.some(n => n.kind === 'refused' || n.kind === 'unresolvedRule')) return
+    if (!result || result.notices.some(n => n.kind === 'refused')) return
     setOption(null)
     if (!getTurnActions(result.state, sheet).some(a => a.id === action.id)) onGone()
   }

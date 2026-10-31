@@ -2391,18 +2391,22 @@ describe('o turno: as ações em combate', () => {
   })
 
   // "Você perde esse benefício [...] se seu deslocamento cair para 0" (linhas 17413-17414): com ele
-  // já em 0, o livro não diz se o benefício chega a valer.
-  it('Esquivar com o deslocamento já em 0 (Agarrado): a ação conta, o efeito não liga, e o aviso diz que o livro não decide', () => {
+  // já em 0, o benefício não vem (decisão de 2026-10-30, Ponto em aberto 4 de
+  // regras-acoes-em-combate.md).
+  it('Esquivar com o deslocamento já em 0 (Agarrado, Impedido, Exaustão 5): a ação conta, sem o benefício, e o aviso diz a regra', () => {
+    const NO_BENEFIT = 'Esquivar sem o benefício: seu deslocamento está em 0, e o benefício se perde com o deslocamento em 0 (pág. 194).'
     const grappled = state({ conditions: ['grappled'] })
     const r = use(grappled, krusk, 'dodge')
     expect(r.state.activeEffects).toEqual([])
     expect(r.state.turn).toEqual({ ...emptyTurn(), action: true, used: ['dodge'] })
-    expect(r.notices).toEqual([{
-      kind: 'unresolvedRule',
-      text: 'Esquivar: seu deslocamento já é 0, e o livro só diz que você perde o benefício se ele cair para 0 (pág. 194). O app não ligou o efeito: decida com o Mestre e, se valer, aplique-o à mão (a vantagem se marca na folha da jogada).',
-    }])
-    // Ligar o efeito sozinho, fora da ação, continua sem mudar nada.
-    expect(activateToggle(grappled, krusk, 'action:dodge', { now: 7 }).state).toBe(grappled)
+    expect(r.notices).toEqual([{ kind: 'warning', text: `${NO_BENEFIT} A ação conta.` }])
+    for (const s of [state({ conditions: ['restrained'] }), state({ exhaustionLevel: 5 })]) {
+      expect(use(s, krusk, 'dodge').notices).toEqual([{ kind: 'warning', text: `${NO_BENEFIT} A ação conta.` }])
+    }
+    // Ligar o efeito sozinho, fora da ação, recusa com a mesma regra.
+    const alone = activateToggle(grappled, krusk, 'action:dodge', { now: 7 })
+    expect(alone.state).toBe(grappled)
+    expect(alone.notices).toEqual([{ kind: 'refused', text: NO_BENEFIT }])
     // A ação segue na lista: o efeito não está ligado.
     expect(turnIds(r.state, krusk)).toContain('dodge')
   })

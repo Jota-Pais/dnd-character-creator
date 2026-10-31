@@ -1026,6 +1026,19 @@ const RECHARGE_TEXT: Record<NonNullable<SheetResource['recharge']>, string> = {
  */
 export type ToggleOn = { option?: string; now: number; sustainedByConcentration?: true }
 
+/** O nome como se digita: sem acento, sem maiúscula e sem espaço nas pontas ("bencao" é a Bênção). */
+const comparableName = (text: string) => text.normalize('NFD').replace(/\p{Diacritic}/gu, '').trim().toLowerCase()
+
+/**
+ * A concentração já é na magia do efeito: pelo id, ou, na digitada sem id (a seção Concentração só
+ * guarda o rótulo), pelo nome dela.
+ */
+function concentratesOn(concentration: Concentration, toggle: SheetToggle): boolean {
+  if (!toggle.spellId) return false
+  if (concentration.spellId) return concentration.spellId === toggle.spellId
+  return comparableName(concentration.label) === comparableName(toggle.source)
+}
+
 /**
  * Tira um efeito ligado do rascunho `next` da operação, com o que vem quando ele acaba: o que o app
  * não aplica, em aviso (a letargia da Velocidade), e o que a opção custa (o Frenesi: um nível de
@@ -1146,8 +1159,12 @@ export function activateToggle(state0: PlayState, sheet: PlaySheet, id: string, 
 
   let state = reconcilePlayState(state0, sheet)
   const notices: PlayNotice[] = []
-  // Já concentrado nela (começada na aba Magia), a concentração fica a mesma.
-  if (sustained && !(toggle.spellId && state.concentration?.spellId === toggle.spellId)) {
+  const current = state.concentration
+  if (sustained && current && concentratesOn(current, toggle)) {
+    // Já concentrado nela — começada pela magia, ou digitada com o nome dela na seção Concentração
+    // ("Bênção") —, a concentração é a mesma: ganha o id da magia, sem aviso nem novo começo.
+    if (!current.spellId && toggle.spellId) state = { ...state, concentration: { ...current, spellId: toggle.spellId } }
+  } else if (sustained) {
     // Começar a concentração recusa como sempre (inconsciente, incapacitado, em fúria), e a de
     // antes termina, com o que ela sustentava.
     const r = startConcentration(state, sheet, { ...(toggle.spellId ? { spellId: toggle.spellId } : {}), label: toggle.source }, now)

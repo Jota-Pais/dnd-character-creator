@@ -1978,6 +1978,18 @@ describe('efeitos recebidos: a magia sustentada pela sua concentração', () => 
     expect(kinds(r)).toEqual(['concentrationReplaced'])
   })
 
+  it('a concentração digitada com o nome da magia é a mesma: sem aviso de duas magias nem novo começo', () => {
+    const typed = startConcentration(state(), cleric, { label: 'bencao ' }, 1).state
+    const r = self(typed, 'spell:bless')
+    expect(r.notices).toEqual([])
+    expect(r.state.concentration).toEqual({ spellId: 'bless', label: 'bencao', startedAt: 1 })
+    expect(r.state.activeEffects).toEqual([{ id: 'spell:bless', startedAt: 5, sustainedByConcentration: true }])
+    // Sustentada por ela: acaba junto.
+    expect(endConcentration(r.state, cleric).state.activeEffects).toEqual([])
+    // Outro nome é outra magia: a de antes termina.
+    expect(kinds(self(startConcentration(state(), cleric, { label: 'Bênção Maior' }, 1).state, 'spell:bless'))).toEqual(['concentrationReplaced'])
+  })
+
   it('perder a concentração desliga a Bênção própria e mantém a de aliado', () => {
     const both = ally(self(state(), 'spell:bless').state, 'spell:shield-of-faith').state
     const ended = endConcentration(both, cleric)

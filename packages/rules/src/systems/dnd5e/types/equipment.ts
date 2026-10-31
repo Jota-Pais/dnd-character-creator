@@ -1,3 +1,4 @@
+import type { ItemUse } from './actions'
 import type { DamageTypeId } from './damage'
 
 // Custo armazenado canonicamente em peças de cobre (pc).
@@ -41,6 +42,12 @@ export type Weapon = {
   damageType: DamageType | null
   weight: number | null      // kg
   properties: WeaponProperty[]
+  /**
+   * A munição que a arma dispara (id em general-items.json, categoria `ammunition`): os arcos,
+   * flechas; as bestas, virotes; a funda, balas; a zarabatana, agulhas. "Cada vez que você atacar com
+   * a arma, você gasta uma peça de munição", e sem ela a arma não ataca (pág. 149).
+   */
+  ammunition?: string
 }
 
 // --- Armaduras ---
@@ -99,6 +106,15 @@ export type GeneralItem = {
    * Vale para a proficiência e o aviso de ferramenta sem proficiência (`getToolEquivalent`).
    */
   countsAsTool?: string
+  /**
+   * Quantas peças vêm numa unidade do catálogo: "Flechas (20)" são 20 flechas, "Zarabatana (50)", 50
+   * agulhas (tabela da pág. 152); o Kit de Primeiros-Socorros tem material "para dez usos" (pág. 154).
+   * A bolsa do jogo conta peças — o ataque gasta uma (pág. 149) —, e o peso da unidade se divide por
+   * elas. Ausente, a unidade é uma peça.
+   */
+  piecesPerUnit?: number
+  /** O "Usar" do item na bolsa do jogo: o tempo, o que causa e o texto do livro (`ItemUse`). */
+  use?: ItemUse
 }
 
 // --- Pacotes de Equipamento ---

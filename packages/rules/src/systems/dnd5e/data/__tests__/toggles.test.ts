@@ -121,8 +121,9 @@ describe('efeitos ligados nos dados', () => {
       .toBe('noHeavyArmor')
     expect(OPTIONS.find(h => h.where === 'opção totem-attunements' && h.name === 'Águia')?.effects.toggleModifiers?.[0].effects?.[0])
       .toEqual({ kind: 'flySpeed', feet: 'walking', scope: 'sheet' })
-    // O Aspecto da Besta não depende da Fúria.
-    expect(OPTIONS.some(h => h.where === 'opção totem-aspects')).toBe(false)
+    // O Aspecto da Besta não depende da Fúria: o do Urso só dobra a carga (onda `inventario`).
+    expect(OPTIONS.filter(h => h.where === 'opção totem-aspects').map(h => [h.name, h.effects]))
+      .toEqual([['Urso', { carryingCapacityMultiplier: 2 }]])
   })
 
   // As ações a ficha lê também nos talentos e traços raciais (`getSheetActions`); o efeito ligado e o
@@ -163,7 +164,7 @@ describe('catálogo de efeitos de magia e de ação', () => {
     }
   })
 
-  it('a magia existe em spells.json; o nome próprio é só do que não é magia (a ação)', () => {
+  it('a magia existe em spells.json; o nome próprio é só do que não é magia (a ação, o item)', () => {
     for (const t of ACTIVE_EFFECT_CATALOG) {
       if (t.spellId) {
         expect(SPELLS.some(s => s.id === t.spellId), t.id).toBe(true)
@@ -171,7 +172,7 @@ describe('catálogo de efeitos de magia e de ação', () => {
         expect(t.name, t.id).toBeUndefined()
       } else {
         expect(t.name, t.id).toBeTruthy()
-        expect(t.id.startsWith('action:'), t.id).toBe(true)
+        expect(t.id.startsWith('action:') || t.id.startsWith('item:'), t.id).toBe(true)
       }
     }
   })
@@ -188,7 +189,7 @@ describe('catálogo de efeitos de magia e de ação', () => {
     }
   })
 
-  it('as dez entradas do desenho, com o que cada uma faz', () => {
+  it('as onze entradas do desenho, com o que cada uma faz', () => {
     const kinds = Object.fromEntries(ACTIVE_EFFECT_CATALOG.map(t =>
       [t.id, [...(t.effects ?? []), ...(t.benefits?.effects ?? [])].map(e => e.kind)]))
     expect(kinds).toEqual({
@@ -202,6 +203,7 @@ describe('catálogo de efeitos de magia e de ação', () => {
       'spell:divine-favor': ['weaponDamage'],
       'spell:barkskin': ['acMinimum'],
       'action:dodge': ['againstYou', 'rollMode'],
+      'item:antitoxin': ['rollMode'],
     })
   })
 
@@ -237,6 +239,17 @@ describe('catálogo de efeitos de magia e de ação', () => {
       expect(action, id).toBeDefined()
       expect(notice && 'text' in notice ? notice.text : '', id).toContain(action?.name ?? id)
     }
+  })
+
+  // "tem vantagem em testes de resistência contra venenos por 1 hora" (linhas 13686-13689): a
+  // vantagem é só contra veneno, então é nota na jogada, nunca o modo (regra de ouro). A hora cabe no
+  // descanso curto (pelo menos 1 hora, pág. 188): acaba nos dois, como a Bênção.
+  it('o Antídoto dá a nota de vantagem nos TR contra veneno e acaba nos descansos', () => {
+    const antitoxin = ACTIVE_EFFECT_CATALOG.find(t => t.id === 'item:antitoxin')
+    expect(antitoxin?.effects).toEqual([
+      { kind: 'rollMode', rolls: ['save'], mode: 'advantage', scope: 'notice', when: 'contra veneno', text: 'Vantagem nos testes de resistência contra veneno' },
+    ])
+    expect(antitoxin?.endsOn).toEqual(['shortRest', 'longRest'])
   })
 
   it('a mesma magia não liga duas vezes: um id, um efeito (pág. 207)', () => {

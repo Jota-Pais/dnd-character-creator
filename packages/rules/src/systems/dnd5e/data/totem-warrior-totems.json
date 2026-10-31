@@ -29,6 +29,7 @@
     "tier14": "Quando estiver em fúria, qualquer criatura a até 1,5 metro de você que for hostil a você terá desvantagem nas jogadas de ataque contra outros alvos além de você ou outro personagem com essa característica. Um inimigo é imune a esse efeito se ele não puder ver ou ouvir você ou caso ele não possa ser amedrontado.",
     "effects": {
       "tier3": { "toggleModifiers": [{ "toggle": "rage", "effects": [{ "kind": "damageDefenses", "defenses": { "resistances": { "allExcept": ["psychic"] } }, "scope": "sheet" }] }] },
+      "tier6": { "carryingCapacityMultiplier": 2 },
       "tier14": { "toggleModifiers": [{ "toggle": "rage", "effects": [{ "kind": "notice", "scope": "notice", "text": "Criaturas hostis a até 1,5 m de você têm desvantagem nos ataques contra alvos que não sejam você ou outro personagem com esta característica; é imune quem não puder ver ou ouvir você ou não puder ser amedrontado.", "page": 50 }] }] }
     }
   }

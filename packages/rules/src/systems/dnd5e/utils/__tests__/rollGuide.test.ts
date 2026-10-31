@@ -1294,6 +1294,20 @@ describe('getRollGuide — efeitos recebidos: os dados a mais', () => {
   it('sem o efeito ligado, nada muda', () => {
     expect(getRollGuide(fighter('longsword'), play())).toEqual(getRollGuide(fighter('longsword'), on()))
   })
+
+  // Antídoto (linhas 13686-13689): "vantagem em testes de resistência contra venenos". Só contra
+  // veneno: nota em todo TR, o modo não muda (regra de ouro); não no teste contra a morte, que não é
+  // contra veneno, nem nos testes de habilidade.
+  it('o Antídoto bebido é nota de vantagem nos TR, com o modo de sempre', () => {
+    const guide = getRollGuide(fighter('longsword'), on('item:antitoxin'))
+    const note = 'Vantagem nos testes de resistência contra veneno (Antídoto)'
+    for (const ab of ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'] as const) {
+      expect(guide.saves[ab].notes, ab).toContain(note)
+      expect(guide.saves[ab].mode, ab).toBe('normal')
+    }
+    expect(guide.deathSave.notes).not.toContain(note)
+    expect(guide.checks.CON.notes).not.toContain(note)
+  })
 })
 
 // Auxílio Divino (linhas 20519-20521): "seus ataques com arma causam 1d4 de dano radiante extra".

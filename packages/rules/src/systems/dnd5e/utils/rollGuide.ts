@@ -1,5 +1,6 @@
 import type { CharacterDraft } from '../types/character'
 import type { AdvantageMode, ConditionEffect, RollCategory, RollMode } from '../types/condition'
+import type { ActiveEffect } from '../types/effects'
 import {
   closeBreakdown, critNote, d20Entry, d20Notation, damageEntry, formatGuideFormula, formatGuideNotation, healEntry,
   inspirationNote, isInspirationNote,
@@ -240,15 +241,17 @@ type ConditionalLine = {
 
 /**
  * As linhas condicionais de jogada das condições em vigor (Amedrontado "com a fonte do medo na
- * linha de visão", Cego/Surdo "teste que requeira a visão/audição") — as que o agregador entrega
- * só como texto solto. Condição suspensa (Envenenado sob Petrificado) não entra.
+ * linha de visão", Cego/Surdo "teste que requeira a visão/audição") e dos efeitos ligados (o
+ * Antídoto: vantagem nos TR "contra veneno") — as que o agregador entrega só como texto solto.
+ * Condição suspensa (Envenenado sob Petrificado) não entra.
  */
-function getConditionalLines(effects: ActiveConditionEffects): ConditionalLine[] {
-  const tagged: { label: string; effect: ConditionEffect }[] = [
+function getConditionalLines(effects: ActiveConditionEffects, session: SheetSession): ConditionalLine[] {
+  const tagged: { label: string; effect: ConditionEffect | ActiveEffect }[] = [
     ...effects.conditions.filter(c => !isConditionSuspended(c)).flatMap(c =>
       (getCondition(c.id)?.effects ?? []).map(effect => ({ label: c.name, effect }))),
     ...EXHAUSTION.levels.filter(row => row.level <= effects.exhaustion).flatMap(row =>
       row.effects.map(effect => ({ label: `Exaustão ${row.level}`, effect }))),
+    ...session.active.flatMap(t => t.effects.map(({ source, effect }) => ({ label: source, effect }))),
   ]
   return tagged.flatMap(({ label, effect }): ConditionalLine[] => {
     if (effect.scope !== 'notice') return []
@@ -563,7 +566,7 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
   const effects = getGuideEffects(draft, state, session)
   // As linhas das condições e as da ficha. O valor passivo leva só as das condições: rerrolar ou
   // "vantagem contra veneno" não alcançam um número que não se rola.
-  const conditionLines = getConditionalLines(effects)
+  const conditionLines = getConditionalLines(effects, session)
   const lines = [...conditionLines, ...getSheetConditionalLines(draft, effects)]
   const inspiration = state.inspiration
 
@@ -829,7 +832,7 @@ export function getConcentrationGuide(draft: CharacterDraft, state: PlayState, d
   const prof = getProficiencyBonus(draft.level ?? 1)
   const session = getSheetSession(draft, state)
   const effects = getGuideEffects(draft, state, session)
-  const lines = [...getConditionalLines(effects), ...getSheetConditionalLines(draft, effects)]
+  const lines = [...getConditionalLines(effects, session), ...getSheetConditionalLines(draft, effects)]
   const sheet: SheetModeSources = { unproficientArmor: [], stealth: [] }
   const input = saveInput('CON', getSavingThrowChecks(draft, scores).CON, mods, prof, effects, sheet, lines, getSaveBonuses(draft, scores, state))
   const amount = Number.isFinite(damage) ? Math.max(0, Math.floor(damage)) : 0

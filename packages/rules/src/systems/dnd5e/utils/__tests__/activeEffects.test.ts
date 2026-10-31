@@ -142,7 +142,7 @@ describe('getCatalogToggles: as magias e ações recebidas', () => {
   it('qualquer ficha liga as que um aliado conjura; as de alcance Pessoal, só quem conhece a magia', () => {
     expect(ids(human())).toEqual([
       'spell:bless', 'spell:bane', 'spell:mage-armor', 'spell:shield-of-faith', 'spell:haste',
-      'spell:longstrider', 'spell:barkskin', 'action:dodge',
+      'spell:longstrider', 'spell:barkskin', 'action:dodge', 'item:antitoxin',
     ])
     const wizard = human({ class: 'wizard', spellChoices: { cantrips: [], spells: ['shield'] } })
     expect(ids(wizard)).toContain('spell:shield')
@@ -161,10 +161,12 @@ describe('getCatalogToggles: as magias e ações recebidas', () => {
     expect(byId(human())['spell:bless'].known).toBeUndefined()
   })
 
-  it('a fonte é o nome da magia (spells.json) ou o da ação; o rótulo e a página são os da declaração', () => {
+  it('a fonte é o nome da magia (spells.json), o da ação ou o do item; o rótulo e a página são os da declaração', () => {
     const [bless] = getCatalogToggles(human())
+    const byId = Object.fromEntries(getCatalogToggles(human()).map(t => [t.id, t]))
     expect(bless).toMatchObject({ id: 'spell:bless', label: 'Sob a Bênção', source: 'Bênção', page: 223, spellId: 'bless' })
-    expect(getCatalogToggles(human()).at(-1)).toMatchObject({ id: 'action:dodge', label: 'Esquivando', source: 'Esquivar', page: 194 })
+    expect(byId['action:dodge']).toMatchObject({ label: 'Esquivando', source: 'Esquivar', page: 194 })
+    expect(byId['item:antitoxin']).toMatchObject({ label: 'Com o Antídoto', source: 'Antídoto', page: 153, endsOn: ['shortRest', 'longRest'] })
   })
 
   // A conta das durações (`spells.json`), como a da Fúria: a Bênção (1 minuto) acaba nos dois

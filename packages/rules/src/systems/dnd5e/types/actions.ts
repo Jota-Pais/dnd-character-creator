@@ -1,3 +1,6 @@
+import type { DamageTypeId } from './damage'
+import type { AbilityScore } from './race'
+
 /**
  * Ações declaradas nos dados: o que o personagem faz no turno e o que isso custa e causa — entrar
  * em fúria é uma ação bônus que gasta um uso da Fúria e liga o efeito "em fúria" (p. 48). Ficam em
@@ -95,3 +98,41 @@ export type ActionDeclaration = {
  * todo personagem tem (`data/combat-actions.json`).
  */
 export type SheetAction = ActionDeclaration & { source: string; description: string; standard?: true }
+
+// ── O uso de um item da bolsa (onda `inventario`) ────────────────────────────
+
+/** Dados e um valor fixo somado: `{ count: 2, sides: 4, bonus: 2 }` é 2d4 + 2 (a Poção de Cura). */
+export type DiceSpec = { count: number; sides: number; bonus?: number }
+
+/**
+ * O que o uso de um item causa: o vocabulário do bloco de ação (liga um efeito do catálogo — o
+ * Antídoto —, conta como ataque seu — o ácido arremessado: o fim prematuro da Fúria pergunta por ele)
+ * mais a cura e o dano do item. A cura vale em quem o usa (a mesa rolou, o jogador digita: decisão
+ * da Fase 2, como no Dado de Vida) ou em outra criatura; o dano é a receita para a mesa, com o tipo,
+ * a situação (`when`: "se o alvo for um corruptor ou morto-vivo"), o TR do alvo (o Veneno Básico) e
+ * se é o dano do acerto de um ataque (`onHit`: o crítico dobra os dados, pág. 196).
+ */
+export type ItemUseOutcome =
+  | Extract<ActionOutcome, { kind: 'toggleOn' } | { kind: 'attack' }>
+  | { kind: 'heal'; dice: DiceSpec }
+  | {
+    kind: 'roll'
+    damage: DiceSpec
+    damageType: DamageTypeId
+    when?: string
+    save?: { ability: AbilityScore; dc: number }
+    onHit?: true
+  }
+
+/**
+ * O "Usar" de um item da bolsa (`GeneralItem.use`): o bloco de ação sem o id e o nome, que são os do
+ * item, e sem o custo, que é sempre uma peça dele (`useItem`). O momento é o que o livro diz ("Usando
+ * uma ação", "exige uma ação"): a ação é a de Usar um Objeto (pág. 195); `special` quando o livro não
+ * diz o tempo (o Antídoto), e o app não marca o turno. O resumo é o do livro, com a página e as linhas
+ * do extrato.
+ */
+export type ItemUse = Pick<ActionDeclaration, 'timing' | 'page'> & {
+  outcomes?: ItemUseOutcome[]
+  summary: string
+  bookLines: [number, number]
+}

@@ -178,6 +178,16 @@ export function getArmorById(id: string): Armor | undefined {
   return ALL_ARMORS.find(a => a.id === id)
 }
 
+/** Item do equipamento geral (`general-items.json`) pelo id, ou undefined. */
+export function getGeneralItemById(id: string): GeneralItem | undefined {
+  return ALL_GENERAL.find(g => g.id === id)
+}
+
+/** Todos os itens do equipamento geral, na ordem do catálogo (a busca da bolsa do jogo). */
+export function getGeneralItems(): readonly GeneralItem[] {
+  return ALL_GENERAL
+}
+
 /** Pacote de equipamento pelo id, ou undefined. */
 export function getPackById(id: string): EquipmentPack | undefined {
   return ALL_PACKS.find(p => p.id === id)

@@ -111,5 +111,16 @@
       { "kind": "rollMode", "rolls": ["save"], "abilities": ["DEX"], "mode": "advantage", "scope": "sheet" }
     ],
     "endsOn": ["startOfYourTurn", "incapacitated", "speedZero"]
+  },
+  {
+    "id": "item:antitoxin",
+    "label": "Com o Antídoto",
+    "name": "Antídoto",
+    "page": 153,
+    "bookLines": [13686, 13689],
+    "effects": [
+      { "kind": "rollMode", "rolls": ["save"], "mode": "advantage", "scope": "notice", "when": "contra veneno", "text": "Vantagem nos testes de resistência contra veneno" }
+    ],
+    "endsOn": ["shortRest", "longRest"]
   }
 ]

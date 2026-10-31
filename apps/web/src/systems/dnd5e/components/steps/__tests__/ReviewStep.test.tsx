@@ -272,3 +272,28 @@ describe('Defesas na Revisão e no PDF', () => {
     expect(renderIt().container.textContent).not.toContain('Defesas:')
   })
 })
+
+// Adepto Elemental (pág. 167): o tipo escolhido no criador sai ao lado do talento, com o rótulo
+// (getCharacterFeats, `chosen`), na Revisão e no PDF como na aba Regras; sem o tipo, sem a linha.
+describe('o tipo de dano do Adepto Elemental na Revisão e no PDF', () => {
+  const wizard4 = (featSelections: CharacterDraft['featSelections']): CharacterDraft => ({
+    ...structuredClone(EMPTY_DRAFT), name: 'Elminster', race: 'human', class: 'wizard', level: 4,
+    asiChoices: [{ kind: 'feat', featId: 'adepto-elemental' }], featSelections,
+  })
+
+  it.each([
+    ['Revisão', () => render(<ReviewStep />)],
+    ['ficha imprimível', () => render(<PrintableSheet />)],
+  ])('%s: "Tipo de dano: fogo" embaixo do talento', (_, renderIt) => {
+    useCharacterStore.setState({ draft: wizard4({ 'adepto-elemental': { damageType: 'fire' } }) })
+    const { container, unmount } = renderIt()
+    const text = container.textContent ?? ''
+    const feat = text.indexOf('Adepto Elemental')
+    expect(feat).toBeGreaterThan(-1)
+    expect(text.indexOf('Tipo de dano: fogo', feat)).toBeGreaterThan(feat)
+    unmount()
+
+    useCharacterStore.setState({ draft: wizard4({}) })
+    expect(renderIt().container.textContent).not.toContain('Tipo de dano:')
+  })
+})

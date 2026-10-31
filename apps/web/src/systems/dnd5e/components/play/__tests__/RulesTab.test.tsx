@@ -225,6 +225,23 @@ describe('RulesTab', () => {
     expect(screen.getByRole('dialog', { name: 'Ancestral Dracônico' })).toHaveTextContent('Escolha: Azul (dano elétrico)')
   })
 
+  // Adepto Elemental (pág. 167): o tipo escolhido no criador sai ao lado do talento, com o rótulo da
+  // Revisão e do PDF (getCharacterFeats, `chosen`), como a Afinidade Elemental acima.
+  it('mago 4 com o Adepto Elemental (fogo): a folha do talento diz o tipo de dano', () => {
+    const adept: CharacterDraft = {
+      ...structuredClone(WIZARD_3),
+      level: 4,
+      asiChoices: [{ kind: 'feat', featId: 'adepto-elemental' }],
+      featSelections: { 'adepto-elemental': { damageType: 'fire' } },
+    }
+    const feats = within(openRules(adept)).getByRole('region', { name: 'Talentos' })
+    fireEvent.click(within(feats).getByRole('button', { name: /^Adepto Elemental/ }))
+    const sheet = screen.getByRole('dialog', { name: 'Adepto Elemental' })
+    expect(sheet).toHaveTextContent('Talento · Incremento nv 4')
+    expect(sheet).toHaveTextContent('Tipo de dano: fogo')
+    expect(sheet).not.toHaveTextContent('Escolha:')
+  })
+
   describe('em fúria não se conjura (p. 48): a regra vale para toda magia', () => {
     it('tiefling bárbaro: sob o título das Magias e na folha da magia inata', () => {
       const spells = within(openRules(TIEFLING_BARBARIAN)).getByRole('region', { name: 'Magias' })

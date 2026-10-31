@@ -5,9 +5,11 @@ import {
   CONDITION_NOTE_MAX_LENGTH, HIT_DIE_SIZES, PLAY_STATE_VERSION, ROLL_HISTORY_LIMIT,
   type ActiveToggle, type Concentration, type DamageInput, type DamagePart, type DeathSaveCount, type LifeState, type PlayNotice, type PlayNoticeKind,
   type PlayResult, type PlaySheet, type PlayState, type SheetSnapshot, type SheetSnapshotAttack, type SheetSnapshotSpellcasting,
-  type TurnSlot, type TurnState,
+  type SpellCastRecord, type TurnSlot, type TurnState,
 } from '../types/playState'
 import type { ActionTiming, SheetAction } from '../types/actions'
+import type { Spell } from '../types/spell'
+import type { CastingTimeKind, SpellbookEntry, SpellPayment } from '../types/spellbook'
 import {
   getActiveConditionEffects, getCondition, getEffectiveConditions, getEffectiveHpMax,
   applyConditionSpeed, damageTypeSetHas, halveSpeedOnGrid, isConditionSuspended, withConditionApplied,
@@ -21,6 +23,9 @@ import { resolveActiveEffects } from './activeEffects'
 import { describeUnproficientArmorCasting } from './proficiencyUtils'
 import { getDamageLabel, getDamageTypeName } from './damageTypes'
 import { countLabel, joinPt } from './textUtils'
+import { findSpellbookEntry } from './spellbook'
+import { getSpellMechanics } from './spellMechanics'
+import { castingTimeKind, getSpell, hasVerbalComponent } from './spellUtils'
 
 /**
  * Operações do estado de jogo: funções puras que recebem (estado, PlaySheet, …) e devolvem
@@ -65,6 +70,7 @@ export function emptyTurn(): TurnState {
   return {
     action: false, bonusAction: false, movement: false, reaction: false,
     extraActions: 0, extraTurnActionUsed: false, dashes: 0, movementSpent: 0, attacked: false, afterTurn: false, beforeTurn: false, used: [],
+    spellsCast: [],
   }
 }
 
@@ -1318,16 +1324,22 @@ export function getTurnExtraActions(state: PlayState, sheet: PlaySheet): number 
  * impede de jogar —, e a ação que vem depois de outra (a outra mão, depois de Atacar) também só
  * avisa sem ela. A ação a mais do Surto de Ação cobre a segunda ação, sem aviso; a de cada turno da
  * Velocidade também, quando ela ou a ação já feita no turno é uma das que essa ação a mais aceita.
+ *
+ * Quem marca é uma ação da ficha ou a magia conjurada pelo grimório (`castSpell`): a de 1 ação vem
+ * como Conjurar uma Magia, com o nome dela; a de ação bônus e a de reação, sem id, não entram em
+ * `used` — não são uma ação da aba.
  */
-function spendTurn(turn: TurnState, action: SheetAction, sheet: PlaySheet, extraTurn: ExtraTurnAction | null, notices: PlayNotice[]): TurnState {
-  if (action.oncePerTurn && turn.used.includes(action.id)) {
+type TurnUse = Pick<SheetAction, 'name' | 'timing' | 'page' | 'oncePerTurn' | 'afterAction'> & { id?: string }
+
+function spendTurn(turn: TurnState, action: TurnUse, sheet: PlaySheet, extraTurn: ExtraTurnAction | null, notices: PlayNotice[]): TurnState {
+  if (action.oncePerTurn && action.id && turn.used.includes(action.id)) {
     notices.push(note('warning', `${action.name}: só uma vez por turno, e já foi usada neste (pág. ${action.page}).`))
   }
   if (action.afterAction && !turn.used.includes(action.afterAction)) {
     const before = sheet.actions.find(a => a.id === action.afterAction)?.name ?? action.afterAction
     notices.push(note('warning', `${action.name}: pede a ação de ${before} antes, no mesmo turno, e ela não foi usada neste (pág. ${action.page}).`))
   }
-  const next = turn.used.includes(action.id) ? turn : { ...turn, used: [...turn.used, action.id] }
+  const next = !action.id || turn.used.includes(action.id) ? turn : { ...turn, used: [...turn.used, action.id] }
   const slot = TURN_SLOT_OF[action.timing]
   if (!slot) return next
   if (slot === 'action' && next.action) {
@@ -1335,7 +1347,7 @@ function spendTurn(turn: TurnState, action: SheetAction, sheet: PlaySheet, extra
     // Qualquer das duas pode ser a da Velocidade: a de agora, ou uma de ação já feita no turno.
     const fits = (id: string) => extraTurn?.actions.includes(id) ?? false
     const doneBefore = turn.used.filter(id => sheet.actions.find(a => a.id === id)?.timing === 'action')
-    if (extraTurn && !next.extraTurnActionUsed && (fits(action.id) || doneBefore.some(fits))) {
+    if (extraTurn && !next.extraTurnActionUsed && ((action.id !== undefined && fits(action.id)) || doneBefore.some(fits))) {
       return { ...next, extraTurnActionUsed: true }
     }
     const names = joinPt((extraTurn?.actions ?? []).map(id => sheet.actions.find(a => a.id === id)?.name ?? id))
@@ -1504,6 +1516,262 @@ export function performAction(state0: PlayState, sheet: PlaySheet, actionId: str
     notices.push(...r.notices)
   }
   next = { ...next, turn: spendTurn(next.turn, action, sheet, getExtraTurnAction(next, sheet), notices) }
+  return done(next, notices)
+}
+
+// ── Conjurar pelo grimório ──────────────────────────────────────────────────
+
+/** Os tempos de conjuração que o turno lembra (`SpellCastRecord.timing`). */
+const CASTING_TIME_KINDS: readonly CastingTimeKind[] = ['action', 'bonusAction', 'reaction', 'longer']
+
+/** A ação em combate pela qual a magia de 1 ação sai (pág. 194): é ela que o turno marca. */
+const CAST_A_SPELL = 'cast-a-spell'
+
+/**
+ * Um jeito de pagar uma magia do grimório agora: o nível em que ela sai e o que resta dele (null: o
+ * que não se conta, o truque e o ritual).
+ */
+export type SpellCastOption = { pay: SpellPayment; castLevel: number; available: number | 'unlimited' | null }
+
+/**
+ * Os jeitos de conjurar uma magia do grimório agora (`PlaySheet.spellbook`), na ordem da folha: sem
+ * gastar (o truque, a inata), os espaços do pool do nível dela para cima, o de Pacto, o uso do
+ * talento e, por último, o ritual, que não gasta e por isso não sobe de nível (pág. 204). Vazio para
+ * a magia fora do grimório. O `castSpell` confere a escolha por aqui: uma regra só.
+ */
+export function getSpellCastOptions(state0: PlayState, sheet: PlaySheet, casterKey: string, spellId: string): SpellCastOption[] {
+  const found = findSpellbookEntry(sheet.spellbook, casterKey, spellId)
+  const spell = getSpell(spellId)
+  if (!found || !spell) return []
+  const { entry } = found
+  const state = reconcilePlayState(state0, sheet)
+  const slots = getSpellSlotsAvailable(state, sheet)
+  const own = entry.castLevel ?? spell.level
+  return [
+    ...(entry.free ? [{ pay: 'free' as const, castLevel: own, available: null }] : []),
+    ...entry.slotLevels.map(level => ({ pay: 'slot' as const, castLevel: level, available: slots[level - 1] ?? 0 })),
+    ...(entry.pactLevel !== null ? [{ pay: 'pact' as const, castLevel: entry.pactLevel, available: getPactSlotsAvailable(state, sheet) }] : []),
+    ...(entry.resourceId
+      ? [{ pay: 'resource' as const, castLevel: own, available: getResourceAvailable(state, sheet, entry.resourceId) ?? 0 }]
+      : []),
+    ...(entry.ritual ? [{ pay: 'ritual' as const, castLevel: spell.level, available: null }] : []),
+  ]
+}
+
+/**
+ * O efeito que a magia liga em quem a recebe, do catálogo (`data/active-effects.json`): pelo
+ * `targetEffect` do dano estruturado, quando ele o diz, ou pela magia da declaração (`spellId`) — o
+ * Escudo Arcano, a Bênção, a Armadura Arcana. Undefined: ela não tem efeito marcado em você.
+ */
+export function getSpellSelfToggle(sheet: PlaySheet, spellId: string): SheetToggle | undefined {
+  const target = getSpellMechanics(spellId)?.targetEffect
+  return sheet.toggles.find(t => (target ? t.id === target : t.spellId === spellId))
+}
+
+/**
+ * O que a mesa rolou para você, quando o alvo da magia é você: a cura, os PV temporários (com a
+ * escolha de manter ou ficar com os novos, se já houver alguns: eles não se somam, pág. 200) e o
+ * aumento do PV máximo (a Ajuda, pág. 215).
+ */
+export type SelfSpellResult = { heal?: number; tempHp?: number; tempHpChoice?: 'keep' | 'replace'; maxHpIncrease?: number }
+
+export type SpellCast = {
+  /** A conjuração do grimório: 'class:<classe>', 'feat:<talento>' ou 'other'. */
+  casterKey: string
+  spellId: string
+  /** O nível em que ela sai: o do espaço escolhido, o de Pacto, o que a fonte fixa; o dela no truque e no ritual. */
+  castLevel: number
+  pay: SpellPayment
+  /** O momento, para o começo da concentração e do efeito ligado. */
+  now: number
+  /** O alvo é você: o efeito da magia liga em você, e o que a mesa rolou se aplica. */
+  self?: SelfSpellResult
+}
+
+/** O truque de 1 ação: a única outra magia do turno da magia de ação bônus (pág. 204). */
+const fitsWithBonusSpell = (r: SpellCastRecord) => r.level === 0 && r.timing === 'action'
+
+/**
+ * A magia de ação bônus (pág. 204, linhas 18204-18210): no turno em que se conjura uma, a única outra
+ * magia possível é um truque de 1 ação, e o turno inteiro conta, antes ou depois dela (decisão de
+ * 2026-10-30, pelo esclarecimento oficial; Ponto em aberto 2 de `regras-conjuracao.md`). Só avisa: o
+ * app não sabe se a mesa já passou a outro turno. A de reação no turno de outra criatura é outro
+ * turno, e o app também não sabe de quem é o turno: o aviso diz isso.
+ */
+function describeBonusActionSpellRule(before: readonly SpellCastRecord[], cast: SpellCastRecord): string | null {
+  const bonus = cast.timing === 'bonusAction' ? cast : before.find(r => r.timing === 'bonusAction')
+  if (!bonus) return null
+  const others = cast === bonus ? before.filter(r => !fitsWithBonusSpell(r)) : fitsWithBonusSpell(cast) ? [] : [cast]
+  if (others.length === 0) return null
+  const name = (r: SpellCastRecord) => getSpell(r.spellId)?.name ?? r.spellId
+  const own = [...new Set(others.filter(r => r.timing !== 'reaction').map(name))]
+  const reactions = [...new Set(others.filter(r => r.timing === 'reaction').map(name))]
+  return [
+    `${name(bonus)} é de ação bônus: no turno dela, a única outra magia possível é um truque de 1 ação, antes ou depois dela (pág. 204).`,
+    ...(own.length > 0 ? [`${joinPt(own)} ${own.length === 1 ? 'não é' : 'não são'}.`] : []),
+    ...(reactions.length > 0
+      ? [`${joinPt(reactions)}, de reação, só ${reactions.length === 1 ? 'entra' : 'entram'} nessa regra no seu turno: no de outra criatura, vale.`]
+      : []),
+    'Se já é outro turno, toque em Novo turno.',
+  ].join(' ')
+}
+
+/** Por que o jeito de pagar escolhido não serve a esta magia. */
+function describeUnavailablePay(spell: Spell, entry: SpellbookEntry, cast: SpellCast): string {
+  if (spell.level === 0 && cast.pay !== 'free') return `${spell.name} é truque: não gasta espaço nem sobe de nível (pág. 203).`
+  switch (cast.pay) {
+    case 'slot':
+      if (cast.castLevel < spell.level) return `${spell.name} é de ${spell.level}º nível: o espaço precisa ser desse nível ou maior (pág. 201).`
+      return entry.slotLevels.length === 0
+        ? `${spell.name}: os espaços de magia não servem a ela.`
+        : `${spell.name}: a ficha não tem espaço de ${cast.castLevel}º nível para ela.`
+    case 'pact':
+      return entry.pactLevel === null
+        ? `${spell.name}: os espaços de Pacto não servem a ela.`
+        : `${spell.name}: o espaço de Pacto é de ${entry.pactLevel}º nível.`
+    case 'resource':
+      return `${spell.name}: não sai pelo uso de um recurso.`
+    case 'ritual':
+      return entry.ritual
+        ? `${spell.name}: o ritual não gasta espaço e por isso não sobe de nível (pág. 204).`
+        : `${spell.name} não vai como ritual nesta ficha: a característica de quem a dá não alcança a magia (pág. 204).`
+    case 'free':
+      return entry.free
+        ? `${spell.name} sai no ${entry.castLevel ?? spell.level}º nível.`
+        : `${spell.name} é de ${spell.level}º nível: escolha o espaço.`
+  }
+}
+
+/** Por que o jeito de pagar escolhido está esgotado. */
+function describeEmptyPay(spell: Spell, option: SpellCastOption, sheet: PlaySheet, entry: SpellbookEntry, listLabel: string): string {
+  if (option.pay === 'pact') return `${spell.name}: sem espaços de Pacto disponíveis.`
+  if (option.pay === 'resource') {
+    const recharge = sheet.resources.find(r => r.id === entry.resourceId)?.recharge
+    return `${spell.name}: o uso de ${listLabel} já foi gasto${recharge ? `, e os usos ${RECHARGE_TEXT[recharge]}` : ''}.`
+  }
+  return `${spell.name}: sem espaços de ${option.castLevel}º nível disponíveis.`
+}
+
+/** O que a conjuração gastou, para o aviso: "Curar Ferimentos, no 2º nível: gastou um espaço de 2º nível." */
+function describeCastPayment(spell: Spell, cast: SpellCast, entry: SpellbookEntry, listLabel: string): string {
+  const at = cast.castLevel > spell.level ? `, no ${cast.castLevel}º nível` : ''
+  switch (cast.pay) {
+    case 'slot': return `${spell.name}${at}: gastou um espaço de ${cast.castLevel}º nível.`
+    case 'pact': return `${spell.name}${at}: gastou um espaço de Pacto.`
+    case 'resource': return `${spell.name}: gastou o uso de ${listLabel}.`
+    case 'ritual': return `${spell.name} como ritual: 10 minutos a mais, sem gastar espaço (pág. 204).`
+    case 'free': return spell.level === 0
+      ? `${spell.name}: truque, sem gastar espaço (pág. 203).`
+      : `${spell.name}${at}: sem gastar espaço.${entry.note ? ` ${entry.note}` : ''}`
+  }
+}
+
+/** O passo que recusou (o estado volta o mesmo, com o aviso), para o `castSpell` desistir inteiro. */
+const refusedStep = (before: PlayState, r: PlayResult) =>
+  (r.state === before ? r.notices.find(n => n.kind === 'refused' || n.kind === 'unresolvedRule') : undefined)
+
+/**
+ * Conjura uma magia do grimório (`PlaySheet.spellbook`), num passo só do desfazer — o espaço, a
+ * concentração e o PV voltam juntos. Nenhum gasto de espaço é feito pela tela: tudo passa por aqui.
+ *
+ * Recusa, sem gastar nada: morto, quem não pode agir (Incapacitado, pág. 292), o que proíbe conjurar
+ * (`getCastingBlockers`: em fúria, pág. 48; de armadura sem proficiência, pág. 144), a magia com
+ * componente verbal sem poder falar (pág. 205), o jeito de pagar que não serve (`getSpellCastOptions`:
+ * o espaço abaixo do nível dela, o ritual que sobe de nível, pág. 204) e o esgotado.
+ *
+ * Feita, ela:
+ * - gasta o escolhido: o espaço do pool, o de Pacto ou o uso do talento; o truque, a inata e o ritual
+ *   não gastam;
+ * - marca o turno pelo tempo de conjuração (a de 1 ação como Conjurar uma Magia; a de ação bônus e a
+ *   de reação, na casa delas; minutos, horas e o ritual, nada), com os avisos de sempre do momento já
+ *   usado, e avisa da regra da magia de ação bônus (`describeBonusActionSpellRule`) — o toque no
+ *   checklist corrige;
+ * - começa a concentração, trocando a anterior com o aviso de sempre (`startConcentration`);
+ * - com o alvo sendo você, liga o efeito dela em você (`getSpellSelfToggle`; a de concentração fica
+ *   sustentada pela sua concentração e acaba com ela) e aplica o que a mesa rolou: a cura
+ *   (`applyHealing`), os PV temporários (`grantTempHp`) e o aumento do PV máximo (`adjustMaxHp`).
+ *   O passo que recusar (os PV temporários sem a escolha de manter ou trocar) desfaz a conjuração
+ *   inteira, com o motivo;
+ * - grava a magia no turno (`TurnState.spellsCast`).
+ */
+export function castSpell(state0: PlayState, sheet: PlaySheet, cast: SpellCast): PlayResult {
+  const found = findSpellbookEntry(sheet.spellbook, cast.casterKey, cast.spellId)
+  const spell = getSpell(cast.spellId)
+  if (!found || !spell) return refuse(state0, `Magia fora do grimório: ${cast.spellId}.`)
+  const { list, entry } = found
+  if (state0.lifeState === 'dead') return refuse(state0, `${spell.name}: o personagem está morto.`)
+  const fx = getPlayEffects(state0, sheet)
+  if (fx.noActions.active) {
+    return refuse(state0, `${spell.name}: ${fx.noActions.sources.map(s => s.label).join(', ')}, sem ações nem reações (pág. 292).`)
+  }
+  const blockers = getCastingBlockers(state0, sheet)
+  if (blockers.length > 0) return refuse(state0, `${spell.name}: ${blockers.join(' ')}`)
+  if (fx.cannotSpeak.active && hasVerbalComponent(spell)) {
+    return refuse(state0, `${spell.name}: ${fx.cannotSpeak.sources.map(s => s.label).join(', ')}, sem poder falar, e ela tem componente verbal (pág. 205).`)
+  }
+  const option = getSpellCastOptions(state0, sheet, cast.casterKey, cast.spellId)
+    .find(o => o.pay === cast.pay && o.castLevel === cast.castLevel)
+  if (!option) return refuse(state0, describeUnavailablePay(spell, entry, cast))
+  if (option.available === 0) return refuse(state0, describeEmptyPay(spell, option, sheet, entry, list.label))
+
+  let next = reconcilePlayState(state0, sheet)
+  const notices: PlayNotice[] = [note('info', describeCastPayment(spell, cast, entry, list.label))]
+  if (cast.pay === 'slot') {
+    const spellSlotsSpent = [...next.spellSlotsSpent]
+    spellSlotsSpent[cast.castLevel - 1] += 1
+    next = { ...next, spellSlotsSpent }
+  } else if (cast.pay === 'pact') {
+    next = { ...next, pactSlotsSpent: next.pactSlotsSpent + 1 }
+  } else if (cast.pay === 'resource' && entry.resourceId && option.available !== 'unlimited') {
+    next = { ...next, resourcesSpent: { ...next.resourcesSpent, [entry.resourceId]: (next.resourcesSpent[entry.resourceId] ?? 0) + 1 } }
+  }
+
+  // O turno: o ritual leva 10 minutos a mais, e minutos ou horas ficam fora do checklist (pág. 204).
+  const timing: CastingTimeKind = cast.pay === 'ritual' ? 'longer' : castingTimeKind(spell)
+  const record: SpellCastRecord = { spellId: spell.id, level: cast.castLevel, timing }
+  const bonusRule = describeBonusActionSpellRule(next.turn.spellsCast, record)
+  let turn = next.turn
+  if (timing !== 'longer') {
+    const castAction = sheet.actions.find(a => a.id === CAST_A_SPELL)
+    const use: TurnUse = timing === 'action' && castAction ? { ...castAction, name: spell.name } : { name: spell.name, timing, page: 204 }
+    turn = spendTurn(turn, use, sheet, getExtraTurnAction(next, sheet), notices)
+  }
+  if (bonusRule) notices.push(note('warning', bonusRule))
+  next = { ...next, turn: { ...turn, spellsCast: [...turn.spellsCast, record] } }
+
+  // A concentração e o efeito em você; o passo recusado desfaz a conjuração inteira.
+  const apply = (r: PlayResult): PlayNotice | undefined => {
+    const refused = refusedStep(next, r)
+    if (refused) return refused
+    next = r.state
+    notices.push(...r.notices)
+    return undefined
+  }
+  const toggle = cast.self ? getSpellSelfToggle(sheet, spell.id) : undefined
+  if (toggle && !next.activeEffects.some(a => a.id === toggle.id)) {
+    // A de concentração conjurada em si fica sustentada pela sua concentração: ligá-la a começa.
+    const refused = apply(activateToggle(next, sheet, toggle.id, { now: cast.now, ...(spell.concentration ? { sustainedByConcentration: true as const } : {}) }))
+    if (refused) return refuse(state0, refused.text, refused.kind)
+  } else {
+    if (toggle) notices.push(note('info', `${toggle.source} já está em você: a mesma magia não acumula (pág. 207).`))
+    if (spell.concentration && next.concentration?.spellId === spell.id) {
+      // Conjurada de novo, a concentração é na mesma magia: segue, contando de agora.
+      next = { ...next, concentration: { ...next.concentration, startedAt: cast.now } }
+    } else if (spell.concentration) {
+      const refused = apply(startConcentration(next, sheet, { spellId: spell.id, label: spell.name }, cast.now))
+      if (refused) return refuse(state0, refused.text, refused.kind)
+    }
+  }
+  const self = cast.self
+  const steps: (() => PlayResult)[] = [
+    ...(self?.heal && self.heal > 0 ? [() => applyHealing(next, sheet, self.heal ?? 0)] : []),
+    ...(self?.tempHp && self.tempHp > 0 ? [() => grantTempHp(next, self.tempHp ?? 0, self.tempHpChoice)] : []),
+    ...(self?.maxHpIncrease && self.maxHpIncrease > 0 ? [() => adjustMaxHp(next, sheet, self.maxHpIncrease ?? 0)] : []),
+  ]
+  for (const step of steps) {
+    const refused = apply(step())
+    if (refused) return refuse(state0, `${spell.name}: ${refused.text}`, refused.kind)
+  }
   return done(next, notices)
 }
 
@@ -2160,6 +2428,13 @@ function sanitizeTurn(x: unknown): TurnState {
     beforeTurn: x.beforeTurn === true,
     used: Array.isArray(x.used)
       ? [...new Set(x.used.filter((id): id is string => typeof id === 'string' && id !== ''))]
+      : [],
+    // A magia que o turno lembra: id, nível inteiro de 0 a 9 e um tempo de conjuração conhecido.
+    spellsCast: Array.isArray(x.spellsCast)
+      ? x.spellsCast.flatMap((r): SpellCastRecord[] => isRecord(r) && typeof r.spellId === 'string' && r.spellId
+        && isInt(r.level) && r.level >= 0 && r.level <= SPELL_LEVELS && CASTING_TIME_KINDS.includes(r.timing as CastingTimeKind)
+        ? [{ spellId: r.spellId, level: r.level, timing: r.timing as CastingTimeKind }]
+        : [])
       : [],
   }
 }

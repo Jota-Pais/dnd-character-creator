@@ -831,6 +831,14 @@ export function describeCastingAids(spellcasting: ClassSpellcasting): CastingAid
 }
 
 /**
+ * A magia tem componente verbal (pág. 205, linhas 18254-18261): quem não pode falar não a conjura.
+ * Lido da lista antes do material entre parênteses ("V, S, M (…)").
+ */
+export function hasVerbalComponent(spell: Pick<Spell, 'components'>): boolean {
+  return spell.components.split('(')[0].split(',').some(c => c.trim() === 'V')
+}
+
+/**
  * O tempo de conjuração no turno (pág. 204, linhas 18200-18228): a ação, a ação bônus, a reação ou
  * mais que isso (minutos, horas: gasta a ação a cada turno e pede concentração enquanto se conjura,
  * fora do checklist). Lido dos valores de `spells.json → castingTime` ("1 reação, que você faz

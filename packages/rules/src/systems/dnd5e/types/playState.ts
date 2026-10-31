@@ -1,7 +1,7 @@
 import type { RollRecord } from '../../../core/dice'
 import type { SheetAction } from './actions'
 import type { SheetToggle } from './session'
-import type { SpellbookList } from './spellbook'
+import type { CastingTimeKind, SpellbookList } from './spellbook'
 import type { SheetResource } from '../utils/classResourceUtils'
 import type { SheetDamageDefense } from '../utils/sheetEffects'
 import type { ConditionId, ExhaustionLevel } from './condition'
@@ -100,10 +100,19 @@ export type TurnState = {
   /**
    * As ações usadas pelo "Usar" neste turno, pelo id, uma vez cada: a de uma vez por turno avisa
    * na segunda (`ActionDeclaration.oncePerTurn`), e a que vem depois de outra pergunta por ela
-   * (`afterAction`: a outra mão, depois de Atacar).
+   * (`afterAction`: a outra mão, depois de Atacar). A magia de 1 ação conjurada pelo grimório entra
+   * como Conjurar uma Magia.
    */
   used: string[]
+  /**
+   * As magias conjuradas desde o Novo turno (`castSpell`), na ordem: a regra da magia de ação bônus
+   * (pág. 204) olha o turno inteiro, antes e depois dela.
+   */
+  spellsCast: SpellCastRecord[]
 }
+
+/** Uma magia conjurada no turno: qual, em que nível (0 no truque) e com que tempo de conjuração. */
+export type SpellCastRecord = { spellId: string; level: number; timing: CastingTimeKind }
 
 /** Magia (ou efeito) em que o personagem se concentra. `spellId` quando vem de `spells.json`. */
 export type Concentration = {

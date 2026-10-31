@@ -7,7 +7,7 @@ import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
 import { buildPlaySheet } from '../playSheet'
 import { COMPLETE_DRAFT } from '../../../../test/fixtures'
 import {
-  activateToggle, addCondition, adjustMaxHp, applyDamage, applyDamageDroppingToOneHp, applyHealing, clearRollHistory, clearTempHp, completeLongRest, completeShortRest,
+  activateToggle, addCondition, adjustMaxHp, applyDamage, castSpell, getSpellCastOptions, type SpellCast, applyDamageDroppingToOneHp, applyHealing, clearRollHistory, clearTempHp, completeLongRest, completeShortRest,
   createPlayState, deactivateToggle, describeHpMaxImmunity, emptyTurn, endConcentration, getBaseMaxHp, getCastingBlockers, getTurnActions, getTurnExtraActions, getTurnMovement, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable,
   getLongRestHitDiceRecoverable, getPactSlotsAvailable, getPlayEffects, getPlayConditionState, getPlayDamageDefenses, getPlaySpeed,
   getResourceAvailable, getShortRestSlotRecovery, performAction, getSpellSlotsAvailable, grantTempHp, previewLongRest, previewShortRest, reconcileLoadedPlayState,
@@ -2263,7 +2263,7 @@ describe('o turno: o checklist, o Usar e o Novo turno', () => {
   // "A reação volta no início do seu próximo turno" (linhas 17130-17131).
   it('o Novo turno zera as quatro casas, a ação a mais e a uma vez por turno, com aviso', () => {
     const sh = fighter(2)
-    const busy = state({ turn: { action: true, bonusAction: true, movement: true, reaction: true, extraActions: 1, extraTurnActionUsed: true, dashes: 1, movementSpent: 15, attacked: true, afterTurn: false, beforeTurn: true, used: ['action-surge'] } })
+    const busy = state({ turn: { action: true, bonusAction: true, movement: true, reaction: true, extraActions: 1, extraTurnActionUsed: true, dashes: 1, movementSpent: 15, attacked: true, afterTurn: false, beforeTurn: true, used: ['action-surge'], spellsCast: [{ spellId: 'bless', level: 1, timing: 'action' }] } })
     const r = newTurn(busy, sh)
     expect(r.state.turn).toEqual(emptyTurn())
     expect(r.notices).toEqual([{ kind: 'info', text: 'Novo turno: a ação, a ação bônus, o movimento e a reação estão de volta.' }])
@@ -2536,5 +2536,241 @@ describe('o turno: as ações em combate', () => {
     const raging = use(state(), krusk, 'rage-enter').state
     const attacked = use(raging, krusk, 'attack').state
     expect(newTurn(attacked, krusk).notices.map(n => n.kind)).toEqual(['info'])
+  })
+})
+
+// ── O grimório: conjurar (castSpell) ────────────────────────────────────────
+
+describe('castSpell: conjurar pelo grimório', () => {
+  const SC = { STR: 10, DEX: 14, CON: 14, INT: 16, WIS: 16, CHA: 16 }
+  const caster = (classId: string, level: number, cantrips: string[], spells: string[], patch: Partial<CharacterDraft> = {}): CharacterDraft => ({
+    ...structuredClone(EMPTY_DRAFT), class: classId, level, abilityScores: SC, spellChoices: { cantrips, spells }, ...patch,
+  })
+  const plus = (classId: string, level: number, cantrips: string[], spells: string[]) => ({
+    additionalClasses: [{ classId, level, classChoices: structuredClone(EMPTY_DRAFT.classChoices), spellChoices: { cantrips, spells }, asiChoices: [], hpRolls: [] }],
+    multiclass: true,
+  })
+  const cast = (s: PlayState, sh: PlaySheet, c: Omit<SpellCast, 'now'> & { now?: number }) => castSpell(s, sh, { now: 5000, ...c })
+  const texts = (r: { notices: { text: string }[] }) => r.notices.map(n => n.text)
+  const warnings = (r: { notices: { kind: string; text: string }[] }) => r.notices.filter(n => n.kind === 'warning').map(n => n.text)
+
+  const cleric = buildPlaySheet(caster('cleric', 3, ['sacred-flame'], ['cure-wounds', 'bless', 'shield-of-faith', 'healing-word', 'detect-magic']))
+  /** Mago 5 / clérigo 1: pool de personagem de 6º nível (4, 3 e 3), Palavra Curativa e Bola de Fogo. */
+  const wizardCleric = buildPlaySheet(caster('wizard', 6, ['fire-bolt'], ['fireball', 'shield', 'detect-magic'], plus('cleric', 1, ['sacred-flame'], ['healing-word'])))
+
+  it('gasta o espaço escolhido do pool: Curar Ferimentos no 2º nível, com a ação do turno', () => {
+    const r = cast(state(), cleric, { casterKey: 'class:cleric', spellId: 'cure-wounds', castLevel: 2, pay: 'slot' })
+    expect(r.state.spellSlotsSpent.slice(0, 2)).toEqual([0, 1])
+    expect(r.notices[0]).toEqual({ kind: 'info', text: 'Curar Ferimentos, no 2º nível: gastou um espaço de 2º nível.' })
+    expect(r.state.turn).toMatchObject({ action: true, used: ['cast-a-spell'], spellsCast: [{ spellId: 'cure-wounds', level: 2, timing: 'action' }] })
+    // A segunda magia de 1 ação no turno só avisa, como toda ação já usada.
+    const again = cast(r.state, cleric, { casterKey: 'class:cleric', spellId: 'cure-wounds', castLevel: 1, pay: 'slot' })
+    expect(warnings(again)).toEqual(['Curar Ferimentos: você já usou a ação deste turno (pág. 191). Se já é outro turno, toque em Novo turno.'])
+  })
+
+  it('gasta o espaço de Pacto: o bruxo 5 conjura no 3º nível, com a reação', () => {
+    const warlock = buildPlaySheet(caster('warlock', 5, ['eldritch-blast'], ['hellish-rebuke']))
+    const r = cast(state(), warlock, { casterKey: 'class:warlock', spellId: 'hellish-rebuke', castLevel: 3, pay: 'pact' })
+    expect(r.state.pactSlotsSpent).toBe(1)
+    expect(r.state.spellSlotsSpent.every(n => n === 0)).toBe(true)
+    expect(r.state.turn).toMatchObject({ reaction: true, action: false, used: [] })
+    expect(texts(r)[0]).toBe('Repreensão Infernal, no 3º nível: gastou um espaço de Pacto.')
+    // O de Pacto é de um nível só, e o pool o bruxo sozinho não tem.
+    expect(cast(state(), warlock, { casterKey: 'class:warlock', spellId: 'hellish-rebuke', castLevel: 1, pay: 'pact' }).notices)
+      .toEqual([{ kind: 'refused', text: 'Repreensão Infernal: o espaço de Pacto é de 3º nível.' }])
+    expect(texts(cast(state(), warlock, { casterKey: 'class:warlock', spellId: 'hellish-rebuke', castLevel: 1, pay: 'slot' })))
+      .toEqual(['Repreensão Infernal: os espaços de magia não servem a ela.'])
+    const empty = { ...state(), pactSlotsSpent: 2 }
+    expect(cast(empty, warlock, { casterKey: 'class:warlock', spellId: 'hellish-rebuke', castLevel: 3, pay: 'pact' }).state).toBe(empty)
+  })
+
+  it('o espaço precisa ser do nível dela ou maior (pág. 201), e o esgotado recusa sem gastar', () => {
+    const below = cast(state(), wizardCleric, { casterKey: 'class:wizard', spellId: 'fireball', castLevel: 2, pay: 'slot' })
+    expect(below.notices).toEqual([{ kind: 'refused', text: 'Bola de Fogo é de 3º nível: o espaço precisa ser desse nível ou maior (pág. 201).' }])
+    const spent = { ...state(), spellSlotsSpent: [0, 0, 3, 0, 0, 0, 0, 0, 0] }
+    const r = cast(spent, wizardCleric, { casterKey: 'class:wizard', spellId: 'fireball', castLevel: 3, pay: 'slot' })
+    expect(r.state).toBe(spent)
+    expect(texts(r)).toEqual(['Bola de Fogo: sem espaços de 3º nível disponíveis.'])
+    expect(texts(cast(state(), wizardCleric, { casterKey: 'class:wizard', spellId: 'fireball', castLevel: 3, pay: 'free' })))
+      .toEqual(['Bola de Fogo é de 3º nível: escolha o espaço.'])
+  })
+
+  it('o truque não gasta nem sobe de nível; a magia fora do grimório recusa', () => {
+    const r = cast(state(), wizardCleric, { casterKey: 'class:wizard', spellId: 'fire-bolt', castLevel: 0, pay: 'free' })
+    expect(r.state.spellSlotsSpent.every(n => n === 0)).toBe(true)
+    expect(texts(r)[0]).toBe('Raio de Fogo: truque, sem gastar espaço (pág. 203).')
+    expect(r.state.turn.spellsCast).toEqual([{ spellId: 'fire-bolt', level: 0, timing: 'action' }])
+    expect(texts(cast(state(), wizardCleric, { casterKey: 'class:wizard', spellId: 'fire-bolt', castLevel: 1, pay: 'slot' })))
+      .toEqual(['Raio de Fogo é truque: não gasta espaço nem sobe de nível (pág. 203).'])
+    expect(texts(cast(state(), wizardCleric, { casterKey: 'class:cleric', spellId: 'fireball', castLevel: 3, pay: 'slot' })))
+      .toEqual(['Magia fora do grimório: fireball.'])
+  })
+
+  it('o ritual não gasta, não marca o turno e não sobe de nível (pág. 204); quem não tem a característica não o faz', () => {
+    const r = cast(state(), wizardCleric, { casterKey: 'class:wizard', spellId: 'detect-magic', castLevel: 1, pay: 'ritual' })
+    expect(r.state.spellSlotsSpent.every(n => n === 0)).toBe(true)
+    expect(r.state.turn).toMatchObject({ action: false, bonusAction: false, reaction: false, spellsCast: [{ spellId: 'detect-magic', level: 1, timing: 'longer' }] })
+    expect(texts(r)[0]).toBe('Detectar Magia como ritual: 10 minutos a mais, sem gastar espaço (pág. 204).')
+    // Detectar Magia pede concentração: o ritual também.
+    expect(r.state.concentration).toEqual({ spellId: 'detect-magic', label: 'Detectar Magia', startedAt: 5000 })
+    expect(texts(cast(state(), wizardCleric, { casterKey: 'class:wizard', spellId: 'detect-magic', castLevel: 2, pay: 'ritual' })))
+      .toEqual(['Detectar Magia: o ritual não gasta espaço e por isso não sobe de nível (pág. 204).'])
+    const sorcerer = buildPlaySheet(caster('sorcerer', 3, ['fire-bolt'], ['comprehend-languages']))
+    expect(texts(cast(state(), sorcerer, { casterKey: 'class:sorcerer', spellId: 'comprehend-languages', castLevel: 1, pay: 'ritual' })))
+      .toEqual(['Compreender Idiomas não vai como ritual nesta ficha: a característica de quem a dá não alcança a magia (pág. 204).'])
+  })
+
+  // Decisão de 2026-10-30 (regras-conjuracao.md, Ponto em aberto 2): o turno inteiro, nas duas ordens, só aviso.
+  it('Palavra Curativa (ação bônus) e depois Bola de Fogo: aviso, sem recusar; na ordem inversa também', () => {
+    const word = cast(state(), wizardCleric, { casterKey: 'class:cleric', spellId: 'healing-word', castLevel: 1, pay: 'slot' })
+    expect(word.state.turn).toMatchObject({ bonusAction: true, action: false })
+    expect(warnings(word)).toEqual([])
+    const fireball = cast(word.state, wizardCleric, { casterKey: 'class:wizard', spellId: 'fireball', castLevel: 3, pay: 'slot' })
+    expect(fireball.state.spellSlotsSpent.slice(0, 3)).toEqual([1, 0, 1])
+    expect(warnings(fireball)).toEqual([
+      'Palavra Curativa é de ação bônus: no turno dela, a única outra magia possível é um truque de 1 ação, antes ou depois dela (pág. 204). Bola de Fogo não é. Se já é outro turno, toque em Novo turno.',
+    ])
+    const first = cast(state(), wizardCleric, { casterKey: 'class:wizard', spellId: 'fireball', castLevel: 3, pay: 'slot' }).state
+    const after = cast(first, wizardCleric, { casterKey: 'class:cleric', spellId: 'healing-word', castLevel: 1, pay: 'slot' })
+    expect(warnings(after)).toEqual([
+      'Palavra Curativa é de ação bônus: no turno dela, a única outra magia possível é um truque de 1 ação, antes ou depois dela (pág. 204). Bola de Fogo não é. Se já é outro turno, toque em Novo turno.',
+    ])
+    // O Novo turno zera o que o turno lembra.
+    expect(newTurn(after.state, wizardCleric).state.turn.spellsCast).toEqual([])
+  })
+
+  it('o truque de 1 ação depois da ação bônus: sem aviso; a magia de reação avisa só se for no seu turno', () => {
+    const word = cast(state(), wizardCleric, { casterKey: 'class:cleric', spellId: 'healing-word', castLevel: 1, pay: 'slot' }).state
+    expect(warnings(cast(word, wizardCleric, { casterKey: 'class:wizard', spellId: 'fire-bolt', castLevel: 0, pay: 'free' }))).toEqual([])
+    const shield = cast(word, wizardCleric, { casterKey: 'class:wizard', spellId: 'shield', castLevel: 1, pay: 'slot' })
+    expect(shield.state.turn.reaction).toBe(true)
+    expect(warnings(shield)).toEqual([
+      'Palavra Curativa é de ação bônus: no turno dela, a única outra magia possível é um truque de 1 ação, antes ou depois dela (pág. 204). Escudo Arcano, de reação, só entra nessa regra no seu turno: no de outra criatura, vale. Se já é outro turno, toque em Novo turno.',
+    ])
+  })
+
+  it('a concentração nova troca a anterior, com o aviso; conjurada em si, a magia fica sustentada por ela', () => {
+    const bless = cast(state(), cleric, { casterKey: 'class:cleric', spellId: 'bless', castLevel: 1, pay: 'slot', self: {} })
+    expect(bless.state.concentration).toEqual({ spellId: 'bless', label: 'Bênção', startedAt: 5000 })
+    expect(bless.state.activeEffects).toEqual([{ id: 'spell:bless', startedAt: 5000, sustainedByConcentration: true }])
+    const faith = cast(bless.state, cleric, { casterKey: 'class:cleric', spellId: 'shield-of-faith', castLevel: 1, pay: 'slot', self: {} })
+    expect(faith.state.concentration?.spellId).toBe('shield-of-faith')
+    expect(kinds(faith)).toContain('concentrationReplaced')
+    expect(texts(faith)).toContain('Bênção: terminou com a sua concentração.')
+    expect(faith.state.activeEffects.map(a => a.id)).toEqual(['spell:shield-of-faith'])
+    // Sem o "em você", só a concentração: o efeito é dos aliados.
+    const allies = cast(state(), cleric, { casterKey: 'class:cleric', spellId: 'bless', castLevel: 1, pay: 'slot' })
+    expect(allies.state.concentration?.spellId).toBe('bless')
+    expect(allies.state.activeEffects).toEqual([])
+  })
+
+  it('o Escudo Arcano em si: a reação, o +5 ligado até o Novo turno', () => {
+    const r = cast(state(), wizardCleric, { casterKey: 'class:wizard', spellId: 'shield', castLevel: 1, pay: 'slot', self: {} })
+    expect(r.state.activeEffects.map(a => a.id)).toEqual(['spell:shield'])
+    expect(r.state.turn.reaction).toBe(true)
+    expect(newTurn(r.state, wizardCleric).state.activeEffects).toEqual([])
+    // Já ligado, a mesma magia não acumula (pág. 207): a conjuração vale, o efeito fica um só.
+    const again = cast(r.state, wizardCleric, { casterKey: 'class:wizard', spellId: 'shield', castLevel: 1, pay: 'slot', self: {} })
+    expect(again.state.activeEffects).toHaveLength(1)
+    expect(texts(again)).toContain('Escudo Arcano já está em você: a mesma magia não acumula (pág. 207).')
+  })
+
+  it('Curar Ferimentos em si: cura o que a mesa rolou, no mesmo passo', () => {
+    const hurt = { ...state(), damageTaken: 10 }
+    const before = getCurrentHp(hurt, cleric)
+    const r = cast(hurt, cleric, { casterKey: 'class:cleric', spellId: 'cure-wounds', castLevel: 1, pay: 'slot', self: { heal: 7 } })
+    expect(getCurrentHp(r.state, cleric)).toBe(before + 7)
+    expect(r.state.spellSlotsSpent[0]).toBe(1)
+    expect(kinds(r)).toContain('healed')
+  })
+
+  it('os PV temporários pedem a escolha quando já há alguns: sem ela, a conjuração inteira é recusada', () => {
+    const wizard = buildPlaySheet(caster('wizard', 3, ['fire-bolt'], ['false-life']))
+    const r = cast(state(), wizard, { casterKey: 'class:wizard', spellId: 'false-life', castLevel: 1, pay: 'slot', self: { tempHp: 8 } })
+    expect(r.state.tempHp).toBe(8)
+    const asked = cast(r.state, wizard, { casterKey: 'class:wizard', spellId: 'false-life', castLevel: 2, pay: 'slot', self: { tempHp: 12 } })
+    expect(asked.state).toBe(r.state)
+    expect(asked.notices).toEqual([{ kind: 'refused', text: 'Vitalidade Falsa: Já tem 8 PV temporários: manter 8 ou ficar com 12? Eles não se somam (pág. 200).' }])
+    const kept = cast(r.state, wizard, { casterKey: 'class:wizard', spellId: 'false-life', castLevel: 2, pay: 'slot', self: { tempHp: 12, tempHpChoice: 'replace' } })
+    expect(kept.state.tempHp).toBe(12)
+  })
+
+  it('a Ajuda em si sobe o PV máximo e o atual (pág. 215)', () => {
+    const sh = buildPlaySheet(caster('cleric', 3, ['sacred-flame'], ['aid']))
+    const r = cast(state(), sh, { casterKey: 'class:cleric', spellId: 'aid', castLevel: 2, pay: 'slot', self: { maxHpIncrease: 5 } })
+    expect(r.state.maxHpAdjustment).toBe(5)
+    expect(getCurrentHp(r.state, sh)).toBe(sh.maxHp + 5)
+  })
+
+  it('em fúria, recusa sem gastar nada, também a magia inata (pág. 48)', () => {
+    const base = structuredClone(COMPLETE_DRAFT)
+    const tiefling = buildPlaySheet({ ...base, race: 'tiefling', level: 3 })
+    const raging = performAction(state(), tiefling, 'rage-enter', { now: 1 }).state
+    const r = cast(raging, tiefling, { casterKey: 'other', spellId: 'thaumaturgy', castLevel: 0, pay: 'free' })
+    expect(r.state).toBe(raging)
+    expect(r.notices).toEqual([{ kind: 'refused', text: 'Taumaturgia: Em fúria você não pode conjurar magias (pág. 48).' }])
+    // Fora da fúria, o tiferino conjura a repreensão infernal no 2º nível, sem espaço.
+    const rebuke = cast(state(), tiefling, { casterKey: 'other', spellId: 'hellish-rebuke', castLevel: 2, pay: 'free' })
+    expect(rebuke.state.turn.reaction).toBe(true)
+    expect(texts(rebuke)[0]).toBe('Repreensão Infernal, no 2º nível: sem gastar espaço. 1 uso por descanso longo, como magia de 2º nível (o app ainda não conta esse uso).')
+  })
+
+  it('o mago de cota de malha sem proficiência: recusa (pág. 144)', () => {
+    const armored = { ...wizardCleric, unproficientArmor: ['Cota de Malha'] }
+    const r = cast(state(), armored, { casterKey: 'class:wizard', spellId: 'fire-bolt', castLevel: 0, pay: 'free' })
+    expect(r.notices).toHaveLength(1)
+    expect(r.notices[0].kind).toBe('refused')
+    expect(r.notices[0].text).toBe(`Raio de Fogo: ${getCastingBlockers(state(), armored).join(' ')}`)
+  })
+
+  it('morto ou incapacitado recusa; sem poder falar, a magia com componente verbal também (pág. 205)', () => {
+    expect(texts(cast({ ...state(), lifeState: 'dead' }, cleric, { casterKey: 'class:cleric', spellId: 'sacred-flame', castLevel: 0, pay: 'free' })))
+      .toEqual(['Chama Sagrada: o personagem está morto.'])
+    const stunned = addCondition(state(), cleric, 'stunned').state
+    expect(texts(cast(stunned, cleric, { casterKey: 'class:cleric', spellId: 'sacred-flame', castLevel: 0, pay: 'free' }))[0])
+      .toMatch(/^Chama Sagrada: .*sem ações nem reações \(pág\. 292\)\.$/)
+    // Uma mordaça de mentira: o efeito ligado que tira a fala sem incapacitar.
+    const gagged: PlaySheet = {
+      ...cleric,
+      toggles: [...cleric.toggles, {
+        id: 'gag', label: 'Amordaçado', source: 'Mordaça', page: 205, effects: [{ source: 'Mordaça', effect: { kind: 'cannotSpeak', scope: 'gameState' } }],
+        benefits: [], endsOn: [], options: [],
+      }],
+    }
+    const quiet = activateToggle(state(), gagged, 'gag', { now: 1 }).state
+    expect(texts(cast(quiet, gagged, { casterKey: 'class:cleric', spellId: 'sacred-flame', castLevel: 0, pay: 'free' })))
+      .toEqual(['Chama Sagrada: Mordaça, sem poder falar, e ela tem componente verbal (pág. 205).'])
+  })
+
+  it('o Iniciado em Magia gasta o uso do talento, e o segundo é recusado até o descanso longo', () => {
+    const sh = buildPlaySheet({
+      ...structuredClone(EMPTY_DRAFT), class: 'fighter', level: 4, abilityScores: SC,
+      asiChoices: [{ kind: 'feat', featId: 'iniciado-em-magia' }],
+      featSelections: { 'iniciado-em-magia': { spellClass: 'cleric', cantrips: ['sacred-flame', 'guidance'], spells: ['cure-wounds'] } },
+    })
+    const ref = { casterKey: 'feat:iniciado-em-magia', spellId: 'cure-wounds', castLevel: 1, pay: 'resource' as const }
+    const r = cast(state(), sh, ref)
+    expect(r.state.resourcesSpent).toEqual({ 'magic-initiate-spell': 1 })
+    expect(texts(r)[0]).toBe('Curar Ferimentos: gastou o uso de Iniciado em Magia (Clérigo).')
+    expect(texts(cast(r.state, sh, ref))).toEqual(['Curar Ferimentos: o uso de Iniciado em Magia (Clérigo) já foi gasto, e os usos voltam num descanso longo.'])
+    expect(texts(cast(state(), sh, { ...ref, castLevel: 2 }))).toEqual(['Curar Ferimentos: não sai pelo uso de um recurso.'])
+  })
+
+  it('as opções da folha: sem gastar, os espaços, o Pacto, o uso e o ritual, com o que resta', () => {
+    const half = { ...state(), spellSlotsSpent: [1, 0, 3, 0, 0, 0, 0, 0, 0] }
+    expect(getSpellCastOptions(half, wizardCleric, 'class:wizard', 'detect-magic')).toEqual([
+      { pay: 'slot', castLevel: 1, available: 3 },
+      { pay: 'slot', castLevel: 2, available: 3 },
+      { pay: 'slot', castLevel: 3, available: 0 },
+      { pay: 'ritual', castLevel: 1, available: null },
+    ])
+    expect(getSpellCastOptions(half, wizardCleric, 'class:wizard', 'fire-bolt')).toEqual([{ pay: 'free', castLevel: 0, available: null }])
+    expect(getSpellCastOptions(half, wizardCleric, 'class:cleric', 'fireball')).toEqual([])
+  })
+
+  it('sanitizePlayState: as magias do turno, só as bem formadas', () => {
+    const raw: Record<string, unknown> = JSON.parse(JSON.stringify(createPlayState('c')))
+    raw.turn = { ...emptyTurn(), spellsCast: [{ spellId: 'bless', level: 1, timing: 'action' }, { spellId: '', level: 1, timing: 'action' }, { spellId: 'x', level: 12, timing: 'action' }, { spellId: 'y', level: 0, timing: 'soon' }, 'z'] }
+    expect(sanitizePlayState(raw, 'c').turn.spellsCast).toEqual([{ spellId: 'bless', level: 1, timing: 'action' }])
   })
 })

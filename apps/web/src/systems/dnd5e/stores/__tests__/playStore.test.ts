@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { registerPendingEdit, usePlayStore, UNDO_LIMIT } from '../playStore'
 import {
-  applyDamage, applyHealing, createPlayState, emptyTurn, getCurrentHp, markTurn, newTurn, performAction, setInspiration, setNote,
+  applyDamage, applyHealing, castSpell, createPlayState, emptyTurn, getCurrentHp, markTurn, newTurn, performAction, setInspiration, setNote,
 } from '@rpg/rules/systems/dnd5e/utils/playState'
 import { loadPlayPreferences, loadPlayState, savePlayState } from '../../utils/playStorage'
 import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
@@ -156,6 +156,29 @@ describe('usePlayStore', () => {
     expect(usePlayStore.getState().state?.turn).toEqual(raging?.turn)
     usePlayStore.getState().undo()
     expect(usePlayStore.getState().state).toMatchObject({ resourcesSpent: {}, activeEffects: [], turn: emptyTurn() })
+  })
+
+  it('o desfazer volta a conjuração inteira: o espaço, a concentração, o efeito em você e o PV', () => {
+    const cleric = {
+      ...draft(), class: 'cleric', level: 3, abilityScores: { STR: 10, DEX: 12, CON: 14, INT: 10, WIS: 16, CHA: 10 },
+      spellChoices: { cantrips: ['sacred-flame'], spells: ['bless', 'cure-wounds'] },
+    }
+    usePlayStore.getState().open('c1', cleric, 1)
+    const { run, undo } = usePlayStore.getState()
+    run((st, sh) => applyDamage(st, sh, { amount: 8 }))
+    const hurt = usePlayStore.getState().state!
+    run((st, sh) => castSpell(st, sh, { casterKey: 'class:cleric', spellId: 'bless', castLevel: 1, pay: 'slot', now: 2, self: {} }))
+    const blessed = usePlayStore.getState().state!
+    expect(blessed).toMatchObject({ spellSlotsSpent: [1, 0, 0, 0, 0, 0, 0, 0, 0], concentration: { spellId: 'bless' }, activeEffects: [{ id: 'spell:bless' }] })
+    run((st, sh) => castSpell(st, sh, { casterKey: 'class:cleric', spellId: 'cure-wounds', castLevel: 2, pay: 'slot', now: 3, self: { heal: 6 } }))
+    expect(usePlayStore.getState().state!.damageTaken).toBe(2)
+    // A hora da gravação muda a cada gravação; o resto volta igual.
+    const now = () => ({ ...usePlayStore.getState().state!, updatedAt: 0 })
+    undo()
+    expect(now()).toEqual({ ...blessed, updatedAt: 0 })
+    undo()
+    expect(now()).toEqual({ ...hurt, updatedAt: 0 })
+    expect(hurt).toMatchObject({ spellSlotsSpent: [0, 0, 0, 0, 0, 0, 0, 0, 0], concentration: null, activeEffects: [], damageTaken: 8 })
   })
 
   it(`a pilha do desfazer guarda no máximo ${UNDO_LIMIT} estados`, () => {

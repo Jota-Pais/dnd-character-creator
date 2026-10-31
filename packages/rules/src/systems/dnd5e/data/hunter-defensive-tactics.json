@@ -12,6 +12,11 @@
   {
     "id": "steel-will",
     "name": "Vontade de Aço",
-    "description": "Você tem vantagem em testes de resistência para evitar ser amedrontado."
+    "description": "Você tem vantagem em testes de resistência para evitar ser amedrontado.",
+    "effects": {
+      "conditionalRolls": [
+        { "rolls": ["save"], "text": "vantagem se o teste de resistência for contra ficar amedrontado (pág. 121)." }
+      ]
+    }
   }
 ]

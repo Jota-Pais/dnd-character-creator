@@ -690,7 +690,12 @@
       {
         "level": 6,
         "name": "Inimigo Favorito Maior",
-        "description": "Escolha um inimigo favorito maior (aberrações, celestiais, constructos, corruptores, dragões, elementais ou gigantes): você ganha contra ele todos os benefícios de Inimigo Favorito, incluindo um idioma adicional. O bônus de dano contra todos os seus inimigos favoritos passa a ser +4. Você tem vantagem em testes de resistência contra magias e habilidades usadas por um inimigo favorito maior."
+        "description": "Escolha um inimigo favorito maior (aberrações, celestiais, constructos, corruptores, dragões, elementais ou gigantes): você ganha contra ele todos os benefícios de Inimigo Favorito, incluindo um idioma adicional. O bônus de dano contra todos os seus inimigos favoritos passa a ser +4. Você tem vantagem em testes de resistência contra magias e habilidades usadas por um inimigo favorito maior.",
+        "effects": {
+          "conditionalRolls": [
+            { "rolls": ["save"], "text": "vantagem se o teste de resistência for contra magia ou habilidade de um inimigo favorito maior (pág. 118)." }
+          ]
+        }
       },
       {
         "level": 8,
@@ -1060,7 +1065,12 @@
       {
         "level": 6,
         "name": "Caminho da Floresta",
-        "description": "Terreno difícil não mágico não lhe custa movimento extra. Você atravessa plantas não mágicas sem ser atrasado e sem sofrer dano de espinhos ou perigos parecidos. Tem vantagem em testes de resistência contra plantas criadas ou manipuladas magicamente para impedir o movimento (ex.: a magia constrição)."
+        "description": "Terreno difícil não mágico não lhe custa movimento extra. Você atravessa plantas não mágicas sem ser atrasado e sem sofrer dano de espinhos ou perigos parecidos. Tem vantagem em testes de resistência contra plantas criadas ou manipuladas magicamente para impedir o movimento (ex.: a magia constrição).",
+        "effects": {
+          "conditionalRolls": [
+            { "rolls": ["save"], "text": "vantagem se o teste de resistência for contra plantas criadas ou manipuladas por magia para impedir o movimento, como as da magia constrição (pág. 76)." }
+          ]
+        }
       },
       {
         "level": 10,
@@ -1672,7 +1682,12 @@
         "level": 14,
         "name": "Resistência à Magia",
         "description": "Você ganha vantagem em testes de resistência contra magias e recebe resistência contra o dano causado por magias.",
-        "effects": { "damageDefenses": { "resistances": "all", "condition": "de magia" } }
+        "effects": {
+          "conditionalRolls": [
+            { "rolls": ["save"], "text": "vantagem se o teste de resistência for contra magia (pág. 98)." }
+          ],
+          "damageDefenses": { "resistances": "all", "condition": "de magia" }
+        }
       }
     ],
     "divination": [

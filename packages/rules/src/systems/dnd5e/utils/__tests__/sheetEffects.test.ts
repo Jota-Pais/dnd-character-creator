@@ -1029,7 +1029,24 @@ describe('getConditionalRollNotes', () => {
       level: 15, class: 'ranger',
       classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), subclass: 'hunter', progressionChoices: { 'hunter-superior-defense-15': ['evasion'] } },
     })
-    expect(getConditionalRollNotes(hunter)).toEqual([evasion(121)])
+    // O patrulheiro 6 também tem a nota do Inimigo Favorito Maior (pág. 118), que vem antes: é da classe.
+    expect(getConditionalRollNotes(hunter).filter(n => n.source === 'Evasão')).toEqual([evasion(121)])
+  })
+
+  // Os talentos e as opções de slot também dão a nota: o Explorador de Cavernas (pág. 169) e a Vontade
+  // de Aço das Táticas Defensivas do Caçador (pág. 121).
+  it('a vantagem nos TR de talento e de opção escolhida: Explorador de Cavernas e Vontade de Aço', () => {
+    const delver = draft({ level: 4, class: 'fighter', asiChoices: [{ kind: 'feat', featId: 'explorador-de-cavernas' }] })
+    expect(getConditionalRollNotes(delver)).toEqual([{
+      source: 'Explorador de Cavernas', rolls: ['save'],
+      text: 'vantagem se o teste de resistência for para evitar ou resistir a armadilhas (pág. 169).',
+    }])
+    const hunter = (pick: string) => draft({
+      level: 7, class: 'ranger',
+      classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), subclass: 'hunter', progressionChoices: { 'hunter-defensive-7': [pick] } },
+    })
+    expect(getConditionalRollNotes(hunter('steel-will')).map(n => n.source)).toEqual(['Inimigo Favorito Maior', 'Vontade de Aço'])
+    expect(getConditionalRollNotes(hunter('escape-the-horde')).map(n => n.source)).toEqual(['Inimigo Favorito Maior'])
   })
 
   it('a mesma característica de duas classes entra uma vez: ladino 7 / monge 7 tem uma Evasão', () => {

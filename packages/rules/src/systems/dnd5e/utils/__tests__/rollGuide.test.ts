@@ -765,6 +765,38 @@ describe('getRollGuide — linhas condicionais da ficha (traços e característi
     expect(has(lightfoot.saves.CON, 'Resiliência dos Robustos')).toBe(false)
   })
 
+  // O mesmo defeito da Resiliência dos Robustos (decisão de 2026-10-31): "Você tem vantagem nos testes
+  // de resistência para resistir a ser enfeitiçado" (Ancestral Feérico do elfo, pág. 23, linhas
+  // 1825-1827) e "vantagem em todos os testes de resistência de Inteligência, Sabedoria e Carisma
+  // contra magia" (Esperteza Gnômica, pág. 37, linhas 2827-2829).
+  it('Ancestral Feérico (elfo) em todo TR; Esperteza Gnômica só nos de INT, SAB e CAR; sem mudar o modo', () => {
+    const elf = getRollGuide(draft({ class: 'fighter', level: 1, race: 'elf', subrace: 'wood-elf', abilityScores: SCORES }), play())
+    expect(has(elf.saves.WIS, 'Ancestral Feérico: vantagem se o teste de resistência for contra ficar enfeitiçado (pág. 23).')).toBe(true)
+    expect(has(elf.saves.STR, 'Ancestral Feérico')).toBe(true)
+    expect(elf.saves.WIS.mode).toBe('normal')
+    expect(has(elf.checks.WIS, 'Ancestral Feérico')).toBe(false)
+    const gnome = getRollGuide(draft({ class: 'fighter', level: 1, race: 'gnome', subrace: 'rock-gnome', abilityScores: SCORES }), play())
+    for (const ab of ['INT', 'WIS', 'CHA'] as const) expect(has(gnome.saves[ab], 'Esperteza Gnômica: vantagem se o teste de resistência for contra magia (pág. 37).'), ab).toBe(true)
+    for (const ab of ['STR', 'DEX', 'CON'] as const) expect(has(gnome.saves[ab], 'Esperteza Gnômica'), ab).toBe(false)
+  })
+
+  // "A partir do 14° nível, você tem vantagem em testes de resistência contra magia" (Resistência à
+  // Magia, pág. 98, linhas 8555-8557) e "vantagem em testes de resistência contra magias conjuradas por
+  // criaturas a até 1,5 metro de você" (Matador de Conjuradores, pág. 170, linhas 15223-15225).
+  it('Resistência à Magia (abjurador 14) e Matador de Conjuradores: a nota nos TR, sem mudar o modo', () => {
+    const abjurer = (level: number) => draft({
+      class: 'wizard', level, abilityScores: SCORES,
+      classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), subclass: 'abjuration' },
+    })
+    const guide = getRollGuide(abjurer(14), play())
+    expect(has(guide.saves.DEX, 'Resistência à Magia: vantagem se o teste de resistência for contra magia (pág. 98).')).toBe(true)
+    expect(guide.saves.DEX.mode).toBe('normal')
+    expect(has(getRollGuide(abjurer(13), play()).saves.DEX, 'Resistência à Magia')).toBe(false)
+    const slayer = getRollGuide(draft({ class: 'fighter', level: 4, abilityScores: SCORES, asiChoices: [{ kind: 'feat', featId: 'matador-de-conjuradores' }] }), play())
+    expect(has(slayer.saves.CON, 'Matador de Conjuradores: vantagem se o teste de resistência for contra magia conjurada por uma criatura a até 1,5 m de você (pág. 170).')).toBe(true)
+    expect(has(slayer.checks.CON, 'Matador de Conjuradores')).toBe(false)
+  })
+
   it('Sentido de Perigo (bárbaro 2): só no TR de Destreza, com a ressalva', () => {
     const barbarian = (level: number) => draft({ class: 'barbarian', level, abilityScores: SCORES })
     const guide = getRollGuide(barbarian(2), play())

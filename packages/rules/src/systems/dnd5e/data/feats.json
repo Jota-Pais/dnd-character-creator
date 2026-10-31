@@ -135,6 +135,9 @@
     "prerequisite": null,
     "description": "Alerta às armadilhas escondidas e portas secretas encontradas em muitas masmorras, você ganha os seguintes benefícios:\n- Você tem vantagem em testes de Sabedoria (Percepção) e de Inteligência (Investigação) feitos para detectar a presença de portas secretas.\n- Você tem vantagem em testes de resistência feitos para evitar ou resistir a armadilhas.\n- Você tem resistência ao dano causado por armadilhas.\n- Você pode procurar armadilhas enquanto viaja a um ritmo normal, ao invés de metade do ritmo.",
     "effects": {
+      "conditionalRolls": [
+        { "rolls": ["save"], "text": "vantagem se o teste de resistência for para evitar ou resistir a armadilhas (pág. 169)." }
+      ],
       "damageDefenses": { "resistances": "all", "condition": "de armadilha" }
     }
   },
@@ -198,7 +201,12 @@
     "id": "matador-de-conjuradores",
     "name": "Matador de Conjuradores",
     "prerequisite": null,
-    "description": "Você praticou técnicas úteis em combate corpo-a-corpo contra conjuradores, ganhando os seguintes benefícios:\n- Quando uma criatura a até 1,5 metro de você conjurar uma magia, você pode usar sua reação para realizar um ataque corpo-a-corpo contra ela.\n- Quando você causa dano em uma criatura que está se concentrando em uma magia, a criatura terá desvantagem no teste de resistência que ela fizer para manter a concentração.\n- Você tem vantagem em testes de resistência contra magias conjuradas por criaturas a até 1,5 metro de você."
+    "description": "Você praticou técnicas úteis em combate corpo-a-corpo contra conjuradores, ganhando os seguintes benefícios:\n- Quando uma criatura a até 1,5 metro de você conjurar uma magia, você pode usar sua reação para realizar um ataque corpo-a-corpo contra ela.\n- Quando você causa dano em uma criatura que está se concentrando em uma magia, a criatura terá desvantagem no teste de resistência que ela fizer para manter a concentração.\n- Você tem vantagem em testes de resistência contra magias conjuradas por criaturas a até 1,5 metro de você.",
+    "effects": {
+      "conditionalRolls": [
+        { "rolls": ["save"], "text": "vantagem se o teste de resistência for contra magia conjurada por uma criatura a até 1,5 m de você (pág. 170)." }
+      ]
+    }
   },
   {
     "id": "mente-afiada",

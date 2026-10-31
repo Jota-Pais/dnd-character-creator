@@ -91,7 +91,12 @@
     "traits": [
       {
         "name": "Ancestral Feérico",
-        "description": "Vantagem em testes contra ser enfeitiçado e imunidade a magias de sono."
+        "description": "Vantagem em testes de resistência contra ser enfeitiçado, e magias não podem colocá-lo para dormir.",
+        "effects": {
+          "conditionalRolls": [
+            { "rolls": ["save"], "text": "vantagem se o teste de resistência for contra ficar enfeitiçado (pág. 23)." }
+          ]
+        }
       },
       {
         "name": "Transe",
@@ -499,7 +504,12 @@
     "traits": [
       {
         "name": "Esperteza Gnômica",
-        "description": "Vantagem em todos os testes de resistência de Inteligência, Sabedoria e Carisma contra magia."
+        "description": "Vantagem em todos os testes de resistência de Inteligência, Sabedoria e Carisma contra magia.",
+        "effects": {
+          "conditionalRolls": [
+            { "rolls": ["save"], "abilities": ["INT", "WIS", "CHA"], "text": "vantagem se o teste de resistência for contra magia (pág. 37)." }
+          ]
+        }
       }
     ],
     "subraces": [

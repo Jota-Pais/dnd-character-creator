@@ -1678,14 +1678,16 @@ function wearInto(next: PlayState, sheet: PlaySheet, after: ArmorSetup, notices:
   const unproficient = putOn.filter(a => !a.proficient).map(a => a.name)
   if (unproficient.length > 0) notices.push(note('warning', describeUnproficientArmorRules(unproficient)))
 
+  // Um aviso por efeito ligado, como ao ligar (`activateToggle`, `blockedBy`): a Fúria do totem da
+  // Águia junta outra entrada de benefícios com a mesma cláusula, e o que se perde é a Fúria.
+  const blocker = (toggle: SheetToggle, setup: ArmorSetup) =>
+    toggle.benefits.map(b => equipmentBlocker(b.requires, equippedOf(setup))).find(Boolean)
   for (const toggle of sheet.toggles) {
     if (!next.activeEffects.some(a => a.id === toggle.id)) continue
-    for (const { requires } of toggle.benefits) {
-      const was = equipmentBlocker(requires, equippedOf(before))
-      const now = equipmentBlocker(requires, equippedOf(after))
-      if (now && !was) notices.push(note('warning', `${toggle.source} sem os benefícios: você está de ${now} (pág. ${toggle.page}).`))
-      if (was && !now) notices.push(note('info', `${toggle.source}: os benefícios voltam (pág. ${toggle.page}).`))
-    }
+    const was = blocker(toggle, before)
+    const now = blocker(toggle, after)
+    if (now && !was) notices.push(note('warning', `${toggle.source} sem os benefícios: você está de ${now} (pág. ${toggle.page}).`))
+    if (was && !now) notices.push(note('info', `${toggle.source}: os benefícios voltam (pág. ${toggle.page}).`))
   }
 }
 

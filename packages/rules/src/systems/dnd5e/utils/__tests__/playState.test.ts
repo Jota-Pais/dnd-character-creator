@@ -2886,6 +2886,21 @@ describe('a armadura vestida: vestir, tirar, o escudo e a reconciliação', () =
     expect(getPlayToggles(off.state, sheetFor(barbarian, off.state))[0].blockedBy).toBeUndefined()
   })
 
+  it('a Fúria do totem da Águia (duas entradas de benefícios, pág. 50) avisa uma vez ao vestir e ao tirar Placas', () => {
+    const totem = (pick: string): CharacterDraft => ({
+      ...character('barbarian', 'hide', 'plate'),
+      classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), subclass: 'totem-warrior', progressionChoices: { 'totem-warrior-totem-3': [pick] } },
+    })
+    for (const pick of ['eagle', 'bear']) {
+      const barbarian = totem(pick)
+      const raging = performAction(state(), sheetFor(barbarian, state()), 'rage-enter', { now: 1 }).state
+      const on = donArmor(raging, sheetFor(barbarian, raging), 'plate')
+      expect(texts(on).filter(t => t.startsWith('Fúria'))).toEqual(['Fúria sem os benefícios: você está de Placas (pág. 48).'])
+      const off = doffArmor(on.state, sheetFor(barbarian, on.state))
+      expect(texts(off).filter(t => t.startsWith('Fúria'))).toEqual(['Fúria: os benefícios voltam (pág. 48).'])
+    }
+  })
+
   it('o escudo marca a ação do turno; a segunda ação só avisa', () => {
     const fighter = character('fighter', 'chain-mail', 'shield')
     const off = doffShield(state(), sheetFor(fighter, state()))

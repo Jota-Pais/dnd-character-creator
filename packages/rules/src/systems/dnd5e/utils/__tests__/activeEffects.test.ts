@@ -230,6 +230,17 @@ describe('describeToggleEffects: o que o efeito ligado está fazendo', () => {
     ])
   })
 
+  it('de Placas vestidas no jogo, com a sessão: sem os benefícios e sem o Dano de Fúria', () => {
+    // Gibão no criador; Placas vestidas no jogo (a base é o Gibão).
+    const d = barbarian(3, carrying('hide', 'plate'))
+    const lines = (bodyArmorId: string | null) => {
+      const session = getSheetSession(d, raging({ wornArmor: { bodyArmorId, shield: false, basis: { bodyArmorId: 'hide', shield: false } } }))
+      return describeToggleEffects(d, session.active[0], 30, session)
+    }
+    expect(lines('plate')).toEqual([])
+    expect(lines(null)).toContain('+2 de dano nos ataques com arma corpo a corpo usando Força (Dano de Fúria)')
+  })
+
   it('de Placas, sem os benefícios: só o que fica proibido, para quem conjura', () => {
     expect(describe1(barbarian(3, { race: 'tiefling', ...carrying('plate') }))).toEqual([
       'Não pode conjurar magias nem se concentrar nelas (Fúria)',
@@ -277,6 +288,23 @@ describe('os efeitos recebidos nos números, pela sessão', () => {
     const armored = wizard(carrying('leather'))
     expect(ac(armored, 'spell:mage-armor').value).toBe(14)
     expect(getSheetSession(armored, on('spell:mage-armor')).active[0].blockedBy).toBe('Couro')
+  })
+
+  it('a Armadura Arcana do catálogo olha a armadura vestida no jogo, não a do criador', () => {
+    // Couro no criador; no jogo, tirou o Couro (base Couro) e recebeu a magia: 13 + DES 3.
+    const armored = wizard(carrying('leather', 'chain-mail'))
+    const off = { ...on('spell:mage-armor'), wornArmor: { bodyArmorId: null, shield: false, basis: { bodyArmorId: 'leather', shield: false } } }
+    const session = getSheetSession(armored, off)
+    expect(session.active[0].blockedBy).toBeUndefined()
+    expect(getSheetArmorClass(armored, getFinalAbilityScores(armored), session).components).toEqual([
+      { label: 'Armadura Arcana', value: 13 }, { label: 'DES', value: 3 },
+    ])
+    // A lista do PlaySheet (`getCatalogToggles` com a sessão), nos dois sentidos.
+    const mageArmor = (worn?: PlayState['wornArmor']) =>
+      buildPlaySheet(armored, worn).toggles.find(t => t.id === 'spell:mage-armor')?.benefits[0].blockedBy
+    expect(mageArmor()).toBe('Couro')
+    expect(mageArmor(off.wornArmor)).toBeUndefined()
+    expect(mageArmor({ bodyArmorId: 'chain-mail', shield: false, basis: { bodyArmorId: 'leather', shield: false } })).toBe('Cota de Malha')
   })
 
   it('a Pele de Árvore é piso, e o Escudo da Fé com a Velocidade somam +4', () => {

@@ -2850,6 +2850,15 @@ describe('a armadura vestida: vestir, tirar, o escudo e a reconciliação', () =
     ])
   })
 
+  it('a armadura média: vestir leva 5 minutos e tirar, 1 (pág. 148)', () => {
+    const fighter = character('fighter', 'hide')
+    const off = doffArmor(state(), sheetFor(fighter, state()))
+    expect(texts(off)).toEqual(['Tirar Gibão de Peles leva 1 minuto, ou a metade com ajuda (pág. 148). O app não conta esse tempo.'])
+    expect(texts(donArmor(off.state, sheetFor(fighter, off.state), 'hide'))).toEqual([
+      'Vestir Gibão de Peles leva 5 minutos (pág. 148): a CA da armadura só vale com o tempo inteiro. O app não conta esse tempo.',
+    ])
+  })
+
   it('o que não está no inventário: recusa, e armadura nova entra pelo criador', () => {
     const fighter = character('fighter', 'leather')
     const sh = sheetFor(fighter, state())

@@ -106,7 +106,7 @@
 
 **Traços raciais:**
 
-- **Ancestral Feérico:** Você tem vantagem em testes contra ser enfeitiçado e imunidade a magias de sono.
+- **Ancestral Feérico:** Você tem vantagem nos testes de resistência para resistir a ser enfeitiçado e magias não podem colocá-lo para dormir.
 - **Transe:** Em vez de dormir, você medita por 4 horas, obtendo o descanso de uma noite completa.
 
 **Subraças:** Alto Elfo, Elfo da Floresta, Elfo Negro (Drow)

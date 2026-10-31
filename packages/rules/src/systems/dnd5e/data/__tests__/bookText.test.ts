@@ -159,6 +159,15 @@ describe('divergências pt-BR × inglês que seguem o inglês', () => {
     const mechanics = (spellMechanicsData as { id: string; status: string; resolution: unknown }[]).find(m => m.id === 'light')
     expect(mechanics).toMatchObject({ status: 'reviewed', resolution: { kind: 'save', ability: 'DEX', onSuccess: 'other' } })
   })
+  // Inglês: "clean or soil an object no larger than 1 cubic foot" e "chill, warm, or flavor up to 1
+  // cubic foot of nonliving material" (Prestidigitação, pág. 271, linhas 26200-26203; decisão de
+  // 2026-10-31). O pt-BR traduz o pé cúbico por "1 metro cúbico", que é uns 35 pés cúbicos.
+  it('Prestidigitação alcança o que cabe num cubo de 30 centímetros (pt-BR: "1 metro cúbico")', () => {
+    const spell = (spellsData as { id: string; description: string }[]).find(s => s.id === 'prestidigitation')
+    expect(spell?.description).toContain('limpa ou suja um objeto que caiba num cubo de 30 centímetros.')
+    expect(spell?.description).toContain('melhora o sabor da matéria inorgânica que caiba num cubo de 30 centímetros, por 1 hora.')
+    expect(spell?.description).not.toContain('metro cúbico')
+  })
   // Inglês: "When you score a critical hit with a melee weapon attack". O pt-BR ("com uma arma
   // corpo-a-corpo") deixaria de fora o golpe desarmado com dado, onde o traço vale (decisão 21).
   it('Ataques Selvagens valem no ATAQUE corpo a corpo com arma (pt-BR: "com uma arma corpo-a-corpo")', () => {

@@ -1,9 +1,10 @@
-import { useEffect } from 'react'
+import { Suspense, useEffect } from 'react'
 import { useAppStore } from '../../core/stores/appStore'
 import { useBackHandler, useStepPath } from '../../core/navigation/back'
 import { printPage } from '../../core/utils/print'
 import { useCharacterStore } from './stores/characterStore'
 import { WizardShell } from '../../components/wizard/WizardShell'
+import { Loading } from '../../components/common/Loading'
 import { getMissingSteps } from '@rpg/rules/systems/dnd5e/utils/draftValidation'
 import { getClass } from '@rpg/rules/systems/dnd5e/utils/classUtils'
 import { dnd5eSystem } from './index'
@@ -103,7 +104,10 @@ export function Dnd5eApp() {
           </button>
         </div>
         <div className="overflow-x-auto print:overflow-visible">
-          <PrintableSheet />
+          {/* A ficha desce sob demanda (core/utils/lazyScreen.ts); a barra acima não espera por ela. */}
+          <Suspense fallback={<Loading className="py-16" />}>
+            <PrintableSheet />
+          </Suspense>
         </div>
         <p className="no-print max-w-[820px] mx-auto mt-4 text-center text-parchment-700 text-xs">
           Dica: na janela de impressão, escolha "Salvar como PDF" como destino.

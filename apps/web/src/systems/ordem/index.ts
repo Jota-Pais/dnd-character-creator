@@ -2,7 +2,6 @@ import { EMPTY_DRAFT } from '@rpg/rules/systems/ordem/types/character'
 import { getMissingSteps } from '@rpg/rules/systems/ordem/utils/draftValidation'
 import { getOrigin } from '@rpg/rules/systems/ordem/utils/originUtils'
 import { getOrdemClass } from '@rpg/rules/systems/ordem/utils/classUtils'
-import { PrintableSheet } from './components/PrintableSheet'
 import { lazyScreen } from '../../core/utils/lazyScreen'
 import type { IRpgSystem } from '../../core/types/system'
 import type { OrdemCharacterDraft } from '@rpg/rules/systems/ordem/types/character'
@@ -12,7 +11,8 @@ export const ordemSystem: IRpgSystem = {
   name: 'Ordem Paranormal',
   subtitle: 'RPG de investigação paranormal',
   getEmptyDraft: () => ({ ...EMPTY_DRAFT }),
-  PrintableSheet,
+  // A ficha imprimível desce sob demanda, num pedaço à parte do criador (core/utils/lazyScreen.ts).
+  PrintableSheet: lazyScreen(() => import('./components/PrintableSheet').then(m => m.PrintableSheet)),
   formatDraftName: (draft: unknown) => {
     const d = draft as OrdemCharacterDraft
     const origin = d.origin ? getOrigin(d.origin) : undefined

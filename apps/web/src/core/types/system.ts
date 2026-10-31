@@ -47,6 +47,7 @@ export interface IRpgSystem {
   name: string;
   subtitle: string;
   getEmptyDraft: () => Record<string, unknown>;
+  /** A ficha imprimível. Desce sob demanda (core/utils/lazyScreen.ts): quem a mostra a põe num `Suspense`. */
   PrintableSheet: ComponentType;
   formatDraftName: (draft: unknown) => string;
   getGalleryFacets: (draft: unknown) => GalleryFacets;

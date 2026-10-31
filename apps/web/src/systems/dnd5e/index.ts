@@ -1,7 +1,7 @@
 import { EMPTY_DRAFT } from '@rpg/rules/systems/dnd5e/types/character';
 import { getMissingSteps, canPlayDraft } from '@rpg/rules/systems/dnd5e/utils/draftValidation';
-import { PrintableSheet } from './components/PrintableSheet';
 import { Dnd5eApp } from './Dnd5eApp';
+import { lazyScreen } from '../../core/utils/lazyScreen';
 import { useCharacterStore } from './stores/characterStore';
 import { getRace, getSubrace } from '@rpg/rules/systems/dnd5e/utils/raceUtils';
 import { getClass } from '@rpg/rules/systems/dnd5e/utils/classUtils';
@@ -13,7 +13,8 @@ export const dnd5eSystem: IRpgSystem = {
   name: 'D&D 5e',
   subtitle: 'PHB 2014',
   getEmptyDraft: () => ({ ...EMPTY_DRAFT }),
-  PrintableSheet: PrintableSheet,
+  // A ficha imprimível desce sob demanda (core/utils/lazyScreen.ts), com o que só ela usa.
+  PrintableSheet: lazyScreen(() => import('./components/PrintableSheet').then(m => m.PrintableSheet)),
   formatDraftName: (draft: unknown) => {
     const dndDraft = draft as CharacterDraft;
     const race = dndDraft.race ? getRace(dndDraft.race) : undefined;

@@ -1,5 +1,9 @@
 import type { ComponentType } from 'react';
 
+/**
+ * Uma etapa do criador de um sistema (o `steps.ts` dele). Fica fora do `IRpgSystem`: só a tela do
+ * próprio sistema a usa, e a do Ordem desce sob demanda com ela (core/utils/lazyScreen.ts).
+ */
 export interface StepConfig {
   id: string;
   title: string;
@@ -43,10 +47,13 @@ export interface IRpgSystem {
   name: string;
   subtitle: string;
   getEmptyDraft: () => Record<string, unknown>;
-  getSteps: () => StepConfig[];
   PrintableSheet: ComponentType;
   formatDraftName: (draft: unknown) => string;
   getGalleryFacets: (draft: unknown) => GalleryFacets;
   play?: PlayCapability;
+  /**
+   * A tela do sistema (criador, impressão, jogo). Pode descer sob demanda (core/utils/lazyScreen.ts):
+   * quem a mostra a põe num `Suspense` (o `App`).
+   */
   Component: ComponentType;
 }

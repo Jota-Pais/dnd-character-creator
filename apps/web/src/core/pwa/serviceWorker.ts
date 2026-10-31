@@ -161,8 +161,10 @@ export type ApplyOnReturnOptions = {
  * "Importar" já abriu o seletor, o "Abrir" já levou ao criador. Por isso a recarga confere de novo:
  * a página na frente, a galeria parada e nenhuma tela de fora pedida pelo app (a marca ainda não
  * gasta). Se mudou, o SW novo fica no controle (ele não volta atrás), a página segue com o código que
- * já carregou (o JS é um arquivo só) e a recarga fica pendente (`reloadPending`) para a próxima volta
- * que aplicaria ou para o toque no aviso, que continua na tela.
+ * já carregou e a recarga fica pendente (`reloadPending`) para a próxima volta que aplicaria ou para o
+ * toque no aviso, que continua na tela. O código inteiro, inclusive o das telas sob demanda: os
+ * pedaços delas descem logo depois da abertura (core/utils/lazyScreen.ts), e o SW novo, que não os
+ * tem, nunca precisa servi-los à página velha.
  */
 export function applyUpdateOnReturn(
   reg: SwRegistration,

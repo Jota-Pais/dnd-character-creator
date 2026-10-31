@@ -5,6 +5,7 @@ import { printPage } from '../../core/utils/print'
 import { useOrdemStore } from './stores/characterStore'
 import { WizardShell } from '../../components/wizard/WizardShell'
 import { ordemSystem } from './index'
+import { getSteps } from './steps'
 import simboloMaior from './assets/simbolo-maior.webp'
 
 /** O Símbolo Maior como máscara: pinta a área com a cor de fundo e recorta no desenho. */
@@ -27,7 +28,7 @@ export function OrdemApp() {
   const exitPrint = useOrdemStore(state => state.exitPrint)
 
   const PrintableSheet = ordemSystem.PrintableSheet
-  const steps = ordemSystem.getSteps()
+  const steps = getSteps()
   const CurrentStepComponent = steps.find(s => s.id === currentStep)?.component
   // Navegação livre: toda etapa é alcançável a qualquer momento. O stepper deixa de ser um
   // trilho e passa a ser um mapa — o ✦ marca completude real do draft, não posição no fluxo.

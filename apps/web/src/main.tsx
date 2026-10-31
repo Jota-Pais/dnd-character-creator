@@ -5,6 +5,7 @@ import App from './App.tsx'
 import { startServiceWorker } from './core/pwa/serviceWorker'
 import { refuseAutomaticInstallOffer } from './core/pwa/platform'
 import { isNativeApp, startNativeApp } from './core/native/nativeApp'
+import { preloadLazyScreens } from './core/utils/lazyScreen'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -12,17 +13,23 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 )
 
+const whenLoaded = document.readyState === 'complete'
+  ? Promise.resolve()
+  : new Promise(resolve => window.addEventListener('load', resolve, { once: true }))
+
 // O app instalável e sem rede (docs/app-instalavel.md): só no build de produção. No APK, a versão
 // nova também entra sozinha na volta à galeria (docs/app-android.md).
 void startServiceWorker({
   isProd: import.meta.env.PROD,
   container: 'serviceWorker' in navigator ? navigator.serviceWorker : undefined,
-  whenLoaded: document.readyState === 'complete'
-    ? Promise.resolve()
-    : new Promise(resolve => window.addEventListener('load', resolve, { once: true })),
+  whenLoaded,
   doc: document,
   native: isNativeApp(),
 })
+
+// As telas sob demanda (o Ordem, a ficha imprimível) descem depois da galeria, sem disputar a rede
+// da primeira abertura, e antes de qualquer troca de versão (core/utils/lazyScreen.ts).
+void whenLoaded.then(preloadLazyScreens)
 
 // No Android, o app é o APK: o Chrome não oferece sozinho instalar o site como um segundo app.
 refuseAutomaticInstallOffer(window, isNativeApp())

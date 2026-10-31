@@ -7,6 +7,7 @@ import { WizardShell } from '../../components/wizard/WizardShell'
 import { getMissingSteps } from '@rpg/rules/systems/dnd5e/utils/draftValidation'
 import { getClass } from '@rpg/rules/systems/dnd5e/utils/classUtils'
 import { dnd5eSystem } from './index'
+import { getSteps } from './steps'
 import { D20Logo } from './assets/D20Logo'
 import { PlayScreen } from './components/play/PlayScreen'
 
@@ -23,7 +24,7 @@ export function Dnd5eApp() {
   const exitPlay = useCharacterStore(state => state.exitPlay)
 
   const PrintableSheet = dnd5eSystem.PrintableSheet
-  const steps = dnd5eSystem.getSteps()
+  const steps = getSteps()
   const CurrentStepComponent = steps.find(s => s.id === currentStep)?.component
   // Navegação livre: toda etapa é alcançável a qualquer momento. O stepper deixa de ser um
   // trilho e passa a ser um mapa — o ✦ marca completude real do draft, não posição no fluxo.

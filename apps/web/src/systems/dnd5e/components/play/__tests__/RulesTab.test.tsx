@@ -298,6 +298,8 @@ describe('getRuleReference', () => {
       expect.stringContaining('truque, à vontade'),
       expect.stringContaining('1 uso por descanso longo, como magia de 2º nível'),
     ])
+    // O guia da magia inata a monta no nível que o traço fixa (a repreensão infernal, 2º nível).
+    expect(entries.map(e => (e.detail.kind === 'spell' ? e.detail.castLevel : null))).toEqual([undefined, 2])
   })
 
   it('a restrição da Fúria em toda magia: da classe, do talento, inata da raça e o truque da subclasse', () => {

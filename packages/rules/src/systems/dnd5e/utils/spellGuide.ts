@@ -12,7 +12,7 @@ import { getRollGuide, type RollGuide, type SpellcastingGuide } from './rollGuid
 import { getCantripSaveHalfDamage, getSpellDamageBonuses, type SheetSpellDamageBonus } from './sheetEffects'
 import { getKnownSpells } from './sheetModel'
 import { getSpellMechanics, scaledDiceCount, scaledFlat, type SpellCastContext } from './spellMechanics'
-import { getSpell } from './spellUtils'
+import { getCombinedSpellSlots, getPactSlots, getSpell } from './spellUtils'
 import { joinPt } from './textUtils'
 
 /**
@@ -37,7 +37,11 @@ export type SpellGuideRef = {
    */
   casterKey: string | null
   spellId: string
-  /** O nível do espaço; ausente ou abaixo do da magia, o da própria magia (0 no truque). */
+  /**
+   * O nível do espaço (ou o nível em que a fonte a conjura: a inata "como uma magia de 2° nível").
+   * Ausente, o espaço mais baixo que a conjuração da classe tem para ela (o de Pacto do bruxo;
+   * `defaultCastLevel`), ou o da própria magia (0 no truque); abaixo do da magia, o da magia.
+   */
   castLevel?: number
 }
 
@@ -180,9 +184,9 @@ function pendingBonusNote(bonus: SheetSpellDamageBonus, instanceNoun: string | n
   return `${bonus.source}${scope ? ` (${scope})` : ''}: some ${formatModifier(bonus.value)}${ability} ${where}; a fórmula ainda não o inclui.`
 }
 
-/** "No 4º nível: 9d6 (+1d6)": o que cada parte ganhou com o espaço acima do da magia. */
-function upcastGain(mech: SpellMechanics, at: SpellCastContext, castLevel: number): string | undefined {
-  if (at.slotsAbove <= 0) return undefined
+/** "9d6 (+1d6)": o que cada parte ganhou com o espaço acima do da magia. */
+function upcastGains(mech: SpellMechanics, at: SpellCastContext): string[] {
+  if (at.slotsAbove <= 0) return []
   const base: SpellCastContext = { ...at, slotsAbove: 0 }
   const gains: string[] = []
   const amount = (part: SpellAmountPart | SpellDamagePart) => {
@@ -206,7 +210,32 @@ function upcastGain(mech: SpellMechanics, at: SpellCastContext, castLevel: numbe
     const diff = at.slotsAbove * mech.targets.perSlotAbove
     gains.push(`${mech.targets.count + diff} alvos (+${diff})`)
   }
+  return gains
+}
+
+/** "No 4º nível: 9d6 (+1d6)": o ganho do espaço acima do da magia, quando há. */
+function upcastGain(mech: SpellMechanics, at: SpellCastContext, castLevel: number): string | undefined {
+  const gains = upcastGains(mech, at)
   return gains.length > 0 ? `No ${castLevel}º nível: ${gains.join('; ')}` : undefined
+}
+
+/**
+ * O nível em que a magia da conjuração de uma classe sai quando quem chama não escolhe o espaço (a
+ * tela ainda não escolhe; o Conjurar da onda `grimorio` escolherá): o espaço mais baixo que serve a
+ * ela. O bruxo só tem os de Magia de Pacto, todos do mesmo nível, e conjura nele: a onda trovejante
+ * no espaço de 3º sai como magia de 3º nível (pág. 58, linhas 4526-4537). Com Conjuração e Magia de
+ * Pacto, os dois servem às magias das duas (pág. 166, linhas 14845-14851): fica o mais baixo, e
+ * `pactLevel` diz o de Pacto, quando é outro. O talento e as magias de fora da conjuração não passam
+ * por aqui: ficam no nível da magia, ou no que quem chama passar (a inata).
+ */
+function defaultCastLevel(draft: CharacterDraft, spell: Spell): { level: number; pactLevel: number | null } {
+  const pool = getCombinedSpellSlots(draft)
+  const pact = getPactSlots(draft)
+  const poolLevel = pool.findIndex((count, i) => count > 0 && i + 1 >= spell.level) + 1 || null
+  const pactLevel = pact && pact.slots > 0 && pact.slotLevel >= spell.level ? pact.slotLevel : null
+  const level = Math.min(poolLevel ?? Infinity, pactLevel ?? Infinity)
+  if (level === Infinity) return { level: spell.level, pactLevel: null }
+  return { level, pactLevel: pactLevel !== null && pactLevel !== level ? pactLevel : null }
 }
 
 /**
@@ -227,18 +256,28 @@ export function getSpellGuide(
 }
 
 function buildSpellGuide(draft: CharacterDraft, spell: Spell, mech: SpellMechanics, ref: SpellGuideRef, rollGuide: RollGuide): SpellGuide {
-  const castLevel = Math.max(spell.level, ref.castLevel ?? spell.level)
-  const fullRef = { casterKey: ref.casterKey, spellId: spell.id, castLevel }
-  const id = (part: string) => spellGuideEntryId(fullRef, part)
-  const at: SpellCastContext = { characterLevel: draft.level ?? 1, slotsAbove: castLevel - spell.level }
   const caster: SpellcastingGuide | null = ref.casterKey
     ? rollGuide.spellcasting.find(s => s.key === ref.casterKey) ?? null
     : null
+  // Sem o espaço escolhido, a magia de 1º nível ou mais da conjuração de uma classe sai no espaço
+  // mais baixo que ela tem (o de Pacto do bruxo); a do talento e a de fora, no nível dela.
+  const slot = ref.castLevel === undefined && caster && !caster.featId && spell.level > 0
+    ? defaultCastLevel(draft, spell)
+    : null
+  const castLevel = Math.max(spell.level, ref.castLevel ?? slot?.level ?? spell.level)
+  const fullRef = { casterKey: ref.casterKey, spellId: spell.id, castLevel }
+  const id = (part: string) => spellGuideEntryId(fullRef, part)
+  const at: SpellCastContext = { characterLevel: draft.level ?? 1, slotsAbove: castLevel - spell.level }
   // O modificador é o da conjuração do guia de rolagens, o mesmo da CD e do ataque: uma conta só.
   const ability: CasterAbility | null = caster ? { ability: caster.ability, modifier: caster.abilityModifier } : null
   const { resolution } = mech
   const isAttack = resolution.kind === 'attack'
   const notes: string[] = []
+  // Na multiclasse com Magia de Pacto, o espaço de Pacto também serve, e pode ser mais alto.
+  const pactGains = slot?.pactLevel ? upcastGains(mech, { ...at, slotsAbove: slot.pactLevel - spell.level }) : []
+  if (slot?.pactLevel && pactGains.length > 0) {
+    notes.push(`Com um espaço de Magia de Pacto, ela sai no ${slot.pactLevel}º nível: ${pactGains.join('; ')}.`)
+  }
   if (!caster && (resolution.kind === 'attack' || resolution.kind === 'save')) {
     notes.push('Sem o ataque e a CD: a ficha ainda não os calcula para as magias de fora da conjuração de uma classe ou de um talento.')
   }

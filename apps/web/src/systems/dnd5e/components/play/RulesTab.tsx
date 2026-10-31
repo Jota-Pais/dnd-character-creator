@@ -16,11 +16,12 @@ const HEADING = 'font-fantasy uppercase tracking-wider text-[11px] text-gold-500
  * abrem a receita por cima da folha) e o texto inteiro. Sem conjurar (onda `grimorio`).
  */
 function SpellBody({ detail, view }: { detail: Extract<RuleDetail, { kind: 'spell' }>; view: PlayTabProps }) {
-  const { spell, source, notes, casterKey } = detail
+  const { spell, source, notes, casterKey, castLevel } = detail
   const { draft, state, guide: rollGuide, openRecipe } = view
+  // Sem `castLevel`, o guia acha o espaço que a fonte tem (o de Pacto do bruxo); a inata leva o dela.
   const guide = useMemo(
-    () => getSpellGuide(draft, state, { casterKey, spellId: spell.id }, rollGuide),
-    [draft, state, casterKey, spell.id, rollGuide],
+    () => getSpellGuide(draft, state, { casterKey, spellId: spell.id, ...(castLevel ? { castLevel } : {}) }, rollGuide),
+    [draft, state, casterKey, castLevel, spell.id, rollGuide],
   )
   const rows: [string, string][] = [
     ['Tempo de conjuração', spell.castingTime],

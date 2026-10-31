@@ -36,6 +36,16 @@ const FIXTURES = vi.hoisted(() => ({
     resolution: { kind: 'attack', range: 'melee' },
     damage: [{ count: 1, sides: 8, bonus: 'spellcastingModifier', type: 'force', perSlotAbove: { count: 1, every: 2 } }],
   },
+  thunderwave: {
+    id: 'thunderwave', batch: '1', bookLines: [1, 1], status: 'reviewed',
+    resolution: { kind: 'save', ability: 'CON', onSuccess: 'half' },
+    damage: [{ count: 2, sides: 8, type: 'thunder', perSlotAbove: { count: 1 } }],
+  },
+  'hellish-rebuke': {
+    id: 'hellish-rebuke', batch: '1', bookLines: [1, 1], status: 'reviewed',
+    resolution: { kind: 'save', ability: 'DEX', onSuccess: 'half' },
+    damage: [{ count: 2, sides: 10, type: 'fire', perSlotAbove: { count: 1 } }],
+  },
 }) as Record<string, SpellMechanics>)
 
 vi.mock('../spellMechanics', async importOriginal => {
@@ -316,5 +326,56 @@ describe('guia da magia: o que cresce com o espaço', () => {
     expect(guide.attack!.notes[0]).toBe('Ataque corpo a corpo com magia.')
     expect(guide.damage[0]).toMatchObject({ formula: '2d8 + 3 energia', crit: { formula: '4d8 + 3 energia' } })
     expect(guide.upcastGain).toBe('No 4º nível: 2d8 (+1d8)')
+  })
+})
+
+/**
+ * Sem o espaço escolhido (a tela ainda não escolhe; o Conjurar da onda `grimorio` escolherá), a
+ * magia sai no espaço que a fonte tem para ela: o de Pacto do bruxo, o nível fixo da inata.
+ */
+describe('guia da magia: o espaço que a fonte tem', () => {
+  it('o bruxo conjura no espaço de Pacto: a onda trovejante do bruxo 5 sai como magia de 3º nível (pág. 58)', () => {
+    const guide = getSpellGuide(caster('warlock', 5, [], ['thunderwave']), play(), { casterKey: 'class:warlock', spellId: 'thunderwave' })!
+    expect(guide.castLevel).toBe(3)
+    expect(guide.damage[0]).toMatchObject({ id: 'spell:thunderwave:3:damage:0@class:warlock', formula: '4d8 trovejante' })
+    expect(guide.upcastGain).toBe('No 3º nível: 4d8 (+2d8)')
+    expect(guide.notes).toEqual([])
+  })
+
+  it('com Conjuração e Magia de Pacto, o espaço mais baixo, e o de Pacto numa nota (pág. 166)', () => {
+    // Bruxo 5 / mago 1: dois espaços de 1º do mago e dois de 3º do Pacto, que servem às magias das duas.
+    const d = draft({
+      class: 'warlock', level: 6, abilityScores: SCORES, classChoices: choices({}), spellChoices: { cantrips: [], spells: ['thunderwave'] },
+      additionalClasses: [{
+        classId: 'wizard', level: 1, classChoices: choices({}),
+        spellChoices: { cantrips: [], spells: ['burning-hands'] }, asiChoices: [], hpRolls: [],
+      }],
+    })
+    const wave = getSpellGuide(d, play(), { casterKey: 'class:warlock', spellId: 'thunderwave' })!
+    expect(wave.castLevel).toBe(1)
+    expect(wave.damage[0].formula).toBe('2d8 trovejante')
+    expect(wave.notes).toEqual(['Com um espaço de Magia de Pacto, ela sai no 3º nível: 4d8 (+2d8).'])
+    expect(getSpellGuide(d, play(), { casterKey: 'class:wizard', spellId: 'burning-hands' })!.notes)
+      .toEqual(['Com um espaço de Magia de Pacto, ela sai no 3º nível: 5d6 (+2d6).'])
+    // O espaço escolhido vale sobre o padrão.
+    const chosen = getSpellGuide(d, play(), { casterKey: 'class:warlock', spellId: 'thunderwave', castLevel: 3 })!
+    expect(chosen.damage[0].formula).toBe('4d8 trovejante')
+    expect(chosen.notes).toEqual([])
+  })
+
+  it('a inata no nível que o traço fixa: a repreensão infernal do tiefling, como magia de 2º nível (pág. 43)', () => {
+    const d = draft({ class: 'barbarian', level: 3, race: 'tiefling', abilityScores: SCORES, classChoices: choices({}) })
+    expect(getSpellGuide(d, play(), { casterKey: null, spellId: 'hellish-rebuke', castLevel: 2 })!.damage[0].formula).toBe('3d10 fogo')
+    // Fora da conjuração de uma classe, sem o nível passado, fica o da magia.
+    expect(getSpellGuide(d, play(), { casterKey: null, spellId: 'hellish-rebuke' })!.castLevel).toBe(1)
+  })
+
+  it('o talento conjura no nível da magia, mesmo com espaços mais altos na ficha', () => {
+    const d = draft({
+      class: 'warlock', level: 5, abilityScores: SCORES, classChoices: choices({}),
+      asiChoices: [{ kind: 'feat', featId: 'iniciado-em-magia' }],
+      featSelections: { 'iniciado-em-magia': { spellClass: 'cleric', cantrips: ['sacred-flame', 'guidance'], spells: ['cure-wounds'] } },
+    })
+    expect(getSpellGuide(d, play(), { casterKey: 'feat:iniciado-em-magia', spellId: 'cure-wounds' })!.castLevel).toBe(1)
   })
 })

@@ -22,9 +22,11 @@ import { ordinal } from './playFormat'
  * Elemental); null = "Escolha". `notes` da magia: o que proíbe conjurá-la numa situação (em fúria).
  * `casterKey` da magia: a conjuração de onde ela vem ('class:wizard', 'feat:<talento>'), a do
  * ataque e da CD no guia dela (`getSpellGuide`); null fora dela (raça, subclasse, inatas).
+ * `castLevel`: o nível em que a fonte a conjura, quando ela fixa um (a repreensão infernal do
+ * tiefling, "como uma magia de 2° nível", p. 43), que o guia usa no lugar do nível da magia.
  */
 export type RuleDetail =
-  | { kind: 'spell'; spell: Spell; source: string | null; notes: string[]; casterKey: string | null }
+  | { kind: 'spell'; spell: Spell; source: string | null; notes: string[]; casterKey: string | null; castLevel?: number }
   | { kind: 'text'; kicker: string | null; text: string; chosen: string | null; chosenLabel: string | null }
 
 /** Uma linha tocável: o nome, uma pista curta ao lado e a regra completa na folha. */
@@ -64,14 +66,19 @@ function spellMeta(spell: Spell, extra: string | null): string {
 
 /** `metaExtra`: a pista ao lado do nome, quando difere da origem que a folha mostra. */
 function spellEntry(
-  key: string, spell: Spell, source: string | null, notes: string[], casterKey: string | null, metaExtra = source,
+  key: string, spell: Spell, source: string | null, notes: string[], casterKey: string | null, metaExtra = source, castLevel?: number,
 ): RuleEntry {
-  return { key, name: spell.name, meta: spellMeta(spell, metaExtra), detail: { kind: 'spell', spell, source, notes, casterKey } }
+  return {
+    key,
+    name: spell.name,
+    meta: spellMeta(spell, metaExtra),
+    detail: { kind: 'spell', spell, source, notes, casterKey, ...(castLevel ? { castLevel } : {}) },
+  }
 }
 
 /** Agrupa por nível de magia, truques primeiro, alfabético dentro de cada nível. */
 function groupByLevel(
-  items: { spell: Spell; source: string | null }[], keyPrefix: string, notes: string[], casterKey: string | null,
+  items: { spell: Spell; source: string | null; castLevel?: number }[], keyPrefix: string, notes: string[], casterKey: string | null,
 ): RuleGroup[] {
   const levels = [...new Set(items.map(i => i.spell.level))].sort((a, b) => a - b)
   return levels.map(level => ({
@@ -79,7 +86,7 @@ function groupByLevel(
     entries: items
       .filter(i => i.spell.level === level)
       .sort((a, b) => byName(a.spell, b.spell))
-      .map(i => spellEntry(`${keyPrefix}:${i.spell.id}`, i.spell, i.source, notes, casterKey)),
+      .map(i => spellEntry(`${keyPrefix}:${i.spell.id}`, i.spell, i.source, notes, casterKey, i.source, i.castLevel)),
   }))
 }
 
@@ -118,13 +125,15 @@ function spellSection(draft: CharacterDraft, session: SheetSession): RuleSection
     blocks.push({ label: feat.label, groups })
   }
 
-  const others: { spell: Spell; source: string | null }[] = [
+  const others: { spell: Spell; source: string | null; castLevel?: number }[] = [
     ...(known.raceCantrip ? [{ spell: known.raceCantrip, source: 'da raça' }] : []),
     ...known.subclassCantrips.map(({ spell, subclassName }) => ({
       spell, source: subclassName ? `de ${subclassName}` : 'da subclasse',
     })),
     ...known.innate.map(({ spell, innate }) => ({
-      spell, source: `${describeInnateSpellUsage(innate, spell.level).text} · ${ABILITY_LABELS[innate.ability].short}`,
+      spell,
+      source: `${describeInnateSpellUsage(innate, spell.level).text} · ${ABILITY_LABELS[innate.ability].short}`,
+      ...(innate.castLevel ? { castLevel: innate.castLevel } : {}),
     })),
   ]
   if (others.length > 0) {

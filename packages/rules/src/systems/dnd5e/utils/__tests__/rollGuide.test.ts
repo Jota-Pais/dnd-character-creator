@@ -1118,6 +1118,23 @@ describe('getZeroHpSaveGuide', () => {
     const after = play({ exhaustionLevel: 3, lifeState: 'dying' })
     expect(labelsOf(getZeroHpSaveGuide(berserker, after, save, 10).disadvantage)).toEqual(['Exaustão 3'])
   })
+
+  // Aura de Proteção (pág. 111, linhas 9969-9975): "Você deve estar consciente para garantir esse
+  // bônus". Quem passa não caiu: o teste é feito no estado de antes, ainda consciente (como ainda em
+  // fúria), e a aura entra no número; no de depois, a 0 PV, não.
+  it('bárbaro 11 / paladino 6: a Aura de Proteção entra no teste, com a parcela, pelo estado de antes', () => {
+    const d = draft({
+      class: 'barbarian', level: 17, abilityScores: { ...SCORES, CHA: 16 }, multiclass: true,
+      additionalClasses: [extraClass('paladin', 6)],
+    })
+    const con = getSavingThrowChecks(d, getFinalAbilityScores(d)).CON.bonus
+    const before = play({ activeEffects: [{ id: 'rage', startedAt: 1 }] })
+    const entry = getZeroHpSaveGuide(d, before, save, 10)
+    expect(entry.modifier).toBe(con + 3)
+    expect(entry.breakdown.at(-1)).toEqual({ label: 'Aura de Proteção', value: 3 })
+    const after = play({ lifeState: 'dying' })
+    expect(getZeroHpSaveGuide(d, after, save, 10).modifier).toBe(con)
+  })
 })
 
 describe('getRollGuide — bônus condicional nas resistências', () => {

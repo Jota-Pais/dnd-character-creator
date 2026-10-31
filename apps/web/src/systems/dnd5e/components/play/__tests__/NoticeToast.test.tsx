@@ -276,19 +276,28 @@ describe('desfazer e avisos', () => {
   })
 
   // Conferido no Edge: a 360 x 780, com as duas ofertas, o "Passei" ia de 690 a 735 e a lista
-  // terminava em 694. Presa ao pé da lista, a escolha fica à vista também a 360 x 740 e a 375 x 667.
-  it('meio-orc bárbaro 11 cai em fúria: a escolha das duas ofertas fica presa ao pé da lista, e o par de botões numa linha', () => {
+  // terminava em 694. Presa ao pé da lista, a escolha fica à vista. Presa, ela não sobe acima do topo
+  // do próprio aviso: a 360 x 640 sobram 55 px para a da Fúria Implacável, e com a receita e o "Ver o
+  // que rolar" dentro (128 px) o "Passei" e o "Falhei" ficavam escondidos também a 375 x 667. A barra
+  // dela é só o par, numa linha (51 px).
+  it('meio-orc bárbaro 11 cai em fúria: a escolha das duas ofertas fica presa ao pé da lista; a da Fúria Implacável é só o par de botões, numa linha', () => {
     openDraft({ ...structuredClone(COMPLETE_DRAFT), level: 11 })
     usePlayStore.getState().run((st, sh) => performAction(st, sh, 'rage-enter', { now: 1 }))
     render(<PlayScreen />)
     damage(screen.getByTestId('hp-current').textContent ?? '')
     const toast = screen.getByRole('status')
-    const bar = (name: string | RegExp) => within(toast).getByRole('button', { name }).closest('.sticky.bottom-0')
-    for (const name of [/Usar Resistência Implacável/, 'Ver o que rolar', 'Passei: fico com 1 PV']) {
+    const bar = (name: string | RegExp) => within(toast).getByRole('button', { name }).closest<HTMLElement>('.sticky.bottom-0')
+    for (const name of [/Usar Resistência Implacável/, 'Passei: fico com 1 PV', 'Falhei']) {
       expect(bar(name)?.parentElement?.tagName, String(name)).toBe('LI')
     }
-    // A receita vai junto dos botões; o par não desce para a linha de baixo.
-    expect(bar('Passei: fico com 1 PV')).toHaveTextContent('Role 1d20 + 6: precisa de 10 ou mais.')
+    // A receita e o "Ver o que rolar" ficam antes da barra, no mesmo aviso, fora dela.
+    const pair = bar('Passei: fico com 1 PV')!
+    expect(bar('Falhei')).toBe(pair)
+    expect(bar('Ver o que rolar')).toBeNull()
+    expect(pair).not.toHaveTextContent('Role 1d20')
+    expect(pair.parentElement).toHaveTextContent('Role 1d20 + 6: precisa de 10 ou mais.')
+    expect(within(pair).getAllByRole('button')).toHaveLength(2)
+    // O par não desce para a linha de baixo.
     const row = within(toast).getByRole('button', { name: 'Passei: fico com 1 PV' }).parentElement
     expect(row).toHaveClass('flex')
     expect(row).not.toHaveClass('flex-wrap')

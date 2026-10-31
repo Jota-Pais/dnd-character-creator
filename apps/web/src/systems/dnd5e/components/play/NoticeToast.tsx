@@ -25,7 +25,7 @@ const DEFAULT_STYLE: KindStyle = { prefix: '', className: 'border-parchment-800 
 const NO_NOTICES: PlayNotice[] = []
 
 /**
- * Avisos que pedem uma escolha agora vêm primeiro, e a escolha de cada um (a receita e os botões)
+ * Avisos que pedem uma escolha agora vêm primeiro, e a escolha de cada um (os botões)
  * fica presa ao pé da lista quando ela rola (`ActionBar`): com dois deles, o segundo passava da
  * altura da lista, e o botão ficava escondido.
  */
@@ -231,8 +231,14 @@ function NoticeLine({ notice, view, onOpenRecipe, canUndo, act }: {
         </ActionBar>
       )}
       {saveOffer && (
-        <ActionBar bg={style.bg}>
-          <p className="text-xs">
+        <>
+          {/* A receita e o "Ver o que rolar" vêm antes da barra, com o texto do aviso: presa, a barra
+              fica só com os dois resultados, numa linha (51 px). Com as duas ofertas do meio-orc, a
+              360 × 640 sobram 55 px dela abaixo do topo deste aviso (presa, ela não sobe acima dele), e
+              com a receita e o "Ver o que rolar" dentro (128 px) o "Passei" e o "Falhei" ficavam
+              escondidos também a 375 × 667. Escondido fica o que tem outro caminho: a receita se lê
+              rolando a lista. */}
+          <p className="mt-1.5 text-xs">
             Role {describeRollGuide(saveOffer.entry)}: precisa de {saveOffer.entry.dc} ou mais.
           </p>
           <div className="mt-1.5">
@@ -243,23 +249,25 @@ function NoticeLine({ notice, view, onOpenRecipe, canUndo, act }: {
               Ver o que rolar
             </button>
           </div>
-          {/* Os dois resultados numa linha só, embaixo da receita: com o "Ver o que rolar" ao lado, a
-              360 px o "Passei" não cabia nem com o texto quebrado dentro dele. */}
-          <div className="mt-1.5 flex gap-2">
-            <button
-              onClick={() => act(() => dropToOneHp(saveOffer.damage, 'save'))}
-              className="min-h-10 min-w-0 rounded-lg border border-emerald-700 px-3 text-xs text-emerald-200 hover:border-emerald-400"
-            >
-              Passei: fico com <span className="whitespace-nowrap">1 PV</span>
-            </button>
-            <button
-              onClick={() => act(() => failZeroHpSave(saveOffer.damage))}
-              className="min-h-10 shrink-0 rounded-lg border border-emerald-700 px-3 text-xs text-emerald-200 hover:border-emerald-400"
-            >
-              Falhei
-            </button>
-          </div>
-        </ActionBar>
+          <ActionBar bg={style.bg}>
+            {/* Numa linha só: com pouca largura, o "Passei" quebra o texto dentro dele (o "1 PV"
+                junto) em vez de descer, e a barra continua com uma linha. */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => act(() => dropToOneHp(saveOffer.damage, 'save'))}
+                className="min-h-10 min-w-0 rounded-lg border border-emerald-700 px-3 text-xs text-emerald-200 hover:border-emerald-400"
+              >
+                Passei: fico com <span className="whitespace-nowrap">1 PV</span>
+              </button>
+              <button
+                onClick={() => act(() => failZeroHpSave(saveOffer.damage))}
+                className="min-h-10 shrink-0 rounded-lg border border-emerald-700 px-3 text-xs text-emerald-200 hover:border-emerald-400"
+              >
+                Falhei
+              </button>
+            </div>
+          </ActionBar>
+        </>
       )}
       {concentration && (
         <ActionBar bg={style.bg}>
@@ -287,11 +295,12 @@ function NoticeLine({ notice, view, onOpenRecipe, canUndo, act }: {
 }
 
 /**
- * A escolha de um aviso de ação (a receita e os botões), presa ao pé da lista quando ela rola: o
- * meio-orc bárbaro 11 que cai em fúria recebe as duas ofertas (Resistência Implacável e Fúria
- * Implacável), e a 360 px o "Passei" ficava abaixo da parte visível. Presa, ela cobre o fim do
- * texto do próprio aviso, que se lê rolando. O fundo é opaco — o do cartão com o tom do aviso por
- * cima, a mesma cor da linha —, para o texto não aparecer por trás.
+ * A escolha de um aviso de ação (os botões e, na concentração, a receita), presa ao pé da lista
+ * quando ela rola: o meio-orc bárbaro 11 que cai em fúria recebe as duas ofertas (Resistência
+ * Implacável e Fúria Implacável), e a 360 px o "Passei" ficava abaixo da parte visível. Presa, ela
+ * cobre o fim do texto do próprio aviso, que se lê rolando, e não sobe acima do topo dele: por isso
+ * a da Fúria Implacável, o segundo aviso, é só o par de botões. O fundo é opaco — o do cartão com o
+ * tom do aviso por cima, a mesma cor da linha —, para o texto não aparecer por trás.
  */
 function ActionBar({ bg, children }: { bg: string; children: ReactNode }) {
   return (

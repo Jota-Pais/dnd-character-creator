@@ -917,6 +917,19 @@ O efeito que você mesmo conjurou e sustenta (sustainedByConcentration) acaba ju
 
 ### Ações padrão, bloco de ação, checklist e Novo turno (`turno`)
 
+**Feita em 2026-10-30.** O que mudou em relação ao desenho abaixo:
+- Os commits seguem os itens, na ordem 1, 3, 2, 4 e o de docs: os dados das ações padrão (item 2) usam o que o Usar causa, que nasce com o turno (item 3).
+- O bloco de ação ficou com o que a onda usa, pelo precedente da `efeitos-ativos`: o gatilho da reação, o que a ação exige (`requires`: `twoLightMeleeWeapons`, `spellcaster` — Conjurar uma Magia só para quem conjura — e `prone`), a uma vez por turno, o "dentro de Atacar" (`partOf: 'attack'`: o agarrão e o encontrão substituem um ataque, págs. 197-198), `links` (lista, porque Procurar leva a duas perícias), o resumo e as linhas do extrato. Os resultados novos são os do turno: `extraAction` (Surto de Ação), `dash`, `attack` (Atacar, o ataque de oportunidade e o da outra mão contam como ataque para o fim prematuro da Fúria) e `standUp` (Levantar-se pelo `standUp`). `ActionSave`, `DiceSpec`, `DamageReaction`, `DamageRider`, a cura, os PV temporários, a rolagem, o ganho de recurso, o espaço criado e os custos em espaço e item chegam com as ondas que os usam (`acoes-marciais`, `grimorio`, `inventario`).
+- `getSheetActions(draft)` mora em `utils/actionUtils.ts`, sem os atributos: nenhuma ação dos dados tem CD nem dado a resolver ainda, então `resolved` e o `evaluateQuantity` entram com a primeira que tiver. `SheetAction` leva `description` (o texto do "?") e `standard`; o grupo sai de `getActionGroup`, sem campo. A ordem é Atacar, as da ficha e as outras em combate (a Fúria antes do ataque com a outra mão). O teste das opções com `requiresPick` e dos talentos e traços usa dados de mentira (`vi.mock`): nenhum deles declara ação ainda.
+- O Surto de Ação (guerreiro 2, p. 85) entrou nos dados nesta onda, porque o teste do desenho o usa: momento livre, uma vez por turno. Retomar o Fôlego, a Defesa Paciente (que liga o Esquivar) e as outras seguem na `acoes-marciais`.
+- `TurnState` ganhou `dashes` (o deslocamento do turno, `getTurnMovement`) e ficou sem `spellsCast`, que é do `castSpell` do grimório. `markTurn`, `newTurn`, `getTurnActions` (o que vale agora: encerrar a fúria só nela, entrar em fúria e Esquivar somem com o efeito ligado, Levantar-se só Caído) e `hasUse` (o agarrão e a interação livre não têm "Usar"). A Nova sessão zera o turno junto com o histórico (`clearRollHistory`).
+- Usar um Objeto ficou sem o link 'bag': a bolsa chega com a onda `inventario`. O 'attacks' mostra as linhas de ataque dentro de Atacar; nas outras (o ataque de oportunidade, o da outra mão), uma linha diz que os números estão em Atacar.
+- Sem ação bônus listada, o grupo diz quando se tem uma, sem afirmar que não há: o guerreiro tem Retomar o Fôlego, que ainda não é ação nos dados.
+- Esquivar com o deslocamento já em 0 (o Agarrado): o livro não responde se o benefício vale. O app não liga e avisa com `unresolvedRule`, sem gastar a ação; vai ao dono (Ponto em aberto 4 de `regras-acoes-em-combate.md`).
+- O desfazer do turno está preso no teste do `playStore`, onde mora o desfazer.
+- Conferido no Edge a 390 × 844 e 360 × 740, pelo teclado: alvos de 45 px, sem rolagem lateral, os rótulos das quatro casas dentro delas (a do movimento é mais larga), o foco no título do grupo abaixo dos vitais e o console sem erros.
+- Nenhum número de ficha salva muda: o retrato do aviso de migração não tem turno nem ações.
+
 - **Tamanho:** M
 - **Depende de:** `efeitos-ativos`
 

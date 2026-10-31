@@ -1366,8 +1366,11 @@ function spendTurn(turn: TurnState, action: TurnUse, sheet: PlaySheet, extraTurn
 /**
  * Por que não se conjura agora, um motivo por fonte: a restrição de um efeito ligado ("Em fúria você
  * não pode conjurar magias", pág. 48) e a armadura vestida sem proficiência (pág. 144). Vazio,
- * conjura. A ação de conjurar (`requires: 'spellcaster'`) some da aba (`getTurnActions`) e o "Usar"
- * dela recusa com eles (`performAction`).
+ * conjura. Com eles, Conjurar uma Magia (`requires: 'spellcaster'`) some da aba Ações
+ * (`getTurnActions`), as magias de ação bônus e de reação do grimório também (`getTurnSpells`), e o
+ * `castSpell` recusa com eles — o único caminho do Conjurar da tela. Conjurar uma Magia não tem
+ * "Usar" desde a onda `grimorio` (`via: 'spellbook'`); o `performAction` ainda recusa a ação que
+ * pede conjurar pela mesma lista.
  */
 export function getCastingBlockers(state: PlayState, sheet: PlaySheet): string[] {
   const toggles = getPlayToggles(state, sheet)

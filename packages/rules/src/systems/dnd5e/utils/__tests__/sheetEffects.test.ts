@@ -16,6 +16,7 @@ import {
   getClassFeatureHpBonus,
   getUnarmoredAcOptions,
   getSheetArmorClass,
+  formatSheetArmorSummary,
   getPassiveScoreBonus,
   getConditionalAcBonuses,
   getFeatArmorProficiencies,
@@ -48,7 +49,7 @@ import {
   getExcludedSkillsForFeat, getExcludedWeaponsForFeat,
   getSkillChecks, describeHalfProficiencyOnChecks, getSavingThrowChecks,
 } from '../proficiencyUtils'
-import { getArmor, getWeaponById } from '../equipmentUtils'
+import { getArmor, getArmorById, getWeaponById } from '../equipmentUtils'
 import { getFinalAbilityScores } from '../asiUtils'
 import { getFeat } from '../featUtils'
 import { getProgressionOptions } from '../progressionOptions'
@@ -498,6 +499,12 @@ describe('getSheetArmorClass — Maestria em Armadura Média', () => {
     const ac = getSheetArmorClass(fighter('maestria-em-armadura-media', 'plate'), scores({ DEX: 16 }))
     expect(ac.value).toBe(18)
     expect(ac.stealthDisadvantage).toBe(true)
+  })
+
+  it('o resumo da peça desta ficha diz a mesma regra da CA (a seção Equipamento vestido)', () => {
+    const halfPlate = getArmorById('half-plate')!
+    expect(formatSheetArmorSummary(fighter('maestria-em-armadura-media'), halfPlate)).toBe('CA 15 + Des (máx. +3)')
+    expect(formatSheetArmorSummary(fighter(null), halfPlate)).toBe('CA 15 + Des (máx. +2) · desv. em Furtividade')
   })
 })
 

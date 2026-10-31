@@ -61,6 +61,13 @@ describe('weaponFormat', () => {
     it('escudo mostra +2', () => {
       expect(formatArmorSummary(getArmorById('shield')!)).toBe('CA +2 (escudo)')
     })
+    it('com a Maestria em Armadura Média (pág. 170), a média sai com o teto dela e sem a desvantagem; as outras, como a tabela', () => {
+      const mastery = { maxDex: 3, noStealthDisadvantage: true }
+      expect(formatArmorSummary(getArmorById('half-plate')!)).toBe('CA 15 + Des (máx. +2) · desv. em Furtividade')
+      expect(formatArmorSummary(getArmorById('half-plate')!, mastery)).toBe('CA 15 + Des (máx. +3)')
+      expect(formatArmorSummary(getArmorById('ring-mail')!, mastery)).toBe('CA 14 · desv. em Furtividade')
+      expect(formatArmorSummary(getArmorById('plate')!, mastery)).toBe('CA 18 · Força 15, desv. em Furtividade')
+    })
   })
 
   describe('formatPackContents (F1 — pacotes)', () => {

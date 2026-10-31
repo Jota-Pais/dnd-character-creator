@@ -1,6 +1,7 @@
 import type { Armor, DamageRoll, Weapon, WeaponProperty } from '../types/equipment'
 import type { DamageTypeId } from '../types/damage'
 import type { AttackScope, LoadingOverride, WeaponAttackEffect } from '../types/effects'
+import type { ArmorClassParams } from './armorClassUtils'
 import { DAMAGE_TYPES, getDamageTypeName } from './damageTypes'
 
 /**
@@ -57,16 +58,22 @@ export function formatWeaponSummary(weapon: Weapon): string {
   return props ? `${damage} · ${props}` : damage
 }
 
-/** Resumo compacto de uma armadura/escudo: "CA 14 + Des (máx. +2) · Força 13, desv. em Furtividade". */
-export function formatArmorSummary(armor: Armor): string {
+/**
+ * Resumo compacto de uma armadura/escudo: "CA 14 + Des (máx. +2) · Força 13, desv. em Furtividade".
+ * Sem `mediumArmor`, o da tabela (o criador, antes do personagem). Com ele — o que a Maestria em
+ * Armadura Média muda, o mesmo da CA (`ArmorClassParams.mediumArmor`) —, a armadura média sai com o
+ * teto do personagem e sem a desvantagem que ele não tem (`formatSheetArmorSummary`).
+ */
+export function formatArmorSummary(armor: Armor, mediumArmor?: ArmorClassParams['mediumArmor']): string {
+  const medium = armor.category === 'medium' ? mediumArmor : undefined
   let ac: string
   if (armor.category === 'shield') ac = 'CA +2 (escudo)'
   else if (armor.dexModifier === 'full') ac = `CA ${armor.acBase} + Des`
-  else if (armor.dexModifier === 'max-2') ac = `CA ${armor.acBase} + Des (máx. +2)`
+  else if (armor.dexModifier === 'max-2') ac = `CA ${armor.acBase} + Des (máx. +${medium?.maxDex ?? 2})`
   else ac = `CA ${armor.acBase}`
   const props: string[] = []
   if (armor.strengthRequirement) props.push(`Força ${armor.strengthRequirement}`)
-  if (armor.stealthDisadvantage) props.push('desv. em Furtividade')
+  if (armor.stealthDisadvantage && !medium?.noStealthDisadvantage) props.push('desv. em Furtividade')
   return props.length ? `${ac} · ${props.join(', ')}` : ac
 }
 

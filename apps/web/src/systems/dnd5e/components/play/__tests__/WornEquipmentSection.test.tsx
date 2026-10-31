@@ -100,6 +100,17 @@ describe('WornEquipmentSection — vestir e tirar pela tela do jogo', () => {
     expect(doff).toHaveFocus()
   })
 
+  it('com a Maestria em Armadura Média, a linha da armadura média diz a regra da CA (pág. 170)', () => {
+    // Humano com o talento e DES 16 (15 + 1): Meia-Armadura 15 + 3 de DES, sem a desvantagem da tabela.
+    const d = character('fighter', 'half-plate', 'shield')
+    openStatus({ ...d, raceChoices: { ...d.raceChoices, feat: 'maestria-em-armadura-media' }, abilityScores: { ...d.abilityScores, DEX: 15 } })
+    expect(within(section()).getByTestId('worn-ac')).toHaveTextContent('CA 20 = 15 (Meia-Armadura) + 3 (DES) + 2 (Escudo)')
+    const row = within(section()).getByTestId('worn-half-plate')
+    expect(row).toHaveTextContent('Armadura média · CA 15 + Des (máx. +3)')
+    expect(row).not.toHaveTextContent('máx. +2')
+    expect(section()).not.toHaveTextContent('Furtividade')
+  })
+
   it('a região viva já existe vazia; quem não carrega armadura nem escudo não tem a seção', () => {
     openStatus(character('fighter', 'leather'))
     expect(within(section()).getAllByText((_, el) => el?.getAttribute('aria-live') === 'polite' && el.textContent === '').length).toBe(1)

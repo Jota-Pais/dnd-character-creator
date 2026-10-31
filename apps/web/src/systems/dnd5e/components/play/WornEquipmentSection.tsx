@@ -9,8 +9,7 @@ import {
   ARMOR_TIME, describeArmorSetup, doffArmor, doffShield, donArmor, donShield, getWornArmor, resetWornArmor,
 } from '@rpg/rules/systems/dnd5e/utils/playState'
 import { describeUnproficientArmorRules } from '@rpg/rules/systems/dnd5e/utils/proficiencyUtils'
-import { describeSpeedBonuses } from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
-import { formatArmorSummary } from '@rpg/rules/systems/dnd5e/utils/weaponFormat'
+import { describeSpeedBonuses, formatSheetArmorSummary } from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
 import { ChangeAnnouncer } from './ChangeAnnouncer'
 import type { PlayTabProps } from './usePlayView'
 
@@ -46,7 +45,7 @@ function ArmorRow({ armor, worn, view }: { armor: CarriedArmor; worn: boolean; v
           {worn && <span className="text-emerald-300"> · vestid{shield ? 'o' : 'a'}</span>}
         </span>
         <span className="block text-[11px] text-parchment-500 leading-snug">
-          {CATEGORY_LABEL[armor.category]}{item ? ` · ${formatArmorSummary(item)}` : ''}
+          {CATEGORY_LABEL[armor.category]}{item ? ` · ${formatSheetArmorSummary(view.draft, item)}` : ''}
           {!armor.proficient && <span className="text-amber-300"> · sem proficiência</span>}
         </span>
       </span>

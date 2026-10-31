@@ -1,6 +1,7 @@
 import type { CharacterDraft, ClassEntry, FeatSelections } from '../types/character'
 import type { Feat } from '../types/feat'
 import type { ArmorProficiency, LevelFeature } from '../types/class'
+import type { Armor } from '../types/equipment'
 import type { AbilityScore, RacialTrait } from '../types/race'
 import type {
   ActiveEffect, AttackScope, CastingRestriction, ConditionalAcBonus, ConditionalRollNote, EquipmentRequirement, FeatureEffects,
@@ -27,7 +28,7 @@ import { getActivePicks, getProgressionSlotsUpToLevel, type ProgressionSlot } fr
 import { getProgressionOptions, getUnmetRequirement, type ProgressionOption } from './progressionOptions'
 import { formatManeuverSaveDc, getClassManeuvers, getManeuver, getManeuverSaveDc } from './maneuverUtils'
 import { getFeatChosenSpell, getFeatSpellPicks, getSpellSources } from './spellUtils'
-import type { SourcedAttackEffect } from './weaponFormat'
+import { formatArmorSummary, type SourcedAttackEffect } from './weaponFormat'
 import {
   allClassEntries, getAllAsiChoices, getTotalHpAverage, getTotalHpRolled,
 } from './multiclassUtils'
@@ -777,6 +778,15 @@ function getMediumArmorMastery(draft: CharacterDraft): ArmorClassParams['mediumA
   const maxDex = Math.max(2, ...effects.map(e => e.mediumArmorMaxDex ?? 2))
   const noStealthDisadvantage = effects.some(e => e.mediumArmorNoStealthDisadvantage)
   return maxDex > 2 || noStealthDisadvantage ? { maxDex, noStealthDisadvantage } : null
+}
+
+/**
+ * O resumo de uma armadura ou escudo desta ficha (a seção Equipamento vestido do jogo): o da tabela,
+ * com o que a Maestria em Armadura Média muda na armadura média — a mesma fonte da CA
+ * (`getMediumArmorMastery`), para a linha da peça e a conta da CA dizerem a mesma regra.
+ */
+export function formatSheetArmorSummary(draft: CharacterDraft, armor: Armor): string {
+  return formatArmorSummary(armor, getMediumArmorMastery(draft) ?? undefined)
 }
 
 // ── Classe de Armadura condicional ─────────────────────────────────────────────

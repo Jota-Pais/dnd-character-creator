@@ -2037,13 +2037,18 @@ describe('efeitos recebidos: o deslocamento ao vivo (getPlaySpeed)', () => {
     ids.reduce((acc, id) => activateToggle(acc, human, id, { now: 1 }).state, s)
 
   // "o deslocamento do alvo é dobrado" (linhas 28211-28212); "aumenta em 3 metros" (linhas 25906-25907).
+  // O livro não fixa a ordem: bônus → dobro → metade, decidida pelo dono em 2026-10-30
+  // (regras-efeitos-ativos.md, seção 7.7).
   it('a Velocidade dobra o deslocamento; Passos Longos soma 3 m antes do dobro', () => {
     expect(getPlaySpeed(state(), human)).toBe(30)
     expect(getPlaySpeed(on(state(), 'spell:haste'), human)).toBe(60)
     expect(getPlaySpeed(on(state(), 'spell:longstrider'), human)).toBe(40)
+    // (9 m + 3 m) × 2 = 24 m, e não 9 × 2 + 3 = 21 m.
     expect(getPlaySpeed(on(state(), 'spell:haste', 'spell:longstrider'), human)).toBe(80)
     // A Exaustão 2 corta a metade por último, na grade de 1,5 m.
     expect(getPlaySpeed(on(state({ exhaustionLevel: 2 }), 'spell:longstrider'), human)).toBe(20)
+    // As três: (30 + 10) × 2 = 80, metade 40.
+    expect(getPlaySpeed(on(state({ exhaustionLevel: 2 }), 'spell:haste', 'spell:longstrider'), human)).toBe(40)
   })
 
   it('o Agarrado zera mesmo com Passos Longos: não se beneficia de bônus (pág. 291)', () => {

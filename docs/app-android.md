@@ -117,7 +117,7 @@ O 0.1.1 (2026-10-30), a variante de teste no build servido pelo `adb reverse`, c
 2. Abrir com internet: a galeria; criar uma ficha, "Jogar".
 3. Na galeria, "Exportar todas" → "Salvar": o arquivo em Downloads (Arquivos). Numa ficha, "Imprimir / Salvar PDF" → "Salvar como PDF".
 4. No jogo: a barra de status e a de gestos não cobrem nada; o celular deitado; a tela não apaga sozinha; o voltar fecha a folha aberta, volta à galeria e, nela, sai para a tela de início.
-5. Fechar o app de verdade (tirar dos recentes), modo avião, abrir: a galeria e o jogo abrem sem rede.
+5. Fechar o app de verdade (tirar dos recentes), modo avião, abrir: a galeria e o jogo abrem sem rede, e também um agente do Ordem e a impressão de uma ficha de cada sistema, que descem sob demanda (`docs/app-instalavel.md`, seção 5).
 6. Depois de um push na `main`: tirar o app dos recentes e abrir (a abertura procura a versão nova; com o app vivo, a procura é no máximo uma vez por hora) até o aviso "Atualização pronta" aparecer na galeria. Com o aviso na tela, nesta ordem (só o último passo recarrega):
    - no criador e no jogo, ir para a tela de início e voltar depois de mais de 1 minuto: não recarrega;
    - na galeria, "Importar" e ficar **mais de 1 minuto** no seletor antes de escolher o arquivo: o arquivo entra, e a página não recarrega. Com menos de 1 minuto, quem segura é a regra do minuto, e o passo não confere a marca do app (`markOwnTrip`), que é o que o emulador não mostra. O mesmo no "Exportar todas": mais de 1 minuto no "Salvar como" antes de "Salvar"; a cópia conta, sem recarregar;

@@ -2118,7 +2118,7 @@ describe('o turno: o checklist, o Usar e o Novo turno', () => {
     const sh = withAnAction(fighter(2))
     const surged = use(state(), sh, 'action-surge')
     expect(surged.state.resourcesSpent).toEqual({ 'action-surge': 1 })
-    expect(surged.state.turn).toEqual({ ...emptyTurn(), extraActions: 1, oncePerTurnUsed: ['action-surge'] })
+    expect(surged.state.turn).toEqual({ ...emptyTurn(), extraActions: 1, used: ['action-surge'] })
     expect(surged.notices).toEqual([{ kind: 'info', text: 'Surto de Ação: mais uma ação neste turno, além da sua ação e da possível ação bônus (pág. 85).' }])
     const first = use(surged.state, sh, 'test-action')
     expect(first.state.turn.action).toBe(true)
@@ -2175,7 +2175,7 @@ describe('o turno: o checklist, o Usar e o Novo turno', () => {
   // "A reação volta no início do seu próximo turno" (linhas 17130-17131).
   it('o Novo turno zera as quatro casas, a ação a mais e a uma vez por turno, com aviso', () => {
     const sh = fighter(2)
-    const busy = state({ turn: { action: true, bonusAction: true, movement: true, reaction: true, extraActions: 1, dashes: 1, movementSpent: 15, attacked: true, afterTurn: false, beforeTurn: true, oncePerTurnUsed: ['action-surge'] } })
+    const busy = state({ turn: { action: true, bonusAction: true, movement: true, reaction: true, extraActions: 1, dashes: 1, movementSpent: 15, attacked: true, afterTurn: false, beforeTurn: true, used: ['action-surge'] } })
     const r = newTurn(busy, sh)
     expect(r.state.turn).toEqual(emptyTurn())
     expect(r.notices).toEqual([{ kind: 'info', text: 'Novo turno: a ação, a ação bônus, o movimento e a reação estão de volta.' }])
@@ -2261,8 +2261,8 @@ describe('o turno: o checklist, o Usar e o Novo turno', () => {
     const old: Record<string, unknown> = JSON.parse(JSON.stringify(createPlayState('c')))
     delete old.turn
     expect(sanitizePlayState(old, 'c').turn).toEqual(emptyTurn())
-    const torn = { ...old, turn: { action: 'sim', bonusAction: true, extraActions: -2, oncePerTurnUsed: ['action-surge', 3, 'action-surge', ''] } }
-    expect(sanitizePlayState(torn, 'c').turn).toEqual({ ...emptyTurn(), bonusAction: true, oncePerTurnUsed: ['action-surge'] })
+    const torn = { ...old, turn: { action: 'sim', bonusAction: true, extraActions: -2, used: ['action-surge', 3, 'action-surge', ''] } }
+    expect(sanitizePlayState(torn, 'c').turn).toEqual({ ...emptyTurn(), bonusAction: true, used: ['action-surge'] })
   })
 })
 
@@ -2277,22 +2277,22 @@ describe('o turno: as ações em combate', () => {
 
   it('Atacar marca a ação e que você atacou; o ataque de oportunidade, a reação', () => {
     const attacked = use(state(), krusk, 'attack')
-    expect(attacked.state.turn).toEqual({ ...emptyTurn(), action: true, attacked: true })
+    expect(attacked.state.turn).toEqual({ ...emptyTurn(), action: true, attacked: true, used: ['attack'] })
     expect(attacked.notices).toEqual([])
     const opportunity = use(state(), krusk, 'opportunity-attack').state
     // O de oportunidade vem no turno de outra criatura: conta para o fim do seu próximo turno.
-    expect(opportunity.turn).toEqual({ ...emptyTurn(), reaction: true, afterTurn: true })
+    expect(opportunity.turn).toEqual({ ...emptyTurn(), reaction: true, afterTurn: true, used: ['opportunity-attack'] })
   })
 
   it('a ação que só marca o momento (Desengajar) marca a ação, e nada mais', () => {
-    expect(use(state(), krusk, 'disengage').state.turn).toEqual({ ...emptyTurn(), action: true })
+    expect(use(state(), krusk, 'disengage').state.turn).toEqual({ ...emptyTurn(), action: true, used: ['disengage'] })
   })
 
   // "O aumento equivale ao seu valor de deslocamento, depois de aplicar qualquer modificador"
   // (linhas 17389-17400).
   it('a Disparada soma o deslocamento já modificado: 9 m viram 18; com o deslocamento em 0, 0', () => {
     const dashed = use(state(), krusk, 'dash').state
-    expect(dashed.turn).toEqual({ ...emptyTurn(), action: true, dashes: 1 })
+    expect(dashed.turn).toEqual({ ...emptyTurn(), action: true, dashes: 1, used: ['dash'] })
     expect(getTurnMovement(state(), krusk)).toBe(30)
     expect(getTurnMovement(dashed, krusk)).toBe(60)
     // Exaustão 2: metade do deslocamento, e a Disparada dobra a metade.
@@ -2314,7 +2314,7 @@ describe('o turno: as ações em combate', () => {
     const grappled = state({ conditions: ['grappled'] })
     const r = use(grappled, krusk, 'dodge')
     expect(r.state.activeEffects).toEqual([])
-    expect(r.state.turn).toEqual({ ...emptyTurn(), action: true })
+    expect(r.state.turn).toEqual({ ...emptyTurn(), action: true, used: ['dodge'] })
     expect(r.notices).toEqual([{
       kind: 'unresolvedRule',
       text: 'Esquivar: seu deslocamento já é 0, e o livro só diz que você perde o benefício se ele cair para 0 (pág. 194). O app não ligou o efeito: decida com o Mestre e, se valer, aplique-o à mão (a vantagem se marca na folha da jogada).',
@@ -2333,11 +2333,11 @@ describe('o turno: as ações em combate', () => {
     expect(turnIds(prone, krusk)).toContain('stand-up')
     const up = use(prone, krusk, 'stand-up')
     expect(up.state.conditions).toEqual([])
-    expect(up.state.turn).toEqual({ ...emptyTurn(), movementSpent: 15 })
+    expect(up.state.turn).toEqual({ ...emptyTurn(), movementSpent: 15, used: ['stand-up'] })
     expect(getTurnMovement(up.state, krusk)).toBe(15)
     expect(up.notices).toEqual([{ kind: 'info', text: 'Levantar-se custa metade do deslocamento (4,5 m) (pág. 192).' }])
     // O "Levantar" do Caído gasta o mesmo; com a Disparada, sobram 13,5 m dos 18.
-    expect(standUp(prone, krusk).state.turn).toEqual(up.state.turn)
+    expect(standUp(prone, krusk).state.turn.movementSpent).toBe(15)
     expect(getTurnMovement(use(up.state, krusk, 'dash').state, krusk)).toBe(45)
     // O Novo turno devolve o deslocamento inteiro.
     expect(getTurnMovement(newTurn(up.state, krusk).state, krusk)).toBe(30)
@@ -2386,6 +2386,25 @@ describe('o turno: as ações em combate', () => {
       kind: 'refused', text: 'Conjurar uma Magia: Usando Cota de Malha sem proficiência, você não pode conjurar magias (pág. 144).',
     }])
     expect(getCastingBlockers(state(), buildPlaySheet(draftOf('wizard', 1)))).toEqual([])
+  })
+
+  // "Quando você realiza a ação de Ataque e ataca com uma arma corpo-a-corpo leve [...], você pode
+  // usar uma ação bônus para atacar" (linhas 17633-17636).
+  it('o ataque com a outra mão sem a ação de Atacar no turno avisa, sem recusar; depois de Atacar, não', () => {
+    const dual = buildPlaySheet(draftOf('barbarian', 3, {
+      equipment: {
+        ...structuredClone(EMPTY_DRAFT.equipment),
+        method: 'wealth',
+        purchasedItems: ['handaxe', 'shortsword'].map(itemId => ({ itemId, quantity: 1, source: 'purchased' as const })),
+      },
+    }))
+    const alone = use(state(), dual, 'two-weapon-fighting')
+    expect(alone.state.turn).toMatchObject({ bonusAction: true, attacked: true })
+    expect(alone.notices).toEqual([{ kind: 'warning', text: 'Atacar com a outra mão: pede a ação de Atacar antes, no mesmo turno, e ela não foi usada neste (pág. 197).' }])
+    const afterAttack = use(use(state(), dual, 'attack').state, dual, 'two-weapon-fighting')
+    expect(afterAttack.notices).toEqual([])
+    // O ataque de oportunidade não é a ação de Atacar.
+    expect(kinds(use(use(state(), dual, 'opportunity-attack').state, dual, 'two-weapon-fighting'))).toEqual(['warning'])
   })
 
   it('a Fúria: entrar some da lista em fúria, e encerrar só aparece nela', () => {

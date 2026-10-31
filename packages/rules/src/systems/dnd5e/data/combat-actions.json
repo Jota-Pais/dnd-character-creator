@@ -123,6 +123,7 @@
     "name": "Atacar com a outra mão",
     "timing": "bonusAction",
     "requires": "twoLightMeleeWeapons",
+    "afterAction": "attack",
     "summary": "Quando você usa a ação de Atacar e ataca com uma arma corpo a corpo leve numa mão, pode atacar com outra arma corpo a corpo leve, empunhada na outra mão. Esse ataque não soma o modificador de habilidade ao dano, a menos que ele seja negativo. Com a propriedade arremesso, você pode arremessá-la.",
     "outcomes": [{ "kind": "attack" }],
     "links": ["attacks"],

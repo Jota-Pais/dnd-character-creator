@@ -74,6 +74,13 @@ describe('ações em combate nos dados', () => {
     expect(COMBAT_ACTIONS.filter(a => a.partOf === 'attack').map(a => a.id)).toEqual(['grapple', 'shove'])
   })
 
+  // "Quando você realiza a ação de Ataque [...], você pode usar uma ação bônus" (linhas 17633-17636).
+  it('o ataque com a outra mão vem depois de Atacar, que existe nos dados', () => {
+    const after = COMBAT_ACTIONS.flatMap(a => (a.afterAction ? [[a.id, a.afterAction]] : []))
+    expect(after).toEqual([['two-weapon-fighting', 'attack']])
+    for (const [, id] of after) expect(COMBAT_ACTIONS.some(a => a.id === id), id).toBe(true)
+  })
+
   it('a reação diz o gatilho', () => {
     for (const a of COMBAT_ACTIONS.filter(x => x.timing === 'reaction')) expect(a.trigger, a.id).toBeTruthy()
   })

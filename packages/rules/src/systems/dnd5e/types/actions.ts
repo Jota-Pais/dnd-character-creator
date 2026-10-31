@@ -59,6 +59,11 @@ export type ActionDeclaration = {
   /** No máximo uma vez por turno (o Surto de Ação no 17º nível, p. 85): a segunda só avisa. */
   oncePerTurn?: true
   /**
+   * Só depois desta outra ação, no mesmo turno (o ataque com a outra mão, depois de Atacar, p. 197):
+   * sem ela usada pelo "Usar", avisa, sem recusar.
+   */
+  afterAction?: string
+  /**
    * Faz-se dentro da ação de Atacar, no lugar de um dos ataques (o agarrão e o encontrão, p.
    * 197-198): não tem "Usar" próprio, quem marca o turno é o Atacar.
    */

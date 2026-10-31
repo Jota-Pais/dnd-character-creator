@@ -64,7 +64,7 @@ const ZERO_SAVES = { successes: 0, failures: 0 } as const
 export function emptyTurn(): TurnState {
   return {
     action: false, bonusAction: false, movement: false, reaction: false,
-    extraActions: 0, dashes: 0, movementSpent: 0, attacked: false, afterTurn: false, beforeTurn: false, oncePerTurnUsed: [],
+    extraActions: 0, dashes: 0, movementSpent: 0, attacked: false, afterTurn: false, beforeTurn: false, used: [],
   }
 }
 
@@ -1239,19 +1239,20 @@ const TURN_SLOT_OF: Partial<Record<ActionTiming, TurnSlot>> = {
 }
 
 /**
- * Marca no turno o que a ação usou: a uma vez por turno e a casa do momento dela. O que já foi usado
- * só avisa — o app não sabe se a mesa já passou ao turno seguinte sem o Novo turno, e o checklist
- * nunca impede de jogar. A ação a mais do Surto de Ação cobre a segunda ação, sem aviso.
+ * Marca no turno o que a ação usou: o id dela (`used`) e a casa do momento. O que já foi usado só
+ * avisa — o app não sabe se a mesa já passou ao turno seguinte sem o Novo turno, e o checklist nunca
+ * impede de jogar —, e a ação que vem depois de outra (a outra mão, depois de Atacar) também só
+ * avisa sem ela. A ação a mais do Surto de Ação cobre a segunda ação, sem aviso.
  */
-function spendTurn(turn: TurnState, action: SheetAction, notices: PlayNotice[]): TurnState {
-  let next = turn
-  if (action.oncePerTurn) {
-    if (next.oncePerTurnUsed.includes(action.id)) {
-      notices.push(note('warning', `${action.name}: só uma vez por turno, e já foi usada neste (pág. ${action.page}).`))
-    } else {
-      next = { ...next, oncePerTurnUsed: [...next.oncePerTurnUsed, action.id] }
-    }
+function spendTurn(turn: TurnState, action: SheetAction, sheet: PlaySheet, notices: PlayNotice[]): TurnState {
+  if (action.oncePerTurn && turn.used.includes(action.id)) {
+    notices.push(note('warning', `${action.name}: só uma vez por turno, e já foi usada neste (pág. ${action.page}).`))
   }
+  if (action.afterAction && !turn.used.includes(action.afterAction)) {
+    const before = sheet.actions.find(a => a.id === action.afterAction)?.name ?? action.afterAction
+    notices.push(note('warning', `${action.name}: pede a ação de ${before} antes, no mesmo turno, e ela não foi usada neste (pág. ${action.page}).`))
+  }
+  const next = turn.used.includes(action.id) ? turn : { ...turn, used: [...turn.used, action.id] }
   const slot = TURN_SLOT_OF[action.timing]
   if (!slot) return next
   if (slot === 'action' && next.action) {
@@ -1416,7 +1417,7 @@ export function performAction(state0: PlayState, sheet: PlaySheet, actionId: str
     next = r.state
     notices.push(...r.notices)
   }
-  next = { ...next, turn: spendTurn(next.turn, action, notices) }
+  next = { ...next, turn: spendTurn(next.turn, action, sheet, notices) }
   return done(next, notices)
 }
 
@@ -2070,8 +2071,8 @@ function sanitizeTurn(x: unknown): TurnState {
     attacked: x.attacked === true,
     afterTurn: x.afterTurn === true,
     beforeTurn: x.beforeTurn === true,
-    oncePerTurnUsed: Array.isArray(x.oncePerTurnUsed)
-      ? [...new Set(x.oncePerTurnUsed.filter((id): id is string => typeof id === 'string' && id !== ''))]
+    used: Array.isArray(x.used)
+      ? [...new Set(x.used.filter((id): id is string => typeof id === 'string' && id !== ''))]
       : [],
   }
 }

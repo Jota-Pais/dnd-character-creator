@@ -91,8 +91,12 @@ export type TurnState = {
   afterTurn: boolean
   /** O `afterTurn` do turno anterior: o que veio entre o fim do seu turno anterior e o começo deste. */
   beforeTurn: boolean
-  /** As ações de uma vez por turno já usadas neste turno (`ActionDeclaration.oncePerTurn`). */
-  oncePerTurnUsed: string[]
+  /**
+   * As ações usadas pelo "Usar" neste turno, pelo id, uma vez cada: a de uma vez por turno avisa
+   * na segunda (`ActionDeclaration.oncePerTurn`), e a que vem depois de outra pergunta por ela
+   * (`afterAction`: a outra mão, depois de Atacar).
+   */
+  used: string[]
 }
 
 /** Magia (ou efeito) em que o personagem se concentra. `spellId` quando vem de `spells.json`. */

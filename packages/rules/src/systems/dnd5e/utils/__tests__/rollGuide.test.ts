@@ -1214,6 +1214,21 @@ describe('getRollGuide — dano extra na arma (Auxílio Divino)', () => {
     expect(unarmed.notes).toContain('Dano fixo: no acerto crítico, só os dados a mais dobram (pág. 198).')
   })
 
+  // O mínimo 0 com dano de outro tipo está com o dono (regras-efeitos-ativos.md, seção 6); seja qual
+  // for a resposta, o 1d4 radiante é dano: a ficha não diz "Não causa dano".
+  it('golpe desarmado com Força 7: o fixo fica em 0, e com o 1d4 radiante ele causa dano', () => {
+    const weak = draft({
+      class: 'paladin', level: 2, abilityScores: { ...SCORES, STR: 7 }, spellChoices: { cantrips: [], spells: ['divine-favor'] },
+    })
+    const unarmed = getRollGuide(weak, favored).attacks.find(a => a.key === 'unarmed')!.damage!
+    expect(unarmed.formula).toBe('0 concussão + 1d4 radiante')
+    expect(unarmed.crit?.formula).toBe('0 concussão + 2d4 radiante')
+    expect(unarmed.notes.some(n => n.startsWith('Não causa dano'))).toBe(false)
+    expect(unarmed.notes).toContain('Dano fixo: no acerto crítico, só os dados a mais dobram (pág. 198).')
+    // Sem o Auxílio Divino, não causa dano, como antes.
+    expect(getRollGuide(weak, play()).attacks.find(a => a.key === 'unarmed')!.damage!.notes.some(n => n.startsWith('Não causa dano'))).toBe(true)
+  })
+
   it('a Revisão e o PDF não têm sessão: o dano fica como era', () => {
     const [sword] = getRollGuide(paladin('longsword'), play()).attacks
     expect(sword.damage?.formula).toBe('1d8 + 3 cortante')

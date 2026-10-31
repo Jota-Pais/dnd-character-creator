@@ -553,7 +553,8 @@ function damageEntry(input: DamageInput): RollGuideEntry {
   const critNotes = count > 0 ? (input.critExtraDice ?? []).map(e => critExtraDiceNote(e, sides, input.unarmedStrike)) : []
   const notes = [...(input.notes ?? [])]
   const extra = input.extraDice ?? []
-  if (count === 0 && modifier === 0) notes.push(NO_DAMAGE_NOTE)
+  // Com dado a mais (o 1d4 radiante do Auxílio Divino), o golpe causa dano mesmo com o fixo em 0.
+  if (count === 0 && modifier === 0 && extra.length === 0) notes.push(NO_DAMAGE_NOTE)
   else if (count === 0 && extra.length === 0) notes.push('Dano fixo, sem dado: o acerto crítico não muda o valor (só os dados dobram, pág. 198).')
   else if (count === 0) notes.push('Dano fixo: no acerto crítico, só os dados a mais dobram (pág. 198).')
   const breakdown = floor > 0 ? [...input.breakdown, { label: 'Mínimo 0', value: floor }] : input.breakdown

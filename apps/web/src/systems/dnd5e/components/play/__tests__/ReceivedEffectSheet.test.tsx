@@ -23,6 +23,20 @@ function openSheet() {
 
 const section = () => screen.getByRole('heading', { name: 'Efeitos ativos' }).closest('section')!
 
+/** Clérigo 1 que conhece o Escudo da Fé (concentração): a folha pergunta quem conjurou. */
+const cleric: CharacterDraft = {
+  ...structuredClone(COMPLETE_DRAFT), race: 'human', class: 'cleric', level: 1,
+  classChoices: structuredClone(EMPTY_DRAFT.classChoices),
+  spellChoices: { cantrips: [], spells: ['shield-of-faith'] },
+}
+
+/** Paladino 2 que conhece o Auxílio Divino (Pessoal, concentração): é sempre dele. */
+const paladin: CharacterDraft = {
+  ...structuredClone(COMPLETE_DRAFT), race: 'human', class: 'paladin', level: 2,
+  classChoices: structuredClone(EMPTY_DRAFT.classChoices),
+  spellChoices: { cantrips: [], spells: ['divine-favor'] },
+}
+
 describe('ReceivedEffectSheet — "Recebeu uma magia?"', () => {
   it('lista o catálogo, busca sem acento, e a de alcance Pessoal só aparece para quem a conhece', () => {
     openKrusk()
@@ -45,41 +59,37 @@ describe('ReceivedEffectSheet — "Recebeu uma magia?"', () => {
     expect(regions.some(r => r.contains(none))).toBe(true)
   })
 
-  it('escolher leva o foco ao título do detalhe; "Outra magia" volta à magia de antes', () => {
+  it('o toque na magia já a marca: dois toques, e o foco volta ao "Recebeu uma magia?"; o chip e o número mudam', () => {
     openKrusk()
     const sheet = openSheet()
+    // Krusk não conhece a Bênção: foi outra pessoa, que mantém a concentração. Não há o que perguntar.
     fireEvent.click(within(sheet).getByRole('button', { name: /^Bênção/ }))
-    expect(within(sheet).getByRole('heading', { name: 'Bênção' })).toHaveFocus()
-    expect(sheet).toHaveTextContent('+1d4 nas jogadas de ataque e testes de resistência, inclusive no teste contra a morte (Bênção)')
-    // Krusk não conhece a Bênção: foi outra pessoa, que mantém a concentração.
-    expect(within(sheet).queryByRole('radio')).toBeNull()
-    expect(sheet).toHaveTextContent('Quem conjurou é quem mantém a concentração')
-    fireEvent.click(within(sheet).getByRole('button', { name: '← Outra magia' }))
-    expect(within(sheet).getByRole('button', { name: /^Bênção/ })).toHaveFocus()
-  })
-
-  it('marcar a de um aliado liga sem concentração, fecha e devolve o foco; o chip e o número mudam', () => {
-    openKrusk()
-    const sheet = openSheet()
-    fireEvent.click(within(sheet).getByRole('button', { name: /^Bênção/ }))
-    fireEvent.click(within(sheet).getByRole('button', { name: 'Marcar em mim' }))
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(screen.getByRole('button', { name: 'Recebeu uma magia?' })).toHaveFocus()
     expect(playState().activeEffects).toEqual([{ id: 'spell:bless', startedAt: expect.any(Number) }])
     expect(playState().concentration).toBeNull()
     expect(screen.getByTestId('vitals-toggle-spell:bless')).toHaveTextContent('Sob a Bênção')
+    expect(within(section()).getByTestId('toggle-spell:bless')).toHaveTextContent('+1d4 nas jogadas de ataque e testes de resistência')
     expect(within(section()).getByTestId('toggle-spell:bless')).toHaveTextContent('Quem conjurou mantém a concentração')
     // Já ligada, a magia fica na lista sem botão.
     fireEvent.click(screen.getByRole('button', { name: 'Recebeu uma magia?' }))
     expect(within(screen.getByRole('dialog')).getByText('Bênção · já está em você')).toBeInTheDocument()
   })
 
+  it('a que pede escolha abre o detalhe, com o foco no título; "Outra magia" volta à magia de antes', () => {
+    openDraft(cleric)
+    const sheet = openSheet()
+    fireEvent.click(within(sheet).getByRole('button', { name: /^Escudo da Fé/ }))
+    expect(within(sheet).getByRole('heading', { name: 'Escudo da Fé' })).toHaveFocus()
+    expect(sheet).toHaveTextContent('+2 na CA (Escudo da Fé)')
+    expect(within(sheet).getByRole('radio', { name: 'Outra pessoa conjurou em mim' })).toBeChecked()
+    expect(sheet).toHaveTextContent('Quem conjurou é quem mantém a concentração')
+    expect(playState().activeEffects).toEqual([])
+    fireEvent.click(within(sheet).getByRole('button', { name: '← Outra magia' }))
+    expect(within(sheet).getByRole('button', { name: /^Escudo da Fé/ })).toHaveFocus()
+  })
+
   it('quem conhece a magia escolhe "Eu conjurei em mim": começa a concentração; recusada, a folha diz por quê e o foco fica', () => {
-    const cleric: CharacterDraft = {
-      ...structuredClone(COMPLETE_DRAFT), race: 'human', class: 'cleric', level: 1,
-      classChoices: structuredClone(EMPTY_DRAFT.classChoices),
-      spellChoices: { cantrips: [], spells: ['shield-of-faith'] },
-    }
     openDraft(cleric)
     let sheet = openSheet()
     fireEvent.click(within(sheet).getByRole('button', { name: /^Escudo da Fé/ }))
@@ -108,16 +118,30 @@ describe('ReceivedEffectSheet — "Recebeu uma magia?"', () => {
     expect(playState().activeEffects).toEqual([])
   })
 
-  it('o paladino que conhece o Auxílio Divino o vê, sem a pergunta: é sempre dele', () => {
-    const paladin: CharacterDraft = {
-      ...structuredClone(COMPLETE_DRAFT), race: 'human', class: 'paladin', level: 2,
-      classChoices: structuredClone(EMPTY_DRAFT.classChoices),
-      spellChoices: { cantrips: [], spells: ['divine-favor'] },
-    }
+  it('o paladino que conhece o Auxílio Divino o marca no toque, sem a pergunta: é sempre dele', () => {
     openDraft(paladin)
     const sheet = openSheet()
     fireEvent.click(within(sheet).getByRole('button', { name: /^Auxílio Divino/ }))
-    expect(within(sheet).queryByRole('radio')).toBeNull()
-    expect(sheet).toHaveTextContent('Começa a sua concentração em Auxílio Divino')
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(playState().activeEffects).toEqual([{ id: 'spell:divine-favor', startedAt: expect.any(Number), sustainedByConcentration: true }])
+    expect(playState().concentration?.label).toBe('Auxílio Divino')
+    expect(within(section()).getByTestId('toggle-spell:divine-favor')).toHaveTextContent('Mantida pela sua concentração')
+  })
+
+  it('o toque recusado (Atordoado não se concentra) diz por quê na região viva da lista, e o foco fica na magia', () => {
+    openDraft(paladin)
+    usePlayStore.getState().run((st, sh) => addCondition(st, sh, 'stunned'))
+    const sheet = openSheet()
+    const regions = liveRegions()
+    const favor = within(sheet).getByRole('button', { name: /^Auxílio Divino/ })
+    favor.focus()
+    fireEvent.click(favor)
+    const refusal = within(screen.getByRole('dialog')).getByText(/^Não é possível se concentrar/)
+    expect(regions.some(r => r.contains(refusal))).toBe(true)
+    expect(favor).toHaveFocus()
+    expect(playState().activeEffects).toEqual([])
+    // Buscar outra apaga a recusa.
+    fireEvent.change(within(sheet).getByRole('searchbox'), { target: { value: 'auxilio' } })
+    expect(within(sheet).queryByText(/^Não é possível se concentrar/)).toBeNull()
   })
 })

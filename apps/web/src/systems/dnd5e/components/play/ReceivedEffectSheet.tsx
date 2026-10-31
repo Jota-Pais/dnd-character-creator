@@ -20,17 +20,26 @@ function previewLines(view: PlayTabProps, toggle: SheetToggle): string[] {
 }
 
 /**
+ * Só a de concentração que a ficha conhece pergunta quem conjurou: quem não a conhece não a conjurou
+ * em si, e a de alcance Pessoal (o Auxílio Divino) é sempre sua.
+ */
+const asksCaster = (toggle: SheetToggle) => Boolean(toggle.concentration && !toggle.selfOnly && toggle.known)
+
+/**
  * "Recebeu uma magia?": o catálogo das magias que se marcam em você (a Bênção de um aliado, a sua
  * Armadura Arcana), com busca pelo nome. As de alcance Pessoal só aparecem para quem as conhece
- * (`getCatalogToggles`). Escolhida a magia, a folha diz o que muda e, na de concentração que a ficha
- * conhece, pergunta quem conjurou: quem conjura é quem mantém a concentração — a do aliado só sai à
- * mão ("Já acabou"), a sua começa a sua concentração nela e acaba junto com ela
+ * (`getCatalogToggles`). O toque na magia já a marca — o aviso do aliado ("você está abençoado")
+ * vira o número em dois toques (o aceite do desenho), e o cartão da seção diz o que ela faz e quando
+ * acaba. Só a que pede escolha abre o detalhe: na de concentração que a ficha conhece, a folha diz o
+ * que muda e pergunta quem conjurou, porque quem conjura é quem mantém a concentração — a do aliado
+ * só sai à mão ("Já acabou"), a sua começa a sua concentração nela e acaba junto com ela
  * (`sustainedByConcentration`).
  *
- * Foco (as regras do CLAUDE.md): escolher a magia troca a lista pelo detalhe, e o foco vai ao título
- * dele; "Outra magia" volta à lista, com o foco na magia de antes; "Marcar em mim" fecha a folha, e
- * o foco volta ao "Recebeu uma magia?"; recusado (em fúria não se concentra), o aviso diz por quê e o
- * foco fica. Nunca num campo de texto, que abriria o teclado do celular.
+ * Foco (as regras do CLAUDE.md): marcar fecha a folha, e o foco volta ao "Recebeu uma magia?"; a
+ * magia que pede escolha troca a lista pelo detalhe, e o foco vai ao título dele; "Outra magia"
+ * volta à lista, com o foco na magia de antes; recusado (em fúria não se concentra), o aviso diz por
+ * quê numa região viva da folha e o foco fica. Nunca num campo de texto, que abriria o teclado do
+ * celular.
  */
 export function ReceivedEffectSheet({ view, onClose }: { view: PlayTabProps; onClose: () => void }) {
   const { state, sheet, run } = view
@@ -45,9 +54,13 @@ export function ReceivedEffectSheet({ view, onClose }: { view: PlayTabProps; onC
   const found = all.filter(t => searchable(t.source).includes(searchable(query.trim())))
   const toggle = selected ? all.find(t => t.id === selected) : undefined
 
-  function choose(id: string) {
+  function choose(chosen: SheetToggle) {
+    if (!asksCaster(chosen)) {
+      mark(chosen, false)
+      return
+    }
     flushSync(() => {
-      setSelected(id)
+      setSelected(chosen.id)
       setCastBySelf(false)
       setRefusal(null)
     })
@@ -68,13 +81,11 @@ export function ReceivedEffectSheet({ view, onClose }: { view: PlayTabProps; onC
     setRefusal(null)
   }
 
-  function mark() {
-    if (!toggle) return
-    const self = castBySelf && toggle.concentration
-    const result = flushSync(() => run((st, sh) => activateToggle(st, sh, toggle.id, {
-      now: Date.now(), ...(self ? { sustainedByConcentration: true as const } : {}),
+  function mark(marked: SheetToggle, self: boolean) {
+    const result = flushSync(() => run((st, sh) => activateToggle(st, sh, marked.id, {
+      now: Date.now(), ...(self && marked.concentration ? { sustainedByConcentration: true as const } : {}),
     })))
-    if (result?.state.activeEffects.some(a => a.id === toggle.id)) onClose()
+    if (result?.state.activeEffects.some(a => a.id === marked.id)) onClose()
     // O aviso do pé fica atrás da folha: a recusa se lê aqui.
     else setRefusal(result?.notices.find(n => n.kind === 'refused')?.text ?? null)
   }
@@ -97,41 +108,37 @@ export function ReceivedEffectSheet({ view, onClose }: { view: PlayTabProps; onC
               Sem os benefícios: você está de {toggle.benefits.find(b => b.blockedBy)?.blockedBy}.
             </p>
           )}
-          {/* Só pergunta a quem conhece a magia: quem não a conhece não a conjurou em si. */}
-          {toggle.concentration && !toggle.selfOnly && toggle.known && (
-            <fieldset className="space-y-1">
-              <legend className="text-sm text-parchment-300">Quem conjurou?</legend>
-              {[
-                { self: false, label: 'Outra pessoa conjurou em mim' },
-                { self: true, label: 'Eu conjurei em mim' },
-              ].map(o => (
-                <label key={String(o.self)} className="flex items-center gap-2 min-h-10 text-sm text-parchment-200 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="received-caster"
-                    checked={castBySelf === o.self}
-                    onChange={() => chooseCaster(o.self)}
-                    className="w-5 h-5 shrink-0 accent-gold-500"
-                  />
-                  {o.label}
-                </label>
-              ))}
-            </fieldset>
-          )}
-          {toggle.concentration && (
-            <p className="text-xs text-amber-200 leading-snug">
-              {castBySelf || toggle.selfOnly
-                ? `Começa a sua concentração em ${toggle.source}, e a magia acaba junto com ela. O espaço de magia se marca na aba Magia.`
-                : 'Quem conjurou é quem mantém a concentração: quando ela acabar, toque em “Já acabou” na seção Efeitos ativos.'}
-            </p>
-          )}
+          {/* O detalhe só abre para a de concentração que a ficha conhece (`asksCaster`): a pergunta é dela. */}
+          <fieldset className="space-y-1">
+            <legend className="text-sm text-parchment-300">Quem conjurou?</legend>
+            {[
+              { self: false, label: 'Outra pessoa conjurou em mim' },
+              { self: true, label: 'Eu conjurei em mim' },
+            ].map(o => (
+              <label key={String(o.self)} className="flex items-center gap-2 min-h-10 text-sm text-parchment-200 cursor-pointer">
+                <input
+                  type="radio"
+                  name="received-caster"
+                  checked={castBySelf === o.self}
+                  onChange={() => chooseCaster(o.self)}
+                  className="w-5 h-5 shrink-0 accent-gold-500"
+                />
+                {o.label}
+              </label>
+            ))}
+          </fieldset>
+          <p className="text-xs text-amber-200 leading-snug">
+            {castBySelf
+              ? `Começa a sua concentração em ${toggle.source}, e a magia acaba junto com ela. O espaço de magia se marca na aba Magia.`
+              : 'Quem conjurou é quem mantém a concentração: quando ela acabar, toque em “Já acabou” na seção Efeitos ativos.'}
+          </p>
           {/* Montada vazia: a recusa que entra nela é anunciada. */}
           <div aria-live="polite">
             {refusal && <p className="text-xs text-red-300 leading-snug">{refusal}</p>}
           </div>
           <div className="flex flex-wrap gap-2">
             <button
-              onClick={mark}
+              onClick={() => mark(toggle, castBySelf)}
               className="min-h-10 rounded-lg bg-gold-500 px-4 font-fantasy font-bold text-sm text-on-accent hover:bg-gold-400 transition-colors"
             >
               Marcar em mim
@@ -147,19 +154,25 @@ export function ReceivedEffectSheet({ view, onClose }: { view: PlayTabProps; onC
       ) : (
         <div className="mt-2 space-y-2">
           <p className="text-xs text-parchment-400 leading-snug">
-            Marque a magia que está em você, e os números da ficha já mudam. As de alcance Pessoal só aparecem para quem as conhece.
+            Toque na magia que está em você, e os números da ficha já mudam. Quem conjurou mantém a concentração: se você conhece a magia, a folha pergunta antes quem foi. As de alcance Pessoal só aparecem para quem as conhece.
           </p>
           <input
             type="search"
             value={query}
-            onChange={e => setQuery(e.target.value)}
+            onChange={e => {
+              setQuery(e.target.value)
+              setRefusal(null)
+            }}
             aria-label="Buscar a magia pelo nome"
             placeholder="Buscar pelo nome"
             className="min-h-10 w-full rounded-lg border border-parchment-800 bg-surface-base px-3 text-sm text-parchment-100 outline-none focus:border-gold-600"
           />
-          {/* A região viva existe antes do aviso: inserida já com o texto, pode não ser anunciada. */}
+          {/* A região viva existe antes do aviso: inserida já com o texto, pode não ser anunciada. A
+              recusa do toque que marca (o Auxílio Divino de quem está Atordoado) também sai aqui, e o
+              foco fica na magia. */}
           <div aria-live="polite">
             {found.length === 0 && <p className="text-xs text-parchment-400">Nenhuma magia do catálogo com esse nome.</p>}
+            {refusal && <p className="text-xs text-red-300 leading-snug">{refusal}</p>}
           </div>
           <ul className="space-y-1.5">
             {found.map(t => {
@@ -173,7 +186,7 @@ export function ReceivedEffectSheet({ view, onClose }: { view: PlayTabProps; onC
                   ) : (
                     <button
                       ref={el => { itemRefs.current[t.id] = el }}
-                      onClick={() => choose(t.id)}
+                      onClick={() => choose(t)}
                       className="w-full min-h-10 flex flex-col items-start justify-center rounded-lg border border-parchment-800 px-3 py-1.5 text-left hover:border-gold-700"
                     >
                       <span className="text-sm text-parchment-100">{t.source}</span>

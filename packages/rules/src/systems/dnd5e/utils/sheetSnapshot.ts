@@ -3,8 +3,8 @@ import type { CharacterDraft } from '../types/character'
 import type { PlayNotice, PlayResult, PlaySheet, PlayState, SheetSnapshot, SheetSnapshotAttack } from '../types/playState'
 import { formatModifier } from './abilityScoreUtils'
 import { getFinalAbilityScores } from './asiUtils'
-import { getSheetAttacks } from './attackUtils'
-import { formatAttackDamage } from './weaponFormat'
+import { getSheetAttacks, type SheetAttack } from './attackUtils'
+import { formatAttackBaseDamage, formatExtraDamages, joinAttackDamage } from './weaponFormat'
 import { createPlayState } from './playState'
 import { getRollGuide } from './rollGuide'
 import { getSheetArmorClass } from './sheetEffects'
@@ -40,12 +40,33 @@ export function takeSheetSnapshot(draft: CharacterDraft, sheet: PlaySheet, sheet
     })),
     spellSlots: [...sheet.spellSlots],
     pactSlots: sheet.pactSlots ? { ...sheet.pactSlots } : null,
-    attacks: getSheetAttacks(draft, scores).map(({ extraDamage, ...attack }) => {
-      const full = formatAttackDamage({ ...attack, ...(extraDamage ? { extraDamage } : {}) })
-      const damage = formatAttackDamage(attack)
-      return { key: attack.key, label: attack.name, damage, extraDamage: full.slice(damage.length) }
-    }),
+    attacks: getSheetAttacks(draft, scores).map(snapshotAttack),
   }
+}
+
+/**
+ * O dano extra no retrato: cada parcela escrita depois de " + " (" + 1d8 radiante"), o formato
+ * guardado desde que os ataques entraram nele.
+ */
+const EXTRA_SEPARATOR = ' + '
+
+/**
+ * Uma linha de ataque no retrato: o dano da arma e, à parte, o dano extra de outro tipo. O extra se
+ * monta das parcelas, e não da diferença entre o texto com e sem ele: a arma sem dano com dano extra
+ * (a Rede, "1d4 radiante") não começa pelo dano da arma, e o recorte guardaria "d4 radiante".
+ */
+export function snapshotAttack(attack: SheetAttack): SheetSnapshotAttack {
+  return {
+    key: attack.key,
+    label: attack.name,
+    damage: formatAttackBaseDamage(attack),
+    extraDamage: formatExtraDamages(attack).map(extra => `${EXTRA_SEPARATOR}${extra}`).join(''),
+  }
+}
+
+/** O dano da linha do retrato como a Revisão o escreve (`joinAttackDamage`). */
+function attackDamageText(attack: SheetSnapshotAttack): string {
+  return joinAttackDamage(attack.damage, attack.extraDamage.split(EXTRA_SEPARATOR).filter(Boolean))
 }
 
 /**
@@ -100,7 +121,7 @@ export function describeSheetChanges(before: SheetSnapshot, after: SheetSnapshot
   for (const key of [...new Set([...nowAttacks, ...wasAttacks].map(a => a.key))]) {
     const was = wasAttacks.find(a => a.key === key)
     const now = nowAttacks.find(a => a.key === key)
-    const text = (a: SheetSnapshotAttack | undefined) => (a ? `${a.damage}${a.extraDamage}` : NONE)
+    const text = (a: SheetSnapshotAttack | undefined) => (a ? attackDamageText(a) : NONE)
     change(`${(now ?? was)?.label ?? key}, dano`, text(was), text(now))
   }
   return parts

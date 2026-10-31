@@ -4,11 +4,14 @@ import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
 import type { SheetSnapshot } from '../../types/playState'
 import { COMPLETE_DRAFT } from '../../../../test/fixtures'
 import { getFinalAbilityScores } from '../asiUtils'
+import type { SheetAttack } from '../attackUtils'
+import { getWeaponById } from '../equipmentUtils'
 import { buildPlaySheet } from '../playSheet'
 import { createPlayState, sanitizePlayState } from '../playState'
 import { getRollGuide } from '../rollGuide'
 import { getSheetArmorClass } from '../sheetEffects'
-import { describeSheetChanges, syncSheetSnapshot, takeSheetSnapshot } from '../sheetSnapshot'
+import { describeSheetChanges, snapshotAttack, syncSheetSnapshot, takeSheetSnapshot } from '../sheetSnapshot'
+import { formatAttackDamage, getWeaponAttack, type AttackContext } from '../weaponFormat'
 
 /** Personagem de 5º nível, mago 3 / clérigo 2: duas conjurações, espaços até o 3º nível. */
 const caster: CharacterDraft = {
@@ -175,6 +178,27 @@ describe('aviso de correção: o dano dos ataques', () => {
     const result = syncSheetSnapshot({ ...createPlayState('c1'), sheetSnapshot: legacy }, now)
     expect(result.notices).toEqual([])
     expect(result.state.sheetSnapshot?.attacks).toEqual(now.attacks)
+  })
+
+  // A Rede acerta sem causar dano (pág. 150): com dano extra, a linha é só ele ("1d4 radiante",
+  // `formatAttackDamage`), sem começar pelo dano da arma. Nenhum efeito de ficha alcança a Rede hoje
+  // (a Destruição Divina Aprimorada é de arma corpo a corpo); o extra entra aqui pelo efeito na
+  // linha, como entraria o de um efeito de ficha com escopo de qualquer arma.
+  it('a Rede com dano extra: o retrato guarda as parcelas inteiras, e o aviso escreve o dano como a Revisão', () => {
+    const effects: AttackContext['effects'] = [
+      { source: 'Teste', value: { weapons: 'weapon-attack', extraDamage: { dice: { count: 1, sides: 4 }, damageType: 'radiant' } } },
+    ]
+    const net = (extra: Partial<AttackContext>): SheetAttack => ({
+      key: 'net',
+      weapon: { id: 'net', melee: false, heavy: false, thrown: true },
+      ...getWeaponAttack(getWeaponById('net')!, { strMod: 2, dexMod: 1, proficiencyBonus: 2, proficient: true, ...extra }),
+    })
+    const before = snapshotAttack(net({}))
+    const after = snapshotAttack(net({ effects }))
+    expect(before).toEqual({ key: 'net', label: 'Rede', damage: '—', extraDamage: '' })
+    expect(after).toEqual({ key: 'net', label: 'Rede', damage: '—', extraDamage: ' + 1d4 radiante' })
+    expect(formatAttackDamage(net({ effects }))).toBe('1d4 radiante')
+    expect(describeSheetChanges(snapshot({ attacks: [before] }), snapshot({ attacks: [after] }))).toEqual(['Rede, dano — → 1d4 radiante'])
   })
 
   it('o ataque torto no retrato guardado: o retrato some inteiro', () => {

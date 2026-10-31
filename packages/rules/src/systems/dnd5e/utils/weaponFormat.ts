@@ -399,12 +399,27 @@ export const NO_WEAPON_DAMAGE = '—'
  * (a Rede com o Auxílio Divino ligado) fica só com ele: "1d4 radiante".
  */
 export function formatAttackDamage(attack: WeaponAttack): string {
-  const extra = (attack.extraDamage ?? []).map(formatExtraDamage)
-  if (attack.damage === NO_WEAPON_DAMAGE && extra.length > 0) return extra.join(' + ')
-  const base = attack.versatileDamage
-    ? `${attack.damage} (${attack.versatileDamage} a duas mãos)`
-    : attack.damage
-  return [base, ...extra].join(' + ')
+  return joinAttackDamage(formatAttackBaseDamage(attack), formatExtraDamages(attack))
+}
+
+/** "1d8+3 cortante (1d10+3 a duas mãos)": o dano da arma na linha, com o versátil, sem o dano extra. */
+export function formatAttackBaseDamage(attack: Pick<WeaponAttack, 'damage' | 'versatileDamage'>): string {
+  return attack.versatileDamage ? `${attack.damage} (${attack.versatileDamage} a duas mãos)` : attack.damage
+}
+
+/** As parcelas de dano extra da linha, escritas: ["1d8 radiante"]. */
+export function formatExtraDamages(attack: Pick<WeaponAttack, 'extraDamage'>): string[] {
+  return (attack.extraDamage ?? []).map(formatExtraDamage)
+}
+
+/**
+ * Junta o dano da arma (`formatAttackBaseDamage`) e as parcelas de dano extra como a linha as
+ * mostra. O aviso de correção da ficha junta as do retrato por aqui, para escrever o dano como a
+ * Revisão: a arma sem dano com dano extra não começa pelo "—".
+ */
+export function joinAttackDamage(weaponDamage: string, extra: string[]): string {
+  if (weaponDamage === NO_WEAPON_DAMAGE && extra.length > 0) return extra.join(' + ')
+  return [weaponDamage, ...extra].join(' + ')
 }
 
 /**

@@ -752,6 +752,19 @@ describe('getRollGuide — linhas condicionais da ficha (traços e característi
     expect(has(guide.attacks[0].attack, 'Resiliência Anã')).toBe(false)
   })
 
+  // "Você tem vantagem em testes de resistência contra veneno e tem resistência contra dano de veneno"
+  // (Resiliência dos Robustos, pág. 28, linhas 2173-2175): a mesma nota da Resiliência Anã.
+  it('Resiliência dos Robustos (halfling robusto): nos TR (contra veneno), sem mudar o modo; o pés leves não', () => {
+    const stout = getRollGuide(draft({ class: 'fighter', level: 1, race: 'halfling', subrace: 'stout-halfling', abilityScores: SCORES }), play())
+    expect(has(stout.saves.CON, 'Resiliência dos Robustos: vantagem se o teste de resistência for contra veneno (pág. 28).')).toBe(true)
+    expect(has(stout.saves.WIS, 'Resiliência dos Robustos')).toBe(true)
+    expect(stout.saves.CON.mode).toBe('normal')
+    expect(has(stout.checks.CON, 'Resiliência dos Robustos')).toBe(false)
+    expect(has(stout.deathSave, 'Resiliência dos Robustos')).toBe(false)
+    const lightfoot = getRollGuide(draft({ class: 'fighter', level: 1, race: 'halfling', subrace: 'lightfoot-halfling', abilityScores: SCORES }), play())
+    expect(has(lightfoot.saves.CON, 'Resiliência dos Robustos')).toBe(false)
+  })
+
   it('Sentido de Perigo (bárbaro 2): só no TR de Destreza, com a ressalva', () => {
     const barbarian = (level: number) => draft({ class: 'barbarian', level, abilityScores: SCORES })
     const guide = getRollGuide(barbarian(2), play())

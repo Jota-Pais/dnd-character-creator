@@ -255,7 +255,12 @@
           {
             "name": "Resiliência dos Robustos",
             "description": "Você tem vantagem em testes de resistência contra veneno e resistência contra dano de veneno.",
-            "effects": { "damageDefenses": { "resistances": ["poison"] } }
+            "effects": {
+              "conditionalRolls": [
+                { "rolls": ["save"], "text": "vantagem se o teste de resistência for contra veneno (pág. 28)." }
+              ],
+              "damageDefenses": { "resistances": ["poison"] }
+            }
           }
         ],
         "overrides": {}

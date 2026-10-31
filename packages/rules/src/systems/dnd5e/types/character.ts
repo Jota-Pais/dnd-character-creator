@@ -57,8 +57,10 @@ export type RaceChoiceSelections = {
 
 /**
  * O que o jogador escolheu dentro de um talento que abre escolhas (Perito, Poliglota, Mestre de
- * Armas, Adepto Marcial). Indexado por id do talento no draft: o livro não deixa pegar o mesmo
- * talento duas vezes, então uma entrada por talento basta — e evita espalhar seleção por
+ * Armas, Adepto Marcial, Adepto Elemental). Indexado por id do talento no draft: o livro só deixa
+ * pegar o mesmo talento de novo quando a descrição diz (o Adepto Elemental, p. 167), e a ficha
+ * guarda cada talento uma vez só (o repetido trava a etapa Aprimoramentos,
+ * `getRepeatedFeatSlots`), então uma entrada por talento basta — e evita espalhar seleção por
  * AsiChoice e raça.
  */
 export type FeatSelections = {

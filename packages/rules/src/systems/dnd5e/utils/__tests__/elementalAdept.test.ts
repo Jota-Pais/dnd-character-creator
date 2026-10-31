@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { EMPTY_DRAFT, type CharacterDraft, type FeatSelections } from '../../types/character'
-import { getCharacterFeats } from '../asiUtils'
-import { isStepComplete, sanitizeImportedDraft } from '../draftValidation'
+import { COMPLETE_DRAFT } from '../../../../test/fixtures'
+import { getCharacterFeats, getRepeatedFeatSlots } from '../asiUtils'
+import { canPlayDraft, getMissingSteps, isStepComplete, sanitizeImportedDraft } from '../draftValidation'
 import { getStepPendingReasons } from '../pendingReasons'
 import { createPlayState } from '../playState'
 import { getChosenDamageTypeSpellNotes, getFeatChoiceSlots, isFeatChoiceComplete } from '../sheetEffects'
@@ -48,6 +49,41 @@ describe('Adepto Elemental: a escolha do tipo de dano', () => {
     expect(getStepPendingReasons(wizard(), 'improvements')).toContainEqual(expect.stringContaining('talento Adepto Elemental: escolha o tipo de dano'))
     expect(isStepComplete(wizard({ damageType: 'cold' }), 'improvements')).toBe(true)
     expect(getStepPendingReasons(wizard({ damageType: 'cold' }), 'improvements')).toEqual([])
+  })
+
+  // "Você pode escolher esse talento diversas vezes. A cada vez que o fizer, você deve escolher um
+  // tipo diferente de dano" (linhas 14911-14913). A ficha guarda o talento uma vez só, com um tipo:
+  // o segundo espaço sumia em silêncio (getOwnedFeats junta os dois). Agora a etapa trava e diz.
+  it('em dois Incrementos, a etapa trava: o livro deixa, mas a ficha guarda um tipo só', () => {
+    const twice: CharacterDraft = {
+      ...wizard({ damageType: 'fire' }), level: 8,
+      asiChoices: [{ kind: 'feat', featId: FEAT }, { kind: 'feat', featId: FEAT }],
+    }
+    expect(getRepeatedFeatSlots(twice)).toEqual([{ classId: 'wizard', slot: 1, featId: FEAT }])
+    expect(isStepComplete(twice, 'improvements')).toBe(false)
+    expect(getStepPendingReasons(twice, 'improvements')).toEqual([
+      'Incremento do 8º nível: Adepto Elemental já está na ficha — o livro deixa repetir este talento (p. 167), mas a ficha guarda cada talento uma vez só; troque por outro',
+    ])
+    const other: CharacterDraft = { ...twice, asiChoices: [{ kind: 'feat', featId: FEAT }, { kind: 'asi', abilities: ['INT', 'INT'] }] }
+    expect(getRepeatedFeatSlots(other)).toEqual([])
+    expect(isStepComplete(other, 'improvements')).toBe(true)
+  })
+
+  // A ficha completa salva antes da leva não tem o tipo: a etapa fica pendente, e o "Jogar" da
+  // galeria e a volta ao jogo ao recarregar (canPlayDraft) esperam a escolha — a regra de toda
+  // pendência (decisão de 2026-10-28), como a perícia repetida da ficha antiga.
+  it('a ficha salva sem o tipo sai do jogo até a escolha (canPlayDraft)', () => {
+    const cleric = (selections?: FeatSelections): CharacterDraft => ({
+      ...structuredClone(COMPLETE_DRAFT), class: 'cleric', level: 4,
+      abilityScores: { STR: 14, DEX: 10, CON: 13, INT: 8, WIS: 15, CHA: 12 },
+      classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), skills: ['history', 'insight'], subclass: 'light-domain' },
+      spellChoices: { cantrips: ['sacred-flame', 'guidance', 'spare-the-dying', 'thaumaturgy'], spells: ['cure-wounds', 'bless'] },
+      asiChoices: [{ kind: 'feat', featId: FEAT }],
+      featSelections: selections ? { [FEAT]: selections } : {},
+    })
+    expect(getMissingSteps(cleric())).toEqual(['improvements'])
+    expect(canPlayDraft(cleric())).toBe(false)
+    expect(canPlayDraft(cleric({ damageType: 'thunder' }))).toBe(true)
   })
 
   it('a ficha importada guarda só um tipo que o talento oferece', () => {

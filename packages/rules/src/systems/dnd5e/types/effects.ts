@@ -345,7 +345,8 @@ export type FeatureChoices = {
   /**
    * Adepto Elemental (p. 167): um tipo de dano entre os de `from` ("ácido, elétrico, fogo, frio ou
    * trovão"), gravado em `featSelections.damageType`. O livro deixa pegar o talento de novo com outro
-   * tipo; o app guarda um talento uma vez só (`getOwnedFeats`), então a escolha é uma.
+   * tipo (`Feat.repeatable`); o app guarda um talento uma vez só (`getOwnedFeats`), então a escolha é
+   * uma, e o talento em dois espaços trava a etapa Aprimoramentos (`getRepeatedFeatSlots`).
    */
   damageTypeChoice?: { from: DamageTypeId[] }
   /**

@@ -8,6 +8,8 @@ import {
   getRacialBonuses,
   getAsiBonuses,
   getFinalAbilityScores,
+  formatRepeatedFeat,
+  getRepeatedFeatSlots,
   isAsiChoiceComplete,
 } from '@rpg/rules/systems/dnd5e/utils/asiUtils'
 import { getClass } from '@rpg/rules/systems/dnd5e/utils/classUtils'
@@ -29,6 +31,9 @@ export function ImprovementsStep() {
 
   const finalScores = getFinalAbilityScores(draft)
   const racial = getRacialBonuses(draft)
+  // O mesmo talento num segundo espaço: a ficha guarda um só (p. 167). O espaço repetido fica
+  // pendente e diz o motivo ali mesmo — no celular, o rodapé da etapa não mostra a pendência.
+  const repeatedSlots = getRepeatedFeatSlots(draft)
 
   // Uma trilha de ASI por classe: a primária (nível derivado) + cada classe adicional no nível dela.
   const primaryLevel = getPrimaryLevel(draft)
@@ -100,6 +105,7 @@ export function ImprovementsStep() {
                     key={slot}
                     asiLevel={asiLevel}
                     choice={g.choices[slot]}
+                    repeatedFeat={repeatedSlots.find(r => r.classId === g.classId && r.slot === slot)?.featId}
                     baseScore={ab => draft.abilityScores[ab] ?? 10}
                     otherBonuses={getAsiBonuses(flat.filter(f => !(f.gi === gi && f.slot === slot)).map(f => f.choice).filter((c): c is AsiChoice => Boolean(c)))}
                     racial={racial}
@@ -125,13 +131,15 @@ export function ImprovementsStep() {
 type AsiSlotProps = {
   asiLevel: number
   choice: AsiChoice | undefined
+  /** O talento deste espaço, quando já veio antes (`getRepeatedFeatSlots`): pendente até a troca. */
+  repeatedFeat: string | undefined
   baseScore: (ab: AbilityScore) => number
   otherBonuses: Record<AbilityScore, number>
   racial: Record<AbilityScore, number>
   onChange: (choice: AsiChoice) => void
 }
 
-function AsiSlot({ asiLevel, choice, baseScore, otherBonuses, racial, onChange }: AsiSlotProps) {
+function AsiSlot({ asiLevel, choice, repeatedFeat, baseScore, otherBonuses, racial, onChange }: AsiSlotProps) {
   const asi = choice?.kind === 'asi' ? choice : undefined
   const initialMode: Mode =
     choice?.kind === 'feat'
@@ -142,7 +150,7 @@ function AsiSlot({ asiLevel, choice, baseScore, otherBonuses, racial, onChange }
   const [mode, setMode] = useState<Mode>(initialMode)
 
   const selected = asi?.abilities ?? []
-  const complete = isAsiChoiceComplete(choice)
+  const complete = isAsiChoiceComplete(choice) && !repeatedFeat
   const scoreWithout = (ab: AbilityScore) => baseScore(ab) + racial[ab] + otherBonuses[ab]
 
   function changeMode(next: Mode) {
@@ -182,6 +190,12 @@ function AsiSlot({ asiLevel, choice, baseScore, otherBonuses, racial, onChange }
         <ModeButton active={mode === 'feat'} onClick={() => changeMode('feat')}>Talento</ModeButton>
       </div>
 
+      {/* Acima do catálogo, perto do "pendente": embaixo, depois dos 42 talentos, ficaria longe de
+          quem acabou de tocar no card. Região viva montada vazia: o aviso entra quando o talento
+          escolhido já está na ficha, e é anunciado. */}
+      <div aria-live="polite">
+        {repeatedFeat && <p className="mb-3 text-xs text-red-400 font-semibold">⚠ {formatRepeatedFeat(repeatedFeat)}</p>}
+      </div>
       {mode === 'feat' ? (
         <FeatCatalog
           selectedFeatId={featChoice?.featId ?? ''}

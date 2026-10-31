@@ -28,7 +28,7 @@ import {
   STANDARD_ARRAY,
   getRemainingPoints,
 } from './abilityScoreUtils'
-import { getAsiSlotCount, getReachedAsiLevels, isAsiChoiceComplete, getRacialBonuses, getAsiBonuses, getFinalAbilityScores } from './asiUtils'
+import { getAsiSlotCount, getReachedAsiLevels, isAsiChoiceComplete, getRacialBonuses, getAsiBonuses, getFinalAbilityScores, getRepeatedFeatSlots, formatRepeatedFeat } from './asiUtils'
 import { getFeat, getFeatDamageType } from './featUtils'
 import {
   getFeatChoiceSlots, getFeatSpellChoiceGaps, getRepeatedFeatManeuvers, getRepeatedFightingStyles, type FeatChoiceSlot,
@@ -366,6 +366,8 @@ function improvementReasons(draft: CharacterDraft): string[] {
   const out: string[] = []
   const entries = allClassEntries(draft)
   const reached: (AsiChoice | undefined)[] = []
+  // O mesmo talento num segundo espaço: a ficha guarda um só, e o espaço sumiria sem aviso.
+  const repeated = getRepeatedFeatSlots(draft)
   for (const entry of entries) {
     const className = entries.length > 1 ? ` (${getClass(entry.classId)?.name ?? entry.classId})` : ''
     const levels = getReachedAsiLevels(entry.classId, entry.level)
@@ -373,6 +375,8 @@ function improvementReasons(draft: CharacterDraft): string[] {
     for (let i = 0; i < slots; i++) {
       const choice = entry.asiChoices[i]
       const where = `Incremento do ${ordinal(levels[i] ?? i + 1)} nível${className}`
+      const again = repeated.find(r => r.classId === entry.classId && r.slot === i)
+      if (again) out.push(`${where}: ${formatRepeatedFeat(again.featId)}`)
       if (choice && isAsiChoiceComplete(choice)) {
         reached.push(choice)
         continue

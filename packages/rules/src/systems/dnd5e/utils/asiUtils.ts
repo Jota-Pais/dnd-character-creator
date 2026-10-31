@@ -183,6 +183,46 @@ export function getCharacterFeats(draft: CharacterDraft): CharacterFeat[] {
   return result
 }
 
+/** Um espaço de Incremento (`slot`, na classe `classId`) com um talento que já veio antes. */
+export type RepeatedFeatSlot = { classId: string; slot: number; featId: string }
+
+/**
+ * Os espaços de Incremento já alcançados — os que a etapa mostra — cujo talento já veio antes: no
+ * Humano Variante, ou num espaço anterior (as classes na ordem da ficha, a inicial primeiro). "Você
+ * só pode escolher um talento uma vez, a não ser que a descrição do talento diga o contrário" (p.
+ * 167, linhas 14890-14891); o Adepto Elemental diz (`Feat.repeatable`), mas a ficha guarda cada
+ * talento uma vez só (`getOwnedFeats`, `featSelections` por id) e juntava os dois em silêncio, com
+ * um tipo de dano só. A etapa Aprimoramentos não fecha assim e diz, no espaço repetido, o que
+ * trocar — como o Estilo de Luta repetido na etapa Classe.
+ */
+export function getRepeatedFeatSlots(draft: CharacterDraft): RepeatedFeatSlot[] {
+  const seen = new Set(draft.raceChoices.feat ? [draft.raceChoices.feat] : [])
+  const out: RepeatedFeatSlot[] = []
+  for (const entry of allClassEntries(draft)) {
+    const slots = getAsiSlotCount(entry.classId, entry.level)
+    for (let slot = 0; slot < slots; slot++) {
+      const c = entry.asiChoices?.[slot]
+      if (c?.kind !== 'feat' || !c.featId) continue
+      if (seen.has(c.featId)) out.push({ classId: entry.classId, slot, featId: c.featId })
+      else seen.add(c.featId)
+    }
+  }
+  return out
+}
+
+/**
+ * O que o espaço repetido diz, na pendência da etapa e no aviso do espaço (como
+ * `formatRepeatedProficiency`). O talento que o livro deixa repetir (o Adepto Elemental) não leva o
+ * "só uma vez": a trava é da ficha, não do livro.
+ */
+export function formatRepeatedFeat(featId: string): string {
+  const feat = getFeat(featId)
+  const why = feat?.repeatable
+    ? 'o livro deixa repetir este talento (p. 167), mas a ficha guarda cada talento uma vez só'
+    : 'cada talento só se escolhe uma vez (p. 167)'
+  return `${feat?.name ?? featId} já está na ficha — ${why}; troque por outro`
+}
+
 /**
  * Bônus raciais de atributo: os fixos e escolhidos da raça MAIS o +1 do meio-talento que o
  * Humano Variante ganha junto com o talento.
@@ -269,6 +309,8 @@ export function isImprovementsStepComplete(draft: CharacterDraft): boolean {
   if (!areFeatChoicesComplete(draft, featIds)) return false
   // Perícia ou ferramenta do talento (Perito) que outra fonte já dá: troca-se por outra (p. 125).
   if (getFeatRepeatedProficiencies(draft, featIds).length > 0) return false
+  // O mesmo talento em dois espaços (ou no racial e num Incremento): a ficha guarda um só (p. 167).
+  if (getRepeatedFeatSlots(draft).length > 0) return false
 
   // teto de 20 sobre o conjunto de todas as escolhas alcançadas (todas as classes)
   const racial = getRacialBonuses(draft)

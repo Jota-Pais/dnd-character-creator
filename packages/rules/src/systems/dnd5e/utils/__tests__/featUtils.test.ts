@@ -15,6 +15,12 @@ describe('feats.json', () => {
   it('ids são únicos', () => {
     expect(new Set(FEATS.map(f => f.id)).size).toBe(FEATS.length)
   })
+  // Só se escolhe um talento uma vez, "a não ser que a descrição do talento diga o contrário" (p.
+  // 167): quem diz declara `repeatable`, que muda o motivo da etapa Aprimoramentos.
+  it('repeatable é o talento cuja descrição deixa escolhê-lo de novo (o Adepto Elemental)', () => {
+    expect(FEATS.filter(f => f.repeatable).map(f => f.id)).toEqual(['adepto-elemental'])
+    expect(FEATS.filter(f => /escolher esse talento diversas vezes/.test(f.description)).map(f => f.id)).toEqual(['adepto-elemental'])
+  })
 })
 
 describe('getFeat / getAllFeats', () => {

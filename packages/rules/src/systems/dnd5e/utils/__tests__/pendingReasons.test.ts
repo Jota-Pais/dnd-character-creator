@@ -180,6 +180,21 @@ describe('getStepPendingReasons — demais regras', () => {
     ])
   })
 
+  // "Você só pode escolher um talento uma vez, a não ser que a descrição do talento diga o
+  // contrário" (p. 167, linhas 14890-14891). A ficha guarda cada talento uma vez só: o segundo
+  // espaço sumia em silêncio. Agora a etapa Aprimoramentos diz qual espaço trocar: o que veio depois.
+  it('o mesmo talento em dois espaços: nos Incrementos, no Humano Variante e entre as classes', () => {
+    const why = 'Alerta já está na ficha — cada talento só se escolhe uma vez (p. 167); troque por outro'
+    expect(getStepPendingReasons(draft({ level: 8, asiChoices: [ALERT, ALERT] }), 'improvements')).toEqual([`Incremento do 8º nível: ${why}`])
+    expect(getStepPendingReasons(draft({ ...VARIANT_HUMAN_ALERT, level: 4, asiChoices: [ALERT] }), 'improvements')).toEqual([`Incremento do 4º nível: ${why}`])
+    const multiclass = draft({ level: 8, asiChoices: [ALERT], additionalClasses: [entry({ classId: 'fighter', level: 4, asiChoices: [ALERT] })], multiclass: true })
+    expect(getStepPendingReasons(multiclass, 'improvements')).toEqual([`Incremento do 4º nível (Guerreiro): ${why}`])
+    // O talento racial sozinho e dois talentos diferentes não travam.
+    expect(getStepPendingReasons(draft({ ...VARIANT_HUMAN_ALERT, level: 4, asiChoices: [{ kind: 'feat', featId: 'sortudo' }] }), 'improvements')).toEqual([])
+    // O espaço que o nível ainda não alcança (o bárbaro 4 tem um) não conta: a etapa não o mostra.
+    expect(getStepPendingReasons(draft({ level: 4, asiChoices: [ALERT, ALERT] }), 'improvements')).toEqual([])
+  })
+
   it('perícia repetida pelo antecedente trocado depois: a etapa Classe diz o que trocar', () => {
     // Guerreiro com Atletismo e Percepção que troca o Acólito pelo Marinheiro (p. 125).
     const fighter = draft({
@@ -371,8 +386,31 @@ function corpus(): CharacterDraft[] {
     }),
   )
   out.push(...bardSecretsDrafts(), ...pactBoonDrafts(), ...draconicAncestorDrafts(), ...totemWarriorDrafts(), ...martialAdeptDrafts(), ...magicInitiateDrafts())
-  out.push(...repeatedProficiencyDrafts())
+  out.push(...repeatedProficiencyDrafts(), ...repeatedFeatDrafts())
   return out
+}
+
+const ALERT = { kind: 'feat' as const, featId: 'alerta' }
+const VARIANT_HUMAN_ALERT: Partial<CharacterDraft> = {
+  race: 'human', subrace: 'variant-human',
+  raceChoices: { abilityBonuses: ['STR', 'DEX'], skills: ['insight'], languages: ['elvish'], feat: 'alerta' },
+}
+
+/**
+ * O mesmo talento em dois espaços (p. 167), com e sem a repetição: nos Incrementos do bárbaro 8, no
+ * Humano Variante e num Incremento, entre as classes da multiclasse, o Adepto Elemental (que o livro
+ * deixa repetir) e o espaço que o nível ainda não alcança.
+ */
+function repeatedFeatDrafts(): CharacterDraft[] {
+  const adept = { kind: 'feat' as const, featId: 'adepto-elemental' }
+  return [
+    draft({ level: 8, asiChoices: [ALERT, ALERT] }),
+    draft({ level: 8, asiChoices: [ALERT, { kind: 'feat', featId: 'sortudo' }] }),
+    draft({ level: 4, asiChoices: [ALERT, ALERT] }),
+    draft({ ...VARIANT_HUMAN_ALERT, level: 4, asiChoices: [ALERT] }),
+    draft({ level: 8, asiChoices: [adept, adept], featSelections: { 'adepto-elemental': { damageType: 'fire' } } }),
+    draft({ level: 8, asiChoices: [ALERT], additionalClasses: [entry({ classId: 'fighter', level: 4, asiChoices: [ALERT] })], multiclass: true }),
+  ]
 }
 
 /**

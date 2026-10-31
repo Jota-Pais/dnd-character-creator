@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { EMPTY_DRAFT, type CharacterDraft, type ClassEntry } from '../../types/character'
 import type { ActionDeclaration } from '../../types/actions'
 import { COMPLETE_DRAFT } from '../../../../test/fixtures'
-import { getSheetActions, groupActionsByTiming } from '../actionUtils'
+import { COMBAT_ACTIONS, getSheetActions, groupActionsByTiming, hasUse } from '../actionUtils'
 import { buildPlaySheet } from '../playSheet'
 
 /**
@@ -127,10 +127,13 @@ describe('getSheetActions', () => {
     expect(actions.find(a => a.id === 'test-maneuver')?.source).toBe('Adepto Marcial — Aparar')
   })
 
-  it('as ações em combate vêm primeiro, com o resumo do livro no "?" e a marca de padrão', () => {
-    const [attack] = getSheetActions(draftOf('barbarian', 1))
-    expect(attack).toMatchObject({ id: 'attack', name: 'Atacar', source: 'Ações em combate', standard: true })
-    expect(attack.description).toBe(attack.summary)
+  it('Atacar primeiro, depois as das características e as outras em combate, com o resumo do livro no "?"', () => {
+    const actions = getSheetActions(draftOf('barbarian', 1))
+    // O traço do meio-orc ganhou a ação de mentira, no topo do arquivo.
+    expect(actions.slice(0, 5).map(a => a.id)).toEqual(['attack', 'rage-enter', 'rage-end', 'test-trait', 'dash'])
+    expect(actions[0]).toMatchObject({ id: 'attack', name: 'Atacar', source: 'Ações em combate', standard: true })
+    expect(actions[0].description).toBe(actions[0].summary)
+    expect(actions[1].standard).toBeUndefined()
   })
 
   // "Quando você realiza a ação de Ataque e ataca com uma arma corpo-a-corpo leve [...] você pode
@@ -149,6 +152,15 @@ describe('getSheetActions', () => {
   it('o PlaySheet leva a mesma lista', () => {
     const draft = draftOf('barbarian', 1)
     expect(buildPlaySheet(draft).actions).toEqual(getSheetActions(draft))
+  })
+})
+
+describe('hasUse', () => {
+  it('o "Usar" marca o turno, gasta ou causa: não o agarrão (dentro de Atacar) nem a interação livre', () => {
+    expect(COMBAT_ACTIONS.filter(a => !hasUse(a)).map(a => a.id)).toEqual(['grapple', 'shove', 'interact'])
+    // O Surto de Ação não marca casa, mas gasta e dá a ação a mais.
+    const fighter = getSheetActions(draftOf('fighter', 2)).find(a => a.id === 'action-surge')
+    expect(fighter && hasUse(fighter)).toBe(true)
   })
 })
 

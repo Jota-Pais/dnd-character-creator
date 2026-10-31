@@ -18,7 +18,7 @@ describe('PlayScreen — casca', () => {
     render(<PlayScreen />)
     expect(screen.getByRole('heading', { name: 'Krusk' })).toBeInTheDocument()
     expect(screen.getByText(/Meio-Orc · Bárbaro · nível 1/i)).toBeInTheDocument()
-    for (const label of ['Testes', 'Ataques', 'Magia', 'Regras', 'Estado', 'Notas']) {
+    for (const label of ['Testes', 'Ações', 'Magia', 'Regras', 'Estado', 'Notas']) {
       expect(screen.getByRole('tab', { name: label })).toBeInTheDocument()
     }
     fireEvent.click(screen.getByRole('tab', { name: 'Notas' }))
@@ -79,9 +79,9 @@ describe('PlayScreen — deslizar entre as abas', () => {
     openKrusk()
     render(<PlayScreen />)
     swipe(screen.getByText('Atributos'), -120)
-    expect(selectedTab()).toHaveTextContent('Ataques')
-    expect(screen.getByRole('tab', { name: 'Ataques' })).toHaveFocus()
-    expect(screen.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', 'play-tab-attacks')
+    expect(selectedTab()).toHaveTextContent('Ações')
+    expect(screen.getByRole('tab', { name: 'Ações' })).toHaveFocus()
+    expect(screen.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', 'play-tab-actions')
 
     swipe(screen.getByRole('tabpanel'), 120)
     expect(selectedTab()).toHaveTextContent('Testes')
@@ -92,7 +92,7 @@ describe('PlayScreen — deslizar entre as abas', () => {
     openKrusk()
     render(<PlayScreen />)
     swipe(screen.getByRole('button', { name: /^Atletismo/ }), -120)
-    expect(selectedTab()).toHaveTextContent('Ataques')
+    expect(selectedTab()).toHaveTextContent('Ações')
     expect(screen.queryByRole('dialog')).toBeNull()
   })
 
@@ -210,7 +210,7 @@ describe('PlayScreen — teclado na barra de abas', () => {
     openKrusk()
     render(<PlayScreen />)
     expect(tab('Testes')).toHaveAttribute('tabindex', '0')
-    for (const name of ['Ataques', 'Magia', 'Regras', 'Estado', 'Notas']) expect(tab(name)).toHaveAttribute('tabindex', '-1')
+    for (const name of ['Ações', 'Magia', 'Regras', 'Estado', 'Notas']) expect(tab(name)).toHaveAttribute('tabindex', '-1')
     fireEvent.click(tab('Regras'))
     expect(tab('Regras')).toHaveAttribute('tabindex', '0')
     expect(tab('Testes')).toHaveAttribute('tabindex', '-1')
@@ -221,11 +221,11 @@ describe('PlayScreen — teclado na barra de abas', () => {
     render(<PlayScreen />)
     tab('Testes').focus()
     fireEvent.keyDown(tab('Testes'), { key: 'ArrowRight' })
-    expect(selectedTab()).toHaveTextContent('Ataques')
-    expect(tab('Ataques')).toHaveFocus()
-    expect(screen.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', 'play-tab-attacks')
+    expect(selectedTab()).toHaveTextContent('Ações')
+    expect(tab('Ações')).toHaveFocus()
+    expect(screen.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', 'play-tab-actions')
 
-    fireEvent.keyDown(tab('Ataques'), { key: 'ArrowLeft' })
+    fireEvent.keyDown(tab('Ações'), { key: 'ArrowLeft' })
     fireEvent.keyDown(tab('Testes'), { key: 'ArrowLeft' })
     expect(selectedTab()).toHaveTextContent('Notas')
     expect(tab('Notas')).toHaveFocus()

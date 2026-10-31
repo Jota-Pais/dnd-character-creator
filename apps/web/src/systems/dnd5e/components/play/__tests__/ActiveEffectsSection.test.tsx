@@ -41,7 +41,7 @@ describe('ActiveEffectsSection — ligar a Fúria é um toque', () => {
     expect(within(section()).queryByTestId('toggle-spell:bless')).toBeNull()
   })
 
-  it('ligar mostra o que está fazendo, o chip nos vitais e o dano novo na aba Ataques; o foco vai ao "Encerrar"', () => {
+  it('ligar mostra o que está fazendo, o chip nos vitais e o dano novo na aba Ações; o foco vai ao "Encerrar"', () => {
     openStatus()
     fireEvent.click(screen.getByRole('button', { name: 'Entrar em fúria' }))
     expect(playState().activeEffects.map(a => a.id)).toEqual(['rage'])
@@ -58,18 +58,18 @@ describe('ActiveEffectsSection — ligar a Fúria é um toque', () => {
     // O ganho de usos sai no número, anunciado.
     expect(liveRegions().some(r => r.textContent === 'Ligado: Em fúria. Fúria — resta 1')).toBe(true)
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Ataques' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Ações' }))
     expect(screen.getByRole('button', { name: /^Machado Grande — dano: 1d12 \+ 5 cortante$/ })).toBeInTheDocument()
   })
 
-  it('encerrar leva o foco ao título da seção, e a aba Ataques volta ao dano de antes', () => {
+  it('encerrar leva o foco ao título da seção, e a aba Ações volta ao dano de antes', () => {
     openStatus()
     fireEvent.click(screen.getByRole('button', { name: 'Entrar em fúria' }))
     fireEvent.click(screen.getByRole('button', { name: 'Encerrar a fúria' }))
     expect(playState().activeEffects).toEqual([])
     expect(screen.getByRole('heading', { name: 'Efeitos ativos' })).toHaveFocus()
     expect(screen.queryByTestId('vitals-toggle-rage')).toBeNull()
-    fireEvent.click(screen.getByRole('tab', { name: 'Ataques' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Ações' }))
     expect(screen.getByRole('button', { name: /^Machado Grande — dano: 1d12 \+ 3 cortante$/ })).toBeInTheDocument()
   })
 
@@ -160,7 +160,7 @@ describe('VitalsBar — o chip do efeito ligado', () => {
     render(<PlayScreen />)
     fireEvent.click(screen.getByRole('tab', { name: 'Estado' }))
     fireEvent.click(screen.getByRole('button', { name: 'Entrar em fúria' }))
-    fireEvent.click(screen.getByRole('tab', { name: 'Ataques' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Ações' }))
     fireEvent.click(screen.getByRole('button', { name: 'Em fúria: ver os efeitos ativos' }))
     expect(screen.getByRole('tab', { name: 'Estado' })).toHaveAttribute('aria-selected', 'true')
     expect(screen.getByRole('heading', { name: 'Efeitos ativos' })).toHaveFocus()

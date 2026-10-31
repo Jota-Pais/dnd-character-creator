@@ -153,7 +153,7 @@ describe('RollRecipeSheet — Normal / Vantagem / Desvantagem da mesa', () => {
   it('jogada que não é d20 (dano) não tem o seletor', () => {
     openKrusk()
     render(<PlayScreen />)
-    fireEvent.click(screen.getByRole('tab', { name: 'Ataques' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Ações' }))
     fireEvent.click(screen.getAllByRole('button', { name: /— dano:/ })[0])
     expect(screen.getByRole('dialog')).toBeInTheDocument()
     expect(screen.queryByRole('group', { name: 'Vantagem ou desvantagem da mesa' })).toBeNull()
@@ -203,7 +203,7 @@ describe('RollRecipeSheet — o resultado à vista', () => {
     usePlayStore.getState().setAppDice(true)
     openKrusk()
     render(<PlayScreen />)
-    fireEvent.click(screen.getByRole('tab', { name: 'Ataques' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Ações' }))
     fireEvent.click(screen.getByRole('button', { name: /^Golpe desarmado — ataque:/ }))
     expect(scrollIntoView).not.toHaveBeenCalled()
 

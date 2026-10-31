@@ -26,8 +26,8 @@ describe('classifySwipe', () => {
 
 describe('adjacentPlayTab', () => {
   it('vai à vizinha na ordem da barra, sem dar a volta nas pontas', () => {
-    expect(adjacentPlayTab('checks', 'next')).toBe('attacks')
-    expect(adjacentPlayTab('attacks', 'previous')).toBe('checks')
+    expect(adjacentPlayTab('checks', 'next')).toBe('actions')
+    expect(adjacentPlayTab('actions', 'previous')).toBe('checks')
     expect(adjacentPlayTab('checks', 'previous')).toBeNull()
     expect(adjacentPlayTab('notes', 'next')).toBeNull()
   })

@@ -41,7 +41,7 @@ function stickyCover(sticky: HTMLElement | null): number {
 /**
  * Modo de jogo do D&D 5e: a ficha de UM personagem durante a sessão. Pensada para o celular
  * (360–430 px), numa coluna central; do tablet (md) para cima a coluna alarga e as abas Testes,
- * Ataques, Magia e Regras abrem em mais colunas — abaixo do md, nada muda. A ficha nunca muda
+ * Ações, Magia e Regras abrem em mais colunas — abaixo do md, nada muda. A ficha nunca muda
  * aqui; tudo que a tela altera passa pelo `run(op)` do playStore, que grava só o estado de jogo.
  *
  * Estrutura: cabeçalho → vitais fixos no topo → abas (`PLAY_TABS`, plugadas por componente).
@@ -117,15 +117,19 @@ export function PlayScreen() {
     document.getElementById(HP_PANEL_ID)?.querySelector('button')?.focus()
   }
 
-  // Deslizar o dedo de lado no conteúdo vai à aba vizinha, com o foco nela, como o toque na barra.
-  // Rolado lá para baixo, a tela volta até a barra de abas: vê-se que aba abriu e o começo dela.
-  const swipe = useTabSwipe(direction => {
-    const next = adjacentPlayTab(tab, direction)
-    if (!next) return
+  // Abre a aba, com o foco nela; rolado lá para baixo, a tela volta até a barra de abas: vê-se que
+  // aba abriu e o começo dela. O deslizar e o "Abrir a aba Magia" da aba Ações passam por aqui.
+  function openTab(next: PlayTabId) {
     flushSync(() => setTab(next))
     const tabButton = document.getElementById(`play-tab-${next}`)
     tabButton?.focus({ preventScroll: true })
     if (tabButton) scrollBelowVitals(tabButton, { onlyIfCovered: true })
+  }
+
+  // Deslizar o dedo de lado no conteúdo vai à aba vizinha, com o foco nela, como o toque na barra.
+  const swipe = useTabSwipe(direction => {
+    const next = adjacentPlayTab(tab, direction)
+    if (next) openTab(next)
   })
 
   // Teclado na barra (padrão de abas da WAI-ARIA, com ativação automática): só a aba aberta entra
@@ -197,7 +201,7 @@ export function PlayScreen() {
     )
   }
 
-  const tabProps: PlayTabProps = { ...view, openRecipe, openSource: setSource }
+  const tabProps: PlayTabProps = { ...view, openRecipe, openSource: setSource, openTab }
   const current = PLAY_TABS.find(t => t.id === tab) ?? PLAY_TABS[0]
   const TabComponent = current.component
   // A aba aberta dá nome ao painel: sem rolar a tela, o Tab seguinte entra no conteúdo dela.
@@ -281,7 +285,8 @@ export function PlayScreen() {
             o "voltar página" do navegador já está fora da tela toda (raiz e `NO_OVERSCROLL_X`). */}
         <div {...swipe} style={{ paddingBottom: Math.max(MIN_BOTTOM_GAP, Math.ceil(toastHeight) + 16) }}>
           {/* No celular as abas dividem a largura em partes iguais, sem recuo lateral: as seis cabem
-              em 360 px ("Ataques", a mais larga, ocupa ~51 dos 54 px), sem rolagem escondida. */}
+              em 360 px ("Regras" e "Estado", as mais largas, ocupam ~44 dos 54 px; medido no Edge em
+              2026-10-30, com a "Ações" no lugar da "Ataques"), sem rolagem escondida. */}
           <nav
             role="tablist"
             aria-label="Seções da ficha"

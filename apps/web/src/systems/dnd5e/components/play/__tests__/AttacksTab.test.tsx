@@ -24,7 +24,7 @@ function openWithGreataxe() {
   draft.equipment.purchasedItems = [{ itemId: 'greataxe', quantity: 1, source: 'purchased' }]
   openDraft(draft)
   render(<PlayScreen />)
-  fireEvent.click(screen.getByRole('tab', { name: 'Ataques' }))
+  fireEvent.click(screen.getByRole('tab', { name: 'Ações' }))
 }
 
 describe('AttacksTab', () => {
@@ -94,7 +94,7 @@ describe('AttacksTab', () => {
     draft.classChoices.subclass = 'champion'
     openDraft(draft)
     render(<PlayScreen />)
-    fireEvent.click(screen.getByRole('tab', { name: 'Ataques' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Ações' }))
     expect(screen.getByText(/^Toque no ataque.*19 ou 20 natural é crítico se acertar \(só o 20 acerta sempre\)/)).toBeInTheDocument()
     expect(screen.queryByText(/Nas armas/)).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: /^Golpe desarmado — ataque/ }))

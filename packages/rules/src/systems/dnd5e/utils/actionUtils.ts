@@ -44,9 +44,10 @@ function sheetMeets(draft: CharacterDraft, action: ActionDeclaration): boolean {
 }
 
 /**
- * As ações da ficha: primeiro as ações em combate que ela cumpre (`COMBAT_ACTIONS`), depois as das
- * características, cada uma com quem a dá e o texto do "?" (o resumo da ação ou, sem ele, o de quem
- * a dá):
+ * As ações da ficha: Atacar, a mais comum; depois as das características, que são do personagem; e
+ * as outras ações em combate que a ficha cumpre (`COMBAT_ACTIONS`). Na aba, cada grupo segue esta
+ * ordem: a Fúria vem antes do ataque com a outra mão. Cada uma com quem a dá e o texto do "?" (o
+ * resumo da ação ou, sem ele, o de quem a dá):
  * - das features de classe e subclasse, no nível NA classe dona (Guerreiro 1 / Mago 4 não tem o
  *   Surto de Ação do guerreiro 2);
  * - dos talentos e dos traços raciais, no nível de personagem;
@@ -57,12 +58,13 @@ function sheetMeets(draft: CharacterDraft, action: ActionDeclaration): boolean {
  * O mesmo id vale uma vez: a mesma característica de duas classes não dá a ação duas vezes.
  */
 export function getSheetActions(draft: CharacterDraft): SheetAction[] {
-  const out: SheetAction[] = COMBAT_ACTIONS
+  const [attack, ...standard] = COMBAT_ACTIONS
     .filter(action => sheetMeets(draft, action))
     .map(action => ({ ...action, source: COMBAT_ACTIONS_SOURCE, description: action.summary ?? '', standard: true as const }))
+  const out: SheetAction[] = [attack]
   const add = (declarations: readonly ActionDeclaration[] | undefined, source: string, description: string) => {
     for (const action of declarations ?? []) {
-      if (!out.some(o => o.id === action.id) && sheetMeets(draft, action)) {
+      if (!out.some(o => o.id === action.id) && !standard.some(o => o.id === action.id) && sheetMeets(draft, action)) {
         out.push({ ...action, source, description: action.summary ?? description })
       }
     }
@@ -80,12 +82,23 @@ export function getSheetActions(draft: CharacterDraft): SheetAction[] {
       if (maneuver) add(maneuver.effects?.actions, `${feat?.name ?? featId} — ${maneuver.name}`, maneuver.description ?? '')
     }
   }
-  return out
+  return [...out, ...standard]
 }
 
 /** O grupo da aba Ações de cada momento: livre, movimento e especial ficam em Outras. */
 export function getActionGroup(timing: ActionTiming): ActionGroup {
   return timing === 'action' || timing === 'bonusAction' || timing === 'reaction' ? timing : 'other'
+}
+
+/**
+ * A ação tem o "Usar": marca uma casa do turno (ação, ação bônus, reação, movimento), gasta ou causa
+ * algo. O agarrão e o encontrão, feitos dentro de Atacar, e a interação livre, que não custa nada,
+ * não têm.
+ */
+export function hasUse(action: ActionDeclaration): boolean {
+  if (action.partOf) return false
+  const marksTurn = action.timing === 'action' || action.timing === 'bonusAction' || action.timing === 'reaction' || action.timing === 'movement'
+  return marksTurn || (action.cost?.length ?? 0) > 0 || (action.outcomes?.length ?? 0) > 0
 }
 
 /** Os grupos na ordem do turno: Ação, Ação Bônus, Reação e Outras. */

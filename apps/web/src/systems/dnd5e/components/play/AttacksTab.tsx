@@ -5,6 +5,11 @@ import { RollMarks } from './RollMarks'
 import type { PlayTabProps } from './usePlayView'
 
 /**
+ * As linhas de ataque da ficha, que a ação Atacar mostra na aba Ações (`ActionsTab`): os números da
+ * mesma fonte da Revisão e do PDF (`getSheetAttacks`, pelo guia de rolagens).
+ */
+
+/**
  * Uma arma: o ataque (tocar abre a receita, que leva ao dano), o dano e o dano a duas mãos,
  * cada um tocável, o "2×" do Ataque Extra e as notas da arma (Duelismo, Armas Grandes…).
  */
@@ -13,7 +18,7 @@ function AttackCard({ attack, openRecipe }: { attack: AttackGuide; openRecipe: P
   return (
     <li className="rounded-xl border border-parchment-900 bg-surface-raised p-3">
       <div className="flex items-baseline justify-between gap-2">
-        <h3 className="font-fantasy font-bold text-parchment-100 leading-tight">{attack.name}</h3>
+        <h4 className="font-fantasy font-bold text-parchment-100 leading-tight">{attack.name}</h4>
         {attack.attacksPerAction > 1 && (
           <span
             className="shrink-0 rounded-full border border-gold-800 px-2 text-xs text-gold-300"
@@ -72,11 +77,11 @@ function AttackCard({ attack, openRecipe }: { attack: AttackGuide; openRecipe: P
 }
 
 /**
- * Aba "Ataques": uma linha por ataque da ficha (`getSheetAttacks`, pelo guia de rolagens), com o
- * bônus já com o modo das condições. No crítico (20 natural, ou a margem do `critThreshold`), os
- * dados de dano dobram (pág. 198): a folha do ataque leva ao dano normal ou ao do crítico.
+ * Uma linha por ataque da ficha (`getSheetAttacks`, pelo guia de rolagens), com o bônus já com o modo
+ * das condições. No crítico (20 natural, ou a margem do `critThreshold`), os dados de dano dobram
+ * (pág. 198): a folha do ataque leva ao dano normal ou ao do crítico.
  */
-export function AttacksTab({ guide, openRecipe }: PlayTabProps) {
+export function AttackList({ guide, openRecipe }: Pick<PlayTabProps, 'guide' | 'openRecipe'>) {
   if (guide.attacks.length === 0) {
     return <p className="text-sm text-parchment-500">Nenhum ataque na ficha.</p>
   }

@@ -1,10 +1,10 @@
 import { useRef, useState, type RefObject } from 'react'
 import { flushSync } from 'react-dom'
-import type { ActionTiming, SheetAction } from '@rpg/rules/systems/dnd5e/types/actions'
 import type { PlaySheet, PlayState } from '@rpg/rules/systems/dnd5e/types/playState'
 import type { SheetToggle } from '@rpg/rules/systems/dnd5e/types/session'
 import { describeToggleEffects } from '@rpg/rules/systems/dnd5e/utils/activeEffects'
-import { deactivateToggle, getPlaySpeed, getPlayToggles, getResourceAvailable, performAction } from '@rpg/rules/systems/dnd5e/utils/playState'
+import { deactivateToggle, getPlaySpeed, getPlayToggles, performAction } from '@rpg/rules/systems/dnd5e/utils/playState'
+import { describeActionCost, TIMING_LABEL } from './actionView'
 import { ChangeAnnouncer } from './ChangeAnnouncer'
 import { describeReceivedEnd, getReceivableToggles, getShownToggles, togglingActions } from './effectToggles'
 import { ReceivedEffectSheet } from './ReceivedEffectSheet'
@@ -12,26 +12,6 @@ import type { PlayTabProps } from './usePlayView'
 
 /** A seção dos efeitos ativos na aba Estado: o chip dos vitais leva até ela. */
 export const ACTIVE_EFFECTS_SECTION_ID = 'play-active-effects'
-
-const TIMING_LABEL: Record<ActionTiming, string> = {
-  action: 'ação',
-  bonusAction: 'ação bônus',
-  reaction: 'reação',
-  free: 'livre',
-  movement: 'movimento',
-  special: 'especial',
-}
-
-/** O custo e o saldo de quem liga: "gasta 1 Fúria — restam 2"; no 20º nível, "Fúria: usos ilimitados". */
-function describeCost(action: SheetAction, state: PlayState, sheet: PlaySheet): string[] {
-  return (action.cost ?? []).flatMap(c => {
-    const r = sheet.resources.find(x => x.id === c.resource)
-    const available = getResourceAvailable(state, sheet, c.resource)
-    if (!r || available === null) return []
-    if (available === 'unlimited') return [`${r.name}: usos ilimitados`]
-    return [`gasta ${c.amount} ${r.name} — ${available === 1 ? 'resta 1' : `restam ${available}`}`]
-  })
-}
 
 /**
  * Um efeito que a ficha liga (a Fúria): desligado, o botão da ação que o liga, com o momento, o
@@ -133,7 +113,7 @@ function ToggleCard({ toggle, view, titleRef }: {
     )
   }
 
-  const cost = on ? describeCost(on, state, sheet) : []
+  const cost = on ? describeActionCost(on, state, sheet) : []
   return (
     <div className="rounded-xl border border-parchment-900 bg-surface-raised p-3 space-y-2" data-testid={`toggle-${toggle.id}`}>
       <p className="font-fantasy text-parchment-100">{toggle.source}</p>
@@ -171,7 +151,7 @@ function describeForAnnouncement(state: PlayState, sheet: PlaySheet): string {
     : 'Nenhum efeito ligado.'
   const costs = sheet.toggles.flatMap(t => {
     const action = togglingActions(sheet, t.id).on
-    return action ? describeCost(action, state, sheet).map(c => c.replace(/^gasta \d+ /, '')) : []
+    return action ? describeActionCost(action, state, sheet).map(c => c.replace(/^gasta \d+ /, '')) : []
   })
   return [status, ...costs].join(' ')
 }

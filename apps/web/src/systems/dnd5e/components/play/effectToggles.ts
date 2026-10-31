@@ -39,14 +39,14 @@ export function describeSpellBrief(toggle: SheetToggle): string {
 /**
  * Quando a magia recebida acaba, em linhas para o cartão dela: quem mantém a concentração (você,
  * e ela acaba junto; ou quem conjurou, e o jogador marca o fim), o início do seu próximo turno (o
- * app não conta turnos) e o que vem ao acabar (a letargia da Velocidade).
+ * Novo turno a encerra) e o que vem ao acabar (a letargia da Velocidade).
  */
 export function describeReceivedEnd(toggle: SheetToggle, active: ActiveToggle | undefined): string[] {
   const lines: string[] = []
   if (toggle.spellId) lines.push(`Duração: ${describeSpellBrief(toggle).replace(/^\d+º nível · /, '').toLowerCase()}.`)
   if (active?.sustainedByConcentration) lines.push('Mantida pela sua concentração: acaba junto com ela.')
   else if (toggle.concentration) lines.push('Quem conjurou mantém a concentração: quando ela acabar, toque em “Já acabou”.')
-  if (toggle.endsOn.includes('startOfYourTurn')) lines.push('Acaba no início do seu próximo turno: toque em “Já acabou”.')
+  if (toggle.endsOn.includes('startOfYourTurn')) lines.push('Acaba no início do seu próximo turno: o Novo turno, na aba Ações, o encerra.')
   if (toggle.onEnd) lines.push(`Ao acabar: ${toggle.onEnd.notice}.`)
   return lines
 }

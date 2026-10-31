@@ -201,7 +201,8 @@ export function ActionsTab(view: PlayTabProps) {
             {list.length === 0 ? (group === 'bonusAction' && (
               <p className="text-sm text-parchment-400 leading-snug">
                 Nenhuma ação bônus listada para a sua ficha. Você só tem ação bônus quando uma característica, magia ou
-                outra habilidade diz que algo pode ser feito como ação bônus (pág. 191): as suas estão na aba Regras.
+                outra habilidade diz que algo pode ser feito como ação bônus (pág. 191): se a sua ficha tiver alguma, o
+                texto está na aba Regras.
               </p>
             )) : (
               <ul className="space-y-2">

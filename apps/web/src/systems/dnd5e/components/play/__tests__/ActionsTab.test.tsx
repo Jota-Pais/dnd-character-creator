@@ -136,7 +136,10 @@ describe('ActionsTab — o que fazer em cada momento do turno', () => {
 
   it('sem nenhuma ação bônus listada, o grupo diz quando se tem uma; quem conjura vê Conjurar uma Magia, que leva à aba Magia', () => {
     openActions(krusk(['dagger'], { class: 'wizard' }))
-    expect(group(/^Ação bônus/)).toHaveTextContent('Nenhuma ação bônus listada para a sua ficha.')
+    // Sem afirmar que ele tem alguma: o mago 1 não tem.
+    expect(group(/^Ação bônus/)).toHaveTextContent(
+      'Nenhuma ação bônus listada para a sua ficha. Você só tem ação bônus quando uma característica, magia ou outra habilidade diz que algo pode ser feito como ação bônus (pág. 191): se a sua ficha tiver alguma, o texto está na aba Regras.',
+    )
     fireEvent.click(within(item('cast-a-spell')).getByRole('button', { name: 'Abrir a aba Magia' }))
     expect(screen.getByRole('tab', { name: 'Magia' })).toHaveAttribute('aria-selected', 'true')
     expect(screen.getByRole('tab', { name: 'Magia' })).toHaveFocus()

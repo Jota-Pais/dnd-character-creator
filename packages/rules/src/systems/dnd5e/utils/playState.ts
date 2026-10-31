@@ -444,6 +444,22 @@ function availableZeroHpSave(state: PlayState, sheet: PlaySheet): ZeroHpSaveOffe
 }
 
 /**
+ * A queda que mata pela exaustão que o fim de um efeito traz: o Furioso 11 em Frenesi na exaustão 5
+ * cai a 0 PV, a queda encerra a fúria, e o Frenesi leva à exaustão 6 (pág. 292). As ofertas de ficar
+ * com 1 PV continuam, e a frase delas diz que a morte também não vem: quem fica com 1 PV não caiu, a
+ * fúria não acaba e a exaustão do Frenesi não chega (decisão de 2026-10-30, Ponto em aberto 29 de
+ * `regras-dano-e-morte.md`). Vazia quando a queda não matou.
+ */
+function describeFallDeath(before: PlayState, after: PlayState, sheet: PlaySheet): string {
+  if (after.lifeState !== 'dead') return ''
+  const cause = before.activeEffects.flatMap(active => {
+    const option = active.option ? sheet.toggles.find(t => t.id === active.id)?.options.find(o => o.id === active.option) : undefined
+    return option?.onEnd?.exhaustion ? [option.label] : []
+  })[0]
+  return ` Ficando com 1 PV, você não cai, e a morte pela exaustão${cause ? ` do ${cause}` : ''} também não acontece.`
+}
+
+/**
  * As defesas contra dano em vigor: as da ficha (`PlaySheet.defenses`), as dos efeitos ligados (a
  * Fúria: concussão, cortante e perfurante) e as das condições, no mesmo formato — o Petrificado dá
  * resistência a todo dano e imunidade a veneno (pág. 293). O pipeline de dano e a aba Estado leem
@@ -696,10 +712,11 @@ function damagePipeline(state0: PlayState, sheet: PlaySheet, input: DamageInput,
         notices.push(note('info', `${drop.source}: em vez de cair a 0 PV, ficou com 1 PV (gastou 1 uso).`))
       } else {
         toZeroHp(next, sheet, notices, input.knockout ? 'stable' : 'dying')
+        const fallDeath = describeFallDeath(state, next, sheet)
         if (drop) {
           notices.push({
             kind: 'dropToOneHp',
-            text: `${drop.source}: em vez de cair a 0 PV, você pode ficar com 1 PV (gasta 1 uso).`,
+            text: `${drop.source}: em vez de cair a 0 PV, você pode ficar com 1 PV (gasta 1 uso).${fallDeath}`,
             damage: { ...input },
           })
         }
@@ -710,7 +727,7 @@ function damagePipeline(state0: PlayState, sheet: PlaySheet, input: DamageInput,
           const dc = getZeroHpSaveDc(state, save)
           notices.push({
             kind: 'dropToOneHpSave',
-            text: `${save.source}: você caiu a 0 PV ${lowerFirst(toggle.label)}. Faça um teste de resistência de ${ABILITY_LABELS[save.ability].long} CD ${dc}: se passar, fica com 1 PV em vez disso e continua ${lowerFirst(toggle.label)} (pág. ${save.page}).`,
+            text: `${save.source}: você caiu a 0 PV ${lowerFirst(toggle.label)}. Faça um teste de resistência de ${ABILITY_LABELS[save.ability].long} CD ${dc}: se passar, fica com 1 PV em vez disso e continua ${lowerFirst(toggle.label)} (pág. ${save.page}).${fallDeath}`,
             dc,
             damage: { ...input },
           })

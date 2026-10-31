@@ -1797,7 +1797,7 @@ describe('efeitos ligados: a Fúria pela ação que a liga', () => {
   describe('Fúria Implacável (bárbaro 11)', () => {
     const OFFER = (dc: number) => `Fúria Implacável: você caiu a 0 PV em fúria. Faça um teste de resistência de Constituição CD ${dc}: se passar, fica com 1 PV em vez disso e continua em fúria (pág. 49).`
     const RESET = 'Fúria Implacável: a CD volta a 10 (pág. 49).'
-    const offerOf = (r: { notices: { kind: string; dc?: number }[] }) => r.notices.find(n => n.kind === 'dropToOneHpSave')
+    const offerOf = (r: { notices: { kind: string; text: string; dc?: number }[] }) => r.notices.find(n => n.kind === 'dropToOneHpSave')
 
     it('cair a 0 PV em fúria oferece o teste, com a CD e o dano, ao lado da Resistência Implacável', () => {
       const sh = barbarian(11)
@@ -1833,6 +1833,30 @@ describe('efeitos ligados: a Fúria pela ação que a liga', () => {
       const twice = applyDamageDroppingToOneHp(r.state, sh, { amount: 1 }, 'save')
       expect(twice.state.restCounters).toEqual({ 'relentless-rage': 2 })
       expect(offerOf(applyDamage(twice.state, sh, { amount: 1 }))?.dc).toBe(20)
+    })
+
+    // Decidido em 2026-10-30 (Ponto em aberto 29 de regras-dano-e-morte.md): quem fica com 1 PV não
+    // caiu, então a morte pela exaustão que a queda traria (o Frenesi na exaustão 5) também não vem.
+    it('Furioso 11 em Frenesi na exaustão 5 cai e morre pela exaustão 6: as ofertas continuam e dizem que a morte não vem', () => {
+      const sh = barbarian(11, {}, 'berserker')
+      const raging = { ...enter(state(), sh, 'frenzy').state, exhaustionLevel: 5 as const }
+      const amount = getCurrentHp(raging, sh)
+      const r = applyDamage(raging, sh, { amount })
+      expect(r.state.lifeState).toBe('dead')
+      expect(r.state.exhaustionLevel).toBe(6)
+      const tail = ' Ficando com 1 PV, você não cai, e a morte pela exaustão do Frenesi também não acontece.'
+      expect(offerOf(r)?.text).toBe(OFFER(10) + tail)
+      expect(r.notices.find(n => n.kind === 'dropToOneHp')?.text)
+        .toBe(`Resistência Implacável: em vez de cair a 0 PV, você pode ficar com 1 PV (gasta 1 uso).${tail}`)
+      // Quem passa fica com 1 PV, em fúria e na exaustão 5; a Resistência Implacável, também.
+      for (const by of ['save', 'trait'] as const) {
+        const kept = applyDamageDroppingToOneHp(raging, sh, { amount }, by)
+        expect(kept.state).toMatchObject({ lifeState: 'conscious', exhaustionLevel: 5 })
+        expect(kept.state.activeEffects.map(a => a.id)).toEqual(['rage'])
+        expect(getCurrentHp(kept.state, sh)).toBe(1)
+      }
+      // A queda que não mata não traz a frase.
+      expect(offerOf(applyDamage(enter(state(), sh, 'frenzy').state, sh, { amount: sh.maxHp }))?.text).toBe(OFFER(10))
     })
 
     // "Cada vez que você utilizar essa característica" (linhas 3740-3741): a falha também é uso

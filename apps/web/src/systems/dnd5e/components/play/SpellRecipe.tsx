@@ -20,8 +20,8 @@ function RecipeButton({ entry, label, openRecipe }: { entry: RollGuideEntry; lab
 }
 
 /**
- * O que rolar numa magia, pelo guia dela (`getSpellGuide`): o TR do alvo com a CD, os feixes, os
- * alvos e o ganho do nível maior numa linha cada; o ataque, o dano, a cura e os PV temporários,
+ * O que rolar numa magia, pelo guia dela (`getSpellGuide`): o TR do alvo com a CD (e o condicional
+ * dele), os feixes, os alvos e o ganho do nível maior numa linha cada; o ataque, o dano, a cura e os PV temporários,
  * tocáveis, abrem a receita (o ataque leva ao dano). A aba Magia mostra por conjuração, e a folha
  * da magia na aba Regras, a de cada uma. Nenhum número é montado aqui.
  */
@@ -29,6 +29,7 @@ export function SpellRecipe({ guide, openRecipe }: { guide: SpellGuide; openReci
   const facts = [
     guide.instances && guide.instances.count > 1 ? `${guide.instances.text}, cada um com a sua jogada.` : null,
     guide.save?.text ?? null,
+    guide.save?.note ?? null,
     guide.targets?.text ?? null,
     guide.upcastGain ?? null,
   ].filter((f): f is string => f !== null)

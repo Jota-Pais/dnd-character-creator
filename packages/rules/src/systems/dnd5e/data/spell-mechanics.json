@@ -28,7 +28,7 @@
     "batch": "T",
     "bookLines": [20987, 20999],
     "status": "reviewed",
-    "resolution": { "kind": "save", "ability": "DEX", "onSuccess": "none" },
+    "resolution": { "kind": "save", "ability": "DEX", "onSuccess": "none", "note": "O alvo não recebe qualquer benefício de cobertura contra esse teste de resistência." },
     "damage": [
       { "count": 1, "sides": 8, "type": "radiant", "byCharacterLevel": [{ "from": 1, "value": 1 }, { "from": 5, "value": 2 }, { "from": 11, "value": 3 }, { "from": 17, "value": 4 }] }
     ]
@@ -216,7 +216,7 @@
     "batch": "T",
     "bookLines": [28093, 28107],
     "status": "reviewed",
-    "resolution": { "kind": "attack", "range": "melee" },
+    "resolution": { "kind": "attack", "range": "melee", "note": "Você tem vantagem na jogada de ataque se o alvo estiver vestindo qualquer armadura de metal." },
     "damage": [
       { "count": 1, "sides": 8, "type": "lightning", "byCharacterLevel": [{ "from": 1, "value": 1 }, { "from": 5, "value": 2 }, { "from": 11, "value": 3 }, { "from": 17, "value": 4 }] }
     ]

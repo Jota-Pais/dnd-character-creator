@@ -9,7 +9,7 @@
 
 `data/spell-mechanics.json` diz o que cada magia faz **em número**, ao lado de `spells.json` e fora dele: o `scripts/parse-spells.mjs` regenera o spells.json a partir de `docs/magias/regras-magias.md` e apagaria o que estivesse lá. O tipo é `types/spellMechanics.ts`, e `utils/spellMechanics.ts` (`getSpellMechanics`) é a única leitura.
 
-- **Resolução:** jogada de ataque com magia (corpo a corpo ou à distância), TR do alvo (o atributo e o que o sucesso faz: metade do dano, nenhum dano, ou outra coisa que o texto diz), automática, ou nada a rolar.
+- **Resolução:** jogada de ataque com magia (corpo a corpo ou à distância), TR do alvo (o atributo e o que o sucesso faz: metade do dano, nenhum dano, ou outra coisa que o texto diz), automática, ou nada a rolar. No ataque e no TR, a `note` é o que muda a jogada numa situação, com a frase do livro como está no texto da magia (a vantagem do Toque Chocante contra armadura de metal): é condicional, então vira linha própria na receita, e a mesa marca o modo na folha.
 - **Dano por parte:** os dados, o bônus (fixo ou o modificador de conjuração), o tipo (um id de `damage-types.json`, ou a escolha entre alguns) e a situação em que só aquela parte vale.
 - **O que cresce:** `perSlotAbove`, por nível de espaço acima do da magia (`every` para o "a cada dois níveis"); `byCharacterLevel`, o total de dados em degraus de nível de personagem (os truques: 1º, 5º, 11º e 17º).
 - **Instâncias:** jogadas separadas da mesma magia (os feixes da Rajada Mística, os dardos, os raios).
@@ -36,7 +36,7 @@ Todos os truques de dano escalam nos degraus de personagem 5º, 11º e 17º ("qu
 | Amizade | `friends` | 216 | 19768-19785 | — | — | só texto: a vantagem nos testes de Carisma é efeito ligado em você, fora do catálogo |
 | Ataque Certeiro | `true-strike` | 221 | 20315-20325 | — | — | só texto: a vantagem no primeiro ataque do próximo turno é efeito ligado, fora do catálogo |
 | Bordão Místico | `shillelagh` | 224 | 20719-20733 | — | — | só texto: muda a arma (atributo de conjuração, dado d8), sem dano próprio |
-| Chama Sagrada | `sacred-flame` | 226 | 20987-20999 | TR de Destreza, nenhum dano no sucesso | 1d8 radiante | revisado |
+| Chama Sagrada | `sacred-flame` | 226 | 20987-20999 | TR de Destreza, nenhum dano no sucesso; a cobertura não vale (nota) | 1d8 radiante | revisado |
 | Chicote de Espinhos | `thorn-whip` | 226 | 21000-21015 | ataque corpo a corpo com magia | 1d6 perfurante | revisado |
 | Consertar | `mending` | 232 | 21689-21704 | — | — | revisado, sem número |
 | Criar Chamas | `produce-flame` | 235 | 22161-22180 | ataque à distância com magia | 1d8 de fogo | revisado |
@@ -58,13 +58,13 @@ Todos os truques de dano escalam nos degraus de personagem 5º, 11º e 17º ("qu
 | Resistência | `resistance` | 278 | 26976-26986 | — | — | só texto: o d4 é do alvo, uma vez, num TR; fora do catálogo |
 | Taumaturgia | `thaumaturgy` | 284 | 27681-27703 | — | — | revisado, sem número |
 | Toque Arrepiante | `chill-touch` | 288 | 28075-28092 | ataque à distância com magia | 1d8 necrótico | revisado |
-| Toque Chocante | `shocking-grasp` | 288 | 28093-28107 | ataque corpo a corpo com magia | 1d8 elétrico | revisado |
+| Toque Chocante | `shocking-grasp` | 288 | 28093-28107 | ataque corpo a corpo com magia; vantagem contra armadura de metal (nota) | 1d8 elétrico | revisado |
 | Zombaria Viciosa | `vicious-mockery` | 290 | 28402-28416 | TR de Sabedoria, nenhum dano no sucesso | 1d4 psíquico | revisado |
 
 Notas da revisão:
 
 - **"Nenhum dano no sucesso"** dos truques de TR: o livro diz "deve ser bem sucedido num teste de resistência ... ou sofrerá 1dX", sem metade.
-- **O que o truque faz no alvo além do dano** (o deslocamento do Raio de Gelo, o "não recupera PV" do Toque Arrepiante, as reações do Toque Chocante, a desvantagem da Zombaria Viciosa, o puxão do Chicote de Espinhos) fica no texto: é do alvo, e a receita é de quem conjura. A vantagem do Toque Chocante contra armadura de metal é circunstância que a mesa marca na folha da receita (o Normal / Vantagem / Desvantagem).
+- **O que o truque faz no alvo além do dano** (o deslocamento do Raio de Gelo, o "não recupera PV" do Toque Arrepiante, as reações do Toque Chocante, a desvantagem da Zombaria Viciosa, o puxão do Chicote de Espinhos) fica no texto: é do alvo, e a receita é de quem conjura. O que muda a jogada de quem conjura ou o TR do alvo numa situação é outro caso: a vantagem do Toque Chocante contra armadura de metal (linhas 28101-28103) e a cobertura que não vale no TR da Chama Sagrada (linhas 20995-20996) ficam nos dados como o condicional da jogada (`resolution.note`, a frase do livro), viram linha própria na receita do ataque e do TR, e a mesa marca o modo na folha da receita (o Normal / Vantagem / Desvantagem).
 - **Espirro Ácido, dois alvos:** "uma criatura ... ou duas criaturas ... a 1,5 metro uma da outra"; cada uma faz o TR, e o dano se joga uma vez para os dois ("Se uma magia ou outro efeito causar dano em mais de um alvo ao mesmo tempo, jogue o dano uma única vez para todos os alvos", pág. 198, linhas 17746-17751).
 - **Ortografia do extrato** que os dados já corrigiram ("um muda", "maia", "conjura-la") não é divergência.
 

@@ -39,8 +39,11 @@ export type SpellGuideRef = {
   castLevel?: number
 }
 
-/** O TR que o alvo faz: o atributo, a CD da conjuração (null sem ela) e o que o sucesso faz. */
-export type SpellGuideSave = { ability: AbilityScore; dc: number | null; onSuccess: 'half' | 'none' | 'other'; text: string }
+/**
+ * O TR que o alvo faz: o atributo, a CD da conjuração (null sem ela) e o que o sucesso faz; `note`,
+ * o condicional dele com a frase do livro (a cobertura que não vale contra a Chama Sagrada).
+ */
+export type SpellGuideSave = { ability: AbilityScore; dc: number | null; onSuccess: 'half' | 'none' | 'other'; text: string; note?: string }
 
 export type SpellGuide = {
   ref: { casterKey: string | null; spellId: string; castLevel: number }
@@ -212,10 +215,10 @@ function buildSpellGuide(draft: CharacterDraft, spell: Spell, mech: SpellMechani
     })()
     : undefined
 
-  const save = resolution.kind === 'save'
+  const save: SpellGuideSave | undefined = resolution.kind === 'save'
     ? (() => {
       const base = { ability: resolution.ability, dc: caster?.saveDc ?? null, onSuccess: resolution.onSuccess }
-      return { ...base, text: saveText(base) }
+      return { ...base, text: saveText(base), ...(resolution.note ? { note: resolution.note } : {}) }
     })()
     : undefined
 
@@ -233,6 +236,8 @@ function buildSpellGuide(draft: CharacterDraft, spell: Spell, mech: SpellMechani
       label: `${spell.name} — ataque`,
       notes: [
         `Ataque ${resolution.range === 'melee' ? 'corpo a corpo' : 'à distância'} com magia.`,
+        // O condicional da jogada, com a frase do livro: a mesa marca o modo na folha.
+        ...(resolution.note ? [resolution.note] : []),
         ...(instances && instances.count > 1 ? [`${instances.text}: uma jogada de ataque para cada um.`] : []),
         ...caster.attack.notes,
       ],
@@ -247,7 +252,7 @@ function buildSpellGuide(draft: CharacterDraft, spell: Spell, mech: SpellMechani
       ? `${spell.name} — dano de cada ${instances.noun}`
       : damageParts.length > 1 && typeName ? `${spell.name} — dano ${typeName}` : `${spell.name} — dano`
     const partNotes = [
-      ...(save ? [save.text] : []),
+      ...(save ? [save.text, ...(save.note ? [save.note] : [])] : []),
       ...(typeof part.type === 'string' ? [] : [`Tipo à escolha: ${joinOr(part.type.choose.map(getDamageTypeName))}.`]),
       ...(part.when ? [`Só ${part.when}.`] : []),
       ...(bonus.missingModifier ? [MISSING_MODIFIER] : []),

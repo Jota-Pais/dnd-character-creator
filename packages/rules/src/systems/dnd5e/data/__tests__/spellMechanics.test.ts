@@ -139,6 +139,10 @@ function problemsOf(entry: SpellMechanics, exceptions: Record<string, string> = 
     if (!text.includes(attack)) problems.push(`"${attack}" não está no texto`)
   }
   if (!(entry.id in exceptions)) problems.push(...resolutionInTextProblems(entry, text))
+  // O condicional da jogada é a frase do livro, como está no texto.
+  if ((resolution.kind === 'attack' || resolution.kind === 'save') && resolution.note !== undefined && !text.includes(resolution.note)) {
+    problems.push(`a nota da jogada "${resolution.note}" não está no texto`)
+  }
 
   for (const [i, part] of (entry.damage ?? []).entries()) {
     const dice = `${part.count}d${part.sides}`
@@ -242,6 +246,13 @@ describe('dano estruturado de magia: o lote T', () => {
     expect(batch.find(m => m.id === 'minor-illusion')?.reason).toMatch(/contra a CD da magia/)
   })
 
+  it('o condicional da jogada vira nota: a vantagem do Toque Chocante e a cobertura da Chama Sagrada', () => {
+    expect(batch.filter(m => 'note' in m.resolution).map(m => [m.id, m.resolution])).toEqual([
+      ['sacred-flame', expect.objectContaining({ note: 'O alvo não recebe qualquer benefício de cobertura contra esse teste de resistência.' })],
+      ['shocking-grasp', expect.objectContaining({ note: 'Você tem vantagem na jogada de ataque se o alvo estiver vestindo qualquer armadura de metal.' })],
+    ])
+  })
+
   it('a Rajada Mística escala nos feixes, e o dano de cada um fica em 1d10', () => {
     const blast = batch.find(m => m.id === 'eldritch-blast')
     expect(blast?.instances).toMatchObject({ noun: 'feixe', byCharacterLevel: [{ from: 1, value: 1 }, { from: 5, value: 2 }, { from: 11, value: 3 }, { from: 17, value: 4 }] })
@@ -279,6 +290,8 @@ describe('dano estruturado de magia: a guarda contra erro de digitação', () =>
       damage: [{ ...damage, byCharacterLevel: [{ from: 1, value: 1 }, { from: 5, value: 2 }, { from: 11, value: 4 }, { from: 17, value: 4 }] }],
     }).join()).toMatch(/degraus de nível de personagem não batem/)
     expect(problemsOf({ ...FIRE_BOLT, resolution: { kind: 'attack', range: 'melee' } }).join()).toMatch(/corpo-a-corpo com magia/)
+    expect(problemsOf({ ...FIRE_BOLT, resolution: { kind: 'attack', range: 'ranged', note: 'Você tem vantagem se o alvo for inflamável.' } }))
+      .toEqual(['a nota da jogada "Você tem vantagem se o alvo for inflamável." não está no texto'])
   })
 
   it('o atributo do TR e a metade no sucesso precisam estar no texto', () => {

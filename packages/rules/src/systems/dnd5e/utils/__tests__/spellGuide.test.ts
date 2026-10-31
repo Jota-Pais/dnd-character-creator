@@ -94,12 +94,23 @@ describe('guia da magia: os truques do lote T', () => {
 
   it('Chama Sagrada: o TR de Destreza do alvo com a CD do clérigo, sem jogada de ataque nem crítico', () => {
     const guide = getSpellGuide(caster('cleric', 1, ['sacred-flame']), play(), { casterKey: 'class:cleric', spellId: 'sacred-flame' })!
-    // CD 8 + proficiência 2 + SAB 3.
-    expect(guide.save).toEqual({ ability: 'DEX', dc: 13, onSuccess: 'none', text: 'TR de Destreza do alvo (CD 13): no sucesso, nenhum dano.' })
+    // CD 8 + proficiência 2 + SAB 3. A cobertura que não vale é o condicional do TR, em linha própria.
+    const cover = 'O alvo não recebe qualquer benefício de cobertura contra esse teste de resistência.'
+    expect(guide.save).toEqual({ ability: 'DEX', dc: 13, onSuccess: 'none', text: 'TR de Destreza do alvo (CD 13): no sucesso, nenhum dano.', note: cover })
     expect(guide.attack).toBeUndefined()
     expect(guide.damage[0]).toMatchObject({ formula: '1d8 radiante' })
     expect(guide.damage[0].crit).toBeUndefined()
-    expect(guide.damage[0].notes[0]).toBe('TR de Destreza do alvo (CD 13): no sucesso, nenhum dano.')
+    expect(guide.damage[0].notes.slice(0, 2)).toEqual(['TR de Destreza do alvo (CD 13): no sucesso, nenhum dano.', cover])
+  })
+
+  it('Toque Chocante: a vantagem contra armadura de metal é nota do ataque, e o modo fica com a mesa', () => {
+    const guide = getSpellGuide(caster('wizard', 1, ['shocking-grasp']), play(), { casterKey: 'class:wizard', spellId: 'shocking-grasp' })!
+    expect(guide.attack!.notes.slice(0, 2)).toEqual([
+      'Ataque corpo a corpo com magia.',
+      'Você tem vantagem na jogada de ataque se o alvo estiver vestindo qualquer armadura de metal.',
+    ])
+    expect(guide.attack!.mode).toBe('normal')
+    expect(guide.damage[0].formula).toBe('1d8 elétrico')
   })
 
   it('Rajada Mística no 5º nível de personagem: 2 feixes, um ataque para cada, 1d10 de energia em cada um', () => {

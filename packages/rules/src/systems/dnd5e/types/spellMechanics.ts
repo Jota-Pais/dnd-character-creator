@@ -18,10 +18,15 @@ import type { AbilityScore } from './race'
 /**
  * Como a magia resolve. Só a jogada de ataque tem acerto crítico, que dobra os dados (pág. 198); no
  * TR, `onSuccess` é o que o sucesso faz: metade do dano, nenhum dano, ou outra coisa que o texto diz.
+ *
+ * `note` é o que muda a jogada numa situação — a vantagem do Toque Chocante contra armadura de metal,
+ * a cobertura que não vale no TR da Chama Sagrada —, com a frase do livro como está no texto da
+ * magia. É condicional: vira linha própria na receita da jogada (a regra de ouro do CLAUDE.md), e a
+ * mesa marca o modo na folha.
  */
 export type SpellResolution =
-  | { kind: 'attack'; range: 'melee' | 'ranged' }
-  | { kind: 'save'; ability: AbilityScore; onSuccess: 'half' | 'none' | 'other' }
+  | { kind: 'attack'; range: 'melee' | 'ranged'; note?: string }
+  | { kind: 'save'; ability: AbilityScore; onSuccess: 'half' | 'none' | 'other'; note?: string }
   | { kind: 'auto' }
   | { kind: 'none' }
 

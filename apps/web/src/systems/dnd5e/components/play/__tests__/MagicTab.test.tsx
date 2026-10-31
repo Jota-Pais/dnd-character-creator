@@ -118,6 +118,8 @@ describe('MagicTab', () => {
       expect(within(card).getByText('Chama Sagrada')).toBeInTheDocument()
       expect(within(card).queryByText('Orientação')).not.toBeInTheDocument()
       expect(within(card).getByText('TR de Destreza do alvo (CD 10): no sucesso, nenhum dano.')).toBeInTheDocument()
+      // O condicional do TR, em linha própria (a regra de ouro).
+      expect(within(card).getByText('O alvo não recebe qualquer benefício de cobertura contra esse teste de resistência.')).toBeInTheDocument()
       // Guerreiro 4: nível de personagem 4, ainda no primeiro degrau do truque.
       fireEvent.click(within(card).getByRole('button', { name: 'Chama Sagrada — dano: 1d8 radiante' }))
       const damage = screen.getByRole('dialog', { name: 'Chama Sagrada — dano' })

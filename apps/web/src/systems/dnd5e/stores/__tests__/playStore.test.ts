@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { registerPendingEdit, usePlayStore, UNDO_LIMIT } from '../playStore'
 import {
-  applyDamage, applyHealing, createPlayState, emptyTurn, getCurrentHp, newTurn, performAction, setInspiration, setNote,
+  applyDamage, applyHealing, createPlayState, emptyTurn, getCurrentHp, markTurn, newTurn, performAction, setInspiration, setNote,
 } from '@rpg/rules/systems/dnd5e/utils/playState'
 import { loadPlayPreferences, loadPlayState, savePlayState } from '../../utils/playStorage'
 import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
@@ -214,12 +214,25 @@ describe('usePlayStore', () => {
     expect(s.state?.rolls).toEqual([])
     expect(s.state?.damageTaken).toBe(4)
     expect(loadPlayState('c1')?.rolls).toEqual([])
-    expect(s.undoStack).toBe(undoStack)
+    expect(s.undoStack).toHaveLength(undoStack.length)
     expect(s.notices).toBe(notices)
     expect(s.lastActionChanged).toBe(true)
     // O desfazer do dano não traz as rolagens de volta: ele nunca toca o histórico.
     usePlayStore.getState().undo()
     expect(usePlayStore.getState().state).toMatchObject({ damageTaken: 0, rolls: [] })
+  })
+
+  it('o desfazer depois da Nova sessão não traz de volta o turno da sessão anterior', () => {
+    usePlayStore.getState().open('c1', draft(), 1)
+    usePlayStore.getState().logRoll(roll('1d20', { roller: sequenceRoller([12]), at: 1 }))
+    usePlayStore.getState().run(st => markTurn(st, 'action', true))
+    usePlayStore.getState().run((st, sh) => applyDamage(st, sh, { amount: 4 }))
+    usePlayStore.getState().clearRolls()
+    expect(usePlayStore.getState().state?.turn).toEqual(emptyTurn())
+    // Desfaz o dano: o PV volta, e o turno e as rolagens continuam os da sessão nova.
+    usePlayStore.getState().undo()
+    expect(usePlayStore.getState().state).toMatchObject({ damageTaken: 0, rolls: [], turn: emptyTurn() })
+    expect(loadPlayState('c1')?.turn).toEqual(emptyTurn())
   })
 
   it('run em segundo plano grava e entra no desfazer, mas mantém os avisos', () => {

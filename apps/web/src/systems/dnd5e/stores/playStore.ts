@@ -77,7 +77,8 @@ type PlayStoreState = {
   /**
    * "Nova sessão": esvazia o histórico de rolagens, zera o turno e grava. Como o `logRoll`, fora do
    * desfazer e sem mexer nos avisos — o desfazer nunca toca o histórico, então quem pede confirmação
-   * é a tela.
+   * é a tela. O que o desfazer guarda também perde o turno: desfazer uma ação de antes da Nova
+   * sessão não traz de volta o turno da sessão anterior, como não traz as rolagens.
    */
   clearRolls: () => void
   /**
@@ -205,6 +206,7 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
     if (!state) return
     const next = clearRollHistory(state).state
     if (next !== state) set({ state: savePlayState(next) })
+    set(s => ({ undoStack: s.undoStack.map(entry => clearRollHistory(entry).state) }))
   },
 
   undo: () => {

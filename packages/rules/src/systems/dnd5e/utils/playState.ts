@@ -21,7 +21,7 @@ import type { ArmorCategory } from '../types/equipment'
 import { ABILITY_LABELS, formatMeters } from './abilityScoreUtils'
 import type { SheetResource } from './classResourceUtils'
 import { resolveActiveEffects } from './activeEffects'
-import { describeUnproficientArmorCasting } from './proficiencyUtils'
+import { describeUnproficientArmorCasting, describeUnproficientArmorRules } from './proficiencyUtils'
 import { getDamageLabel, getDamageTypeName } from './damageTypes'
 import { countLabel, joinPt } from './textUtils'
 import { findSpellbookEntry } from './spellbook'
@@ -1593,7 +1593,7 @@ export function performAction(state0: PlayState, sheet: PlaySheet, actionId: str
  * linhas 13327-13332). O app não conta o tempo de jogo: o tempo vai no aviso, e o do escudo, uma
  * ação, marca a casa do turno.
  */
-const ARMOR_TIME: Record<ArmorCategory, { don: string; doff: string }> = {
+export const ARMOR_TIME: Readonly<Record<ArmorCategory, { don: string; doff: string }>> = {
   light: { don: '1 minuto', doff: '1 minuto' },
   medium: { don: '5 minutos', doff: '1 minuto' },
   heavy: { don: '10 minutos', doff: '5 minutos' },
@@ -1601,7 +1601,7 @@ const ARMOR_TIME: Record<ArmorCategory, { don: string; doff: string }> = {
 }
 
 /** A página da tabela de vestir e tirar (pág. 148, no pt-BR). */
-const ARMOR_TIME_PAGE = 148
+export const ARMOR_TIME_PAGE = 148
 
 const armorName = (id: string) => getArmorById(id)?.name ?? id
 
@@ -1651,10 +1651,8 @@ function wearInto(next: PlayState, sheet: PlaySheet, after: ArmorSetup, notices:
   const putOn: CarriedArmor[] = sheet.carriedArmor.filter(a => a.category === 'shield'
     ? after.shield && !before.shield
     : a.id === after.bodyArmorId && a.id !== before.bodyArmorId)
-  for (const armor of putOn.filter(a => !a.proficient)) {
-    const name = armor.category === 'shield' ? 'o escudo' : armor.name
-    notices.push(note('warning', `Usando ${name} sem proficiência, você tem desvantagem em testes de habilidade, testes de resistência e jogadas de ataque que envolvam Força ou Destreza, e não pode conjurar magias (pág. 144).`))
-  }
+  const unproficient = putOn.filter(a => !a.proficient).map(a => a.name)
+  if (unproficient.length > 0) notices.push(note('warning', describeUnproficientArmorRules(unproficient)))
 
   for (const toggle of sheet.toggles) {
     if (!next.activeEffects.some(a => a.id === toggle.id)) continue

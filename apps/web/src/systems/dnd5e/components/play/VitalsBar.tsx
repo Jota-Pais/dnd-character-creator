@@ -111,7 +111,7 @@ export function VitalsBar({ view, onOpenRecipe, onOpenSource, onOpenRests, onOpe
   /** Leva à seção Efeitos ativos (aba Estado), onde o efeito ligado se encerra. */
   onOpenEffects: () => void
 }) {
-  const { draft, state, sheet, guide, armorClass, run } = view
+  const { draft, state, sheet, guide, armorClass, baseArmorClass, baseSpeed, run } = view
   const current = getCurrentHp(state, sheet)
   const effMax = getEffectiveMaxHp(state, sheet)
   // O máximo antes da exaustão: o da ficha com o ajuste temporário (Ajuda).
@@ -202,16 +202,19 @@ export function VitalsBar({ view, onOpenRecipe, onOpenSource, onOpenRests, onOpe
           </Stat>
         </div>
         <div className="grid grid-cols-4 gap-1.5 sm:contents">
+          {/* O "era N" é o número da ficha (o do criador e do PDF): a armadura vestida no jogo, um efeito
+              ligado (o Escudo Arcano) ou uma condição o mudaram. */}
           <Stat
             label="CA"
+            sub={armorClass.value !== baseArmorClass.value ? <span className="text-amber-300">era {baseArmorClass.value}</span> : undefined}
             onOpen={() => onOpenSource(armorClassSource(armorClass, getConditionalAcBonuses(draft)))}
-            ariaLabel={`Classe de Armadura ${armorClass.value}: de onde vem`}
+            ariaLabel={`Classe de Armadura ${armorClass.value}${armorClass.value !== baseArmorClass.value ? `, era ${baseArmorClass.value}` : ''}: de onde vem`}
           >
             {armorClass.value}
           </Stat>
           <Stat
             label="Desloc."
-            sub={speed !== sheet.speed ? <span className="text-amber-300">era {formatMeters(sheet.speed)}</span> : undefined}
+            sub={speed !== baseSpeed ? <span className="text-amber-300">era {formatMeters(baseSpeed)}</span> : undefined}
           >
             <span className="text-sm">{formatMeters(speed)}</span>
           </Stat>

@@ -7,6 +7,7 @@ import {
 import { describeDamageDefenses, EXHAUSTION } from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
 import { ACTIVE_EFFECTS_SECTION_ID, ActiveEffectsSection } from './ActiveEffectsSection'
 import { ConditionsSection } from './ConditionsSection'
+import { WORN_EQUIPMENT_SECTION_ID, WornEquipmentSection } from './WornEquipmentSection'
 import { LongRestPanel } from './LongRestPanel'
 import { ShortRestPanel } from './ShortRestPanel'
 import { useBackHandler } from '../../../../core/navigation/back'
@@ -249,12 +250,14 @@ function RestSection(view: PlayTabProps) {
 
 /**
  * Aba "Estado": os efeitos ativos (a Fúria de quem a tem, as magias recebidas e o "Recebeu uma
- * magia?", que toda ficha tem), as condições (liga/desliga, regra a um toque, nota de duração), as
- * defesas contra dano (só quem tem), a exaustão, a concentração e os descansos.
+ * magia?", que toda ficha tem), as condições (liga/desliga, regra a um toque, nota de duração), o
+ * equipamento vestido (só quem carrega armadura ou escudo), as defesas contra dano (só quem tem), a
+ * exaustão, a concentração e os descansos.
  */
 export function StatusTab(view: PlayTabProps) {
   const concentrationTitle = useRef<HTMLHeadingElement>(null)
   const effectsTitle = useRef<HTMLHeadingElement>(null)
+  const wornTitle = useRef<HTMLHeadingElement>(null)
   const defenseLines = describeDamageDefenses(getPlayDamageDefenses(view.state, view.sheet))
   return (
     <div className="space-y-6">
@@ -264,6 +267,11 @@ export function StatusTab(view: PlayTabProps) {
       <Section title="Condições">
         <ConditionsSection {...view} />
       </Section>
+      {view.sheet.carriedArmor.length > 0 && (
+        <Section title="Equipamento vestido" id={WORN_EQUIPMENT_SECTION_ID} headingRef={wornTitle}>
+          <WornEquipmentSection {...view} titleRef={wornTitle} />
+        </Section>
+      )}
       {defenseLines.length > 0 && (
         <Section title="Defesas">
           <DefensesSection lines={defenseLines} />

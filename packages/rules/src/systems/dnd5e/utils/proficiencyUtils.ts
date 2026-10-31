@@ -793,6 +793,14 @@ export function getUnproficientArmor(draft: CharacterDraft, session: SheetSessio
 }
 
 /**
+ * A regra inteira de quem veste armadura sem proficiência (p. 144), pelos nomes: a desvantagem e o não
+ * conjurar. Um texto só para o aviso de vestir no jogo e a seção Equipamento vestido.
+ */
+export function describeUnproficientArmorRules(armorNames: readonly string[]): string {
+  return `Usando ${armorNames.join(' e ')} sem proficiência, você tem desvantagem em testes de habilidade, testes de resistência e jogadas de ataque que envolvam Força ou Destreza, e não pode conjurar magias (pág. 144).`
+}
+
+/**
  * O aviso de quem veste armadura sem proficiência (`getUnproficientArmor`, pelos nomes): não conjura
  * (p. 144). Um texto só para as notas do guia de rolagens e a recusa do "Usar" de Conjurar uma Magia.
  */

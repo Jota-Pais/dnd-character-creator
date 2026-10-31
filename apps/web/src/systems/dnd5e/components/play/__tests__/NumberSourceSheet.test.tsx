@@ -35,7 +35,7 @@ describe('"De onde vem" dos números que não se rolam', () => {
     const ac = getSheetArmorClass(COMPLETE_DRAFT, getFinalAbilityScores(COMPLETE_DRAFT))
     usePlayStore.getState().run((st, sh) => activateToggle(st, sh, 'spell:shield-of-faith', { now: 1 }))
     render(<PlayScreen />)
-    fireEvent.click(screen.getByRole('button', { name: `Classe de Armadura ${ac.value + 2}: de onde vem` }))
+    fireEvent.click(screen.getByRole('button', { name: `Classe de Armadura ${ac.value + 2}, era ${ac.value}: de onde vem` }))
     expect(itemLabels()).toEqual([...ac.components.map(c => c.label), 'Escudo da Fé', 'Total'])
     expect(screen.getByText(`${formatArmorClassBreakdown(ac)} + 2 (Escudo da Fé)`)).toBeInTheDocument()
   })

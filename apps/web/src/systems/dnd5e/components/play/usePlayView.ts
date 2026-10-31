@@ -12,7 +12,7 @@ import { allClassEntries, formatClassLevelLabel } from '@rpg/rules/systems/dnd5e
 import { getSubclassDetails } from '@rpg/rules/systems/dnd5e/utils/progressionOptions'
 import { getRace, getSubrace } from '@rpg/rules/systems/dnd5e/utils/raceUtils'
 import { getRollGuide, type RollGuide, type RollGuideEntry } from '@rpg/rules/systems/dnd5e/utils/rollGuide'
-import { getSheetArmorClass } from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
+import { getSheetArmorClass, getSheetSpeed } from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
 import type { NumberSource } from './numberSources'
 import type { PlayTabId } from './playTabs'
 
@@ -33,6 +33,12 @@ export type PlayView = {
   session: SheetSession
   guide: RollGuide
   armorClass: ArmorClassResult
+  /**
+   * A CA e o deslocamento da ficha (os do criador e do PDF), sem a sessão: o "era N" dos vitais e da
+   * seção Equipamento vestido, quando a armadura vestida, um efeito ou uma condição os muda.
+   */
+  baseArmorClass: ArmorClassResult
+  baseSpeed: number
   /** Preferência "Usar os dados do app" (desligada por padrão). */
   appDice: boolean
   run: (op: PlayOperation, options?: RunOptions) => PlayResult | null
@@ -62,11 +68,15 @@ export function usePlayView(): PlayView | null {
 
   const guide = useMemo(() => (state ? getRollGuide(draft, state) : null), [draft, state])
   const session = useMemo(() => (state ? getSheetSession(draft, state) : NO_SESSION), [draft, state])
-  // A CA com os efeitos ligados (o Escudo Arcano, a Armadura Arcana), pela mesma sessão do guia.
-  const armorClass = useMemo(() => getSheetArmorClass(draft, getFinalAbilityScores(draft), session), [draft, session])
+  // A CA com a armadura vestida e os efeitos ligados (o Escudo Arcano, a Armadura Arcana), pela mesma
+  // sessão do guia; a da ficha, sem ela.
+  const scores = useMemo(() => getFinalAbilityScores(draft), [draft])
+  const armorClass = useMemo(() => getSheetArmorClass(draft, scores, session), [draft, scores, session])
+  const baseArmorClass = useMemo(() => getSheetArmorClass(draft, scores), [draft, scores])
+  const baseSpeed = useMemo(() => getSheetSpeed(draft, scores) ?? 0, [draft, scores])
 
   if (!sheet || !state || !guide) return null
-  return { draft, characterName, sheet, state, session, guide, armorClass, appDice, run }
+  return { draft, characterName, sheet, state, session, guide, armorClass, baseArmorClass, baseSpeed, appDice, run }
 }
 
 /** "Meio-Orc · Bárbaro · nível 3"; na multiclasse, "Humano · Guerreiro 3º / Mago 2º — nível 5". */

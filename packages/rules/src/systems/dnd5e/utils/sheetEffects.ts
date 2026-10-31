@@ -6,7 +6,6 @@ import type {
   ActiveEffect, AttackScope, CastingRestriction, ConditionalAcBonus, ConditionalRollNote, EquipmentRequirement, FeatureEffects,
   LevelStep, LoadingOverride, ResourceEffect, ToggleBenefits, ToggleDeclaration,
 } from '../types/effects'
-import type { SheetAction } from '../types/actions'
 import { NO_SESSION, type ResolvedToggle, type SheetSession, type SheetToggle, type SourcedActiveEffect } from '../types/session'
 import { getFeat } from './featUtils'
 import { getOwnedFeats } from './ownedFeats'
@@ -79,7 +78,7 @@ export function getOwnedClassFeaturesByEntry(
  * Traços raciais que o personagem tem, já com a sub-raça aplicada (ela pode substituir os da
  * raça-mãe), e quem os concede — a sub-raça, quando houver. `null` sem raça escolhida.
  */
-function getOwnedRacialTraits(
+export function getOwnedRacialTraits(
   draft: CharacterDraft,
 ): { source: ResourceSource; traits: RacialTrait[] } | null {
   const race = draft.race ? getRace(draft.race) : undefined
@@ -361,21 +360,6 @@ export function getSheetToggles(draft: CharacterDraft): SheetToggle[] {
     if (r.blocks?.includes('concentrate')) t.effects.push({ source: r.source, effect: { kind: 'endsConcentration', scope: 'gameState', page: t.page } })
   }
   return toggles
-}
-
-/**
- * As ações das características (`actions`: entrar em fúria, encerrá-la), das features de classe e
- * subclasse no nível NA classe dona, com quem as dá. O mesmo id vale uma vez. É o que as
- * operações de jogo usam (`performAction`): o custo e o que a ação liga ou desliga.
- */
-export function getSheetActions(draft: CharacterDraft): SheetAction[] {
-  const out: SheetAction[] = []
-  for (const feature of getOwnedClassFeatures(draft)) {
-    for (const action of feature.effects?.actions ?? []) {
-      if (!out.some(o => o.id === action.id)) out.push({ ...action, source: feature.name })
-    }
-  }
-  return out
 }
 
 // ── Deslocamento ───────────────────────────────────────────────────────────────
@@ -898,7 +882,7 @@ export function getMeleeCritExtraWeaponDice(draft: CharacterDraft): ScopedSheetE
  * o pré-requisito de opção (Lâmina Sedenta sem o Pacto da Lâmina) não vale: fica pendente na etapa
  * Classe e de fora daqui.
  */
-function getOwnedProgressionOptions(
+export function getOwnedProgressionOptions(
   draft: CharacterDraft,
 ): { entry: ClassEntry; slot: ProgressionSlot; option: ProgressionOption }[] {
   return allClassEntries(draft).flatMap(entry => {

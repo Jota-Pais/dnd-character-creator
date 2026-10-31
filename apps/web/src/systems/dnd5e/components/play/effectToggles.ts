@@ -6,7 +6,7 @@ import { getSpell } from '@rpg/rules/systems/dnd5e/utils/spellUtils'
 /** As ações que ligam e desligam o efeito (a Fúria: entrar e encerrar), pelo que elas causam. */
 export function togglingActions(sheet: PlaySheet, id: string): { on?: SheetAction; off?: SheetAction } {
   const causes = (kind: 'toggleOn' | 'toggleOff') =>
-    sheet.actions.find(a => a.outcomes.some(o => o.kind === kind && o.toggle === id))
+    sheet.actions.find(a => (a.outcomes ?? []).some(o => o.kind === kind && o.toggle === id))
   return { on: causes('toggleOn'), off: causes('toggleOff') }
 }
 

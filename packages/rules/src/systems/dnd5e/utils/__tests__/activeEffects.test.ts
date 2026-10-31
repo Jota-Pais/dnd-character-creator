@@ -10,7 +10,7 @@ import { buildPlaySheet } from '../playSheet'
 import { createPlayState } from '../playState'
 import { getConcentrationGuide, getRollGuide } from '../rollGuide'
 import { formatArmorClassBreakdown } from '../armorClassUtils'
-import { getCastingRestrictions, getSheetActions, getSheetArmorClass, getSheetToggles } from '../sheetEffects'
+import { getCastingRestrictions, getSheetArmorClass, getSheetToggles } from '../sheetEffects'
 
 /** Itens comprados pelo método riqueza: as armas e a armadura que a ficha considera equipadas. */
 const carrying = (...itemIds: string[]) => ({
@@ -91,15 +91,6 @@ describe('getSheetToggles: a Fúria com o que a modifica', () => {
 
   it('sem a Fúria, nada', () => {
     expect(getSheetToggles({ ...structuredClone(EMPTY_DRAFT), class: 'wizard', level: 5 })).toEqual([])
-  })
-})
-
-describe('getSheetActions', () => {
-  it('as duas ações da Fúria, com a origem', () => {
-    expect(getSheetActions(barbarian(1)).map(a => [a.id, a.source, a.cost?.[0]?.resource ?? null])).toEqual([
-      ['rage-enter', 'Fúria', 'rage'],
-      ['rage-end', 'Fúria', null],
-    ])
   })
 })
 

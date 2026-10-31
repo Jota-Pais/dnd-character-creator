@@ -669,7 +669,8 @@ export type FeatureEffects = {
   toggleModifiers?: ToggleModifier[]
   /**
    * As ações da característica, com o custo e o que causam (entrar em fúria, encerrá-la). Lidas em
-   * features de classe e subclasse, no nível NA classe dona (`getSheetActions`).
+   * features de classe e subclasse, no nível NA classe dona, nos talentos, nos traços raciais e nas
+   * opções escolhidas em slot de progressão (`getSheetActions`).
    */
   actions?: ActionDeclaration[]
   /**

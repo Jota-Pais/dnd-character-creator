@@ -1240,7 +1240,7 @@ export function performAction(state0: PlayState, sheet: PlaySheet, actionId: str
     }
     next = { ...next, resourcesSpent: { ...next.resourcesSpent, [r.id]: (next.resourcesSpent[r.id] ?? 0) + cost.amount } }
   }
-  for (const outcome of action.outcomes) {
+  for (const outcome of action.outcomes ?? []) {
     const r = outcome.kind === 'toggleOn'
       ? activateToggle(next, sheet, outcome.toggle, on)
       : deactivateToggle(next, sheet, outcome.toggle)

@@ -213,7 +213,7 @@ export type PlaySheet = {
    * bloqueio pelo equipamento já avaliado. As operações resolvem o `activeEffects` contra eles.
    */
   toggles: SheetToggle[]
-  /** As ações das características (`getSheetActions`): o custo e o que ligam ou desligam. */
+  /** As ações da ficha (`getSheetActions`): o momento, o custo e o que causam. */
   actions: SheetAction[]
 }
 

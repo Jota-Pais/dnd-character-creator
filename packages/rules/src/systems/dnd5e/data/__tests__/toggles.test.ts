@@ -64,7 +64,7 @@ describe('efeitos ligados nos dados', () => {
         ...(h.effects.castingRestriction?.toggle ? [[label, h.effects.castingRestriction.toggle]] : []),
         ...(h.effects.actions ?? []).flatMap(a => [
           ...(a.requiresToggle ? [[label, a.requiresToggle]] : []),
-          ...a.outcomes.map(o => [label, o.toggle]),
+          ...(a.outcomes ?? []).map(o => [label, o.toggle]),
         ]),
         ...(h.effects.toggleModifiers ?? []).map(m => [label, m.toggle]),
       ]
@@ -124,16 +124,18 @@ describe('efeitos ligados nos dados', () => {
     expect(OPTIONS.some(h => h.where === 'opção totem-aspects')).toBe(false)
   })
 
-  it('efeito ligado, modificador e ação só nas features de classe e nas opções, onde a ficha os lê', () => {
+  // As ações a ficha lê também nos talentos e traços raciais (`getSheetActions`); o efeito ligado e o
+  // modificador, só nas features de classe e nas opções.
+  it('efeito ligado e modificador só nas features de classe e nas opções, onde a ficha os lê', () => {
     type Loose = { name: string; effects?: Record<string, unknown> }
     const races = racesData as unknown as { traits: Loose[]; subraces: { traits: Loose[] }[] }[]
     const elsewhere = [
       ...(featsData as unknown as Loose[]),
       ...races.flatMap(r => [...r.traits, ...r.subraces.flatMap(s => s.traits)]),
-    ].filter(x => x.effects && ['toggle', 'toggleModifiers', 'actions'].some(k => k in x.effects!))
+    ].filter(x => x.effects && ['toggle', 'toggleModifiers'].some(k => k in x.effects!))
     expect(elsewhere.map(x => x.name)).toEqual([])
     // O efeito ligado é de feature de classe; opção só o modifica.
-    expect(OPTIONS.filter(h => h.effects.toggle || h.effects.actions).map(h => h.name)).toEqual([])
+    expect(OPTIONS.filter(h => h.effects.toggle).map(h => h.name)).toEqual([])
   })
 })
 

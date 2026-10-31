@@ -6,8 +6,9 @@ import { getFinalAbilityScores } from './asiUtils'
 import { getHitDicePool } from './multiclassUtils'
 import { getSavingThrowChecks } from './proficiencyUtils'
 import { getSessionToggles } from './activeEffects'
+import { getSheetActions } from './actionUtils'
 import {
-  getDamageDefenses, getDropToOneHp, getHpMaxReductionImmunity, getInitiativeBonusTotal, getOwnedFeats, getSheetActions,
+  getDamageDefenses, getDropToOneHp, getHpMaxReductionImmunity, getInitiativeBonusTotal, getOwnedFeats,
   getSheetResources, getSheetSpeed, getTotalHp,
 } from './sheetEffects'
 import { getCombinedSpellSlots, getPactSlots } from './spellUtils'

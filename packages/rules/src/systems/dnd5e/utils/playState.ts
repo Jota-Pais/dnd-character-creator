@@ -1030,6 +1030,11 @@ export type ToggleOn = { option?: string; now: number; sustainedByConcentration?
  * Tira um efeito ligado do rascunho `next` da operação, com o que vem quando ele acaba: o que o app
  * não aplica, em aviso (a letargia da Velocidade), e o que a opção custa (o Frenesi: um nível de
  * exaustão, pelo caminho do `setExhaustion`, com os avisos dele).
+ *
+ * A magia que você conjurou em si e sustentava (`sustainedByConcentration`) leva junto a
+ * concentração nela, por qualquer caminho do fim — o "Já acabou", o descanso —, porque a
+ * concentração dura no máximo o que a magia dura (pág. 205, linhas 18299-18302). A que acaba PELA
+ * concentração já a encontra encerrada.
  */
 function endToggleInto(next: PlayState, sheet: PlaySheet, id: string, notices: PlayNotice[]): void {
   const active = next.activeEffects.find(a => a.id === id)
@@ -1037,6 +1042,9 @@ function endToggleInto(next: PlayState, sheet: PlaySheet, id: string, notices: P
   next.activeEffects = next.activeEffects.filter(a => a.id !== id)
   const toggle = sheet.toggles.find(t => t.id === id)
   if (toggle?.onEnd) notices.push(note('warning', `${toggle.source} acabou: ${toggle.onEnd.notice} (pág. ${toggle.page}).`))
+  if (active.sustainedByConcentration && toggle?.spellId && next.concentration?.spellId === toggle.spellId) {
+    endConcentrationInto(next, sheet, notices, `${toggle.source} acabou`)
+  }
   const option = active.option ? toggle?.options.find(o => o.id === active.option) : undefined
   const exhaustion = option?.onEnd?.exhaustion ?? 0
   if (!option || exhaustion === 0) return
@@ -1090,7 +1098,8 @@ function endTogglesOnState(next: PlayState, sheet: PlaySheet, notices: PlayNotic
  * Fúria, de 1 minuto, num descanso de pelo menos 1 hora, pág. 48 e 188) terminam, com aviso e com o
  * que a opção custa ao acabar (o Frenesi: um nível de exaustão) — ANTES do que o descanso devolve,
  * porque acabaram no começo dele: a exaustão do Frenesi vem antes do −1 do descanso longo, e os
- * Dados de Vida do curto, gastos no fim (pág. 188), já veem o PV máximo depois dela.
+ * Dados de Vida do curto, gastos no fim (pág. 188), já veem o PV máximo depois dela. A magia que
+ * você sustentava (a sua Bênção) acaba com a concentração nela, com o aviso (`endToggleInto`).
  *
  * O descanso não dá benefícios a quem morre: se o fim leva à exaustão 6 (pág. 292), recusa e diz
  * para encerrar o efeito antes, na seção Efeitos ativos. Sem efeito a encerrar, devolve o estado
@@ -1169,20 +1178,16 @@ export function activateToggle(state0: PlayState, sheet: PlaySheet, id: string, 
 
 /**
  * Desliga um efeito ligado, com o que a opção dele custa ao acabar (o Frenesi: +1 de exaustão). A
- * magia que você conjurou em si e sustentava acabou: a concentração nela também.
+ * magia que você conjurou em si e sustentava acabou: a concentração nela também (`endToggleInto`).
  */
 export function deactivateToggle(state0: PlayState, sheet: PlaySheet, id: string): PlayResult {
   const toggle = sheet.toggles.find(t => t.id === id)
-  const active = state0.activeEffects.find(a => a.id === id)
-  if (!active) {
+  if (!state0.activeEffects.some(a => a.id === id)) {
     return refuse(state0, toggle ? `Não está ${lowerFirst(toggle.label)}.` : `Efeito desconhecido: ${id}.`)
   }
   const next: PlayState = { ...reconcilePlayState(state0, sheet) }
   const notices: PlayNotice[] = []
   endToggleInto(next, sheet, id, notices)
-  if (active.sustainedByConcentration && next.concentration && next.concentration.spellId === toggle?.spellId) {
-    endConcentrationInto(next, sheet, notices, `${toggle?.source ?? id} acabou`)
-  }
   return done(next, notices)
 }
 

@@ -2002,6 +2002,33 @@ describe('efeitos recebidos: a magia sustentada pela sua concentração', () => 
     expect(r.notices).toEqual([{ kind: 'concentrationEnded', text: 'A concentração em Bênção terminou: Bênção acabou.' }])
   })
 
+  // A concentração dura no máximo o que a magia dura (pág. 205, linhas 18299-18302): a magia própria
+  // que o descanso encerra leva a concentração junto, como o "Já acabou".
+  it('o descanso que encerra a magia própria encerra a concentração nela; a de aliado não mexe na sua', () => {
+    const short = completeShortRest(self(state(), 'spell:bless').state, cleric)
+    expect(short.state.activeEffects).toEqual([])
+    expect(short.state.concentration).toBeNull()
+    expect(short.notices).toContainEqual({ kind: 'info', text: 'Bênção: acaba durante o descanso (pág. 223).' })
+    expect(short.notices).toContainEqual({ kind: 'concentrationEnded', text: 'A concentração em Bênção terminou: Bênção acabou.' })
+    // A Bênção de um aliado acaba no descanso, e a sua concentração em outra magia fica.
+    const allyBless = ally(startConcentration(state(), cleric, { label: 'Raio de Luar' }, 1).state, 'spell:bless').state
+    const rested = completeShortRest(allyBless, cleric)
+    expect(rested.state.activeEffects).toEqual([])
+    expect(rested.state.concentration?.label).toBe('Raio de Luar')
+  })
+
+  it('o descanso longo encerra o Auxílio Divino do paladino e a concentração nele', () => {
+    const paladin = buildPlaySheet({
+      ...structuredClone(EMPTY_DRAFT), race: 'human', class: 'paladin', level: 2,
+      spellChoices: { cantrips: [], spells: ['divine-favor'] },
+    })
+    const favored = activateToggle(state(), paladin, 'spell:divine-favor', { now: 1 }).state
+    const long = completeLongRest(favored, paladin)
+    expect(long.state.activeEffects).toEqual([])
+    expect(long.state.concentration).toBeNull()
+    expect(long.notices).toContainEqual({ kind: 'concentrationEnded', text: 'A concentração em Auxílio Divino terminou: Auxílio Divino acabou.' })
+  })
+
   it('a Velocidade própria que acaba com a concentração avisa a letargia', () => {
     const wizard = buildPlaySheet({ ...structuredClone(EMPTY_DRAFT), race: 'human', class: 'wizard', level: 5 })
     const hasted = activateToggle(state(), wizard, 'spell:haste', { now: 1, sustainedByConcentration: true }).state

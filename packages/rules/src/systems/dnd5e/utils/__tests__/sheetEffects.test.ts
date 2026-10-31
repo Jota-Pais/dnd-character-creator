@@ -36,6 +36,8 @@ import {
   formatCastingRestriction,
   getDamageDefenses,
   describeDamageDefenses,
+  getSpellDamageBonuses,
+  getCantripSaveHalfDamage,
 } from '../sheetEffects'
 import {
   getArmorProficiencies, hasArmorProficiency, hasWeaponProficiency,
@@ -1311,5 +1313,57 @@ describe('getCastingRestrictions (Fúria)', () => {
       expect(Boolean(option.effects?.castsSpells), option.name).toBe(/para conjurar/.test(option.description ?? ''))
     }
     expect(getFeat('conjurador-de-ritual')?.effects?.castsSpells).toBe(true)
+  })
+})
+
+/**
+ * Os bônus no dano de magia (`spellDamageBonus`) e o Truque Potente: a feature de classe no nível
+ * NA classe dona, a invocação escolhida e o tipo do ancestral resolvido. O guia da magia os lê.
+ */
+describe('getSpellDamageBonuses / getCantripSaveHalfDamage', () => {
+  const SCORES = { STR: 10, DEX: 14, CON: 14, INT: 18, WIS: 12, CHA: 16 }
+  const caster = (classId: string, level: number, subclass: string | null, progressionChoices: Record<string, string[]> = {}) => draft({
+    class: classId, level, abilityScores: SCORES,
+    classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), subclass, progressionChoices },
+  })
+  const bonuses = (d: CharacterDraft) => getSpellDamageBonuses(d, getFinalAbilityScores(d))
+
+  it('a Explosão Agonizante escolhida: +CAR em cada feixe da rajada mística', () => {
+    const d = caster('warlock', 2, 'fiend', { 'warlock-invocations-2': ['explosao-agonizante', 'visao-diabolica'] })
+    expect(bonuses(d)).toEqual([
+      { source: 'Explosão Agonizante', match: { ids: ['eldritch-blast'] }, value: 3, ability: 'CHA', per: 'instance' },
+    ])
+  })
+
+  it('no nível NA classe dona: a Evocação Potencializada no mago 10, e não no guerreiro 5 / mago 9', () => {
+    expect(bonuses(caster('wizard', 10, 'evocation'))).toEqual([
+      { source: 'Evocação Potencializada', match: { schools: ['evocação'], spellClass: 'wizard' }, value: 4, ability: 'INT', per: 'roll' },
+    ])
+    const multi = draft({
+      ...caster('fighter', 14, null),
+      additionalClasses: [{
+        classId: 'wizard', level: 9, classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), subclass: 'evocation' },
+        spellChoices: { cantrips: [], spells: [] }, asiChoices: [], hpRolls: [],
+      }],
+    })
+    expect(bonuses(multi)).toEqual([])
+    expect(getCantripSaveHalfDamage(multi)).toBe('Truque Potente')
+    expect(getCantripSaveHalfDamage(caster('wizard', 5, 'evocation'))).toBeNull()
+  })
+
+  it('a Afinidade Elemental toma o tipo do ancestral escolhido; sem a escolha, fica de fora', () => {
+    expect(bonuses(caster('sorcerer', 6, 'draconic-bloodline', { 'draconic-ancestor-1': ['blue'] }))).toEqual([
+      { source: 'Afinidade Elemental', match: { damageType: 'lightning' }, value: 3, ability: 'CHA', per: 'roll' },
+    ])
+    expect(bonuses(caster('sorcerer', 6, 'draconic-bloodline'))).toEqual([])
+  })
+
+  it('a Conjuração Poderosa dos domínios do Conhecimento e da Luz, no clérigo 8', () => {
+    for (const subclass of ['knowledge-domain', 'light-domain']) {
+      expect(bonuses(caster('cleric', 8, subclass))).toEqual([
+        { source: 'Conjuração Poderosa', match: { spellClass: 'cleric', cantripsOnly: true }, value: 1, ability: 'WIS', per: 'roll' },
+      ])
+      expect(bonuses(caster('cleric', 7, subclass))).toEqual([])
+    }
   })
 })

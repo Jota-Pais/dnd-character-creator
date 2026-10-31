@@ -2034,3 +2034,68 @@ export function describeDamageDefenses(defenses: readonly SheetDamageDefense[]):
       && defenses.some(o => o.kind === 'immunity' && o.source === d.source && o.condition === d.condition)))
     .map(d => describeDamageDefense(d, defenses))
 }
+
+// ── Bônus no dano de magia ───────────────────────────────────────────────────
+//
+// O que as características somam ao dano das magias (`spellDamageBonus`) e o Truque Potente
+// (`cantripSaveHalfDamage`), que o guia da magia (`spellGuide.ts`) lê. Até a onda
+// `magias-modificadores`, o bônus vai numa nota da receita, com o valor (a fórmula ainda não o
+// soma); o Truque Potente já muda o texto do TR.
+
+import type { SpellDamageBonus } from '../types/effects'
+import { getPickedOption } from './progressionOptions'
+
+/**
+ * Um bônus no dano de magia da ficha: quem o dá, em quais magias (com o tipo do ancestral já
+ * resolvido), o valor calculado e o atributo dele, e se vale em cada instância ou numa jogada.
+ */
+export type SheetSpellDamageBonus = {
+  source: string
+  match: Omit<SpellDamageBonus['match'], 'damageType'> & { damageType?: DamageTypeId }
+  value: number
+  /** O atributo de que o valor é o modificador (Carisma na Explosão Agonizante). */
+  ability?: AbilityScore
+  per: SpellDamageBonus['per']
+}
+
+/**
+ * Os bônus no dano de magia da ficha: features de classe e subclasse no nível NA classe dona,
+ * opções escolhidas em slot de progressão (a Explosão Agonizante) e talentos, com os atributos
+ * finais. O `ancestor` toma o tipo do ancestral que a característica mostra (`showsPick`); sem a
+ * escolha (a etapa Classe fica pendente), o bônus fica de fora. A mesma característica de duas
+ * fontes entra uma vez.
+ */
+export function getSpellDamageBonuses(draft: CharacterDraft, scores: FinalScores): SheetSpellDamageBonus[] {
+  const prof = getProficiencyBonus(draft.level ?? 1)
+  const out: SheetSpellDamageBonus[] = []
+  const add = (source: string, bonus: SpellDamageBonus | undefined, level: number, ancestor?: DamageTypeId) => {
+    if (!bonus || out.some(b => b.source === source)) return
+    const { damageType, ...match } = bonus.match
+    const resolvedType = damageType === 'ancestor' ? ancestor : damageType
+    if (damageType === 'ancestor' && !resolvedType) return
+    out.push({
+      source,
+      match: { ...match, ...(resolvedType ? { damageType: resolvedType } : {}) },
+      value: evaluateQuantity(bonus.value, level, scores, prof),
+      ...(typeof bonus.value !== 'number' && bonus.value.ability ? { ability: bonus.value.ability } : {}),
+      per: bonus.per,
+    })
+  }
+  for (const { entry, features } of getOwnedClassFeaturesByEntry(draft)) {
+    for (const feature of features) {
+      const bonus = feature.effects?.spellDamageBonus
+      const ancestor = bonus?.match.damageType === 'ancestor' && feature.showsPick
+        ? getPickedOption(entry, feature.showsPick.slot)?.damageType
+        : undefined
+      add(feature.name, bonus, entry.level, ancestor)
+    }
+  }
+  for (const { entry, option } of getOwnedProgressionOptions(draft)) add(option.name, option.effects?.spellDamageBonus, entry.level)
+  for (const feat of getOwnedFeats(draft)) add(feat.name, feat.effects?.spellDamageBonus, draft.level ?? 1)
+  return out
+}
+
+/** Quem dá o Truque Potente à ficha (feature de classe, no nível NA classe dona), ou null. */
+export function getCantripSaveHalfDamage(draft: CharacterDraft): string | null {
+  return getOwnedClassFeatures(draft).find(f => f.effects?.cantripSaveHalfDamage)?.name ?? null
+}

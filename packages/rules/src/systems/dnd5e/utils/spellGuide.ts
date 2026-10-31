@@ -3,10 +3,13 @@ import type { PlayState } from '../types/playState'
 import type { AbilityScore } from '../types/race'
 import type { Spell } from '../types/spell'
 import type { SpellAmountPart, SpellDamagePart, SpellInstances, SpellMechanics } from '../types/spellMechanics'
-import { ABILITY_LABELS } from './abilityScoreUtils'
-import { getDamageTypeName } from './damageTypes'
+import { ABILITY_LABELS, formatModifier } from './abilityScoreUtils'
+import { getFinalAbilityScores } from './asiUtils'
+import { getClass } from './classUtils'
+import { getDamageLabel, getDamageTypeName } from './damageTypes'
 import { damageEntry, healEntry, type GuideBreakdownItem, type RollGuideEntry } from './guideEntries'
 import { getRollGuide, type RollGuide, type SpellcastingGuide } from './rollGuide'
+import { getCantripSaveHalfDamage, getSpellDamageBonuses, type SheetSpellDamageBonus } from './sheetEffects'
 import { getKnownSpells } from './sheetModel'
 import { getSpellMechanics, scaledDiceCount, scaledFlat, type SpellCastContext } from './spellMechanics'
 import { getSpell } from './spellUtils'
@@ -130,12 +133,51 @@ function instanceStepsNote(instances: SpellInstances): string | null {
   return `A quantidade de ${PLURAL[instances.noun]} cresce com o nível de personagem — ${joinPt(steps.map(s => `${s.value} no ${s.from}º`))}.`
 }
 
-function saveText(save: Omit<SpellGuideSave, 'text'>): string {
+/** O texto do TR; `halfBy` é quem dá a metade no lugar do "nenhum dano" (o Truque Potente). */
+function saveText(save: Omit<SpellGuideSave, 'text'>, halfBy: string | null = null): string {
   const dc = save.dc !== null ? ` (CD ${save.dc})` : ''
-  const success = save.onSuccess === 'half' ? 'no sucesso, metade do dano'
+  const success = save.onSuccess === 'half' ? `no sucesso, metade do dano${halfBy ? ` (${halfBy})` : ''}`
     : save.onSuccess === 'none' ? 'no sucesso, nenhum dano'
       : 'o sucesso faz o que o texto da magia diz'
   return `TR de ${ABILITY_LABELS[save.ability].long} do alvo${dc}: ${success}.`
+}
+
+/**
+ * O bônus vale nesta parte do dano da magia? Pelas palavras do livro: a magia (a rajada mística), a
+ * escola e a lista da classe ("magia de evocação de mago"), o truque ("truque de clérigo") e o tipo
+ * (o do ancestral dracônico; na escolha de tipo, quando ele está entre os da escolha).
+ */
+function bonusApplies(bonus: SheetSpellDamageBonus, spell: Spell, part: SpellDamagePart): boolean {
+  const { ids, schools, spellClass, cantripsOnly, damageType } = bonus.match
+  if (ids && !ids.includes(spell.id)) return false
+  if (schools && !schools.includes(spell.school)) return false
+  if (spellClass && !spell.classes.includes(spellClass)) return false
+  if (cantripsOnly && spell.level !== 0) return false
+  if (damageType && !(typeof part.type === 'string' ? [part.type] : part.type.choose).includes(damageType)) return false
+  return true
+}
+
+/** "truques de clérigo", "magias de evocação de mago", "dano de fogo do seu ancestral": em quais magias o bônus vale. */
+function bonusScope(bonus: SheetSpellDamageBonus): string | null {
+  const { schools, spellClass, cantripsOnly, damageType } = bonus.match
+  if (damageType) return `${getDamageLabel(damageType)} do seu ancestral`
+  if (!schools && !spellClass && !cantripsOnly) return null
+  const className = spellClass ? getClass(spellClass)?.name.toLowerCase() : undefined
+  return [cantripsOnly ? 'truques' : 'magias', ...(schools ? [`de ${joinOr(schools)}`] : []), ...(className ? [`de ${className}`] : [])].join(' ')
+}
+
+/**
+ * O bônus no dano que a fórmula ainda não soma (até a onda `magias-modificadores`), numa nota com o
+ * valor: "Explosão Agonizante: some +3 (Carisma) ao dano de cada feixe que acerta; a fórmula ainda
+ * não o inclui." Sem ela, a receita passaria por completa com o número errado.
+ */
+function pendingBonusNote(bonus: SheetSpellDamageBonus, instanceNoun: string | null, severalRolls: boolean): string {
+  const scope = bonusScope(bonus)
+  const ability = bonus.ability ? ` (${ABILITY_LABELS[bonus.ability].long})` : ''
+  const where = bonus.per === 'instance' && instanceNoun ? `ao dano de cada ${instanceNoun} que acerta`
+    : severalRolls ? 'a uma só jogada de dano da magia'
+      : 'ao dano'
+  return `${bonus.source}${scope ? ` (${scope})` : ''}: some ${formatModifier(bonus.value)}${ability} ${where}; a fórmula ainda não o inclui.`
 }
 
 /** "No 4º nível: 9d6 (+1d6)": o que cada parte ganhou com o espaço acima do da magia. */
@@ -213,10 +255,14 @@ function buildSpellGuide(draft: CharacterDraft, spell: Spell, mech: SpellMechani
     })()
     : undefined
 
+  // Truque Potente: quem passa no TR de um truque de dano seu sofre metade do dano, não nenhum.
+  const halfBy = resolution.kind === 'save' && resolution.onSuccess === 'none' && spell.level === 0 && (mech.damage?.length ?? 0) > 0
+    ? getCantripSaveHalfDamage(draft)
+    : null
   const save: SpellGuideSave | undefined = resolution.kind === 'save'
     ? (() => {
-      const base = { ability: resolution.ability, dc: caster?.saveDc ?? null, onSuccess: resolution.onSuccess }
-      return { ...base, text: saveText(base), ...(resolution.note ? { note: resolution.note } : {}) }
+      const base = { ability: resolution.ability, dc: caster?.saveDc ?? null, onSuccess: halfBy ? 'half' as const : resolution.onSuccess }
+      return { ...base, text: saveText(base, halfBy), ...(resolution.note ? { note: resolution.note } : {}) }
     })()
     : undefined
 
@@ -243,6 +289,13 @@ function buildSpellGuide(draft: CharacterDraft, spell: Spell, mech: SpellMechani
     : undefined
 
   const damageParts = mech.damage ?? []
+  // Os bônus no dano que a ficha tem e a fórmula ainda não soma: nota na parte e na magia.
+  const bonuses = damageParts.length > 0 ? getSpellDamageBonuses(draft, getFinalAbilityScores(draft)) : []
+  const severalRolls = damageParts.length > 1 || (instances?.count ?? 1) > 1
+  const bonusNotes = (part: SpellDamagePart) => bonuses
+    .filter(b => bonusApplies(b, spell, part))
+    .map(b => pendingBonusNote(b, instances?.noun ?? null, severalRolls))
+  for (const n of damageParts.flatMap(bonusNotes)) if (!notes.includes(n)) notes.push(n)
   const damage = damageParts.map((part, i) => {
     const typeName = typeof part.type === 'string' ? getDamageTypeName(part.type) : ''
     const bonus = bonusParts(part, at, spell.name, ability)
@@ -254,6 +307,7 @@ function buildSpellGuide(draft: CharacterDraft, spell: Spell, mech: SpellMechani
       ...(typeof part.type === 'string' ? [] : [`Tipo à escolha: ${joinOr(part.type.choose.map(getDamageTypeName))}.`]),
       ...(part.when ? [`Só ${part.when}.`] : []),
       ...(bonus.missingModifier ? [MISSING_MODIFIER] : []),
+      ...bonusNotes(part),
       ...(instances && instances.count > 1 ? [`${instances.text} no seu nível: cada ${instances.noun} que acerta causa este dano.`] : []),
       ...(mech.instances ? [instanceStepsNote(mech.instances)] : []),
       cantripStepsNote(part),

@@ -27,7 +27,10 @@
     "id": "explosao-agonizante",
     "name": "Explosão Agonizante",
     "description": "Quando você conjura rajada mística, adicione seu modificador de Carisma ao dano causado quando atingir.",
-    "prerequisite": "truque rajada mística"
+    "prerequisite": "truque rajada mística",
+    "effects": {
+      "spellDamageBonus": { "match": { "ids": ["eldritch-blast"] }, "value": { "ability": "CHA" }, "per": "instance" }
+    }
   },
   {
     "id": "explosao-repulsiva",

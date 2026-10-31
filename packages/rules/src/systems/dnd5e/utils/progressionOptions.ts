@@ -268,8 +268,11 @@ export function getProgressionChoiceBlocks(entries: ClassEntry[]): ProgressionCh
 
 // ── Escolha que a ficha mostra fora das Escolhas de Progressão ──────────────
 
-/** A opção escolhida num slot que o nível na classe já liberou; null sem escolha (ou id desconhecido). */
-function getPickedOption(entry: ClassEntry, slotId: string): ProgressionOption | null {
+/**
+ * A opção escolhida num slot que o nível na classe já liberou; null sem escolha (ou id desconhecido).
+ * O tipo do ancestral da Afinidade Elemental sai daqui (`getSpellDamageBonuses`).
+ */
+export function getPickedOption(entry: ClassEntry, slotId: string): ProgressionOption | null {
   const { classId, level, classChoices: { subclass, progressionChoices } } = entry
   const slot = getProgressionSlotsUpToLevel(classId, subclass, level, progressionChoices).find(s => s.id === slotId)
   const picked = slot ? progressionChoices[slot.id]?.[0] : undefined

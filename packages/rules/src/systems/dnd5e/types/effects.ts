@@ -3,6 +3,7 @@ import type { ArmorProficiency } from './class'
 import type { AgainstYouEffect, ConditionId, NoticeEffect, RollCategory, RollModeEffect, StateEffect } from './condition'
 import type { DamageTypeId } from './damage'
 import type { AbilityScore } from './race'
+import type { SpellClass, SpellSchool } from './spell'
 
 /**
  * Efeitos mecânicos estruturados de uma característica — talentos, features de classe e (por ora só
@@ -696,11 +697,46 @@ export type FeatureEffects = {
    */
   actions?: ActionDeclaration[]
   /**
+   * Bônus no dano das magias (Explosão Agonizante, Conjuração Poderosa, Evocação Potencializada,
+   * Afinidade Elemental). Lido em features de classe e subclasse (no nível NA classe dona), nas
+   * opções escolhidas em slot de progressão e nos talentos (`getSpellDamageBonuses`). Até a onda
+   * `magias-modificadores`, que o põe na fórmula com a parcela nomeada, o guia da magia o diz numa
+   * nota: a receita nunca passa por completa sem ele.
+   */
+  spellDamageBonus?: SpellDamageBonus
+  /**
+   * Truque Potente (mago evocador 6, p. 99): a criatura que passa no TR de um truque seu sofre
+   * metade do dano, em vez de nenhum. Lido em features de classe e subclasse, no nível NA classe
+   * dona (`getCantripSaveHalfDamage`); o guia da magia o põe no texto do TR.
+   */
+  cantripSaveHalfDamage?: true
+  /**
    * Recursos que a característica dá: usos que se gastam e voltam no descanso (Fúria, Surto de
    * Ação), poços (Chi, Cura pelas Mãos) e dados que crescem com o nível (Ataque Furtivo). A ficha
    * não gasta nada — só mostra quanto se tem e quando volta, pra marcar a lápis na mesa.
    */
   resources?: ResourceEffect[]
+}
+
+/**
+ * Um bônus no dano das magias (desenho da Fase 2, onda `magias-modificadores`). `match` diz em
+ * quais magias, com as palavras do livro: `ids` (a rajada mística), `schools` e `spellClass` (as
+ * "magias de evocação de mago": a escola e a lista da classe), `cantripsOnly` (os "truques de
+ * clérigo") e `damageType` (`ancestor`: o tipo do ancestral dracônico que a característica mostra,
+ * `showsPick`). `value` é o que se soma (o modificador de um atributo); `per`, se vale em cada
+ * instância (cada feixe da Explosão Agonizante) ou numa jogada de dano da magia ("o bônus se aplica
+ * a uma rolagem de dano da magia, não à múltiplas rolagens").
+ */
+export type SpellDamageBonus = {
+  match: {
+    ids?: string[]
+    schools?: SpellSchool[]
+    spellClass?: SpellClass
+    cantripsOnly?: true
+    damageType?: DamageTypeId | 'ancestor'
+  }
+  value: ResourceQuantity
+  per: 'roll' | 'instance'
 }
 
 // ── Recursos (de classe, talento ou raça) ──────────────────────────────────────

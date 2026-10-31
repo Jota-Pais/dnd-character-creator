@@ -809,7 +809,10 @@
       {
         "level": 8,
         "name": "Conjuração Poderosa",
-        "description": "Você adiciona seu modificador de Sabedoria no dano causado por qualquer truque de clérigo."
+        "description": "Você adiciona seu modificador de Sabedoria no dano causado por qualquer truque de clérigo.",
+        "effects": {
+          "spellDamageBonus": { "match": { "spellClass": "cleric", "cantripsOnly": true }, "value": { "ability": "WIS" }, "per": "roll" }
+        }
       },
       {
         "level": 17,
@@ -921,7 +924,10 @@
       {
         "level": 8,
         "name": "Conjuração Poderosa",
-        "description": "Você adiciona seu modificador de Sabedoria no dano causado por qualquer truque de clérigo."
+        "description": "Você adiciona seu modificador de Sabedoria no dano causado por qualquer truque de clérigo.",
+        "effects": {
+          "spellDamageBonus": { "match": { "spellClass": "cleric", "cantripsOnly": true }, "value": { "ability": "WIS" }, "per": "roll" }
+        }
       },
       {
         "level": 17,
@@ -1588,7 +1594,10 @@
         "level": 6,
         "name": "Afinidade Elemental",
         "showsPick": { "slot": "draconic-ancestor-1", "as": "damageType" },
-        "description": "Quando conjurar uma magia que cause dano do tipo do seu ancestral dracônico, some seu modificador de Carisma a uma única rolagem de dano dessa magia. Ao mesmo tempo, pode gastar 1 ponto de feitiçaria para ganhar resistência a esse tipo de dano por 1 hora."
+        "description": "Quando conjurar uma magia que cause dano do tipo do seu ancestral dracônico, some seu modificador de Carisma a uma única rolagem de dano dessa magia. Ao mesmo tempo, pode gastar 1 ponto de feitiçaria para ganhar resistência a esse tipo de dano por 1 hora.",
+        "effects": {
+          "spellDamageBonus": { "match": { "damageType": "ancestor" }, "value": { "ability": "CHA" }, "per": "roll" }
+        }
       },
       {
         "level": 14,
@@ -1776,12 +1785,16 @@
       {
         "level": 6,
         "name": "Truque Potente",
-        "description": "Quando uma criatura passa no teste de resistência contra um truque seu de dano, ela sofre metade do dano (se houver), mas nenhum efeito adicional."
+        "description": "Quando uma criatura passa no teste de resistência contra um truque seu de dano, ela sofre metade do dano (se houver), mas nenhum efeito adicional.",
+        "effects": { "cantripSaveHalfDamage": true }
       },
       {
         "level": 10,
         "name": "Evocação Potencializada",
-        "description": "Some seu modificador de Inteligência a uma rolagem de dano de cada magia de evocação de mago que você conjurar (não a várias rolagens da mesma magia)."
+        "description": "Some seu modificador de Inteligência a uma rolagem de dano de cada magia de evocação de mago que você conjurar (não a várias rolagens da mesma magia).",
+        "effects": {
+          "spellDamageBonus": { "match": { "schools": ["evocação"], "spellClass": "wizard" }, "value": { "ability": "INT" }, "per": "roll" }
+        }
       },
       {
         "level": 14,

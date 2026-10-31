@@ -154,6 +154,63 @@ describe('guia da magia: os truques do lote T', () => {
   })
 })
 
+/**
+ * Os bônus da ficha no dano dos truques. Até a onda `magias-modificadores`, que os põe na fórmula
+ * com a parcela nomeada, o guia os diz numa nota com o valor: a receita não passa por completa sem
+ * eles. O Truque Potente já muda o texto do TR.
+ */
+describe('guia da magia: os bônus da ficha no dano dos truques', () => {
+  const sub = (classId: string, level: number, subclass: string, cantrips: string[], progressionChoices: Record<string, string[]> = {}) => draft({
+    class: classId, level, abilityScores: SCORES, classChoices: choices({ subclass, progressionChoices }),
+    spellChoices: { cantrips, spells: [] },
+  })
+  const spellOf = (d: CharacterDraft, casterKey: string, spellId: string) => getSpellGuide(d, play(), { casterKey, spellId })!
+
+  it('Explosão Agonizante (pág. 61): o bruxo 5 com CAR 16 lê o +3 de cada feixe, que a fórmula ainda não soma', () => {
+    const blast = (choices: Record<string, string[]>) => spellOf(sub('warlock', 5, 'fiend', ['eldritch-blast'], choices), 'class:warlock', 'eldritch-blast')
+    const guide = blast({ 'warlock-invocations-2': ['explosao-agonizante', 'visao-diabolica'] })
+    const note = 'Explosão Agonizante: some +3 (Carisma) ao dano de cada feixe que acerta; a fórmula ainda não o inclui.'
+    expect(guide.damage[0].formula).toBe('1d10 energia')
+    expect(guide.damage[0].notes).toContain(note)
+    // Na magia também: a aba Magia mostra a nota embaixo das jogadas, sem abrir a receita.
+    expect(guide.notes).toEqual([note])
+    expect(blast({ 'warlock-invocations-2': ['visao-diabolica'] }).notes).toEqual([])
+  })
+
+  it('Truque Potente (pág. 99): o mago evocador 6 dá metade do dano no sucesso do TR dos truques; o 5, ainda não', () => {
+    const splash = (level: number) => spellOf(sub('wizard', level, 'evocation', ['acid-splash']), 'class:wizard', 'acid-splash')
+    const text = 'TR de Destreza do alvo (CD 14): no sucesso, metade do dano (Truque Potente).'
+    expect(splash(6).save).toMatchObject({ onSuccess: 'half', text })
+    expect(splash(6).damage[0].notes[0]).toBe(text)
+    expect(splash(5).save).toMatchObject({ onSuccess: 'none', text: 'TR de Destreza do alvo (CD 14): no sucesso, nenhum dano.' })
+  })
+
+  it('Evocação Potencializada (pág. 100): o evocador 10 lê o +INT nas magias de evocação de mago, não no Espirro Ácido', () => {
+    const d = sub('wizard', 10, 'evocation', ['fire-bolt', 'acid-splash'])
+    const bolt = spellOf(d, 'class:wizard', 'fire-bolt')
+    expect(bolt.damage[0].formula).toBe('2d10 fogo')
+    expect(bolt.notes).toEqual(['Evocação Potencializada (magias de evocação de mago): some +3 (Inteligência) ao dano; a fórmula ainda não o inclui.'])
+    // O Espirro Ácido é de conjuração.
+    expect(spellOf(d, 'class:wizard', 'acid-splash').notes).toEqual([])
+  })
+
+  it('Conjuração Poderosa (págs. 67 e 69): o clérigo da Luz 8 lê o +SAB nos truques de clérigo; o 7, ainda não', () => {
+    const flame = (level: number) => spellOf(sub('cleric', level, 'light-domain', ['sacred-flame']), 'class:cleric', 'sacred-flame')
+    expect(flame(8).damage[0].formula).toBe('2d8 radiante')
+    expect(flame(8).notes).toEqual(['Conjuração Poderosa (truques de clérigo): some +3 (Sabedoria) ao dano; a fórmula ainda não o inclui.'])
+    expect(flame(7).notes).toEqual([])
+  })
+
+  it('Afinidade Elemental (pág. 80): o feiticeiro dracônico 6 de ancestral Vermelho lê o +CAR no dano de fogo, não no de frio', () => {
+    const d = sub('sorcerer', 6, 'draconic-bloodline', ['fire-bolt', 'ray-of-frost'], { 'draconic-ancestor-1': ['red'] })
+    expect(spellOf(d, 'class:sorcerer', 'fire-bolt').notes)
+      .toEqual(['Afinidade Elemental (dano de fogo do seu ancestral): some +3 (Carisma) ao dano; a fórmula ainda não o inclui.'])
+    expect(spellOf(d, 'class:sorcerer', 'ray-of-frost').notes).toEqual([])
+    // Sem o ancestral escolhido (a etapa Classe fica pendente), sem nota.
+    expect(spellOf(sub('sorcerer', 6, 'draconic-bloodline', ['fire-bolt']), 'class:sorcerer', 'fire-bolt').notes).toEqual([])
+  })
+})
+
 describe('guia da magia: o ataque é o da conjuração', () => {
   it('o mesmo número, modo, notação e "de onde vem" do ataque de magia do guia de rolagens', () => {
     const d = caster('wizard', 3, ['fire-bolt'])

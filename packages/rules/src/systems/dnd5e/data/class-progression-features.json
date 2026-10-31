@@ -887,8 +887,8 @@
       {
         "level": 17,
         "name": "Avatar da Batalha",
-        "description": "Você adquire resistência a dano de concussão, cortante e perfurante proveniente de ataques com armas não-mágicas.",
-        "effects": { "damageDefenses": { "resistances": ["bludgeoning", "piercing", "slashing"], "condition": "de ataque com arma não mágica" } }
+        "description": "Você adquire resistência a dano de concussão, cortante e perfurante de ataques não-mágicos.",
+        "effects": { "damageDefenses": { "resistances": ["bludgeoning", "piercing", "slashing"], "condition": "de ataque não mágico" } }
       }
     ],
     "light-domain": [

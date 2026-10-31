@@ -1111,11 +1111,13 @@ describe('getDamageDefenses e describeDamageDefenses', () => {
       { source: 'Aura de Vigilância', kind: 'resistance', types: 'all', condition: 'de magia' },
     ])
     expect(lines(sub('paladin', 7, 'oath-of-the-ancients'))).toEqual(['Resistência a todo dano de magia (Aura de Vigilância)'])
+    // O Avatar da Batalha segue o pt-BR, "de ataques não-mágicos", como a Maestria em Armadura
+    // Pesada (decisão de 2026-10-30): a mesma situação, uma caixa só no painel de PV.
     expect(getDamageDefenses(sub('cleric', 17, 'war-domain'))).toEqual([
-      { source: 'Avatar da Batalha', kind: 'resistance', types: ['bludgeoning', 'piercing', 'slashing'], condition: 'de ataque com arma não mágica' },
+      { source: 'Avatar da Batalha', kind: 'resistance', types: ['bludgeoning', 'piercing', 'slashing'], condition: 'de ataque não mágico' },
     ])
     expect(lines(sub('cleric', 17, 'war-domain'))).toEqual([
-      'Resistência a concussão, cortante e perfurante de ataque com arma não mágica (Avatar da Batalha)',
+      'Resistência a concussão, cortante e perfurante de ataque não mágico (Avatar da Batalha)',
     ])
   })
 

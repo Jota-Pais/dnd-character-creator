@@ -71,7 +71,7 @@ describe('stripHpSign', () => {
 describe('o tipo do dano e as caixas das defesas', () => {
   const infernal: SheetDamageDefense = { source: 'Resistência Infernal', kind: 'resistance', types: ['fire'] }
   const avatar: SheetDamageDefense = {
-    source: 'Avatar da Batalha', kind: 'resistance', types: ['bludgeoning', 'piercing', 'slashing'], condition: 'de ataque com arma não mágica',
+    source: 'Avatar da Batalha', kind: 'resistance', types: ['bludgeoning', 'piercing', 'slashing'], condition: 'de ataque não mágico',
   }
   const aura: SheetDamageDefense = { source: 'Aura de Vigilância', kind: 'resistance', types: 'all', condition: 'de magia' }
   const master: SheetDamageDefense = {
@@ -108,9 +108,9 @@ describe('o tipo do dano e as caixas das defesas', () => {
     expect(getDefenseQuestions([avatar, aura], [undefined])).toEqual({
       conditions: [{ text: 'de magia', sources: ['Aura de Vigilância'] }], exceptions: [],
     })
+    // O Avatar da Batalha e a Maestria em Armadura Pesada: a mesma situação, uma caixa só.
     expect(getDefenseQuestions([avatar, master], ['slashing']).conditions).toEqual([
-      { text: 'de ataque com arma não mágica', sources: ['Avatar da Batalha'] },
-      { text: 'de ataque não mágico', sources: ['Maestria em Armadura Pesada'] },
+      { text: 'de ataque não mágico', sources: ['Avatar da Batalha', 'Maestria em Armadura Pesada'] },
     ])
     expect(getDefenseQuestions([avatar], ['fire']).conditions).toEqual([])
     expect(getDefenseQuestions([fiend], ['fire']).exceptions).toEqual([{ text: 'arma mágica ou de prata', sources: ['Resistência Demoníaca'] }])
@@ -133,7 +133,8 @@ describe('o tipo do dano e as caixas das defesas', () => {
 
   it('a linha diz só o que vai valer: a condicional com a caixa marcada, a de exceção sem a caixa que a cancela', () => {
     expect(getDefensesForTypes([avatar, master], ['slashing'], {})).toEqual([])
-    expect(getDefensesForTypes([avatar, master], ['slashing'], { conditionalDefenses: ['de ataque não mágico'] })).toEqual([master])
+    expect(getDefensesForTypes([avatar, master], ['slashing'], { conditionalDefenses: ['de ataque não mágico'] })).toEqual([avatar, master])
+    expect(getDefensesForTypes([aura, master], ['slashing'], { conditionalDefenses: ['de ataque não mágico'] })).toEqual([master])
     expect(getDefensesForTypes([fiend], ['fire'], {})).toEqual([fiend])
     expect(getDefensesForTypes([fiend], ['fire'], { exceptions: ['arma mágica ou de prata'] })).toEqual([])
   })

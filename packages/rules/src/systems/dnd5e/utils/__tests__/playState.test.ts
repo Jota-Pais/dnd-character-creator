@@ -1526,6 +1526,19 @@ describe('applyDamage — o tipo do dano e as defesas da ficha', () => {
       }, petrified)).toBe(3)
     })
 
+    // O Avatar da Batalha segue o pt-BR ("de ataques não-mágicos", linhas 5643-5645), como a Maestria
+    // (decisão de 2026-10-30): o mesmo golpe marca uma caixa só, e as duas valem.
+    it('clérigo da Guerra 17 de Placas com a Maestria: uma caixa liga a redução e o Avatar da Batalha', () => {
+      const cleric = sheetOf({ ...sub('cleric', 17, 'war-domain'), raceChoices: { feat: 'maestria-em-armadura-pesada' }, equipment: wearing('plate') })
+      const r = applyDamage(state(), cleric, { amount: 10, damageType: 'slashing', ...NON_MAGICAL })
+      expect(getCurrentHp(state(), cleric) - getCurrentHp(r.state, cleric)).toBe(3)
+      expect(texts(r)).toEqual([
+        'Redução de 3 em cortante (Maestria em Armadura Pesada): 10 → 7.',
+        'Resistência a cortante (Avatar da Batalha): 7 → 3.',
+      ])
+      expect(lost(cleric, { amount: 10, damageType: 'slashing' })).toBe(10)
+    })
+
     it('a parcela menor que a redução zera, e o que sobra sai da seguinte', () => {
       const petrified = state({ conditions: ['petrified'] })
       const r = applyDamage(petrified, master('plate'), {

@@ -464,7 +464,7 @@ describe('HpPanel — o tipo do dano', () => {
       sheet: s.sheet && {
         ...s.sheet,
         defenses: [
-          { source: 'Avatar da Batalha', kind: 'resistance', types: ['bludgeoning', 'piercing', 'slashing'], condition: 'de ataque com arma não mágica' },
+          { source: 'Avatar da Batalha', kind: 'resistance', types: ['bludgeoning', 'piercing', 'slashing'], condition: 'de ataque não mágico' },
           { source: 'Resistência Demoníaca', kind: 'resistance', types: ['slashing'], exceptWhen: 'arma mágica ou de prata' },
         ],
       },
@@ -472,11 +472,11 @@ describe('HpPanel — o tipo do dano', () => {
     render(<PlayScreen />)
     fireEvent.click(screen.getByRole('button', { name: 'Dano' }))
     fireEvent.click(typeGroup().getByRole('button', { name: 'Cortante' }))
-    const avatarLine = 'Resistência a concussão, cortante e perfurante de ataque com arma não mágica (Avatar da Batalha)'
+    const avatarLine = 'Resistência a concussão, cortante e perfurante de ataque não mágico (Avatar da Batalha)'
     const fiendLine = 'Resistência a cortante, salvo arma mágica ou de prata (Resistência Demoníaca)'
     expect(screen.queryByText(avatarLine)).toBeNull()
     expect(screen.getByText(fiendLine)).toBeInTheDocument()
-    fireEvent.click(screen.getByLabelText('Dano de ataque com arma não mágica? (Avatar da Batalha)'))
+    fireEvent.click(screen.getByLabelText('Dano de ataque não mágico? (Avatar da Batalha)'))
     expect(screen.getByText(avatarLine)).toBeInTheDocument()
     fireEvent.click(screen.getByLabelText('Arma mágica ou de prata? (anula Resistência Demoníaca)'))
     expect(screen.queryByText(fiendLine)).toBeNull()

@@ -148,7 +148,8 @@ export type DamageDefenses = {
   reduction?: { amount: number; types: DamageTypeId[] }
   /**
    * Só vale nesta situação, que vem depois de "dano" na linha e na caixa: "de magia" (Aura de
-   * Vigilância), "de ataque não mágico" (Maestria em Armadura Pesada).
+   * Vigilância), "de ataque não mágico" (Maestria em Armadura Pesada e Avatar da Batalha, que segue
+   * o pt-BR, decisão de 2026-10-30). A mesma situação de duas fontes é uma caixa só.
    */
   condition?: string
   /**

@@ -2,11 +2,11 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { act, render, screen, fireEvent, cleanup, within } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { usePlayStore } from '../../../stores/playStore'
-import { applyDamage, castSpell, getCurrentHp, performAction } from '@rpg/rules/systems/dnd5e/utils/playState'
+import { applyDamage, getCurrentHp } from '@rpg/rules/systems/dnd5e/utils/playState'
 import type { SpellMechanics } from '@rpg/rules/systems/dnd5e/types/spellMechanics'
 import { EMPTY_DRAFT, type CharacterDraft } from '@rpg/rules/systems/dnd5e/types/character'
 import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
-import { openDraft, resetPlay } from './openPlay'
+import { liveRegions, openDraft, resetPlay } from './openPlay'
 
 /**
  * Uma entrada de mentira para Curar Ferimentos, que chega no lote 1: só para exercitar o "Em você?"
@@ -101,28 +101,53 @@ describe('SpellCastSheet — conjurar pelo grimório', () => {
     expect(within(sorcerer).queryByRole('radio', { name: /ritual/ })).not.toBeInTheDocument()
   })
 
-  it('os avisos saem numa região viva montada antes deles: a magia de ação bônus no turno (pág. 204)', () => {
+  // Na ordem em que se joga: o que muda a prévia (a Palavra Curativa, a fúria) vem pela tela, ANTES
+  // de abrir a folha — o fundo escuro dela fecha a folha, e nada muda o estado com ela aberta.
+  it('a magia de ação bônus conjurada antes: o aviso nasce no Conjurar, e a região viva, vazia (pág. 204)', () => {
     openMagic(CLERIC)
+    fireEvent.click(within(openCast('Palavra Curativa').sheet).getByRole('button', { name: 'Conjurar' }))
+    expect(playState().turn.bonusAction).toBe(true)
+
     const { sheet } = openCast('Curar Ferimentos')
-    const region = sheet.querySelector('[aria-live]')!
-    expect(region).toBeEmptyDOMElement()
-    // A Palavra Curativa (ação bônus) conjurada com a folha aberta: o aviso entra na mesma região.
-    act(() => { usePlayStore.getState().run((st, sh) => castSpell(st, sh, { casterKey: 'class:cleric', spellId: 'healing-word', castLevel: 1, pay: 'slot', now: 1 })) })
-    expect(region).toHaveTextContent('Palavra Curativa é de ação bônus: no turno dela, a única outra magia possível é um truque de 1 ação, antes ou depois dela (pág. 204). Curar Ferimentos não é.')
+    const regions = liveRegions().filter(r => sheet.contains(r))
+    expect(regions).toHaveLength(1)
+    expect(regions[0]).toBeEmptyDOMElement()
+    // A prévia é texto comum, que o leitor lê ao focar o Conjurar.
+    const conjure = within(sheet).getByRole('button', { name: 'Conjurar' })
+    expect(conjure).toHaveAccessibleDescription(
+      'Palavra Curativa é de ação bônus: no turno dela, a única outra magia possível é um truque de 1 ação, antes ou depois dela (pág. 204). Curar Ferimentos não é. Se já é outro turno, toque em Novo turno.',
+    )
     // O aviso não impede: Conjurar vale.
-    fireEvent.click(within(sheet).getByRole('button', { name: 'Conjurar' }))
+    fireEvent.click(conjure)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(playState().spellSlotsSpent[0]).toBe(2)
   })
 
-  it('recusado (em fúria), a recusa fica na folha e o foco no Conjurar, sem gastar nada', () => {
+  it('em fúria pela aba Ações: a recusa já está no Conjurar; cada toque a escreve na região viva, e o foco fica', () => {
+    const RAGE = 'Mísseis Mágicos: Em fúria você não pode conjurar magias (pág. 48).'
     openMagic(BARBARIAN_WIZARD)
+    fireEvent.click(screen.getByRole('tab', { name: 'Ações' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Usar: Entrar em fúria' }))
+    expect(playState().activeEffects.map(a => a.id)).toContain('rage')
+    fireEvent.click(screen.getByRole('tab', { name: 'Magia' }))
+
     const { sheet } = openCast('Mísseis Mágicos')
-    act(() => { usePlayStore.getState().run((st, sh) => performAction(st, sh, 'rage-enter', { now: 1 })) })
+    const [region] = liveRegions().filter(r => sheet.contains(r))
+    expect(region).toBeEmptyDOMElement()
     const conjure = within(sheet).getByRole('button', { name: 'Conjurar' })
+    expect(conjure).toHaveAccessibleDescription(RAGE)
+
     conjure.focus()
     fireEvent.click(conjure)
     expect(screen.getByRole('dialog', { name: 'Mísseis Mágicos' })).toBeInTheDocument()
-    expect(sheet.querySelector('[aria-live]')).toHaveTextContent('Mísseis Mágicos: Em fúria você não pode conjurar magias (pág. 48).')
+    expect(region).toHaveTextContent(RAGE)
+    // Igual à prévia, o texto sai dela: uma vez só na folha.
+    expect(within(sheet).getAllByText(RAGE)).toHaveLength(1)
+    // O toque seguinte escreve de novo (outro parágrafo), e o leitor anuncia outra vez.
+    const first = region.firstElementChild
+    fireEvent.click(conjure)
+    expect(region.firstElementChild).not.toBe(first)
+    expect(region).toHaveTextContent(RAGE)
     expect(conjure).toHaveFocus()
     expect(playState().spellSlotsSpent.every(n => n === 0)).toBe(true)
   })

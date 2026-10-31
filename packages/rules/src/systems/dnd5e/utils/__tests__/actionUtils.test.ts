@@ -143,6 +143,16 @@ describe('getSheetActions', () => {
     expect(ids(draftOf('barbarian', 1, undefined, carrying('handaxe', 'shortsword')))).toContain('two-weapon-fighting')
   })
 
+  // Ambidestro: "Você pode usar combater com duas armas mesmo que a arma de uma mão que você está
+  // empunhando não seja leve" (linhas 14945-14947).
+  it('com o Ambidestro, duas armas corpo a corpo de uma mão bastam, leves ou não; a de duas mãos, não', () => {
+    const dual = (...items: string[]) => draftOf('barbarian', 4, undefined, { asiChoices: [{ kind: 'feat', featId: 'ambidestro' }], ...carrying(...items) })
+    expect(ids(dual('longsword', 'dagger'))).toContain('two-weapon-fighting')
+    expect(ids(dual('longsword', 'battleaxe'))).toContain('two-weapon-fighting')
+    expect(ids(dual('longsword', 'greatsword'))).not.toContain('two-weapon-fighting')
+    expect(ids(draftOf('barbarian', 4, undefined, carrying('longsword', 'dagger')))).not.toContain('two-weapon-fighting')
+  })
+
   it('Conjurar uma Magia só para quem é capaz de conjurar', () => {
     expect(ids(draftOf('barbarian', 1))).not.toContain('cast-a-spell')
     expect(ids(draftOf('barbarian', 1, undefined, { race: 'tiefling' }))).toContain('cast-a-spell')

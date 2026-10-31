@@ -140,6 +140,17 @@ describe('getSheetAttacks', () => {
     it('adaga + besta de mão (leve, mas à distância): sem a nota', () => {
       expect(daggerNotes(draft({ level: 1, class: 'rogue', ...carrying('dagger', 'hand-crossbow') }))).toEqual([])
     })
+
+    // Ambidestro: "mesmo que a arma de uma mão que você está empunhando não seja leve" (linhas
+    // 14945-14947).
+    it('com o Ambidestro, espada longa + adaga: a nota nas duas, com o talento; o machado grande fica de fora', () => {
+      const d = draft({ level: 1, class: 'fighter', raceChoices: { feat: 'ambidestro' }, ...carrying('longsword', 'dagger', 'greataxe') })
+      const notes = Object.fromEntries(getSheetAttacks(d, scores({ STR: 16 })).map(a => [a.key, a.notes]))
+      const base = 'com outra arma corpo a corpo na outra mão: ataque extra como ação bônus, sem somar o modificador no dano (a menos que seja negativo) (Ambidestro)'
+      expect(notes.longsword).toEqual([base])
+      expect(notes.dagger).toEqual([base])
+      expect(notes.greataxe).toEqual([])
+    })
   })
 
   it('Especialista em Briga dá 1d4 ao golpe desarmado de quem não é monge', () => {

@@ -189,7 +189,7 @@ describe('weaponFormat', () => {
     })
 
     it('arma leve: a regra-base do ataque da outra mão (p. 197), trocada pelo Combate com Duas Armas', () => {
-      const pair = { twoLightMeleeWeapons: true }
+      const pair = { twoWeaponFighting: { weapons: 'melee-light' as const, source: null, carriesTwo: true } }
       expect(getWeaponAttack(getWeaponById('shortsword')!, ctx(0, 3, 2, true, pair)).notes).toEqual([TWF_BASE])
       // uma arma leve só: a regra-base não tem o que dizer
       expect(getWeaponAttack(getWeaponById('shortsword')!, ctx(0, 3, 2, true)).notes).toEqual([])
@@ -201,6 +201,21 @@ describe('weaponFormat', () => {
       expect(twf.damage).toBe('1d6+3 perfurante')
       // besta de mão é leve, mas à distância: não é combate com duas armas
       expect(getWeaponAttack(getWeaponById('hand-crossbow')!, ctx(0, 3, 2, true, pair)).notes).toEqual([])
+    })
+
+    // Ambidestro: "Você pode usar combater com duas armas mesmo que a arma de uma mão que você está
+    // empunhando não seja leve" (linhas 14945-14947).
+    it('com o Ambidestro, a nota vale na arma corpo a corpo de uma mão que não é leve; na de duas mãos, não', () => {
+      const dual = { twoWeaponFighting: { weapons: 'melee-one-handed' as const, source: 'Ambidestro', carriesTwo: true } }
+      const base = 'com outra arma corpo a corpo na outra mão: ataque extra como ação bônus, sem somar o modificador no dano (a menos que seja negativo) (Ambidestro)'
+      expect(getWeaponAttack(getWeaponById('longsword')!, ctx(3, 0, 2, true, dual)).notes).toEqual([base])
+      expect(getWeaponAttack(getWeaponById('dagger')!, ctx(3, 0, 2, true, dual)).notes).toEqual([base])
+      expect(getWeaponAttack(getWeaponById('greatsword')!, ctx(3, 0, 2, true, dual)).notes).toEqual([])
+      // O Estilo de Luta vale no ataque da outra mão, leve ou não.
+      const styled = getWeaponAttack(getWeaponById('longsword')!, ctx(3, 0, 2, true, { ...dual, effects: style('two-weapon-fighting') }))
+      expect(styled.notes).toEqual([
+        'com outra arma corpo a corpo na outra mão: ataque extra como ação bônus, somando o modificador no dano (Combate com Duas Armas, Ambidestro)',
+      ])
     })
   })
 

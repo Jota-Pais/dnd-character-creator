@@ -35,11 +35,12 @@ export type ActionOutcome =
   | { kind: 'standUp' }
 
 /**
- * O que a ação exige da ficha ou do estado, para aparecer: duas armas leves corpo a corpo
- * carregadas (Combater com Duas Armas, p. 197), ser capaz de conjurar magias (Conjurar uma Magia,
- * `canCastSpells`) ou estar Caído (Levantar-se, p. 192).
+ * O que a ação exige da ficha ou do estado, para aparecer: o par de armas do combate com duas armas
+ * carregado (as leves corpo a corpo, p. 197, ou as de uma mão com o Ambidestro, p. 167:
+ * `getTwoWeaponFighting`), ser capaz de conjurar magias (Conjurar uma Magia, `canCastSpells`; em
+ * fúria, não, `getCastingBlockers`) ou estar Caído (Levantar-se, p. 192).
  */
-export type ActionRequirement = 'twoLightMeleeWeapons' | 'spellcaster' | 'prone'
+export type ActionRequirement = 'twoWeaponFighting' | 'spellcaster' | 'prone'
 
 export type ActionDeclaration = {
   /** Único entre as ações da ficha ('rage-enter'). */

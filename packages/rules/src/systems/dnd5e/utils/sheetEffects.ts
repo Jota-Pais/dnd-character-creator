@@ -1147,6 +1147,18 @@ export function getUnarmedDamageDie(draft: CharacterDraft): SheetEffect<number> 
 }
 
 /**
+ * O que muda as armas do combate com duas armas (Ambidestro: as corpo a corpo de uma mão, leves ou
+ * não, p. 167), de talentos. Sem ele, as leves corpo a corpo (p. 197). Quem conta as armas
+ * carregadas é `getTwoWeaponFighting` (attackUtils).
+ */
+export function getTwoWeaponFightingScope(draft: CharacterDraft): { weapons: AttackScope; source: string | null } {
+  const feat = getOwnedFeats(draft).find(f => f.effects?.twoWeaponFighting)
+  return feat?.effects?.twoWeaponFighting
+    ? { weapons: feat.effects.twoWeaponFighting.weapons, source: feat.name }
+    : { weapons: 'melee-light', source: null }
+}
+
+/**
  * O que ignora a propriedade recarga (Especialista em Besta, p. 169), de talentos e features.
  * Quem decide se vale numa arma — id e proficiência — é `getWeaponAttack`.
  */

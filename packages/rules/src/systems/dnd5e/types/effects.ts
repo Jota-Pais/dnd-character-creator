@@ -659,6 +659,12 @@ export type FeatureEffects = {
   /** Ignora a recarga destas armas (Especialista em Besta, p. 169). Lido em talentos e features. */
   ignoresLoading?: LoadingOverride
   /**
+   * As armas do combate com duas armas no lugar das leves corpo a corpo (Ambidestro: "Você pode usar
+   * combater com duas armas mesmo que a arma de uma mão que você está empunhando não seja leve",
+   * p. 167): `melee-one-handed`. Lido em talentos (`getTwoWeaponFightingScope`).
+   */
+  twoWeaponFighting?: { weapons: AttackScope }
+  /**
    * Defesas contra dano e condição (Resistência Infernal, Pureza Corporal, Aura de Vigilância,
    * Maestria em Armadura Pesada). Lidas de features de classe e subclasse (no nível NA classe
    * dona), opções escolhidas em slot de progressão, talentos e traços raciais, por

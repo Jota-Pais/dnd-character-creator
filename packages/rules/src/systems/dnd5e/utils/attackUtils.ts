@@ -7,11 +7,11 @@ import { getStartingInventory } from './sheetModel'
 import { calculateModifier, getProficiencyBonus } from './abilityScoreUtils'
 import { hasWeaponProficiency } from './proficiencyUtils'
 import {
-  getWeaponAttackEffects, getMartialArts, getUnarmedDamageDie, getAttacksPerAction, getLoadingOverrides,
+  getWeaponAttackEffects, getMartialArts, getUnarmedDamageDie, getAttacksPerAction, getLoadingOverrides, getTwoWeaponFightingScope,
 } from './sheetEffects'
 import type { FinalScores } from './classResourceUtils'
 import {
-  getUnarmedStrike, getWeaponAttack, hasProperty, isUnarmedStrikeInScope, isWeaponInScope, type WeaponAttack,
+  getUnarmedStrike, getWeaponAttack, hasProperty, isUnarmedStrikeInScope, isWeaponInScope, type TwoWeaponFighting, type WeaponAttack,
 } from './weaponFormat'
 
 /**
@@ -31,17 +31,20 @@ export function getEquippedWeapons(draft: CharacterDraft): Weapon[] {
 }
 
 /**
- * Se o personagem carrega ao menos duas armas leves corpo a corpo (contando a quantidade: duas
- * adagas valem) — o que combater com duas armas pede (p. 197). Sem isso, a nota do ataque da
- * outra mão não tem o que dizer.
+ * O combate com duas armas da ficha (p. 197): as armas que ele aceita — as leves corpo a corpo, ou,
+ * com o Ambidestro, as corpo a corpo de uma mão (p. 167, `getTwoWeaponFightingScope`) — e se o
+ * personagem carrega duas delas (contando a quantidade: duas adagas valem). A ação "Atacar com a
+ * outra mão" e a nota da linha de ataque fazem esta mesma pergunta; sem o par, a nota não tem o que
+ * dizer.
  */
-export function carriesTwoLightMeleeWeapons(draft: CharacterDraft): boolean {
+export function getTwoWeaponFighting(draft: CharacterDraft): TwoWeaponFighting {
+  const { weapons, source } = getTwoWeaponFightingScope(draft)
   let count = 0
   for (const { id, quantity } of getCarriedItems(draft)) {
     const weapon = getWeaponById(id)
-    if (weapon && isWeaponInScope(weapon, 'melee-light')) count += quantity
+    if (weapon && isWeaponInScope(weapon, weapons)) count += quantity
   }
-  return count >= 2
+  return { weapons, source, carriesTwo: count >= 2 }
 }
 
 /** A arma de uma linha de ataque, para as regras que dependem dela (crítico, Pesada, arremesso). */
@@ -87,7 +90,7 @@ export function getSheetAttacks(draft: CharacterDraft, finalScores: FinalScores,
     effects: getWeaponAttackEffects(draft, finalScores, session),
     attacksPerAction: getAttacksPerAction(draft),
     loadingOverrides: getLoadingOverrides(draft),
-    twoLightMeleeWeapons: carriesTwoLightMeleeWeapons(draft),
+    twoWeaponFighting: getTwoWeaponFighting(draft),
   }
   const ma = getMartialArts(draft, finalScores)
   const martialArts = ma?.active ? { source: ma.source, die: ma.die, condition: ma.condition } : undefined

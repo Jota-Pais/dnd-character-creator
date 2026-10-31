@@ -312,12 +312,19 @@ export type AttackContext = {
   /** O que ignora a propriedade recarga (`getLoadingOverrides`: Especialista em Besta). */
   loadingOverrides?: { source: string; value: LoadingOverride }[]
   /**
-   * Se o personagem carrega duas armas leves corpo a corpo (`carriesTwoLightMeleeWeapons`). Sem
-   * isso, a regra-base do ataque da outra mão (p. 197) fica fora da linha — só o Estilo de Luta
-   * Combate com Duas Armas a mostra mesmo assim.
+   * O combate com duas armas da ficha (`getTwoWeaponFighting`): as armas que ele aceita e se o
+   * personagem carrega duas. Sem o par, a regra-base do ataque da outra mão (p. 197) fica fora da
+   * linha — só o Estilo de Luta Combate com Duas Armas a mostra mesmo assim. Sem o campo, as leves
+   * corpo a corpo, sem o par.
    */
-  twoLightMeleeWeapons?: boolean
+  twoWeaponFighting?: TwoWeaponFighting
 }
+
+/**
+ * As armas do combate com duas armas — as leves corpo a corpo (p. 197) ou, com o Ambidestro, as de
+ * uma mão (`melee-one-handed`, p. 167), com quem o dá — e se o personagem carrega duas delas.
+ */
+export type TwoWeaponFighting = { weapons: AttackScope; source: string | null; carriesTwo: boolean }
 
 export type WeaponAttack = {
   name: string
@@ -451,13 +458,19 @@ export function getWeaponAttack(weapon: Weapon, ctx: AttackContext): WeaponAttac
 
   // Combater com duas armas (p. 197): o ataque da outra mão é de ação bônus e não soma o
   // modificador no dano, a menos que seja negativo — salvo com o Estilo de Luta (p. 85). A
-  // regra-base só aparece pra quem carrega duas armas leves; o Estilo, sempre.
-  if (isWeaponInScope(weapon, 'melee-light')) {
-    const style = effects.find(e => e.value.offHandAddsModifier)
+  // regra-base só aparece pra quem carrega o par; o Estilo, sempre. Com o Ambidestro (p. 167), nas
+  // armas corpo a corpo de uma mão, leves ou não — e o Estilo vale nelas também: ele é do combate
+  // com duas armas, seja qual for a arma que ele aceita.
+  const twf = ctx.twoWeaponFighting ?? { weapons: 'melee-light', source: null, carriesTwo: false }
+  if (isWeaponInScope(weapon, twf.weapons)) {
+    const style = (ctx.effects ?? []).find(e => e.value.offHandAddsModifier)
+    const other = twf.weapons === 'melee-light' ? 'outra arma leve' : 'outra arma corpo a corpo'
+    const by = [style?.source, twf.source].filter((s): s is string => !!s)
     if (style) {
-      notes.push(`com outra arma leve na outra mão: ataque extra como ação bônus, somando o modificador no dano (${style.source})`)
-    } else if (ctx.twoLightMeleeWeapons) {
-      notes.push('com outra arma leve na outra mão: ataque extra como ação bônus, sem somar o modificador no dano (a menos que seja negativo)')
+      notes.push(`com ${other} na outra mão: ataque extra como ação bônus, somando o modificador no dano (${by.join(', ')})`)
+    } else if (twf.carriesTwo) {
+      const from = by.length > 0 ? ` (${by.join(', ')})` : ''
+      notes.push(`com ${other} na outra mão: ataque extra como ação bônus, sem somar o modificador no dano (a menos que seja negativo)${from}`)
     }
   }
 

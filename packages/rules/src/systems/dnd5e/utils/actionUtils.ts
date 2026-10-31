@@ -1,7 +1,7 @@
 import type { CharacterDraft } from '../types/character'
 import type { ActionDeclaration, ActionGroup, ActionTiming, SheetAction } from '../types/actions'
 import combatActionsData from '../data/combat-actions.json'
-import { carriesTwoLightMeleeWeapons } from './attackUtils'
+import { getTwoWeaponFighting } from './attackUtils'
 import { getFeat } from './featUtils'
 import { getManeuver } from './maneuverUtils'
 import {
@@ -33,12 +33,13 @@ export const ACTION_DESTINATIONS = ['attacks', 'spellbook'] as const
 const COMBAT_ACTIONS_SOURCE = 'Ações em combate'
 
 /**
- * A ação que a ficha cumpre (o ataque com a outra mão só com duas armas leves corpo a corpo
- * carregadas, `carriesTwoLightMeleeWeapons`, a mesma pergunta da nota da linha de ataque; Conjurar
- * uma Magia só para quem conjura). O que depende do estado (estar Caído) fica para o jogo.
+ * A ação que a ficha cumpre (o ataque com a outra mão só com o par de armas do combate com duas
+ * armas carregado — as leves corpo a corpo, ou as de uma mão com o Ambidestro —,
+ * `getTwoWeaponFighting`, a mesma pergunta da nota da linha de ataque; Conjurar uma Magia só para
+ * quem conjura). O que depende do estado (estar Caído, em fúria) fica para o jogo.
  */
 function sheetMeets(draft: CharacterDraft, action: ActionDeclaration): boolean {
-  if (action.requires === 'twoLightMeleeWeapons') return carriesTwoLightMeleeWeapons(draft)
+  if (action.requires === 'twoWeaponFighting') return getTwoWeaponFighting(draft).carriesTwo
   if (action.requires === 'spellcaster') return canCastSpells(draft)
   return true
 }

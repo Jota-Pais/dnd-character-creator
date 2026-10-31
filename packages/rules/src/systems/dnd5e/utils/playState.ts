@@ -598,7 +598,8 @@ function applyDamageDefenses(input: DamageInput, defenses: SheetDamageDefense[],
  * Quem cai a 0 PV sem morrer e tem a Resistência Implacável com uso recebe também o aviso
  * `dropToOneHp`, com o dano: a tela desfaz e reaplica por `applyDamageDroppingToOneHp`. Quem cai em
  * fúria com a Fúria Implacável recebe o `dropToOneHpSave`, com a CD do teste e o dano: quem passa, a
- * tela desfaz e reaplica por `applyDamageDroppingToOneHp(…, 'save')`.
+ * tela desfaz e reaplica por `applyDamageDroppingToOneHp(…, 'save')`; quem falha, por aqui, com
+ * `zeroHpSaveFailed` no dano — a queda fica, e o uso conta (decisão de 2026-10-30).
  */
 export function applyDamage(state0: PlayState, sheet: PlaySheet, input: DamageInput): PlayResult {
   return damagePipeline(state0, sheet, input, null)
@@ -655,6 +656,7 @@ function damagePipeline(state0: PlayState, sheet: PlaySheet, input: DamageInput,
   const drop = availableDropToOneHp(state, sheet)
   const zeroHpSave = availableZeroHpSave(state, sheet)
   let dropped = false
+  let failedCounted = false
   if (state.lifeState === 'conscious') {
     const current = getCurrentHp(state, sheet)
     if (rest < current) {
@@ -662,6 +664,16 @@ function damagePipeline(state0: PlayState, sheet: PlaySheet, input: DamageInput,
     } else {
       const overflow = rest - current
       next.damageTaken = sheetMax
+      // "Cada vez que você utilizar essa característica" (pág. 49): a falha no teste também é uso
+      // (decisão de 2026-10-30), e a próxima CD sobe. O resto segue como sem o teste: a queda, ou a
+      // Resistência Implacável, que o meio-orc ainda pode usar.
+      if (overflow < effMax && input.zeroHpSaveFailed && zeroHpSave && dropBy !== 'save') {
+        failedCounted = true
+        const { save } = zeroHpSave
+        const dc = getZeroHpSaveDc(state, save)
+        next.restCounters = { ...next.restCounters, [save.counter]: (next.restCounters[save.counter] ?? 0) + 1 }
+        notices.push(note('info', `${save.source}: não passou no teste de resistência de ${ABILITY_LABELS[save.ability].long} (CD ${dc}). A falha também conta como uso: a próxima CD é ${dc + save.dcStep} (pág. ${save.page}).`))
+      }
       if (overflow >= effMax) {
         toDead(next, sheet, notices, `Morte instantânea: o dano que sobrou (${overflow}) é igual ou maior que o PV máximo (${effMax}) (pág. 199).`)
       } else if (dropBy === 'save' && zeroHpSave) {
@@ -692,7 +704,8 @@ function damagePipeline(state0: PlayState, sheet: PlaySheet, input: DamageInput,
           })
         }
         // A fúria já acabou com a queda (toZeroHp); quem passa no teste não caiu, e a tela reaplica.
-        if (zeroHpSave) {
+        // Quem já falhou nele não o faz de novo.
+        if (zeroHpSave && !failedCounted) {
           const { toggle, save } = zeroHpSave
           const dc = getZeroHpSaveDc(state, save)
           notices.push({
@@ -717,9 +730,12 @@ function damagePipeline(state0: PlayState, sheet: PlaySheet, input: DamageInput,
     notices.push(note('deathSaveFailure', `${added === 2 ? '2 fracassos (crítico)' : '1 fracasso'} no teste contra a morte por sofrer dano a 0 PV: ${failures}/3.`))
     if (failures >= 3) toDead(next, sheet, notices, 'Três fracassos no teste contra a morte (pág. 199).')
   }
-  if (dropBy && !dropped) {
+  // O 1 PV ou a falha no teste que não cabem neste dano: o dano vale como veio, e o aviso diz por quê.
+  const missed: DropToOneHpBy | null = dropBy && !dropped ? dropBy
+    : input.zeroHpSaveFailed && !failedCounted && dropBy !== 'save' ? 'save' : null
+  if (missed) {
     const declared = sheet.toggles.find(t => t.zeroHpSave)
-    const [source, need] = dropBy === 'trait'
+    const [source, need] = missed === 'trait'
       ? [sheet.dropToOneHp?.source ?? 'Ficar com 1 PV', 'com um uso disponível']
       : [declared?.zeroHpSave?.source ?? 'O teste para ficar com 1 PV', declared ? lowerFirst(declared.label) : 'com o efeito ligado']
     notices.push(note('warning', `${source} não se aplica a este dano: só quando ele deixaria você a 0 PV sem matar na hora, e ${need}. O dano foi aplicado normalmente.`))

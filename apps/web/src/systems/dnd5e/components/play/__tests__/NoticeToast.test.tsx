@@ -139,6 +139,35 @@ describe('desfazer e avisos', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Constituição CD 15')
   })
 
+  // A falha também é uso (decisão de 2026-10-30): o "Falhei" soma o uso sem mudar o PV, no mesmo
+  // passo do desfazer do dano.
+  it('o "Falhei" da Fúria Implacável conta o uso, fica a 0 PV e mantém a Resistência Implacável; o "Desfazer" volta tudo', () => {
+    openDraft({ ...structuredClone(COMPLETE_DRAFT), level: 11 })
+    usePlayStore.getState().run((st, sh) => performAction(st, sh, 'rage-enter', { now: 1 }))
+    render(<PlayScreen />)
+    const undoDepth = usePlayStore.getState().undoStack.length
+    damage(screen.getByTestId('hp-current').textContent ?? '')
+    const fail = within(screen.getByRole('status')).getByRole('button', { name: 'Falhei' })
+    fail.focus()
+    fireEvent.click(fail)
+    const st = usePlayStore.getState().state!
+    expect(st.lifeState).toBe('dying')
+    expect(st.activeEffects).toEqual([])
+    expect(st.restCounters).toEqual({ 'relentless-rage': 1 })
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('0')
+    const toast = screen.getByRole('status')
+    expect(toast).toHaveTextContent('A falha também conta como uso: a próxima CD é 15 (pág. 49).')
+    // O teste não volta; a Resistência Implacável, sim. O botão sumiu: o foco vai ao "Desfazer".
+    expect(within(toast).queryByRole('button', { name: 'Falhei' })).toBeNull()
+    expect(within(toast).getByRole('button', { name: /Usar Resistência Implacável/ })).toBeInTheDocument()
+    expect(within(toast).getByRole('button', { name: '↶ Desfazer' })).toHaveFocus()
+    // Um passo só: o dano e a falha saem juntos.
+    expect(usePlayStore.getState().undoStack).toHaveLength(undoDepth + 1)
+    fireEvent.click(within(toast).getByRole('button', { name: '↶ Desfazer' }))
+    expect(usePlayStore.getState().state).toMatchObject({ lifeState: 'conscious', restCounters: {}, damageTaken: 0 })
+    expect(usePlayStore.getState().state!.activeEffects.map(a => a.id)).toEqual(['rage'])
+  })
+
   // Quem passa não caiu: o teste é feito ainda em fúria, antes da exaustão que o Frenesi dá na queda.
   it('Furioso 11 com exaustão 2 cai em Frenesi: a receita do TR sai de antes da queda, sem a desvantagem da exaustão 3', () => {
     const berserker = { ...structuredClone(COMPLETE_DRAFT), level: 11, race: 'human', classChoices: { ...COMPLETE_DRAFT.classChoices, subclass: 'berserker' } }

@@ -2,7 +2,7 @@ import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type
 import { flushSync } from 'react-dom'
 import { usePlayStore } from '../../stores/playStore'
 import type { DamageInput, PlayNotice, PlayNoticeKind } from '@rpg/rules/systems/dnd5e/types/playState'
-import { applyDamageDroppingToOneHp, endConcentration, standUp, type DropToOneHpBy } from '@rpg/rules/systems/dnd5e/utils/playState'
+import { applyDamage, applyDamageDroppingToOneHp, endConcentration, standUp, type DropToOneHpBy } from '@rpg/rules/systems/dnd5e/utils/playState'
 import { describeRollGuide, getConcentrationGuide, getZeroHpSaveGuide, type RollGuideEntry } from '@rpg/rules/systems/dnd5e/utils/rollGuide'
 import type { PlayView } from './usePlayView'
 
@@ -43,7 +43,8 @@ export type NoticeToastHandle = { focus: () => boolean }
  * tela, com o "Desfazer" quando a ação mudou algo; a correção da ficha fica entre eles até o OK.
  * O aviso de concentração traz a CD e a receita do TR de Constituição (`getConcentrationGuide`),
  * com atalho para a folha e para encerrar; o da Fúria Implacável, a CD e a receita do teste
- * (`getZeroHpSaveGuide`), com o "Passei", que reaplica o dano terminando em 1 PV.
+ * (`getZeroHpSaveGuide`), com o "Passei", que reaplica o dano terminando em 1 PV, e o "Falhei", que o
+ * reaplica contando o uso.
  */
 export function NoticeToast({ view, onOpenRecipe, onHeightChange, onFocusAway, ref }: {
   view: PlayView
@@ -181,10 +182,17 @@ function NoticeLine({ notice, view, onOpenRecipe, canUndo, act }: {
     undo()
     view.run((st, sh) => applyDamageDroppingToOneHp(st, sh, damage, by))
   }
+  // A falha no teste também é uso (decisão de 2026-10-30): desfaz e reaplica o mesmo dano com a
+  // falha, que soma o uso sem mudar o PV, num passo só do desfazer, como o "Passei".
+  function failZeroHpSave(damage: DamageInput) {
+    undo()
+    view.run((st, sh) => applyDamage(st, sh, { ...damage, zeroHpSaveFailed: true }))
+  }
   // Fúria Implacável: a receita do TR com a CD do aviso; quem passou, desfaz e reaplica em 1 PV,
-  // ainda em fúria. A ficha diz o atributo e quem dá o teste. A receita sai do estado de antes do
-  // dano (o topo do desfazer, de onde o "Passei" reaplica), e não do `view.guide`: a queda já
-  // encerrou a fúria e, com o Frenesi, subiu a exaustão, e o teste é feito antes dela.
+  // ainda em fúria; quem falhou, conta o uso. A ficha diz o atributo e quem dá o teste. A receita sai
+  // do estado de antes do dano (o topo do desfazer, de onde o "Passei" reaplica), e não do
+  // `view.guide`: a queda já encerrou a fúria e, com o Frenesi, subiu a exaustão, e o teste é feito
+  // antes dela.
   const before = usePlayStore(s => s.undoStack.at(-1))
   const zeroHpSave = view.sheet.toggles.find(t => t.zeroHpSave)?.zeroHpSave
   const saveOffer = notice.kind === 'dropToOneHpSave' && canUndo && before && notice.damage && notice.dc !== undefined && zeroHpSave
@@ -227,19 +235,28 @@ function NoticeLine({ notice, view, onOpenRecipe, canUndo, act }: {
           <p className="text-xs">
             Role {describeRollGuide(saveOffer.entry)}: precisa de {saveOffer.entry.dc} ou mais.
           </p>
-          {/* Numa linha só: a 360 px, o "Passei" quebra o texto dentro dele (o "1 PV" junto) em vez de descer. */}
-          <div className="mt-1.5 flex gap-2">
+          <div className="mt-1.5">
             <button
               onClick={() => onOpenRecipe(saveOffer.entry)}
-              className="min-h-10 shrink-0 rounded-lg border border-emerald-700 px-3 text-xs text-emerald-200 hover:border-emerald-400"
+              className="min-h-10 rounded-lg border border-emerald-700 px-3 text-xs text-emerald-200 hover:border-emerald-400"
             >
               Ver o que rolar
             </button>
+          </div>
+          {/* Os dois resultados numa linha só, embaixo da receita: com o "Ver o que rolar" ao lado, a
+              360 px o "Passei" não cabia nem com o texto quebrado dentro dele. */}
+          <div className="mt-1.5 flex gap-2">
             <button
               onClick={() => act(() => dropToOneHp(saveOffer.damage, 'save'))}
               className="min-h-10 min-w-0 rounded-lg border border-emerald-700 px-3 text-xs text-emerald-200 hover:border-emerald-400"
             >
               Passei: fico com <span className="whitespace-nowrap">1 PV</span>
+            </button>
+            <button
+              onClick={() => act(() => failZeroHpSave(saveOffer.damage))}
+              className="min-h-10 shrink-0 rounded-lg border border-emerald-700 px-3 text-xs text-emerald-200 hover:border-emerald-400"
+            >
+              Falhei
             </button>
           </div>
         </ActionBar>

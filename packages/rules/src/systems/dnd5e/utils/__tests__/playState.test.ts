@@ -1835,6 +1835,32 @@ describe('efeitos ligados: a Fúria pela ação que a liga', () => {
       expect(offerOf(applyDamage(twice.state, sh, { amount: 1 }))?.dc).toBe(20)
     })
 
+    // "Cada vez que você utilizar essa característica" (linhas 3740-3741): a falha também é uso
+    // (decisão de 2026-10-30), como o "você pode realizar um teste" (linha 3737).
+    it('quem falha fica a 0 PV, como na queda, e a falha conta: a próxima CD é 15', () => {
+      const sh = barbarian(11)
+      const raging = enter(state(), sh).state
+      const r = applyDamage(raging, sh, { amount: sh.maxHp, zeroHpSaveFailed: true })
+      expect(r.state.lifeState).toBe('dying')
+      expect(getCurrentHp(r.state, sh)).toBe(0)
+      expect(r.state.activeEffects).toEqual([])
+      expect(r.state.restCounters).toEqual({ 'relentless-rage': 1 })
+      expect(r.notices[0]).toEqual({
+        kind: 'info',
+        text: 'Fúria Implacável: não passou no teste de resistência de Constituição (CD 10). A falha também conta como uso: a próxima CD é 15 (pág. 49).',
+      })
+      // O teste não é oferecido de novo; a Resistência Implacável do meio-orc continua, e o dano dela
+      // leva a falha junto.
+      expect(offerOf(r)).toBeUndefined()
+      const trait = r.notices.find(n => n.kind === 'dropToOneHp')
+      expect(trait?.damage).toEqual({ amount: sh.maxHp, zeroHpSaveFailed: true })
+      const kept = applyDamageDroppingToOneHp(raging, sh, trait!.damage!, 'trait')
+      expect(getCurrentHp(kept.state, sh)).toBe(1)
+      expect(kept.state.activeEffects.map(a => a.id)).toEqual(['rage'])
+      expect(kept.state.restCounters).toEqual({ 'relentless-rage': 1 })
+      expect(offerOf(applyDamage(kept.state, sh, { amount: 1 }))?.dc).toBe(15)
+    })
+
     it('o descanso curto ou longo volta a CD a 10, com aviso; sem uso, sem aviso', () => {
       const sh = barbarian(11)
       const used = { ...state(), restCounters: { 'relentless-rage': 2 } }
@@ -1874,6 +1900,10 @@ describe('efeitos ligados: a Fúria pela ação que a liga', () => {
         kind: 'warning',
         text: 'Fúria Implacável não se aplica a este dano: só quando ele deixaria você a 0 PV sem matar na hora, e em fúria. O dano foi aplicado normalmente.',
       })
+      // O "falhei" fora da fúria também: o dano vale, e a falha não conta.
+      const failed = applyDamage(state(), sh, { amount: sh.maxHp, zeroHpSaveFailed: true })
+      expect(failed.state.restCounters).toEqual({})
+      expect(failed.notices.map(n => n.text)).toContain('Fúria Implacável não se aplica a este dano: só quando ele deixaria você a 0 PV sem matar na hora, e em fúria. O dano foi aplicado normalmente.')
     })
   })
 

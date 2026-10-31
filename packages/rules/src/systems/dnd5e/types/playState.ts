@@ -295,6 +295,12 @@ export type DamageInput = {
   conditionalDefenses?: string[]
   /** As exceções que o jogador marcou ("arma mágica ou de prata"): as defesas delas não valem. */
   exceptions?: string[]
+  /**
+   * O jogador já fez o teste para ficar com 1 PV deste dano (a Fúria Implacável) e falhou: a queda
+   * fica como estava, e a falha também conta como uso — a próxima CD sobe (decisão de 2026-10-30).
+   * A tela o põe ao reaplicar o dano pelo "Falhei" do aviso `dropToOneHpSave`.
+   */
+  zeroHpSaveFailed?: true
 }
 
 export type PlayNoticeKind =
@@ -321,7 +327,7 @@ export type PlayNoticeKind =
   /**
    * Caiu a 0 PV com um efeito ligado que dá um teste para ficar com 1 PV (a Fúria Implacável): o
    * aviso traz a CD (`dc`) e o dano (`damage`); quem passa, a tela desfaz e reaplica com
-   * `applyDamageDroppingToOneHp(…, 'save')`.
+   * `applyDamageDroppingToOneHp(…, 'save')`; quem falha, com `applyDamage` e `zeroHpSaveFailed`.
    */
   | 'dropToOneHpSave'
   | 'droppedItems'

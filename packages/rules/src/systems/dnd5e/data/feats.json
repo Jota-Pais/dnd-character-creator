@@ -3,7 +3,11 @@
     "id": "adepto-elemental",
     "name": "Adepto Elemental",
     "prerequisite": "Capacidade de conjurar pelo menos uma magia",
-    "description": "Quando você ganha esse talento, escolha um dos tipos de dano a seguir: ácido, elétrico, fogo, frio ou trovão. As magias que você conjurar ignoram resistência a dano do tipo escolhido. Além disso, quando você rola o dano para uma magia que você conjurar que causar dano desse tipo, você pode tratar qualquer 1 num dado de dano como um 2.\nVocê pode escolher esse talento diversas vezes. A cada vez que o fizer, você deve escolher um tipo diferente de dano."
+    "description": "Quando você ganha esse talento, escolha um dos tipos de dano a seguir: ácido, elétrico, fogo, frio ou trovão. As magias que você conjurar ignoram resistência a dano do tipo escolhido. Além disso, quando você rola o dano para uma magia que você conjurar que causar dano desse tipo, você pode tratar qualquer 1 num dado de dano como um 2.\nVocê pode escolher esse talento diversas vezes. A cada vez que o fizer, você deve escolher um tipo diferente de dano.",
+    "effects": {
+      "choices": { "damageTypeChoice": { "from": ["acid", "lightning", "fire", "cold", "thunder"] } },
+      "chosenDamageTypeSpellNote": "a magia ignora a resistência a esse tipo de dano, e você pode tratar o 1 em cada dado de dano dele como 2 (pág. 167)."
+    }
   },
   {
     "id": "adepto-marcial",

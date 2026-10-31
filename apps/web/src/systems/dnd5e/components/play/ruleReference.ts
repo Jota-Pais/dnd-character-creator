@@ -242,7 +242,10 @@ function raceSection(draft: CharacterDraft): RuleSection | null {
   return { id: 'race', title: 'Traços raciais', blocks: [{ label: null, groups: [{ title: null, entries }] }] }
 }
 
-/** Talentos (`getCharacterFeats`: o racial do Humano Variante e os dos Incrementos), com a origem. */
+/**
+ * Talentos (`getCharacterFeats`: o racial do Humano Variante e os dos Incrementos), com a origem e a
+ * escolha que o talento mostra (o tipo de dano do Adepto Elemental), como na Revisão e no PDF.
+ */
 function featSection(draft: CharacterDraft): RuleSection | null {
   const feats = getCharacterFeats(draft)
   if (feats.length === 0) return null
@@ -253,11 +256,11 @@ function featSection(draft: CharacterDraft): RuleSection | null {
       label: null,
       groups: [{
         title: null,
-        entries: feats.map(({ feat, origin }) => ({
+        entries: feats.map(({ feat, origin, chosen, chosenLabel }) => ({
           key: `feat:${feat.id}`,
           name: feat.name,
           meta: origin,
-          detail: { kind: 'text', kicker: `Talento · ${origin}`, text: feat.description, chosen: null, chosenLabel: null },
+          detail: { kind: 'text', kicker: `Talento · ${origin}`, text: feat.description, chosen: chosen ?? null, chosenLabel: chosenLabel ?? null },
         })),
       }],
     }],

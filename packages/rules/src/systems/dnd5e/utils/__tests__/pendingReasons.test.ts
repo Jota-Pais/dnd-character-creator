@@ -344,7 +344,7 @@ function corpus(): CharacterDraft[] {
     out.push(draft({ race: race.id, subrace: null, raceChoices: {} }))
     for (const sub of race.subraces) out.push(draft({ race: race.id, subrace: sub.id, raceChoices: {} }))
   }
-  for (const feat of ['perito', 'poliglota', 'mestre-de-armas', 'atleta', 'resiliente', 'adepto-marcial', 'iniciado-em-magia']) {
+  for (const feat of ['perito', 'poliglota', 'mestre-de-armas', 'atleta', 'resiliente', 'adepto-marcial', 'iniciado-em-magia', 'adepto-elemental']) {
     out.push(draft({ race: 'human', subrace: 'variant-human', raceChoices: { abilityBonuses: ['STR', 'DEX'], skills: ['insight'], feat } }))
     out.push(draft({ level: 4, asiChoices: [{ kind: 'feat', featId: feat }] }))
     out.push(draft({ level: 4, asiChoices: [{ kind: 'feat', featId: feat, abilities: ['STR'] }] }))

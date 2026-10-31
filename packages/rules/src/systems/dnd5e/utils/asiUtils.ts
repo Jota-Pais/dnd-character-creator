@@ -4,7 +4,8 @@ import type { Feat } from '../types/feat'
 import type { LevelFeature } from '../types/class'
 import { getRace, getSubrace, getEffectiveAbilityBonuses } from './raceUtils'
 import { ALL_ABILITY_SCORES, ABILITY_LABELS } from './abilityScoreUtils'
-import { getFeat } from './featUtils'
+import { getFeat, getFeatDamageType } from './featUtils'
+import { getDamageTypeName } from './damageTypes'
 import { areFeatChoicesComplete } from './sheetEffects'
 import { getFeatRepeatedProficiencies } from './proficiencyUtils'
 import { getClass, getSubclass, getClassFeaturesUpToLevel } from './classUtils'
@@ -136,12 +137,19 @@ export type CharacterFeat = {
    * "Incremento nv 4" (na multiclasse, com a classe: "Incremento nv 4 (Guerreiro)").
    */
   origin: string
+  /**
+   * A escolha que o talento abre e a ficha mostra ao lado dele, com o rótulo — o tipo de dano do
+   * Adepto Elemental ("Tipo de dano: fogo"), como o `chosen` das características de classe.
+   * Ausente sem escolha.
+   */
+  chosen?: string
+  chosenLabel?: string
 }
 
 /**
  * Talentos do personagem para a caixa Talentos da ficha e da Revisão: o talento racial (Humano
  * Variante) e os dos Aprimoramentos de todas as classes, cada um com a origem e sem repetir (se o
- * mesmo talento vier de duas origens, as duas aparecem).
+ * mesmo talento vier de duas origens, as duas aparecem), e a escolha que ele mostra.
  */
 export function getCharacterFeats(draft: CharacterDraft): CharacterFeat[] {
   const result: CharacterFeat[] = []
@@ -149,8 +157,12 @@ export function getCharacterFeats(draft: CharacterDraft): CharacterFeat[] {
     const feat = getFeat(featId)
     if (!feat) return
     const existing = result.find(r => r.feat.id === featId)
-    if (existing) existing.origin = `${existing.origin}, ${origin}`
-    else result.push({ feat, origin })
+    if (existing) {
+      existing.origin = `${existing.origin}, ${origin}`
+      return
+    }
+    const damageType = getFeatDamageType(feat, draft.featSelections[feat.id])
+    result.push({ feat, origin, ...(damageType ? { chosen: getDamageTypeName(damageType), chosenLabel: 'Tipo de dano' } : {}) })
   }
   if (draft.raceChoices.feat) {
     const race = draft.race ? getRace(draft.race) : undefined

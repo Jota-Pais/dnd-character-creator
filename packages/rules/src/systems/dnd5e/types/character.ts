@@ -1,6 +1,7 @@
 import type { AbilityScore } from './race'
 import type { ClassChoiceSelections } from './class'
 import type { BackgroundChoiceSelections } from './background'
+import type { DamageTypeId } from './damage'
 import { type EquipmentDraft, EMPTY_EQUIPMENT_DRAFT } from './equipment'
 import { type SpellChoices, EMPTY_SPELL_CHOICES } from './spell'
 export type { ClassChoiceSelections, BackgroundChoiceSelections, EquipmentDraft, SpellChoices }
@@ -73,6 +74,8 @@ export type FeatSelections = {
   cantrips?: string[]
   /** Magias de 1º nível ou mais aprendidas pelo talento, da lista de `spellClass`. */
   spells?: string[]
+  /** Tipo de dano escolhido no talento (Adepto Elemental, p. 167), um dos de `damageTypeChoice`. */
+  damageType?: DamageTypeId
 }
 
 export type HpMethod = 'average' | 'roll'

@@ -8,6 +8,9 @@ import {
   getRepeatedSpells, type FeatSpellChoice,
 } from '@rpg/rules/systems/dnd5e/utils/spellUtils'
 import { getClass } from '@rpg/rules/systems/dnd5e/utils/classUtils'
+import { getDamageType } from '@rpg/rules/systems/dnd5e/utils/damageTypes'
+import { getFeatDamageType } from '@rpg/rules/systems/dnd5e/utils/featUtils'
+import type { DamageTypeId } from '@rpg/rules/systems/dnd5e/types/damage'
 import { ABILITY_LABELS } from '@rpg/rules/systems/dnd5e/utils/abilityScoreUtils'
 import type { CharacterDraft, FeatSelections } from '@rpg/rules/systems/dnd5e/types/character'
 import type { SpellClass } from '@rpg/rules/systems/dnd5e/types/spell'
@@ -29,7 +32,7 @@ const ALL_TOOLS = toolsData as Tool[]
 /**
  * As escolhas que um talento abre — Perito (3 perícias ou ferramentas), Poliglota (3 idiomas),
  * Mestre de Armas (4 armas), Adepto Marcial (2 manobras do Mestre de Batalha), Iniciado em Magia
- * (classe, 2 truques e 1 magia de 1º nível da lista dela).
+ * (classe, 2 truques e 1 magia de 1º nível da lista dela), Adepto Elemental (o tipo de dano).
  *
  * Fica ao LADO do catálogo, na etapa dona do talento, e não dentro do card: o card já é uma
  * escolha, e aninhar um segundo catálogo nele esconde a decisão em vez de apresentá-la.
@@ -203,6 +206,29 @@ function SlotBody({
 
   if (choices.spellChoice) {
     return <SpellChoiceBody slot={slot} choice={choices.spellChoice} accent={accent} onChange={onChange} />
+  }
+
+  if (choices.damageTypeChoice) {
+    // Adepto Elemental (p. 167): um tipo, escolha de 1 (rádio). O livro deixa pegar o talento de novo
+    // com outro tipo; o app guarda cada talento uma vez só, então a escolha é uma.
+    const picked = getFeatDamageType(feat, selections)
+    const selected = picked ? [picked] : []
+    return (
+      <>
+        <Header label="Tipo de dano" />
+        <p className="text-[11px] text-parchment-600 mb-2">
+          Suas magias ignoram a resistência a ele, e o 1 no dado de dano dele pode contar como 2.
+        </p>
+        <Group
+          options={choices.damageTypeChoice.from.map(id => ({ id, name: getDamageType(id).name }))}
+          selected={selected}
+          excluded={new Set()}
+          full={false}
+          accent={accent}
+          onToggle={id => pick(selected, id, 1, ([next]) => onChange({ damageType: next as DamageTypeId | undefined }))}
+        />
+      </>
+    )
   }
 
   return null

@@ -572,13 +572,14 @@ export function PrintableSheet() {
 
       {feats.length > 0 && (
         <Box title="Talentos" className="mb-4">
-          {feats.map(({ feat: f, origin }) => (
+          {feats.map(({ feat: f, origin, chosen, chosenLabel }) => (
             <div key={f.id} className="mb-1">
               <p className="text-xs">
                 <strong>{f.name}.</strong>
                 <span className="text-gray-600"> {origin}</span>
               </p>
               <RuleText text={f.description} className="text-xs" />
+              {chosen && <p className="text-xs"><span className="text-gray-600">{chosenLabel ?? 'Escolha'}:</span> <strong>{chosen}</strong></p>}
               {(() => {
                 const block = getFeatManeuverBlock(draft, f.id, finalScores)
                 if (!block) return null

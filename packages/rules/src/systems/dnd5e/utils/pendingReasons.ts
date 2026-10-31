@@ -29,7 +29,7 @@ import {
   getRemainingPoints,
 } from './abilityScoreUtils'
 import { getAsiSlotCount, getReachedAsiLevels, isAsiChoiceComplete, getRacialBonuses, getAsiBonuses, getFinalAbilityScores } from './asiUtils'
-import { getFeat } from './featUtils'
+import { getFeat, getFeatDamageType } from './featUtils'
 import {
   getFeatChoiceSlots, getFeatSpellChoiceGaps, getRepeatedFeatManeuvers, getRepeatedFightingStyles, type FeatChoiceSlot,
 } from './sheetEffects'
@@ -82,7 +82,7 @@ function ordinal(n: number): string {
   return `${n}º`
 }
 
-/** Escolhas de um talento que ainda faltam (Perito, Poliglota, Mestre de Armas, Adepto Marcial, Iniciado em Magia). */
+/** Escolhas de um talento que ainda faltam (Perito, Poliglota, Mestre de Armas, Adepto Marcial, Iniciado em Magia, Adepto Elemental). */
 function featChoiceReasons(slot: FeatChoiceSlot, where: string): string[] {
   const { choices, selections, feat } = slot
   const out: string[] = []
@@ -113,6 +113,9 @@ function featChoiceReasons(slot: FeatChoiceSlot, where: string): string[] {
     if (spellGaps.cantrips > 0) asks.push(plural(spellGaps.cantrips, 'truque', 'truques'))
     if (spellGaps.spells > 0) asks.push(plural(spellGaps.spells, `magia de ${ordinal(spellGaps.spellLevel)} nível`, `magias de ${ordinal(spellGaps.spellLevel)} nível`))
     if (asks.length > 0) out.push(`${where}, talento ${feat.name}: escolha ${asks.join(' e ')}`)
+  }
+  if (choices.damageTypeChoice && !getFeatDamageType(feat, selections)) {
+    out.push(`${where}, talento ${feat.name}: escolha o tipo de dano`)
   }
   return out
 }

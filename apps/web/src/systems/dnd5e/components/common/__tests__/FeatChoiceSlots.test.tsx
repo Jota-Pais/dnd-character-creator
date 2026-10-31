@@ -70,3 +70,25 @@ describe('FeatChoiceSlots — Perito com perícia que outra fonte já dá (p. 12
     expect(container.textContent).not.toContain('Atletismo já vem')
   })
 })
+
+// Decisão de 2026-10-31: o Adepto Elemental (p. 167) abre a escolha do tipo de dano no criador, no
+// padrão do Iniciado em Magia. O app guarda cada talento uma vez só: a escolha é uma.
+describe('FeatChoiceSlots — Adepto Elemental', () => {
+  const ADEPT = 'adepto-elemental'
+  const wizard: CharacterDraft = {
+    ...structuredClone(EMPTY_DRAFT),
+    class: 'wizard', level: 4,
+    asiChoices: [{ kind: 'feat', featId: ADEPT }],
+  }
+
+  it('os cinco tipos do livro; a escolha é de 1, e outro tipo troca o marcado', () => {
+    useCharacterStore.setState({ draft: structuredClone(wizard) })
+    const { getByText } = render(<FeatChoiceSlots accent="#fff" featIds={[ADEPT]} />)
+    expect(getByText('Tipo de dano')).not.toBeNull()
+    for (const name of ['Ácido', 'Elétrico', 'Fogo', 'Frio', 'Trovejante']) expect(getByText(name)).not.toBeNull()
+    fireEvent.click(getByText('Fogo'))
+    expect(useCharacterStore.getState().draft.featSelections[ADEPT]).toEqual({ damageType: 'fire' })
+    fireEvent.click(getByText('Frio'))
+    expect(useCharacterStore.getState().draft.featSelections[ADEPT]).toEqual({ damageType: 'cold' })
+  })
+})

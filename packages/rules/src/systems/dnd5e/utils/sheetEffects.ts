@@ -7,7 +7,7 @@ import type {
   LevelStep, LoadingOverride, ResourceEffect, ToggleBenefits, ToggleDeclaration,
 } from '../types/effects'
 import { NO_SESSION, type ResolvedToggle, type SheetSession, type SheetToggle, type SourcedActiveEffect } from '../types/session'
-import { getFeat } from './featUtils'
+import { getFeat, getFeatDamageType } from './featUtils'
 import { getOwnedFeats } from './ownedFeats'
 import {
   getClass, getSubclass, getClassFeaturesUpToLevel, getClassFightingStyleOptions, FIGHTING_STYLES,
@@ -1204,7 +1204,8 @@ export type FeatChoiceSlot = {
 
 /**
  * Talentos possuídos que abrem escolhas (Perito, Poliglota, Mestre de Armas: proficiências;
- * Adepto Marcial: manobras; Iniciado em Magia: classe, truques e magia).
+ * Adepto Marcial: manobras; Iniciado em Magia: classe, truques e magia; Adepto Elemental: o tipo de
+ * dano).
  */
 export function getFeatChoiceSlots(draft: CharacterDraft): FeatChoiceSlot[] {
   return getOwnedFeats(draft)
@@ -1212,7 +1213,7 @@ export function getFeatChoiceSlots(draft: CharacterDraft): FeatChoiceSlot[] {
       const choices = feat.effects?.choices
       // savingThrowFromAbilityChoice não abre slot: reaproveita o atributo do +1 do talento.
       return choices?.skillOrToolChoice || choices?.languageChoice || choices?.weaponChoice || choices?.maneuverChoice
-        || choices?.spellChoice
+        || choices?.spellChoice || choices?.damageTypeChoice
     })
     .map(feat => ({
       feat,
@@ -1250,6 +1251,7 @@ export function isFeatChoiceComplete(slot: FeatChoiceSlot): boolean {
   }
   const spellGaps = getFeatSpellChoiceGaps(slot)
   if (spellGaps && (spellGaps.needsClass || spellGaps.cantrips > 0 || spellGaps.spells > 0)) return false
+  if (choices.damageTypeChoice && !getFeatDamageType(slot.feat, selections)) return false
   return true
 }
 
@@ -2098,4 +2100,19 @@ export function getSpellDamageBonuses(draft: CharacterDraft, scores: FinalScores
 /** Quem dá o Truque Potente à ficha (feature de classe, no nível NA classe dona), ou null. */
 export function getCantripSaveHalfDamage(draft: CharacterDraft): string | null {
   return getOwnedClassFeatures(draft).find(f => f.effects?.cantripSaveHalfDamage)?.name ?? null
+}
+
+/** A nota de um talento no dano do tipo escolhido nele, com o talento e o tipo. */
+export type ChosenDamageTypeSpellNote = { source: string; damageType: DamageTypeId; text: string }
+
+/**
+ * As notas dos talentos no dano das magias do tipo escolhido neles (`chosenDamageTypeSpellNote`: o
+ * Adepto Elemental, p. 167). Sem o tipo escolhido, não há nota: o guia não sabe em que dano ela vale.
+ */
+export function getChosenDamageTypeSpellNotes(draft: CharacterDraft): ChosenDamageTypeSpellNote[] {
+  return getOwnedFeats(draft).flatMap(feat => {
+    const text = feat.effects?.chosenDamageTypeSpellNote
+    const damageType = getFeatDamageType(feat, draft.featSelections[feat.id])
+    return text && damageType ? [{ source: feat.name, damageType, text }] : []
+  })
 }

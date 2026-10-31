@@ -10,7 +10,7 @@ import { getClass } from './classUtils'
 import { getDamageLabel, getDamageTypeName } from './damageTypes'
 import { damageEntry, healEntry, type GuideBreakdownItem, type RollGuideEntry } from './guideEntries'
 import { getRollGuide, type RollGuide, type SpellcastingGuide } from './rollGuide'
-import { getCantripSaveHalfDamage, getSpellDamageBonuses, type SheetSpellDamageBonus } from './sheetEffects'
+import { getCantripSaveHalfDamage, getChosenDamageTypeSpellNotes, getSpellDamageBonuses, type SheetSpellDamageBonus } from './sheetEffects'
 import { getPlaySpellbook } from './spellbook'
 import { getSpellMechanics, scaledDiceCount, scaledFlat, type SpellCastContext } from './spellMechanics'
 import { getCombinedSpellSlots, getPactSlots, getSpell } from './spellUtils'
@@ -338,6 +338,13 @@ function buildSpellGuide(draft: CharacterDraft, spell: Spell, mech: SpellMechani
     .filter(b => bonusApplies(b, spell, part))
     .map(b => pendingBonusNote(b, instances?.noun ?? null, severalRolls))
   for (const n of damageParts.flatMap(bonusNotes)) if (!notes.includes(n)) notes.push(n)
+  // O que um talento faz no dano do tipo escolhido nele (o Adepto Elemental, pág. 167): condicional,
+  // nota na parte desse tipo (ou na escolha de tipo que o tem) e na magia, com o tipo escolhido.
+  const typeNotes = damageParts.length > 0 ? getChosenDamageTypeSpellNotes(draft) : []
+  const typeNotesFor = (part: SpellDamagePart) => typeNotes
+    .filter(n => (typeof part.type === 'string' ? [part.type] : part.type.choose).includes(n.damageType))
+    .map(n => `${n.source} (${getDamageTypeName(n.damageType)}): ${n.text}`)
+  for (const n of damageParts.flatMap(typeNotesFor)) if (!notes.includes(n)) notes.push(n)
   const damage = damageParts.map((part, i) => {
     const typeName = typeof part.type === 'string' ? getDamageTypeName(part.type) : ''
     const bonus = bonusParts(part, at, spell.name, ability)
@@ -350,6 +357,7 @@ function buildSpellGuide(draft: CharacterDraft, spell: Spell, mech: SpellMechani
       ...(part.when ? [`Só ${part.when}.`] : []),
       ...(bonus.missingModifier ? [MISSING_MODIFIER] : []),
       ...bonusNotes(part),
+      ...typeNotesFor(part),
       ...(instances && instances.count > 1 ? [`${instances.text} no seu nível: cada ${instances.noun} que acerta causa este dano.`] : []),
       ...(mech.instances ? [instanceStepsNote(mech.instances)] : []),
       cantripStepsNote(part),

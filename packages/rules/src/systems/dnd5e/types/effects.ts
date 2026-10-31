@@ -343,6 +343,12 @@ export type FeatureChoices = {
    */
   spellChoice?: { classes: string[]; cantrips: number; spells: number; spellLevel: number }
   /**
+   * Adepto Elemental (p. 167): um tipo de dano entre os de `from` ("ácido, elétrico, fogo, frio ou
+   * trovão"), gravado em `featSelections.damageType`. O livro deixa pegar o talento de novo com outro
+   * tipo; o app guarda um talento uma vez só (`getOwnedFeats`), então a escolha é uma.
+   */
+  damageTypeChoice?: { from: DamageTypeId[] }
+  /**
    * Resiliente: proficiência no teste de resistência do atributo escolhido. Não é escolha nova —
    * reaproveita o atributo que já recebe o +1 do talento (`abilityIncrease`).
    */
@@ -710,6 +716,14 @@ export type FeatureEffects = {
    * dona (`getCantripSaveHalfDamage`); o guia da magia o põe no texto do TR.
    */
   cantripSaveHalfDamage?: true
+  /**
+   * O que o talento faz no dano do tipo escolhido nele (`choices.damageTypeChoice`): o Adepto
+   * Elemental (p. 167) — as magias que você conjura ignoram a resistência a esse tipo, e o 1 no dado
+   * de dano dele pode contar como 2. É condicional (a resistência é do alvo; o 1 é o que sair), então
+   * vira nota no dano das magias desse tipo, com o nome do talento e o tipo escolhido
+   * (`getChosenDamageTypeSpellNotes`). Lido nos talentos.
+   */
+  chosenDamageTypeSpellNote?: string
   /**
    * Recursos que a característica dá: usos que se gastam e voltam no descanso (Fúria, Surto de
    * Ação), poços (Chi, Cura pelas Mãos) e dados que crescem com o nível (Ataque Furtivo). A ficha

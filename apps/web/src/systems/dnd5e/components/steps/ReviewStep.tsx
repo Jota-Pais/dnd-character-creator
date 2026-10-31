@@ -693,13 +693,19 @@ export function ReviewStep() {
         return (
           <Section title="Talentos">
             <div className="space-y-3">
-              {feats.map(({ feat, origin }) => (
+              {feats.map(({ feat, origin, chosen, chosenLabel }) => (
                 <div key={feat.id}>
                   <p className="text-sm font-semibold font-fantasy text-parchment-200">
                     {feat.name}
                     <span className="font-sans font-normal text-xs text-parchment-600"> · {origin}</span>
                   </p>
                   <RuleText text={feat.description} className="text-sm text-parchment-500 leading-relaxed" />
+                  {chosen && (
+                    <p className="text-sm leading-relaxed">
+                      <span className="text-parchment-600">{chosenLabel ?? 'Escolha'}:</span>{' '}
+                      <span className="font-semibold" style={{ color: accent }}>{chosen}</span>
+                    </p>
+                  )}
                   {(() => {
                     const block = getFeatManeuverBlock(draft, feat.id, finalScores)
                     if (!block) return null

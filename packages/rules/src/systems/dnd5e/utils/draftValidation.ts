@@ -25,7 +25,8 @@ import { isEquipmentStepComplete } from './equipmentUtils'
 import { isImprovementsStepComplete, getFinalAbilityScores } from './asiUtils'
 import { areFeatChoicesComplete, hasRepeatedFightingStyle } from './sheetEffects'
 import { getUnmetPickRequirements } from './progressionOptions'
-import { getFeat } from './featUtils'
+import { getFeat, getFeatDamageType } from './featUtils'
+import { isDamageTypeId } from './damageTypes'
 import { getManeuver } from './maneuverUtils'
 import {
   getBackgroundRepeatedProficiencies, getClassRepeatedProficiencies, getFeatRepeatedProficiencies,
@@ -128,6 +129,10 @@ function sanitizeFeatSelections(raw: unknown): Record<string, FeatSelections> {
       if (picks.cantrips.length > 0) selections.cantrips = picks.cantrips
       if (picks.spells.length > 0) selections.spells = picks.spells
     }
+    // Tipo de dano (Adepto Elemental): só um dos que o talento oferece.
+    const feat = getFeat(featId)
+    const damageType = feat && isDamageTypeId(value.damageType) ? getFeatDamageType(feat, { damageType: value.damageType }) : null
+    if (damageType) selections.damageType = damageType
     if (Object.keys(selections).length > 0) out[featId] = selections
   }
   return out

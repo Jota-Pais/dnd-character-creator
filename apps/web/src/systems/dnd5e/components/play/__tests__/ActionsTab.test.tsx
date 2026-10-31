@@ -160,3 +160,49 @@ describe('ActionsTab — o que fazer em cada momento do turno', () => {
     expect(playState().activeEffects).toEqual([expect.objectContaining({ id: 'rage', option: 'frenzy' })])
   })
 })
+
+describe('ActionsTab — as magias de ação bônus e de reação do grimório (onda grimorio)', () => {
+  /** Clérigo 3 com Palavra Curativa (ação bônus) e mago 1 com Escudo Arcano (reação). */
+  const caster: CharacterDraft = {
+    ...krusk(['dagger']),
+    class: 'cleric',
+    level: 4,
+    abilityScores: { STR: 10, DEX: 14, CON: 14, INT: 14, WIS: 16, CHA: 10 },
+    spellChoices: { cantrips: ['sacred-flame'], spells: ['healing-word', 'cure-wounds'] },
+    additionalClasses: [{
+      classId: 'wizard', level: 1, classChoices: structuredClone(COMPLETE_DRAFT.classChoices),
+      spellChoices: { cantrips: ['fire-bolt'], spells: ['shield'] }, asiChoices: [], hpRolls: [],
+    }],
+    multiclass: true,
+  }
+  const spell = (key: string, id: string) => screen.getByTestId(`spell-${key}-${id}`)
+
+  it('cada uma no grupo dela, com o Conjurar; Conjurar uma Magia leva à aba Magia, sem "Usar" próprio', () => {
+    openActions(caster)
+    expect(within(group(/^Ação bônus/)).getByRole('heading', { name: 'Palavra Curativa' })).toBeInTheDocument()
+    expect(spell('class:cleric', 'healing-word')).toHaveTextContent('Magia · Clérigo')
+    expect(within(group(/^Reação/)).getByRole('heading', { name: 'Escudo Arcano' })).toBeInTheDocument()
+    expect(spell('class:wizard', 'shield')).toHaveTextContent('1 reação, que você faz quando é atingido por um ataque ou alvo da magia mísseis mágicos.')
+    // As de 1 ação saem pela aba Magia: aqui, nem elas nem o "Usar" de Conjurar uma Magia, que o Conjurar marca.
+    expect(screen.queryByTestId('spell-class:cleric-cure-wounds')).toBeNull()
+    expect(within(item('cast-a-spell')).queryByRole('button', { name: /^Usar/ })).toBeNull()
+    // Com a magia de ação bônus listada, o grupo não diz que não há nenhuma.
+    expect(group(/^Ação bônus/)).not.toHaveTextContent('Nenhuma ação bônus listada')
+  })
+
+  it('o Conjurar abre a folha da aba Magia, marca a casa do turno e o foco volta a ele', () => {
+    openActions(caster)
+    const button = within(spell('class:wizard', 'shield')).getByRole('button', { name: 'Conjurar: Escudo Arcano' })
+    button.focus()
+    fireEvent.click(button)
+    const sheet = screen.getByRole('dialog', { name: 'Escudo Arcano' })
+    // Alcance pessoal: é sempre em você.
+    expect(sheet).toHaveTextContent('Em você: o alcance é pessoal.')
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Conjurar' }))
+    expect(playState().turn.reaction).toBe(true)
+    expect(playState().activeEffects.map(a => a.id)).toEqual(['spell:shield'])
+    expect(playState().spellSlotsSpent[0]).toBe(1)
+    expect(button).toHaveFocus()
+    expect(screen.getByRole('heading', { level: 2, name: /^Reação · usada neste turno/ })).toBeInTheDocument()
+  })
+})

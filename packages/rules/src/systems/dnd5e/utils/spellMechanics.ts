@@ -58,3 +58,11 @@ export function scaledDiceCount(part: LevelScaled & { count?: number }, at: Spel
 export function scaledFlat(part: LevelScaled & { flat?: number }, at: SpellCastContext): number {
   return (part.flat ?? 0) + slotSteps(part.perSlotAbove, at.slotsAbove) * (part.perSlotAbove?.flat ?? 0)
 }
+
+/**
+ * A magia cresce com o nível de PERSONAGEM (os truques de dano e os feixes da Rajada Mística: os
+ * degraus do 5º, 11º e 17º, decisão de 2026-10-29): a aba Magia diz o nível de que a conta parte.
+ */
+export function scalesWithCharacterLevel(mech: SpellMechanics): boolean {
+  return Boolean(mech.instances?.byCharacterLevel?.length || mech.damage?.some(part => part.byCharacterLevel?.length))
+}

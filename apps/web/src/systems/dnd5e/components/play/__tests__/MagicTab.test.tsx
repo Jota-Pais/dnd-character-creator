@@ -93,13 +93,15 @@ describe('MagicTab', () => {
   })
 
   describe('o que rolar nas magias (onda magias-base)', () => {
+    /** A linha de uma magia no grimório: o nome, a pista, o Conjurar e o que rolar. */
+    const spellRow = (name: string) => screen.getByText(name, { selector: 'li p' }).closest('li')!
+
     it('o truque de ataque: o ataque da conjuração abre a receita e leva ao dano, com o crítico', () => {
       openMagic(BARBARIAN_WIZARD)
-      const card = screen.getByText('O que rolar nas magias').closest('li')!
+      const card = spellRow('Raio de Fogo')
       // Só os revisados com algo a rolar: a Luz fica no texto, e as Mãos Mágicas não têm jogada.
-      expect(within(card).getByText('Raio de Fogo')).toBeInTheDocument()
-      expect(within(card).queryByText('Luz')).not.toBeInTheDocument()
-      expect(within(card).queryByText('Mãos Mágicas')).not.toBeInTheDocument()
+      expect(within(spellRow('Luz')).queryByRole('button', { name: /^Luz — / })).not.toBeInTheDocument()
+      expect(within(spellRow('Mãos Mágicas')).queryByRole('button', { name: /^Mãos Mágicas — / })).not.toBeInTheDocument()
 
       // Bárbaro 2 / mago 1: nível de personagem 3, proficiência +2, INT +1.
       fireEvent.click(within(card).getByRole('button', { name: 'Raio de Fogo — ataque: 1d20 + 3' }))
@@ -114,9 +116,8 @@ describe('MagicTab', () => {
 
     it('o truque de TR (Iniciado em Magia): o TR do alvo com a CD do talento, e o dano sem crítico', () => {
       openMagic(FIGHTER_INITIATE)
-      const card = screen.getByText('O que rolar nas magias').closest('li')!
-      expect(within(card).getByText('Chama Sagrada')).toBeInTheDocument()
-      expect(within(card).queryByText('Orientação')).not.toBeInTheDocument()
+      const card = spellRow('Chama Sagrada')
+      expect(within(spellRow('Orientação')).queryByRole('button', { name: /^Orientação — / })).not.toBeInTheDocument()
       expect(within(card).getByText('TR de Destreza do alvo (CD 10): no sucesso, nenhum dano.')).toBeInTheDocument()
       // O condicional do TR, em linha própria (a regra de ouro).
       expect(within(card).getByText('O alvo não recebe qualquer benefício de cobertura contra esse teste de resistência.')).toBeInTheDocument()
@@ -132,7 +133,7 @@ describe('MagicTab', () => {
     it('a CD e o ataque do talento na Conjuração, tocáveis como os da classe', () => {
       openMagic(FIGHTER_INITIATE)
       expect(screen.queryByText('Sem magias nem recursos com usos nesta ficha.')).not.toBeInTheDocument()
-      expect(screen.getByText('Conjuração')).toBeInTheDocument()
+      expect(screen.getByText('Grimório')).toBeInTheDocument()
       expect(screen.getByText('Iniciado em Magia (Clérigo)')).toBeInTheDocument()
 
       fireEvent.click(screen.getByRole('button', { name: 'CD de magia 10: de onde vem' }))
@@ -163,7 +164,7 @@ describe('MagicTab', () => {
   describe('em fúria não se conjura (p. 48)', () => {
     it('bárbaro / mago: uma linha na Conjuração, fora da caixa do que está em vigor; o ataque de magia a repete', () => {
       openMagic(BARBARIAN_WIZARD)
-      const casting = screen.getByText('Conjuração').closest('section')!
+      const casting = screen.getByText('Grimório').closest('section')!
       expect(within(casting).getByText(RAGE)).toBeInTheDocument()
       // Uma só vez na aba: a caixa vermelha (guide.notes) não a recebe.
       expect(screen.getAllByText(RAGE)).toHaveLength(1)
@@ -253,5 +254,45 @@ describe('MagicTab', () => {
     expect(regions.some(r => r.textContent?.includes('Fúria'))).toBe(false)
     fireEvent.click(screen.getAllByRole('button', { name: 'Gastar: Fúria' })[0])
     expect(regions.some(r => r.textContent === 'Fúria: 1 de 2')).toBe(true)
+  })
+})
+
+describe('MagicTab — o grimório (onda grimorio)', () => {
+  /** Mago 3 com um ritual no grimório, uma magia de concentração e a de reação. */
+  const WIZARD: CharacterDraft = {
+    ...structuredClone(COMPLETE_DRAFT),
+    name: 'Elminster',
+    class: 'wizard',
+    level: 3,
+    abilityScores: { STR: 8, DEX: 14, CON: 13, INT: 16, WIS: 12, CHA: 10 },
+    spellChoices: { cantrips: ['fire-bolt', 'light'], spells: ['detect-magic', 'shield', 'magic-missile'] },
+  }
+  const row = (name: string) => screen.getByText(name, { selector: 'li p' }).closest('li')!
+
+  it('as magias por nível, com as marcas, o Conjurar e a nota do que o app ainda não sabe (as preparadas do mago)', () => {
+    openMagic(WIZARD)
+    const book = screen.getByText('Grimório').closest('section')!
+    expect(within(book).getByRole('heading', { name: 'Truques' })).toBeInTheDocument()
+    expect(within(book).getByRole('heading', { name: '1º nível' })).toBeInTheDocument()
+    expect(row('Detectar Magia')).toHaveTextContent('1 ação · concentração · ritual · no grimório')
+    expect(row('Escudo Arcano')).toHaveTextContent('1 reação · no grimório')
+    // O truque de dano diz o nível de personagem de que a conta parte (decisão de 2026-10-29).
+    expect(row('Raio de Fogo')).toHaveTextContent('1 ação · escala pelo nível de personagem: 3')
+    expect(row('Luz')).not.toHaveTextContent('escala')
+    expect(within(row('Mísseis Mágicos')).getByRole('button', { name: 'Conjurar: Mísseis Mágicos' })).toBeInTheDocument()
+    expect(book).toHaveTextContent('O app ainda não sabe quais magias você preparou hoje: conjure só as preparadas')
+    expect(screen.getByText('O Conjurar gasta o espaço sozinho; o toque na bolinha corrige.')).toBeInTheDocument()
+  })
+
+  it('as de fora da conjuração (o tiferino): a lista Outras magias, sem CD nem ataque, e a inata no nível dela', () => {
+    openMagic({ ...structuredClone(COMPLETE_DRAFT), race: 'tiefling', level: 3 })
+    const book = screen.getByText('Grimório').closest('section')!
+    expect(within(book).getByText('Outras magias')).toBeInTheDocument()
+    expect(within(book).getByText('A CD e o ataque destas o app ainda não calcula.')).toBeInTheDocument()
+    expect(row('Repreensão Infernal')).toHaveTextContent('1 reação · 1×/descanso longo · da raça')
+    fireEvent.click(screen.getByRole('button', { name: 'Conjurar: Repreensão Infernal' }))
+    const sheet = screen.getByRole('dialog', { name: 'Repreensão Infernal' })
+    expect(sheet).toHaveTextContent('No 2º nível, sem gastar espaço')
+    expect(sheet).toHaveTextContent('1 uso por descanso longo, como magia de 2º nível (o app ainda não conta esse uso).')
   })
 })

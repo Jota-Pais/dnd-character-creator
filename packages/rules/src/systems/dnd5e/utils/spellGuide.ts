@@ -3,6 +3,7 @@ import type { PlayState } from '../types/playState'
 import type { AbilityScore } from '../types/race'
 import type { Spell } from '../types/spell'
 import type { SpellAmountPart, SpellDamagePart, SpellInstances, SpellMechanics } from '../types/spellMechanics'
+import type { SpellbookList } from '../types/spellbook'
 import { ABILITY_LABELS, formatModifier } from './abilityScoreUtils'
 import { getFinalAbilityScores } from './asiUtils'
 import { getClass } from './classUtils'
@@ -10,7 +11,7 @@ import { getDamageLabel, getDamageTypeName } from './damageTypes'
 import { damageEntry, healEntry, type GuideBreakdownItem, type RollGuideEntry } from './guideEntries'
 import { getRollGuide, type RollGuide, type SpellcastingGuide } from './rollGuide'
 import { getCantripSaveHalfDamage, getSpellDamageBonuses, type SheetSpellDamageBonus } from './sheetEffects'
-import { getKnownSpells } from './sheetModel'
+import { getPlaySpellbook } from './spellbook'
 import { getSpellMechanics, scaledDiceCount, scaledFlat, type SpellCastContext } from './spellMechanics'
 import { getCombinedSpellSlots, getPactSlots, getSpell } from './spellUtils'
 import { joinPt } from './textUtils'
@@ -426,27 +427,31 @@ export function findSpellGuideEntry(
 }
 
 /**
- * Por conjuração do guia de rolagens (classe ou talento), as magias que ela conhece com receita —
- * truques primeiro, depois por nível, alfabética dentro de cada um. As mesmas magias da aba Regras
- * (`getKnownSpells`), só as revisadas com algo a rolar. A aba Magia lista daqui.
+ * Por conjuração do grimório (`getPlaySpellbook`: a classe, o talento e as de fora delas, a lista
+ * `other`), as magias com receita — truques primeiro, depois por nível, alfabética dentro de cada um.
+ * As mesmas magias da aba Regras, só as revisadas com algo a rolar, no nível que a fonte fixa (a
+ * inata) ou no espaço mais baixo. `casterKey` é a chave da lista; o guia da de fora fica sem a
+ * conjuração (sem CD nem ataque). A aba Magia lista daqui.
  */
 export function getCasterSpellGuides(
   draft: CharacterDraft,
   state: PlayState,
   rollGuide: RollGuide = getRollGuide(draft, state),
+  spellbook: readonly SpellbookList[] = getPlaySpellbook(draft),
 ): { casterKey: string; guides: SpellGuide[] }[] {
-  const known = getKnownSpells(draft)
-  return rollGuide.spellcasting.map(sc => {
-    const spells = sc.featId
-      ? (() => {
-        const feat = known.feats.find(f => f.featId === sc.featId)
-        return feat ? [...feat.cantrips, ...feat.spells] : []
-      })()
-      : known.classes.find(c => c.caster.cls.id === sc.classId)?.spells.map(s => s.spell) ?? []
-    const guides = [...spells]
-      .sort((a, b) => a.level - b.level || a.name.localeCompare(b.name, 'pt-BR'))
-      .map(spell => getSpellGuide(draft, state, { casterKey: sc.key, spellId: spell.id }, rollGuide))
+  return spellbook.map(list => {
+    const guides = list.spells
+      .flatMap(entry => {
+        const spell = getSpell(entry.spellId)
+        return spell ? [{ entry, spell }] : []
+      })
+      .sort((a, b) => a.spell.level - b.spell.level || a.spell.name.localeCompare(b.spell.name, 'pt-BR'))
+      .map(({ entry, spell }) => getSpellGuide(draft, state, {
+        casterKey: list.kind === 'other' ? null : list.key,
+        spellId: spell.id,
+        ...(entry.castLevel !== undefined ? { castLevel: entry.castLevel } : {}),
+      }, rollGuide))
       .filter((g): g is SpellGuide => g !== null && spellGuideRolls(g).length > 0)
-    return { casterKey: sc.key, guides }
+    return { casterKey: list.key, guides }
   })
 }

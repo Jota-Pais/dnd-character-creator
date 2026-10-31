@@ -166,8 +166,8 @@ describe('getSheetActions', () => {
 })
 
 describe('hasUse', () => {
-  it('o "Usar" marca o turno, gasta ou causa: não o agarrão (dentro de Atacar) nem a interação livre', () => {
-    expect(COMBAT_ACTIONS.filter(a => !hasUse(a)).map(a => a.id)).toEqual(['grapple', 'shove', 'interact'])
+  it('o "Usar" marca o turno, gasta ou causa: não o agarrão (dentro de Atacar), a interação livre nem Conjurar uma Magia (pelo grimório)', () => {
+    expect(COMBAT_ACTIONS.filter(a => !hasUse(a)).map(a => a.id)).toEqual(['cast-a-spell', 'grapple', 'shove', 'interact'])
     // O Surto de Ação não marca casa, mas gasta e dá a ação a mais.
     const fighter = getSheetActions(draftOf('fighter', 2)).find(a => a.id === 'action-surge')
     expect(fighter && hasUse(fighter)).toBe(true)

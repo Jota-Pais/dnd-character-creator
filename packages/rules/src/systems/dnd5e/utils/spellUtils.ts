@@ -831,6 +831,20 @@ export function describeCastingAids(spellcasting: ClassSpellcasting): CastingAid
 }
 
 /**
+ * O "Em níveis superiores" do texto da magia (`spells.json`), sem o título: o que o espaço acima do
+ * nível dela muda. A folha de conjurar o lê quando o dano estruturado da magia ainda não chegou (os
+ * lotes de `spell-mechanics.json`). Null para a magia sem a seção.
+ */
+export function getHigherLevelsText(spell: Pick<Spell, 'description'>): string | null {
+  const heading = /^##\s*Em níveis superiores\s*$/im.exec(spell.description)
+  if (!heading) return null
+  // A digitalização deixou alguns parágrafos da seção com o "## " do título: sai junto.
+  const text = spell.description.slice(heading.index + heading[0].length)
+    .split('\n').map(line => line.replace(/^#+\s*/, '').trim()).filter(Boolean).join(' ')
+  return text || null
+}
+
+/**
  * A magia tem componente verbal (pág. 205, linhas 18254-18261): quem não pode falar não a conjura.
  * Lido da lista antes do material entre parênteses ("V, S, M (…)").
  */

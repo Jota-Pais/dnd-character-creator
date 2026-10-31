@@ -16,6 +16,7 @@
     "requires": "spellcaster",
     "summary": "Para a magia com tempo de conjuração de 1 ação. Cada magia diz o seu tempo: uma ação, uma reação, minutos ou horas.",
     "links": ["spellbook"],
+    "via": "spellbook",
     "page": 194,
     "bookLines": [17375, 17385]
   },

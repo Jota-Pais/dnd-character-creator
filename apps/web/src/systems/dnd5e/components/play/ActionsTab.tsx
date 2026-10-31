@@ -4,13 +4,14 @@ import type { ActionGroup, SheetAction } from '@rpg/rules/systems/dnd5e/types/ac
 import type { PlaySheet, PlayState, TurnSlot } from '@rpg/rules/systems/dnd5e/types/playState'
 import { formatModifier } from '@rpg/rules/systems/dnd5e/utils/abilityScoreUtils'
 import { ACTION_GROUPS, getActionGroup, groupActionsByTiming, hasUse } from '@rpg/rules/systems/dnd5e/utils/actionUtils'
-import { getTurnActions, performAction } from '@rpg/rules/systems/dnd5e/utils/playState'
+import { getTurnActions, getTurnSpells, performAction, type TurnSpell } from '@rpg/rules/systems/dnd5e/utils/playState'
 import { findRollGuideEntry } from '@rpg/rules/systems/dnd5e/utils/rollGuide'
 import { describeActionCost, TIMING_LABEL } from './actionView'
 import { AttackList } from './AttacksTab'
 import { ChangeAnnouncer } from './ChangeAnnouncer'
 import { rollButtonLabel } from './playFormat'
 import { RollMarks } from './RollMarks'
+import { SpellCastSheet, type SpellCastTarget } from './SpellCastSheet'
 import { TurnChecklist } from './TurnChecklist'
 import type { PlayTabProps } from './usePlayView'
 
@@ -161,72 +162,109 @@ function ActionItem({ action, view, onGone, nested = false, children }: {
 }
 
 /**
+ * Uma magia do grimório de ação bônus ou de reação (`getTurnSpells`): o nome, a conjuração de onde
+ * vem, o gatilho da reação (o tempo de conjuração dela) e o "Conjurar", que abre a mesma folha da aba
+ * Magia (`SpellCastSheet`). A folha conjura pelo `castSpell`, que marca a casa do turno; o foco volta
+ * ao "Conjurar".
+ */
+function SpellItem({ spell, onCast }: { spell: TurnSpell; onCast: () => void }) {
+  return (
+    <li className="rounded-xl border border-parchment-900 bg-surface-raised p-3" data-testid={`spell-${spell.casterKey}-${spell.spellId}`}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h3 className="font-fantasy font-bold text-parchment-100 leading-tight">{spell.name}</h3>
+          <p className="text-[11px] text-parchment-500 leading-snug">Magia · {spell.source}</p>
+          {spell.timing === 'reaction' && <p className="text-xs text-parchment-300 leading-snug">{spell.castingTime[0].toUpperCase()}{spell.castingTime.slice(1)}.</p>}
+        </div>
+        <button
+          onClick={onCast}
+          aria-label={`Conjurar: ${spell.name}`}
+          className="min-h-10 shrink-0 rounded-lg border border-gold-800 px-3 text-sm text-gold-300 hover:border-gold-600"
+        >
+          Conjurar
+        </button>
+      </div>
+    </li>
+  )
+}
+
+/**
  * Aba Ações (Fase 2, onda `turno`): o que o personagem pode fazer em cada momento do turno, com o
  * custo. No topo, o checklist do turno (`TurnChecklist`); depois os grupos Ação, Ação Bônus, Reação
  * e Outras, com as ações que valem agora (`getTurnActions`: as em combate e as das características,
  * montadas em `getSheetActions`). A ação de Atacar traz as linhas de ataque de sempre (`AttackList`)
- * e, dentro dela, o agarrão e o encontrão. Sem ação bônus listada, o grupo diz quando se tem uma
- * (pág. 191).
+ * e, dentro dela, o agarrão e o encontrão. As magias de ação bônus e de reação do grimório vêm nos
+ * grupos delas, com o "Conjurar" (onda `grimorio`); as de 1 ação saem pela aba Magia, aonde Conjurar
+ * uma Magia leva. Sem ação bônus listada, o grupo diz quando se tem uma (pág. 191).
  */
 export function ActionsTab(view: PlayTabProps) {
   const { state, sheet } = view
   const titles = useRef<Partial<Record<ActionGroup, HTMLHeadingElement | null>>>({})
+  const [casting, setCasting] = useState<SpellCastTarget | null>(null)
   const actions = getTurnActions(state, sheet)
+  const spells = getTurnSpells(state, sheet)
   const parts = actions.filter(a => a.partOf === 'attack')
   const groups = groupActionsByTiming(actions.filter(a => !a.partOf))
 
   return (
-    <div className="space-y-4">
-      {/* Primeiro filho: no fim, o space-y daria margem a ele. */}
-      <ChangeAnnouncer text={describeForAnnouncement(state, sheet)} />
-      <TurnChecklist {...view} />
-      {ACTION_GROUPS.map(group => {
-        const slot = GROUP_SLOT[group]
-        const list = groups[group]
-        return (
-          <section key={group} aria-labelledby={`actions-${group}`}>
-            <h2
-              id={`actions-${group}`}
-              ref={el => { titles.current[group] = el }}
-              tabIndex={-1}
-              className="text-[11px] uppercase tracking-wider text-parchment-600 font-fantasy mb-1.5"
-            >
-              {GROUP_TITLE[group]}
-              {/* O espaço fora do span: o nome acessível apara o começo de cada elemento. */}
-              {slot && <>{' '}<span className="normal-case tracking-normal">· {state.turn[slot] ? 'usada neste turno' : 'livre'}</span></>}
-            </h2>
-            {/* Sem afirmar que não há: as ações de várias características (Retomar o Fôlego, Ação
-                Ardilosa) e as magias de ação bônus ainda não estão nos dados, e o texto delas está
-                na aba Regras. */}
-            {list.length === 0 ? (group === 'bonusAction' && (
-              <p className="text-sm text-parchment-400 leading-snug">
-                Nenhuma ação bônus listada para a sua ficha. Você só tem ação bônus quando uma característica, magia ou
-                outra habilidade diz que algo pode ser feito como ação bônus (pág. 191): se a sua ficha tiver alguma, o
-                texto está na aba Regras.
-              </p>
-            )) : (
-              <ul className="space-y-2">
-                {list.map(action => (
-                  <ActionItem key={action.id} action={action} view={view} onGone={() => titles.current[group]?.focus()}>
-                    {group === 'action' && action.links?.includes('attacks') && (
-                      <div className="mt-3 space-y-2">
-                        <AttackList guide={view.guide} openRecipe={view.openRecipe} />
-                        {parts.length > 0 && (
-                          <ul className="space-y-2">
-                            {parts.map(part => (
-                              <ActionItem key={part.id} action={part} view={view} nested onGone={() => titles.current[group]?.focus()} />
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    )}
-                  </ActionItem>
-                ))}
-              </ul>
-            )}
-          </section>
-        )
-      })}
-    </div>
+    <>
+      <div className="space-y-4">
+        {/* Primeiro filho: no fim, o space-y daria margem a ele. */}
+        <ChangeAnnouncer text={describeForAnnouncement(state, sheet)} />
+        <TurnChecklist {...view} />
+        {ACTION_GROUPS.map(group => {
+          const slot = GROUP_SLOT[group]
+          const list = groups[group]
+          const groupSpells = spells.filter(s => s.timing === group)
+          return (
+            <section key={group} aria-labelledby={`actions-${group}`}>
+              <h2
+                id={`actions-${group}`}
+                ref={el => { titles.current[group] = el }}
+                tabIndex={-1}
+                className="text-[11px] uppercase tracking-wider text-parchment-600 font-fantasy mb-1.5"
+              >
+                {GROUP_TITLE[group]}
+                {/* O espaço fora do span: o nome acessível apara o começo de cada elemento. */}
+                {slot && <>{' '}<span className="normal-case tracking-normal">· {state.turn[slot] ? 'usada neste turno' : 'livre'}</span></>}
+              </h2>
+              {/* Sem afirmar que não há: as ações de várias características (Retomar o Fôlego, Ação
+                  Ardilosa) ainda não estão nos dados, e o texto delas está na aba Regras. */}
+              {list.length === 0 && groupSpells.length === 0 ? (group === 'bonusAction' && (
+                <p className="text-sm text-parchment-400 leading-snug">
+                  Nenhuma ação bônus listada para a sua ficha. Você só tem ação bônus quando uma característica, magia ou
+                  outra habilidade diz que algo pode ser feito como ação bônus (pág. 191): se a sua ficha tiver alguma, o
+                  texto está na aba Regras.
+                </p>
+              )) : (
+                <ul className="space-y-2">
+                  {list.map(action => (
+                    <ActionItem key={action.id} action={action} view={view} onGone={() => titles.current[group]?.focus()}>
+                      {group === 'action' && action.links?.includes('attacks') && (
+                        <div className="mt-3 space-y-2">
+                          <AttackList guide={view.guide} openRecipe={view.openRecipe} />
+                          {parts.length > 0 && (
+                            <ul className="space-y-2">
+                              {parts.map(part => (
+                                <ActionItem key={part.id} action={part} view={view} nested onGone={() => titles.current[group]?.focus()} />
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      )}
+                    </ActionItem>
+                  ))}
+                  {groupSpells.map(spell => (
+                    <SpellItem key={`${spell.casterKey}:${spell.spellId}`} spell={spell} onCast={() => setCasting({ casterKey: spell.casterKey, spellId: spell.spellId })} />
+                  ))}
+                </ul>
+              )}
+            </section>
+          )
+        })}
+      </div>
+      {/* Fora do space-y: a folha é fixa, e a margem do irmão a deslocaria. */}
+      {casting && <SpellCastSheet view={view} target={casting} onClose={() => setCasting(null)} />}
+    </>
   )
 }

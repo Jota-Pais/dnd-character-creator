@@ -1395,6 +1395,24 @@ export function getTurnActions(state: PlayState, sheet: PlaySheet): SheetAction[
   })
 }
 
+/** Uma magia do grimório que se conjura com a ação bônus ou com a reação, para os grupos da aba Ações. */
+export type TurnSpell = { casterKey: string; source: string; spellId: string; name: string; castingTime: string; timing: 'bonusAction' | 'reaction' }
+
+/**
+ * As magias do grimório (`PlaySheet.spellbook`) de ação bônus e de reação, na ordem dele, para os
+ * grupos Ação bônus e Reação da aba Ações: o "Conjurar" delas abre a mesma folha da aba Magia. Some
+ * tudo quando não se pode conjurar (`getCastingBlockers`), como Conjurar uma Magia.
+ */
+export function getTurnSpells(state: PlayState, sheet: PlaySheet): TurnSpell[] {
+  if (getCastingBlockers(state, sheet).length > 0) return []
+  return sheet.spellbook.flatMap(list => list.spells.flatMap((entry): TurnSpell[] => {
+    const spell = getSpell(entry.spellId)
+    const timing = spell ? castingTimeKind(spell) : null
+    if (!spell || (timing !== 'bonusAction' && timing !== 'reaction')) return []
+    return [{ casterKey: list.key, source: list.label, spellId: spell.id, name: spell.name, castingTime: spell.castingTime, timing }]
+  }))
+}
+
 /**
  * O deslocamento que resta no turno, em pés: o de agora (`getPlaySpeed`, com os efeitos e as
  * condições) uma vez mais por Disparada — o aumento é o deslocamento depois de qualquer modificador

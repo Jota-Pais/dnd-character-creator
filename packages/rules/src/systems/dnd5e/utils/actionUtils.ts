@@ -93,11 +93,11 @@ export function getActionGroup(timing: ActionTiming): ActionGroup {
 
 /**
  * A ação tem o "Usar": marca uma casa do turno (ação, ação bônus, reação, movimento), gasta ou causa
- * algo. O agarrão e o encontrão, feitos dentro de Atacar, e a interação livre, que não custa nada,
- * não têm.
+ * algo. O agarrão e o encontrão, feitos dentro de Atacar, a interação livre, que não custa nada, e
+ * Conjurar uma Magia, feita pelo Conjurar do grimório (`via`), não têm.
  */
 export function hasUse(action: ActionDeclaration): boolean {
-  if (action.partOf) return false
+  if (action.partOf || action.via) return false
   const marksTurn = action.timing === 'action' || action.timing === 'bonusAction' || action.timing === 'reaction' || action.timing === 'movement'
   return marksTurn || (action.cost?.length ?? 0) > 0 || (action.outcomes?.length ?? 0) > 0
 }

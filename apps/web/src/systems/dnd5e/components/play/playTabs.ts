@@ -26,13 +26,14 @@ export type PlayTab = {
  * Rótulos de uma palavra: no celular as abas dividem a largura (360 px) em colunas iguais, sem
  * rolagem escondida — seis abas, sem 7ª (decisão de 2026-10-30): uma a mais apertaria os alvos de
  * toque. A aba Ações (a antiga Ataques) traz os ataques no grupo Ação, com o checklist do turno no
- * topo. A aba Magia também traz os recursos (Fúria, Chi…), o que o `hint` diz; a lista de magias,
- * com o texto de cada uma, fica em Regras, junto das características.
+ * topo. A aba Magia é o grimório (onda `grimorio`): os espaços, as magias por conjuração com o
+ * Conjurar e os recursos (Fúria, Chi…), o que o `hint` diz; o texto inteiro de cada magia fica em
+ * Regras, só leitura, junto das características.
  */
 export const PLAY_TABS: readonly PlayTab[] = [
   { id: 'checks', label: 'Testes', hint: 'Atributos, testes de resistência e perícias, com o que rolar em cada um.', component: ChecksTab },
   { id: 'actions', label: 'Ações', hint: 'O que fazer no turno: atacar, a ação bônus, a reação e o resto, com o custo e o checklist do turno.', component: ActionsTab },
-  { id: 'magic', label: 'Magia', hint: 'Espaços de magia, CD, ataque de magia e os usos das suas características.', component: MagicTab },
+  { id: 'magic', label: 'Magia', hint: 'Espaços de magia, o grimório com o Conjurar, a CD e o ataque de magia e os usos das suas características.', component: MagicTab },
   { id: 'rules', label: 'Regras', hint: 'Suas magias, características, traços e talentos, com a regra inteira a um toque.', component: RulesTab },
   { id: 'status', label: 'Estado', hint: 'Condições, exaustão, concentração e descansos.', component: StatusTab },
   { id: 'notes', label: 'Notas', hint: 'Suas anotações da sessão; com os dados do app, o rolador livre e o histórico de rolagens.', component: NotesTab },

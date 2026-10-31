@@ -7,7 +7,7 @@ import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
 import { buildPlaySheet } from '../playSheet'
 import { COMPLETE_DRAFT } from '../../../../test/fixtures'
 import {
-  activateToggle, addCondition, adjustMaxHp, applyDamage, castSpell, getSpellCastOptions, type SpellCast, applyDamageDroppingToOneHp, applyHealing, clearRollHistory, clearTempHp, completeLongRest, completeShortRest,
+  activateToggle, addCondition, adjustMaxHp, applyDamage, castSpell, getSpellCastOptions, getTurnSpells, type SpellCast, applyDamageDroppingToOneHp, applyHealing, clearRollHistory, clearTempHp, completeLongRest, completeShortRest,
   createPlayState, deactivateToggle, describeHpMaxImmunity, emptyTurn, endConcentration, getBaseMaxHp, getCastingBlockers, getTurnActions, getTurnExtraActions, getTurnMovement, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable,
   getLongRestHitDiceRecoverable, getPactSlotsAvailable, getPlayEffects, getPlayConditionState, getPlayDamageDefenses, getPlaySpeed,
   getResourceAvailable, getShortRestSlotRecovery, performAction, getSpellSlotsAvailable, grantTempHp, previewLongRest, previewShortRest, reconcileLoadedPlayState,
@@ -2772,5 +2772,25 @@ describe('castSpell: conjurar pelo grimório', () => {
     const raw: Record<string, unknown> = JSON.parse(JSON.stringify(createPlayState('c')))
     raw.turn = { ...emptyTurn(), spellsCast: [{ spellId: 'bless', level: 1, timing: 'action' }, { spellId: '', level: 1, timing: 'action' }, { spellId: 'x', level: 12, timing: 'action' }, { spellId: 'y', level: 0, timing: 'soon' }, 'z'] }
     expect(sanitizePlayState(raw, 'c').turn.spellsCast).toEqual([{ spellId: 'bless', level: 1, timing: 'action' }])
+  })
+})
+
+describe('getTurnSpells: as magias de ação bônus e de reação para a aba Ações', () => {
+  it('as do grimório, na ordem dele; em fúria, nenhuma (pág. 48)', () => {
+    const base = structuredClone(COMPLETE_DRAFT)
+    const sh = buildPlaySheet({
+      ...base, level: 3, abilityScores: { STR: 15, DEX: 14, CON: 13, INT: 13, WIS: 10, CHA: 8 },
+      additionalClasses: [{
+        classId: 'wizard', level: 1, classChoices: structuredClone(EMPTY_DRAFT.classChoices),
+        spellChoices: { cantrips: ['fire-bolt'], spells: ['shield', 'magic-missile'] }, asiChoices: [], hpRolls: [],
+      }],
+      multiclass: true,
+    })
+    expect(getTurnSpells(state(), sh)).toEqual([{
+      casterKey: 'class:wizard', source: 'Mago', spellId: 'shield', name: 'Escudo Arcano',
+      castingTime: '1 reação, que você faz quando é atingido por um ataque ou alvo da magia mísseis mágicos', timing: 'reaction',
+    }])
+    const raging = performAction(state(), sh, 'rage-enter', { now: 1 }).state
+    expect(getTurnSpells(raging, sh)).toEqual([])
   })
 })

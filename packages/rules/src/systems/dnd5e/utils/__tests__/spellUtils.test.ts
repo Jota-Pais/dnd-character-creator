@@ -25,6 +25,8 @@ import {
   isOutsideSchoolRestriction,
   getCasterEntries,
   getSpellChoiceOverflow,
+  getHigherLevelsText,
+  hasVerbalComponent,
 } from '../spellUtils'
 import { getFinalAbilityScores } from '../asiUtils'
 import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
@@ -536,5 +538,20 @@ describe('magias preparadas pelos atributos finais', () => {
     expect(collectStepReasons(lowered, 'spells')).toEqual([overflow?.text])
     expect(isStepComplete(withCantrips(clerigaAna(15)), 'spells')).toBe(true)
     expect(collectStepReasons(withCantrips(clerigaAna(15)), 'spells')).toEqual([])
+  })
+})
+
+describe('getHigherLevelsText (a folha de conjurar, sem o dano estruturado)', () => {
+  it('o "Em níveis superiores" sem o título, também o parágrafo que a digitalização deixou com "##"', () => {
+    expect(getHigherLevelsText(getSpell('cure-wounds')!)).toBe(
+      'Se você conjurar essa magia usando um espaço de magia de 2° nível ou superior, a cura aumenta em 1d8 para cada nível do espaço acima do 1°.',
+    )
+    expect(getHigherLevelsText(getSpell('shield')!)).toBeNull()
+  })
+
+  it('o componente verbal: lido antes do material (pág. 205)', () => {
+    expect(hasVerbalComponent(getSpell('healing-word')!)).toBe(true)
+    // A Ilusão Menor é S, M (pelo inglês): sem o V.
+    expect(hasVerbalComponent(getSpell('minor-illusion')!)).toBe(false)
   })
 })

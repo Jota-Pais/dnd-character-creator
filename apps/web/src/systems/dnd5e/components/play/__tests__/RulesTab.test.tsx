@@ -4,6 +4,7 @@ import { PlayScreen } from '../PlayScreen'
 import { getRuleReference } from '../ruleReference'
 import { getSheetSession } from '@rpg/rules/systems/dnd5e/utils/activeEffects'
 import { createPlayState } from '@rpg/rules/systems/dnd5e/utils/playState'
+import { getPlaySpellbook } from '@rpg/rules/systems/dnd5e/utils/spellbook'
 import { EMPTY_DRAFT, type CharacterDraft } from '@rpg/rules/systems/dnd5e/types/character'
 import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
 import { openDraft, openKrusk, resetPlay } from './openPlay'
@@ -408,5 +409,22 @@ describe('getRuleReference', () => {
         ['Palavra Curativa', null],
       ]))
     })
+  })
+})
+
+describe('a aba Regras e o grimório leem a mesma lista (onda grimorio)', () => {
+  it('cada bloco de magias da aba Regras tem as mesmas magias da conjuração no grimório', () => {
+    const draft: CharacterDraft = {
+      ...WIZARD_3,
+      race: 'tiefling',
+      asiChoices: [{ kind: 'feat', featId: 'iniciado-em-magia' }],
+      featSelections: { 'iniciado-em-magia': { spellClass: 'cleric', cantrips: ['sacred-flame', 'guidance'], spells: ['cure-wounds'] } },
+      level: 4,
+    }
+    const spells = getRuleReference(draft).find(s => s.id === 'spells')!
+    const fromRules = spells.blocks.map(b => b.groups.flatMap(g => g.entries.map(e => (e.detail.kind === 'spell' ? e.detail.spell.id : ''))).sort())
+    const fromBook = getPlaySpellbook(draft).map(l => l.spells.map(s => s.spellId).sort())
+    expect(fromRules).toEqual(fromBook)
+    expect(fromBook).toHaveLength(3)
   })
 })

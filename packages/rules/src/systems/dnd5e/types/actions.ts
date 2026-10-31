@@ -70,6 +70,11 @@ export type ActionDeclaration = {
    */
   partOf?: 'attack'
   /**
+   * Faz-se pelo Conjurar do grimório (a aba Magia), que marca o turno sozinho (`castSpell`):
+   * Conjurar uma Magia não tem "Usar" próprio, que marcaria a ação duas vezes.
+   */
+  via?: 'spellbook'
+  /**
    * Para onde a ação leva: uma jogada do guia (`RollGuideEntry.id`: 'skill:stealth') ou uma parte
    * da tela ('attacks': os ataques; 'spellbook': a aba Magia).
    */

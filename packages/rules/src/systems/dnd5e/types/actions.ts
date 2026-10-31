@@ -23,8 +23,8 @@ export type ActionCost = { kind: 'resource'; resource: string; amount: number }
 /**
  * O que a ação causa: liga ou desliga um efeito declarado (`ToggleDeclaration.id`), dá mais uma ação
  * neste turno (o Surto de Ação, p. 85), soma o deslocamento outra vez (a Disparada, p. 194), conta
- * como ataque seu no turno (Atacar, o ataque de oportunidade: o fim prematuro da Fúria pergunta por
- * ele) ou levanta quem está Caído (`standUp`, p. 192).
+ * como ataque seu (o fim prematuro da Fúria pergunta por ele: Atacar e a outra mão no seu turno; o
+ * de oportunidade, que é reação, depois dele) ou levanta quem está Caído (`standUp`, p. 192).
  */
 export type ActionOutcome =
   | { kind: 'toggleOn'; toggle: string }

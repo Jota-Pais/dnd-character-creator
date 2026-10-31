@@ -121,7 +121,7 @@ describe('NotesTab', () => {
     // Apagar: o histórico some (o botão junto), o turno marcado (o dano sofrido) zera, o foco vai
     // ao título, e o resto da sessão fica.
     const before = playState()
-    expect(before.turn.tookDamage).toBe(true)
+    expect(before.turn.afterTurn).toBe(true)
     fireEvent.click(screen.getByRole('button', { name: 'Nova sessão' }))
     fireEvent.click(screen.getByRole('button', { name: 'Apagar o histórico' }))
     expect(playState()).toEqual({ ...before, rolls: [], turn: emptyTurn(), updatedAt: playState().updatedAt })

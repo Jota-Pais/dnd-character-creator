@@ -806,7 +806,7 @@ describe('inspiração, nota e histórico', () => {
     const r = clearRollHistory(withRolls)
     expect(r.state).toEqual({ ...withRolls, rolls: [] })
     expect(r.notices).toEqual([])
-    const marked = { ...withRolls, turn: { ...emptyTurn(), action: true, tookDamage: true } }
+    const marked = { ...withRolls, turn: { ...emptyTurn(), action: true, afterTurn: true, beforeTurn: true } }
     expect(clearRollHistory(marked).state).toEqual({ ...withRolls, rolls: [] })
     // Sem rolagem e sem turno marcado, nada a fazer: o mesmo estado.
     expect(clearRollHistory(before).state).toBe(before)
@@ -2167,17 +2167,20 @@ describe('o turno: o checklist, o Usar e o Novo turno', () => {
   })
 
   it('o dano marca que você sofreu dano (mesmo o que os PV temporários absorvem); o dano 0, não', () => {
-    expect(applyDamage(state({ tempHp: 5 }), S, { amount: 3 }).state.turn.tookDamage).toBe(true)
-    expect(applyDamage(state(), S, { amount: 0 }).state.turn.tookDamage).toBe(false)
+    expect(applyDamage(state({ tempHp: 5 }), S, { amount: 3 }).state.turn.afterTurn).toBe(true)
+    expect(applyDamage(state(), S, { amount: 0 }).state.turn.afterTurn).toBe(false)
   })
 
   // "A reação volta no início do seu próximo turno" (linhas 17130-17131).
   it('o Novo turno zera as quatro casas, a ação a mais e a uma vez por turno, com aviso', () => {
     const sh = fighter(2)
-    const busy = state({ turn: { action: true, bonusAction: true, movement: true, reaction: true, extraActions: 1, dashes: 1, attacked: true, tookDamage: true, oncePerTurnUsed: ['action-surge'] } })
+    const busy = state({ turn: { action: true, bonusAction: true, movement: true, reaction: true, extraActions: 1, dashes: 1, attacked: true, afterTurn: false, beforeTurn: true, oncePerTurnUsed: ['action-surge'] } })
     const r = newTurn(busy, sh)
     expect(r.state.turn).toEqual(emptyTurn())
     expect(r.notices).toEqual([{ kind: 'info', text: 'Novo turno: a ação, a ação bônus, o movimento e a reação estão de volta.' }])
+    // O dano sofrido depois do Novo turno vai para o turno seguinte: o próximo Novo turno o leva.
+    const hit = { ...busy, turn: { ...busy.turn, afterTurn: true } }
+    expect(newTurn(hit, sh).state.turn).toEqual({ ...emptyTurn(), beforeTurn: true })
   })
 
   // Escudo Arcano: "até o início do seu próximo turno" (linhas 23192-23203); Esquivar: "até o
@@ -2193,8 +2196,9 @@ describe('o turno: o checklist, o Usar e o Novo turno', () => {
     expect(r.notices).toContainEqual({ kind: 'info', text: 'Esquivar: terminou no início do seu turno (pág. 194).' })
   })
 
-  // "Ela termina prematuramente se [...] seu turno acabar e você não tiver atacado [...] ou não
-  // tiver sofrido dano" (linhas 3662-3667), pelo inglês: só sem ataque E sem dano.
+  // "Ela termina prematuramente se [...] seu turno acabar e você não tiver atacado [...] desde seu
+  // último turno ou não tiver sofrido dano nesse período" (linhas 3662-3667), pelo inglês: só sem
+  // ataque E sem dano.
   it('a Fúria sem ataque nem dano no turno lembra o fim prematuro no Novo turno, sem desligar', () => {
     const sh = barbarian(3)
     const raging = use(state(), sh, 'rage-enter').state
@@ -2202,12 +2206,38 @@ describe('o turno: o checklist, o Usar e o Novo turno', () => {
     expect(r.state.activeEffects.map(a => a.id)).toEqual(['rage'])
     expect(r.notices).toContainEqual({
       kind: 'warning',
-      text: 'Fúria: nenhum ataque e nenhum dano registrados no turno que acabou. A fúria acaba no fim do seu turno se, desde o seu último turno, você não atacou nenhuma criatura hostil nem sofreu dano (pág. 48). Se ela acabou, toque em “Já acabou” em Efeitos ativos, na aba Estado.',
+      text: 'Fúria: nenhum ataque nem dano registrados entre o fim do seu turno anterior e o fim do último. A fúria acaba no fim do seu turno se, desde o seu último turno, você não atacou nenhuma criatura hostil nem sofreu dano (pág. 48). O app conta o dano como vindo depois do seu turno: se você sofreu dano durante o último, ela continua. Se ela acabou, toque em “Já acabou” em Efeitos ativos, na aba Estado.',
     })
-    // Com dano sofrido (ou ataque) no turno, não lembra.
-    const hit = applyDamage(raging, sh, { amount: 2 }).state
-    expect(newTurn(hit, sh).notices.map(n => n.kind)).toEqual(['info'])
+    // Com ataque no turno, ou dano entre o fim do turno anterior e o começo dele, não lembra.
     expect(newTurn({ ...raging, turn: { ...raging.turn, attacked: true } }, sh).notices.map(n => n.kind)).toEqual(['info'])
+    expect(newTurn({ ...raging, turn: { ...raging.turn, beforeTurn: true } }, sh).notices.map(n => n.kind)).toEqual(['info'])
+  })
+
+  // A janela do livro vai do fim do seu turno anterior ao fim deste (linhas 3662-3666); a do Novo
+  // turno, do começo de um turno ao do outro.
+  it('a janela do fim prematuro é a do livro: o dano antes do seu turno segura a fúria dele, e o de depois vai para o próximo', () => {
+    const sh = barbarian(3)
+    const hasReminder = (s: PlayState) => newTurn(s, sh).notices.some(n => n.kind === 'warning')
+    // Turno 1: entra em fúria e ataca. No turno do inimigo, sofre 7.
+    const turn1 = use(use(newTurn(state(), sh).state, sh, 'rage-enter').state, sh, 'attack').state
+    const hitAfter1 = applyDamage(turn1, sh, { amount: 7 }).state
+    expect(hasReminder(hitAfter1)).toBe(false)
+    // Turno 2: só a Disparada, e ninguém o acerta. O dano depois do turno 1 conta para o fim do 2.
+    const turn2 = use(newTurn(hitAfter1, sh).state, sh, 'dash').state
+    expect(hasReminder(turn2)).toBe(false)
+    // Turno 3: sem ataque nem dano desde o fim do turno 2, ela acaba no fim do 3 — mesmo que um
+    // inimigo o acerte depois, no turno dele.
+    const turn3 = use(newTurn(turn2, sh).state, sh, 'dash').state
+    expect(hasReminder(applyDamage(turn3, sh, { amount: 5 }).state)).toBe(true)
+  })
+
+  it('o ataque de oportunidade, depois do seu turno, segura a fúria do turno seguinte, não a do que acabou', () => {
+    const sh = barbarian(3)
+    const raging = use(newTurn(state(), sh).state, sh, 'rage-enter').state
+    const reacted = use(raging, sh, 'opportunity-attack').state
+    expect(newTurn(reacted, sh).notices.some(n => n.kind === 'warning')).toBe(true)
+    const next = newTurn(reacted, sh).state
+    expect(newTurn(next, sh).notices.some(n => n.kind === 'warning')).toBe(false)
   })
 
   // Fúria Persistente: "sua fúria é tão violenta que ela só termina prematuramente se você cair
@@ -2249,7 +2279,8 @@ describe('o turno: as ações em combate', () => {
     expect(attacked.state.turn).toEqual({ ...emptyTurn(), action: true, attacked: true })
     expect(attacked.notices).toEqual([])
     const opportunity = use(state(), krusk, 'opportunity-attack').state
-    expect(opportunity.turn).toEqual({ ...emptyTurn(), reaction: true, attacked: true })
+    // O de oportunidade vem no turno de outra criatura: conta para o fim do seu próximo turno.
+    expect(opportunity.turn).toEqual({ ...emptyTurn(), reaction: true, afterTurn: true })
   })
 
   it('a ação que só marca o momento (Desengajar) marca a ação, e nada mais', () => {

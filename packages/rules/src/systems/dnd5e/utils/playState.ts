@@ -63,7 +63,7 @@ const ZERO_SAVES = { successes: 0, failures: 0 } as const
 export function emptyTurn(): TurnState {
   return {
     action: false, bonusAction: false, movement: false, reaction: false,
-    extraActions: 0, dashes: 0, attacked: false, tookDamage: false, oncePerTurnUsed: [],
+    extraActions: 0, dashes: 0, attacked: false, afterTurn: false, beforeTurn: false, oncePerTurnUsed: [],
   }
 }
 
@@ -644,7 +644,7 @@ function damagePipeline(state0: PlayState, sheet: PlaySheet, input: DamageInput,
   const absorbed = Math.min(state.tempHp, total)
   const rest = total - absorbed
   // Sofreu dano, mesmo o que os PV temporários absorveram: o fim prematuro da Fúria pergunta por ele.
-  const next: PlayState = { ...state, tempHp: state.tempHp - absorbed, turn: { ...state.turn, tookDamage: true } }
+  const next: PlayState = { ...state, tempHp: state.tempHp - absorbed, turn: { ...state.turn, afterTurn: true } }
   if (absorbed > 0) notices.push(note('tempHpAbsorbed', `Os PV temporários absorveram ${absorbed}.`))
 
   const drop = availableDropToOneHp(state, sheet)
@@ -1295,19 +1295,23 @@ export function markTurn(state: PlayState, slot: TurnSlot, used: boolean): PlayR
 /**
  * O Novo turno, no início do seu turno: a ação, a ação bônus, o movimento e a reação voltam (a
  * reação volta no início do SEU turno, pág. 192), e o que dura "até o início do seu próximo turno"
- * acaba (o Escudo Arcano, o Esquivar), com aviso. Com um efeito que tem fim prematuro (a Fúria) e
- * nenhum ataque nem dano marcados no turno que acabou, lembra o fim, sem desligar: o app não vê a
- * mesa, e o jogador marca o "Já acabou". Sem esse lembrete quem o tira (a Fúria Persistente). Os
- * efeitos que duram mais seguem ligados.
+ * acaba (o Escudo Arcano, o Esquivar), com aviso. Os efeitos que duram mais seguem ligados.
+ *
+ * O fim prematuro (a Fúria) olha o fim do turno que acabou e "desde o seu último turno" (pág. 48):
+ * o ataque no seu turno (`attacked`) e o dano ou o ataque de reação entre o fim do seu turno anterior
+ * e o começo dele (`beforeTurn`). O dano e a reação depois do Novo turno o app conta como vindos
+ * depois do seu turno: vão para o próximo (`afterTurn` vira `beforeTurn`). Sem nada disso, lembra o
+ * fim, sem desligar — o app não vê a mesa, e o jogador marca o "Já acabou". Sem esse lembrete quem o
+ * tira (a Fúria Persistente).
  */
 export function newTurn(state0: PlayState, sheet: PlaySheet): PlayResult {
   const state = reconcilePlayState(state0, sheet)
-  const next: PlayState = { ...state, turn: emptyTurn() }
+  const next: PlayState = { ...state, turn: { ...emptyTurn(), beforeTurn: state.turn.afterTurn } }
   const notices: PlayNotice[] = [note('info', 'Novo turno: a ação, a ação bônus, o movimento e a reação estão de volta.')]
   for (const toggle of sheet.toggles) {
     if (!state.activeEffects.some(a => a.id === toggle.id)) continue
-    if (toggle.earlyEndReminder && !state.turn.attacked && !state.turn.tookDamage) {
-      notices.push(note('warning', `${toggle.source}: nenhum ataque e nenhum dano registrados no turno que acabou. ${toggle.earlyEndReminder} Se ela acabou, toque em “Já acabou” em Efeitos ativos, na aba Estado.`))
+    if (toggle.earlyEndReminder && !state.turn.attacked && !state.turn.beforeTurn) {
+      notices.push(note('warning', `${toggle.source}: nenhum ataque nem dano registrados entre o fim do seu turno anterior e o fim do último. ${toggle.earlyEndReminder} O app conta o dano como vindo depois do seu turno: se você sofreu dano durante o último, ela continua. Se ela acabou, toque em “Já acabou” em Efeitos ativos, na aba Estado.`))
     }
     if (toggle.endsOn.includes('startOfYourTurn')) {
       notices.push(note('info', `${toggle.source}: terminou no início do seu turno (pág. ${toggle.page}).`))
@@ -1356,11 +1360,14 @@ export function performAction(state0: PlayState, sheet: PlaySheet, actionId: str
       notices.push(note('info', `${action.name}: mais uma ação neste turno, além da sua ação e da possível ação bônus (pág. ${action.page}).`))
       continue
     }
-    if (outcome.kind === 'dash' || outcome.kind === 'attack') {
-      next = {
-        ...next,
-        turn: outcome.kind === 'dash' ? { ...next.turn, dashes: next.turn.dashes + 1 } : { ...next.turn, attacked: true },
-      }
+    if (outcome.kind === 'dash') {
+      next = { ...next, turn: { ...next.turn, dashes: next.turn.dashes + 1 } }
+      continue
+    }
+    if (outcome.kind === 'attack') {
+      // O ataque de reação (o de oportunidade) vem no turno de outra criatura, depois do seu: conta
+      // para o fim do seu próximo turno, como o dano (`TurnState.afterTurn`).
+      next = { ...next, turn: action.timing === 'reaction' ? { ...next.turn, afterTurn: true } : { ...next.turn, attacked: true } }
       continue
     }
     const r = outcome.kind === 'toggleOn' ? activateToggle(next, sheet, outcome.toggle, on)
@@ -2019,7 +2026,8 @@ function sanitizeTurn(x: unknown): TurnState {
     extraActions: nonNegInt(x.extraActions),
     dashes: nonNegInt(x.dashes),
     attacked: x.attacked === true,
-    tookDamage: x.tookDamage === true,
+    afterTurn: x.afterTurn === true,
+    beforeTurn: x.beforeTurn === true,
     oncePerTurnUsed: Array.isArray(x.oncePerTurnUsed)
       ? [...new Set(x.oncePerTurnUsed.filter((id): id is string => typeof id === 'string' && id !== ''))]
       : [],

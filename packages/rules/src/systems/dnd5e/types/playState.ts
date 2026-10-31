@@ -63,7 +63,8 @@ export type TurnSlot = 'action' | 'bonusAction' | 'movement' | 'reaction'
 /**
  * O turno em curso, para o checklist leve (decisão 10.2.10): o que já se usou, marcado pelo "Usar"
  * das ações (`performAction`) ou à mão, e o que o fim prematuro da Fúria pergunta. Lembra, nunca
- * impede: momento já usado só avisa. O Novo turno (`newTurn`) e a Nova sessão o zeram.
+ * impede: momento já usado só avisa. O Novo turno (`newTurn`) o zera, levando adiante só o
+ * `afterTurn` (como `beforeTurn`), e a Nova sessão o zera inteiro.
  */
 export type TurnState = {
   action: boolean
@@ -74,10 +75,17 @@ export type TurnState = {
   extraActions: number
   /** Disparadas neste turno: cada uma soma o deslocamento já modificado (p. 194). */
   dashes: number
-  /** Você atacou neste turno (a ação de Atacar, o ataque de oportunidade). */
+  /** Você atacou no seu turno: Atacar e o ataque com a outra mão. */
   attacked: boolean
-  /** Você sofreu dano desde o último Novo turno (`applyDamage`). */
-  tookDamage: boolean
+  /**
+   * Desde o Novo turno, você sofreu dano (`applyDamage`) ou atacou com a reação (o ataque de
+   * oportunidade). O fim prematuro da Fúria conta "desde o seu último turno" até o fim deste (pág.
+   * 48), e o app não vê o fim do turno: conta isso como vindo DEPOIS do seu turno, porque o dano e a
+   * reação chegam quase sempre nos turnos dos outros. O Novo turno seguinte o passa a `beforeTurn`.
+   */
+  afterTurn: boolean
+  /** O `afterTurn` do turno anterior: o que veio entre o fim do seu turno anterior e o começo deste. */
+  beforeTurn: boolean
   /** As ações de uma vez por turno já usadas neste turno (`ActionDeclaration.oncePerTurn`). */
   oncePerTurnUsed: string[]
 }

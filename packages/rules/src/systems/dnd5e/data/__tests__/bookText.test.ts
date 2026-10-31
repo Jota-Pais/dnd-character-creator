@@ -124,6 +124,14 @@ describe('divergências pt-BR × inglês que seguem o inglês', () => {
     const spell = (spellsData as { id: string; components: string }[]).find(s => s.id === 'minor-illusion')
     expect(spell?.components).toBe('S, M (um pouco de lã)')
   })
+  // Inglês: "it must be no larger than a 5-foot cube" (Ilusão Menor, pág. 250, linhas 24028-24030;
+  // decisão de 2026-10-31). O pt-BR diz "1,5 metro cúbico", menos de um vigésimo do cubo de 1,5 m; o
+  // próprio livro traduz a medida assim no Druidismo ("deve caber num cubo de 1,5 metro", pág. 242).
+  it('a imagem da Ilusão Menor cabe num cubo de 1,5 metro (pt-BR: "1,5 metro cúbico")', () => {
+    const spell = (spellsData as { id: string; description: string }[]).find(s => s.id === 'minor-illusion')
+    expect(spell?.description).toContain('ela não pode ser maior que um cubo de 1,5 metro.')
+    expect(spell?.description).not.toContain('metro cúbico')
+  })
   it('Correntes de Cárceri exige o Pacto da Corrente — o pt-BR diz "característica Corrente de Cárceri", que não existe', () => {
     const invocation = (invocationsData as { id: string; prerequisite?: string }[]).find(i => i.id === 'correntes-de-carceri')
     expect(invocation?.prerequisite).toContain('Pacto da Corrente')

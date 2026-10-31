@@ -1504,27 +1504,42 @@ describe('applyDamage — o tipo do dano e as defesas da ficha', () => {
       })).toBe(4)
     })
 
-    it('alcançando duas parcelas com outra defesa, a ordem muda o resultado: não aplica e avisa (Ponto em aberto 28)', () => {
+    // Decidido em 2026-10-30 (Ponto em aberto 28): os 3 saem da parcela digitada primeiro, e o que
+    // sobrar, da seguinte. Com outra defesa nelas, a ordem muda o resultado.
+    it('alcançando duas parcelas, a redução sai da digitada primeiro, com outra defesa também', () => {
       const petrified = state({ conditions: ['petrified'] })
       const r = applyDamage(petrified, master('plate'), {
         amount: 9, parts: [{ amount: 4, damageType: 'slashing' }, { amount: 5, damageType: 'piercing' }], ...NON_MAGICAL,
       })
-      // Só a resistência do Petrificado: 2 + 2.
-      expect(getCurrentHp(petrified, master('plate')) - getCurrentHp(r.state, master('plate'))).toBe(4)
-      expect(kinds(r)).toContain('unresolvedRule')
-      expect(texts(r)[0]).toBe('Maestria em Armadura Pesada: a redução de 3 alcança mais de uma parcela (cortante e perfurante), e o livro não diz de qual ela sai; com as outras defesas, isso muda o resultado. O app não a aplicou: combine com o Mestre e, se for o caso, desfaça e digite as parcelas já com a redução, sem marcar "Dano de ataque não mágico?".')
-      // Numa parcela só, a regra está decidida: aplica.
-      expect(lost(master('plate'), { amount: 9, parts: [{ amount: 4, damageType: 'slashing' }, { amount: 5, damageType: 'fire' }], ...NON_MAGICAL }, petrified))
-        .toBe(2) // cortante: 4 − 3 = 1, metade 0; fogo: metade de 5, 2
+      // Cortante: 4 − 3 = 1, metade 0; perfurante: metade de 5, 2.
+      expect(getCurrentHp(petrified, master('plate')) - getCurrentHp(r.state, master('plate'))).toBe(2)
+      expect(kinds(r)).not.toContain('unresolvedRule')
+      expect(texts(r)).toEqual([
+        'Redução de 3 em cortante (Maestria em Armadura Pesada): 4 → 1.',
+        'Resistência a cortante (Petrificado): 1 → 0.',
+        'Resistência a perfurante (Petrificado): 5 → 2.',
+        'Dano somado: 0 + 2 = 2.',
+      ])
+      // Na outra ordem, 5 − 3 = 2, metade 1; cortante: metade de 4, 2.
+      expect(lost(master('plate'), {
+        amount: 9, parts: [{ amount: 5, damageType: 'piercing' }, { amount: 4, damageType: 'slashing' }], ...NON_MAGICAL,
+      }, petrified)).toBe(3)
     })
 
-    it('quem segue o aviso digita as parcelas já reduzidas sem a caixa: a redução não se aplica de novo', () => {
-      // 3 cortante + 5 perfurante, petrificado; o Mestre tira os 3 do cortante: sobra 5 perfurante.
+    it('a parcela menor que a redução zera, e o que sobra sai da seguinte', () => {
       const petrified = state({ conditions: ['petrified'] })
-      expect(lost(master('plate'), { amount: 5, damageType: 'piercing' }, petrified)).toBe(2)
-      // Com a caixa marcada, a parcela única passa pela redução outra vez (5 − 3, metade 1): é o que
-      // o aviso manda evitar.
-      expect(lost(master('plate'), { amount: 5, damageType: 'piercing', ...NON_MAGICAL }, petrified)).toBe(1)
+      const r = applyDamage(petrified, master('plate'), {
+        amount: 7, parts: [{ amount: 2, damageType: 'slashing' }, { amount: 5, damageType: 'piercing' }], ...NON_MAGICAL,
+      })
+      expect(texts(r).slice(0, 2)).toEqual([
+        'Redução de 2 em cortante (Maestria em Armadura Pesada): 2 → 0.',
+        'Redução de 1 em perfurante (Maestria em Armadura Pesada): 5 → 4.',
+      ])
+      // Cortante 0; perfurante: metade de 4, 2.
+      expect(getCurrentHp(petrified, master('plate')) - getCurrentHp(r.state, master('plate'))).toBe(2)
+      // A parcela de outro tipo fica fora: o fogo não paga nada da redução.
+      expect(lost(master('plate'), { amount: 9, parts: [{ amount: 5, damageType: 'fire' }, { amount: 4, damageType: 'slashing' }], ...NON_MAGICAL }, petrified))
+        .toBe(2) // fogo: metade de 5, 2; cortante: 4 − 3 = 1, metade 0
     })
   })
 

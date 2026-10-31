@@ -491,68 +491,72 @@ const defenseCovers = (d: SheetDamageDefense, type: DamageTypeId | undefined) =>
 const sourcesOf = (defenses: SheetDamageDefense[]) => [...new Set(defenses.map(d => d.source))].join(', ')
 
 /**
- * As parcelas do evento, já somadas por tipo e com piso 0 (decisão 3): a resistência arredonda por
- * tipo, somando antes as parcelas do mesmo tipo (decisão de 2026-10-30, item 12). A parcela sem tipo
- * ("Outro tipo") fica sozinha: o app não sabe se duas sem tipo são do mesmo tipo, e quem separa o
- * dano em parcelas separa dois tipos (a tempestade de gelo: concussão e frio). Sem `parts`, o evento
- * é uma parcela só, com o tipo informado ou sem tipo.
+ * As parcelas do evento na ordem em que foram digitadas, inteiras e com piso 0 (decisão 3). Sem
+ * `parts`, o evento é uma parcela só, com o tipo informado ou sem tipo.
  */
-function groupDamageParts(input: DamageInput): DamagePart[] {
+function getDamageParts(input: DamageInput): DamagePart[] {
   const parts = input.parts?.length ? input.parts : [{ amount: input.amount, damageType: input.damageType }]
+  return parts.map(part => {
+    const amount = Math.max(0, Math.floor(part.amount))
+    return part.damageType ? { amount, damageType: part.damageType } : { amount }
+  })
+}
+
+/**
+ * A redução fixa (Maestria em Armadura Pesada), uma vez por evento, sobre as parcelas do tipo que ela
+ * alcança, com um aviso por parcela reduzida. Alcançando mais de uma, ela sai da parcela digitada
+ * primeiro, e o que sobrar, da seguinte (decisão de 2026-10-30, Ponto em aberto 28 de
+ * `regras-dano-e-morte.md`): com outra defesa nelas (a metade arredonda por tipo), a ordem muda o
+ * resultado, e é a da mesa que digita.
+ */
+function applyDamageReductions(parts: DamagePart[], reductions: SheetDamageDefense[], notices: PlayNotice[]): DamagePart[] {
+  const left = new Map(reductions.map(d => [d, d.amount ?? 0]))
+  return parts.map(part => {
+    let amount = part.amount
+    for (const [d, rest] of left) {
+      if (rest <= 0 || amount <= 0 || !defenseCovers(d, part.damageType)) continue
+      const taken = Math.min(rest, amount)
+      left.set(d, rest - taken)
+      const typeName = part.damageType ? ` em ${getDamageTypeName(part.damageType)}` : ''
+      notices.push(note('resisted', `Redução de ${taken}${typeName} (${d.source}): ${amount} → ${amount - taken}.`))
+      amount -= taken
+    }
+    return { ...part, amount }
+  })
+}
+
+/**
+ * As parcelas somadas por tipo: a resistência arredonda por tipo, somando antes as parcelas do mesmo
+ * tipo (decisão de 2026-10-30, item 12). A parcela sem tipo ("Outro tipo") fica sozinha: o app não
+ * sabe se duas sem tipo são do mesmo tipo, e quem separa o dano em parcelas separa dois tipos (a
+ * tempestade de gelo: concussão e frio).
+ */
+function groupDamageParts(parts: DamagePart[]): DamagePart[] {
   const groups: DamagePart[] = []
   for (const part of parts) {
-    const amount = Math.max(0, Math.floor(part.amount))
     const group = part.damageType ? groups.find(g => g.damageType === part.damageType) : undefined
-    if (group) group.amount += amount
-    else groups.push(part.damageType ? { amount, damageType: part.damageType } : { amount })
+    if (group) group.amount += part.amount
+    else groups.push({ ...part })
   }
   return groups
 }
 
 /**
- * O dano depois das defesas (p. 199, decisões de 2026-10-30), parcela por parcela, com um aviso
- * por passo que mudou algo:
+ * O dano depois das defesas (p. 199, decisões de 2026-10-30), com um aviso por passo que mudou algo:
  * 1. redução fixa (Maestria em Armadura Pesada), uma vez por evento, sobre as parcelas do tipo que
- *    ela alcança;
+ *    ela alcança, da digitada primeiro para a seguinte (`applyDamageReductions`);
  * 2. imunidade, da ficha ou de condição: a parcela vira 0;
  * 3. resistência — a da ficha, a de condição, a marcada no painel e as condicionais confirmadas
- *    contam como uma só: metade, para baixo;
+ *    contam como uma só: metade, para baixo, sobre a soma das parcelas do mesmo tipo;
  * 4. vulnerabilidade, só sem resistência ao mesmo tipo (decisão 10): o dobro.
- * Depois soma as parcelas.
- *
- * O livro não diz de qual parcela sai a redução que alcança mais de uma (`regras-dano-e-morte.md`,
- * Ponto em aberto 28). Sem outra defesa nelas, a ordem não muda o total, e ela sai na ordem em que
- * as parcelas vieram; com outra defesa (a metade arredonda por parcela), a ordem muda o resultado: o
- * app não a aplica e avisa (`unresolvedRule`), sem chutar.
+ * Depois soma os tipos.
  */
 function applyDamageDefenses(input: DamageInput, defenses: SheetDamageDefense[], notices: PlayNotice[]): number {
   const active = defenses.filter(d => defenseApplies(d, input))
-  const groups = groupDamageParts(input)
-  const changesLater = (type: DamageTypeId | undefined) => !!input.resisted
-    || active.some(d => d.kind !== 'reduction' && d.kind !== 'conditionImmunity' && defenseCovers(d, type))
-  const reductions = active.filter(d => d.kind === 'reduction').filter(d => {
-    const reached = groups.filter(g => g.amount > 0 && defenseCovers(d, g.damageType))
-    if (reached.length < 2 || !reached.some(g => changesLater(g.damageType))) return true
-    const names = joinPt(reached.map(g => (g.damageType ? getDamageTypeName(g.damageType) : 'sem tipo')))
-    // Digitadas já com a redução, as parcelas não podem passar por ela de novo: com uma parcela só,
-    // ela se aplicaria. Por isso o aviso manda deixar a caixa da situação desmarcada.
-    const uncheck = d.condition ? `, sem marcar "${formatDefenseConditionQuestion(d.condition)}"` : ''
-    notices.push(note('unresolvedRule', `${d.source}: a redução de ${d.amount ?? 0} alcança mais de uma parcela (${names}), e o livro não diz de qual ela sai; com as outras defesas, isso muda o resultado. O app não a aplicou: combine com o Mestre e, se for o caso, desfaça e digite as parcelas já com a redução${uncheck}.`))
-    return false
-  })
-  const reductionLeft = new Map(reductions.map(d => [d, d.amount ?? 0]))
+  const reduced = applyDamageReductions(getDamageParts(input), active.filter(d => d.kind === 'reduction'), notices)
   const results: number[] = []
-  for (const { amount: raw, damageType } of groups) {
+  for (const { amount, damageType } of groupDamageParts(reduced)) {
     const typeName = damageType ? getDamageTypeName(damageType) : undefined
-    let amount = raw
-    for (const [d, left] of reductionLeft) {
-      if (left <= 0 || amount <= 0 || !defenseCovers(d, damageType)) continue
-      const taken = Math.min(left, amount)
-      reductionLeft.set(d, left - taken)
-      notices.push(note('resisted', `Redução de ${taken}${typeName ? ` em ${typeName}` : ''} (${d.source}): ${amount} → ${amount - taken}.`))
-      amount -= taken
-    }
-
     const immune = damageType ? active.filter(d => d.kind === 'immunity' && defenseCovers(d, damageType)) : []
     if (damageType && immune.length > 0) {
       notices.push(note('resisted', `Imune a ${getDamageLabel(damageType)} (${sourcesOf(immune)}): o dano vira 0.`))

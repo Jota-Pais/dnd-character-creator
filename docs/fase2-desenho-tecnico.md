@@ -304,8 +304,8 @@ PlaySheet += {
 
 // ===== types/spellMechanics.ts (novo) — data/spell-mechanics.json, nunca tocado pelo parse-spells
 export type SpellResolution =
-  | { kind: 'attack'; range: 'melee' | 'ranged' }                     // crítico dobra os dados (p. 196)
-  | { kind: 'save'; ability: AbilityScore; onSuccess: 'half' | 'none' | 'other' }
+  | { kind: 'attack'; range: 'melee' | 'ranged'; note?: string }     // crítico dobra os dados (p. 196); note: o condicional da jogada, a frase do livro
+  | { kind: 'save'; ability: AbilityScore; onSuccess: 'half' | 'none' | 'other'; note?: string }
   | { kind: 'auto' } | { kind: 'none' }
 export type LevelScaled = { perSlotAbove?: { count?: number; flat?: number; every?: number }; byCharacterLevel?: LevelStep[] /* truques: 1º/5º/11º/17º de PERSONAGEM */ }
 export type SpellInstances = { count: number; noun: 'feixe' | 'raio' | 'dardo' | 'alvo'; perSlotAbove?: number; byCharacterLevel?: LevelStep[] }
@@ -341,6 +341,7 @@ FeatureEffects.spellDamageBonus?: {
   per: 'roll' | 'instance'
 }
 FeatureEffects.spellHealingBonus?: { base: number; perSpellLevel: number }   // Discípulo da Vida
+FeatureEffects.cantripSaveHalfDamage?: true                                  // Truque Potente (na revisão da magias-base)
 
 ## Ondas
 
@@ -1086,13 +1087,22 @@ Montar o esquema e o processo de revisão que não chuta regra. Os 27 truques pa
 A onda vale sozinha, sem esperar o grimório.
 
 **Feita em 2026-10-31.** Um commit por item, na ordem 1, 2, 3, 5 e 4: os testes do guia (item 4) são os do desenho, com os truques revisados, então o lote T veio antes. O que mudou em relação ao desenho, e por quê:
-- (1) O esquema é o do "Modelo de dados". O `status` ganhou a leitura que faltava: `reviewed` quando tudo o que a magia faz em número está declarado e conferido, inclusive a de utilidade, sem número (Luz, Consertar), com a resolução `none`; `textOnly`, com o motivo, quando há número ou efeito que o esquema ainda não diz, que depende do Mestre ou que espera o dono. A entrada `textOnly` não leva dano, cura nem instâncias: o guia não mostra receita pela metade. `utils/spellMechanics.ts` também faz a conta do que cresce (`scaledDiceCount`, `scaledFlat`, com o `every`).
+- (1) O esquema é o do "Modelo de dados". O `status` ganhou a leitura que faltava: `reviewed` quando tudo o que a magia faz em número está declarado e conferido, inclusive a de utilidade, sem número (Consertar, Mãos Mágicas), com a resolução `none`; `textOnly`, com o motivo, quando há número ou efeito que o esquema ainda não diz, que depende do Mestre ou que espera o dono. A entrada `textOnly` não leva dano, cura nem instâncias: o guia não mostra receita pela metade. `utils/spellMechanics.ts` também faz a conta do que cresce (`scaledDiceCount`, `scaledFlat`, com o `every`).
 - (2) O script grava na pasta temporária (ou em `--out`, recusando `packages/` e `apps/`) e ganhou o `--check`, que confere as `bookLines` das entradas revisadas contra o cabeçalho de cada magia no extrato (a letra capitular do PDF solta a inicial do nome: "E SPIRRO Á CIDO").
 - (3) O extrato do livro fica fora do git (`.gitignore`), e o CI não o tem: o teste confere cada entrada com o texto da magia no `spells.json`, que é o do livro digitalizado. A guarda é provada com entradas erradas de propósito (o dado, o tipo, o degrau, o ataque, o atributo, o lote). O "dano ácido" do livro vale pelo "dano de ácido" do app, só redação.
 - (4) `getSpellGuide` recebe, como 4º parâmetro opcional, o guia de rolagens que a tela já tem (sem ele, monta). O ataque da magia é o ataque de magia da conjuração (`RollGuide.spellcasting`), pela `casterKey` (`class:<classe>`, `feat:<talento>`); a magia de fora dela (o truque da raça, o da subclasse, as inatas) fica só com o dano, com a nota, porque o app não tem a CD nem o ataque delas (com o dono). Os ids `spell:<magia>:<nível>:<parte>@<conjuração>` deixam a folha da receita remontar a jogada com o estado de agora (`findSpellGuideEntry`), e o ataque leva ao dano. Além do `d20Entry` e do `damageEntry`, nasceu o `healEntry` em `guideEntries.ts`, e o Dado de Vida passou a usá-lo; o guia de rolagens saiu igual, conferido byte a byte em 32 combinações de ficha e estado. Na tela, "O que rolar nas magias" em cada conjuração da aba Magia (`getCasterSpellGuides`) e "O que rolar" na folha da magia da aba Regras (`SpellRecipe`). A receita aberta da folha fica por cima dela: o `PlayDialog` passou a guardar a pilha das folhas abertas, e o Esc fecha só a de cima, como o voltar do Android.
-- (5) O lote T: onze truques de dano com a receita, nove de utilidade revisados sem número e sete só no texto — Orientação, Resistência, Proteção contra Lâminas, Ataque Certeiro e Amizade (o efeito no alvo ou em você que o catálogo de efeitos recebidos ainda não tem), o Bordão Místico (muda a arma) e a Luz, pela divergência pt-BR × inglês, que foi ao dono (`docs/magias/mecanica-magias.md`, seção 4, com a Prestidigitação e a Ilusão Menor, cujas divergências não mudam número da receita).
+- (5) O lote T: onze truques de dano com a receita, oito de utilidade revisados sem número e oito só no texto — Orientação, Resistência, Proteção contra Lâminas, Ataque Certeiro e Amizade (o efeito no alvo ou em você que o catálogo de efeitos recebidos ainda não tem), o Bordão Místico (muda a arma), a Ilusão Menor (o teste de Investigação contra a CD da magia, que o esquema não diz; da revisão da onda) e a Luz, pela divergência pt-BR × inglês, que foi ao dono (`docs/magias/mecanica-magias.md`, seção 4, com a Prestidigitação e a Ilusão Menor, cujas divergências de tamanho não mudam número da receita).
 - Nenhum número de ficha salva muda no aviso de migração: o retrato não tem o dano das magias, e a CD e o ataque de cada conjuração não mudaram.
 - Conferido no Edge a 390 × 844 e 360 × 740, também pelo teclado: o mago 5 Alto Elfo (o Raio de Gelo com 2d8 e o crítico 4d8, o Espirro Ácido com a CD e até 2 alvos, o Raio de Fogo da raça só com o dano) e o bruxo 5 (a Rajada Mística com 2 feixes, a Zombaria Viciosa com a CD); a receita por cima da folha, o Esc que fecha só ela e o foco de volta ao "Dano"; alvos de 45 px, sem rolagem lateral e o console sem erros.
+- **Correções da revisão (2026-10-31):**
+  - O condicional da jogada vira nota (a regra de ouro): a resolução de ataque e de TR ganhou a `note`, com a frase do livro como está no texto (a guarda confere): a vantagem do Toque Chocante contra armadura de metal, no ataque, e a cobertura que não vale no TR da Chama Sagrada, ao lado do texto dele.
+  - A guarda confere a resolução nos dois sentidos: o "teste de resistência de X" do texto pede o TR, o "metade desse dano" com ele pede a metade no sucesso, o "ataque ... com magia" pede a jogada de ataque, e a "CD da magia" pede o TR. A magia em que a frase não é a resolução vai a `RESOLUTION_EXCEPTIONS`, com o motivo (vazia no lote T).
+  - A Ilusão Menor passou a `textOnly` (o teste contra a CD da magia é número que o esquema não diz).
+  - O modificador de conjuração do guia da magia é o da conjuração do guia de rolagens (`SpellcastingGuide.abilityModifier`, a mesma parcela da CD e do ataque): uma conta só.
+  - Os bônus da ficha no dano (Explosão Agonizante, Conjuração Poderosa, Evocação Potencializada, Afinidade Elemental) estão nos dados, na forma de `magias-modificadores` (`spellDamageBonus`, agregados por `getSpellDamageBonuses`), e, até aquela onda pô-los na fórmula, o guia os diz numa nota com o valor, na receita do dano e embaixo das jogadas da magia: a receita dos truques não passa por completa com o número errado. O Truque Potente (`cantripSaveHalfDamage`) já está no texto do TR: no sucesso, metade do dano.
+  - Sem o espaço escolhido, a magia de 1º nível ou mais da conjuração de uma classe sai no espaço mais baixo que a ficha tem (o de Pacto do bruxo, pág. 58; com Conjuração e Pacto, o mais baixo, e o de Pacto numa nota, pág. 166), e a inata, no nível do traço (`InnateSpell.castLevel`, que a aba Regras passa): os lotes 1 em diante podem sair antes do grimório sem o bruxo 5 ver a onda trovejante com 2d8.
+  - Nenhum número de ficha salva muda no aviso de migração: o retrato não tem o dano das magias, e a CD e o ataque de cada conjuração não mudaram.
+  - Conferido no Edge a 390 × 844 e 360 × 740: o bruxo 5 com a Explosão Agonizante (a nota na aba Magia, na receita e na folha da aba Regras), o evocador 6 (o Truque Potente no TR do Espirro Ácido, a vantagem na receita do ataque do Toque Chocante) e o clérigo da Luz 8 (a cobertura e a Conjuração Poderosa); alvos de 45 px, sem rolagem lateral, o Esc que fecha só a receita, o foco de volta ao "Dano" e o console sem erros.
 - Achado, com o dono: o JS do build passou de 2 MB (2.050,5 kB; o aviso do `chunkSizeWarningLimit` voltou, por cerca de 6 kB desta onda). A decisão de `docs/app-instalavel.md` (seção 5) é dividir quando o aviso voltar. Medido nesta sessão (build servido, Edge 390 × 844, CPU 4×, mediana de 3): a galeria em 1,77 s no 4G rápido e 5,32 s no 4G lento; a versão de antes não foi medida na mesma sessão, então a comparação com os 1,32 s da tabela não vale.
 
 #### 1. Esquema e carga
@@ -1899,16 +1909,22 @@ Mesmo processo. Ao fechar, spellMechanics.test passa a exigir 100% das 361 magia
 - **Tamanho:** P
 - **Depende de:** `magias-lote-1`
 
-Truque Potente, Evocação Potencializada, Afinidade Elemental, Rajada Agonizante e Discípulo da Vida entram no número da magia.
+Evocação Potencializada, Afinidade Elemental, Explosão Agonizante, Conjuração Poderosa e Discípulo da Vida entram no número da magia.
+
+Desde a revisão da `magias-base` (2026-10-31), os quatro bônus no dano já estão nos dados (`spellDamageBonus`, agregados por `getSpellDamageBonuses`) e saem numa nota com o valor ("a fórmula ainda não o inclui"); esta onda os passa à fórmula, com a parcela nomeada, e tira a nota. O Truque Potente já está no texto do TR (`cantripSaveHalfDamage`). Fica para esta onda decidir, com o dono, a leitura de "truque de clérigo" e de "magia de evocação de mago" para a magia de outra fonte (o Iniciado em Magia, o truque da raça): a nota de hoje aparece em toda magia da lista da classe, com a condição do livro.
+
+Também nesta onda, como notas condicionais do guia da magia, os dois talentos da mesma família que nenhuma onda cobria: o Adepto Elemental (pág. 167, linhas 14901-14913: as magias ignoram a resistência ao tipo escolhido, e o 1 no dado de dano vira 2) e o Atirador de Magia (págs. 167-168, linhas 14970-14984: o alcance dobrado da magia com jogada de ataque, e o ataque à distância com magia ignora a meia-cobertura e a de três quartos). O Adepto Elemental ainda não tem a escolha do tipo no criador (feats.json, sem `choices`): é mudança no criador, com o dono.
 
 #### 1. spellDamageBonus e spellHealingBonus
 
 Efeitos nas características e invocações, com as linhas do extrato:
-- Truque Potente (8762-8766): metade do dano no sucesso do TR.
+- Truque Potente (8762-8766): metade do dano no sucesso do TR (já no texto do TR desde a revisão da `magias-base`).
 - Evocação Potencializada (8770-8775): +INT em uma jogada de dano.
 - Afinidade Elemental (6857-6864): +CAR no tipo do ancestral, numa jogada.
-- Rajada Agonizante: +CAR por feixe.
+- Explosão Agonizante (4940-4943): +CAR por feixe.
+- Conjuração Poderosa, domínios do Conhecimento e da Luz (5478-5481 e 5702-5705): +SAB no dano dos truques de clérigo, a partir do 8º nível NA classe.
 - Discípulo da Vida (5862 e seguintes): +2 + o nível da magia na cura.
+- Adepto Elemental (14901-14913) e Atirador de Magia (14970-14984): notas condicionais (acima).
 
 O spellGuide aplica cada um como parcela nomeada.
 
@@ -1917,7 +1933,8 @@ O spellGuide aplica cada um como parcela nomeada.
 - Rajada Mística com Agonizante no 5º nível: 2 feixes de 1d10 + CAR.
 - Curar Ferimentos no 1º com Discípulo da Vida: 1d8 + mod + 3.
 - Raio de Fogo com Evocação Potencializada: +INT uma vez.
-- **Aceite:** O 'de onde vem' mostra a parcela de cada característica.
+- Chama Sagrada do clérigo da Luz 8: 2d8 + SAB.
+- **Aceite:** O 'de onde vem' mostra a parcela de cada característica, e a nota "a fórmula ainda não o inclui" some.
 
 ## Dúvidas de regra
 

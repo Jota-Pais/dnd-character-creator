@@ -14,7 +14,7 @@
 - **O que cresce:** `perSlotAbove`, por nível de espaço acima do da magia (`every` para o "a cada dois níveis"); `byCharacterLevel`, o total de dados em degraus de nível de personagem (os truques: 1º, 5º, 11º e 17º).
 - **Instâncias:** jogadas separadas da mesma magia (os feixes da Rajada Mística, os dardos, os raios).
 - **Cura, PV temporários e aumento de PV máximo**, com dados, valor fixo e o modificador; **alvos** (até quantas criaturas, e quantas a mais por nível); **área**; e o **efeito no alvo** (o id em `data/active-effects.json`).
-- **Status:** `reviewed` quando tudo o que a magia faz em número está declarado e conferido — a magia de utilidade, sem número nenhum (Luz, Consertar), também, com a resolução `none`; `textOnly` quando há número ou efeito que o esquema ainda não diz ou que depende do Mestre, com o motivo. A entrada `textOnly` não leva dano, cura nem instâncias: o guia não mostra receita pela metade, só o texto.
+- **Status:** `reviewed` quando tudo o que a magia faz em número está declarado e conferido — a magia de utilidade, sem número nenhum (Consertar, Mãos Mágicas), também, com a resolução `none`; `textOnly` quando há número ou efeito que o esquema ainda não diz ou que depende do Mestre, com o motivo. O teste de alguém contra a CD da magia é número: a Ilusão Menor, em que quem examina a imagem faz um teste de Inteligência (Investigação) contra a CD, fica `textOnly` até o esquema dizer teste contra a CD. A entrada `textOnly` não leva dano, cura nem instâncias: o guia não mostra receita pela metade, só o texto.
 - **Linhas do extrato** (`bookLines`): do nome da magia ao fim do texto. É contra elas que a revisão foi feita.
 
 ## 2. O processo de cada lote

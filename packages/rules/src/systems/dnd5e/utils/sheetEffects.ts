@@ -398,9 +398,10 @@ export type SheetSpeedBonus = SheetEffect<number> & {
 
 /**
  * O que, no equipamento atual, impede a condição — `undefined` quando ela está cumprida. Na que
- * pede armadura pesada, é o que falta: "sem armadura pesada".
+ * pede armadura pesada, é o que falta: "sem armadura pesada". As operações de vestir e tirar
+ * (playState) perguntam com a armadura de depois, para o aviso dos benefícios da Fúria.
  */
-function equipmentBlocker(
+export function equipmentBlocker(
   requires: EquipmentRequirement,
   { bodyArmor, hasShield }: ReturnType<typeof getEquippedArmor>,
 ): string | undefined {

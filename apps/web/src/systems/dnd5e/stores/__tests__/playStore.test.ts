@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { registerPendingEdit, usePlayStore, UNDO_LIMIT } from '../playStore'
 import {
-  addCondition, applyDamage, applyHealing, castSpell, createPlayState, emptyTurn, getCurrentHp, getPlaySpeed, markTurn, newTurn, performAction,
-  setInspiration, setNote, standUp,
+  addCondition, applyDamage, applyHealing, castSpell, createPlayState, doffArmor, donArmor, emptyTurn, getCurrentHp, getPlaySpeed, markTurn,
+  newTurn, performAction, setInspiration, setNote, standUp,
 } from '@rpg/rules/systems/dnd5e/utils/playState'
 import type { PlayOperation } from '../playStore'
 import type { WornArmor } from '@rpg/rules/systems/dnd5e/types/session'
@@ -180,6 +180,27 @@ describe('usePlayStore', () => {
     expect(sheet().speed).toBe(30)
     usePlayStore.getState().undo()
     expect(sheet().speed).toBe(45)
+  })
+
+  it('vestir e tirar pelas operações: cada troca é um passo do desfazer, com o sheet junto', () => {
+    // Guerreiro humano com Couro e Cota de Malha compradas: o criador equipa o Couro.
+    const fighter = {
+      ...draft(), race: 'human', class: 'fighter', level: 1,
+      equipment: { ...draft().equipment, purchasedItems: ['leather', 'chain-mail'].map(itemId => ({ itemId, quantity: 1, source: 'purchased' as const })) },
+    }
+    usePlayStore.getState().open('c1', fighter, 1)
+    const worn = () => usePlayStore.getState().sheet!.wornArmor
+    usePlayStore.getState().run((st, sh) => donArmor(st, sh, 'chain-mail'))
+    expect(worn()).toEqual({ bodyArmorId: 'chain-mail', shield: false })
+    expect(loadPlayState('c1')?.wornArmor).toEqual({ bodyArmorId: 'chain-mail', shield: false, basis: { bodyArmorId: 'leather', shield: false } })
+    usePlayStore.getState().run((st, sh) => doffArmor(st, sh))
+    expect(worn()).toEqual({ bodyArmorId: null, shield: false })
+    usePlayStore.getState().undo()
+    expect(worn()).toEqual({ bodyArmorId: 'chain-mail', shield: false })
+    usePlayStore.getState().undo()
+    expect(worn()).toEqual({ bodyArmorId: 'leather', shield: false })
+    expect(usePlayStore.getState().state?.wornArmor).toBeUndefined()
+    expect(loadPlayState('c1')?.wornArmor).toBeUndefined()
   })
 
   it('o desfazer volta o turno: o Usar (uso, efeito e casa num passo só) e o Novo turno', () => {

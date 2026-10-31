@@ -7,7 +7,7 @@ import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
 import { buildPlaySheet } from '../playSheet'
 import { COMPLETE_DRAFT } from '../../../../test/fixtures'
 import {
-  activateToggle, addCondition, adjustMaxHp, applyDamage, castSpell, getSpellCastOptions, getTurnSpells, type SpellCast, applyDamageDroppingToOneHp, applyHealing, clearRollHistory, clearTempHp, completeLongRest, completeShortRest,
+  activateToggle, addCondition, adjustMaxHp, applyDamage, doffArmor, doffShield, donArmor, donShield, getPlayToggles, getWornArmor, resetWornArmor, castSpell, getSpellCastOptions, getTurnSpells, type SpellCast, applyDamageDroppingToOneHp, applyHealing, clearRollHistory, clearTempHp, completeLongRest, completeShortRest,
   createPlayState, deactivateToggle, describeHpMaxImmunity, emptyTurn, endConcentration, getBaseMaxHp, getCastingBlockers, getTurnActions, getTurnExtraActions, getTurnMovement, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable,
   getLongRestHitDiceRecoverable, getPactSlotsAvailable, getPlayEffects, getPlayConditionState, getPlayDamageDefenses, getPlaySpeed,
   getResourceAvailable, getShortRestSlotRecovery, performAction, getSpellSlotsAvailable, grantTempHp, previewLongRest, previewShortRest, reconcileLoadedPlayState,
@@ -2811,5 +2811,148 @@ describe('getTurnSpells: as magias de ação bônus e de reação para a aba Aç
     }])
     const raging = performAction(state(), sh, 'rage-enter', { now: 1 }).state
     expect(getTurnSpells(raging, sh)).toEqual([])
+  })
+})
+
+// ── A armadura vestida: vestir, tirar e a reconciliação (onda `armadura`) ──────
+
+describe('a armadura vestida: vestir, tirar, o escudo e a reconciliação', () => {
+  const SCORES = { STR: 15, DEX: 12, CON: 14, INT: 10, WIS: 10, CHA: 10 }
+  /** Um personagem de verdade que compra (método riqueza) o que carrega; o criador equipa a primeira armadura. */
+  const character = (classId: string, ...itemIds: string[]): CharacterDraft => ({
+    ...structuredClone(EMPTY_DRAFT), level: 3, class: classId, race: 'human', abilityScores: SCORES,
+    equipment: {
+      ...structuredClone(EMPTY_DRAFT.equipment), method: 'wealth',
+      purchasedItems: itemIds.map(itemId => ({ itemId, quantity: 1, source: 'purchased' as const })),
+    },
+  })
+  /** A ficha de jogo com a armadura vestida do estado, como o playStore a monta. */
+  const sheetFor = (draft: CharacterDraft, s: PlayState) => buildPlaySheet(draft, s.wornArmor)
+  const texts = (r: { notices: { text: string }[] }) => r.notices.map(n => n.text)
+
+  it('vestir encerra a Armadura Arcana; o escudo não (decisão de 2026-10-30)', () => {
+    const fighter = character('fighter', 'leather', 'shield')
+    const s0 = state({ activeEffects: [{ id: 'spell:mage-armor', startedAt: 1 }] })
+    const off = doffArmor(s0, sheetFor(fighter, s0)).state
+    expect(off.wornArmor).toEqual({ bodyArmorId: null, shield: true, basis: { bodyArmorId: 'leather', shield: true } })
+    expect(off.activeEffects.map(a => a.id)).toEqual(['spell:mage-armor'])
+    const shieldOff = doffShield(off, sheetFor(fighter, off)).state
+    const shieldOn = donShield(shieldOff, sheetFor(fighter, shieldOff))
+    expect(shieldOn.state.activeEffects.map(a => a.id)).toEqual(['spell:mage-armor'])
+
+    const on = donArmor(off, sheetFor(fighter, off), 'leather')
+    expect(on.state.activeEffects).toEqual([])
+    // De volta ao equipado no criador: a troca não tem o que guardar.
+    expect(on.state.wornArmor).toBeUndefined()
+    expect(texts(on)).toEqual([
+      'Vestir Couro leva 1 minuto (pág. 148): a CA da armadura só vale com o tempo inteiro. O app não conta esse tempo.',
+      'Armadura Arcana: terminou ao vestir Couro (pág. 220).',
+    ])
+  })
+
+  it('o que não está no inventário: recusa, e armadura nova entra pelo criador', () => {
+    const fighter = character('fighter', 'leather')
+    const sh = sheetFor(fighter, state())
+    const s = state()
+    expect(donArmor(s, sh, 'plate')).toEqual({ state: s, notices: [{ kind: 'refused', text: 'Placas não está entre as armaduras que você carrega: armadura nova entra pelo criador.' }] })
+    expect(donArmor(s, sh, 'shield').notices[0].kind).toBe('refused')
+    expect(donShield(s, sh)).toEqual({ state: s, notices: [{ kind: 'refused', text: 'Você não carrega escudo: escudo novo entra pelo criador.' }] })
+    expect(texts(donArmor(s, sh, 'leather'))).toEqual(['Você já está de Couro.'])
+    const off = doffArmor(s, sh).state
+    expect(texts(doffArmor(off, sheetFor(fighter, off)))).toEqual(['Você não está vestindo armadura.'])
+  })
+
+  it('bárbaro que veste Placas: a Fúria fica sem os benefícios, e a falta de proficiência avisa; tirar as devolve', () => {
+    // Gibão e Placas compradas: o criador equipa o Gibão; no jogo, a troca.
+    const barbarian = character('barbarian', 'hide', 'plate')
+    const raging = performAction(state(), sheetFor(barbarian, state()), 'rage-enter', { now: 1 }).state
+    const on = donArmor(raging, sheetFor(barbarian, raging), 'plate')
+    expect(getWornArmor(on.state, sheetFor(barbarian, on.state))).toEqual({ bodyArmorId: 'plate', shield: false })
+    expect(texts(on)).toEqual([
+      'Tirar Gibão de Peles leva 1 minuto (a metade com ajuda), e vestir Placas, 10 minutos (pág. 148): a CA da armadura só vale com o tempo inteiro. O app não conta esse tempo.',
+      'Usando Placas sem proficiência, você tem desvantagem em testes de habilidade, testes de resistência e jogadas de ataque que envolvam Força ou Destreza, e não pode conjurar magias (pág. 144).',
+      'Fúria sem os benefícios: você está de Placas (pág. 48).',
+    ])
+    const plateSheet = sheetFor(barbarian, on.state)
+    expect(getPlayToggles(on.state, plateSheet)[0].blockedBy).toBe('Placas')
+    expect(plateSheet.unproficientArmor).toEqual(['Placas'])
+
+    const off = doffArmor(on.state, plateSheet)
+    expect(texts(off)).toEqual([
+      'Tirar Placas leva 5 minutos, ou a metade com ajuda (pág. 148). O app não conta esse tempo.',
+      'Fúria: os benefícios voltam (pág. 48).',
+    ])
+    expect(off.state.wornArmor).toEqual({ bodyArmorId: null, shield: false, basis: { bodyArmorId: 'hide', shield: false } })
+    expect(getPlayToggles(off.state, sheetFor(barbarian, off.state))[0].blockedBy).toBeUndefined()
+  })
+
+  it('o escudo marca a ação do turno; a segunda ação só avisa', () => {
+    const fighter = character('fighter', 'chain-mail', 'shield')
+    const off = doffShield(state(), sheetFor(fighter, state()))
+    expect(off.state.turn.action).toBe(true)
+    expect(off.state.wornArmor).toEqual({ bodyArmorId: 'chain-mail', shield: false, basis: { bodyArmorId: 'chain-mail', shield: true } })
+    expect(texts(off)).toEqual(['Tirar o escudo: 1 ação (pág. 148), marcada no turno.'])
+    const on = donShield(off.state, sheetFor(fighter, off.state))
+    expect(on.state.wornArmor).toBeUndefined()
+    expect(on.notices.map(n => n.kind)).toEqual(['info', 'warning'])
+    expect(texts(on)[1]).toBe('Vestir o escudo: você já usou a ação deste turno (pág. 191). Se já é outro turno, toque em Novo turno.')
+    expect(texts(doffShield(on.state, sheetFor(fighter, on.state)))).toContain('Tirar o escudo: 1 ação (pág. 148), marcada no turno.')
+    expect(texts(donShield(state(), sheetFor(fighter, state())))).toEqual(['Você já está com o escudo.'])
+  })
+
+  it('morto ou sem poder agir (Atordoado), não veste nem tira', () => {
+    const fighter = character('fighter', 'leather', 'shield')
+    const sh = sheetFor(fighter, state())
+    const dead = state({ lifeState: 'dead' })
+    expect(texts(doffArmor(dead, sh))).toEqual(['Tirar Couro: o personagem está morto.'])
+    const stunned = state({ conditions: ['stunned'] })
+    expect(doffShield(stunned, sh).notices[0]).toEqual({ kind: 'refused', text: 'Tirar o escudo: Incapacitado (por Atordoado), sem ações nem reações (pág. 292).' })
+    expect(doffShield(stunned, sh).state).toBe(stunned)
+  })
+
+  it('voltar ao da ficha é correção: sem tempo, sem turno, e encerra a Armadura Arcana se põe a armadura', () => {
+    const fighter = character('fighter', 'leather')
+    const off = doffArmor(state(), sheetFor(fighter, state())).state
+    const withMageArmor = { ...off, activeEffects: [{ id: 'spell:mage-armor', startedAt: 1 }] }
+    const r = resetWornArmor(withMageArmor, sheetFor(fighter, withMageArmor))
+    expect(r.state.wornArmor).toBeUndefined()
+    expect(r.state.activeEffects).toEqual([])
+    expect(r.state.turn).toEqual(withMageArmor.turn)
+    expect(texts(r)).toEqual([
+      'Equipamento vestido de volta ao da ficha: Couro.',
+      'Armadura Arcana: terminou ao vestir Couro (pág. 220).',
+    ])
+    expect(texts(resetWornArmor(state(), sheetFor(fighter, state())))).toEqual(['O equipamento vestido já é o da ficha.'])
+  })
+
+  it('o criador mudou o equipamento: a troca cai inteira, com o aviso, e a ficha manda', () => {
+    const before = character('fighter', 'leather', 'shield')
+    const off = doffArmor(state(), sheetFor(before, state())).state
+    const after = character('fighter', 'chain-mail', 'shield')
+    const r = reconcileLoadedPlayState(off, sheetFor(after, off))
+    expect(r.state.wornArmor).toBeUndefined()
+    expect(r.notices).toEqual([{ kind: 'info', text: 'Você mudou o equipamento no criador: o equipamento vestido volta a ser o da ficha (Cota de Malha e escudo).' }])
+    // O sheet montado com a troca velha já é o do criador: a mesma conta.
+    expect(sheetFor(after, off).wornArmor).toEqual({ bodyArmorId: 'chain-mail', shield: true })
+  })
+
+  it('a armadura vestida que saiu do inventário sai também, com aviso; o resto da troca fica', () => {
+    const before = character('fighter', 'leather', 'plate', 'shield')
+    const s0 = state()
+    const inPlate = donArmor(s0, sheetFor(before, s0), 'plate').state
+    const noShield = doffShield(inPlate, sheetFor(before, inPlate)).state
+    // O jogador tirou as Placas da compra no criador; o Couro continua o equipado (a base bate).
+    const after = character('fighter', 'leather', 'shield')
+    const r = reconcileLoadedPlayState(noShield, sheetFor(after, noShield))
+    expect(r.state.wornArmor).toEqual({ bodyArmorId: null, shield: false, basis: { bodyArmorId: 'leather', shield: true } })
+    expect(r.notices).toEqual([{ kind: 'info', text: 'A ficha mudou: Placas não está mais no inventário e saiu do equipamento vestido.' }])
+  })
+
+  it('a troca igual ao equipado no criador não fica no estado', () => {
+    const fighter = character('fighter', 'leather')
+    const sh = sheetFor(fighter, state())
+    const same = state({ wornArmor: { bodyArmorId: 'leather', shield: false, basis: { bodyArmorId: 'leather', shield: false } } })
+    expect(reconcilePlayState(same, sh).wornArmor).toBeUndefined()
+    expect(reconcileLoadedPlayState(same, sh).notices).toEqual([])
   })
 })

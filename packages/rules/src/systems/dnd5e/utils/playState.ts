@@ -12,11 +12,12 @@ import type { Spell } from '../types/spell'
 import type { CastingTimeKind, SpellbookEntry, SpellPayment } from '../types/spellbook'
 import {
   getActiveConditionEffects, getCondition, getEffectiveConditions, getEffectiveHpMax,
-  applyConditionSpeed, damageTypeSetHas, halveSpeedOnGrid, isConditionSuspended, withConditionApplied,
+  applyConditionSpeed, damageTypeSetHas, equipmentBlocker, halveSpeedOnGrid, isConditionSuspended, withConditionApplied,
   type ActiveConditionEffects, type ConditionState, type SheetDamageDefense,
 } from './sheetEffects'
 import type { ZeroHpSave } from '../types/effects'
-import type { ArmorSetup, ResolvedToggle, SheetToggle, WornArmor } from '../types/session'
+import type { ArmorSetup, CarriedArmor, ResolvedToggle, SheetToggle, WornArmor } from '../types/session'
+import type { ArmorCategory } from '../types/equipment'
 import { ABILITY_LABELS, formatMeters } from './abilityScoreUtils'
 import type { SheetResource } from './classResourceUtils'
 import { resolveActiveEffects } from './activeEffects'
@@ -27,7 +28,7 @@ import { findSpellbookEntry } from './spellbook'
 import { getSpellMechanics } from './spellMechanics'
 import { castingTimeKind, getSpell, hasVerbalComponent } from './spellUtils'
 import { getArmorById } from './equipmentUtils'
-import { resolveWornArmor } from './wornArmor'
+import { resolveWornArmor, sameArmorSetup } from './wornArmor'
 
 /**
  * Operações do estado de jogo: funções puras que recebem (estado, PlaySheet, …) e devolvem
@@ -286,7 +287,7 @@ export function reconcilePlayState(state: PlayState, sheet: PlaySheet): PlayStat
     if (spent > 0) resourcesSpent[r.id] = spent
   }
 
-  return {
+  const next: PlayState = {
     ...state,
     damageTaken,
     hitDiceSpent,
@@ -307,6 +308,20 @@ export function reconcilePlayState(state: PlayState, sheet: PlaySheet): PlayStat
       return a.option && !toggle.options.some(o => o.id === a.option) ? [{ id: a.id, startedAt: a.startedAt }] : [a]
     }),
   }
+  // A armadura vestida no jogo: com a base diferente do equipado no criador, o criador mudou o
+  // equipamento e manda; com a base igual, fica o que ainda se carrega. Igual ao do criador, a troca
+  // não tem o que guardar e sai — a próxima mudança no criador vale sem aviso.
+  const worn = reconcileWornArmor(state.wornArmor, sheet)
+  if (worn) next.wornArmor = worn
+  else delete next.wornArmor
+  return next
+}
+
+/** A troca de armadura que ainda vale contra a ficha (`reconcilePlayState`); `undefined`, nenhuma. */
+function reconcileWornArmor(worn: WornArmor | undefined, sheet: PlaySheet): WornArmor | undefined {
+  if (!worn || !sameArmorSetup(worn.basis, sheet.equippedArmor)) return undefined
+  const now = resolveWornArmor(sheet.equippedArmor, sheet.carriedArmor, worn)
+  return sameArmorSetup(now, sheet.equippedArmor) ? undefined : { ...now, basis: { ...worn.basis } }
 }
 
 /**
@@ -332,6 +347,7 @@ export function reconcileLoadedPlayState(state: PlayState, sheet: PlaySheet): Pl
         : `A ficha mudou: ${gone.length} efeitos ligados deixaram de valer e foram desligados, porque a ficha não os tem mais.`)]
       : []),
     ...optionLost.map(t => note('info', `A ficha mudou: continua ${lowerFirst(t.label)}, sem a opção escolhida ao ligar, porque a ficha não a tem mais; o que ela fazia, inclusive ao terminar, deixa de valer.`)),
+    ...describeWornArmorReconciled(state.wornArmor, sheet),
   ]
   if (state.lifeState !== 'conscious') return done(next, toggleNotices)
   const sheetMax = getBaseMaxHp(state, sheet)
@@ -347,6 +363,25 @@ export function reconcileLoadedPlayState(state: PlayState, sheet: PlaySheet): Pl
     notices.push(note('info', `A ficha mudou: o PV máximo (${sheetMax}) ficou abaixo do dano sofrido. O personagem fica com ${after} PV — reduzir o máximo não leva a 0 PV sozinho.`))
   }
   return done(next, [...notices, ...toggleNotices])
+}
+
+/**
+ * Os avisos da troca de armadura que a ficha mudada derrubou: o equipamento mudado no criador (a
+ * troca cai inteira, e o criador manda) ou a peça vestida que saiu do inventário (só ela sai).
+ */
+function describeWornArmorReconciled(worn: WornArmor | undefined, sheet: PlaySheet): PlayNotice[] {
+  if (!worn) return []
+  if (!sameArmorSetup(worn.basis, sheet.equippedArmor)) {
+    return [note('info', `Você mudou o equipamento no criador: o equipamento vestido volta a ser o da ficha (${describeArmorSetup(sheet.equippedArmor)}).`)]
+  }
+  const now = resolveWornArmor(sheet.equippedArmor, sheet.carriedArmor, worn)
+  const gone = [
+    ...(worn.bodyArmorId && !now.bodyArmorId ? [armorName(worn.bodyArmorId)] : []),
+    ...(worn.shield && !now.shield ? ['o escudo'] : []),
+  ]
+  return gone.length > 0
+    ? [note('info', `A ficha mudou: ${joinPt(gone)} não ${gone.length > 1 ? 'estão' : 'está'} mais no inventário e ${gone.length > 1 ? 'saíram' : 'saiu'} do equipamento vestido.`)]
+    : []
 }
 
 // ── Transições de vida (internas, mutam o rascunho `next` da operação) ─────────
@@ -1548,6 +1583,174 @@ export function performAction(state0: PlayState, sheet: PlaySheet, actionId: str
     notices.push(...r.notices)
   }
   next = { ...next, turn: spendTurn(next.turn, action, sheet, getExtraTurnAction(next, sheet), notices) }
+  return done(next, notices)
+}
+
+// ── A armadura vestida (onda `armadura`) ─────────────────────────────────────
+
+/**
+ * Quanto leva vestir e tirar cada categoria (tabela "Vestindo e Despindo uma Armadura", pág. 148,
+ * linhas 13327-13332). O app não conta o tempo de jogo: o tempo vai no aviso, e o do escudo, uma
+ * ação, marca a casa do turno.
+ */
+const ARMOR_TIME: Record<ArmorCategory, { don: string; doff: string }> = {
+  light: { don: '1 minuto', doff: '1 minuto' },
+  medium: { don: '5 minutos', doff: '1 minuto' },
+  heavy: { don: '10 minutos', doff: '5 minutos' },
+  shield: { don: '1 ação', doff: '1 ação' },
+}
+
+/** A página da tabela de vestir e tirar (pág. 148, no pt-BR). */
+const ARMOR_TIME_PAGE = 148
+
+const armorName = (id: string) => getArmorById(id)?.name ?? id
+
+/** "Couro e escudo", "Couro", "escudo", "sem armadura nem escudo". */
+export function describeArmorSetup(setup: ArmorSetup): string {
+  const parts = [...(setup.bodyArmorId ? [armorName(setup.bodyArmorId)] : []), ...(setup.shield ? ['escudo'] : [])]
+  return parts.length > 0 ? parts.join(' e ') : 'sem armadura nem escudo'
+}
+
+/** A armadura do catálogo de um `ArmorSetup`, na forma que `equipmentBlocker` pergunta. */
+const equippedOf = (setup: ArmorSetup) => ({
+  bodyArmor: setup.bodyArmorId ? getArmorById(setup.bodyArmorId) : undefined,
+  hasShield: setup.shield,
+})
+
+/**
+ * O que veste e tira pede poder agir: o morto não veste nada, e quem está Incapacitado não faz ações
+ * (pág. 292) — o escudo leva uma, e a armadura, minutos delas. A frase da recusa, ou null.
+ */
+function describeCannotChangeArmor(state: PlayState, sheet: PlaySheet, what: string): string | null {
+  if (state.lifeState === 'dead') return `${what}: o personagem está morto.`
+  const noActions = getPlayEffects(state, sheet).noActions
+  return noActions.active ? `${what}: ${noActions.sources.map(s => s.label).join(', ')}, sem ações nem reações (pág. 292).` : null
+}
+
+/**
+ * Troca o que está vestido no rascunho `next` da operação, com o que vem junto, no mesmo passo do
+ * desfazer: a armadura de corpo colocada encerra o que acaba ao vestir armadura (`endsOn` 'donArmor':
+ * a Armadura Arcana, pág. 220 — o escudo não, decisão de 2026-10-30); a peça sem proficiência avisa
+ * (pág. 144); e o efeito ligado cujos benefícios pedem outro equipamento (a Fúria, sem armadura
+ * pesada) avisa quando os perde ou os ganha de volta. A troca igual ao equipado no criador não tem
+ * o que guardar: o estado fica sem ela.
+ */
+function wearInto(next: PlayState, sheet: PlaySheet, after: ArmorSetup, notices: PlayNotice[]): void {
+  const before = getWornArmor(next, sheet)
+  if (sameArmorSetup(after, sheet.equippedArmor)) delete next.wornArmor
+  else next.wornArmor = { ...after, basis: { ...sheet.equippedArmor } }
+
+  if (after.bodyArmorId && after.bodyArmorId !== before.bodyArmorId) {
+    for (const toggle of sheet.toggles) {
+      if (!toggle.endsOn.includes('donArmor') || !next.activeEffects.some(a => a.id === toggle.id)) continue
+      notices.push(note('info', `${toggle.source}: terminou ao vestir ${armorName(after.bodyArmorId)} (pág. ${toggle.page}).`))
+      endToggleInto(next, sheet, toggle.id, notices)
+    }
+  }
+
+  const putOn: CarriedArmor[] = sheet.carriedArmor.filter(a => a.category === 'shield'
+    ? after.shield && !before.shield
+    : a.id === after.bodyArmorId && a.id !== before.bodyArmorId)
+  for (const armor of putOn.filter(a => !a.proficient)) {
+    const name = armor.category === 'shield' ? 'o escudo' : armor.name
+    notices.push(note('warning', `Usando ${name} sem proficiência, você tem desvantagem em testes de habilidade, testes de resistência e jogadas de ataque que envolvam Força ou Destreza, e não pode conjurar magias (pág. 144).`))
+  }
+
+  for (const toggle of sheet.toggles) {
+    if (!next.activeEffects.some(a => a.id === toggle.id)) continue
+    for (const { requires } of toggle.benefits) {
+      const was = equipmentBlocker(requires, equippedOf(before))
+      const now = equipmentBlocker(requires, equippedOf(after))
+      if (now && !was) notices.push(note('warning', `${toggle.source} sem os benefícios: você está de ${now} (pág. ${toggle.page}).`))
+      if (was && !now) notices.push(note('info', `${toggle.source}: os benefícios voltam (pág. ${toggle.page}).`))
+    }
+  }
+}
+
+/**
+ * Veste uma armadura de corpo que o personagem carrega (`sheet.carriedArmor`); vestido com outra,
+ * troca. O tempo da tabela (pág. 148) vai no aviso — "você se beneficia da CA da armadura só se
+ * despender o tempo integral" —, e o app não o conta. Recusa a que não está no inventário (armadura
+ * nova entra pelo criador, decisão de 2026-10-30), a já vestida, e quem não pode agir.
+ */
+export function donArmor(state0: PlayState, sheet: PlaySheet, armorId: string): PlayResult {
+  const armor = sheet.carriedArmor.find(a => a.id === armorId && a.category !== 'shield')
+  if (!armor) {
+    return refuse(state0, `${armorName(armorId)} não está entre as armaduras que você carrega: armadura nova entra pelo criador.`)
+  }
+  const cannot = describeCannotChangeArmor(state0, sheet, `Vestir ${armor.name}`)
+  if (cannot) return refuse(state0, cannot)
+  const state = reconcilePlayState(state0, sheet)
+  const before = getWornArmor(state, sheet)
+  if (before.bodyArmorId === armor.id) return refuse(state0, `Você já está de ${armor.name}.`)
+
+  const next: PlayState = { ...state }
+  const old = before.bodyArmorId ? sheet.carriedArmor.find(a => a.id === before.bodyArmorId) : undefined
+  const don = ARMOR_TIME[armor.category].don
+  const notices: PlayNotice[] = [note('info', old
+    ? `Tirar ${old.name} leva ${ARMOR_TIME[old.category].doff} (a metade com ajuda), e vestir ${armor.name}, ${don} (pág. ${ARMOR_TIME_PAGE}): a CA da armadura só vale com o tempo inteiro. O app não conta esse tempo.`
+    : `Vestir ${armor.name} leva ${don} (pág. ${ARMOR_TIME_PAGE}): a CA da armadura só vale com o tempo inteiro. O app não conta esse tempo.`)]
+  wearInto(next, sheet, { ...before, bodyArmorId: armor.id }, notices)
+  return done(next, notices)
+}
+
+/** Tira a armadura de corpo vestida, com o tempo da tabela no aviso (pág. 148). */
+export function doffArmor(state0: PlayState, sheet: PlaySheet): PlayResult {
+  const state = reconcilePlayState(state0, sheet)
+  const before = getWornArmor(state, sheet)
+  if (!before.bodyArmorId) return refuse(state0, 'Você não está vestindo armadura.')
+  const name = armorName(before.bodyArmorId)
+  const cannot = describeCannotChangeArmor(state0, sheet, `Tirar ${name}`)
+  if (cannot) return refuse(state0, cannot)
+  const category = getArmorById(before.bodyArmorId)?.category ?? 'light'
+  const next: PlayState = { ...state }
+  const notices: PlayNotice[] = [
+    note('info', `Tirar ${name} leva ${ARMOR_TIME[category].doff}, ou a metade com ajuda (pág. ${ARMOR_TIME_PAGE}). O app não conta esse tempo.`),
+  ]
+  wearInto(next, sheet, { ...before, bodyArmorId: null }, notices)
+  return done(next, notices)
+}
+
+/**
+ * Veste ou tira o escudo: uma ação (pág. 148), marcada no turno como o "Usar" (`spendTurn`: a ação
+ * já usada só avisa). Vestir pede um escudo no inventário.
+ */
+function changeShield(state0: PlayState, sheet: PlaySheet, on: boolean): PlayResult {
+  const name = on ? 'Vestir o escudo' : 'Tirar o escudo'
+  if (on && !sheet.carriedArmor.some(a => a.category === 'shield')) {
+    return refuse(state0, 'Você não carrega escudo: escudo novo entra pelo criador.')
+  }
+  const cannot = describeCannotChangeArmor(state0, sheet, name)
+  if (cannot) return refuse(state0, cannot)
+  const state = reconcilePlayState(state0, sheet)
+  const before = getWornArmor(state, sheet)
+  if (before.shield === on) return refuse(state0, on ? 'Você já está com o escudo.' : 'Você não está com o escudo.')
+  const notices: PlayNotice[] = [note('info', `${name}: 1 ação (pág. ${ARMOR_TIME_PAGE}), marcada no turno.`)]
+  const next: PlayState = { ...state }
+  wearInto(next, sheet, { ...before, shield: on }, notices)
+  next.turn = spendTurn(next.turn, { name, timing: 'action', page: ARMOR_TIME_PAGE }, sheet, getExtraTurnAction(next, sheet), notices)
+  return done(next, notices)
+}
+
+export function donShield(state: PlayState, sheet: PlaySheet): PlayResult {
+  return changeShield(state, sheet, true)
+}
+
+export function doffShield(state: PlayState, sheet: PlaySheet): PlayResult {
+  return changeShield(state, sheet, false)
+}
+
+/**
+ * Volta ao equipamento da ficha (o do criador): a correção de uma troca, não uma ação — sem tempo nem
+ * turno, e sem recusar quem não pode agir. Colocar a armadura de corpo da ficha encerra a Armadura
+ * Arcana, como vestir.
+ */
+export function resetWornArmor(state0: PlayState, sheet: PlaySheet): PlayResult {
+  const state = reconcilePlayState(state0, sheet)
+  if (!state.wornArmor) return refuse(state0, 'O equipamento vestido já é o da ficha.')
+  const next: PlayState = { ...state }
+  const notices: PlayNotice[] = [note('info', `Equipamento vestido de volta ao da ficha: ${describeArmorSetup(sheet.equippedArmor)}.`)]
+  wearInto(next, sheet, { ...sheet.equippedArmor }, notices)
   return done(next, notices)
 }
 

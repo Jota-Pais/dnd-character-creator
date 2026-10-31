@@ -462,8 +462,9 @@ export type ActiveEffect =
  *   tempo de jogo declarado: o efeito acaba nele, antes do que o descanso devolve;
  * - `startOfYourTurn`: o início do seu próximo turno (o Escudo Arcano, o Esquivar). O app não conta
  *   turnos: até o Novo turno (onda `turno`), a seção Efeitos ativos o lembra, e o jogador marca o fim;
- * - `donArmor`: vestir uma armadura (a Armadura Arcana, p. 220). A armadura é a da ficha até a onda
- *   `armadura`; vestida no criador, os benefícios ficam bloqueados (`noArmor`).
+ * - `donArmor`: vestir a armadura de corpo no jogo (a Armadura Arcana, p. 220: `donArmor`, e o
+ *   `resetWornArmor` que põe a da ficha); o escudo não (decisão de 2026-10-30). Vestida no criador,
+ *   os benefícios ficam bloqueados (`noArmor`).
  */
 export type ToggleEnd = 'unconscious' | 'incapacitated' | 'speedZero' | 'shortRest' | 'longRest' | 'startOfYourTurn' | 'donArmor'
 

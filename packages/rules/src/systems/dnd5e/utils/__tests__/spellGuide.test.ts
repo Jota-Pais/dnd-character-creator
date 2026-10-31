@@ -167,6 +167,17 @@ describe('guia da magia: o ataque é o da conjuração', () => {
     expect(attack.notes.slice(1)).toEqual(sc.notes)
   })
 
+  it('o modificador da cura é o da conjuração do guia de rolagens, o da CD e do ataque (uma conta só)', () => {
+    const d = caster('cleric', 3, [], ['cure-wounds'])
+    const rg = getRollGuide(d, play())
+    expect(rg.spellcasting[0].abilityModifier).toBe(3)
+    expect(rg.spellcasting[0].saveDcBreakdown).toContainEqual({ label: 'Sabedoria', value: 3 })
+    // Se a conjuração do guia de rolagens mudar o modificador, a cura muda junto: ela não o recalcula.
+    const changed = { ...rg, spellcasting: [{ ...rg.spellcasting[0], abilityModifier: 5 }] }
+    const cure = getSpellGuide(d, play(), { casterKey: 'class:cleric', spellId: 'cure-wounds' }, changed)!.heal!
+    expect(cure).toMatchObject({ formula: '1d8 + 5', breakdown: [{ label: 'Sabedoria', value: 5 }] })
+  })
+
   it('o guia de rolagens monta pelas mesmas funções (a extração não copiou nada)', () => {
     expect(rollGuide.formatGuideFormula).toBe(guideEntries.formatGuideFormula)
     expect(rollGuide.formatGuideNotation).toBe(guideEntries.formatGuideNotation)

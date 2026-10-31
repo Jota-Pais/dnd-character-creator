@@ -92,6 +92,11 @@ export type SpellcastingGuide = {
   /** "Mago", "Guerreiro (Cavaleiro Arcano)", "Iniciado em Magia (Clérigo)". */
   label: string
   ability: AbilityScore
+  /**
+   * O modificador do atributo de conjuração, a parcela do "de onde vem" da CD e do ataque: o guia
+   * da magia soma daqui o modificador da cura e do dano (`spellGuide.ts`), sem outra conta.
+   */
+  abilityModifier: number
   saveDc: number
   saveDcBreakdown: GuideBreakdownItem[]
   attack: RollGuideEntry
@@ -537,7 +542,7 @@ function getGuideEffects(draft: CharacterDraft, state: PlayState, session: Sheet
 }
 
 /** Uma conjuração (classe ou talento) com a CD e o bônus de ataque já calculados pela fonte dela. */
-type SpellcastingInput = Omit<SpellcastingGuide, 'saveDcBreakdown' | 'attack'> & { attackId: string; attackModifier: number }
+type SpellcastingInput = Omit<SpellcastingGuide, 'saveDcBreakdown' | 'attack' | 'abilityModifier'> & { attackId: string; attackModifier: number }
 
 /** O guia de todas as jogadas da ficha, com o estado de jogo aplicado. Pura. */
 export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide {
@@ -694,6 +699,7 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
     const abilityPart = { label: ABILITY_LABELS[source.ability].long, value: mods[source.ability] }
     return {
       ...source,
+      abilityModifier: abilityPart.value,
       saveDcBreakdown: closeBreakdown([{ label: 'Base', value: 8 }, { label: 'Proficiência', value: prof }, abilityPart], source.saveDc),
       attack: d20Entry({
         id: attackId,

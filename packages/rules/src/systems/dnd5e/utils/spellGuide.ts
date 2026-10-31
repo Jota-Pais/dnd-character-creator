@@ -3,8 +3,7 @@ import type { PlayState } from '../types/playState'
 import type { AbilityScore } from '../types/race'
 import type { Spell } from '../types/spell'
 import type { SpellAmountPart, SpellDamagePart, SpellInstances, SpellMechanics } from '../types/spellMechanics'
-import { ABILITY_LABELS, calculateModifier } from './abilityScoreUtils'
-import { getFinalAbilityScores } from './asiUtils'
+import { ABILITY_LABELS } from './abilityScoreUtils'
 import { getDamageTypeName } from './damageTypes'
 import { damageEntry, healEntry, type GuideBreakdownItem, type RollGuideEntry } from './guideEntries'
 import { getRollGuide, type RollGuide, type SpellcastingGuide } from './rollGuide'
@@ -193,9 +192,8 @@ function buildSpellGuide(draft: CharacterDraft, spell: Spell, mech: SpellMechani
   const caster: SpellcastingGuide | null = ref.casterKey
     ? rollGuide.spellcasting.find(s => s.key === ref.casterKey) ?? null
     : null
-  const ability: CasterAbility | null = caster
-    ? { ability: caster.ability, modifier: calculateModifier(getFinalAbilityScores(draft)[caster.ability]) }
-    : null
+  // O modificador é o da conjuração do guia de rolagens, o mesmo da CD e do ataque: uma conta só.
+  const ability: CasterAbility | null = caster ? { ability: caster.ability, modifier: caster.abilityModifier } : null
   const { resolution } = mech
   const isAttack = resolution.kind === 'attack'
   const notes: string[] = []

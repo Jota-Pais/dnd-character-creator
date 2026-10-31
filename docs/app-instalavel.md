@@ -9,7 +9,7 @@
 - **Manifesto** (`apps/web/public/manifest.webmanifest`): "Forja de Heróis", nome curto "Forja" (a tela de início corta por volta de 12 caracteres), `standalone`, início e escopo em `/`, cores do fundo do tema (`#0e0a06`) e ícones 192 e 512, comuns e maskable. No iPhone, o ícone é o `apple-touch-icon` (180 px), e o modo de tela cheia e a barra de status preta (o conteúdo começa abaixo dela) vêm das metas `apple-*` do `index.html`. O `manifest.test.ts` confere os campos, os ícones e as ligações.
 - **Ícones**: o d20 do favicon sobre o fundo do tema (ícone de tela de início é opaco). Os PNGs ficam versionados em `apps/web/public/icons`; quando o favicon mudar, `node scripts/make-icons.mjs` os desenha de novo (precisa do Edge ou do Chrome instalado).
 - **Fontes do próprio site**: Cinzel e Lora vêm dos pacotes `@fontsource-variable` (OFL), não do Google. Entram no cache junto com o build, sem pedido a terceiros, e só os subconjuntos que o texto usa descem (`unicode-range`).
-- **Service worker** (`vite-plugin-pwa` com o Workbox, gerado no build como `/sw.js`; a configuração está no `apps/web/vite.config.ts`). Guarda o build inteiro: HTML, JS, CSS, fontes, ícones e a imagem do Ordem (22 arquivos, ~2,6 MB). Ficam de fora os subconjuntos cirílico e vietnamita das fontes, que o português não usa. Toda navegação abre o `index.html` guardado, e a versão nova apaga o cache da velha. Só entra no cache o que é do site: nenhum cache de outro domínio.
+- **Service worker** (`vite-plugin-pwa` com o Workbox, gerado no build como `/sw.js`; a configuração está no `apps/web/vite.config.ts`). Guarda o build inteiro: HTML, JS (o da abertura e os pedaços sob demanda, seção 5), CSS, fontes, ícones e a imagem do Ordem (27 arquivos, ~2,7 MB). Ficam de fora os subconjuntos cirílico e vietnamita das fontes, que o português não usa. Toda navegação abre o `index.html` guardado, e a versão nova apaga o cache da velha. Só entra no cache o que é do site: nenhum cache de outro domínio.
 - **Registro** (`apps/web/src/core/pwa/serviceWorker.ts`, chamado no `main.tsx`): só no build de produção (no `npm run dev` não há SW, que guardaria código velho) e só depois do `load`, para a primeira abertura não dividir a rede com o SW baixando o build.
 - **No Android, o app é o APK** (2026-10-30). Sozinho, o Chrome do Android ofereceria instalar o site (a barrinha de instalar), e o que ele instala é um segundo "Forja", com as fichas à parte das do APK. Fora do APK, no Android, a página recusa o `beforeinstallprompt` (`refuseAutomaticInstallOffer`, `core/pwa/platform.ts`), e a oferta automática não aparece. O "Instalar app" do menu do Chrome continua: é escolha de quem o procura, e a página não tem como tirá-lo. No computador e no iPhone nada muda, e o manifesto fica (o iPhone precisa dele). O Chrome em modo computador (o padrão nos tablets grandes, e o "Site para computador" do celular) se apresenta como Linux de mesa: o site reconhece o Android pela tela de toque, como o iPad que se diz Mac (`isAndroid`; não conferido num tablet de verdade, e o Linux de mesa com tela de toque também fica sem a oferta automática).
 - **Área segura**: com `viewport-fit=cover`, a página vai até as bordas. O `body` leva as margens `env(safe-area-inset-*)`, e uma capa (`body::before`) cobre o que rola por baixo da barra de status do Android de ponta a ponta. O que fica fixo nas bordas soma a margem: os vitais do jogo, o aviso do pé, as folhas e o rodapé do criador. Sem entalhe nem barra, as margens valem 0.
@@ -44,7 +44,9 @@ Depois da primeira publicação com o SW, confira com `curl -I https://dnd-chara
 - **O arquivo exportado** vai para Arquivos → Downloads, ou abre a pré-visualização com o botão de compartilhar. O "Importar" escolhe o arquivo em Arquivos.
 - **Fora do que o app usa**: notificação e trabalho em segundo plano.
 
-## 5. Carregamento medido (2026-10-30)
+## 5. Carregamento medido (2026-10-30 e 2026-10-31)
+
+### O app instalável (2026-10-30)
 
 Build servido (`vite preview`), Edge no tamanho do celular (390×844, toque), CPU 4× mais lenta e os perfis de rede do DevTools do Chrome ("Fast 4G" e "Slow 4G"), pelo CDP. Cada número é a mediana de 3 rodadas, com 3 fichas na biblioteca. "Galeria" é o título e um "Jogar" na tela, com o React montado; "fontes" é o `document.fonts.ready` depois disso. A abertura repetida é fechar e abrir de novo, no mesmo navegador. As duas versões foram medidas na mesma sessão da máquina.
 
@@ -56,7 +58,35 @@ Build servido (`vite preview`), Edge no tamanho do celular (390×844, toque), CP
 - A abertura repetida sai toda do SW: nada pela rede, o mesmo tempo em qualquer conexão, e sem rede também.
 - Na primeira abertura, o que segura a galeria é o JS, um arquivo só: 1,9 MB, 513 kB comprimido, a maior parte nos dados dos dois sistemas (o `spells.json` sozinho tem 475 kB). No 4G lento, as duas versões variam de 4,5 s a 5,2 s, rodada a rodada.
 - Achado medindo: a capa da barra de status puxava a Lora junto com o JS, antes de haver texto na tela. A linha que o `content` dela abre pede a fonte. Com fonte genérica na capa (`indexCss.test.ts`), a primeira abertura no 4G lento passou de 5,22 s para 5,01 s nas medianas, e de 5,3 s para 4,8 s numa rodada de cada com o mesmo build. No 4G rápido, a diferença some no ruído.
-- **Decisão: o código fica num arquivo só.** A primeira abertura em 4G rápido (1,3 s) está longe dos ~3 s a partir dos quais valeria dividir. O aviso de tamanho do build está em 2 MB (`chunkSizeWarningLimit`, logo acima do JS de hoje). Quando ele voltar, ou se a primeira abertura incomodar no 4G lento, divida: o Ordem e a impressão sob demanda (`import()`), e meça de novo.
+- A decisão de então: o código num arquivo só, porque a primeira abertura em 4G rápido (1,3 s) estava longe dos ~3 s a partir dos quais valeria dividir, com o aviso de tamanho do build em 2 MB (`chunkSizeWarningLimit`) e, quando ele voltasse, o Ordem e a impressão sob demanda (`import()`). Ele voltou na onda `magias-base` da Fase 2, e a divisão está abaixo.
+
+### O JS em pedaços (2026-10-31)
+
+O aviso voltou com o JS em 2.083 kB (578 kB comprimido). O Ordem Paranormal e a ficha imprimível dos dois sistemas passaram a descer sob demanda (`core/utils/lazyScreen.ts`, por `import()` com o `React.lazy`), e a galeria abre sem eles.
+
+| Arquivo | Tamanho | Comprimido |
+|---|---|---|
+| Antes: o JS inteiro | 2.083 kB | 578 kB |
+| Depois: o da abertura (galeria, D&D, a regra do Ordem que a galeria usa) | 1.891 kB | 529 kB |
+| O criador do Ordem | 139 kB | 36 kB |
+| A ficha imprimível do Ordem / do D&D | 26 kB / 23 kB | 7 kB / 7 kB |
+| O que o criador e a ficha do Ordem dividem | 11 kB | 5 kB |
+
+Medido como em 2026-10-30, na mesma sessão para as duas versões, com 3 fichas (2 do D&D, completas, e 1 do Ordem):
+
+| | 1ª abertura, 4G rápido | 1ª abertura, 4G lento | Repetida, 4G rápido | Repetida, 4G lento |
+|---|---|---|---|---|
+| **Antes** (um arquivo só) | galeria 1,30 s · fontes 1,97 s | 4,96 s · 6,01 s | 0,37 s · 0,92 s | 0,49 s · 0,98 s |
+| **Depois** (em pedaços) | galeria 1,25 s · fontes 1,74 s | 4,76 s · 5,77 s | 0,36 s · 0,89 s | 0,63 s · 1,16 s |
+
+- O ganho é o dos bytes a menos na primeira abertura: 0,2 s no 4G lento, quase nada no rápido. A repetida não muda: sai do SW, e varia de 0,3 s a 0,7 s rodada a rodada em qualquer versão.
+- **Os pedaços descem sozinhos, logo depois da abertura** (`preloadAfterOpening`, no `main.tsx`), e não só no toque. Assim a página tem o código inteiro da versão dela antes de qualquer troca de versão: o SW novo que assume com a página aberta (o "Atualizar agora", a volta à galeria no APK, outra aba) não tem os pedaços da versão velha, e a Vercel também não. Conferido no Edge: depois da abertura, abrir o Ordem, as duas impressões e o jogo não pede nenhum arquivo.
+- Achado medindo: descendo no `load`, os pedaços disputavam a rede com as fontes, que o navegador só pede ao desenhar a primeira tela, e no celular lento o React a desenha depois do `load`. No 4G lento, as fontes chegavam 0,4 s depois (6,42 s contra 5,98 s antes da divisão, na mesma sessão). Agora os pedaços esperam a primeira tela no ar e as fontes dela (`document.fonts.ready`).
+- Já carregada, a tela monta no mesmo render. Só o toque antes de o pedaço descer (na primeira abertura, nos primeiros segundos) vê o "Carregando…".
+- **Sem rede, depois da primeira visita** (Edge, 390 e 360 px): o SW guarda os pedaços (o `**/*.js` do `globPatterns` já os pega), e a galeria, o criador e a impressão do Ordem, a impressão do D&D, o jogo e o agente novo abrem, com os pedaços saindo do SW e o console limpo. O APK abre o mesmo site, na mesma origem e sem interceptar pedidos: o WebView (111 ou mais) carrega os pedaços como o Edge. Não conferido num aparelho; está no roteiro da seção 7.
+- **Um corte a mais, medido e não feito: o D&D** (o criador e o jogo, 451 kB, 135 kB comprimido). A galeria apareceria em 3,93 s no 4G lento (−0,8 s) e em 1,07 s no rápido. Mas quem toca "Jogar" assim que a galeria aparece chegaria à mesa depois: 5,67 s contra 5,15 s no 4G lento, 1,82 s contra 1,67 s no rápido. A espera só mudaria de lugar, do abrir para o primeiro "Jogar".
+- **Como medir de novo.** Sirva o build em `127.0.0.1` (`npm run preview -- --host 127.0.0.1 --port N --strictPort`) e abra esse endereço. Com `localhost`, o servidor escuta só no `::1`, e o Edge às vezes tenta antes o `127.0.0.1`, que demora ~2 s para recusar: a primeira abertura no 4G rápido mediu 3,2 s em vez de 1,3 s nas duas versões.
+- O aviso continua em 2 MB, com o JS da abertura em 1,89 MB. Quando ele voltar, meça de novo; o próximo corte é o do D&D acima, se a galeria antes do primeiro "Jogar" valer a troca.
 
 ## 6. Conferido nos navegadores (2026-10-29 e 2026-10-30)
 
@@ -72,7 +102,7 @@ Para a turma de teste, num iPhone e num Android:
 
 1. Instalar: no iPhone pela dica da galeria; no Android pelo APK. No Chrome do Android, o site não oferece instalar sozinho. O ícone e o nome "Forja" na tela de início.
 2. No iPhone, com fichas no Safari: "Exportar todas" pela dica, instalar, e "Importar" no app.
-3. Abrir em modo avião: a galeria, criar uma ficha, jogar.
+3. Abrir em modo avião: a galeria, criar uma ficha, jogar, abrir uma ficha do Ordem e a impressão de uma ficha de cada sistema (os dois descem sob demanda, seção 5).
 4. No jogo: os títulos e números em negrito (Cinzel), o campo de PV com o teclado numérico aberto (o "Aplicar" à vista), a folha da receita com a barra do Safari aparecendo e sumindo, o celular deitado (entalhe).
 5. "Exportar todas": o arquivo aparece em Arquivos (iPhone) ou em Downloads (Android) e volta pelo "Importar".
 6. Depois de um push na `main`: abrir (o aviso de versão nova aparece na galeria), fechar o app de verdade e abrir de novo (já é a nova). No APK, o roteiro da atualização é o do `docs/app-android.md`.

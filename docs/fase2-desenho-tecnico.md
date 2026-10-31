@@ -1104,6 +1104,7 @@ A onda vale sozinha, sem esperar o grimório.
   - Nenhum número de ficha salva muda no aviso de migração: o retrato não tem o dano das magias, e a CD e o ataque de cada conjuração não mudaram.
   - Conferido no Edge a 390 × 844 e 360 × 740: o bruxo 5 com a Explosão Agonizante (a nota na aba Magia, na receita e na folha da aba Regras), o evocador 6 (o Truque Potente no TR do Espirro Ácido, a vantagem na receita do ataque do Toque Chocante) e o clérigo da Luz 8 (a cobertura e a Conjuração Poderosa); alvos de 45 px, sem rolagem lateral, o Esc que fecha só a receita, o foco de volta ao "Dano" e o console sem erros.
 - Achado, com o dono: o JS do build passou de 2 MB (2.050,5 kB; o aviso do `chunkSizeWarningLimit` voltou, por cerca de 6 kB desta onda). A decisão de `docs/app-instalavel.md` (seção 5) é dividir quando o aviso voltar. Medido nesta sessão (build servido, Edge 390 × 844, CPU 4×, mediana de 3): a galeria em 1,77 s no 4G rápido e 5,32 s no 4G lento; a versão de antes não foi medida na mesma sessão, então a comparação com os 1,32 s da tabela não vale.
+  - Feito na onda `divisao-js` (2026-10-31): o Ordem e as fichas imprimíveis descem sob demanda, e o JS da abertura foi de 2.083 kB a 1.891 kB. Medidas as duas versões na mesma sessão: a galeria de 1,30 s a 1,25 s no 4G rápido e de 4,96 s a 4,76 s no lento (`docs/app-instalavel.md`, seção 5, que também explica por que medir em `127.0.0.1`: com `localhost`, a abertura pode ganhar ~2 s nas duas versões).
 
 #### 1. Esquema e carga
 

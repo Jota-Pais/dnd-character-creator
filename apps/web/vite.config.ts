@@ -19,6 +19,8 @@ export default defineConfig({
       registerType: 'prompt',
       manifest: false,
       workbox: {
+        // O `js` pega também os pedaços sob demanda (o Ordem, as fichas imprimíveis): sem rede, eles
+        // saem daqui como o resto.
         globPatterns: ['**/*.{html,js,css,woff2,webp,png,svg,webmanifest}'],
         // Subconjuntos das fontes que um texto em português não usa: ficam no build (o navegador
         // os baixa se aparecer um nome em cirílico, com rede), fora do que se guarda.
@@ -28,16 +30,18 @@ export default defineConfig({
         navigateFallback: 'index.html',
         cleanupOutdatedCaches: true,
         // O padrão (2 MiB) deixaria de fora, só com um aviso no build, um JS que crescesse além
-        // dele: o app abriria sem rede quebrado. O build de hoje tem o maior JS em 1,9 MB.
+        // dele: o app abriria sem rede quebrado. O build de hoje tem o maior JS (o da abertura) em 1,9 MB.
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
       },
     }),
   ],
   build: {
-    // O JS é um arquivo só (~1,9 MB, 530 kB comprimido; os dados dos dois sistemas são a maior
-    // parte). Medido em 2026-10-30 (docs/app-instalavel.md): no celular com 4G rápido, a primeira
-    // abertura mostra a galeria em ~1,3 s, longe dos ~3 s a partir dos quais vale dividir o código,
-    // e as aberturas seguintes saem do service worker. O aviso volta acima de 2 MB: medir de novo.
+    // O aviso voltou em 2026-10-31 com o JS num arquivo só em 2.083 kB (578 kB comprimido). O Ordem e
+    // as fichas imprimíveis passaram a descer sob demanda (src/core/utils/lazyScreen.ts), e o JS da
+    // abertura ficou em 1.891 kB (529 kB comprimido; os dados dos dois sistemas são a maior parte).
+    // Medido no celular (docs/app-instalavel.md, seção 5), a galeria da primeira abertura passou de
+    // 1,30 s para 1,25 s no 4G rápido e de 4,96 s para 4,76 s no lento; as seguintes saem do service
+    // worker. O aviso volta acima de 2 MB: medir de novo (o próximo corte medido é o do D&D).
     chunkSizeWarningLimit: 2048,
   },
   test: {

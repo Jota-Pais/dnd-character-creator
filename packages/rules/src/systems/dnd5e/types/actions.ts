@@ -20,10 +20,14 @@ export type ActionGroup = 'action' | 'bonusAction' | 'reaction' | 'other'
 /** O que a ação gasta: usos de um recurso da MESMA característica (`effects.resources`). */
 export type ActionCost = { kind: 'resource'; resource: string; amount: number }
 
-/** O que a ação causa: liga ou desliga um efeito declarado (`ToggleDeclaration.id`). */
+/**
+ * O que a ação causa: liga ou desliga um efeito declarado (`ToggleDeclaration.id`), ou dá mais uma
+ * ação neste turno (o Surto de Ação, p. 85).
+ */
 export type ActionOutcome =
   | { kind: 'toggleOn'; toggle: string }
   | { kind: 'toggleOff'; toggle: string }
+  | { kind: 'extraAction' }
 
 /**
  * O que a ação exige da ficha ou do estado, para aparecer: duas armas leves corpo a corpo

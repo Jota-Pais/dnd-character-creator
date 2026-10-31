@@ -135,7 +135,8 @@ export function NotesTab({ state, appDice, run }: PlayTabProps) {
 }
 
 /**
- * O título do histórico com o "Nova sessão" (decisão 10.2.20), que esvazia o histórico e só ele.
+ * O título do histórico com o "Nova sessão" (decisão 10.2.20), que esvazia o histórico e zera o
+ * checklist do turno (`clearRollHistory`); o resto da sessão fica.
  * O histórico fica fora do desfazer (`clearRolls`), então apagar pede confirmação ali mesmo, no
  * padrão dos descansos. O foco nunca cai no body: abrir a pergunta leva ao "Cancelar" (a saída
  * segura), cancelar volta ao "Nova sessão" e apagar vai ao título, porque o botão some com as
@@ -183,8 +184,8 @@ function RollHistoryHeader({ count }: { count: number }) {
       {asking && (
         <div role="group" aria-labelledby="new-session-question" className="mb-3 rounded-xl border border-parchment-800 bg-surface-raised p-3">
           <p id="new-session-question" className="text-sm text-parchment-200 leading-snug">
-            Começar uma nova sessão apaga {count === 1 ? 'a rolagem' : `as ${count} rolagens`} do histórico. PV, espaços,
-            condições e anotações ficam como estão.
+            Começar uma nova sessão apaga {count === 1 ? 'a rolagem' : `as ${count} rolagens`} do histórico e limpa o
+            turno marcado. PV, espaços, condições, efeitos ligados e anotações ficam como estão.
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             <button

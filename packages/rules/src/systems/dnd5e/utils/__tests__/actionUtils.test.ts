@@ -70,8 +70,15 @@ describe('getSheetActions', () => {
     expect(actions[0].description).toMatch(/^No seu turno, como ação bônus, entre em fúria por 1 minuto./)
   })
 
-  it('cada classe no nível que tem NELA: guerreiro 3 / mago 2 não tem a Fúria; mago 4 / bárbaro 1, sim', () => {
-    expect(ids(draftOf('fighter', 3, { classId: 'wizard', level: 2 }))).not.toContain('rage-enter')
+  it('cada classe no nível que tem NELA: guerreiro 3 / mago 2 tem o Surto de Ação e não a Fúria', () => {
+    const fighter3 = getSheetActions(draftOf('fighter', 3, { classId: 'wizard', level: 2 }))
+    expect(fighter3.map(a => a.id)).not.toContain('rage-enter')
+    expect(fighter3.find(a => a.id === 'action-surge')).toMatchObject({
+      timing: 'free', source: 'Surto de Ação', oncePerTurn: true,
+      cost: [{ kind: 'resource', resource: 'action-surge', amount: 1 }], outcomes: [{ kind: 'extraAction' }],
+    })
+    // Guerreiro 1 / mago 4 tem nível 5 de personagem, mas o Surto de Ação é do guerreiro 2.
+    expect(ids(draftOf('fighter', 1, { classId: 'wizard', level: 4 }))).not.toContain('action-surge')
     expect(ids(draftOf('wizard', 4, { classId: 'barbarian', level: 1 }))).toContain('rage-enter')
   })
 

@@ -3,7 +3,7 @@ import { render, screen, fireEvent, cleanup, act, waitFor, within } from '@testi
 import { PlayScreen } from '../PlayScreen'
 import { usePlayStore } from '../../../stores/playStore'
 import { roll, sequenceRoller } from '@rpg/rules/core/dice'
-import { applyDamage, recordRoll, startConcentration } from '@rpg/rules/systems/dnd5e/utils/playState'
+import { applyDamage, emptyTurn, recordRoll, startConcentration } from '@rpg/rules/systems/dnd5e/utils/playState'
 import { loadPlayState } from '../../../utils/playStorage'
 import { openKrusk, resetPlay } from './openPlay'
 
@@ -101,7 +101,7 @@ describe('NotesTab', () => {
     expect(items[1]).toHaveTextContent('25')
   })
 
-  it('"Nova sessão" pergunta antes e apaga só o histórico, com o foco sempre num controle', () => {
+  it('"Nova sessão" pergunta antes e apaga o histórico e o turno marcado, com o foco sempre num controle', () => {
     usePlayStore.getState().setAppDice(true)
     openKrusk()
     usePlayStore.getState().run((st, sh) => applyDamage(st, sh, { amount: 3 }))
@@ -118,11 +118,13 @@ describe('NotesTab', () => {
     expect(screen.getByRole('button', { name: 'Nova sessão' })).toHaveFocus()
     expect(playState().rolls).toHaveLength(2)
 
-    // Apagar: o histórico some (o botão junto), o foco vai ao título, e o resto da sessão fica.
+    // Apagar: o histórico some (o botão junto), o turno marcado (o dano sofrido) zera, o foco vai
+    // ao título, e o resto da sessão fica.
     const before = playState()
+    expect(before.turn.tookDamage).toBe(true)
     fireEvent.click(screen.getByRole('button', { name: 'Nova sessão' }))
     fireEvent.click(screen.getByRole('button', { name: 'Apagar o histórico' }))
-    expect(playState()).toEqual({ ...before, rolls: [], updatedAt: playState().updatedAt })
+    expect(playState()).toEqual({ ...before, rolls: [], turn: emptyTurn(), updatedAt: playState().updatedAt })
     expect(loadPlayState(playState().characterId)?.rolls).toEqual([])
     expect(screen.queryByTestId('roll-history')).toBeNull()
     expect(screen.getByText(/Nenhuma rolagem ainda/)).toBeInTheDocument()

@@ -8,10 +8,10 @@ import { buildPlaySheet } from '../playSheet'
 import { COMPLETE_DRAFT } from '../../../../test/fixtures'
 import {
   activateToggle, addCondition, adjustMaxHp, applyDamage, applyDamageDroppingToOneHp, applyHealing, clearRollHistory, clearTempHp, completeLongRest, completeShortRest,
-  createPlayState, deactivateToggle, describeHpMaxImmunity, endConcentration, getBaseMaxHp, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable,
+  createPlayState, deactivateToggle, describeHpMaxImmunity, emptyTurn, endConcentration, getBaseMaxHp, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable,
   getLongRestHitDiceRecoverable, getPactSlotsAvailable, getPlayEffects, getPlayConditionState, getPlayDamageDefenses, getPlaySpeed,
   getResourceAvailable, getShortRestSlotRecovery, performAction, getSpellSlotsAvailable, grantTempHp, previewLongRest, previewShortRest, reconcileLoadedPlayState,
-  reconcilePlayState,
+  markTurn, newTurn, reconcilePlayState,
   recordDeathSave, recordRoll, recoverPactSlot, regainHpWhileStable, recoverResource, recoverSpellSlot, removeCondition,
   revive, sanitizePlayState, setConditionNote, setExhaustion, setInspiration, setNote, spendHitDie, spendPactSlot,
   spendResource, spendSpellSlot, stabilize, standUp, startConcentration, suggestLongRestHitDice,
@@ -94,6 +94,7 @@ describe('createPlayState', () => {
     expect(s.lifeState).toBe('conscious')
     expect(s.spellSlotsSpent).toHaveLength(9)
     expect(s.concentration).toBeNull()
+    expect(s.turn).toEqual(emptyTurn())
     expect(getCurrentHp(s, S)).toBe(20)
   })
 })
@@ -796,13 +797,18 @@ describe('inspiração, nota e histórico', () => {
     expect(s.rolls.at(-1)?.id).toBe(`r${ROLL_HISTORY_LIMIT + 4}`)
   })
 
-  it('"Nova sessão" esvazia o histórico, e só ele', () => {
-    const before = state({ damageTaken: 4, tempHp: 2, conditions: ['poisoned'], inspiration: true, note: 'pistas' })
+  it('"Nova sessão" esvazia o histórico e zera o turno; o resto fica', () => {
+    const before = state({
+      damageTaken: 4, tempHp: 2, conditions: ['poisoned'], inspiration: true, note: 'pistas',
+      activeEffects: [{ id: 'spell:bless', startedAt: 1 }],
+    })
     const withRolls = recordRoll(before, roll('1d20', { roller: sequenceRoller([10]), id: 'r', at: 1 })).state
     const r = clearRollHistory(withRolls)
     expect(r.state).toEqual({ ...withRolls, rolls: [] })
     expect(r.notices).toEqual([])
-    // Sem rolagem, nada a fazer: o mesmo estado.
+    const marked = { ...withRolls, turn: { ...emptyTurn(), action: true, tookDamage: true } }
+    expect(clearRollHistory(marked).state).toEqual({ ...withRolls, rolls: [] })
+    // Sem rolagem e sem turno marcado, nada a fazer: o mesmo estado.
     expect(clearRollHistory(before).state).toBe(before)
   })
 })
@@ -1624,7 +1630,8 @@ describe('efeitos ligados: a Fúria pela ação que a liga', () => {
   it('encerrar pede estar em fúria; em fúria, desliga sem custo', () => {
     const sh = barbarian(1)
     expect(end(state(), sh).notices).toEqual([{ kind: 'refused', text: 'Encerrar a fúria: só em fúria.' }])
-    const raging = enter(state(), sh).state
+    // Num turno seguinte: no mesmo, encerrar seria a segunda ação bônus, que só avisa.
+    const raging = newTurn(enter(state(), sh).state, sh).state
     const r = end(raging, sh)
     expect(r.state.activeEffects).toEqual([])
     expect(r.state.resourcesSpent).toEqual({ rage: 1 })
@@ -1694,7 +1701,7 @@ describe('efeitos ligados: a Fúria pela ação que a liga', () => {
 
   it('o Frenesi: escolhido ao entrar, ao terminar dá +1 de exaustão pelo caminho do setExhaustion, num passo só', () => {
     const sh = barbarian(3, {}, 'berserker')
-    const frenzy = enter(state(), sh, 'frenzy').state
+    const frenzy = newTurn(enter(state(), sh, 'frenzy').state, sh).state
     expect(frenzy.activeEffects).toEqual([{ id: 'rage', startedAt: 5, option: 'frenzy' }])
     const r = end(frenzy, sh)
     expect(r.state.activeEffects).toEqual([])
@@ -2078,5 +2085,152 @@ describe('efeitos recebidos: a magia sustentada pela sua concentração', () => 
     const stored = JSON.parse(JSON.stringify(blessed))
     expect(sanitizePlayState(stored, 'char-1').activeEffects).toEqual(blessed.activeEffects)
     expect(sanitizePlayState({ ...stored, concentration: null }, 'char-1').activeEffects).toEqual([])
+  })
+})
+
+// ── O turno (onda `turno`) ─────────────────────────────────────────────────
+
+describe('o turno: o checklist, o Usar e o Novo turno', () => {
+  const draftOf = (classId: string, level: number, subclass: string | null = null): CharacterDraft => {
+    const base = structuredClone(COMPLETE_DRAFT)
+    return { ...base, class: classId, level, classChoices: { ...base.classChoices, subclass } }
+  }
+  const fighter = (level: number) => buildPlaySheet(draftOf('fighter', level))
+  const barbarian = (level: number, subclass: string | null = null) => buildPlaySheet(draftOf('barbarian', level, subclass))
+  /** Uma ação de 1 ação qualquer, para ver a casa da ação (as do livro chegam com os dados das ações padrão). */
+  const withAnAction = (sh: PlaySheet): PlaySheet => ({
+    ...sh,
+    actions: [...sh.actions, { id: 'test-action', name: 'Ação de teste', timing: 'action', page: 1, source: 'teste', description: '' }],
+  })
+  const use = (s: PlayState, sh: PlaySheet, id: string) => performAction(s, sh, id, { now: 7 })
+
+  it('markTurn marca e desmarca uma casa; o mesmo valor devolve o mesmo estado', () => {
+    const marked = markTurn(state(), 'movement', true).state
+    expect(marked.turn).toEqual({ ...emptyTurn(), movement: true })
+    expect(markTurn(marked, 'movement', true).state).toBe(marked)
+    expect(markTurn(marked, 'movement', false).state.turn).toEqual(emptyTurn())
+  })
+
+  // "Durante o seu turno, você pode realizar uma ação adicional juntamente com sua ação e possível
+  // ação bônus" (Surto de Ação, linhas 7265-7273).
+  it('o Surto de Ação gasta o uso e dá mais uma ação: a segunda ação do turno não avisa', () => {
+    const sh = withAnAction(fighter(2))
+    const surged = use(state(), sh, 'action-surge')
+    expect(surged.state.resourcesSpent).toEqual({ 'action-surge': 1 })
+    expect(surged.state.turn).toEqual({ ...emptyTurn(), extraActions: 1, oncePerTurnUsed: ['action-surge'] })
+    expect(surged.notices).toEqual([{ kind: 'info', text: 'Surto de Ação: mais uma ação neste turno, além da sua ação e da possível ação bônus (pág. 85).' }])
+    const first = use(surged.state, sh, 'test-action')
+    expect(first.state.turn.action).toBe(true)
+    expect(first.state.turn.extraActions).toBe(1)
+    const second = use(first.state, sh, 'test-action')
+    expect(second.notices).toEqual([])
+    expect(second.state.turn.extraActions).toBe(0)
+    // A terceira já não tem ação a mais: avisa, sem recusar.
+    const third = use(second.state, sh, 'test-action')
+    expect(third.state).not.toBe(second.state)
+    expect(third.notices).toEqual([{ kind: 'warning', text: 'Ação de teste: você já usou a ação deste turno (pág. 191). Se já é outro turno, toque em Novo turno.' }])
+  })
+
+  // "A partir do 17º nível, você pode usá-la duas vezes antes do descanso, porém somente uma vez por
+  // turno" (linhas 7271-7273).
+  it('o Surto de Ação é uma vez por turno: o segundo no mesmo turno avisa, e no turno seguinte não', () => {
+    const sh = fighter(17)
+    const once = use(state(), sh, 'action-surge').state
+    const twice = use(once, sh, 'action-surge')
+    expect(twice.state.resourcesSpent).toEqual({ 'action-surge': 2 })
+    expect(twice.notices).toContainEqual({ kind: 'warning', text: 'Surto de Ação: só uma vez por turno, e já foi usada neste (pág. 85).' })
+    const next = use(newTurn(once, sh).state, sh, 'action-surge')
+    expect(next.notices.map(n => n.kind)).toEqual(['info'])
+  })
+
+  it('usar sem o recurso recusa sem gastar nem marcar o turno', () => {
+    const sh = fighter(2)
+    const spent = state({ resourcesSpent: { 'action-surge': 1 } })
+    const r = use(spent, sh, 'action-surge')
+    expect(r.state).toBe(spent)
+    expect(r.notices).toEqual([{ kind: 'refused', text: 'Surto de Ação: sem usos de Surto de Ação: eles voltam num descanso curto ou longo.' }])
+  })
+
+  it('o guerreiro 1 não tem o Surto de Ação (é do 2º nível)', () => {
+    expect(fighter(1).actions.map(a => a.id)).not.toContain('action-surge')
+    expect(use(state(), fighter(1), 'action-surge').notices[0].kind).toBe('refused')
+  })
+
+  // Ação bônus: "você pode realizar apenas uma ação bônus no seu turno" (linhas 17082-17098).
+  it('a segunda ação bônus no turno avisa, sem recusar: o checklist nunca impede de jogar', () => {
+    const sh = barbarian(1)
+    const raging = use(state(), sh, 'rage-enter').state
+    expect(raging.turn.bonusAction).toBe(true)
+    const ended = use(raging, sh, 'rage-end')
+    expect(ended.state.activeEffects).toEqual([])
+    expect(ended.notices).toEqual([{ kind: 'warning', text: 'Encerrar a fúria: você já usou a ação bônus deste turno, e só há uma por turno (pág. 191).' }])
+  })
+
+  it('o dano marca que você sofreu dano (mesmo o que os PV temporários absorvem); o dano 0, não', () => {
+    expect(applyDamage(state({ tempHp: 5 }), S, { amount: 3 }).state.turn.tookDamage).toBe(true)
+    expect(applyDamage(state(), S, { amount: 0 }).state.turn.tookDamage).toBe(false)
+  })
+
+  // "A reação volta no início do seu próximo turno" (linhas 17130-17131).
+  it('o Novo turno zera as quatro casas, a ação a mais e a uma vez por turno, com aviso', () => {
+    const sh = fighter(2)
+    const busy = state({ turn: { action: true, bonusAction: true, movement: true, reaction: true, extraActions: 1, attacked: true, tookDamage: true, oncePerTurnUsed: ['action-surge'] } })
+    const r = newTurn(busy, sh)
+    expect(r.state.turn).toEqual(emptyTurn())
+    expect(r.notices).toEqual([{ kind: 'info', text: 'Novo turno: a ação, a ação bônus, o movimento e a reação estão de volta.' }])
+  })
+
+  // Escudo Arcano: "até o início do seu próximo turno" (linhas 23192-23203); Esquivar: "até o
+  // começo do seu próximo turno" (linhas 17408-17414).
+  it('o Novo turno encerra o Escudo Arcano e o Esquivar, com aviso; a Bênção fica', () => {
+    // O Escudo Arcano é de alcance Pessoal: só quem o conhece o liga.
+    const sh = buildPlaySheet({ ...draftOf('wizard', 1), spellChoices: { cantrips: [], spells: ['shield'] } })
+    const on = (s: PlayState, id: string) => activateToggle(s, sh, id, { now: 5 }).state
+    const covered = on(on(on(state(), 'spell:shield'), 'action:dodge'), 'spell:bless')
+    const r = newTurn(covered, sh)
+    expect(r.state.activeEffects.map(a => a.id)).toEqual(['spell:bless'])
+    expect(r.notices).toContainEqual({ kind: 'info', text: 'Escudo Arcano: terminou no início do seu turno (pág. 243).' })
+    expect(r.notices).toContainEqual({ kind: 'info', text: 'Esquivar: terminou no início do seu turno (pág. 194).' })
+  })
+
+  // "Ela termina prematuramente se [...] seu turno acabar e você não tiver atacado [...] ou não
+  // tiver sofrido dano" (linhas 3662-3667), pelo inglês: só sem ataque E sem dano.
+  it('a Fúria sem ataque nem dano no turno lembra o fim prematuro no Novo turno, sem desligar', () => {
+    const sh = barbarian(3)
+    const raging = use(state(), sh, 'rage-enter').state
+    const r = newTurn(raging, sh)
+    expect(r.state.activeEffects.map(a => a.id)).toEqual(['rage'])
+    expect(r.notices).toContainEqual({
+      kind: 'warning',
+      text: 'Fúria: nenhum ataque e nenhum dano registrados no turno que acabou. A fúria acaba no fim do seu turno se, desde o seu último turno, você não atacou nenhuma criatura hostil nem sofreu dano (pág. 48). Se ela acabou, toque em “Já acabou” em Efeitos ativos, na aba Estado.',
+    })
+    // Com dano sofrido (ou ataque) no turno, não lembra.
+    const hit = applyDamage(raging, sh, { amount: 2 }).state
+    expect(newTurn(hit, sh).notices.map(n => n.kind)).toEqual(['info'])
+    expect(newTurn({ ...raging, turn: { ...raging.turn, attacked: true } }, sh).notices.map(n => n.kind)).toEqual(['info'])
+  })
+
+  // Fúria Persistente: "sua fúria é tão violenta que ela só termina prematuramente se você cair
+  // inconsciente ou se escolher terminá-la" (linhas 3743-3746).
+  it('o bárbaro 15 (Fúria Persistente) não recebe o lembrete', () => {
+    const sh = barbarian(15)
+    const raging = use(state(), sh, 'rage-enter').state
+    expect(newTurn(raging, sh).notices.map(n => n.kind)).toEqual(['info'])
+  })
+
+  it('o estado de antes não muda: o desfazer do store volta o turno', () => {
+    const sh = barbarian(1)
+    const before = state()
+    use(before, sh, 'rage-enter')
+    expect(before.turn).toEqual(emptyTurn())
+  })
+
+  it('sanitizePlayState: sem o turno, carrega vazio; casa torta fica livre e contagem torta, 0', () => {
+    // O estado gravado antes da onda não tem o campo.
+    const old: Record<string, unknown> = JSON.parse(JSON.stringify(createPlayState('c')))
+    delete old.turn
+    expect(sanitizePlayState(old, 'c').turn).toEqual(emptyTurn())
+    const torn = { ...old, turn: { action: 'sim', bonusAction: true, extraActions: -2, oncePerTurnUsed: ['action-surge', 3, 'action-surge', ''] } }
+    expect(sanitizePlayState(torn, 'c').turn).toEqual({ ...emptyTurn(), bonusAction: true, oncePerTurnUsed: ['action-surge'] })
   })
 })

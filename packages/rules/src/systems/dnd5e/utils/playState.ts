@@ -5,7 +5,9 @@ import {
   CONDITION_NOTE_MAX_LENGTH, HIT_DIE_SIZES, PLAY_STATE_VERSION, ROLL_HISTORY_LIMIT,
   type ActiveToggle, type Concentration, type DamageInput, type DamagePart, type DeathSaveCount, type LifeState, type PlayNotice, type PlayNoticeKind,
   type PlayResult, type PlaySheet, type PlayState, type SheetSnapshot, type SheetSnapshotAttack, type SheetSnapshotSpellcasting,
+  type TurnSlot, type TurnState,
 } from '../types/playState'
+import type { ActionTiming, SheetAction } from '../types/actions'
 import {
   getActiveConditionEffects, getCondition, getEffectiveConditions, getEffectiveHpMax,
   applyConditionSpeed, damageTypeSetHas, halveSpeedOnGrid, isConditionSuspended, withConditionApplied,
@@ -57,6 +59,14 @@ export const formatHpAdjustment = (n: number) => (n < 0 ? `−${Math.abs(n)}` : 
 
 const ZERO_SAVES = { successes: 0, failures: 0 } as const
 
+/** O turno sem nada usado: o começo do jogo, o Novo turno e a Nova sessão. */
+export function emptyTurn(): TurnState {
+  return {
+    action: false, bonusAction: false, movement: false, reaction: false,
+    extraActions: 0, attacked: false, tookDamage: false, oncePerTurnUsed: [],
+  }
+}
+
 /** Estado novo, vazio, para uma ficha que começa a jogar. */
 export function createPlayState(characterId: string, now = 0): PlayState {
   return {
@@ -76,6 +86,7 @@ export function createPlayState(characterId: string, now = 0): PlayState {
     exhaustionLevel: 0,
     concentration: null,
     activeEffects: [],
+    turn: emptyTurn(),
     restCounters: {},
     inspiration: false,
     note: '',
@@ -632,7 +643,8 @@ function damagePipeline(state0: PlayState, sheet: PlaySheet, input: DamageInput,
   const effMax = getEffectiveMaxHp(state, sheet)
   const absorbed = Math.min(state.tempHp, total)
   const rest = total - absorbed
-  const next: PlayState = { ...state, tempHp: state.tempHp - absorbed }
+  // Sofreu dano, mesmo o que os PV temporários absorveram: o fim prematuro da Fúria pergunta por ele.
+  const next: PlayState = { ...state, tempHp: state.tempHp - absorbed, turn: { ...state.turn, tookDamage: true } }
   if (absorbed > 0) notices.push(note('tempHpAbsorbed', `Os PV temporários absorveram ${absorbed}.`))
 
   const drop = availableDropToOneHp(state, sheet)
@@ -1208,11 +1220,80 @@ export function deactivateToggle(state0: PlayState, sheet: PlaySheet, id: string
   return done(next, notices)
 }
 
+// ── O turno ─────────────────────────────────────────────────────────────────
+
+/** A casa do checklist que cada momento marca; livre e especial não marcam nenhuma. */
+const TURN_SLOT_OF: Partial<Record<ActionTiming, TurnSlot>> = {
+  action: 'action', bonusAction: 'bonusAction', movement: 'movement', reaction: 'reaction',
+}
+
 /**
- * Usa uma ação da ficha (`sheet.actions`), na versão mínima: confere e gasta o custo e liga ou
- * desliga o efeito, tudo num passo só do desfazer. Recusa morto, quem não pode agir (Incapacitado,
- * pág. 292), a ação que pede um efeito ligado que não está, e o custo sem usos — sem gastar nada.
- * O que a ação liga recusa como `activateToggle` (já em fúria), também sem gastar.
+ * Marca no turno o que a ação usou: a uma vez por turno e a casa do momento dela. O que já foi usado
+ * só avisa — o app não sabe se a mesa já passou ao turno seguinte sem o Novo turno, e o checklist
+ * nunca impede de jogar. A ação a mais do Surto de Ação cobre a segunda ação, sem aviso.
+ */
+function spendTurn(turn: TurnState, action: SheetAction, notices: PlayNotice[]): TurnState {
+  let next = turn
+  if (action.oncePerTurn) {
+    if (next.oncePerTurnUsed.includes(action.id)) {
+      notices.push(note('warning', `${action.name}: só uma vez por turno, e já foi usada neste (pág. ${action.page}).`))
+    } else {
+      next = { ...next, oncePerTurnUsed: [...next.oncePerTurnUsed, action.id] }
+    }
+  }
+  const slot = TURN_SLOT_OF[action.timing]
+  if (!slot) return next
+  if (slot === 'action' && next.action) {
+    if (next.extraActions > 0) return { ...next, extraActions: next.extraActions - 1 }
+    notices.push(note('warning', `${action.name}: você já usou a ação deste turno (pág. 191). Se já é outro turno, toque em Novo turno.`))
+  } else if (slot === 'bonusAction' && next.bonusAction) {
+    notices.push(note('warning', `${action.name}: você já usou a ação bônus deste turno, e só há uma por turno (pág. 191).`))
+  } else if (slot === 'reaction' && next.reaction) {
+    notices.push(note('warning', `${action.name}: você já usou a sua reação, e ela só volta no início do seu próximo turno (pág. 192).`))
+  }
+  return { ...next, [slot]: true }
+}
+
+/**
+ * Marca ou desmarca uma casa do checklist à mão: o toque que corrige o que o "Usar" marcou, ou marca
+ * o que se fez sem ele (mover-se, conjurar pela aba Magia).
+ */
+export function markTurn(state: PlayState, slot: TurnSlot, used: boolean): PlayResult {
+  if (state.turn[slot] === used) return done(state)
+  return done({ ...state, turn: { ...state.turn, [slot]: used } })
+}
+
+/**
+ * O Novo turno, no início do seu turno: a ação, a ação bônus, o movimento e a reação voltam (a
+ * reação volta no início do SEU turno, pág. 192), e o que dura "até o início do seu próximo turno"
+ * acaba (o Escudo Arcano, o Esquivar), com aviso. Com um efeito que tem fim prematuro (a Fúria) e
+ * nenhum ataque nem dano marcados no turno que acabou, lembra o fim, sem desligar: o app não vê a
+ * mesa, e o jogador marca o "Já acabou". Sem esse lembrete quem o tira (a Fúria Persistente). Os
+ * efeitos que duram mais seguem ligados.
+ */
+export function newTurn(state0: PlayState, sheet: PlaySheet): PlayResult {
+  const state = reconcilePlayState(state0, sheet)
+  const next: PlayState = { ...state, turn: emptyTurn() }
+  const notices: PlayNotice[] = [note('info', 'Novo turno: a ação, a ação bônus, o movimento e a reação estão de volta.')]
+  for (const toggle of sheet.toggles) {
+    if (!state.activeEffects.some(a => a.id === toggle.id)) continue
+    if (toggle.earlyEndReminder && !state.turn.attacked && !state.turn.tookDamage) {
+      notices.push(note('warning', `${toggle.source}: nenhum ataque e nenhum dano registrados no turno que acabou. ${toggle.earlyEndReminder} Se ela acabou, toque em “Já acabou” em Efeitos ativos, na aba Estado.`))
+    }
+    if (toggle.endsOn.includes('startOfYourTurn')) {
+      notices.push(note('info', `${toggle.source}: terminou no início do seu turno (pág. ${toggle.page}).`))
+      endToggleInto(next, sheet, toggle.id, notices)
+    }
+  }
+  return done(next, notices)
+}
+
+/**
+ * Usa uma ação da ficha (`sheet.actions`): confere e gasta o custo, aplica o que ela causa (liga ou
+ * desliga o efeito, a ação a mais do Surto de Ação) e marca o turno (`spendTurn`), tudo num passo só
+ * do desfazer. Recusa morto, quem não pode agir (Incapacitado, pág. 292), a ação que pede um efeito
+ * ligado que não está, e o custo sem usos — sem gastar nada. O que a ação liga recusa como
+ * `activateToggle` (já em fúria), também sem gastar. O momento já usado no turno só avisa.
  */
 export function performAction(state0: PlayState, sheet: PlaySheet, actionId: string, on: ToggleOn): PlayResult {
   const action = sheet.actions.find(a => a.id === actionId)
@@ -1241,6 +1322,11 @@ export function performAction(state0: PlayState, sheet: PlaySheet, actionId: str
     next = { ...next, resourcesSpent: { ...next.resourcesSpent, [r.id]: (next.resourcesSpent[r.id] ?? 0) + cost.amount } }
   }
   for (const outcome of action.outcomes ?? []) {
+    if (outcome.kind === 'extraAction') {
+      next = { ...next, turn: { ...next.turn, extraActions: next.turn.extraActions + 1 } }
+      notices.push(note('info', `${action.name}: mais uma ação neste turno, além da sua ação e da possível ação bônus (pág. ${action.page}).`))
+      continue
+    }
     const r = outcome.kind === 'toggleOn'
       ? activateToggle(next, sheet, outcome.toggle, on)
       : deactivateToggle(next, sheet, outcome.toggle)
@@ -1249,6 +1335,7 @@ export function performAction(state0: PlayState, sheet: PlaySheet, actionId: str
     next = r.state
     notices.push(...r.notices)
   }
+  next = { ...next, turn: spendTurn(next.turn, action, notices) }
   return done(next, notices)
 }
 
@@ -1453,11 +1540,13 @@ export function recordRoll(state: PlayState, record: RollRecord): PlayResult {
 }
 
 /**
- * "Nova sessão" (decisão 10.2.20): esvazia o histórico de rolagens, e só ele — PV, espaços,
- * recursos, condições e a nota ficam como estão. Histórico vazio devolve o mesmo estado.
+ * "Nova sessão" (decisão 10.2.20): esvazia o histórico de rolagens e zera o turno em curso — PV,
+ * espaços, recursos, condições, efeitos ligados e a nota ficam como estão (tempo de relógio não é
+ * tempo de jogo). Sem rolagens nem turno marcado, devolve o mesmo estado.
  */
 export function clearRollHistory(state: PlayState): PlayResult {
-  return state.rolls.length === 0 ? done(state) : done({ ...state, rolls: [] })
+  const turnEmpty = JSON.stringify(state.turn) === JSON.stringify(emptyTurn())
+  return state.rolls.length === 0 && turnEmpty ? done(state) : done({ ...state, rolls: [], turn: emptyTurn() })
 }
 
 // ── Descanso curto ──────────────────────────────────────────────────────────
@@ -1882,6 +1971,23 @@ function sanitizeActiveEffects(x: unknown): ActiveToggle[] {
   return out
 }
 
+/** O turno gravado: casa que não é `true` fica livre, contagem que não é número fica 0. */
+function sanitizeTurn(x: unknown): TurnState {
+  if (!isRecord(x)) return emptyTurn()
+  return {
+    action: x.action === true,
+    bonusAction: x.bonusAction === true,
+    movement: x.movement === true,
+    reaction: x.reaction === true,
+    extraActions: nonNegInt(x.extraActions),
+    attacked: x.attacked === true,
+    tookDamage: x.tookDamage === true,
+    oncePerTurnUsed: Array.isArray(x.oncePerTurnUsed)
+      ? [...new Set(x.oncePerTurnUsed.filter((id): id is string => typeof id === 'string' && id !== ''))]
+      : [],
+  }
+}
+
 /**
  * O retrato da ficha só vale inteiro: torto em qualquer parte, sai (a próxima abertura tira outro,
  * sem aviso — melhor calar uma correção do que inventar uma).
@@ -1989,6 +2095,7 @@ export function sanitizePlayState(raw: unknown, characterId: string): PlayState 
     // concentra, acima).
     activeEffects: sanitizeActiveEffects(raw.activeEffects)
       .filter(a => !a.sustainedByConcentration || (lifeState === 'conscious' && sanitizeConcentration(raw.concentration) !== null)),
+    turn: sanitizeTurn(raw.turn),
     restCounters: sanitizeCounts(raw.restCounters),
     inspiration: raw.inspiration === true,
     note: typeof raw.note === 'string' ? raw.note : '',

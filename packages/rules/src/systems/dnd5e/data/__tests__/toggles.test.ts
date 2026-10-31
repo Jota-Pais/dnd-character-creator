@@ -64,7 +64,7 @@ describe('efeitos ligados nos dados', () => {
         ...(h.effects.castingRestriction?.toggle ? [[label, h.effects.castingRestriction.toggle]] : []),
         ...(h.effects.actions ?? []).flatMap(a => [
           ...(a.requiresToggle ? [[label, a.requiresToggle]] : []),
-          ...(a.outcomes ?? []).map(o => [label, o.toggle]),
+          ...(a.outcomes ?? []).flatMap(o => ('toggle' in o ? [[label, o.toggle]] : [])),
         ]),
         ...(h.effects.toggleModifiers ?? []).map(m => [label, m.toggle]),
       ]

@@ -131,6 +131,9 @@
         "effects": {
           "resources": [
             { "id": "action-surge", "name": "Surto de Ação", "uses": { "byLevel": [{ "from": 2, "value": 1 }, { "from": 17, "value": 2 }] }, "recharge": "short", "note": "no máximo uma vez por turno" }
+          ],
+          "actions": [
+            { "id": "action-surge", "name": "Surto de Ação", "timing": "free", "cost": [{ "kind": "resource", "resource": "action-surge", "amount": 1 }], "outcomes": [{ "kind": "extraAction" }], "oncePerTurn": true, "page": 85 }
           ]
         }
       },

@@ -57,6 +57,29 @@ export type ActiveToggle = {
   sustainedByConcentration?: true
 }
 
+/** As quatro casas do checklist do turno: a ação, a ação bônus, o movimento e a reação (págs. 191-192). */
+export type TurnSlot = 'action' | 'bonusAction' | 'movement' | 'reaction'
+
+/**
+ * O turno em curso, para o checklist leve (decisão 10.2.10): o que já se usou, marcado pelo "Usar"
+ * das ações (`performAction`) ou à mão, e o que o fim prematuro da Fúria pergunta. Lembra, nunca
+ * impede: momento já usado só avisa. O Novo turno (`newTurn`) e a Nova sessão o zeram.
+ */
+export type TurnState = {
+  action: boolean
+  bonusAction: boolean
+  movement: boolean
+  reaction: boolean
+  /** Ações a mais ainda por usar neste turno (o Surto de Ação, p. 85). */
+  extraActions: number
+  /** Você atacou neste turno (a ação de Atacar, o ataque de oportunidade). */
+  attacked: boolean
+  /** Você sofreu dano desde o último Novo turno (`applyDamage`). */
+  tookDamage: boolean
+  /** As ações de uma vez por turno já usadas neste turno (`ActionDeclaration.oncePerTurn`). */
+  oncePerTurnUsed: string[]
+}
+
 /** Magia (ou efeito) em que o personagem se concentra. `spellId` quando vem de `spells.json`. */
 export type Concentration = {
   spellId?: string
@@ -114,6 +137,8 @@ export type PlayState = {
    * A Nova sessão não os desliga — tempo de jogo não é tempo de relógio.
    */
   activeEffects: ActiveToggle[]
+  /** O turno em curso (o checklist): vazio no começo, no Novo turno e na Nova sessão. */
+  turn: TurnState
   /**
    * Usos desde o último descanso do que fica mais difícil a cada uso, pelo id do contador (a Fúria
    * Implacável: a CD sobe 5 a cada uso e volta a 10 no descanso curto ou longo, pág. 49). Zero não

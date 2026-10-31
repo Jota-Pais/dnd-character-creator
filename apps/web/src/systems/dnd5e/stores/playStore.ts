@@ -75,8 +75,9 @@ type PlayStoreState = {
    */
   logRoll: (record: RollRecord) => void
   /**
-   * "Nova sessão": esvazia o histórico de rolagens e grava. Como o `logRoll`, fora do desfazer e
-   * sem mexer nos avisos — o desfazer nunca toca o histórico, então quem pede confirmação é a tela.
+   * "Nova sessão": esvazia o histórico de rolagens, zera o turno e grava. Como o `logRoll`, fora do
+   * desfazer e sem mexer nos avisos — o desfazer nunca toca o histórico, então quem pede confirmação
+   * é a tela.
    */
   clearRolls: () => void
   /**

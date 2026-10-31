@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { registerPendingEdit, usePlayStore, UNDO_LIMIT } from '../playStore'
 import {
-  applyDamage, applyHealing, createPlayState, getCurrentHp, setInspiration, setNote,
+  applyDamage, applyHealing, createPlayState, emptyTurn, getCurrentHp, newTurn, performAction, setInspiration, setNote,
 } from '@rpg/rules/systems/dnd5e/utils/playState'
 import { loadPlayPreferences, loadPlayState, savePlayState } from '../../utils/playStorage'
 import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
@@ -143,6 +143,19 @@ describe('usePlayStore', () => {
     expect(loadPlayState('c1')?.damageTaken).toBe(0)
     usePlayStore.getState().undo()
     expect(usePlayStore.getState().state?.damageTaken).toBe(0)
+  })
+
+  it('o desfazer volta o turno: o Usar (uso, efeito e casa num passo só) e o Novo turno', () => {
+    usePlayStore.getState().open('c1', draft(), 1)
+    usePlayStore.getState().run((st, sh) => performAction(st, sh, 'rage-enter', { now: 1 }))
+    const raging = usePlayStore.getState().state
+    expect(raging).toMatchObject({ resourcesSpent: { rage: 1 }, turn: { bonusAction: true } })
+    usePlayStore.getState().run((st, sh) => newTurn(st, sh))
+    expect(usePlayStore.getState().state?.turn).toEqual(emptyTurn())
+    usePlayStore.getState().undo()
+    expect(usePlayStore.getState().state?.turn).toEqual(raging?.turn)
+    usePlayStore.getState().undo()
+    expect(usePlayStore.getState().state).toMatchObject({ resourcesSpent: {}, activeEffects: [], turn: emptyTurn() })
   })
 
   it(`a pilha do desfazer guarda no máximo ${UNDO_LIMIT} estados`, () => {

@@ -104,9 +104,8 @@
     "id": "light",
     "batch": "T",
     "bookLines": [24550, 24565],
-    "status": "textOnly",
-    "reason": "Divergência pt-BR × inglês em aberto, com o dono: para evitar a magia, a criatura hostil que segura o objeto faz um \"teste de Destreza\" no pt-BR e um \"Dexterity saving throw\" (TR de Destreza, contra a CD da magia) no inglês.",
-    "resolution": { "kind": "none" }
+    "status": "reviewed",
+    "resolution": { "kind": "save", "ability": "DEX", "onSuccess": "other" }
   },
   {
     "id": "mage-hand",

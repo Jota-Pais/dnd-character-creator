@@ -143,12 +143,20 @@ describe('guia da magia: os truques do lote T', () => {
     expect(guide.damage[0].notes).toContain('Até 2 alvos. Jogue o dano uma única vez para todos (pág. 198).')
   })
 
-  it('a magia só no texto (a Luz), a sem número (Mãos Mágicas: sem jogada) e a que não tem mecânica ainda', () => {
-    const d = caster('wizard', 1, ['light', 'mage-hand'], ['magic-missile'])
-    expect(getSpellGuide(d, play(), { casterKey: 'class:wizard', spellId: 'light' })).toBeNull()
+  it('a magia só no texto (a Ilusão Menor), a sem número (Mãos Mágicas: sem jogada) e a que não tem mecânica ainda', () => {
+    const d = caster('wizard', 1, ['minor-illusion', 'mage-hand'], ['magic-missile'])
+    expect(getSpellGuide(d, play(), { casterKey: 'class:wizard', spellId: 'minor-illusion' })).toBeNull()
     expect(spellGuideRolls(getSpellGuide(d, play(), { casterKey: 'class:wizard', spellId: 'mage-hand' })!)).toEqual([])
     expect(getSpellGuide(d, play(), { casterKey: 'class:wizard', spellId: 'magic-missile' })).toBeNull()
     expect(getSpellGuide(d, play(), { casterKey: 'class:wizard', spellId: 'nao-existe' })).toBeNull()
+  })
+
+  // Luz (pág. 255, linhas 24563-24565): o TR de Destreza do inglês (decisão de 2026-10-31). Não há
+  // o que você role: a receita diz o TR de quem segura o objeto, com a CD.
+  it('a Luz: o TR de Destreza com a CD da conjuração, sem jogada sua', () => {
+    const guide = getSpellGuide(caster('wizard', 1, ['light'], []), play(), { casterKey: 'class:wizard', spellId: 'light' })!
+    expect(guide.save).toEqual({ ability: 'DEX', dc: 13, onSuccess: 'other', text: 'TR de Destreza do alvo (CD 13): o sucesso faz o que o texto da magia diz.' })
+    expect(spellGuideRolls(guide)).toEqual([])
   })
 
   it('fora da conjuração (o truque do Alto Elfo): o dano, sem o ataque, com a nota', () => {

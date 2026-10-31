@@ -5,6 +5,7 @@ import { getSheetAttacks } from '../../utils/attackUtils'
 import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
 import weaponsData from '../weapons.json'
 import spellsData from '../spells.json'
+import spellMechanicsData from '../spell-mechanics.json'
 import progressionFeatures from '../class-progression-features.json'
 import invocationsData from '../eldritch-invocations.json'
 import racesData from '../races.json'
@@ -147,6 +148,16 @@ describe('divergências pt-BR × inglês que seguem o inglês', () => {
     const summary = (combatActionsData as { id: string; summary?: string }[]).find(a => a.id === 'dodge')?.summary
     expect(summary).toContain('vantagem nos testes de resistência de Destreza')
     expect(summary).not.toContain('vantagem em testes de Destreza')
+  })
+  // Inglês: "that creature must succeed on a Dexterity saving throw to avoid the spell" (Luz, pág.
+  // 255, linhas 24563-24565; decisão de 2026-10-31). O pt-BR diz "num teste de Destreza", que é teste
+  // de habilidade: é o TR de Destreza contra a CD da magia, e o dano estruturado o declara.
+  it('Luz pede TR de Destreza para evitar a magia (pt-BR: "num teste de Destreza")', () => {
+    const light = (spellsData as { id: string; description: string }[]).find(s => s.id === 'light')
+    expect(light?.description).toContain('a criatura deve ser bem sucedida num teste de resistência de Destreza para evitar a magia')
+    expect(light?.description).not.toContain('num teste de Destreza')
+    const mechanics = (spellMechanicsData as { id: string; status: string; resolution: unknown }[]).find(m => m.id === 'light')
+    expect(mechanics).toMatchObject({ status: 'reviewed', resolution: { kind: 'save', ability: 'DEX', onSuccess: 'other' } })
   })
   // Inglês: "When you score a critical hit with a melee weapon attack". O pt-BR ("com uma arma
   // corpo-a-corpo") deixaria de fora o golpe desarmado com dado, onde o traço vale (decisão 21).

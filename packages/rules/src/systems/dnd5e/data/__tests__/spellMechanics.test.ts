@@ -238,12 +238,17 @@ describe('dano estruturado de magia: o lote T', () => {
     ])
   })
 
-  it('os que ficam só no texto, a Luz pela divergência pt-BR × inglês em aberto e a Ilusão Menor pelo teste contra a CD', () => {
+  it('os que ficam só no texto, a Ilusão Menor pelo teste contra a CD', () => {
     expect(ids(m => m.status === 'textOnly')).toEqual([
-      'blade-ward', 'friends', 'guidance', 'light', 'minor-illusion', 'resistance', 'shillelagh', 'true-strike',
+      'blade-ward', 'friends', 'guidance', 'minor-illusion', 'resistance', 'shillelagh', 'true-strike',
     ])
-    expect(batch.find(m => m.id === 'light')?.reason).toMatch(/Divergência pt-BR × inglês em aberto/)
     expect(batch.find(m => m.id === 'minor-illusion')?.reason).toMatch(/contra a CD da magia/)
+  })
+
+  // A divergência pt-BR × inglês decidida pelo inglês (2026-10-31): o TR de Destreza da criatura
+  // hostil que segura o objeto, contra a CD da magia; o sucesso evita a magia, sem dano nenhum.
+  it('a Luz, revisada: o TR de Destreza, e o sucesso faz o que o texto diz', () => {
+    expect(batch.find(m => m.id === 'light')).toMatchObject({ status: 'reviewed', resolution: { kind: 'save', ability: 'DEX', onSuccess: 'other' } })
   })
 
   it('o condicional da jogada vira nota: a vantagem do Toque Chocante e a cobertura da Chama Sagrada', () => {

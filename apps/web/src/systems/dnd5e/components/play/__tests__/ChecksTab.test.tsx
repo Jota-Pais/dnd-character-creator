@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { render, screen, fireEvent, cleanup } from '@testing-library/react'
+import { render, screen, fireEvent, cleanup, within } from '@testing-library/react'
 import { PlayScreen } from '../PlayScreen'
 import { usePlayStore } from '../../../stores/playStore'
-import { addCondition } from '@rpg/rules/systems/dnd5e/utils/playState'
+import { activateToggle, addCondition } from '@rpg/rules/systems/dnd5e/utils/playState'
 import { openKrusk, resetPlay } from './openPlay'
 
 beforeEach(resetPlay)
@@ -33,6 +33,27 @@ describe('ChecksTab', () => {
     expect(screen.getByRole('button', { name: /^Furtividade: 1d20 \+ 2, com desvantagem \(Envenenado\)$/ })).toBeInTheDocument()
     expect(screen.getByText('Lembretes')).toBeInTheDocument()
     expect(screen.getByText(/fonte do seu medo/)).toBeInTheDocument()
+  })
+
+  // O número da aba é o modificador; o dado a mais da Bênção (e o a menos da Perdição) também se
+  // rola, e aparece ao lado dele. Na letra do texto: no Cinzel, o "1d4" virava "ID4".
+  it('a Bênção põe o "+1d4" ao lado do número, e a Perdição o "−1d4"', () => {
+    openKrusk()
+    usePlayStore.getState().run((st, sh) => activateToggle(st, sh, 'spell:bless', { now: 1 }))
+    render(<PlayScreen />)
+    const save = screen.getByRole('button', { name: /^TR de Força: 1d20 \+ \d+ \+ 1d4/ })
+    const bless = within(save).getByTitle('Bênção')
+    expect(bless).toHaveTextContent(/^\+1d4/)
+    expect(bless).toHaveClass('font-body')
+    // A perícia não leva o dado: a Bênção é de ataque e TR.
+    expect(within(screen.getByRole('button', { name: /^Atletismo:/ })).queryByTitle('Bênção')).toBeNull()
+    cleanup()
+
+    usePlayStore.getState().run((st, sh) => activateToggle(st, sh, 'spell:bane', { now: 2 }))
+    render(<PlayScreen />)
+    const both = screen.getByRole('button', { name: /^TR de Força:/ })
+    expect(within(both).getByTitle('Perdição')).toHaveTextContent(/^−1d4/)
+    expect(within(both).getByTitle('Bênção')).toHaveTextContent(/^\+1d4/)
   })
 
   it('paralisado: falha automática no TR de Destreza', () => {

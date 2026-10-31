@@ -284,11 +284,15 @@ describe('MagicTab — o grimório (onda grimorio)', () => {
     expect(screen.getByText('O Conjurar gasta o espaço sozinho; o toque na bolinha corrige.')).toBeInTheDocument()
   })
 
-  it('as de fora da conjuração (o tiferino): a lista Outras magias, sem CD nem ataque, e a inata no nível dela', () => {
+  // Decisão de 2026-10-31: a raça é uma conjuração, com o atributo que o traço declara (o tiferino,
+  // Carisma, pág. 43).
+  it('as da raça (o tiferino): a lista dela com a CD e o ataque de Carisma, e a inata no nível dela', () => {
     openMagic({ ...structuredClone(COMPLETE_DRAFT), race: 'tiefling', level: 3 })
     const book = screen.getByText('Grimório').closest('section')!
-    expect(within(book).getByText('Outras magias')).toBeInTheDocument()
-    expect(within(book).getByText('A CD e o ataque destas o app ainda não calcula.')).toBeInTheDocument()
+    expect(within(book).getByText('Tiefling')).toBeInTheDocument()
+    // Carisma 10 (8 + 2 do tiferino): CD 8 + 2 + 0; ataque +2.
+    expect(within(book).getByRole('button', { name: 'CD de magia 10: de onde vem' })).toBeInTheDocument()
+    expect(within(book).getByRole('button', { name: /^Ataque de magia — Tiefling: 1d20 \+ 2/ })).toBeInTheDocument()
     expect(row('Repreensão Infernal')).toHaveTextContent('1 reação · 1×/descanso longo · da raça')
     fireEvent.click(screen.getByRole('button', { name: 'Conjurar: Repreensão Infernal' }))
     const sheet = screen.getByRole('dialog', { name: 'Repreensão Infernal' })

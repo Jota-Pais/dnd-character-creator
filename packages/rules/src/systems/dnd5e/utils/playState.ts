@@ -1597,7 +1597,7 @@ export function getSpellSelfToggle(sheet: PlaySheet, spellId: string): SheetTogg
 export type SelfSpellResult = { heal?: number; tempHp?: number; tempHpChoice?: 'keep' | 'replace'; maxHpIncrease?: number }
 
 export type SpellCast = {
-  /** A conjuração do grimório: 'class:<classe>', 'feat:<talento>' ou 'other'. */
+  /** A conjuração do grimório: 'class:<classe>', 'feat:<talento>', 'race:<raça>' ou 'subclass:<subclasse>'. */
   casterKey: string
   spellId: string
   /** O nível em que ela sai: o do espaço escolhido, o de Pacto, o que a fonte fixa; o dela no truque e no ritual. */

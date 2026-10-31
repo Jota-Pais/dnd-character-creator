@@ -61,17 +61,24 @@ export type CastingTimeKind = 'action' | 'bonusAction' | 'reaction' | 'longer'
 export type RitualRule = 'spellbook' | 'prepared' | 'known'
 
 /**
- * As magias de uma conjuração: a de uma classe, a de um talento (Iniciado em Magia) ou as de fora
- * delas (o truque da raça, o da subclasse e as inatas), sem CD nem ataque no app.
+ * De onde vem uma conjuração: a classe, o talento que ensina magias (Iniciado em Magia), a raça (o
+ * truque e as inatas) ou o truque da subclasse (o Acólito da Natureza) — as duas últimas desde a
+ * leva `ajustes-leva-3` (2026-10-31), cada uma com a CD e o ataque pelo atributo que o dado declara.
+ */
+export type SpellcastingKind = 'class' | 'feat' | 'race' | 'subclass'
+
+/**
+ * As magias de uma conjuração: a de uma classe, a de um talento (Iniciado em Magia), a da raça (o
+ * truque e as inatas) ou a do truque de uma subclasse.
  */
 export type SpellbookList = {
   /**
-   * 'class:<classe>' e 'feat:<talento>', a mesma chave da conjuração no guia de rolagens
-   * (`RollGuide.spellcasting`), de onde vêm a CD e o ataque; 'other' para as de fora delas.
+   * 'class:<classe>', 'feat:<talento>', 'race:<raça>' e 'subclass:<subclasse>', a mesma chave da
+   * conjuração no guia de rolagens (`RollGuide.spellcasting`), de onde vêm a CD e o ataque.
    */
   key: string
-  kind: 'class' | 'feat' | 'other'
-  /** "Mago", "Guerreiro (Cavaleiro Arcano)", "Iniciado em Magia (Clérigo)", "Outras magias". */
+  kind: SpellcastingKind
+  /** "Mago", "Guerreiro (Cavaleiro Arcano)", "Iniciado em Magia (Clérigo)", "Tiefling", "Domínio da Natureza". */
   label: string
   /** Com quais magias a classe conjura rituais; null sem a característica (o bruxo, o talento). */
   ritualRule: RitualRule | null

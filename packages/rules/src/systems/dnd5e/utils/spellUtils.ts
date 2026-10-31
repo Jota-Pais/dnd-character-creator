@@ -743,8 +743,10 @@ export function getWizardSpellbookSize(charLevel: number): number {
 
 // ── Spell casting stats ───────────────────────────────────────────────────────
 
+// Só o atributo pesa: a conjuração da classe e a de fora dela (a raça, o truque da subclasse,
+// `getOtherSpellcastings`) passam pela mesma conta.
 export function getSpellSaveDC(
-  spellcasting: ClassSpellcasting,
+  spellcasting: Pick<ClassSpellcasting, 'ability'>,
   abilityScores: Partial<Record<AbilityScore, number | null>>,
   level = 1,
 ): number {
@@ -753,7 +755,7 @@ export function getSpellSaveDC(
 }
 
 export function getSpellAttackBonus(
-  spellcasting: ClassSpellcasting,
+  spellcasting: Pick<ClassSpellcasting, 'ability'>,
   abilityScores: Partial<Record<AbilityScore, number | null>>,
   level = 1,
 ): number {

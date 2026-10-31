@@ -5,7 +5,7 @@ import type { Spell } from '../types/spell'
 import { getFeat } from './featUtils'
 import { getGrantedSpellGroups } from './progressionOptions'
 import { describeInnateSpellUsage } from './raceUtils'
-import { getKnownSpells } from './sheetModel'
+import { getKnownSpells, getOtherSpellcastings, subclassSpellcastingKey } from './sheetModel'
 import { canCastAsRitual, getCombinedSpellSlots, getPactSlots, getRitualRule } from './spellUtils'
 
 /**
@@ -34,9 +34,9 @@ const innateUsageNote = (text: string) => `${text[0].toUpperCase()}${text.slice(
 
 /**
  * O grimório da ficha: uma lista por conjuração — cada classe conjuradora (`class:<classe>`), cada
- * talento que ensina magias (`feat:<talento>`, o Iniciado em Magia) e as de fora delas (`other`: o
- * truque da raça, o da subclasse e as inatas). A chave da classe e a do talento são as do guia de
- * rolagens (`RollGuide.spellcasting`), de onde vêm a CD e o ataque. Cada magia diz:
+ * talento que ensina magias (`feat:<talento>`, o Iniciado em Magia), a raça (`race:<raça>`: o truque
+ * e as inatas) e o truque de cada subclasse (`subclass:<subclasse>`; `getOtherSpellcastings`). A
+ * chave é a do guia de rolagens (`RollGuide.spellcasting`), de onde vêm a CD e o ataque. Cada magia diz:
  * - o status: o truque, a preparada, a conhecida, a do grimório do mago ou a de uso por descanso;
  * - os espaços que servem: os níveis do pool combinado do dela para cima (pág. 203; na multiclasse,
  *   também os de nível acima do que a classe conhece, pág. 166, linhas 14828-14837) e o de Pacto
@@ -107,14 +107,12 @@ export function getPlaySpellbook(draft: CharacterDraft): SpellbookList[] {
     })
   }
 
-  // De fora da conjuração de uma classe ou de um talento: sem CD nem ataque no app (o guia da magia
-  // diz isso). A inata de 1º nível ou mais tem um uso por descanso longo, que o contador da onda
-  // `recursos-completos` vai contar; até lá, sai sem gastar, com a nota.
-  const others: SpellbookEntry[] = [
+  // De fora da conjuração de uma classe ou de um talento, cada fonte com a sua conjuração
+  // (`getOtherSpellcastings`): a da raça e a do truque de cada subclasse. A inata de 1º nível ou mais
+  // tem um uso por descanso longo, que o contador da onda `recursos-completos` vai contar; até lá,
+  // sai sem gastar, com a nota.
+  const raceSpells: SpellbookEntry[] = [
     ...(known.raceCantrip ? [{ spellId: known.raceCantrip.id, status: 'cantrip' as const, origin: 'da raça', ...slots(known.raceCantrip), ritual: false }] : []),
-    ...known.subclassCantrips.map(({ spell, subclassName }) => ({
-      spellId: spell.id, status: 'cantrip' as const, origin: subclassName ? `de ${subclassName}` : 'da subclasse', ...slots(spell), ritual: false,
-    })),
     ...known.innate.map(({ spell, innate }) => {
       const usage = describeInnateSpellUsage(innate, spell.level)
       return {
@@ -130,7 +128,14 @@ export function getPlaySpellbook(draft: CharacterDraft): SpellbookList[] {
       }
     }),
   ]
-  if (others.length > 0) lists.push({ key: 'other', kind: 'other', label: 'Outras magias', ritualRule: null, spells: others })
+  for (const { key, kind, label } of getOtherSpellcastings(draft)) {
+    const spells: SpellbookEntry[] = kind === 'race'
+      ? raceSpells
+      : known.subclassCantrips.filter(s => subclassSpellcastingKey(s.subclassId) === key).map(({ spell, subclassName }) => ({
+        spellId: spell.id, status: 'cantrip' as const, origin: `de ${subclassName}`, ...slots(spell), ritual: false,
+      }))
+    lists.push({ key, kind, label, ritualRule: null, spells })
+  }
   return lists.filter(l => l.spells.length > 0)
 }
 

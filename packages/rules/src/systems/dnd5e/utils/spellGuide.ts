@@ -33,8 +33,8 @@ import { joinPt } from './textUtils'
 /** Qual magia e por quem: a conjuração dá o ataque e a CD. */
 export type SpellGuideRef = {
   /**
-   * A conjuração (`SpellcastingGuide.key`: 'class:wizard', 'feat:<talento>'); null para a magia de
-   * fora dela (o truque da raça, o da subclasse, as inatas): o guia fica só com o dano.
+   * A conjuração (`SpellcastingGuide.key`: 'class:wizard', 'feat:<talento>', 'race:<raça>',
+   * 'subclass:<subclasse>'); null sem ela: o guia fica só com o dano.
    */
   casterKey: string | null
   spellId: string
@@ -226,8 +226,9 @@ function upcastGain(mech: SpellMechanics, at: SpellCastContext, castLevel: numbe
  * ela. O bruxo só tem os de Magia de Pacto, todos do mesmo nível, e conjura nele: a onda trovejante
  * no espaço de 3º sai como magia de 3º nível (pág. 58, linhas 4526-4537). Com Conjuração e Magia de
  * Pacto, os dois servem às magias das duas (pág. 166, linhas 14845-14851): fica o mais baixo, e
- * `pactLevel` diz o de Pacto, quando é outro. O talento e as magias de fora da conjuração não passam
- * por aqui: ficam no nível da magia, ou no que quem chama passar (a inata).
+ * `pactLevel` diz o de Pacto, quando é outro. O talento e as magias de fora da conjuração de uma
+ * classe (a raça, o truque da subclasse) não passam por aqui: ficam no nível da magia, ou no que
+ * quem chama passar (a inata).
  */
 function defaultCastLevel(draft: CharacterDraft, spell: Spell): { level: number; pactLevel: number | null } {
   const pool = getCombinedSpellSlots(draft)
@@ -261,8 +262,9 @@ function buildSpellGuide(draft: CharacterDraft, spell: Spell, mech: SpellMechani
     ? rollGuide.spellcasting.find(s => s.key === ref.casterKey) ?? null
     : null
   // Sem o espaço escolhido, a magia de 1º nível ou mais da conjuração de uma classe sai no espaço
-  // mais baixo que ela tem (o de Pacto do bruxo); a do talento e a de fora, no nível dela.
-  const slot = ref.castLevel === undefined && caster && !caster.featId && spell.level > 0
+  // mais baixo que ela tem (o de Pacto do bruxo); a do talento e a da raça, no nível dela (a inata, no
+  // que o traço fixa, que quem chama passa).
+  const slot = ref.castLevel === undefined && caster?.kind === 'class' && spell.level > 0
     ? defaultCastLevel(draft, spell)
     : null
   const castLevel = Math.max(spell.level, ref.castLevel ?? slot?.level ?? spell.level)
@@ -280,7 +282,7 @@ function buildSpellGuide(draft: CharacterDraft, spell: Spell, mech: SpellMechani
     notes.push(`Com um espaço de Magia de Pacto, ela sai no ${slot.pactLevel}º nível: ${pactGains.join('; ')}.`)
   }
   if (!caster && (resolution.kind === 'attack' || resolution.kind === 'save')) {
-    notes.push('Sem o ataque e a CD: a ficha ainda não os calcula para as magias de fora da conjuração de uma classe ou de um talento.')
+    notes.push('Sem o ataque e a CD: a magia não veio de uma conjuração da ficha.')
   }
 
   const instances = mech.instances
@@ -427,11 +429,11 @@ export function findSpellGuideEntry(
 }
 
 /**
- * Por conjuração do grimório (`getPlaySpellbook`: a classe, o talento e as de fora delas, a lista
- * `other`), as magias com receita — truques primeiro, depois por nível, alfabética dentro de cada um.
+ * Por conjuração do grimório (`getPlaySpellbook`: a classe, o talento, a raça e o truque da
+ * subclasse), as magias com receita — truques primeiro, depois por nível, alfabética dentro de cada um.
  * As mesmas magias da aba Regras, só as revisadas com algo a rolar, no nível que a fonte fixa (a
- * inata) ou no espaço mais baixo. `casterKey` é a chave da lista; o guia da de fora fica sem a
- * conjuração (sem CD nem ataque). A aba Magia lista daqui.
+ * inata) ou no espaço mais baixo. `casterKey` é a chave da lista, a da conjuração no guia de
+ * rolagens, de onde vêm a CD e o ataque. A aba Magia lista daqui.
  */
 export function getCasterSpellGuides(
   draft: CharacterDraft,
@@ -447,7 +449,7 @@ export function getCasterSpellGuides(
       })
       .sort((a, b) => a.spell.level - b.spell.level || a.spell.name.localeCompare(b.spell.name, 'pt-BR'))
       .map(({ entry, spell }) => getSpellGuide(draft, state, {
-        casterKey: list.kind === 'other' ? null : list.key,
+        casterKey: list.key,
         spellId: spell.id,
         ...(entry.castLevel !== undefined ? { castLevel: entry.castLevel } : {}),
       }, rollGuide))

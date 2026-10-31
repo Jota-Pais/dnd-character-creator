@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
 import type { ClassChoiceSelections } from '../../types/class'
 import { buildPlaySheet } from '../playSheet'
+import { createPlayState } from '../playState'
+import { getRollGuide } from '../rollGuide'
 import { getKnownSpells } from '../sheetModel'
 import { findSpellbookEntry, getPlaySpellbook, SPELLBOOK_PREPARATION_NOTE } from '../spellbook'
 import { getClass } from '../classUtils'
@@ -123,10 +125,29 @@ describe('grimório: os espaços que servem', () => {
   it('o tiferino: a taumaturgia à vontade e a repreensão infernal no 2º nível, uma vez por descanso longo, que o app ainda não conta', () => {
     const d = draft({ class: 'fighter', race: 'tiefling', level: 3, abilityScores: SCORES, classChoices: choices() })
     const [list] = getPlaySpellbook(d)
-    expect(list).toMatchObject({ key: 'other', kind: 'other', label: 'Outras magias' })
-    expect(entry(d, 'other', 'thaumaturgy')).toMatchObject({ status: 'cantrip', origin: 'da raça', free: true })
-    expect(entry(d, 'other', 'hellish-rebuke')).toMatchObject({ status: 'perRest', castLevel: 2, free: true })
-    expect(entry(d, 'other', 'hellish-rebuke')?.note).toContain('o app ainda não conta esse uso')
+    expect(list).toMatchObject({ key: 'race:tiefling', kind: 'race', label: 'Tiefling' })
+    expect(entry(d, 'race:tiefling', 'thaumaturgy')).toMatchObject({ status: 'cantrip', origin: 'da raça', free: true })
+    expect(entry(d, 'race:tiefling', 'hellish-rebuke')).toMatchObject({ status: 'perRest', castLevel: 2, free: true })
+    expect(entry(d, 'race:tiefling', 'hellish-rebuke')?.note).toContain('o app ainda não conta esse uso')
+  })
+
+  // Decisão de 2026-10-31: cada fonte de fora da classe e do talento é uma conjuração, com a chave
+  // da CD e do ataque no guia de rolagens — a raça e o truque de cada subclasse.
+  it('o Alto Elfo e o Domínio da Natureza: uma lista por conjuração, com a chave do guia de rolagens', () => {
+    const d = draft({
+      class: 'cleric', race: 'elf', subrace: 'high-elf', level: 1, abilityScores: SCORES,
+      raceChoices: { cantrip: 'fire-bolt' },
+      classChoices: choices({ subclass: 'nature-domain', subclassExtras: { cantrip: 'shillelagh' } }),
+      spellChoices: { cantrips: ['sacred-flame', 'guidance', 'light'], spells: ['bless'] },
+    })
+    const book = getPlaySpellbook(d)
+    expect(book.map(l => [l.key, l.kind, l.label, l.spells.map(s => s.spellId)])).toEqual([
+      ['class:cleric', 'class', 'Clérigo', ['sacred-flame', 'guidance', 'light', 'bless']],
+      ['race:elf', 'race', 'Alto Elfo', ['fire-bolt']],
+      ['subclass:nature-domain', 'subclass', 'Domínio da Natureza', ['shillelagh']],
+    ])
+    expect(entry(d, 'subclass:nature-domain', 'shillelagh')).toMatchObject({ status: 'cantrip', origin: 'de Domínio da Natureza', free: true })
+    expect(getRollGuide(d, createPlayState('')).spellcasting.map(s => s.key)).toEqual(book.map(l => l.key))
   })
 })
 
@@ -142,7 +163,7 @@ describe('grimório: a mesma lista da aba Regras', () => {
     const ids = (key: string) => book.find(l => l.key === key)?.spells.map(s => s.spellId)
     expect(ids('class:bard')).toEqual(known.classes[0].spells.map(s => s.spell.id))
     expect(ids('feat:iniciado-em-magia')).toEqual([...known.feats[0].cantrips, ...known.feats[0].spells].map(s => s.id))
-    expect(ids('other')).toEqual(known.innate.map(s => s.spell.id))
+    expect(ids('race:tiefling')).toEqual(known.innate.map(s => s.spell.id))
     expect(buildPlaySheet(d).spellbook).toEqual(book)
   })
 

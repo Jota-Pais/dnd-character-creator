@@ -2707,11 +2707,11 @@ describe('castSpell: conjurar pelo grimório', () => {
     const base = structuredClone(COMPLETE_DRAFT)
     const tiefling = buildPlaySheet({ ...base, race: 'tiefling', level: 3 })
     const raging = performAction(state(), tiefling, 'rage-enter', { now: 1 }).state
-    const r = cast(raging, tiefling, { casterKey: 'other', spellId: 'thaumaturgy', castLevel: 0, pay: 'free' })
+    const r = cast(raging, tiefling, { casterKey: 'race:tiefling', spellId: 'thaumaturgy', castLevel: 0, pay: 'free' })
     expect(r.state).toBe(raging)
     expect(r.notices).toEqual([{ kind: 'refused', text: 'Taumaturgia: Em fúria você não pode conjurar magias (pág. 48).' }])
     // Fora da fúria, o tiferino conjura a repreensão infernal no 2º nível, sem espaço.
-    const rebuke = cast(state(), tiefling, { casterKey: 'other', spellId: 'hellish-rebuke', castLevel: 2, pay: 'free' })
+    const rebuke = cast(state(), tiefling, { casterKey: 'race:tiefling', spellId: 'hellish-rebuke', castLevel: 2, pay: 'free' })
     expect(rebuke.state.turn.reaction).toBe(true)
     expect(texts(rebuke)[0]).toBe('Repreensão Infernal, no 2º nível: sem gastar espaço. 1 uso por descanso longo, como magia de 2º nível (o app ainda não conta esse uso).')
   })

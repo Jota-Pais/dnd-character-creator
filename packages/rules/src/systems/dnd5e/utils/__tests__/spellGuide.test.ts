@@ -159,16 +159,33 @@ describe('guia da magia: os truques do lote T', () => {
     expect(spellGuideRolls(guide)).toEqual([])
   })
 
-  it('fora da conjuração (o truque do Alto Elfo): o dano, sem o ataque, com a nota', () => {
+  // Decisão de 2026-10-31: o truque do Alto Elfo conjura com a Inteligência que o traço declara (pág.
+  // 24), pela conjuração da raça no guia de rolagens.
+  it('o truque do Alto Elfo: o ataque pela conjuração da raça (Inteligência); sem conjuração, só o dano, com a nota', () => {
     const d = draft({
       class: 'fighter', level: 1, race: 'elf', subrace: 'high-elf', raceChoices: { cantrip: 'fire-bolt' },
       abilityScores: SCORES, classChoices: choices({}),
     })
-    const guide = getSpellGuide(d, play(), { casterKey: null, spellId: 'fire-bolt' })!
-    expect(guide.caster).toBeNull()
-    expect(guide.attack).toBeUndefined()
-    expect(guide.damage[0].formula).toBe('1d10 fogo')
-    expect(guide.notes).toEqual(['Sem o ataque e a CD: a ficha ainda não os calcula para as magias de fora da conjuração de uma classe ou de um talento.'])
+    const guide = getSpellGuide(d, play(), { casterKey: 'race:elf', spellId: 'fire-bolt' })!
+    expect(guide.caster).toEqual({ key: 'race:elf', label: 'Alto Elfo' })
+    // Inteligência 17 (16 + 1 do Alto Elfo): +3, e a proficiência do 1º nível, +2.
+    expect(guide.attack).toMatchObject({ label: 'Raio de Fogo — ataque', formula: '1d20 + 5' })
+    expect(guide.notes).toEqual([])
+    const without = getSpellGuide(d, play(), { casterKey: null, spellId: 'fire-bolt' })!
+    expect(without.caster).toBeNull()
+    expect(without.attack).toBeUndefined()
+    expect(without.damage[0].formula).toBe('1d10 fogo')
+    expect(without.notes).toEqual(['Sem o ataque e a CD: a magia não veio de uma conjuração da ficha.'])
+  })
+
+  // A conjuração da raça não passa pelo espaço mais baixo da classe (o bruxo 5 tem os de Pacto no
+  // 3º): a magia sai no nível dela, ou no que o traço fixa, que quem chama passa (a inata).
+  it('a magia da conjuração da raça sai no nível dela, não no espaço da classe; a CD é a de Carisma da raça', () => {
+    const d = draft({ class: 'warlock', level: 5, race: 'tiefling', abilityScores: SCORES, classChoices: choices({}) })
+    expect(getSpellGuide(d, play(), { casterKey: 'class:warlock', spellId: 'burning-hands' })?.castLevel).toBe(3)
+    expect(getSpellGuide(d, play(), { casterKey: 'race:tiefling', spellId: 'burning-hands' })?.castLevel).toBe(1)
+    // Carisma 18 (16 + 2 do tiferino): +4, e a proficiência do 5º nível, +3.
+    expect(getRollGuide(d, play()).spellcasting.find(s => s.key === 'race:tiefling')).toMatchObject({ kind: 'race', ability: 'CHA', saveDc: 15 })
   })
 })
 

@@ -190,7 +190,7 @@ function SpellbookSpells({ list, guides, view, onCast }: {
 /**
  * Aba "Magia", o grimório (Fase 2, onda `grimorio`; decisão de 2026-10-30): os espaços do pool e os de
  * Magia de Pacto, como bolinhas; as magias por conjuração (`PlaySheet.spellbook`: cada classe, cada
- * talento que ensina magias e as de fora delas) e nível, com a CD e o ataque da conjuração, a pista de
+ * talento que ensina magias, a raça e o truque da subclasse) e nível, com a CD e o ataque da conjuração, a pista de
  * cada uma, o que rolar e o "Conjurar", que abre a folha (`SpellCastSheet`) e gasta pelo `castSpell`
  * — nenhum gasto de espaço é feito aqui; as bolinhas são o toque que corrige. Com a restrição de
  * conjuração da ficha (Fúria) numa linha, e os recursos da ficha (`sheet.resources`) com os usos e a
@@ -212,12 +212,9 @@ export function MagicTab(view: PlayTabProps) {
   const hasSlots = slotLevels.length > 0 || (pact !== null && pact.slots > 0)
   const groups = groupResourcesBySource(sheet.resources)
   const labelGroups = resourceGroupsNeedLabels(groups)
-  // As conjurações com CD e ataque (o guia de rolagens), cada uma com a lista dela, e depois as
-  // listas de fora delas (o truque da raça, o da subclasse, as inatas).
-  const casters = [
-    ...guide.spellcasting.map(sc => ({ key: sc.key, sc, list: sheet.spellbook.find(l => l.key === sc.key) ?? null })),
-    ...sheet.spellbook.filter(l => !guide.spellcasting.some(sc => sc.key === l.key)).map(list => ({ key: list.key, sc: null, list })),
-  ]
+  // As conjurações com CD e ataque (o guia de rolagens), cada uma com a lista dela: as classes, os
+  // talentos, a raça e o truque da subclasse (desde 2026-10-31, toda lista do grimório tem a sua).
+  const casters = guide.spellcasting.map(sc => ({ key: sc.key, sc, list: sheet.spellbook.find(l => l.key === sc.key) ?? null }))
 
   // Do md para cima, duas colunas: os espaços (os do pool e os de Pacto) ao lado do grimório, e os
   // recursos embaixo, na largura toda, com uma origem (classe, raça, talento) por coluna.
@@ -278,13 +275,8 @@ export function MagicTab(view: PlayTabProps) {
             <ul className="space-y-2">
               {casters.map(({ key, sc, list }) => (
                 <li key={key} className="rounded-xl border border-parchment-900 bg-surface-raised p-3">
-                  <p className="font-fantasy text-parchment-100">{sc?.label ?? list?.label}</p>
-                  {sc && <CastingNumbers sc={sc} view={view} />}
-                  {!sc && (
-                    <p className="mt-1 text-[11px] text-parchment-500 leading-snug">
-                      A CD e o ataque destas o app ainda não calcula.
-                    </p>
-                  )}
+                  <p className="font-fantasy text-parchment-100">{sc.label}</p>
+                  <CastingNumbers sc={sc} view={view} />
                   {list?.note && <p className="mt-1.5 text-xs text-amber-200 leading-snug">{list.note}</p>}
                   {list && (
                     <SpellbookSpells list={list} guides={spellGuides.get(list.key) ?? new Map()} view={view} onCast={setCasting} />

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { getKnownSpells, getStartingInventory, listKnownSpells } from '../sheetModel'
+import { getKnownSpells, getOtherSpellcastings, getStartingInventory, listKnownSpells } from '../sheetModel'
+import { RACES, getAllChoices, getEffectiveInnateSpells } from '../raceUtils'
 import { formatInventoryItem } from '../equipmentUtils'
 import { getEquippedWeapons } from '../attackUtils'
 import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
@@ -141,6 +142,17 @@ describe('getKnownSpells (as magias da Revisão, da ficha imprimível e da aba R
       .toEqual([['cleric', 'Domínio da Natureza', 'shillelagh']])
   })
 
+  it('a sobra de outra raça ou de outra subclasse (ficha importada) não vira magia', () => {
+    const stale = draft({
+      race: 'dwarf', subrace: 'hill-dwarf', raceChoices: { cantrip: 'prestidigitation' },
+      class: 'cleric', classChoices: choices({ subclass: 'life-domain', subclassExtras: { cantrip: 'shillelagh' } }),
+    })
+    const known = getKnownSpells(stale)
+    expect(known.raceCantrip).toBeNull()
+    expect(known.subclassCantrips).toEqual([])
+    expect(getOtherSpellcastings(stale)).toEqual([])
+  })
+
   it('as inatas da raça entram no nível em que o traço as libera', () => {
     const tiefling = (level: number) => getKnownSpells(draft({ race: 'tiefling', class: 'barbarian', level }))
     expect(tiefling(1).innate.map(s => s.spell.id)).toEqual(['thaumaturgy'])
@@ -161,5 +173,50 @@ describe('getKnownSpells (as magias da Revisão, da ficha imprimível e da aba R
     })
     expect(ids(listKnownSpells(getKnownSpells(wizard))))
       .toEqual(['light', 'mage-hand', 'fire-bolt', 'shield', 'magic-missile', 'fireball'])
+  })
+})
+
+// Decisão de 2026-10-31: cada fonte de magia de fora da classe e do talento é uma conjuração, com o
+// atributo que o dado declara, a chave do guia de rolagens e a do grimório.
+describe('getOtherSpellcastings', () => {
+  it('a raça, pelo atributo do traço: o Alto Elfo com Inteligência (pág. 24), o drow e o tiferino com Carisma (págs. 24 e 43)', () => {
+    const highElf = draft({ race: 'elf', subrace: 'high-elf', raceChoices: { cantrip: 'fire-bolt' }, class: 'fighter' })
+    expect(getOtherSpellcastings(highElf)).toEqual([{ key: 'race:elf', kind: 'race', label: 'Alto Elfo', classId: null, ability: 'INT' }])
+    const drow = draft({ race: 'elf', subrace: 'drow', class: 'fighter' })
+    expect(getOtherSpellcastings(drow)).toEqual([{ key: 'race:elf', kind: 'race', label: 'Elfo Negro (Drow)', classId: null, ability: 'CHA' }])
+    const tiefling = draft({ race: 'tiefling', class: 'fighter' })
+    expect(getOtherSpellcastings(tiefling)).toEqual([{ key: 'race:tiefling', kind: 'race', label: 'Tiefling', classId: null, ability: 'CHA' }])
+    // O Alto Elfo que ainda não escolheu o truque não tem magia da raça.
+    expect(getOtherSpellcastings(draft({ race: 'elf', subrace: 'high-elf', class: 'fighter' }))).toEqual([])
+    expect(getOtherSpellcastings(draft({ race: 'human', class: 'fighter' }))).toEqual([])
+  })
+
+  // "Cada magia que você conhece e prepara está associada com uma das suas classes e você usa a
+  // habilidade de conjuração dessa classe" (pág. 166, linhas 14812-14814): o truque de druida do
+  // Acólito da Natureza conjura com a Sabedoria do clérigo, também na multiclasse.
+  it('o truque da subclasse, pelo atributo da Conjuração da classe dona: o Acólito da Natureza com Sabedoria', () => {
+    const nature = draft({
+      class: 'wizard', level: 2, multiclass: true,
+      additionalClasses: [{
+        classId: 'cleric', level: 1,
+        classChoices: choices({ subclass: 'nature-domain', subclassExtras: { cantrip: 'shillelagh' } }),
+        spellChoices: { cantrips: [], spells: [] }, asiChoices: [], hpRolls: [],
+      }],
+    })
+    expect(getOtherSpellcastings(nature)).toEqual([
+      { key: 'subclass:nature-domain', kind: 'subclass', label: 'Domínio da Natureza', classId: 'cleric', ability: 'WIS' },
+    ])
+  })
+
+  it('toda raça e sub-raça declara um atributo só para as magias dela (o truque e as inatas)', () => {
+    for (const race of RACES) {
+      for (const subrace of [null, ...race.subraces]) {
+        const abilities = new Set([
+          ...getAllChoices(race, subrace).flatMap(c => (c.kind === 'cantrip' ? [c.spellcastingAbility] : [])),
+          ...getEffectiveInnateSpells(race, subrace).map(s => s.ability),
+        ])
+        expect(abilities.size, `${race.id}/${subrace?.id ?? '—'}`).toBeLessThanOrEqual(1)
+      }
+    }
   })
 })

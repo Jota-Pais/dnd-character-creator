@@ -10,7 +10,7 @@ import {
   getEffectiveTraitsWithChoices, getRace, getSubrace,
 } from '@rpg/rules/systems/dnd5e/utils/raceUtils'
 import { formatCastingRestriction, getCastingRestrictions, getSheetFightingStyles } from '@rpg/rules/systems/dnd5e/utils/sheetEffects'
-import { getKnownSpells } from '@rpg/rules/systems/dnd5e/utils/sheetModel'
+import { getKnownSpells, getOtherSpellcastings, subclassSpellcastingKey } from '@rpg/rules/systems/dnd5e/utils/sheetModel'
 import { NO_SESSION, type SheetSession } from '@rpg/rules/systems/dnd5e/types/session'
 import { FEAT_SPELL_USAGE } from '@rpg/rules/systems/dnd5e/utils/spellUtils'
 import { ordinal } from './playFormat'
@@ -94,9 +94,10 @@ function groupByLevel(
  * Magias: as que o personagem conhece por qualquer via (`getKnownSpells`, as mesmas da Revisão e
  * da ficha imprimível) — um bloco por classe conjuradora, com a origem das de slot de progressão
  * (o grupo da Revisão e do PDF: Segredos Mágicos, Truques do Livro das Sombras, Pacto da
- * Corrente…, nunca um rótulo fixo), um por talento que ensina magias, e depois as que vêm de fora
- * da conjuração da classe — o truque da raça, o da subclasse e as magias inatas — com o jeito de
- * usar de `describeInnateSpellUsage`. A restrição de conjuração (em fúria,
+ * Corrente…, nunca um rótulo fixo), um por talento que ensina magias, e depois um por conjuração de
+ * fora da classe — a raça (o truque e as magias inatas, com o jeito de usar de
+ * `describeInnateSpellUsage`) e o truque de cada subclasse —, os mesmos blocos do grimório, cada um
+ * com a chave da conjuração no guia de rolagens. A restrição de conjuração (em fúria,
  * `getCastingRestrictions`) vale para toda magia, de qualquer fonte: sai sob o título da seção e na
  * folha de cada uma — com a fúria ligada na sessão, dizendo que está em vigor.
  */
@@ -125,19 +126,23 @@ function spellSection(draft: CharacterDraft, session: SheetSession): RuleSection
     blocks.push({ label: feat.label, groups })
   }
 
-  const others: { spell: Spell; source: string | null; castLevel?: number }[] = [
-    ...(known.raceCantrip ? [{ spell: known.raceCantrip, source: 'da raça' }] : []),
-    ...known.subclassCantrips.map(({ spell, subclassName }) => ({
-      spell, source: subclassName ? `de ${subclassName}` : 'da subclasse',
-    })),
-    ...known.innate.map(({ spell, innate }) => ({
-      spell,
-      source: `${describeInnateSpellUsage(innate, spell.level).text} · ${ABILITY_LABELS[innate.ability].short}`,
-      ...(innate.castLevel ? { castLevel: innate.castLevel } : {}),
-    })),
-  ]
-  if (others.length > 0) {
-    blocks.push({ label: 'Outras magias', groups: groupByLevel(others, 'other', notes, null) })
+  // De fora da classe e do talento, um bloco por conjuração, como no grimório (`getOtherSpellcastings`,
+  // decisão de 2026-10-31): a raça (o truque e as inatas, com o jeito de usar) e o truque de cada
+  // subclasse, com a chave da conjuração, de onde a receita tira a CD e o ataque.
+  for (const other of getOtherSpellcastings(draft)) {
+    const items: { spell: Spell; source: string | null; castLevel?: number }[] = other.kind === 'race'
+      ? [
+        ...(known.raceCantrip ? [{ spell: known.raceCantrip, source: 'da raça' }] : []),
+        ...known.innate.map(({ spell, innate }) => ({
+          spell,
+          source: `${describeInnateSpellUsage(innate, spell.level).text} · ${ABILITY_LABELS[innate.ability].short}`,
+          ...(innate.castLevel ? { castLevel: innate.castLevel } : {}),
+        })),
+      ]
+      : known.subclassCantrips
+        .filter(s => subclassSpellcastingKey(s.subclassId) === other.key)
+        .map(({ spell, subclassName }) => ({ spell, source: `de ${subclassName}` }))
+    blocks.push({ label: other.label, groups: groupByLevel(items, other.key, notes, other.key) })
   }
 
   const filled = blocks.filter(b => b.groups.length > 0)

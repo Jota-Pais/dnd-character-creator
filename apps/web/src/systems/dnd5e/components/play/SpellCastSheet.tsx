@@ -133,7 +133,7 @@ export function SpellCastSheet({ view, target, onClose }: { view: PlayTabProps; 
   const { list, entry } = found
   const castLevel = chosen.castLevel
   // O guia da magia no nível escolhido: a receita, o ganho do nível e o que pede um número da mesa.
-  const guide = getSpellGuide(draft, state, { casterKey: list.kind === 'other' ? null : list.key, spellId: spell.id, castLevel }, rollGuide)
+  const guide = getSpellGuide(draft, state, { casterKey: list.key, spellId: spell.id, castLevel }, rollGuide)
 
   // O que pede um número da mesa, com o alvo em você: a cura, os PV temporários e o PV máximo (a
   // Ajuda soma um valor fixo: sem campo).

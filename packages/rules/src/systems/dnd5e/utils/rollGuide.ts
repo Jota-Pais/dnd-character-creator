@@ -8,6 +8,7 @@ import {
 } from './guideEntries'
 import type { PlayState } from '../types/playState'
 import type { SheetSession } from '../types/session'
+import type { SpellcastingKind } from '../types/spellbook'
 import type { AbilityScore } from '../types/race'
 import { ABILITY_LABELS, ALL_ABILITY_SCORES, calculateModifier, getProficiencyBonus } from './abilityScoreUtils'
 import { getSheetSession } from './activeEffects'
@@ -27,6 +28,7 @@ import {
   type ActiveConditionEffects, type ConditionRoll, type ScopedSheetEffect, type SheetConditionalSave,
 } from './sheetEffects'
 import { getCasterEntries, getFeatSpellBlocks, getSpellAttackBonus, getSpellSaveDC } from './spellUtils'
+import { getOtherSpellcastings } from './sheetModel'
 import { DAMAGE_TYPE_PT, scopeCaveat } from './weaponFormat'
 
 /**
@@ -76,20 +78,25 @@ export type AttackGuide = {
 }
 
 /**
- * Conjuração de uma classe ou de um talento que ensina magias (Iniciado em Magia, p. 170): a CD
- * que os alvos enfrentam e o ataque de magia.
+ * Conjuração de uma classe, de um talento que ensina magias (Iniciado em Magia, p. 170), da raça (o
+ * truque e as inatas) ou do truque de uma subclasse (`getOtherSpellcastings`, decisão de
+ * 2026-10-31): a CD que os alvos enfrentam e o ataque de magia.
  */
 export type SpellcastingGuide = {
   /**
-   * Única no guia: `class:<classId>` ou `feat:<featId>` — o clérigo com Iniciado em Magia de
-   * clérigo tem as duas, cada uma com a sua CD.
+   * Única no guia: `class:<classId>`, `feat:<featId>`, `race:<raça>` ou `subclass:<subclasse>` — o
+   * clérigo com Iniciado em Magia de clérigo tem as duas primeiras, cada uma com a sua CD.
    */
   key: string
-  /** A classe da lista e do atributo: a conjuradora, ou a escolhida no talento. */
-  classId: string
-  /** O talento que ensina as magias; null na conjuração da classe. */
+  kind: SpellcastingKind
+  /**
+   * A classe da lista e do atributo: a conjuradora, a escolhida no talento ou a dona da subclasse;
+   * null na raça.
+   */
+  classId: string | null
+  /** O talento que ensina as magias; null fora do talento. */
   featId: string | null
-  /** "Mago", "Guerreiro (Cavaleiro Arcano)", "Iniciado em Magia (Clérigo)". */
+  /** "Mago", "Guerreiro (Cavaleiro Arcano)", "Iniciado em Magia (Clérigo)", "Tiefling", "Domínio da Natureza". */
   label: string
   ability: AbilityScore
   /**
@@ -726,6 +733,7 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
       const sc = caster.casting.spellcasting
       return spellcastingGuide({
         key: `class:${caster.cls.id}`,
+        kind: 'class',
         classId: caster.cls.id,
         featId: null,
         label: caster.casting.label,
@@ -739,6 +747,7 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
     // escolhida nele, os de getFeatSpellBlocks — os mesmos da Revisão e do PDF.
     ...getFeatSpellBlocks(draft, scores).map(block => spellcastingGuide({
       key: `feat:${block.featId}`,
+      kind: 'feat',
       classId: block.spellClass,
       featId: block.featId,
       label: block.label,
@@ -746,6 +755,20 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
       saveDc: block.saveDc,
       attackId: `spell-attack:feat:${block.featId}`,
       attackModifier: Number(block.attackBonus),
+    })),
+    // De fora da classe e do talento (decisão de 2026-10-31): a raça (o truque do Alto Elfo, as inatas
+    // do drow e do tiferino) e o truque da subclasse, cada um pelo atributo que o dado declara — a
+    // mesma conta da classe, 8 + proficiência + o modificador, com os atributos finais.
+    ...getOtherSpellcastings(draft).map(source => spellcastingGuide({
+      key: source.key,
+      kind: source.kind,
+      classId: source.classId,
+      featId: null,
+      label: source.label,
+      ability: source.ability,
+      saveDc: getSpellSaveDC(source, scores, level),
+      attackId: `spell-attack:${source.key}`,
+      attackModifier: getSpellAttackBonus(source, scores, level),
     })),
   ]
 

@@ -1,14 +1,14 @@
 import type { CharacterDraft } from '../types/character'
-import type { AbilityScore, InnateSpell } from '../types/race'
+import type { AbilityScore, CantripChoice, InnateSpell, Race, Subrace } from '../types/race'
 import type { Spell } from '../types/spell'
 import { getFinalAbilityScores } from './asiUtils'
 import { getBackground, resolveBackgroundItems } from './backgroundUtils'
 import { getClass, getSubclass } from './classUtils'
 import { formatInventoryItem, getActivePurchases, resolveOptionItems } from './equipmentUtils'
 import { allClassEntries } from './multiclassUtils'
-import { getAvailableInnateSpells, getRace, getSubrace } from './raceUtils'
+import { getAllChoices, getAvailableInnateSpells, getRace, getSubrace } from './raceUtils'
 import {
-  getCasterEntries, getFeatSpellBlocks, getSecretSpellGroups, getSpell, type CasterEntry, type FeatSpellBlock,
+  getCasterEntries, getEntrySpellcasting, getFeatSpellBlocks, getSecretSpellGroups, getSpell, type CasterEntry, type FeatSpellBlock,
 } from './spellUtils'
 
 // O modelo de ficha: as listas que a Revisão, a ficha imprimível e o jogo mostram, agregadas aqui
@@ -67,6 +67,9 @@ export function getStartingInventory(draft: CharacterDraft): InventoryEntry[] {
  */
 export type ClassKnownSpell = { spell: Spell; group: string | null }
 
+/** O truque escolhido na subclasse (o Acólito da Natureza), com a classe dona e a subclasse. */
+export type SubclassCantrip = { classId: string; subclassId: string; subclassName: string; spell: Spell }
+
 /** As magias que o personagem conhece, por via. Cada tela agrupa como mostra. */
 export type KnownSpells = {
   /** Por classe conjuradora (`getCasterEntries`), cada magia uma vez: truques, magias e as de slot. */
@@ -76,7 +79,7 @@ export type KnownSpells = {
   /** O truque escolhido na raça (Alto Elfo). */
   raceCantrip: Spell | null
   /** O truque escolhido na subclasse (Domínio da Natureza), por classe da multiclasse. */
-  subclassCantrips: { classId: string; subclassName: string | null; spell: Spell }[]
+  subclassCantrips: SubclassCantrip[]
   /** As magias inatas da raça já liberadas no nível do personagem. */
   innate: { innate: InnateSpell; spell: Spell }[]
 }
@@ -111,26 +114,101 @@ export function getKnownSpells(
 ): KnownSpells {
   const race = draft.race ? getRace(draft.race) : undefined
   const subrace = race && draft.subrace ? getSubrace(race, draft.subrace) ?? null : null
-  const raceCantripId = draft.raceChoices.cantrip
   return {
     classes: getCasterEntries(draft).map(caster => ({ caster, spells: casterSpells(caster) })),
     feats: getFeatSpellBlocks(draft, finalScores),
-    raceCantrip: (raceCantripId ? getSpell(raceCantripId) : undefined) ?? null,
-    subclassCantrips: allClassEntries(draft).flatMap(entry => {
-      const id = entry.classChoices.subclassExtras.cantrip
-      const spell = id ? getSpell(id) : undefined
-      if (!spell) return []
-      const cls = getClass(entry.classId)
-      const subclass = cls && entry.classChoices.subclass ? getSubclass(cls, entry.classChoices.subclass) : undefined
-      return [{ classId: entry.classId, subclassName: subclass?.name ?? null, spell }]
-    }),
-    innate: race
-      ? getAvailableInnateSpells(race, subrace, draft.level ?? 1).flatMap(innate => {
-        const spell = getSpell(innate.spellId)
-        return spell ? [{ innate, spell }] : []
-      })
-      : [],
+    raceCantrip: race ? getRaceCantrip(draft, race, subrace)?.spell ?? null : null,
+    subclassCantrips: getSubclassCantrips(draft),
+    innate: race ? getRaceInnateSpells(draft, race, subrace) : [],
   }
+}
+
+/**
+ * O truque escolhido na raça (o Alto Elfo, pág. 24), com o atributo que o traço declara. Só o da
+ * raça que dá a escolha: a sobra de uma ficha importada com outra raça não vira magia.
+ */
+function getRaceCantrip(draft: CharacterDraft, race: Race, subrace: Subrace | null): { spell: Spell; ability: AbilityScore } | null {
+  const id = draft.raceChoices.cantrip
+  const spell = id ? getSpell(id) : undefined
+  const choice = getAllChoices(race, subrace).find((c): c is CantripChoice => c.kind === 'cantrip')
+  return spell && choice ? { spell, ability: choice.spellcastingAbility } : null
+}
+
+/** As magias inatas da raça já liberadas no nível do personagem (Magia Drow, Legado Infernal). */
+function getRaceInnateSpells(draft: CharacterDraft, race: Race, subrace: Subrace | null): KnownSpells['innate'] {
+  return getAvailableInnateSpells(race, subrace, draft.level ?? 1).flatMap(innate => {
+    const spell = getSpell(innate.spellId)
+    return spell ? [{ innate, spell }] : []
+  })
+}
+
+/**
+ * O truque escolhido na subclasse de cada classe da multiclasse (o Domínio da Natureza). Só o da
+ * subclasse que dá a escolha: a sobra de outra subclasse (trocada, ficha importada) não vira magia.
+ */
+function getSubclassCantrips(draft: CharacterDraft): SubclassCantrip[] {
+  return allClassEntries(draft).flatMap(entry => {
+    const cls = getClass(entry.classId)
+    const subclass = cls && entry.classChoices.subclass ? getSubclass(cls, entry.classChoices.subclass) : undefined
+    const id = entry.classChoices.subclassExtras.cantrip
+    const spell = id ? getSpell(id) : undefined
+    if (!spell || !subclass?.extras?.cantripChoice) return []
+    return [{ classId: entry.classId, subclassId: subclass.id, subclassName: subclass.name, spell }]
+  })
+}
+
+// ── Conjurações de fora da classe e do talento (decisão de 2026-10-31) ─────────
+
+/**
+ * Uma conjuração de fora da classe e do talento, com o atributo que o dado declara: a da raça — o
+ * truque do Alto Elfo, Inteligência (pág. 24, `CantripChoice.spellcastingAbility`); as magias
+ * inatas do drow e do tiferino, Carisma (págs. 24 e 43, `InnateSpell.ability`) — e a do truque da
+ * subclasse, que usa o atributo de conjuração da classe dona: a magia que uma característica de
+ * classe dá está associada a essa classe (pág. 166, linhas 14812-14814), e o Acólito da Natureza
+ * conjura o truque de druida com a Sabedoria do clérigo. A chave é a da conjuração no guia de
+ * rolagens (`RollGuide.spellcasting`, de onde vêm a CD e o ataque) e a da lista no grimório, como a
+ * `feat:<talento>`.
+ */
+export type OtherSpellcasting = {
+  /** 'race:<raça>' ou 'subclass:<subclasse>'. */
+  key: string
+  kind: 'race' | 'subclass'
+  /** A sub-raça ou a raça ("Alto Elfo", "Tiefling"); a subclasse ("Domínio da Natureza"). */
+  label: string
+  /** A classe dona da subclasse, a do atributo; null na raça. */
+  classId: string | null
+  ability: AbilityScore
+}
+
+/** A chave da conjuração das magias da raça (o truque e as inatas): uma por personagem. */
+export const raceSpellcastingKey = (raceId: string): string => `race:${raceId}`
+
+/** A chave da conjuração do truque de uma subclasse. */
+export const subclassSpellcastingKey = (subclassId: string): string => `subclass:${subclassId}`
+
+/**
+ * As conjurações de fora da classe e do talento que a ficha tem, sobre as mesmas magias de
+ * `getKnownSpells`: a da raça, com o truque escolhido nela ou alguma inata liberada no nível, e a de
+ * cada truque de subclasse, com o atributo da Conjuração da classe dona (o clérigo conjura desde o
+ * 1º nível, e o truque só existe na subclasse que o dá). O atributo da raça é o que o traço declara,
+ * um só por raça e sub-raça: o teste do modelo de ficha confere isso nos dados.
+ */
+export function getOtherSpellcastings(draft: CharacterDraft): OtherSpellcasting[] {
+  const out: OtherSpellcasting[] = []
+  const race = draft.race ? getRace(draft.race) : undefined
+  if (race) {
+    const subrace = draft.subrace ? getSubrace(race, draft.subrace) ?? null : null
+    const [ability] = [
+      getRaceCantrip(draft, race, subrace)?.ability,
+      ...getRaceInnateSpells(draft, race, subrace).map(s => s.innate.ability),
+    ].filter((a): a is AbilityScore => a !== undefined)
+    if (ability) out.push({ key: raceSpellcastingKey(race.id), kind: 'race', label: subrace?.name ?? race.name, classId: null, ability })
+  }
+  for (const { classId, subclassId, subclassName } of getSubclassCantrips(draft)) {
+    const ability = getEntrySpellcasting(getClass(classId), subclassId)?.spellcasting.ability
+    if (ability) out.push({ key: subclassSpellcastingKey(subclassId), kind: 'subclass', label: subclassName, classId, ability })
+  }
+  return out
 }
 
 /**

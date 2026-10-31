@@ -289,12 +289,14 @@ describe('getRuleReference', () => {
     expect(raceEntries(human).map(e => e.name)).not.toContain('Visão no Escuro')
   })
 
-  it('truques da raça e magias inatas saem em "Outras magias", com o jeito de usar', () => {
+  it('truques da raça e magias inatas saem no bloco da raça, com o jeito de usar e a conjuração dela', () => {
     const tiefling: CharacterDraft = { ...structuredClone(COMPLETE_DRAFT), race: 'tiefling', level: 3 }
     const spells = getRuleReference(tiefling).find(s => s.id === 'spells')!
     expect(spells.blocks).toHaveLength(1)
-    expect(spells.blocks[0].label).toBe('Outras magias')
+    expect(spells.blocks[0].label).toBe('Tiefling')
     const entries = spells.blocks[0].groups.flatMap(g => g.entries)
+    // A receita da folha tira a CD e o ataque da conjuração da raça (decisão de 2026-10-31).
+    expect(entries.map(e => (e.detail.kind === 'spell' ? e.detail.casterKey : null))).toEqual(['race:tiefling', 'race:tiefling'])
     expect(entries.map(e => e.meta)).toEqual([
       expect.stringContaining('truque, à vontade'),
       expect.stringContaining('1 uso por descanso longo, como magia de 2º nível'),
@@ -321,7 +323,7 @@ describe('getRuleReference', () => {
     }
     const section = getRuleReference(d).find(s => s.id === 'spells')!
     expect(section.notes).toEqual([RAGE])
-    expect(section.blocks.map(b => b.label)).toEqual(['Clérigo', 'Iniciado em Magia (Mago)', 'Outras magias'])
+    expect(section.blocks.map(b => b.label)).toEqual(['Clérigo', 'Iniciado em Magia (Mago)', 'Tiefling', 'Domínio da Natureza'])
     const entries = section.blocks.flatMap(b => b.groups.flatMap(g => g.entries))
     expect(entries.map(e => e.name)).toEqual(expect.arrayContaining(['Chama Sagrada', 'Escudo Arcano', 'Taumaturgia', 'Druidismo']))
     for (const e of entries) expect(e.detail).toMatchObject({ kind: 'spell', notes: [RAGE] })

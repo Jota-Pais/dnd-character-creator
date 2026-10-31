@@ -1009,10 +1009,14 @@ describe('getRollGuide — em fúria não se conjura (pág. 48)', () => {
     expect(getRollGuide(wizard, play()).castingRestrictions).toEqual([])
   })
 
-  it('tiefling bárbaro: sem conjuração de classe, a restrição vale pela magia inata', () => {
+  it('tiefling bárbaro: sem conjuração de classe, a restrição vale pela magia inata, também no ataque da raça', () => {
     const guide = getRollGuide(draft({ class: 'barbarian', level: 3, race: 'tiefling', abilityScores: SCORES }), play())
-    expect(guide.spellcasting).toEqual([])
+    // Carisma 10 (8 + 2 do tiferino): +0; a proficiência do 3º nível, +2.
+    expect(guide.spellcasting.map(s => [s.key, s.kind, s.classId, s.ability, s.saveDc, s.attack.formula])).toEqual([
+      ['race:tiefling', 'race', null, 'CHA', 10, '1d20 + 2'],
+    ])
     expect(guide.castingRestrictions).toEqual([RAGE])
+    expect(guide.spellcasting[0].attack.notes).toContain(RAGE)
   })
 })
 

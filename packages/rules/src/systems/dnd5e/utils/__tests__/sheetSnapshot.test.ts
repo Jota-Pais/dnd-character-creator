@@ -207,3 +207,31 @@ describe('aviso de correção: o dano dos ataques', () => {
     expect(sanitizePlayState(stored, 'c1').sheetSnapshot).toBeUndefined()
   })
 })
+
+// Decisão de 2026-10-31: as magias da raça e o truque da subclasse ganham a conjuração deles, com a
+// CD e o ataque. O retrato de antes não as tem, e a ficha salva do tiferino ou do Domínio da Natureza
+// entra no aviso de correção, como a Destruição Divina Aprimorada (decisão 10.2.23).
+describe('aviso de correção: a CD e o ataque das magias de fora da classe', () => {
+  const tieflingCleric: CharacterDraft = {
+    ...structuredClone(EMPTY_DRAFT), race: 'tiefling', class: 'cleric', level: 1,
+    abilityScores: { STR: 10, DEX: 10, CON: 14, INT: 8, WIS: 16, CHA: 14 },
+    classChoices: { ...structuredClone(EMPTY_DRAFT.classChoices), subclass: 'nature-domain', subclassExtras: { cantrip: 'shillelagh' } },
+    spellChoices: { cantrips: ['sacred-flame', 'guidance', 'light'], spells: [] },
+  }
+
+  it('a raça e a subclasse entram no retrato; o de antes, sem elas, avisa com o nome de cada conjuração', () => {
+    const now = takeSheetSnapshot(tieflingCleric, buildPlaySheet(tieflingCleric), 10)
+    // Carisma 16 (14 + 2 do tiferino): CD 8 + 2 + 3; Sabedoria 16: CD 8 + 2 + 3.
+    expect(now.spellcasting).toEqual([
+      { key: 'class:cleric', label: 'Clérigo', saveDc: 13, attackBonus: 5 },
+      { key: 'race:tiefling', label: 'Tiefling', saveDc: 13, attackBonus: 5 },
+      { key: 'subclass:nature-domain', label: 'Domínio da Natureza', saveDc: 13, attackBonus: 5 },
+    ])
+    const before: SheetSnapshot = { ...now, spellcasting: now.spellcasting.filter(sc => sc.key.startsWith('class:')) }
+    expect(syncSheetSnapshot({ ...createPlayState('c1'), sheetSnapshot: before }, now).notices).toEqual([{
+      kind: 'sheetCorrected',
+      text: 'O app corrigiu sua ficha: CD de magia de Tiefling — → 13; ataque de magia de Tiefling — → +5; '
+        + 'CD de magia de Domínio da Natureza — → 13; ataque de magia de Domínio da Natureza — → +5.',
+    }])
+  })
+})

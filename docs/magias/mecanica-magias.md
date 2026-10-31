@@ -44,7 +44,7 @@ Todos os truques de dano escalam nos degraus de personagem 5º, 11º e 17º ("qu
 | Espirro Ácido | `acid-splash` | 244 | 23395-23407 | TR de Destreza, nenhum dano no sucesso; até 2 alvos | 1d6 de ácido | revisado |
 | Estabilizar | `spare-the-dying` | 246 | 23437-23445 | — | — | revisado, sem número |
 | Globos de Luz | `dancing-lights` | 249 | 23902-23920 | — | — | revisado, sem número |
-| Ilusão Menor | `minor-illusion` | 250 | 24011-24039 | — | — | revisado, sem número (seção 4, item 3) |
+| Ilusão Menor | `minor-illusion` | 250 | 24011-24039 | — | — | só texto: quem examina a imagem faz um teste de Inteligência (Investigação) contra a CD da magia, que o esquema ainda não diz (e a seção 4, item 3) |
 | Luz | `light` | 255 | 24550-24565 | — | — | só texto: divergência pt-BR × inglês em aberto (seção 4, item 1) |
 | Mãos Mágicas | `mage-hand` | 257 | 24740-24758 | — | — | revisado, sem número |
 | Mensagem | `message` | 258 | 24847-24863 | — | — | revisado, sem número |

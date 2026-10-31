@@ -96,7 +96,8 @@
     "id": "minor-illusion",
     "batch": "T",
     "bookLines": [24011, 24039],
-    "status": "reviewed",
+    "status": "textOnly",
+    "reason": "Quem examina a imagem faz um teste de Inteligência (Investigação) contra a CD da magia: é teste de habilidade contra a CD, que o esquema ainda não diz.",
     "resolution": { "kind": "none" }
   },
   {

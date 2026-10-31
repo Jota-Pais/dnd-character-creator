@@ -196,11 +196,12 @@ describe('dano estruturado de magia: o lote T', () => {
     ])
   })
 
-  it('os que ficam só no texto, e a Luz pela divergência pt-BR × inglês em aberto', () => {
+  it('os que ficam só no texto, a Luz pela divergência pt-BR × inglês em aberto e a Ilusão Menor pelo teste contra a CD', () => {
     expect(ids(m => m.status === 'textOnly')).toEqual([
-      'blade-ward', 'friends', 'guidance', 'light', 'resistance', 'shillelagh', 'true-strike',
+      'blade-ward', 'friends', 'guidance', 'light', 'minor-illusion', 'resistance', 'shillelagh', 'true-strike',
     ])
     expect(batch.find(m => m.id === 'light')?.reason).toMatch(/Divergência pt-BR × inglês em aberto/)
+    expect(batch.find(m => m.id === 'minor-illusion')?.reason).toMatch(/contra a CD da magia/)
   })
 
   it('a Rajada Mística escala nos feixes, e o dano de cada um fica em 1d10', () => {

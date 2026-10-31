@@ -520,6 +520,9 @@
         "abilityBonuses": [{ "ability": "DEX", "value": 1 }],
         "choices": [],
         "grantedProficiencies": [],
+        "innateSpells": [
+          { "spellId": "minor-illusion", "minLevel": 1, "ability": "INT" }
+        ],
         "traits": [
           {
             "name": "Ilusionista Nato",

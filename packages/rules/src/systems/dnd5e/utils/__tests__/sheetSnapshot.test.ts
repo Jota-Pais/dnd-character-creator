@@ -235,3 +235,24 @@ describe('aviso de correção: a CD e o ataque das magias de fora da classe', ()
     }])
   })
 })
+
+// O Ilusionista Nato do gnomo da floresta (pág. 37, linhas 2854-2856) entrou nos dados como magia
+// inata depois: a ficha salva ganha a conjuração da raça, e o retrato de antes avisa, sem o nome
+// (a única conjuração da ficha), pelo mesmo precedente.
+describe('aviso de correção: a ilusão menor do gnomo da floresta', () => {
+  const forestGnomeFighter: CharacterDraft = {
+    ...structuredClone(EMPTY_DRAFT), race: 'gnome', subrace: 'forest-gnome', class: 'fighter', level: 1,
+    abilityScores: { STR: 15, DEX: 14, CON: 14, INT: 12, WIS: 10, CHA: 8 },
+  }
+
+  it('a conjuração da raça entra no retrato, e o de antes, sem ela, avisa', () => {
+    const now = takeSheetSnapshot(forestGnomeFighter, buildPlaySheet(forestGnomeFighter), 10)
+    // Inteligência 14 (12 + 2 do gnomo): CD 8 + 2 + 2; ataque 2 + 2.
+    expect(now.spellcasting).toEqual([{ key: 'race:gnome', label: 'Gnomo da Floresta', saveDc: 12, attackBonus: 4 }])
+    const before: SheetSnapshot = { ...now, spellcasting: [] }
+    expect(syncSheetSnapshot({ ...createPlayState('c1'), sheetSnapshot: before }, now).notices).toEqual([{
+      kind: 'sheetCorrected',
+      text: 'O app corrigiu sua ficha: CD de magia — → 12; ataque de magia — → +4.',
+    }])
+  })
+})

@@ -60,8 +60,9 @@ export type GrantedProficiency =
   | { type: 'tool'; value: string }
 
 /**
- * Magia inata concedida pela raça (ex.: Magia Drow, Legado Infernal do tiefling). Truque é à
- * vontade; as de 1º nível ou mais, uma vez cada por descanso longo (p. 24 e 43).
+ * Magia inata concedida pela raça (ex.: Magia Drow, Legado Infernal do tiefling, Ilusionista Nato
+ * do gnomo da floresta). Truque é à vontade; as de 1º nível ou mais, uma vez cada por descanso
+ * longo (p. 24 e 43). Todo traço que dá um truque fixo o declara aqui (teste do modelo de ficha).
  */
 export type InnateSpell = {
   spellId: string

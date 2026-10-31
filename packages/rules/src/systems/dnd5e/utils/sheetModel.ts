@@ -134,7 +134,7 @@ function getRaceCantrip(draft: CharacterDraft, race: Race, subrace: Subrace | nu
   return spell && choice ? { spell, ability: choice.spellcastingAbility } : null
 }
 
-/** As magias inatas da raça já liberadas no nível do personagem (Magia Drow, Legado Infernal). */
+/** As magias inatas da raça já liberadas no nível do personagem (Magia Drow, Legado Infernal, Ilusionista Nato). */
 function getRaceInnateSpells(draft: CharacterDraft, race: Race, subrace: Subrace | null): KnownSpells['innate'] {
   return getAvailableInnateSpells(race, subrace, draft.level ?? 1).flatMap(innate => {
     const spell = getSpell(innate.spellId)
@@ -162,7 +162,8 @@ function getSubclassCantrips(draft: CharacterDraft): SubclassCantrip[] {
 /**
  * Uma conjuração de fora da classe e do talento, com o atributo que o dado declara: a da raça — o
  * truque do Alto Elfo, Inteligência (pág. 24, `CantripChoice.spellcastingAbility`); as magias
- * inatas do drow e do tiferino, Carisma (págs. 24 e 43, `InnateSpell.ability`) — e a do truque da
+ * inatas do drow e do tiferino, Carisma (págs. 24 e 43, `InnateSpell.ability`), e a ilusão menor do
+ * gnomo da floresta, Inteligência (pág. 37) — e a do truque da
  * subclasse, que usa o atributo de conjuração da classe dona: a magia que uma característica de
  * classe dá está associada a essa classe (pág. 166, linhas 14812-14814), e o Acólito da Natureza
  * conjura o truque de druida com a Sabedoria do clérigo. A chave é a da conjuração no guia de

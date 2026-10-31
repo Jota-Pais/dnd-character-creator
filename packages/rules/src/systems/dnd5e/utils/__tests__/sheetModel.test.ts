@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { getKnownSpells, getOtherSpellcastings, getStartingInventory, listKnownSpells } from '../sheetModel'
 import { RACES, getAllChoices, getEffectiveInnateSpells } from '../raceUtils'
+import { getSpell } from '../spellUtils'
 import { formatInventoryItem } from '../equipmentUtils'
 import { getEquippedWeapons } from '../attackUtils'
 import { EMPTY_DRAFT, type CharacterDraft } from '../../types/character'
@@ -179,13 +180,19 @@ describe('getKnownSpells (as magias da Revisão, da ficha imprimível e da aba R
 // Decisão de 2026-10-31: cada fonte de magia de fora da classe e do talento é uma conjuração, com o
 // atributo que o dado declara, a chave do guia de rolagens e a do grimório.
 describe('getOtherSpellcastings', () => {
-  it('a raça, pelo atributo do traço: o Alto Elfo com Inteligência (pág. 24), o drow e o tiferino com Carisma (págs. 24 e 43)', () => {
+  it('a raça, pelo atributo do traço: o Alto Elfo e o gnomo da floresta com Inteligência (págs. 24 e 37), o drow e o tiferino com Carisma (págs. 24 e 43)', () => {
     const highElf = draft({ race: 'elf', subrace: 'high-elf', raceChoices: { cantrip: 'fire-bolt' }, class: 'fighter' })
     expect(getOtherSpellcastings(highElf)).toEqual([{ key: 'race:elf', kind: 'race', label: 'Alto Elfo', classId: null, ability: 'INT' }])
     const drow = draft({ race: 'elf', subrace: 'drow', class: 'fighter' })
     expect(getOtherSpellcastings(drow)).toEqual([{ key: 'race:elf', kind: 'race', label: 'Elfo Negro (Drow)', classId: null, ability: 'CHA' }])
     const tiefling = draft({ race: 'tiefling', class: 'fighter' })
     expect(getOtherSpellcastings(tiefling)).toEqual([{ key: 'race:tiefling', kind: 'race', label: 'Tiefling', classId: null, ability: 'CHA' }])
+    // Ilusionista Nato (pág. 37, linhas 2854-2856): "Você conhece o truque ilusão menor.
+    // Inteligência é a sua habilidade usada para conjurá-la." O gnomo das rochas não tem magia.
+    const forestGnome = draft({ race: 'gnome', subrace: 'forest-gnome', class: 'fighter' })
+    expect(getOtherSpellcastings(forestGnome)).toEqual([{ key: 'race:gnome', kind: 'race', label: 'Gnomo da Floresta', classId: null, ability: 'INT' }])
+    expect(getKnownSpells(forestGnome).innate.map(s => [s.spell.id, s.innate.ability])).toEqual([['minor-illusion', 'INT']])
+    expect(getOtherSpellcastings(draft({ race: 'gnome', subrace: 'rock-gnome', class: 'fighter' }))).toEqual([])
     // O Alto Elfo que ainda não escolheu o truque não tem magia da raça.
     expect(getOtherSpellcastings(draft({ race: 'elf', subrace: 'high-elf', class: 'fighter' }))).toEqual([])
     expect(getOtherSpellcastings(draft({ race: 'human', class: 'fighter' }))).toEqual([])
@@ -216,6 +223,26 @@ describe('getOtherSpellcastings', () => {
           ...getEffectiveInnateSpells(race, subrace).map(s => s.ability),
         ])
         expect(abilities.size, `${race.id}/${subrace?.id ?? '—'}`).toBeLessThanOrEqual(1)
+      }
+    }
+  })
+
+  // O traço que dá um truque fixo ("Você conhece o truque globos de luz") precisa dele nos dados
+  // (`innateSpells` de quem tem o traço): só no texto, a ficha não mostra o truque e a raça fica sem
+  // a conjuração. Foi o que aconteceu com o Ilusionista Nato do gnomo da floresta.
+  it('todo traço que dá um truque fixo o declara nas magias inatas de quem tem o traço', () => {
+    for (const race of RACES) {
+      for (const owner of [race, ...race.subraces]) {
+        for (const trait of owner.traits) {
+          const named = /Você conhece o truque ([^,.]+)/.exec(trait.description)?.[1]
+          if (!named) continue
+          const declared = (owner.innateSpells ?? [])
+            .filter(s => s.minLevel === 1)
+            .map(s => getSpell(s.spellId))
+            .filter(s => s?.level === 0)
+            .map(s => s!.name.toLowerCase())
+          expect(declared, `${owner.id}: ${trait.name}`).toContain(named.toLowerCase())
+        }
       }
     }
   })

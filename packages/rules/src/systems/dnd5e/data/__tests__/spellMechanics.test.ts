@@ -23,7 +23,7 @@ const SPELLS = new Map((spellsData as Spell[]).map(s => [s.id, s]))
  * Os lotes fechados: toda magia dos níveis deles tem entrada, revisada ou só no texto com o motivo.
  * O lote entra aqui no commit que o fecha.
  */
-const CLOSED_BATCHES: SpellMechanicsBatch[] = []
+const CLOSED_BATCHES: SpellMechanicsBatch[] = ['T']
 
 /**
  * O dano por extenso que o texto da magia usa no lugar do de `damage-types.json`, só redação: o
@@ -177,6 +177,36 @@ describe('dano estruturado de magia: as entradas', () => {
       .filter(s => levels.includes(s.level) && !SPELL_MECHANICS.some(m => m.id === s.id))
       .map(s => s.name)
     expect(missing).toEqual([])
+  })
+})
+
+/**
+ * O lote T revisado (docs/magias/mecanica-magias.md, seção 3.1): os onze truques de dano com a
+ * receita, e os que ficam só no texto, cada um pelo seu motivo — mudar a lista é decisão, não
+ * acidente.
+ */
+describe('dano estruturado de magia: o lote T', () => {
+  const batch = SPELL_MECHANICS.filter(m => m.batch === 'T')
+  const ids = (pick: (m: SpellMechanics) => boolean) => batch.filter(pick).map(m => m.id).sort()
+
+  it('os truques de dano', () => {
+    expect(ids(m => (m.damage?.length ?? 0) > 0)).toEqual([
+      'acid-splash', 'chill-touch', 'eldritch-blast', 'fire-bolt', 'poison-spray', 'produce-flame',
+      'ray-of-frost', 'sacred-flame', 'shocking-grasp', 'thorn-whip', 'vicious-mockery',
+    ])
+  })
+
+  it('os que ficam só no texto, e a Luz pela divergência pt-BR × inglês em aberto', () => {
+    expect(ids(m => m.status === 'textOnly')).toEqual([
+      'blade-ward', 'friends', 'guidance', 'light', 'resistance', 'shillelagh', 'true-strike',
+    ])
+    expect(batch.find(m => m.id === 'light')?.reason).toMatch(/Divergência pt-BR × inglês em aberto/)
+  })
+
+  it('a Rajada Mística escala nos feixes, e o dano de cada um fica em 1d10', () => {
+    const blast = batch.find(m => m.id === 'eldritch-blast')
+    expect(blast?.instances).toMatchObject({ noun: 'feixe', byCharacterLevel: [{ from: 1, value: 1 }, { from: 5, value: 2 }, { from: 11, value: 3 }, { from: 17, value: 4 }] })
+    expect(blast?.damage).toEqual([{ count: 1, sides: 10, type: 'force' }])
   })
 })
 

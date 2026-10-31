@@ -1,1 +1,233 @@
-[]
+[
+  {
+    "id": "friends",
+    "batch": "T",
+    "bookLines": [19768, 19785],
+    "status": "textOnly",
+    "reason": "A vantagem nos testes de Carisma contra uma criatura é efeito ligado em você, e o catálogo dos efeitos recebidos (active-effects.json) ainda não o tem.",
+    "resolution": { "kind": "none" }
+  },
+  {
+    "id": "true-strike",
+    "batch": "T",
+    "bookLines": [20315, 20325],
+    "status": "textOnly",
+    "reason": "A vantagem no primeiro ataque contra o alvo, no seu próximo turno, é efeito ligado em você, e o catálogo dos efeitos recebidos (active-effects.json) ainda não o tem.",
+    "resolution": { "kind": "none" }
+  },
+  {
+    "id": "shillelagh",
+    "batch": "T",
+    "bookLines": [20719, 20733],
+    "status": "textOnly",
+    "reason": "Não causa dano próprio: muda a clava ou o bordão (o atributo de conjuração no ataque e no dano, o dado vira d8). Quem precisa saber disso é a linha de ataque da arma, com o efeito ligado.",
+    "resolution": { "kind": "none" }
+  },
+  {
+    "id": "sacred-flame",
+    "batch": "T",
+    "bookLines": [20987, 20999],
+    "status": "reviewed",
+    "resolution": { "kind": "save", "ability": "DEX", "onSuccess": "none" },
+    "damage": [
+      { "count": 1, "sides": 8, "type": "radiant", "byCharacterLevel": [{ "from": 1, "value": 1 }, { "from": 5, "value": 2 }, { "from": 11, "value": 3 }, { "from": 17, "value": 4 }] }
+    ]
+  },
+  {
+    "id": "thorn-whip",
+    "batch": "T",
+    "bookLines": [21000, 21015],
+    "status": "reviewed",
+    "resolution": { "kind": "attack", "range": "melee" },
+    "damage": [
+      { "count": 1, "sides": 6, "type": "piercing", "byCharacterLevel": [{ "from": 1, "value": 1 }, { "from": 5, "value": 2 }, { "from": 11, "value": 3 }, { "from": 17, "value": 4 }] }
+    ]
+  },
+  {
+    "id": "mending",
+    "batch": "T",
+    "bookLines": [21689, 21704],
+    "status": "reviewed",
+    "resolution": { "kind": "none" }
+  },
+  {
+    "id": "produce-flame",
+    "batch": "T",
+    "bookLines": [22161, 22180],
+    "status": "reviewed",
+    "resolution": { "kind": "attack", "range": "ranged" },
+    "damage": [
+      { "count": 1, "sides": 8, "type": "fire", "byCharacterLevel": [{ "from": 1, "value": 1 }, { "from": 5, "value": 2 }, { "from": 11, "value": 3 }, { "from": 17, "value": 4 }] }
+    ]
+  },
+  {
+    "id": "druidcraft",
+    "batch": "T",
+    "bookLines": [22994, 23015],
+    "status": "reviewed",
+    "resolution": { "kind": "none" }
+  },
+  {
+    "id": "acid-splash",
+    "batch": "T",
+    "bookLines": [23395, 23407],
+    "status": "reviewed",
+    "resolution": { "kind": "save", "ability": "DEX", "onSuccess": "none" },
+    "damage": [
+      { "count": 1, "sides": 6, "type": "acid", "byCharacterLevel": [{ "from": 1, "value": 1 }, { "from": 5, "value": 2 }, { "from": 11, "value": 3 }, { "from": 17, "value": 4 }] }
+    ],
+    "targets": { "count": 2 }
+  },
+  {
+    "id": "spare-the-dying",
+    "batch": "T",
+    "bookLines": [23437, 23445],
+    "status": "reviewed",
+    "resolution": { "kind": "none" }
+  },
+  {
+    "id": "dancing-lights",
+    "batch": "T",
+    "bookLines": [23902, 23920],
+    "status": "reviewed",
+    "resolution": { "kind": "none" }
+  },
+  {
+    "id": "minor-illusion",
+    "batch": "T",
+    "bookLines": [24011, 24039],
+    "status": "reviewed",
+    "resolution": { "kind": "none" }
+  },
+  {
+    "id": "light",
+    "batch": "T",
+    "bookLines": [24550, 24565],
+    "status": "textOnly",
+    "reason": "Divergência pt-BR × inglês em aberto, com o dono: para evitar a magia, a criatura hostil que segura o objeto faz um \"teste de Destreza\" no pt-BR e um \"Dexterity saving throw\" (TR de Destreza, contra a CD da magia) no inglês.",
+    "resolution": { "kind": "none" }
+  },
+  {
+    "id": "mage-hand",
+    "batch": "T",
+    "bookLines": [24740, 24758],
+    "status": "reviewed",
+    "resolution": { "kind": "none" }
+  },
+  {
+    "id": "message",
+    "batch": "T",
+    "bookLines": [24847, 24863],
+    "status": "reviewed",
+    "resolution": { "kind": "none" }
+  },
+  {
+    "id": "guidance",
+    "batch": "T",
+    "bookLines": [25731, 25741],
+    "status": "textOnly",
+    "reason": "O d4 é do alvo, uma vez, num teste de habilidade à escolha dele: é efeito recebido de uso único, que o catálogo dos efeitos recebidos (active-effects.json) ainda não tem.",
+    "resolution": { "kind": "none" }
+  },
+  {
+    "id": "prestidigitation",
+    "batch": "T",
+    "bookLines": [26186, 26212],
+    "status": "reviewed",
+    "resolution": { "kind": "none" }
+  },
+  {
+    "id": "blade-ward",
+    "batch": "T",
+    "bookLines": [26388, 26397],
+    "status": "textOnly",
+    "reason": "A resistência a dano de concussão, cortante e perfurante de ataques com armas, até o fim do seu próximo turno, é efeito ligado em você, e o catálogo dos efeitos recebidos (active-effects.json) ainda não o tem.",
+    "resolution": { "kind": "none" }
+  },
+  {
+    "id": "fire-bolt",
+    "batch": "T",
+    "bookLines": [26573, 26586],
+    "status": "reviewed",
+    "resolution": { "kind": "attack", "range": "ranged" },
+    "damage": [
+      { "count": 1, "sides": 10, "type": "fire", "byCharacterLevel": [{ "from": 1, "value": 1 }, { "from": 5, "value": 2 }, { "from": 11, "value": 3 }, { "from": 17, "value": 4 }] }
+    ]
+  },
+  {
+    "id": "ray-of-frost",
+    "batch": "T",
+    "bookLines": [26587, 26599],
+    "status": "reviewed",
+    "resolution": { "kind": "attack", "range": "ranged" },
+    "damage": [
+      { "count": 1, "sides": 8, "type": "cold", "byCharacterLevel": [{ "from": 1, "value": 1 }, { "from": 5, "value": 2 }, { "from": 11, "value": 3 }, { "from": 17, "value": 4 }] }
+    ]
+  },
+  {
+    "id": "poison-spray",
+    "batch": "T",
+    "bookLines": [26682, 26695],
+    "status": "reviewed",
+    "resolution": { "kind": "save", "ability": "CON", "onSuccess": "none" },
+    "damage": [
+      { "count": 1, "sides": 12, "type": "poison", "byCharacterLevel": [{ "from": 1, "value": 1 }, { "from": 5, "value": 2 }, { "from": 11, "value": 3 }, { "from": 17, "value": 4 }] }
+    ]
+  },
+  {
+    "id": "eldritch-blast",
+    "batch": "T",
+    "bookLines": [26696, 26710],
+    "status": "reviewed",
+    "resolution": { "kind": "attack", "range": "ranged" },
+    "instances": { "count": 1, "noun": "feixe", "byCharacterLevel": [{ "from": 1, "value": 1 }, { "from": 5, "value": 2 }, { "from": 11, "value": 3 }, { "from": 17, "value": 4 }] },
+    "damage": [
+      { "count": 1, "sides": 10, "type": "force" }
+    ]
+  },
+  {
+    "id": "resistance",
+    "batch": "T",
+    "bookLines": [26976, 26986],
+    "status": "textOnly",
+    "reason": "O d4 é do alvo, uma vez, num teste de resistência à escolha dele: é efeito recebido de uso único, que o catálogo dos efeitos recebidos (active-effects.json) ainda não tem.",
+    "resolution": { "kind": "none" }
+  },
+  {
+    "id": "thaumaturgy",
+    "batch": "T",
+    "bookLines": [27681, 27703],
+    "status": "reviewed",
+    "resolution": { "kind": "none" }
+  },
+  {
+    "id": "chill-touch",
+    "batch": "T",
+    "bookLines": [28075, 28092],
+    "status": "reviewed",
+    "resolution": { "kind": "attack", "range": "ranged" },
+    "damage": [
+      { "count": 1, "sides": 8, "type": "necrotic", "byCharacterLevel": [{ "from": 1, "value": 1 }, { "from": 5, "value": 2 }, { "from": 11, "value": 3 }, { "from": 17, "value": 4 }] }
+    ]
+  },
+  {
+    "id": "shocking-grasp",
+    "batch": "T",
+    "bookLines": [28093, 28107],
+    "status": "reviewed",
+    "resolution": { "kind": "attack", "range": "melee" },
+    "damage": [
+      { "count": 1, "sides": 8, "type": "lightning", "byCharacterLevel": [{ "from": 1, "value": 1 }, { "from": 5, "value": 2 }, { "from": 11, "value": 3 }, { "from": 17, "value": 4 }] }
+    ]
+  },
+  {
+    "id": "vicious-mockery",
+    "batch": "T",
+    "bookLines": [28402, 28416],
+    "status": "reviewed",
+    "resolution": { "kind": "save", "ability": "WIS", "onSuccess": "none" },
+    "damage": [
+      { "count": 1, "sides": 4, "type": "psychic", "byCharacterLevel": [{ "from": 1, "value": 1 }, { "from": 5, "value": 2 }, { "from": 11, "value": 3 }, { "from": 17, "value": 4 }] }
+    ]
+  }
+]

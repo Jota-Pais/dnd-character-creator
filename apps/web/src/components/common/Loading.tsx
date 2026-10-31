@@ -1,6 +1,7 @@
 /**
  * O que fica na tela enquanto desce o pedaço de uma tela sob demanda (core/utils/lazyScreen.ts):
- * só no toque logo na primeira abertura, antes de o pedaço descer sozinho depois do `load`.
+ * só na primeira visita, no toque antes de o pedaço descer sozinho (depois da primeira tela e das
+ * fontes dela). Nas aberturas seguintes, o pedaço sai do SW antes de a galeria aparecer.
  */
 export function Loading({ className = '' }: { className?: string }) {
   return (

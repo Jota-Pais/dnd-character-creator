@@ -105,6 +105,7 @@ describe('preloadAfterOpening', () => {
     let drawn = false
     let paints = 0
     const opening = preloadAfterOpening({
+      fromServiceWorker: false,
       whenLoaded: loaded.promise,
       root: { hasChildNodes: () => drawn },
       fonts: { ready: fontsReady.promise.then(() => ({}) as FontFaceSet) },
@@ -125,6 +126,23 @@ describe('preloadAfterOpening', () => {
 
     fontsReady.open()
     await flush()
+    expect(pending.calls()).toBe(1)
+    pending.resolve()
+    await expect(opening).resolves.toBeDefined()
+  })
+
+  // Esperando a abertura, o toque logo na galeria via o "Carregando…", que antes da divisão não havia.
+  it('com a página vinda do SW, os pedaços descem na hora, sem esperar a abertura', async () => {
+    const pending = deferredLoad()
+    lazyScreen(pending.load)
+    const opening = preloadAfterOpening({
+      fromServiceWorker: true,
+      whenLoaded: new Promise(() => {}),
+      root: { hasChildNodes: () => false },
+      fonts: { ready: new Promise<FontFaceSet>(() => {}) },
+      nextPaint: () => new Promise(() => {}),
+    })
+
     expect(pending.calls()).toBe(1)
     pending.resolve()
     await expect(opening).resolves.toBeDefined()

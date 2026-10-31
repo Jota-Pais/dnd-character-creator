@@ -12,7 +12,7 @@ export default function App() {
   if (System) {
     const Component = System.Component
     // A tela do Ordem desce sob demanda (core/utils/lazyScreen.ts): no toque logo na primeira
-    // abertura, antes de o pedaço descer, o "Carregando…" segura a vez.
+    // visita, antes de o pedaço descer, o "Carregando…" segura a vez.
     return (
       <Suspense fallback={<Loading className="min-h-screen" />}>
         <Component />

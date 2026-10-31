@@ -6,7 +6,7 @@ import { lazy, type ComponentType, type LazyExoticComponent } from 'react'
  * galeria aparece antes. Quem mostra a tela a põe dentro de um `Suspense`, que segura a vez enquanto
  * o pedaço desce.
  *
- * Todo pedaço desce logo depois da abertura (`preloadAfterOpening`, no `main.tsx`), e não só no
+ * Todo pedaço desce sozinho na abertura (`preloadAfterOpening`, no `main.tsx`), e não só no
  * primeiro toque: a página fica com o código inteiro da versão dela antes de qualquer
  * troca de versão. O SW novo que assume com a página aberta (o "Atualizar agora" e, no APK, a volta
  * à galeria: core/pwa/serviceWorker.ts) tira do cache os pedaços da versão velha, e a Vercel só
@@ -46,6 +46,8 @@ export function preloadLazyScreens(): Promise<unknown> {
 
 /** O que a abertura do app oferece para saber quando ela terminou (os testes simulam). */
 export type Opening = {
+  /** A página veio do SW (`navigator.serviceWorker.controller`): as aberturas depois da primeira visita. */
+  fromServiceWorker: boolean
   /** O `load` da página. */
   whenLoaded: Promise<unknown>
   /** O `#root`: com conteúdo, a primeira tela está no ar. */
@@ -57,17 +59,24 @@ export type Opening = {
 }
 
 /**
- * Desce os pedaços quando a abertura termina: a página carregada, a primeira tela desenhada e as
- * fontes dela na mão. O navegador só pede as fontes ao desenhar a primeira tela, e no celular lento o
- * React a desenha depois do `load`: descendo no `load`, os pedaços disputavam a rede com as fontes, e
- * no 4G lento elas chegavam 0,4 s depois (medido em 2026-10-31, docs/app-instalavel.md).
+ * Na primeira visita, desce os pedaços quando a abertura termina: a página carregada, a primeira tela
+ * desenhada e as fontes dela na mão. O navegador só pede as fontes ao desenhar a primeira tela, e no
+ * celular lento o React a desenha depois do `load`: descendo no `load`, os pedaços disputavam a rede
+ * com as fontes, e no 4G lento elas chegavam 0,4 s depois (medido em 2026-10-31, docs/app-instalavel.md).
+ *
+ * Aberta pelo SW (as aberturas seguintes), desce na hora, antes de a galeria aparecer: os pedaços
+ * saem do cache dele, e não há rede a disputar. Esperando a abertura, eles chegavam uns 0,3 s depois
+ * da galeria, e o toque nesse meio (o "Abrir" de um agente do Ordem) via o "Carregando…" por 0,3 s,
+ * o tempo que o React segura o `fallback` que entrou.
  */
-export async function preloadAfterOpening({ whenLoaded, root, fonts, nextPaint = afterNextPaint }: Opening): Promise<unknown> {
-  await whenLoaded
-  while (!root.hasChildNodes()) await nextPaint()
-  // O quadro seguinte ao da primeira tela: é nele que o navegador pede as fontes que ela usa.
-  await nextPaint()
-  await fonts.ready
+export async function preloadAfterOpening({ fromServiceWorker, whenLoaded, root, fonts, nextPaint = afterNextPaint }: Opening): Promise<unknown> {
+  if (!fromServiceWorker) {
+    await whenLoaded
+    while (!root.hasChildNodes()) await nextPaint()
+    // O quadro seguinte ao da primeira tela: é nele que o navegador pede as fontes que ela usa.
+    await nextPaint()
+    await fonts.ready
+  }
   return preloadLazyScreens()
 }
 

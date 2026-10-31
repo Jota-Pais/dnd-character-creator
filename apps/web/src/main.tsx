@@ -17,20 +17,22 @@ createRoot(root).render(
 const whenLoaded = document.readyState === 'complete'
   ? Promise.resolve()
   : new Promise(resolve => window.addEventListener('load', resolve, { once: true }))
+const swContainer = 'serviceWorker' in navigator ? navigator.serviceWorker : undefined
 
 // O app instalável e sem rede (docs/app-instalavel.md): só no build de produção. No APK, a versão
 // nova também entra sozinha na volta à galeria (docs/app-android.md).
 void startServiceWorker({
   isProd: import.meta.env.PROD,
-  container: 'serviceWorker' in navigator ? navigator.serviceWorker : undefined,
+  container: swContainer,
   whenLoaded,
   doc: document,
   native: isNativeApp(),
 })
 
-// As telas sob demanda (o Ordem, a ficha imprimível) descem quando a abertura termina, sem disputar a
-// rede com a primeira tela e as fontes dela, e antes de qualquer troca de versão (core/utils/lazyScreen.ts).
-void preloadAfterOpening({ whenLoaded, root, fonts: document.fonts })
+// As telas sob demanda (o Ordem, a ficha imprimível) descem antes de qualquer troca de versão
+// (core/utils/lazyScreen.ts): na primeira visita, quando a abertura termina, sem disputar a rede com
+// a primeira tela e as fontes dela; com a página vinda do SW, na hora, do cache dele.
+void preloadAfterOpening({ fromServiceWorker: !!swContainer?.controller, whenLoaded, root, fonts: document.fonts })
 
 // No Android, o app é o APK: o Chrome não oferece sozinho instalar o site como um segundo app.
 refuseAutomaticInstallOffer(window, isNativeApp())

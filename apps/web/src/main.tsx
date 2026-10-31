@@ -5,9 +5,10 @@ import App from './App.tsx'
 import { startServiceWorker } from './core/pwa/serviceWorker'
 import { refuseAutomaticInstallOffer } from './core/pwa/platform'
 import { isNativeApp, startNativeApp } from './core/native/nativeApp'
-import { preloadLazyScreens } from './core/utils/lazyScreen'
+import { preloadAfterOpening } from './core/utils/lazyScreen'
 
-createRoot(document.getElementById('root')!).render(
+const root = document.getElementById('root')!
+createRoot(root).render(
   <StrictMode>
     <App />
   </StrictMode>,
@@ -27,9 +28,9 @@ void startServiceWorker({
   native: isNativeApp(),
 })
 
-// As telas sob demanda (o Ordem, a ficha imprimível) descem depois da galeria, sem disputar a rede
-// da primeira abertura, e antes de qualquer troca de versão (core/utils/lazyScreen.ts).
-void whenLoaded.then(preloadLazyScreens)
+// As telas sob demanda (o Ordem, a ficha imprimível) descem quando a abertura termina, sem disputar a
+// rede com a primeira tela e as fontes dela, e antes de qualquer troca de versão (core/utils/lazyScreen.ts).
+void preloadAfterOpening({ whenLoaded, root, fonts: document.fonts })
 
 // No Android, o app é o APK: o Chrome não oferece sozinho instalar o site como um segundo app.
 refuseAutomaticInstallOffer(window, isNativeApp())

@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { Suspense } from 'react'
 import { render, screen, cleanup } from '@testing-library/react'
-import { lazyScreen, preloadLazyScreens } from '../lazyScreen'
+import { lazyScreen, preloadAfterOpening, preloadLazyScreens } from '../lazyScreen'
 
 afterEach(() => {
   cleanup()
@@ -84,5 +84,49 @@ describe('lazyScreen', () => {
     pending.resolve()
     expect(await screen.findByText('A tela')).toBeInTheDocument()
     expect(pending.calls()).toBe(2)
+  })
+})
+
+describe('preloadAfterOpening', () => {
+  /** Uma promessa que o teste cumpre quando quer. */
+  function gate() {
+    let open!: () => void
+    const promise = new Promise<void>(resolve => { open = resolve })
+    return { promise, open: () => open() }
+  }
+  const flush = () => new Promise(resolve => setTimeout(resolve, 0))
+
+  // No 4G lento, os pedaços disputavam a rede com as fontes da primeira tela, pedidas depois do load.
+  it('os pedaços só descem com a página carregada, a primeira tela no ar e as fontes dela na mão', async () => {
+    const pending = deferredLoad()
+    lazyScreen(pending.load)
+    const loaded = gate()
+    const fontsReady = gate()
+    let drawn = false
+    let paints = 0
+    const opening = preloadAfterOpening({
+      whenLoaded: loaded.promise,
+      root: { hasChildNodes: () => drawn },
+      fonts: { ready: fontsReady.promise.then(() => ({}) as FontFaceSet) },
+      nextPaint: () => new Promise(resolve => { paints++; setTimeout(resolve, 0) }),
+    })
+
+    await flush()
+    expect(pending.calls()).toBe(0) // antes do load
+
+    loaded.open()
+    await flush()
+    expect(paints).toBeGreaterThan(0) // espera a primeira tela, quadro a quadro
+    expect(pending.calls()).toBe(0)
+
+    drawn = true
+    await flush()
+    expect(pending.calls()).toBe(0) // a tela no ar, as fontes ainda descendo
+
+    fontsReady.open()
+    await flush()
+    expect(pending.calls()).toBe(1)
+    pending.resolve()
+    await expect(opening).resolves.toBeDefined()
   })
 })

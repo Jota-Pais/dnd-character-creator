@@ -163,8 +163,8 @@ export type ApplyOnReturnOptions = {
  * gasta). Se mudou, o SW novo fica no controle (ele não volta atrás), a página segue com o código que
  * já carregou e a recarga fica pendente (`reloadPending`) para a próxima volta que aplicaria ou para o
  * toque no aviso, que continua na tela. O código inteiro, inclusive o das telas sob demanda: os
- * pedaços delas descem logo depois da abertura (core/utils/lazyScreen.ts), e o SW novo, que não os
- * tem, nunca precisa servi-los à página velha.
+ * pedaços delas descem na abertura (core/utils/lazyScreen.ts), e o SW novo, que não os tem, nunca
+ * precisa servi-los à página velha.
  */
 export function applyUpdateOnReturn(
   reg: SwRegistration,

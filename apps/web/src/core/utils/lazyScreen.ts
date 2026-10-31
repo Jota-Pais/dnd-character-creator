@@ -48,6 +48,8 @@ export function preloadLazyScreens(): Promise<unknown> {
 export type Opening = {
   /** A página veio do SW (`navigator.serviceWorker.controller`): as aberturas depois da primeira visita. */
   fromServiceWorker: boolean
+  /** O `document`: se a página está escondida. */
+  doc: Pick<Document, 'visibilityState' | 'addEventListener' | 'removeEventListener'>
   /** O `load` da página. */
   whenLoaded: Promise<unknown>
   /** O `#root`: com conteúdo, a primeira tela está no ar. */
@@ -68,16 +70,43 @@ export type Opening = {
  * saem do cache dele, e não há rede a disputar. Esperando a abertura, eles chegavam uns 0,3 s depois
  * da galeria, e o toque nesse meio (o "Abrir" de um agente do Ordem) via o "Carregando…" por 0,3 s,
  * o tempo que o React segura o `fallback` que entrou.
+ *
+ * Escondida (aberta em segundo plano, como no Ctrl+clique, ou deixada no meio da abertura), também
+ * desce na hora: não há tela sendo desenhada a proteger, e o navegador não desenha quadro em página
+ * escondida (o `requestAnimationFrame` para). Esperando, ela ficaria sem os pedaços até voltar à
+ * vista, e o "Atualizar agora" de outra aba, nesse meio, trocaria a versão sem eles.
  */
-export async function preloadAfterOpening({ fromServiceWorker, whenLoaded, root, fonts, nextPaint = afterNextPaint }: Opening): Promise<unknown> {
+export async function preloadAfterOpening({ fromServiceWorker, doc, ...opening }: Opening): Promise<unknown> {
   if (!fromServiceWorker) {
-    await whenLoaded
-    while (!root.hasChildNodes()) await nextPaint()
-    // O quadro seguinte ao da primeira tela: é nele que o navegador pede as fontes que ela usa.
-    await nextPaint()
-    await fonts.ready
+    const hidden = whenHidden(doc)
+    // Se a página se esconde antes, a espera da abertura fica parada no quadro e só termina quando
+    // ela volta à vista, sem efeito: cada pedaço desce uma vez só.
+    await Promise.race([openingDone(opening), hidden.promise])
+    hidden.stop()
   }
   return preloadLazyScreens()
+}
+
+/** A página carregada, a primeira tela desenhada e as fontes dela na mão. */
+async function openingDone({ whenLoaded, root, fonts, nextPaint = afterNextPaint }: Omit<Opening, 'fromServiceWorker' | 'doc'>): Promise<void> {
+  await whenLoaded
+  while (!root.hasChildNodes()) await nextPaint()
+  // O quadro seguinte ao da primeira tela: é nele que o navegador pede as fontes que ela usa.
+  await nextPaint()
+  await fonts.ready
+}
+
+/** Cumpre quando a página fica escondida, ou na hora se ela já está; `stop` larga o evento. */
+function whenHidden(doc: Opening['doc']): { promise: Promise<void>; stop: () => void } {
+  let onChange!: () => void
+  const promise = new Promise<void>(resolve => {
+    onChange = () => {
+      if (doc.visibilityState === 'hidden') resolve()
+    }
+  })
+  onChange()
+  doc.addEventListener('visibilitychange', onChange)
+  return { promise, stop: () => doc.removeEventListener('visibilitychange', onChange) }
 }
 
 /** Depois do próximo quadro: o `requestAnimationFrame` roda antes do desenho, e o `setTimeout`, depois. */

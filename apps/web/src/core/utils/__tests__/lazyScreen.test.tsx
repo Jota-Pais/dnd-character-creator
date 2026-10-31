@@ -95,6 +95,13 @@ describe('preloadAfterOpening', () => {
     return { promise, open: () => open() }
   }
   const flush = () => new Promise(resolve => setTimeout(resolve, 0))
+  /** O `document` de mentira: a visibilidade e o evento dela. */
+  function fakeDoc(state: DocumentVisibilityState = 'visible') {
+    const doc = new EventTarget() as EventTarget & { visibilityState: DocumentVisibilityState }
+    doc.visibilityState = state
+    return doc
+  }
+  const never = <T,>() => new Promise<T>(() => {})
 
   // No 4G lento, os pedaços disputavam a rede com as fontes da primeira tela, pedidas depois do load.
   it('os pedaços só descem com a página carregada, a primeira tela no ar e as fontes dela na mão', async () => {
@@ -106,6 +113,7 @@ describe('preloadAfterOpening', () => {
     let paints = 0
     const opening = preloadAfterOpening({
       fromServiceWorker: false,
+      doc: fakeDoc(),
       whenLoaded: loaded.promise,
       root: { hasChildNodes: () => drawn },
       fonts: { ready: fontsReady.promise.then(() => ({}) as FontFaceSet) },
@@ -137,12 +145,57 @@ describe('preloadAfterOpening', () => {
     lazyScreen(pending.load)
     const opening = preloadAfterOpening({
       fromServiceWorker: true,
-      whenLoaded: new Promise(() => {}),
+      doc: fakeDoc(),
+      whenLoaded: never(),
       root: { hasChildNodes: () => false },
-      fonts: { ready: new Promise<FontFaceSet>(() => {}) },
-      nextPaint: () => new Promise(() => {}),
+      fonts: { ready: never() },
+      nextPaint: never,
     })
 
+    expect(pending.calls()).toBe(1)
+    pending.resolve()
+    await expect(opening).resolves.toBeDefined()
+  })
+
+  // O navegador não desenha quadro em página escondida: esperando, ela ficaria sem os pedaços até
+  // voltar à vista, e o "Atualizar agora" de outra aba trocaria a versão nesse meio.
+  it('aberta em segundo plano, os pedaços descem na hora, sem esperar o quadro que não vem', async () => {
+    const pending = deferredLoad()
+    lazyScreen(pending.load)
+    const opening = preloadAfterOpening({
+      fromServiceWorker: false,
+      doc: fakeDoc('hidden'),
+      whenLoaded: never(),
+      root: { hasChildNodes: () => false },
+      fonts: { ready: never() },
+      nextPaint: never,
+    })
+
+    await flush()
+    expect(pending.calls()).toBe(1)
+    pending.resolve()
+    await expect(opening).resolves.toBeDefined()
+  })
+
+  it('escondida no meio da abertura, os pedaços descem ali', async () => {
+    const pending = deferredLoad()
+    lazyScreen(pending.load)
+    const doc = fakeDoc()
+    const opening = preloadAfterOpening({
+      fromServiceWorker: false,
+      doc,
+      whenLoaded: Promise.resolve(),
+      root: { hasChildNodes: () => true },
+      fonts: { ready: never() },
+      nextPaint: never, // o quadro parado, como o requestAnimationFrame da página escondida
+    })
+
+    await flush()
+    expect(pending.calls()).toBe(0)
+
+    doc.visibilityState = 'hidden'
+    doc.dispatchEvent(new Event('visibilitychange'))
+    await flush()
     expect(pending.calls()).toBe(1)
     pending.resolve()
     await expect(opening).resolves.toBeDefined()

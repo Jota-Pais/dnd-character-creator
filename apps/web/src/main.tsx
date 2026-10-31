@@ -31,8 +31,14 @@ void startServiceWorker({
 
 // As telas sob demanda (o Ordem, a ficha imprimível) descem antes de qualquer troca de versão
 // (core/utils/lazyScreen.ts): na primeira visita, quando a abertura termina, sem disputar a rede com
-// a primeira tela e as fontes dela; com a página vinda do SW, na hora, do cache dele.
-void preloadAfterOpening({ fromServiceWorker: !!swContainer?.controller, whenLoaded, root, fonts: document.fonts })
+// a primeira tela e as fontes dela; com a página vinda do SW ou escondida, na hora.
+void preloadAfterOpening({
+  fromServiceWorker: !!swContainer?.controller,
+  doc: document,
+  whenLoaded,
+  root,
+  fonts: document.fonts,
+})
 
 // No Android, o app é o APK: o Chrome não oferece sozinho instalar o site como um segundo app.
 refuseAutomaticInstallOffer(window, isNativeApp())

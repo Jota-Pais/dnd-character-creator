@@ -1,9 +1,11 @@
 import type { CharacterDraft } from '../types/character'
 import type { ActionDeclaration, ActionGroup, ActionTiming, SheetAction } from '../types/actions'
+import combatActionsData from '../data/combat-actions.json'
+import { carriesTwoLightMeleeWeapons } from './attackUtils'
 import { getFeat } from './featUtils'
 import { getManeuver } from './maneuverUtils'
 import {
-  getFeatSelectionsByFeat, getOwnedClassFeatures, getOwnedFeats, getOwnedProgressionOptions, getOwnedRacialTraits,
+  canCastSpells, getFeatSelectionsByFeat, getOwnedClassFeatures, getOwnedFeats, getOwnedProgressionOptions, getOwnedRacialTraits,
 } from './sheetEffects'
 
 /**
@@ -13,8 +15,38 @@ import {
  */
 
 /**
- * As ações das características, cada uma com quem a dá e o texto do "?" (o resumo da ação ou, sem
- * ele, o de quem a dá):
+ * As ações em combate que todo personagem tem (págs. 192-197, `docs/regras-acoes-em-combate.md`):
+ * Atacar, Conjurar uma Magia, Disparada, Desengajar, Esquivar, Ajudar, Esconder, Preparar, Procurar,
+ * Usar um Objeto, o agarrão e o encontrão (dentro de Atacar), o ataque de oportunidade, o ataque com
+ * a outra mão, Levantar-se e Interagir com um objeto. Dados, com o resumo do livro: não há a
+ * característica que dá o texto.
+ */
+export const COMBAT_ACTIONS = combatActionsData as ActionDeclaration[]
+
+/**
+ * As partes da tela para onde uma ação leva (`ActionDeclaration.links`), além das jogadas do guia:
+ * os ataques (na própria aba Ações) e a aba Magia.
+ */
+export const ACTION_DESTINATIONS = ['attacks', 'spellbook'] as const
+
+/** A origem das ações em combate, onde a tela diria quem dá a ação. */
+const COMBAT_ACTIONS_SOURCE = 'Ações em combate'
+
+/**
+ * A ação que a ficha cumpre (o ataque com a outra mão só com duas armas leves corpo a corpo
+ * carregadas, `carriesTwoLightMeleeWeapons`, a mesma pergunta da nota da linha de ataque; Conjurar
+ * uma Magia só para quem conjura). O que depende do estado (estar Caído) fica para o jogo.
+ */
+function sheetMeets(draft: CharacterDraft, action: ActionDeclaration): boolean {
+  if (action.requires === 'twoLightMeleeWeapons') return carriesTwoLightMeleeWeapons(draft)
+  if (action.requires === 'spellcaster') return canCastSpells(draft)
+  return true
+}
+
+/**
+ * As ações da ficha: primeiro as ações em combate que ela cumpre (`COMBAT_ACTIONS`), depois as das
+ * características, cada uma com quem a dá e o texto do "?" (o resumo da ação ou, sem ele, o de quem
+ * a dá):
  * - das features de classe e subclasse, no nível NA classe dona (Guerreiro 1 / Mago 4 não tem o
  *   Surto de Ação do guerreiro 2);
  * - dos talentos e dos traços raciais, no nível de personagem;
@@ -25,10 +57,14 @@ import {
  * O mesmo id vale uma vez: a mesma característica de duas classes não dá a ação duas vezes.
  */
 export function getSheetActions(draft: CharacterDraft): SheetAction[] {
-  const out: SheetAction[] = []
+  const out: SheetAction[] = COMBAT_ACTIONS
+    .filter(action => sheetMeets(draft, action))
+    .map(action => ({ ...action, source: COMBAT_ACTIONS_SOURCE, description: action.summary ?? '', standard: true as const }))
   const add = (declarations: readonly ActionDeclaration[] | undefined, source: string, description: string) => {
     for (const action of declarations ?? []) {
-      if (!out.some(o => o.id === action.id)) out.push({ ...action, source, description: action.summary ?? description })
+      if (!out.some(o => o.id === action.id) && sheetMeets(draft, action)) {
+        out.push({ ...action, source, description: action.summary ?? description })
+      }
     }
   }
   for (const feature of getOwnedClassFeatures(draft)) add(feature.effects?.actions, feature.name, feature.description)

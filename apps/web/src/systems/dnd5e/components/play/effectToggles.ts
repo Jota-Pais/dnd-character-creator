@@ -11,12 +11,15 @@ export function togglingActions(sheet: PlaySheet, id: string): { on?: SheetActio
 }
 
 /**
- * Os efeitos que a seção Efeitos ativos mostra: os que uma ação da ficha liga (a Fúria) e os que
- * estão ligados. O do catálogo sem ação (a magia recebida) só aparece ligado; desligado, ele é
- * marcado pelo "Recebeu uma magia?".
+ * Os efeitos que a seção Efeitos ativos mostra: os que uma característica da ficha liga (a Fúria) e
+ * os que estão ligados. O do catálogo (a magia recebida, o Esquivar) só aparece ligado; desligado, a
+ * magia é marcada pelo "Recebeu uma magia?", e a ação em combate fica na aba Ações.
  */
 export function getShownToggles(state: PlayState, sheet: PlaySheet): SheetToggle[] {
-  return sheet.toggles.filter(t => togglingActions(sheet, t.id).on || state.activeEffects.some(a => a.id === t.id))
+  return sheet.toggles.filter(t => {
+    const on = togglingActions(sheet, t.id).on
+    return (on && !on.standard) || state.activeEffects.some(a => a.id === t.id)
+  })
 }
 
 /** As magias do catálogo que se marcam como recebidas (`getCatalogToggles`), na ordem dele. */

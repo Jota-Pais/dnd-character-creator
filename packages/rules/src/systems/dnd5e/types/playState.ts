@@ -72,6 +72,8 @@ export type TurnState = {
   reaction: boolean
   /** Ações a mais ainda por usar neste turno (o Surto de Ação, p. 85). */
   extraActions: number
+  /** Disparadas neste turno: cada uma soma o deslocamento já modificado (p. 194). */
+  dashes: number
   /** Você atacou neste turno (a ação de Atacar, o ataque de oportunidade). */
   attacked: boolean
   /** Você sofreu dano desde o último Novo turno (`applyDamage`). */

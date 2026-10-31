@@ -60,6 +60,15 @@ function draftOf(classId: string, level: number, extra?: { classId: string; leve
 
 const ids = (draft: CharacterDraft) => getSheetActions(draft).map(a => a.id)
 
+/** Itens comprados pelo método riqueza: as armas que a ficha considera carregadas. */
+const carrying = (...itemIds: string[]): Partial<CharacterDraft> => ({
+  equipment: {
+    ...structuredClone(EMPTY_DRAFT.equipment),
+    method: 'wealth',
+    purchasedItems: itemIds.map(itemId => ({ itemId, quantity: 1, source: 'purchased' as const })),
+  },
+})
+
 describe('getSheetActions', () => {
   it('bárbaro 1: as duas ações da Fúria, com a origem e o texto da característica no "?"', () => {
     const actions = getSheetActions(draftOf('barbarian', 1)).filter(a => a.id.startsWith('rage'))
@@ -116,6 +125,25 @@ describe('getSheetActions', () => {
       featSelections: { 'adepto-marcial': { maneuvers: ['aparar', 'ataque-de-finta'] } },
     }))
     expect(actions.find(a => a.id === 'test-maneuver')?.source).toBe('Adepto Marcial — Aparar')
+  })
+
+  it('as ações em combate vêm primeiro, com o resumo do livro no "?" e a marca de padrão', () => {
+    const [attack] = getSheetActions(draftOf('barbarian', 1))
+    expect(attack).toMatchObject({ id: 'attack', name: 'Atacar', source: 'Ações em combate', standard: true })
+    expect(attack.description).toBe(attack.summary)
+  })
+
+  // "Quando você realiza a ação de Ataque e ataca com uma arma corpo-a-corpo leve [...] você pode
+  // usar uma ação bônus" (linhas 17632-17642): sem duas armas leves, não há o ataque da outra mão.
+  it('o ataque com a outra mão só com duas armas leves corpo a corpo carregadas', () => {
+    expect(ids(draftOf('barbarian', 1, undefined, carrying('greataxe')))).not.toContain('two-weapon-fighting')
+    expect(ids(draftOf('barbarian', 1, undefined, carrying('handaxe', 'shortsword')))).toContain('two-weapon-fighting')
+  })
+
+  it('Conjurar uma Magia só para quem é capaz de conjurar', () => {
+    expect(ids(draftOf('barbarian', 1))).not.toContain('cast-a-spell')
+    expect(ids(draftOf('barbarian', 1, undefined, { race: 'tiefling' }))).toContain('cast-a-spell')
+    expect(ids(draftOf('wizard', 1))).toContain('cast-a-spell')
   })
 
   it('o PlaySheet leva a mesma lista', () => {

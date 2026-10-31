@@ -8,7 +8,7 @@ import { buildPlaySheet } from '../playSheet'
 import { COMPLETE_DRAFT } from '../../../../test/fixtures'
 import {
   activateToggle, addCondition, adjustMaxHp, applyDamage, applyDamageDroppingToOneHp, applyHealing, clearRollHistory, clearTempHp, completeLongRest, completeShortRest,
-  createPlayState, deactivateToggle, describeHpMaxImmunity, emptyTurn, endConcentration, getBaseMaxHp, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable,
+  createPlayState, deactivateToggle, describeHpMaxImmunity, emptyTurn, endConcentration, getBaseMaxHp, getTurnActions, getTurnMovement, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable,
   getLongRestHitDiceRecoverable, getPactSlotsAvailable, getPlayEffects, getPlayConditionState, getPlayDamageDefenses, getPlaySpeed,
   getResourceAvailable, getShortRestSlotRecovery, performAction, getSpellSlotsAvailable, grantTempHp, previewLongRest, previewShortRest, reconcileLoadedPlayState,
   markTurn, newTurn, reconcilePlayState,
@@ -2097,7 +2097,7 @@ describe('o turno: o checklist, o Usar e o Novo turno', () => {
   }
   const fighter = (level: number) => buildPlaySheet(draftOf('fighter', level))
   const barbarian = (level: number, subclass: string | null = null) => buildPlaySheet(draftOf('barbarian', level, subclass))
-  /** Uma ação de 1 ação qualquer, para ver a casa da ação (as do livro chegam com os dados das ações padrão). */
+  /** Uma ação de 1 ação sem efeito, para ver a casa da ação sozinha. */
   const withAnAction = (sh: PlaySheet): PlaySheet => ({
     ...sh,
     actions: [...sh.actions, { id: 'test-action', name: 'Ação de teste', timing: 'action', page: 1, source: 'teste', description: '' }],
@@ -2174,7 +2174,7 @@ describe('o turno: o checklist, o Usar e o Novo turno', () => {
   // "A reação volta no início do seu próximo turno" (linhas 17130-17131).
   it('o Novo turno zera as quatro casas, a ação a mais e a uma vez por turno, com aviso', () => {
     const sh = fighter(2)
-    const busy = state({ turn: { action: true, bonusAction: true, movement: true, reaction: true, extraActions: 1, attacked: true, tookDamage: true, oncePerTurnUsed: ['action-surge'] } })
+    const busy = state({ turn: { action: true, bonusAction: true, movement: true, reaction: true, extraActions: 1, dashes: 1, attacked: true, tookDamage: true, oncePerTurnUsed: ['action-surge'] } })
     const r = newTurn(busy, sh)
     expect(r.state.turn).toEqual(emptyTurn())
     expect(r.notices).toEqual([{ kind: 'info', text: 'Novo turno: a ação, a ação bônus, o movimento e a reação estão de volta.' }])
@@ -2232,5 +2232,87 @@ describe('o turno: o checklist, o Usar e o Novo turno', () => {
     expect(sanitizePlayState(old, 'c').turn).toEqual(emptyTurn())
     const torn = { ...old, turn: { action: 'sim', bonusAction: true, extraActions: -2, oncePerTurnUsed: ['action-surge', 3, 'action-surge', ''] } }
     expect(sanitizePlayState(torn, 'c').turn).toEqual({ ...emptyTurn(), bonusAction: true, oncePerTurnUsed: ['action-surge'] })
+  })
+})
+
+describe('o turno: as ações em combate', () => {
+  const draftOf = (classId: string, level: number, patch: Partial<CharacterDraft> = {}): CharacterDraft => {
+    const base = structuredClone(COMPLETE_DRAFT)
+    return { ...base, class: classId, level, ...patch }
+  }
+  const krusk = buildPlaySheet(draftOf('barbarian', 3))
+  const use = (s: PlayState, sh: PlaySheet, id: string) => performAction(s, sh, id, { now: 7 })
+  const turnIds = (s: PlayState, sh: PlaySheet) => getTurnActions(s, sh).map(a => a.id)
+
+  it('Atacar marca a ação e que você atacou; o ataque de oportunidade, a reação', () => {
+    const attacked = use(state(), krusk, 'attack')
+    expect(attacked.state.turn).toEqual({ ...emptyTurn(), action: true, attacked: true })
+    expect(attacked.notices).toEqual([])
+    const opportunity = use(state(), krusk, 'opportunity-attack').state
+    expect(opportunity.turn).toEqual({ ...emptyTurn(), reaction: true, attacked: true })
+  })
+
+  it('a ação que só marca o momento (Desengajar) marca a ação, e nada mais', () => {
+    expect(use(state(), krusk, 'disengage').state.turn).toEqual({ ...emptyTurn(), action: true })
+  })
+
+  // "O aumento equivale ao seu valor de deslocamento, depois de aplicar qualquer modificador"
+  // (linhas 17389-17400).
+  it('a Disparada soma o deslocamento já modificado: 9 m viram 18; com o deslocamento em 0, 0', () => {
+    const dashed = use(state(), krusk, 'dash').state
+    expect(dashed.turn).toEqual({ ...emptyTurn(), action: true, dashes: 1 })
+    expect(getTurnMovement(state(), krusk)).toBe(30)
+    expect(getTurnMovement(dashed, krusk)).toBe(60)
+    // Exaustão 2: metade do deslocamento, e a Disparada dobra a metade.
+    expect(getTurnMovement({ ...dashed, exhaustionLevel: 2 }, krusk)).toBe(30)
+    expect(getTurnMovement({ ...dashed, conditions: ['grappled'] }, krusk)).toBe(0)
+  })
+
+  it('Esquivar liga o efeito do Esquivar e marca a ação; esquivando, ele sai da lista', () => {
+    const dodging = use(state(), krusk, 'dodge').state
+    expect(dodging.activeEffects.map(a => a.id)).toEqual(['action:dodge'])
+    expect(dodging.turn.action).toBe(true)
+    expect(turnIds(dodging, krusk)).not.toContain('dodge')
+    expect(turnIds(state(), krusk)).toContain('dodge')
+  })
+
+  // "Você perde esse benefício [...] se seu deslocamento cair para 0" (linhas 17413-17414): com ele
+  // já em 0, o livro não diz se o benefício chega a valer.
+  it('Esquivar com o deslocamento já em 0 (Agarrado) não marca nada e diz que o livro não decide', () => {
+    const grappled = state({ conditions: ['grappled'] })
+    const r = use(grappled, krusk, 'dodge')
+    expect(r.state).toBe(grappled)
+    expect(r.notices).toEqual([{
+      kind: 'unresolvedRule',
+      text: 'Esquivar: seu deslocamento já é 0, e o livro só diz que você perde o benefício se ele cair para 0 (pág. 194). O app não sabe se ele vale assim: decida com o Mestre; nada foi marcado.',
+    }])
+  })
+
+  it('Levantar-se só aparece Caído: tira o Caído e marca o movimento; com o deslocamento em 0, recusa', () => {
+    expect(turnIds(state(), krusk)).not.toContain('stand-up')
+    const prone = state({ conditions: ['prone'] })
+    expect(turnIds(prone, krusk)).toContain('stand-up')
+    const up = use(prone, krusk, 'stand-up')
+    expect(up.state.conditions).toEqual([])
+    expect(up.state.turn).toEqual({ ...emptyTurn(), movement: true })
+    expect(up.notices).toEqual([{ kind: 'info', text: 'Levantar-se custa metade do deslocamento (4,5 m) (pág. 192).' }])
+    const stuck = state({ conditions: ['prone', 'grappled'] })
+    const refused = use(stuck, krusk, 'stand-up')
+    expect(refused.state).toBe(stuck)
+    expect(refused.notices).toEqual([{ kind: 'refused', text: 'Com deslocamento 0 não é possível se levantar (pág. 193).' }])
+  })
+
+  it('a Fúria: entrar some da lista em fúria, e encerrar só aparece nela', () => {
+    expect(turnIds(state(), krusk)).toEqual(expect.arrayContaining(['rage-enter']))
+    expect(turnIds(state(), krusk)).not.toContain('rage-end')
+    const raging = use(state(), krusk, 'rage-enter').state
+    expect(turnIds(raging, krusk)).toContain('rage-end')
+    expect(turnIds(raging, krusk)).not.toContain('rage-enter')
+  })
+
+  it('Atacar com a ação conta como ataque para o fim prematuro da Fúria: sem lembrete no Novo turno', () => {
+    const raging = use(state(), krusk, 'rage-enter').state
+    const attacked = use(raging, krusk, 'attack').state
+    expect(newTurn(attacked, krusk).notices.map(n => n.kind)).toEqual(['info'])
   })
 })

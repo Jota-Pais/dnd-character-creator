@@ -63,7 +63,7 @@ const ZERO_SAVES = { successes: 0, failures: 0 } as const
 export function emptyTurn(): TurnState {
   return {
     action: false, bonusAction: false, movement: false, reaction: false,
-    extraActions: 0, attacked: false, tookDamage: false, oncePerTurnUsed: [],
+    extraActions: 0, dashes: 0, attacked: false, tookDamage: false, oncePerTurnUsed: [],
   }
 }
 
@@ -1166,6 +1166,11 @@ export function activateToggle(state0: PlayState, sheet: PlaySheet, id: string, 
   }
   if (state0.activeEffects.some(a => a.id === id)) return refuse(state0, `Já está ${lowerFirst(toggle.label)}.`)
   if (option && !toggle.options.some(o => o.id === option)) return refuse(state0, `${toggle.label}: opção desconhecida (${option}).`)
+  // O que se perde "se seu deslocamento cair para 0" (o Esquivar, pág. 194) com ele já em 0 (o
+  // Agarrado): o livro não diz se o benefício chega a valer. O app não chuta e avisa.
+  if (toggle.endsOn.includes('speedZero') && getPlaySpeed(state0, sheet) === 0) {
+    return refuse(state0, `${toggle.source}: seu deslocamento já é 0, e o livro só diz que você perde o benefício se ele cair para 0 (pág. ${toggle.page}). O app não sabe se ele vale assim: decida com o Mestre; nada foi marcado.`, 'unresolvedRule')
+  }
   // A de alcance Pessoal com concentração (o Auxílio Divino) é sempre sua: quem conjura sustenta.
   const sustained = toggle.concentration && (on.sustainedByConcentration || toggle.selfOnly)
 
@@ -1255,6 +1260,30 @@ function spendTurn(turn: TurnState, action: SheetAction, notices: PlayNotice[]):
 }
 
 /**
+ * As ações que valem agora, na ordem da ficha: some a que pede um efeito ligado que não está
+ * (encerrar a fúria fora dela), a que liga o que já está ligado (entrar em fúria em fúria, Esquivar
+ * esquivando) e a que pede estar Caído (Levantar-se). As condições da ficha (duas armas leves, ser
+ * capaz de conjurar) já vêm cumpridas de `getSheetActions`.
+ */
+export function getTurnActions(state: PlayState, sheet: PlaySheet): SheetAction[] {
+  const on = (id: string) => state.activeEffects.some(a => a.id === id)
+  return sheet.actions.filter(action => {
+    if (action.requiresToggle && !on(action.requiresToggle)) return false
+    if (action.requires === 'prone' && !state.conditions.includes('prone')) return false
+    return !(action.outcomes ?? []).some(o => o.kind === 'toggleOn' && on(o.toggle))
+  })
+}
+
+/**
+ * O deslocamento do turno, em pés: o de agora (`getPlaySpeed`, com os efeitos e as condições) uma
+ * vez mais por Disparada — o aumento é o deslocamento depois de qualquer modificador (pág. 194), e
+ * com ele em 0 a Disparada dá 0.
+ */
+export function getTurnMovement(state: PlayState, sheet: PlaySheet): number {
+  return getPlaySpeed(state, sheet) * (1 + state.turn.dashes)
+}
+
+/**
  * Marca ou desmarca uma casa do checklist à mão: o toque que corrige o que o "Usar" marcou, ou marca
  * o que se fez sem ele (mover-se, conjurar pela aba Magia).
  */
@@ -1290,8 +1319,8 @@ export function newTurn(state0: PlayState, sheet: PlaySheet): PlayResult {
 
 /**
  * Usa uma ação da ficha (`sheet.actions`): confere e gasta o custo, aplica o que ela causa (liga ou
- * desliga o efeito, a ação a mais do Surto de Ação) e marca o turno (`spendTurn`), tudo num passo só
- * do desfazer. Recusa morto, quem não pode agir (Incapacitado, pág. 292), a ação que pede um efeito
+ * desliga o efeito, a ação a mais do Surto de Ação, a Disparada, o ataque, o levantar-se) e marca o
+ * turno (`spendTurn`), tudo num passo só do desfazer. Recusa morto, quem não pode agir (Incapacitado, pág. 292), a ação que pede um efeito
  * ligado que não está, e o custo sem usos — sem gastar nada. O que a ação liga recusa como
  * `activateToggle` (já em fúria), também sem gastar. O momento já usado no turno só avisa.
  */
@@ -1327,11 +1356,19 @@ export function performAction(state0: PlayState, sheet: PlaySheet, actionId: str
       notices.push(note('info', `${action.name}: mais uma ação neste turno, além da sua ação e da possível ação bônus (pág. ${action.page}).`))
       continue
     }
-    const r = outcome.kind === 'toggleOn'
-      ? activateToggle(next, sheet, outcome.toggle, on)
-      : deactivateToggle(next, sheet, outcome.toggle)
-    const refused = r.notices.find(n => n.kind === 'refused')
-    if (refused) return refuse(state0, refused.text)
+    if (outcome.kind === 'dash' || outcome.kind === 'attack') {
+      next = {
+        ...next,
+        turn: outcome.kind === 'dash' ? { ...next.turn, dashes: next.turn.dashes + 1 } : { ...next.turn, attacked: true },
+      }
+      continue
+    }
+    const r = outcome.kind === 'toggleOn' ? activateToggle(next, sheet, outcome.toggle, on)
+      : outcome.kind === 'toggleOff' ? deactivateToggle(next, sheet, outcome.toggle)
+        : standUp(next, sheet)
+    // A recusa, e o caso que o livro não decide, voltam ao estado de antes, sem gastar nada.
+    const refused = r.notices.find(n => n.kind === 'refused' || n.kind === 'unresolvedRule')
+    if (refused) return refuse(state0, refused.text, refused.kind)
     next = r.state
     notices.push(...r.notices)
   }
@@ -1980,6 +2017,7 @@ function sanitizeTurn(x: unknown): TurnState {
     movement: x.movement === true,
     reaction: x.reaction === true,
     extraActions: nonNegInt(x.extraActions),
+    dashes: nonNegInt(x.dashes),
     attacked: x.attacked === true,
     tookDamage: x.tookDamage === true,
     oncePerTurnUsed: Array.isArray(x.oncePerTurnUsed)

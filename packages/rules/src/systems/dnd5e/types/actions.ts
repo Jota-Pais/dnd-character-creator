@@ -21,19 +21,25 @@ export type ActionGroup = 'action' | 'bonusAction' | 'reaction' | 'other'
 export type ActionCost = { kind: 'resource'; resource: string; amount: number }
 
 /**
- * O que a ação causa: liga ou desliga um efeito declarado (`ToggleDeclaration.id`), ou dá mais uma
- * ação neste turno (o Surto de Ação, p. 85).
+ * O que a ação causa: liga ou desliga um efeito declarado (`ToggleDeclaration.id`), dá mais uma ação
+ * neste turno (o Surto de Ação, p. 85), soma o deslocamento outra vez (a Disparada, p. 194), conta
+ * como ataque seu no turno (Atacar, o ataque de oportunidade: o fim prematuro da Fúria pergunta por
+ * ele) ou levanta quem está Caído (`standUp`, p. 192).
  */
 export type ActionOutcome =
   | { kind: 'toggleOn'; toggle: string }
   | { kind: 'toggleOff'; toggle: string }
   | { kind: 'extraAction' }
+  | { kind: 'dash' }
+  | { kind: 'attack' }
+  | { kind: 'standUp' }
 
 /**
  * O que a ação exige da ficha ou do estado, para aparecer: duas armas leves corpo a corpo
- * carregadas (Combater com Duas Armas, p. 197) ou estar Caído (Levantar-se, p. 192).
+ * carregadas (Combater com Duas Armas, p. 197), ser capaz de conjurar magias (Conjurar uma Magia,
+ * `canCastSpells`) ou estar Caído (Levantar-se, p. 192).
  */
-export type ActionRequirement = 'twoLightMeleeWeapons' | 'prone'
+export type ActionRequirement = 'twoLightMeleeWeapons' | 'spellcaster' | 'prone'
 
 export type ActionDeclaration = {
   /** Único entre as ações da ficha ('rage-enter'). */
@@ -74,6 +80,7 @@ export type ActionDeclaration = {
 
 /**
  * Uma ação da ficha (`getSheetActions`), com quem a dá (o nome da característica) e o texto que o
- * "?" abre: o resumo da ação ou, sem ele, o de quem a dá.
+ * "?" abre: o resumo da ação ou, sem ele, o de quem a dá. `standard`: uma das ações em combate que
+ * todo personagem tem (`data/combat-actions.json`).
  */
-export type SheetAction = ActionDeclaration & { source: string; description: string }
+export type SheetAction = ActionDeclaration & { source: string; description: string; standard?: true }

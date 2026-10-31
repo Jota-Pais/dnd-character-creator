@@ -266,6 +266,15 @@ export function getResourceAvailable(state: PlayState, sheet: PlaySheet, id: str
  * `lifeState` só muda pelo pipeline de dano (`regras-dano-e-morte.md`, Notas; pág. 199).
  */
 export function reconcilePlayState(state: PlayState, sheet: PlaySheet): PlayState {
+  return reconcileInto(state, sheet, [])
+}
+
+/**
+ * O `reconcilePlayState`, com os avisos do que a ficha mudada encerra: a troca de armadura que cai e
+ * põe de volta a armadura de corpo da ficha encerra a Armadura Arcana, como vestir (`reconcileLoadedPlayState`
+ * os mostra).
+ */
+function reconcileInto(state: PlayState, sheet: PlaySheet, notices: PlayNotice[]): PlayState {
   const sheetMax = getBaseMaxHp(state, sheet)
   const effMax = getEffectiveMaxHp(state, sheet)
   let damageTaken = clampInt(state.damageTaken, 0, sheetMax)
@@ -314,6 +323,11 @@ export function reconcilePlayState(state: PlayState, sheet: PlaySheet): PlayStat
   const worn = reconcileWornArmor(state.wornArmor, sheet)
   if (worn) next.wornArmor = worn
   else delete next.wornArmor
+  // A troca sem a armadura de corpo da ficha (ou com outra) que cai põe essa armadura de volta: é
+  // vestir, e o que acaba ao vestir armadura acaba (a Armadura Arcana, pág. 220), como no "Voltar ao
+  // da ficha". Sem a troca, o estado não sabe o que estava vestido antes da ficha mudar.
+  const donned = getWornArmor(next, sheet).bodyArmorId
+  if (state.wornArmor && donned && donned !== state.wornArmor.bodyArmorId) endTogglesOnDonArmor(next, sheet, donned, notices)
   return next
 }
 
@@ -331,8 +345,10 @@ function reconcileWornArmor(worn: WornArmor | undefined, sheet: PlaySheet): Worn
  * 0 numa ficha menor. Use com `buildPlaySheet(draft)` antes de mostrar o estado.
  */
 export function reconcileLoadedPlayState(state: PlayState, sheet: PlaySheet): PlayResult {
-  const next = reconcilePlayState(state, sheet)
-  const gone = state.activeEffects.filter(a => !next.activeEffects.some(n => n.id === a.id))
+  const ended: PlayNotice[] = []
+  const next = reconcileInto(state, sheet, ended)
+  // Os que a ficha não tem mais; o que acabou ao pôr de volta a armadura da ficha avisa por si.
+  const gone = state.activeEffects.filter(a => !sheet.toggles.some(t => t.id === a.id))
   // A opção que caiu também avisa: o que ela fazia, inclusive ao terminar (o nível de exaustão do
   // Frenesi), deixa de valer.
   const optionLost = next.activeEffects.flatMap(n => {
@@ -348,6 +364,7 @@ export function reconcileLoadedPlayState(state: PlayState, sheet: PlaySheet): Pl
       : []),
     ...optionLost.map(t => note('info', `A ficha mudou: continua ${lowerFirst(t.label)}, sem a opção escolhida ao ligar, porque a ficha não a tem mais; o que ela fazia, inclusive ao terminar, deixa de valer.`)),
     ...describeWornArmorReconciled(state.wornArmor, sheet),
+    ...ended,
   ]
   if (state.lifeState !== 'conscious') return done(next, toggleNotices)
   const sheetMax = getBaseMaxHp(state, sheet)
@@ -1628,6 +1645,19 @@ function describeCannotChangeArmor(state: PlayState, sheet: PlaySheet, what: str
 }
 
 /**
+ * Colocar a armadura de corpo `armorId` encerra o que declara `endsOn` 'donArmor' (a Armadura Arcana,
+ * pág. 220: "A magia acaba se o alvo colocar uma armadura"), com aviso — pela troca no jogo
+ * (`wearInto`) ou pela reconciliação que põe de volta a armadura da ficha (`reconcileInto`).
+ */
+function endTogglesOnDonArmor(next: PlayState, sheet: PlaySheet, armorId: string, notices: PlayNotice[]): void {
+  for (const toggle of sheet.toggles) {
+    if (!toggle.endsOn.includes('donArmor') || !next.activeEffects.some(a => a.id === toggle.id)) continue
+    notices.push(note('info', `${toggle.source}: terminou ao vestir ${armorName(armorId)} (pág. ${toggle.page}).`))
+    endToggleInto(next, sheet, toggle.id, notices)
+  }
+}
+
+/**
  * Troca o que está vestido no rascunho `next` da operação, com o que vem junto, no mesmo passo do
  * desfazer: a armadura de corpo colocada encerra o que acaba ao vestir armadura (`endsOn` 'donArmor':
  * a Armadura Arcana, pág. 220 — o escudo não, decisão de 2026-10-30); a peça sem proficiência avisa
@@ -1640,13 +1670,7 @@ function wearInto(next: PlayState, sheet: PlaySheet, after: ArmorSetup, notices:
   if (sameArmorSetup(after, sheet.equippedArmor)) delete next.wornArmor
   else next.wornArmor = { ...after, basis: { ...sheet.equippedArmor } }
 
-  if (after.bodyArmorId && after.bodyArmorId !== before.bodyArmorId) {
-    for (const toggle of sheet.toggles) {
-      if (!toggle.endsOn.includes('donArmor') || !next.activeEffects.some(a => a.id === toggle.id)) continue
-      notices.push(note('info', `${toggle.source}: terminou ao vestir ${armorName(after.bodyArmorId)} (pág. ${toggle.page}).`))
-      endToggleInto(next, sheet, toggle.id, notices)
-    }
-  }
+  if (after.bodyArmorId && after.bodyArmorId !== before.bodyArmorId) endTogglesOnDonArmor(next, sheet, after.bodyArmorId, notices)
 
   const putOn: CarriedArmor[] = sheet.carriedArmor.filter(a => a.category === 'shield'
     ? after.shield && !before.shield

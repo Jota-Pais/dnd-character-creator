@@ -2936,6 +2936,31 @@ describe('a armadura vestida: vestir, tirar, o escudo e a reconciliação', () =
     expect(sheetFor(after, off).wornArmor).toEqual({ bodyArmorId: 'chain-mail', shield: true })
   })
 
+  it('a troca sem armadura que cai põe de volta a armadura da ficha: a Armadura Arcana acaba, como ao vestir', () => {
+    // Tirou o Couro no jogo e recebeu a Armadura Arcana; depois, no criador, comprou um escudo.
+    const before = character('fighter', 'leather')
+    const off = doffArmor(state(), sheetFor(before, state())).state
+    const withMageArmor = { ...off, activeEffects: [{ id: 'spell:mage-armor', startedAt: 1 }] }
+    const after = character('fighter', 'leather', 'shield')
+    const r = reconcileLoadedPlayState(withMageArmor, sheetFor(after, withMageArmor))
+    expect(r.state.wornArmor).toBeUndefined()
+    expect(r.state.activeEffects).toEqual([])
+    expect(texts(r)).toEqual([
+      'Você mudou o equipamento no criador: o equipamento vestido volta a ser o da ficha (Couro e escudo).',
+      'Armadura Arcana: terminou ao vestir Couro (pág. 220).',
+    ])
+    // A mesma conta em qualquer reconciliação: tirar o Couro de novo não devolve a magia.
+    expect(reconcilePlayState(withMageArmor, sheetFor(after, withMageArmor)).activeEffects).toEqual([])
+    const offAgain = doffArmor(r.state, sheetFor(after, r.state))
+    expect(texts(offAgain)).toEqual(['Tirar Couro leva 1 minuto, ou a metade com ajuda (pág. 148). O app não conta esse tempo.'])
+
+    // A ficha que ficou sem armadura de corpo não veste nada: a magia continua.
+    const unarmored = character('fighter', 'shield')
+    const kept = reconcileLoadedPlayState(withMageArmor, sheetFor(unarmored, withMageArmor))
+    expect(kept.state.activeEffects.map(a => a.id)).toEqual(['spell:mage-armor'])
+    expect(texts(kept)).toEqual(['Você mudou o equipamento no criador: o equipamento vestido volta a ser o da ficha (escudo).'])
+  })
+
   it('a armadura vestida que saiu do inventário sai também, com aviso; o resto da troca fica', () => {
     const before = character('fighter', 'leather', 'plate', 'shield')
     const s0 = state()

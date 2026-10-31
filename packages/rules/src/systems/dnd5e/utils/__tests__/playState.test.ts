@@ -2584,9 +2584,9 @@ describe('castSpell: conjurar pelo grimório', () => {
     expect(cast(empty, warlock, { casterKey: 'class:warlock', spellId: 'hellish-rebuke', castLevel: 3, pay: 'pact' }).state).toBe(empty)
   })
 
-  it('o espaço precisa ser do nível dela ou maior (pág. 201), e o esgotado recusa sem gastar', () => {
+  it('o espaço precisa ser do nível dela ou maior (pág. 203), e o esgotado recusa sem gastar', () => {
     const below = cast(state(), wizardCleric, { casterKey: 'class:wizard', spellId: 'fireball', castLevel: 2, pay: 'slot' })
-    expect(below.notices).toEqual([{ kind: 'refused', text: 'Bola de Fogo é de 3º nível: o espaço precisa ser desse nível ou maior (pág. 201).' }])
+    expect(below.notices).toEqual([{ kind: 'refused', text: 'Bola de Fogo é de 3º nível: o espaço precisa ser desse nível ou maior (pág. 203).' }])
     const spent = { ...state(), spellSlotsSpent: [0, 0, 3, 0, 0, 0, 0, 0, 0] }
     const r = cast(spent, wizardCleric, { casterKey: 'class:wizard', spellId: 'fireball', castLevel: 3, pay: 'slot' })
     expect(r.state).toBe(spent)

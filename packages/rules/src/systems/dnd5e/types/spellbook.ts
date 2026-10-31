@@ -30,7 +30,7 @@ export type SpellbookEntry = {
    */
   origin: string | null
   /**
-   * Os níveis do pool combinado que servem: os que a ficha tem, do nível dela para cima (pág. 201;
+   * Os níveis do pool combinado que servem: os que a ficha tem, do nível dela para cima (pág. 203;
    * na multiclasse, também os acima do que a classe conhece, pág. 166). Vazio no truque.
    */
   slotLevels: number[]

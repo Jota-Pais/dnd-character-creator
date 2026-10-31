@@ -38,7 +38,7 @@ const innateUsageNote = (text: string) => `${text[0].toUpperCase()}${text.slice(
  * truque da raça, o da subclasse e as inatas). A chave da classe e a do talento são as do guia de
  * rolagens (`RollGuide.spellcasting`), de onde vêm a CD e o ataque. Cada magia diz:
  * - o status: o truque, a preparada, a conhecida, a do grimório do mago ou a de uso por descanso;
- * - os espaços que servem: os níveis do pool combinado do dela para cima (pág. 201; na multiclasse,
+ * - os espaços que servem: os níveis do pool combinado do dela para cima (pág. 203; na multiclasse,
  *   também os de nível acima do que a classe conhece, pág. 166, linhas 14828-14837) e o de Pacto
  *   quando é do nível dela ou acima — com Conjuração e Magia de Pacto, os dois servem às magias das
  *   duas (pág. 166, linhas 14845-14851);

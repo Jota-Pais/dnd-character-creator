@@ -1639,7 +1639,7 @@ function describeUnavailablePay(spell: Spell, entry: SpellbookEntry, cast: Spell
   if (spell.level === 0 && cast.pay !== 'free') return `${spell.name} é truque: não gasta espaço nem sobe de nível (pág. 203).`
   switch (cast.pay) {
     case 'slot':
-      if (cast.castLevel < spell.level) return `${spell.name} é de ${spell.level}º nível: o espaço precisa ser desse nível ou maior (pág. 201).`
+      if (cast.castLevel < spell.level) return `${spell.name} é de ${spell.level}º nível: o espaço precisa ser desse nível ou maior (pág. 203).`
       return entry.slotLevels.length === 0
         ? `${spell.name}: os espaços de magia não servem a ela.`
         : `${spell.name}: a ficha não tem espaço de ${cast.castLevel}º nível para ela.`

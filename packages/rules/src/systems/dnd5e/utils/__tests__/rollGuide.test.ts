@@ -1108,17 +1108,38 @@ describe('getZeroHpSaveGuide', () => {
 })
 
 describe('getRollGuide — bônus condicional nas resistências', () => {
-  // Aura de Proteção (pág. 111): fica fora do número, como na Revisão e no PDF, e vira nota.
+  // Aura de Proteção (pág. 111, linhas 9969-9975): "Você deve estar consciente para garantir esse
+  // bônus". No jogo, consciente, entra no número dos TR do próprio paladino, com a parcela nomeada
+  // (decisão de 2026-10-30, o critério das Auras de Coragem e de Devoção); sem estar, fica a nota da
+  // Revisão e do PDF.
   const aura = '+3 em todos os testes de resistência (Aura de Proteção: você e criaturas amigáveis a até 3 m, enquanto você estiver consciente; mínimo +1)'
+  const paladin = draft({ class: 'paladin', level: 6, abilityScores: { ...SCORES, CHA: 16 } })
+  const saves = getSavingThrowChecks(paladin, getFinalAbilityScores(paladin))
 
-  it('paladino 6 com CAR 16: a nota em todo TR, sem mexer no modificador', () => {
-    const d = draft({ class: 'paladin', level: 6, abilityScores: { ...SCORES, CHA: 16 } })
-    const guide = getRollGuide(d, play())
-    const saves = getSavingThrowChecks(d, getFinalAbilityScores(d))
+  it('paladino 6 com CAR 16, consciente: +3 em todo TR, com a parcela da aura e sem a nota', () => {
+    const guide = getRollGuide(paladin, play())
     for (const ab of ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'] as const) {
-      expect(guide.saves[ab].notes).toContain(aura)
-      expect(guide.saves[ab].modifier).toBe(saves[ab].bonus)
+      expect(guide.saves[ab].modifier).toBe(saves[ab].bonus + 3)
+      expect(guide.saves[ab].breakdown.at(-1)).toEqual({ label: 'Aura de Proteção', value: 3 })
+      expect(guide.saves[ab].notes).not.toContain(aura)
     }
+    expect(guide.saves.WIS.formula).toBe(`1d20 + ${saves.WIS.bonus + 3}`)
+    // A concentração é TR de Constituição: a aura vale nela também.
+    expect(getConcentrationGuide(paladin, play(), 10).modifier).toBe(saves.CON.bonus + 3)
+  })
+
+  it('com o Inconsciente gravado, fora do número e de volta à nota', () => {
+    const guide = getRollGuide(paladin, play({ conditions: ['unconscious'] }))
+    expect(guide.saves.WIS.modifier).toBe(saves.WIS.bonus)
+    expect(guide.saves.WIS.notes).toContain(aura)
+    expect(guide.saves.WIS.breakdown.some(b => b.label === 'Aura de Proteção')).toBe(false)
+  })
+
+  it('a 0 PV e morto, também fora do número; o teste contra a morte nunca a teve', () => {
+    for (const lifeState of ['dying', 'stable', 'dead'] as const) {
+      expect(getRollGuide(paladin, play({ lifeState })).saves.CON.modifier).toBe(saves.CON.bonus)
+    }
+    expect(getRollGuide(paladin, play({ lifeState: 'dying' })).deathSave.modifier).toBe(0)
   })
 
   it('antes do 6º nível de paladino, nada', () => {

@@ -7,17 +7,18 @@ import { ABILITY_LABELS, ALL_ABILITY_SCORES, calculateModifier, getProficiencyBo
 import { getSheetSession } from './activeEffects'
 import { getFinalAbilityScores } from './asiUtils'
 import { getSheetAttacks, isSheetAttackInScope, type SheetAttack } from './attackUtils'
+import type { FinalScores } from './classResourceUtils'
 import { SKILLS } from './backgroundUtils'
 import { getHitDicePool } from './multiclassUtils'
-import { getPlayConditionState } from './playState'
+import { getPlayConditionState, isConscious } from './playState'
 import { getRace } from './raceUtils'
 import { describeUnproficientArmorCasting, getSavingThrowChecks, getSkillChecks, getPassiveScore, getUnproficientArmor } from './proficiencyUtils'
 import {
-  EXHAUSTION, describeConditionalSaveBonuses, formatCastingRestriction, getActiveConditionEffects, getAttacksPerAction,
-  getBestHalfProficiencySource, getCastingRestrictions, getCondition, getConditionalRollNotes, getDamageDefenses, isConditionSuspended,
+  EXHAUSTION, formatCastingRestriction, formatConditionalSaveBonus, getActiveConditionEffects, getAttacksPerAction,
+  getBestHalfProficiencySource, getCastingRestrictions, getCondition, getConditionalRollNotes, getConditionalSaveBonuses, getDamageDefenses, isConditionSuspended,
   getHalfProficiencySources, getMeleeCritExtraWeaponDice,
   getInitiativeAdvantageSources, getInitiativeBonuses, getOwnedFeats, getSheetArmorClass, getWeaponCritThreshold, resolveRollMode,
-  type ActiveConditionEffects, type ConditionRoll, type ScopedSheetEffect, type SheetEffect,
+  type ActiveConditionEffects, type ConditionRoll, type ScopedSheetEffect, type SheetConditionalSave, type SheetEffect,
 } from './sheetEffects'
 import { getCasterEntries, getFeatSpellBlocks, getSpellAttackBonus, getSpellSaveDC } from './spellUtils'
 import { DAMAGE_TYPE_PT, scopeCaveat } from './weaponFormat'
@@ -749,7 +750,22 @@ function hasWarCaster(draft: CharacterDraft): { source: string; label: string } 
   return feat ? { source: `feat:${feat.id}`, label: feat.name } : null
 }
 
-/** O TR de Constituição de base, que a concentração reaproveita. */
+/**
+ * Os bônus que dependem da situação em todo TR (a Aura de Proteção, pág. 111), com o estado de jogo:
+ * o que só pede você consciente, consciente, entra no número com a parcela nomeada (`included`,
+ * decisão de 2026-10-30, o critério das Auras de Coragem e de Devoção); o resto — e ele mesmo, sem
+ * você consciente — fica na nota, com o texto da Revisão e do PDF (`notes`).
+ */
+function getSaveBonuses(draft: CharacterDraft, scores: FinalScores, state: PlayState): { included: GuideBreakdownItem[]; notes: string[] } {
+  const bonuses = getConditionalSaveBonuses(draft, scores)
+  const inNumber = (b: SheetConditionalSave) => !!b.whileConscious && isConscious(state)
+  return {
+    included: bonuses.filter(inNumber).map(b => ({ label: b.source, value: b.value })),
+    notes: bonuses.filter(b => !inNumber(b)).map(formatConditionalSaveBonus),
+  }
+}
+
+/** O TR de base, que a concentração reaproveita, com os bônus da situação (`getSaveBonuses`). */
 function saveInput(
   ability: AbilityScore,
   check: { proficient: boolean; bonus: number },
@@ -758,19 +774,21 @@ function saveInput(
   effects: ActiveConditionEffects,
   sheet: SheetModeSources,
   lines: ConditionalLine[],
+  bonuses: { included: GuideBreakdownItem[]; notes: string[] },
 ): D20Input {
   return {
     id: `save:${ability}`,
     label: `TR de ${ABILITY_LABELS[ability].long}`,
     ability,
-    modifier: check.bonus,
+    modifier: check.bonus + bonuses.included.reduce((sum, b) => sum + b.value, 0),
     breakdown: [
       { label: ABILITY_LABELS[ability].long, value: mods[ability] },
       ...(check.proficient ? [{ label: 'Proficiência', value: proficiencyBonus }] : []),
+      ...bonuses.included,
     ],
     condition: effects.savingThrows[ability],
     extraDisadvantage: STR_DEX.includes(ability) ? sheet.unproficientArmor : [],
-    notes: linesFor(lines, 'save', ability),
+    notes: [...linesFor(lines, 'save', ability), ...bonuses.notes],
   }
 }
 
@@ -851,12 +869,11 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
   })) as Record<AbilityScore, RollGuideEntry>
 
   const saveChecks = getSavingThrowChecks(draft, scores)
-  // Bônus que depende da situação (Aura de Proteção, pág. 111): fica fora do número, como na
-  // Revisão e no PDF, e vira nota com a condição — o mesmo texto de describeConditionalSaveBonuses.
-  const conditionalSaveLines = describeConditionalSaveBonuses(draft, scores)
+  // Bônus que depende da situação (Aura de Proteção, pág. 111): consciente, no número; senão, a nota
+  // com o texto da Revisão e do PDF.
+  const saveBonuses = getSaveBonuses(draft, scores, state)
   const saves = Object.fromEntries(ALL_ABILITY_SCORES.map(ab => {
-    const input = saveInput(ab, saveChecks[ab], mods, prof, effects, sheet, lines)
-    if (conditionalSaveLines.length > 0) input.notes = [...(input.notes ?? []), ...conditionalSaveLines]
+    const input = saveInput(ab, saveChecks[ab], mods, prof, effects, sheet, lines, saveBonuses)
     if (ab === 'CON' && warCaster) {
       input.notes = [...(input.notes ?? []), `${warCaster.label}: vantagem neste TR para manter a concentração ao sofrer dano (pág. 169).`]
     }
@@ -1060,7 +1077,7 @@ export function getConcentrationGuide(draft: CharacterDraft, state: PlayState, d
   const effects = getGuideEffects(draft, state, session)
   const lines = [...getConditionalLines(effects), ...getSheetConditionalLines(draft, effects)]
   const sheet: SheetModeSources = { unproficientArmor: [], stealth: [] }
-  const input = saveInput('CON', getSavingThrowChecks(draft, scores).CON, mods, prof, effects, sheet, lines)
+  const input = saveInput('CON', getSavingThrowChecks(draft, scores).CON, mods, prof, effects, sheet, lines, getSaveBonuses(draft, scores, state))
   const amount = Number.isFinite(damage) ? Math.max(0, Math.floor(damage)) : 0
   const warCaster = hasWarCaster(draft)
   const spell = state.concentration?.label

@@ -892,7 +892,7 @@ describe('Aura de Proteção (resistências condicionais)', () => {
   const paladin = (level: number, overrides: Partial<CharacterDraft> = {}) =>
     draft({ level, class: 'paladin', ...overrides })
   const aura = (cha: number, condition: string) =>
-    ({ value: Math.max(1, Math.floor((cha - 10) / 2)), condition, source: 'Aura de Proteção' })
+    ({ value: Math.max(1, Math.floor((cha - 10) / 2)), condition, source: 'Aura de Proteção', whileConscious: true })
   const near3 = 'você e criaturas amigáveis a até 3 m, enquanto você estiver consciente; mínimo +1'
   const near9 = 'você e criaturas amigáveis a até 9 m, enquanto você estiver consciente; mínimo +1'
 

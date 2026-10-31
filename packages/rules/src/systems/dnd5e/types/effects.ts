@@ -101,8 +101,8 @@ export type ConditionalAttacks = {
 /**
  * Bônus em todos os testes de resistência que só vale numa situação — a Aura de Proteção do
  * paladino 6 (p. 111): mod. de Carisma, mínimo +1, para você e criaturas amigáveis a até 3 m,
- * enquanto você estiver consciente. Fica FORA do número das resistências (a ficha não sabe se você
- * está consciente nem quem está perto) e vira linha própria com a condição.
+ * enquanto você estiver consciente. Fica FORA do número das resistências da ficha (a Revisão e o
+ * PDF não sabem se você está consciente nem quem está perto) e vira linha própria com a condição.
  */
 export type ConditionalSaveBonus = {
   /** O bônus, com os atributos finais e o nível NA classe dona (`{ ability: 'CHA', min: 1 }`). */
@@ -112,6 +112,12 @@ export type ConditionalSaveBonus = {
    * passa de 3 m a 9 m no 18º nível de paladino.
    */
   condition: LevelStep<string>[]
+  /**
+   * Para você, a condição é só estar consciente ("Você deve estar consciente para garantir esse
+   * bônus", p. 111): no jogo, consciente — o mesmo critério das Auras de Coragem e de Devoção —, o
+   * bônus entra no número dos seus TR, com a parcela nomeada (decisão de 2026-10-30).
+   */
+  whileConscious?: true
 }
 
 /**

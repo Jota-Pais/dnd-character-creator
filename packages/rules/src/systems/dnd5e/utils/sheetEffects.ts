@@ -761,14 +761,18 @@ export function getConditionalAcBonuses(draft: CharacterDraft): SheetConditional
 
 // ── Testes de resistência condicionais ─────────────────────────────────────────
 
-/** Um bônus condicional nos testes de resistência, já calculado, com a condição e quem o dá. */
-export type SheetConditionalSave = { value: number; condition: string; source: string }
+/**
+ * Um bônus condicional nos testes de resistência, já calculado, com a condição e quem o dá.
+ * `whileConscious`: para você, a condição é só estar consciente (a Aura de Proteção), e o jogo o põe
+ * no número quando o estado diz que você está (`getRollGuide`).
+ */
+export type SheetConditionalSave = { value: number; condition: string; source: string; whileConscious?: true }
 
 /**
  * Bônus em todos os testes de resistência que dependem de uma situação (Aura de Proteção, p. 111).
- * Ficam FORA do número de cada resistência — a ficha não sabe se você está consciente nem quem
- * está a até 3 m — e viram linha com a condição. Feature de classe e subclasse, no nível NA classe
- * dona (paladino 6 / guerreiro 12 tem a aura de 3 m), com os atributos finais.
+ * Ficam FORA do número de cada resistência da ficha — a Revisão e o PDF não sabem se você está
+ * consciente nem quem está a até 3 m — e viram linha com a condição. Feature de classe e subclasse,
+ * no nível NA classe dona (paladino 6 / guerreiro 12 tem a aura de 3 m), com os atributos finais.
  */
 export function getConditionalSaveBonuses(
   draft: CharacterDraft,
@@ -783,20 +787,24 @@ export function getConditionalSaveBonuses(
       const condition = stepValue(bonus.condition, entry.level)
       if (condition === undefined || out.some(o => o.source === feature.name)) continue
       const value = evaluateQuantity(bonus.value, entry.level, finalScores, prof)
-      out.push({ value, condition, source: feature.name })
+      out.push({ value, condition, source: feature.name, ...(bonus.whileConscious ? { whileConscious: true as const } : {}) })
     }
   }
   return out
 }
 
+/** "+3 em todos os testes de resistência (Aura de Proteção: …)": a linha de um bônus condicional. */
+export function formatConditionalSaveBonus(b: SheetConditionalSave): string {
+  return `${formatModifier(b.value)} em todos os testes de resistência (${b.source}: ${b.condition})`
+}
+
 /**
  * As linhas que a Revisão e a ficha imprimível mostram junto das resistências — o mesmo texto nas
- * duas. Vazio para quem não tem bônus condicional.
+ * duas, e o das notas da jogada quando o jogo não o põe no número. Vazio para quem não tem bônus
+ * condicional.
  */
 export function describeConditionalSaveBonuses(draft: CharacterDraft, finalScores: FinalScores): string[] {
-  return getConditionalSaveBonuses(draft, finalScores).map(b =>
-    `${formatModifier(b.value)} em todos os testes de resistência (${b.source}: ${b.condition})`,
-  )
+  return getConditionalSaveBonuses(draft, finalScores).map(formatConditionalSaveBonus)
 }
 
 // ── Ataques por ação ───────────────────────────────────────────────────────────

@@ -103,6 +103,15 @@ export function isAtZeroHp(state: Pick<PlayState, 'lifeState'>): boolean {
 }
 
 /**
+ * Consciente: vivo, acima de 0 PV e sem o Inconsciente gravado (o sono mágico). É o "enquanto você
+ * estiver consciente" das auras do paladino (págs. 111-112): a imunidade das de Coragem e de
+ * Devoção e o bônus da de Proteção nos TR.
+ */
+export function isConscious(state: Pick<PlayState, 'lifeState' | 'conditions'>): boolean {
+  return state.lifeState === 'conscious' && !state.conditions.includes('unconscious')
+}
+
+/**
  * O que o agregador de condições (`sheetEffects.ts`) recebe deste estado: as condições gravadas,
  * mais o Inconsciente enquanto o personagem está a 0 PV (`regras-condicoes.md`, 6.4); os efeitos
  * ligados já resolvidos (`toggles`) e a imunidade a condição das defesas da ficha (`defenses`: a
@@ -118,7 +127,7 @@ export function getPlayConditionState(
   const conditions: ConditionId[] = isAtZeroHp(state) && !state.conditions.includes('unconscious')
     ? [...state.conditions, 'unconscious']
     : [...state.conditions]
-  const conscious = state.lifeState === 'conscious' && !conditions.includes('unconscious')
+  const conscious = isConscious(state)
   const conditionImmunities = defenses
     .filter(d => d.kind === 'conditionImmunity' && d.conditions?.length && !d.blockedBy && !d.condition && !d.exceptWhen)
     .filter(d => conscious || !d.whileConscious)

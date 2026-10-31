@@ -925,10 +925,21 @@ O efeito que você mesmo conjurou e sustenta (sustainedByConcentration) acaba ju
 - `TurnState` ganhou `dashes` (o deslocamento do turno, `getTurnMovement`) e ficou sem `spellsCast`, que é do `castSpell` do grimório. `markTurn`, `newTurn`, `getTurnActions` (o que vale agora: encerrar a fúria só nela, entrar em fúria e Esquivar somem com o efeito ligado, Levantar-se só Caído) e `hasUse` (o agarrão e a interação livre não têm "Usar"). A Nova sessão zera o turno junto com o histórico (`clearRollHistory`).
 - Usar um Objeto ficou sem o link 'bag': a bolsa chega com a onda `inventario`. O 'attacks' mostra as linhas de ataque dentro de Atacar; nas outras (o ataque de oportunidade, o da outra mão), uma linha diz que os números estão em Atacar.
 - Sem ação bônus listada, o grupo diz quando se tem uma, sem afirmar que não há: o guerreiro tem Retomar o Fôlego, que ainda não é ação nos dados.
-- Esquivar com o deslocamento já em 0 (o Agarrado): o livro não responde se o benefício vale. O app não liga e avisa com `unresolvedRule`, sem gastar a ação; vai ao dono (Ponto em aberto 4 de `regras-acoes-em-combate.md`).
+- Esquivar com o deslocamento já em 0 (o Agarrado): o livro não responde se o benefício vale. O app não liga e avisa com `unresolvedRule`; vai ao dono (Ponto em aberto 4 de `regras-acoes-em-combate.md`). A ação conta (correção da revisão, abaixo).
 - O desfazer do turno está preso no teste do `playStore`, onde mora o desfazer.
 - Conferido no Edge a 390 × 844 e 360 × 740, pelo teclado: alvos de 45 px, sem rolagem lateral, os rótulos das quatro casas dentro delas (a do movimento é mais larga), o foco no título do grupo abaixo dos vitais e o console sem erros.
 - Nenhum número de ficha salva muda: o retrato do aviso de migração não tem turno nem ações.
+- **Correções da revisão (2026-10-30)**, um commit cada:
+  - O fim prematuro da Fúria conta a janela do livro, do fim do seu turno anterior ao fim do que acabou ("desde seu último turno", linhas 3662-3666). O Novo turno perguntava de um Novo turno ao outro: o dano antes do seu turno era apagado (lembrete falso) e o de depois calava o lembrete que o livro manda. O app não vê o fim do turno: o dano e o ataque de reação contam como vindos depois do seu turno (`TurnState.afterTurn`), e o Novo turno os passa ao seguinte (`beforeTurn`); Atacar e a outra mão marcam `attacked`. O lembrete diz o limite: o dano sofrido durante o próprio turno conta para o próximo.
+  - Conjurar uma Magia some da aba e o "Usar" recusa em fúria e de armadura sem proficiência (págs. 48 e 144, a lista de recusas acima): `getCastingBlockers`, com a armadura em `PlaySheet.unproficientArmor`; o `castSpell` do grimório lerá a mesma lista.
+  - O Ambidestro (p. 167) libera o combate com duas armas nas armas corpo a corpo de uma mão: o talento declara `twoWeaponFighting`, e `getTwoWeaponFighting` (no lugar do `carriesTwoLightMeleeWeapons`; o `requires` passou a `twoWeaponFighting`) responde à ação e à nota da linha. Só a nota muda; nenhum número.
+  - A Velocidade dá a ação a mais em cada turno (p. 289): o efeito `extraTurnAction` lista as ações que ela aceita, o "Usar" a gasta sem aviso, e o checklist mostra o "+1" (`getTurnExtraActions`).
+  - Levantar-se: o "Usar" não é recusado a quem só está Incapacitado (é movimento, e o deslocamento decide, como no "Levantar" do Caído), e gasta metade do deslocamento sem marcar a casa do movimento (`TurnState.movementSpent`, gravado pelo `standUp`; `getTurnMovement` dá o que resta).
+  - O ataque com a outra mão sem a ação de Atacar no turno avisa, sem recusar (p. 197): `afterAction` nos dados e `TurnState.used` (no lugar do `oncePerTurnUsed`).
+  - O Esquivar com o deslocamento já em 0 conta a ação e diz como aplicar o benefício à mão se o Mestre decidir que vale; o efeito continua desligado até o dono decidir.
+  - O grupo de ação bônus vazio não afirma que a ficha tem alguma ("se a sua ficha tiver alguma, o texto está na aba Regras").
+  - O desfazer depois da Nova sessão não traz de volta o turno da sessão anterior: a Nova sessão passa também pelos estados que o desfazer guarda.
+  - Conferido no Edge a 390 × 844 e 360 × 740: levantar-se deixa a casa do movimento livre com 4,5 m (9 m sob a Velocidade), a Velocidade mostra o "+1" e Atacar mais Disparada não avisam, o Esquivar Agarrado marca a ação com o foco no "Usar", o tiferino em fúria perde Conjurar uma Magia e o texto da ação bônus vazia; sem rolagem lateral e o console sem erros.
 
 - **Tamanho:** M
 - **Depende de:** `efeitos-ativos`

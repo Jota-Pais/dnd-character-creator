@@ -1471,6 +1471,11 @@ O cartão de ataque de arma de munição mostra 'Flechas: 18', o botão '−1' e
 
 CLAUDE.md: inventário de sessão. regras-equipamentos.md, seção 6.3: implementada.
 
+**Feita em 2026-10-31**, sem as duas revisões independentes das outras ondas. A leva foi interrompida por custo de tokens, e o dono pediu para terminar esta onda mais barato. O que mudou em relação ao desenho:
+- O cartão da arma ficou no `AttacksTab`, que hoje é a lista de ataques dentro da ação Atacar da aba Ações.
+- O −1 a 0 não fica apagado: o motor recusa e diz por quê, e o foco não se perde.
+- As moedas entram por uma conta só (quantas e de que tipo, "Gastar" ou "Receber"), e não por +/−.
+
 - **Arquivos:** `CLAUDE.md`, `docs/regras-equipamentos.md`
 - **Testes:** Sem teste novo.
 - **Aceite:** Commit docs:.

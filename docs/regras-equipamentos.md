@@ -2214,7 +2214,7 @@
 
 ## 6.3 Notas de implementação (mapeamento pro app)
 
-Não faz parte da regra do livro.
+Não faz parte da regra do livro. **Implementada na Fase 2, onda `inventario` (2026-10-31).** O motor fica em `utils/inventoryPlay.ts` e nas operações de `utils/playState.ts`; a tela, na seção Bolsa da aba Estado e no cartão da arma da aba Ações.
 
 - **Munição no inventário de sessão:** as munições do catálogo vêm em pacotes ("Flechas (20)", "Agulhas de Zarabatana (50)"); a sessão conta **peças**. O "−1" é o tiro; "Recuperar munição" devolve `floor(gastas na batalha / 2)` e zera o contador da batalha. Fica no estado de jogo, com desfazer, nunca no draft.
 - **Carga:** a capacidade sai dos atributos finais (`getFinalAbilityScores`), 7,5 × Força em kg, comparada à soma dos pesos do inventário. Passar da capacidade é aviso: a regra padrão não tem penalidade escalonada (só a de empurrar e arrastar, que é situação da mesa).

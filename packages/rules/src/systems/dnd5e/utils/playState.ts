@@ -1771,7 +1771,8 @@ export function castSpell(state0: PlayState, sheet: PlaySheet, cast: SpellCast):
     const refused = apply(activateToggle(next, sheet, toggle.id, { now: cast.now, ...(spell.concentration ? { sustainedByConcentration: true as const } : {}) }))
     if (refused) return refuse(state0, refused.text, refused.kind)
   } else {
-    if (toggle) notices.push(note('info', `${toggle.source} já está em você: a mesma magia não acumula (pág. 207).`))
+    // Aviso de regra, não resultado: a folha do Conjurar o mostra antes do toque.
+    if (toggle) notices.push(note('warning', `${toggle.source} já está em você: a mesma magia não acumula (pág. 207).`))
     if (spell.concentration && next.concentration?.spellId === spell.id) {
       // Conjurada de novo, a concentração é na mesma magia: segue, contando de agora.
       next = { ...next, concentration: { ...next.concentration, startedAt: cast.now } }

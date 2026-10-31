@@ -48,10 +48,21 @@ function parseAmount(text: string): number | null {
   return /^\d+$/.test(t) && Number(t) > 0 ? Number(t) : null
 }
 
-/** Os avisos que a conjuração daria agora, sem o do gasto (que o jeito escolhido já diz), ou a recusa. */
+/**
+ * Os avisos de regra da conjuração, os que valem antes do toque: a ação já usada, a magia de ação
+ * bônus, a mesma magia que não acumula, os benefícios que a armadura tira (`warning`) e a
+ * concentração que vai terminar (`concentrationReplaced`). Os de resultado ficam para o aviso do pé,
+ * depois de conjurar: o gasto (que o jeito escolhido já diz), a cura, os PV temporários, o efeito
+ * sustentado que terminou com a concentração.
+ */
+const PREVIEW_KINDS: ReadonlySet<PlayNotice['kind']> = new Set(['warning', 'concentrationReplaced'])
+
+/** A prévia: os avisos de regra que a conjuração daria agora, ou a recusa. */
 function previewNotices(notices: PlayNotice[]): { lines: string[]; refused: boolean } {
   const refused = notices.find(n => n.kind === 'refused' || n.kind === 'unresolvedRule')
-  return refused ? { lines: [refused.text], refused: true } : { lines: notices.slice(1).map(n => n.text), refused: false }
+  return refused
+    ? { lines: [refused.text], refused: true }
+    : { lines: notices.filter(n => PREVIEW_KINDS.has(n.kind)).map(n => n.text), refused: false }
 }
 
 /**

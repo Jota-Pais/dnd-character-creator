@@ -164,6 +164,9 @@ describe('SpellCastSheet — conjurar pelo grimório', () => {
     expect(sheet.querySelector('[aria-live]')).toHaveTextContent('Digite o que rolou, ou desmarque “Em você?”.')
     expect(playState().spellSlotsSpent[0]).toBe(0)
     fireEvent.change(within(sheet).getByLabelText('Cura que você rolou'), { target: { value: '7' } })
+    // A cura é resultado: só o aviso do pé a diz, depois do toque, nunca a prévia.
+    expect(sheet).not.toHaveTextContent('Recuperou')
+    expect(conjure).not.toHaveAttribute('aria-describedby')
     fireEvent.click(conjure)
     expect(getCurrentHp(playState(), usePlayStore.getState().sheet!)).toBe(before + 7)
     expect(playState().spellSlotsSpent[0]).toBe(1)
@@ -181,5 +184,26 @@ describe('SpellCastSheet — conjurar pelo grimório', () => {
     expect(playState().activeEffects).toEqual([expect.objectContaining({ id: 'spell:bless', sustainedByConcentration: true })])
     expect(playState().concentration?.spellId).toBe('bless')
     expect(playState().spellSlotsSpent.slice(0, 2)).toEqual([0, 1])
+  })
+
+  it('a prévia diz só as regras, antes do toque: a concentração que vai terminar, sem a Bênção que acaba junto (págs. 205 e 207)', () => {
+    openMagic(CLERIC)
+    const bless = openCast('Bênção').sheet
+    fireEvent.click(within(bless).getByRole('checkbox', { name: 'Em você?' }))
+    fireEvent.click(within(bless).getByRole('button', { name: 'Conjurar' }))
+
+    // A mesma magia de novo em você: o que não acumula (pág. 207) é regra, e já sai na prévia.
+    const again = openCast('Bênção').sheet
+    fireEvent.click(within(again).getByRole('checkbox', { name: 'Em você?' }))
+    expect(within(again).getByRole('button', { name: 'Conjurar' }))
+      .toHaveAccessibleDescription(expect.stringContaining('Bênção já está em você: a mesma magia não acumula (pág. 207).'))
+    fireEvent.click(within(again).getByRole('button', { name: 'Fechar' }))
+
+    // Detectar Magia também pede concentração: a da Bênção termina, e a Bênção em você com ela.
+    const detect = openCast('Detectar Magia').sheet
+    expect(within(detect).getByRole('button', { name: 'Conjurar' }))
+      .toHaveAccessibleDescription(expect.stringContaining('A concentração em Bênção termina: não dá para se concentrar em duas magias (pág. 205).'))
+    // O que só acontece depois do toque (no passado) fica para o aviso do pé.
+    expect(detect).not.toHaveTextContent('Bênção: terminou com a sua concentração.')
   })
 })

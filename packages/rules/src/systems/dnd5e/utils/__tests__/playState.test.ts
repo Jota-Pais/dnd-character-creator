@@ -2672,7 +2672,8 @@ describe('castSpell: conjurar pelo grimório', () => {
     // Já ligado, a mesma magia não acumula (pág. 207): a conjuração vale, o efeito fica um só.
     const again = cast(r.state, wizardCleric, { casterKey: 'class:wizard', spellId: 'shield', castLevel: 1, pay: 'slot', self: {} })
     expect(again.state.activeEffects).toHaveLength(1)
-    expect(texts(again)).toContain('Escudo Arcano já está em você: a mesma magia não acumula (pág. 207).')
+    // É aviso de regra (a folha o mostra antes do toque), não resultado.
+    expect(again.notices).toContainEqual({ kind: 'warning', text: 'Escudo Arcano já está em você: a mesma magia não acumula (pág. 207).' })
   })
 
   it('Curar Ferimentos em si: cura o que a mesa rolou, no mesmo passo', () => {

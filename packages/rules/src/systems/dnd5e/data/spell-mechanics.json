@@ -105,7 +105,7 @@
     "batch": "T",
     "bookLines": [24550, 24565],
     "status": "reviewed",
-    "resolution": { "kind": "save", "ability": "DEX", "onSuccess": "other" }
+    "resolution": { "kind": "save", "ability": "DEX", "onSuccess": "other", "note": "Se você tentar afetar um objeto segurado ou vestido por uma criatura hostil, a criatura deve ser bem sucedida num teste de resistência de Destreza para evitar a magia." }
   },
   {
     "id": "mage-hand",

@@ -159,13 +159,17 @@ describe('divergências pt-BR × inglês que seguem o inglês', () => {
   })
   // Inglês: "that creature must succeed on a Dexterity saving throw to avoid the spell" (Luz, pág.
   // 255, linhas 24563-24565; decisão de 2026-10-31). O pt-BR diz "num teste de Destreza", que é teste
-  // de habilidade: é o TR de Destreza contra a CD da magia, e o dano estruturado o declara.
+  // de habilidade: é o TR de Destreza contra a CD da magia, e o dano estruturado o declara, com a
+  // condição do livro na nota (só no objeto segurado ou vestido por uma criatura hostil).
   it('Luz pede TR de Destreza para evitar a magia (pt-BR: "num teste de Destreza")', () => {
     const light = (spellsData as { id: string; description: string }[]).find(s => s.id === 'light')
     expect(light?.description).toContain('a criatura deve ser bem sucedida num teste de resistência de Destreza para evitar a magia')
     expect(light?.description).not.toContain('num teste de Destreza')
     const mechanics = (spellMechanicsData as { id: string; status: string; resolution: unknown }[]).find(m => m.id === 'light')
-    expect(mechanics).toMatchObject({ status: 'reviewed', resolution: { kind: 'save', ability: 'DEX', onSuccess: 'other' } })
+    expect(mechanics).toMatchObject({
+      status: 'reviewed',
+      resolution: { kind: 'save', ability: 'DEX', onSuccess: 'other', note: expect.stringContaining('objeto segurado ou vestido por uma criatura hostil') },
+    })
   })
   // Inglês: "clean or soil an object no larger than 1 cubic foot" e "chill, warm, or flavor up to 1
   // cubic foot of nonliving material" (Prestidigitação, pág. 271, linhas 26200-26203; decisão de

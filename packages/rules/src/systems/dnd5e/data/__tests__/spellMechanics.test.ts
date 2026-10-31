@@ -251,9 +251,12 @@ describe('dano estruturado de magia: o lote T', () => {
     expect(batch.find(m => m.id === 'light')).toMatchObject({ status: 'reviewed', resolution: { kind: 'save', ability: 'DEX', onSuccess: 'other' } })
   })
 
-  it('o condicional da jogada vira nota: a vantagem do Toque Chocante e a cobertura da Chama Sagrada', () => {
+  // O TR da Luz só existe no objeto de uma criatura hostil (pág. 255, linhas 24563-24565): sem a
+  // nota, o guia anunciaria um TR em toda conjuração, e a regra de ouro manda o condicional à nota.
+  it('o condicional da jogada vira nota: a vantagem do Toque Chocante, a cobertura da Chama Sagrada e o TR da Luz', () => {
     expect(batch.filter(m => 'note' in m.resolution).map(m => [m.id, m.resolution])).toEqual([
       ['sacred-flame', expect.objectContaining({ note: 'O alvo não recebe qualquer benefício de cobertura contra esse teste de resistência.' })],
+      ['light', expect.objectContaining({ note: 'Se você tentar afetar um objeto segurado ou vestido por uma criatura hostil, a criatura deve ser bem sucedida num teste de resistência de Destreza para evitar a magia.' })],
       ['shocking-grasp', expect.objectContaining({ note: 'Você tem vantagem na jogada de ataque se o alvo estiver vestindo qualquer armadura de metal.' })],
     ])
   })

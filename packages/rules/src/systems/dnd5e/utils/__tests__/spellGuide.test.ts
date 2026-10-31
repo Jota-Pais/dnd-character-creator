@@ -152,10 +152,14 @@ describe('guia da magia: os truques do lote T', () => {
   })
 
   // Luz (pág. 255, linhas 24563-24565): o TR de Destreza do inglês (decisão de 2026-10-31). Não há
-  // o que você role: a receita diz o TR de quem segura o objeto, com a CD.
-  it('a Luz: o TR de Destreza com a CD da conjuração, sem jogada sua', () => {
+  // o que você role: a receita diz o TR de quem segura o objeto, com a CD. O TR só existe no objeto
+  // de uma criatura hostil ("Se você tentar afetar..."): é condicional, e vai na nota do TR.
+  it('a Luz: o TR de Destreza com a CD da conjuração, só no objeto de criatura hostil, sem jogada sua', () => {
     const guide = getSpellGuide(caster('wizard', 1, ['light'], []), play(), { casterKey: 'class:wizard', spellId: 'light' })!
-    expect(guide.save).toEqual({ ability: 'DEX', dc: 13, onSuccess: 'other', text: 'TR de Destreza do alvo (CD 13): o sucesso faz o que o texto da magia diz.' })
+    expect(guide.save).toEqual({
+      ability: 'DEX', dc: 13, onSuccess: 'other', text: 'TR de Destreza do alvo (CD 13): o sucesso faz o que o texto da magia diz.',
+      note: 'Se você tentar afetar um objeto segurado ou vestido por uma criatura hostil, a criatura deve ser bem sucedida num teste de resistência de Destreza para evitar a magia.',
+    })
     expect(spellGuideRolls(guide)).toEqual([])
   })
 

@@ -36,6 +36,22 @@ const NUMBER_WORDS: Record<number, string[]> = {
   1: ['um', 'uma'], 2: ['dois', 'duas'], 3: ['três'], 4: ['quatro'], 5: ['cinco'], 6: ['seis'],
 }
 
+/**
+ * As frases que dizem como a magia resolve. A conferência vale nos dois sentidos: a resolução
+ * declarada precisa estar no texto, e a frase no texto precisa da resolução que ela diz — sem isso,
+ * 'none' no lugar de 'half', ou o ataque e o TR omitidos, passariam.
+ */
+const SAVE_IN_TEXT = /teste de resistência de (Força|Destreza|Constituição|Inteligência|Sabedoria|Carisma)/
+const ATTACK_IN_TEXT = /ataque (corpo-a-corpo|à distância) com magia/
+const HALF_IN_TEXT = /metade (desse|do) dano/
+
+/**
+ * As magias cujo texto tem a frase do TR, do ataque, da metade ou da CD sem que ela seja a
+ * resolução da magia (o Raio Adoecente: o TR de Constituição vem depois do acerto, e a resolução é
+ * o ataque), com o motivo. O lote T não tem nenhuma; cada lote acrescenta as suas.
+ */
+const RESOLUTION_EXCEPTIONS: Record<string, string> = {}
+
 /** O texto de uma linha só, sem o "## " dos títulos que a digitalização deixou no meio do parágrafo. */
 const flat = (text: string) => text.replace(/^#+\s*/gm, '').replace(/\s+/g, ' ')
 
@@ -69,10 +85,31 @@ function amountProblems(label: string, part: SpellAmountPart, text: string): str
 }
 
 /**
- * O que a entrada declara e o texto da magia não diz. Vazio quando bate: o teste de cada entrada
- * cobra isso, e os testes logo abaixo provam que um erro de digitação aparece.
+ * O que o texto diz da resolução e a entrada revisada não declara: o TR, a metade no sucesso dele,
+ * o ataque e a CD da magia. Fora as exceções com motivo (`RESOLUTION_EXCEPTIONS`).
  */
-function problemsOf(entry: SpellMechanics): string[] {
+function resolutionInTextProblems(entry: SpellMechanics, text: string): string[] {
+  const { resolution } = entry
+  const problems: string[] = []
+  const save = SAVE_IN_TEXT.exec(text)
+  if (save && resolution.kind !== 'save') problems.push(`o texto diz "${save[0]}", e a resolução não é o TR`)
+  if (save && HALF_IN_TEXT.test(text) && !(resolution.kind === 'save' && resolution.onSuccess === 'half')) {
+    problems.push('o texto dá metade do dano no TR, e a resolução não dá metade no sucesso')
+  }
+  const attack = ATTACK_IN_TEXT.exec(text)
+  if (attack && resolution.kind !== 'attack') problems.push(`o texto diz "${attack[0]}", e a resolução não é a jogada de ataque`)
+  if (text.includes('CD da magia') && resolution.kind !== 'save') {
+    problems.push('o texto fala da CD da magia, e a resolução não é o TR: o número fica de fora')
+  }
+  return problems
+}
+
+/**
+ * O que a entrada declara e o texto da magia não diz, e o que o texto diz da resolução e a entrada
+ * não declara. Vazio quando bate: o teste de cada entrada cobra isso, e os testes logo abaixo provam
+ * que um erro de digitação aparece.
+ */
+function problemsOf(entry: SpellMechanics, exceptions: Record<string, string> = RESOLUTION_EXCEPTIONS): string[] {
   const spell = SPELLS.get(entry.id)
   if (!spell) return [`${entry.id}: não existe em spells.json`]
   const text = flat(spell.description)
@@ -101,6 +138,7 @@ function problemsOf(entry: SpellMechanics): string[] {
     const attack = `ataque ${resolution.range === 'melee' ? 'corpo-a-corpo' : 'à distância'} com magia`
     if (!text.includes(attack)) problems.push(`"${attack}" não está no texto`)
   }
+  if (!(entry.id in exceptions)) problems.push(...resolutionInTextProblems(entry, text))
 
   for (const [i, part] of (entry.damage ?? []).entries()) {
     const dice = `${part.count}d${part.sides}`
@@ -267,6 +305,45 @@ describe('dano estruturado de magia: a guarda contra erro de digitação', () =>
     }
     expect(problemsOf(burningHands)).toContain('"Em níveis superiores" fala de dano, cura ou PV, e nenhuma parte tem perSlotAbove')
     expect(problemsOf({ ...burningHands, damage: [{ count: 3, sides: 6, type: 'fire', perSlotAbove: { count: 1 } }] })).toEqual([])
+  })
+
+  it('nos dois sentidos: "nenhum dano" no lugar da metade, o TR e o ataque omitidos falham', () => {
+    // Mãos Flamejantes (pág. 256, linhas 24719-24739): "metade desse dano se obtiver sucesso".
+    const burningHands: SpellMechanics = {
+      id: 'burning-hands', batch: '1', bookLines: [24719, 24739], status: 'reviewed',
+      resolution: { kind: 'save', ability: 'DEX', onSuccess: 'half' },
+      damage: [{ count: 3, sides: 6, type: 'fire', perSlotAbove: { count: 1 } }],
+    }
+    expect(problemsOf(burningHands)).toEqual([])
+    expect(problemsOf({ ...burningHands, resolution: { kind: 'save', ability: 'DEX', onSuccess: 'none' } }))
+      .toEqual(['o texto dá metade do dano no TR, e a resolução não dá metade no sucesso'])
+    expect(problemsOf({ ...burningHands, resolution: { kind: 'none' } })).toEqual([
+      'o texto diz "teste de resistência de Destreza", e a resolução não é o TR',
+      'o texto dá metade do dano no TR, e a resolução não dá metade no sucesso',
+    ])
+    // O Raio de Fogo sem o ataque: a receita perderia o ataque e o crítico.
+    for (const resolution of [{ kind: 'none' }, { kind: 'auto' }] as const) {
+      expect(problemsOf({ ...FIRE_BOLT, resolution }))
+        .toEqual(['o texto diz "ataque à distância com magia", e a resolução não é a jogada de ataque'])
+    }
+  })
+
+  it('a CD da magia numa entrada revisada sem o TR falha (a Ilusão Menor)', () => {
+    const minorIllusion: SpellMechanics = {
+      id: 'minor-illusion', batch: 'T', bookLines: [24011, 24039], status: 'reviewed', resolution: { kind: 'none' },
+    }
+    expect(problemsOf(minorIllusion)).toEqual(['o texto fala da CD da magia, e a resolução não é o TR: o número fica de fora'])
+  })
+
+  it('a exceção com motivo cala as conferências da resolução no texto (o Raio Adoecente)', () => {
+    // Raio Adoecente (pág. 273, linhas 26518-26533): o TR de Constituição vem depois do acerto.
+    const rayOfSickness: SpellMechanics = {
+      id: 'ray-of-sickness', batch: '1', bookLines: [26518, 26533], status: 'reviewed',
+      resolution: { kind: 'attack', range: 'ranged' },
+      damage: [{ count: 2, sides: 8, type: 'poison', perSlotAbove: { count: 1 } }],
+    }
+    expect(problemsOf(rayOfSickness)).toEqual(['o texto diz "teste de resistência de Constituição", e a resolução não é o TR'])
+    expect(problemsOf(rayOfSickness, { 'ray-of-sickness': 'o TR vem depois do acerto e só decide o envenenado' })).toEqual([])
   })
 
   it('o textOnly pede motivo e não leva receita pela metade', () => {

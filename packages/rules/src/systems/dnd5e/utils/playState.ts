@@ -18,6 +18,7 @@ import type { ResolvedToggle, SheetToggle } from '../types/session'
 import { ABILITY_LABELS, formatMeters } from './abilityScoreUtils'
 import type { SheetResource } from './classResourceUtils'
 import { resolveActiveEffects } from './activeEffects'
+import { describeUnproficientArmorCasting } from './proficiencyUtils'
 import { getDamageLabel, getDamageTypeName } from './damageTypes'
 import { countLabel, joinPt } from './textUtils'
 
@@ -1264,16 +1265,33 @@ function spendTurn(turn: TurnState, action: SheetAction, notices: PlayNotice[]):
 }
 
 /**
+ * Por que não se conjura agora, um motivo por fonte: a restrição de um efeito ligado ("Em fúria você
+ * não pode conjurar magias", pág. 48) e a armadura vestida sem proficiência (pág. 144). Vazio,
+ * conjura. A ação de conjurar (`requires: 'spellcaster'`) some da aba (`getTurnActions`) e o "Usar"
+ * dela recusa com eles (`performAction`).
+ */
+export function getCastingBlockers(state: PlayState, sheet: PlaySheet): string[] {
+  const toggles = getPlayToggles(state, sheet)
+    .filter(t => t.effects.some(e => e.effect.kind === 'cannotCast'))
+    .map(t => `${t.label} você não pode conjurar magias (pág. ${t.page}).`)
+  const armor = sheet.unproficientArmor.length > 0 ? [describeUnproficientArmorCasting(sheet.unproficientArmor)] : []
+  return [...toggles, ...armor]
+}
+
+/**
  * As ações que valem agora, na ordem da ficha: some a que pede um efeito ligado que não está
  * (encerrar a fúria fora dela), a que liga o que já está ligado (entrar em fúria em fúria, Esquivar
- * esquivando) e a que pede estar Caído (Levantar-se). As condições da ficha (duas armas leves, ser
- * capaz de conjurar) já vêm cumpridas de `getSheetActions`.
+ * esquivando), a que pede estar Caído (Levantar-se) e a de conjurar quando não se pode
+ * (`getCastingBlockers`: em fúria, de armadura sem proficiência). As condições da ficha (duas armas
+ * leves, ser capaz de conjurar) já vêm cumpridas de `getSheetActions`.
  */
 export function getTurnActions(state: PlayState, sheet: PlaySheet): SheetAction[] {
   const on = (id: string) => state.activeEffects.some(a => a.id === id)
+  const castingBlocked = getCastingBlockers(state, sheet).length > 0
   return sheet.actions.filter(action => {
     if (action.requiresToggle && !on(action.requiresToggle)) return false
     if (action.requires === 'prone' && !state.conditions.includes('prone')) return false
+    if (action.requires === 'spellcaster' && castingBlocked) return false
     return !(action.outcomes ?? []).some(o => o.kind === 'toggleOn' && on(o.toggle))
   })
 }
@@ -1348,6 +1366,8 @@ export function performAction(state0: PlayState, sheet: PlaySheet, actionId: str
     const toggle = sheet.toggles.find(t => t.id === action.requiresToggle)
     return refuse(state0, `${action.name}: só ${toggle ? lowerFirst(toggle.label) : 'com o efeito ligado'}.`)
   }
+  const castingBlockers = action.requires === 'spellcaster' ? getCastingBlockers(state0, sheet) : []
+  if (castingBlockers.length > 0) return refuse(state0, `${action.name}: ${castingBlockers.join(' ')}`)
 
   let next = reconcilePlayState(state0, sheet)
   const notices: PlayNotice[] = []

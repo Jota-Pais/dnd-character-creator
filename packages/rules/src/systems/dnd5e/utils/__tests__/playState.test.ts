@@ -8,7 +8,7 @@ import { buildPlaySheet } from '../playSheet'
 import { COMPLETE_DRAFT } from '../../../../test/fixtures'
 import {
   activateToggle, addCondition, adjustMaxHp, applyDamage, applyDamageDroppingToOneHp, applyHealing, clearRollHistory, clearTempHp, completeLongRest, completeShortRest,
-  createPlayState, deactivateToggle, describeHpMaxImmunity, emptyTurn, endConcentration, getBaseMaxHp, getTurnActions, getTurnMovement, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable,
+  createPlayState, deactivateToggle, describeHpMaxImmunity, emptyTurn, endConcentration, getBaseMaxHp, getCastingBlockers, getTurnActions, getTurnMovement, getCurrentHp, getEffectiveMaxHp, getHitDiceAvailable,
   getLongRestHitDiceRecoverable, getPactSlotsAvailable, getPlayEffects, getPlayConditionState, getPlayDamageDefenses, getPlaySpeed,
   getResourceAvailable, getShortRestSlotRecovery, performAction, getSpellSlotsAvailable, grantTempHp, previewLongRest, previewShortRest, reconcileLoadedPlayState,
   markTurn, newTurn, reconcilePlayState,
@@ -65,6 +65,7 @@ function sheet(overrides: Partial<PlaySheet> = {}): PlaySheet {
     defenses: [],
     toggles: [],
     actions: [],
+    unproficientArmor: [],
     ...overrides,
   }
 }
@@ -2354,6 +2355,32 @@ describe('o turno: as ações em combate', () => {
     // Paralisado também incapacita, mas zera o deslocamento: quem recusa é o standUp.
     const paralyzed = state({ conditions: ['prone', 'paralyzed'] })
     expect(use(paralyzed, krusk, 'stand-up').notices).toEqual([{ kind: 'refused', text: 'Com deslocamento 0 não é possível se levantar (pág. 193).' }])
+  })
+
+  // "Se você for capaz de conjurar magias, você não poderá conjurá-las [...] enquanto estiver em
+  // fúria" (linhas 3659-3661); de armadura sem proficiência, "não poderá conjurar magias" (p. 144).
+  it('Conjurar uma Magia some em fúria e de armadura sem proficiência, e o Usar recusa com o motivo', () => {
+    const tiefling = buildPlaySheet(draftOf('barbarian', 3, { race: 'tiefling' }))
+    expect(turnIds(state(), tiefling)).toContain('cast-a-spell')
+    const raging = use(state(), tiefling, 'rage-enter').state
+    expect(getCastingBlockers(raging, tiefling)).toEqual(['Em fúria você não pode conjurar magias (pág. 48).'])
+    expect(turnIds(raging, tiefling)).not.toContain('cast-a-spell')
+    const r = use(raging, tiefling, 'cast-a-spell')
+    expect(r.state).toBe(raging)
+    expect(r.notices).toEqual([{ kind: 'refused', text: 'Conjurar uma Magia: Em fúria você não pode conjurar magias (pág. 48).' }])
+
+    const armored = buildPlaySheet(draftOf('wizard', 1, {
+      equipment: {
+        ...structuredClone(EMPTY_DRAFT.equipment),
+        method: 'wealth',
+        purchasedItems: [{ itemId: 'chain-mail', quantity: 1, source: 'purchased' }],
+      },
+    }))
+    expect(turnIds(state(), armored)).not.toContain('cast-a-spell')
+    expect(use(state(), armored, 'cast-a-spell').notices).toEqual([{
+      kind: 'refused', text: 'Conjurar uma Magia: Usando Cota de Malha sem proficiência, você não pode conjurar magias (pág. 144).',
+    }])
+    expect(getCastingBlockers(state(), buildPlaySheet(draftOf('wizard', 1)))).toEqual([])
   })
 
   it('a Fúria: entrar some da lista em fúria, e encerrar só aparece nela', () => {

@@ -4,7 +4,7 @@ import type { AbilityScore } from '../types/race'
 import { ALL_ABILITY_SCORES, calculateModifier, getProficiencyBonus } from './abilityScoreUtils'
 import { getFinalAbilityScores } from './asiUtils'
 import { getHitDicePool } from './multiclassUtils'
-import { getSavingThrowChecks } from './proficiencyUtils'
+import { getSavingThrowChecks, getUnproficientArmor } from './proficiencyUtils'
 import { getSessionToggles } from './activeEffects'
 import { getSheetActions } from './actionUtils'
 import {
@@ -50,5 +50,6 @@ export function buildPlaySheet(draft: CharacterDraft): PlaySheet {
     defenses: structuredClone(getDamageDefenses(draft)),
     toggles: structuredClone(getSessionToggles(draft)),
     actions: structuredClone(getSheetActions(draft)),
+    unproficientArmor: getUnproficientArmor(draft).map(a => a.name),
   }
 }

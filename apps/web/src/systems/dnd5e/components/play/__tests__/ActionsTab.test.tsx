@@ -129,6 +129,14 @@ describe('ActionsTab — o que fazer em cada momento do turno', () => {
     expect(screen.getByRole('tab', { name: 'Magia' })).toHaveFocus()
   })
 
+  it('o tiefling bárbaro conjura pelo traço, mas em fúria Conjurar uma Magia sai da aba (pág. 48)', () => {
+    openActions(krusk(['greataxe'], { race: 'tiefling' }))
+    expect(item('cast-a-spell')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Usar: Entrar em fúria' }))
+    expect(screen.queryByTestId('action-cast-a-spell')).toBeNull()
+    expect(playState().turn.action).toBe(false)
+  })
+
   it('o Frenesi se escolhe ao entrar em fúria pela aba também', () => {
     openActions(krusk(['greataxe'], { level: 3, classChoices: { ...structuredClone(COMPLETE_DRAFT.classChoices), subclass: 'berserker' } }))
     fireEvent.click(within(item('rage-enter')).getByRole('checkbox', { name: 'Frenesi (ao terminar, +1 nível de exaustão)' }))

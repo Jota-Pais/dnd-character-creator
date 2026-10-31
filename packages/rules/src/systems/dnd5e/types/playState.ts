@@ -255,6 +255,11 @@ export type PlaySheet = {
   toggles: SheetToggle[]
   /** As ações da ficha (`getSheetActions`): o momento, o custo e o que causam. */
   actions: SheetAction[]
+  /**
+   * A armadura vestida sem proficiência, pelo nome (`getUnproficientArmor`): com ela não se conjura
+   * (pág. 144, `getCastingBlockers`). É a da ficha até a onda `armadura`.
+   */
+  unproficientArmor: string[]
 }
 
 /** Uma parcela de um dano de vários tipos (o golpe com Auxílio Divino, a coluna de chamas). */

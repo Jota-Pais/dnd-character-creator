@@ -11,7 +11,7 @@ import { SKILLS } from './backgroundUtils'
 import { getHitDicePool } from './multiclassUtils'
 import { getPlayConditionState } from './playState'
 import { getRace } from './raceUtils'
-import { getSavingThrowChecks, getSkillChecks, getPassiveScore, getUnproficientArmor } from './proficiencyUtils'
+import { describeUnproficientArmorCasting, getSavingThrowChecks, getSkillChecks, getPassiveScore, getUnproficientArmor } from './proficiencyUtils'
 import {
   EXHAUSTION, describeConditionalSaveBonuses, formatCastingRestriction, getActiveConditionEffects, getAttacksPerAction,
   getBestHalfProficiencySource, getCastingRestrictions, getCondition, getConditionalRollNotes, getDamageDefenses, isConditionSuspended,
@@ -812,7 +812,7 @@ export function getRollGuide(draft: CharacterDraft, state: PlayState): RollGuide
       : [],
   }
   const cannotCast = unproficient.length > 0
-    ? [`Usando ${unproficient.map(a => a.name).join(' e ')} sem proficiência, você não pode conjurar magias (pág. 144).`]
+    ? [describeUnproficientArmorCasting(unproficient.map(a => a.name))]
     : []
   const warCaster = hasWarCaster(draft)
   // Incapacitado (gravado ou implicado: Paralisado, Atordoado, Inconsciente…) e sem fala. A ficha

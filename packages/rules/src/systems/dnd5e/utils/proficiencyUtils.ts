@@ -792,6 +792,14 @@ export function getUnproficientArmor(draft: CharacterDraft): Armor[] {
   return worn.filter(armor => !hasArmorProficiency(draft, armor))
 }
 
+/**
+ * O aviso de quem veste armadura sem proficiência (`getUnproficientArmor`, pelos nomes): não conjura
+ * (p. 144). Um texto só para as notas do guia de rolagens e a recusa do "Usar" de Conjurar uma Magia.
+ */
+export function describeUnproficientArmorCasting(armorNames: readonly string[]): string {
+  return `Usando ${armorNames.join(' e ')} sem proficiência, você não pode conjurar magias (pág. 144).`
+}
+
 /** O foco do bardo (p. 53), como `spellcasting.focus` o grava em classes.json. */
 const INSTRUMENT_FOCUS = 'instrumento musical'
 

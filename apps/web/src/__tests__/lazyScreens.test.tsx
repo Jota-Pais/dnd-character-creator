@@ -94,3 +94,25 @@ describe('a ficha imprimível ainda descendo', () => {
     expect(screen.queryByText('Carregando…')).toBeNull()
   })
 })
+
+describe('o criador do Ordem ainda descendo', () => {
+  // O "Abrir" de um agente na primeira visita, antes de o pedaço do criador descer.
+  it('o App mostra o "Carregando…" no lugar da galeria, e depois o criador', async () => {
+    const creator = notYetLoaded('O criador do Ordem')
+    ordemSystem.Component = creator.Lazy
+    useCharacterStore.setState({ library: [] })
+    useOrdemStore.setState({ library: [] })
+    useOrdemStore.getState().importDraft({ ...structuredClone(ORDEM_EMPTY), name: 'Bianca' })
+    useOrdemStore.getState().goToGallery()
+    render(<App />)
+
+    fireEvent.click(screen.getByText('Abrir'))
+    expect(useAppStore.getState().activeSystemId).toBe('ordem')
+    expect(screen.getByText('Carregando…')).toBeInTheDocument()
+    expect(screen.queryByText('MEUS PERSONAGENS')).toBeNull()
+
+    creator.arrive()
+    expect(await screen.findByText('O criador do Ordem')).toBeInTheDocument()
+    expect(screen.queryByText('Carregando…')).toBeNull()
+  })
+})

@@ -390,15 +390,21 @@ function addAttackBonuses(effects: SourcedAttackEffect[], notes: string[], inclu
   return total
 }
 
+/** O dano da arma que acerta sem causar dano (a Rede, p. 150). */
+export const NO_WEAPON_DAMAGE = '—'
+
 /**
  * "1d8+3 cortante (1d10+3 a duas mãos) + 1d8 radiante": o dano da linha, com o versátil quando houver
- * e o dano extra de outro tipo depois, que vale nas duas empunhaduras.
+ * e o dano extra de outro tipo depois, que vale nas duas empunhaduras. A arma sem dano com dano extra
+ * (a Rede com o Auxílio Divino ligado) fica só com ele: "1d4 radiante".
  */
 export function formatAttackDamage(attack: WeaponAttack): string {
+  const extra = (attack.extraDamage ?? []).map(formatExtraDamage)
+  if (attack.damage === NO_WEAPON_DAMAGE && extra.length > 0) return extra.join(' + ')
   const base = attack.versatileDamage
     ? `${attack.damage} (${attack.versatileDamage} a duas mãos)`
     : attack.damage
-  return [base, ...(attack.extraDamage ?? []).map(formatExtraDamage)].join(' + ')
+  return [base, ...extra].join(' + ')
 }
 
 /**
@@ -436,7 +442,7 @@ export function getWeaponAttack(weapon: Weapon, ctx: AttackContext): WeaponAttac
 
   const type = weapon.damageType ? ` ${DAMAGE_TYPE_PT[weapon.damageType]}` : ''
   const roll = weapon.damage ? withMartialArtsDie(weapon.damage, martialArts?.die) : null
-  const damage = roll ? `${formatRoll(roll, mod + damageBonus)}${type}` : '—'
+  const damage = roll ? `${formatRoll(roll, mod + damageBonus)}${type}` : NO_WEAPON_DAMAGE
 
   const versatile = weapon.properties.find(p => p.kind === 'versatile')
   const versatileRoll = versatile ? withMartialArtsDie(versatile.alternateDamage, martialArts?.die) : null
@@ -452,7 +458,9 @@ export function getWeaponAttack(weapon: Weapon, ctx: AttackContext): WeaponAttac
 
   const fixed = roll && !('dice' in roll && roll.dice) ? { base: roll.flat ?? 0, mod } : undefined
   pushEffectNotes(notes, effects, useDex, hasProperty(weapon, 'thrown'), fixed, includedDamage)
-  const extraDamage = roll ? getExtraDamage(effects, hasProperty(weapon, 'thrown'), notes) : []
+  // O dano extra vem também na arma que acerta sem causar dano: o Auxílio Divino é dos "ataques com
+  // arma" e a Rede é arma, então o acerto dela causa o 1d4 radiante (decisão de 2026-10-30).
+  const extraDamage = getExtraDamage(effects, hasProperty(weapon, 'thrown'), notes)
 
   const attacksPerAction = getWeaponAttacksPerAction(weapon, ctx, notes)
 

@@ -1235,8 +1235,26 @@ describe('getRollGuide — dano extra na arma (Auxílio Divino)', () => {
     expect(unarmed.notes).toContain('Dano fixo: no acerto crítico, só os dados a mais dobram (pág. 198).')
   })
 
-  // O mínimo 0 com dano de outro tipo está com o dono (regras-efeitos-ativos.md, seção 6); seja qual
-  // for a resposta, o 1d4 radiante é dano: a ficha não diz "Não causa dano".
+  // A Rede é arma e acerta sem causar dano (pág. 150, linhas 13476-13488): com o Auxílio Divino, o
+  // acerto causa o 1d4 radiante (decisão de 2026-10-30), sem o modificador do atributo.
+  it('a Rede: o dano é só o 1d4 radiante, que o crítico dobra', () => {
+    const net = getRollGuide(paladin('net'), favored).attacks.find(a => a.key === 'net')!
+    expect(net.damage).toMatchObject({
+      dice: '', modifier: 0, formula: '1d4 radiante', notation: '1d4', breakdown: [],
+      crit: { formula: '2d4 radiante', notation: '2d4' },
+    })
+    expect(net.damage?.extraDice).toEqual([{ label: 'Auxílio Divino', count: 1, sides: 4, sign: 1, damageType: 'radiante' }])
+    expect(net.damage?.notes).toContain('A arma não causa dano: o acerto causa só o dano extra.')
+    expect(net.damage?.notes.some(n => n.startsWith('Dano fixo') || n.startsWith('Não causa dano'))).toBe(false)
+    expect(getCritRecipe(net.damage!, ['Auxílio Divino'])).toMatchObject({ formula: '1d4 radiante', notation: '1d4' })
+    expect(net.versatile).toBeNull()
+    // Sem o Auxílio Divino, a Rede continua sem dano.
+    expect(getRollGuide(paladin('net'), play()).attacks.find(a => a.key === 'net')!.damage).toBeNull()
+  })
+
+  // O mínimo 0 do golpe desarmado com dano extra de outro tipo é por parcela, decidido em 2026-10-30
+  // (regras-efeitos-ativos.md, seção 6): 0 concussão + 1d4 radiante, e o 1d4 radiante é dano — a
+  // ficha não diz "Não causa dano".
   it('golpe desarmado com Força 7: o fixo fica em 0, e com o 1d4 radiante ele causa dano', () => {
     const weak = draft({
       class: 'paladin', level: 2, abilityScores: { ...SCORES, STR: 7 }, spellChoices: { cantrips: [], spells: ['divine-favor'] },

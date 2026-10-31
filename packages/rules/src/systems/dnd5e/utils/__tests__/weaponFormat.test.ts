@@ -445,6 +445,28 @@ describe('weaponFormat', () => {
   })
 
   // p. 149: "Um valor de dano aparece entre parênteses [...] quando usada com as duas mãos".
+  // Auxílio Divino (linhas 20519-20521): "seus ataques com arma causam 1d4 de dano radiante extra ao
+  // atingirem". A Rede é arma e acerta sem causar dano (p. 150): o acerto causa só o 1d4 radiante
+  // (decisão de 2026-10-30).
+  describe('dano extra na arma que acerta sem causar dano (Rede)', () => {
+    const favor: Partial<AttackContext> = {
+      effects: [{ source: 'Auxílio Divino', value: { weapons: 'weapon-attack', extraDamage: { dice: { count: 1, sides: 4 }, damageType: 'radiant' } } }],
+    }
+
+    it('a Rede com o Auxílio Divino: o dano da linha é só o dado a mais', () => {
+      const net = getWeaponAttack(getWeaponById('net')!, ctx(3, 2, 2, true, favor))
+      expect(net.damage).toBe('—')
+      expect(net.extraDamage).toEqual([{ label: 'Auxílio Divino', count: 1, sides: 4, damageType: 'radiant' }])
+      expect(formatAttackDamage(net)).toBe('1d4 radiante')
+    })
+
+    it('sem o efeito, a Rede continua sem dano', () => {
+      const net = getWeaponAttack(getWeaponById('net')!, ctx(3, 2, 2, true))
+      expect(net.extraDamage).toBeUndefined()
+      expect(formatAttackDamage(net)).toBe('—')
+    })
+  })
+
   describe('arma versátil', () => {
     it('espada longa mostra o dano a duas mãos como segundo valor', () => {
       const atk = getWeaponAttack(getWeaponById('longsword')!, ctx(3, 0, 2, true))

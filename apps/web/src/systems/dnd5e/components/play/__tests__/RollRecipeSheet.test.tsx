@@ -267,4 +267,29 @@ describe('RollRecipeSheet — os dados a mais dos efeitos ligados', () => {
     const last = usePlayStore.getState().state!.rolls.at(-1)!
     expect(last.terms.map(t => `${t.term.count}d${t.term.sides}`)).toEqual(['2d8', '1d4'])
   })
+
+  // A Rede acerta sem causar dano (pág. 150); com o Auxílio Divino, o acerto causa o 1d4 radiante
+  // (decisão de 2026-10-30): sem parcela de modificador, o "de onde vem" diz de quem é o dado.
+  it('a Rede com o Auxílio Divino: o dano é o 1d4 radiante, com a origem no "de onde vem", e rola só ele', () => {
+    usePlayStore.getState().setAppDice(true)
+    const paladin: CharacterDraft = {
+      ...structuredClone(COMPLETE_DRAFT),
+      race: 'human',
+      class: 'paladin',
+      level: 2,
+      classChoices: structuredClone(EMPTY_DRAFT.classChoices),
+      spellChoices: { cantrips: [], spells: ['divine-favor'] },
+      equipment: { ...structuredClone(COMPLETE_DRAFT.equipment), purchasedItems: [{ itemId: 'net', quantity: 1, source: 'purchased' }] },
+    }
+    openDraft(paladin)
+    usePlayStore.getState().run((st, sh) => activateToggle(st, sh, 'spell:divine-favor', { now: 1 }))
+    const damage = getRollGuide(paladin, usePlayStore.getState().state!).attacks.find(a => a.key === 'net')!.damage!
+    render(<RollRecipeSheet entry={damage} appDice onClose={() => {}} />)
+    expect(screen.getByTestId('recipe-formula')).toHaveTextContent('1d4 radiante')
+    expect(screen.getByText('De onde vem')).toBeInTheDocument()
+    expect(within(screen.getByText('Auxílio Divino', { selector: 'li span' }).closest('li')!).getByText('+1d4 radiante')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Rolar' }))
+    const last = usePlayStore.getState().state!.rolls.at(-1)!
+    expect(last.terms.map(t => `${t.term.count}d${t.term.sides}`)).toEqual(['1d4'])
+  })
 })

@@ -121,7 +121,7 @@ export type AttackGuide = {
   /** As notas da linha de ataque da ficha (Duelismo, Artes Marciais, recarga…), menos as já no `breakdown`. */
   notes: string[]
   attack: RollGuideEntry
-  /** Null quando a arma não causa dano (Rede). */
+  /** Null quando a arma não causa dano (a Rede), salvo com dano extra (o Auxílio Divino): aí, só ele. */
   damage: RollGuideEntry | null
   versatile: RollGuideEntry | null
 }
@@ -221,16 +221,29 @@ function extraNotation(extra: readonly GuideExtraDice[], crit = false, undoubled
 
 /**
  * Fórmula de texto: "1d8 + 3 cortante"; sem dado, só o número ("4 concussão"); com os dados a mais
- * depois ("1d20 + 5 + 1d4", "1d8 + 3 cortante + 1d4 radiante").
+ * depois ("1d20 + 5 + 1d4", "1d8 + 3 cortante + 1d4 radiante"), dobrados no crítico (`crit`), menos
+ * os grupos desmarcados (`undoubled`). A arma que acerta sem causar dano (a Rede, pág. 150) com dano
+ * extra fica só com ele: "1d4 radiante".
  */
-export function formatGuideFormula(dice: string, modifier: number, damageType = '', extra: readonly GuideExtraDice[] = []): string {
+export function formatGuideFormula(
+  dice: string, modifier: number, damageType = '', extra: readonly GuideExtraDice[] = [], crit = false, undoubled: readonly string[] = [],
+): string {
+  const extras = extraFormula(extra, crit, undoubled)
+  if (!dice && modifier === 0 && !damageType && extra.length > 0) return extras.replace(/^ \+ /, '')
   const base = dice ? `${dice}${spacedModifier(modifier)}` : String(modifier)
-  return `${damageType ? `${base} ${damageType}` : base}${extraFormula(extra)}`
+  return `${damageType ? `${base} ${damageType}` : base}${extras}`
 }
 
-/** Notação do motor: "1d8+3"; sem dado, a constante ("4"); os dados a mais depois ("1d20+5+1d4"). */
-export function formatGuideNotation(dice: string, modifier: number, extra: readonly GuideExtraDice[] = []): string {
-  return `${dice ? `${dice}${notationModifier(modifier)}` : String(modifier)}${extraNotation(extra)}`
+/**
+ * Notação do motor: "1d8+3"; sem dado, a constante ("4"); os dados a mais depois ("1d20+5+1d4"),
+ * como na fórmula. Sem dado nem constante, só os dados a mais ("1d4", não "0+1d4").
+ */
+export function formatGuideNotation(
+  dice: string, modifier: number, extra: readonly GuideExtraDice[] = [], crit = false, undoubled: readonly string[] = [],
+): string {
+  const extras = extraNotation(extra, crit, undoubled)
+  if (!dice && modifier === 0 && extra.length > 0) return extras.replace(/^\+/, '')
+  return `${dice ? `${dice}${notationModifier(modifier)}` : String(modifier)}${extras}`
 }
 
 /**
@@ -251,11 +264,10 @@ export function getCritRecipe(entry: RollGuideEntry, undoubled: readonly string[
   if (!entry.crit) return null
   if (undoubled.length === 0) return entry.crit
   const extra = entry.extraDice ?? []
-  const text = entry.crit.dice ? `${entry.crit.dice}${spacedModifier(entry.modifier)}` : String(entry.modifier)
   return {
     ...entry.crit,
-    formula: `${entry.damageType ? `${text} ${entry.damageType}` : text}${extraFormula(extra, true, undoubled)}`,
-    notation: `${formatGuideNotation(entry.crit.dice, entry.modifier)}${extraNotation(extra, true, undoubled)}`,
+    formula: formatGuideFormula(entry.crit.dice, entry.modifier, entry.damageType, extra, true, undoubled),
+    notation: formatGuideNotation(entry.crit.dice, entry.modifier, extra, true, undoubled),
   }
 }
 
@@ -537,6 +549,8 @@ type DamageInput = {
   unarmedStrike?: boolean
   /** O dano extra de outro tipo (o Auxílio Divino, a Destruição Divina Aprimorada): parcela própria, que o crítico dobra. */
   extraDice?: GuideExtraDice[]
+  /** A arma acerta sem causar dano (a Rede, pág. 150): a jogada é só o dano extra, sem dano fixo. */
+  noWeaponDamage?: boolean
 }
 
 /** O que a ficha diz do dano fixo que dá 0 (golpe desarmado com Força baixa). */
@@ -555,7 +569,8 @@ function damageEntry(input: DamageInput): RollGuideEntry {
   const notes = [...(input.notes ?? [])]
   const extra = input.extraDice ?? []
   // Com dado a mais (o 1d4 radiante do Auxílio Divino), o golpe causa dano mesmo com o fixo em 0.
-  if (count === 0 && modifier === 0 && extra.length === 0) notes.push(NO_DAMAGE_NOTE)
+  if (input.noWeaponDamage) notes.push('A arma não causa dano: o acerto causa só o dano extra.')
+  else if (count === 0 && modifier === 0 && extra.length === 0) notes.push(NO_DAMAGE_NOTE)
   else if (count === 0 && extra.length === 0) notes.push('Dano fixo, sem dado: o acerto crítico não muda o valor (só os dados dobram, pág. 198).')
   else if (count === 0) notes.push('Dano fixo: no acerto crítico, só os dados a mais dobram (pág. 198).')
   const breakdown = floor > 0 ? [...input.breakdown, { label: 'Mínimo 0', value: floor }] : input.breakdown
@@ -578,8 +593,8 @@ function damageEntry(input: DamageInput): RollGuideEntry {
     // O crítico dobra todos os dados de dano do ataque, os a mais também (pág. 198, linhas 17752-17764).
     crit: {
       dice: critDice,
-      formula: `${formatGuideFormula(critDice, modifier, input.damageType)}${extraFormula(extra, true)}`,
-      notation: `${formatGuideNotation(critDice, modifier)}${extraNotation(extra, true)}`,
+      formula: formatGuideFormula(critDice, modifier, input.damageType, extra, true),
+      notation: formatGuideNotation(critDice, modifier, extra, true),
       ...(critNotes.length > 0 ? { notes: critNotes } : {}),
     },
   }
@@ -701,17 +716,21 @@ function attackGuide(attack: SheetAttack, ctx: AttackGuideContext): AttackGuide 
     { label: attack.ability, value: mods[ability] },
     ...included.damage.map(b => ({ label: b.label, value: b.value })),
   ]
-  const damage = parsed
+  // A arma que acerta sem causar dano (a Rede) com dano extra (o Auxílio Divino ligado, decisão de
+  // 2026-10-30): a jogada de dano é só o dado a mais, sem o modificador do atributo.
+  const extraOnly = !parsed && extraDice.length > 0
+  const damage = parsed || extraOnly
     ? damageEntry({
       id: `damage:${attack.key}`,
       label: `${attack.name} — dano`,
-      parsed,
-      damageType: parsed.damageType,
-      breakdown: damageBreakdown(parsed),
+      parsed: parsed ?? { count: 0, sides: 0, modifier: 0, damageType: '' },
+      damageType: parsed?.damageType ?? '',
+      breakdown: parsed ? damageBreakdown(parsed) : [],
       notes,
       critExtraDice,
       unarmedStrike: attack.weapon === null,
       extraDice,
+      noWeaponDamage: extraOnly,
     })
     : null
 

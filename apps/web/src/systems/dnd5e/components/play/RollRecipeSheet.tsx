@@ -290,7 +290,8 @@ export function RollRecipeSheet({
         </ul>
       )}
 
-      {entry.breakdown.length > 0 && (
+      {/* A Rede com o Auxílio Divino não tem parcela de modificador, só o dado a mais: o "de onde vem" diz de quem ele é. */}
+      {(entry.breakdown.length > 0 || extraDice.length > 0) && (
         <div className="mt-4">
           <p className="text-[11px] uppercase tracking-wider text-parchment-600">De onde vem</p>
           <ul className="mt-1 divide-y divide-parchment-900">

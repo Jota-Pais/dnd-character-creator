@@ -7,6 +7,7 @@ import { getHitDicePool } from './multiclassUtils'
 import { getSavingThrowChecks, getUnproficientArmor } from './proficiencyUtils'
 import { getSessionToggles } from './activeEffects'
 import { getSheetActions } from './actionUtils'
+import { getPlaySpellbook } from './spellbook'
 import {
   getDamageDefenses, getDropToOneHp, getHpMaxReductionImmunity, getInitiativeBonusTotal, getOwnedFeats,
   getSheetResources, getSheetSpeed, getTotalHp,
@@ -50,6 +51,7 @@ export function buildPlaySheet(draft: CharacterDraft): PlaySheet {
     defenses: structuredClone(getDamageDefenses(draft)),
     toggles: structuredClone(getSessionToggles(draft)),
     actions: structuredClone(getSheetActions(draft)),
+    spellbook: getPlaySpellbook(draft),
     unproficientArmor: getUnproficientArmor(draft).map(a => a.name),
   }
 }

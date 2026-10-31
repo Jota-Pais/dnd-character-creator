@@ -1,6 +1,7 @@
 import type { RollRecord } from '../../../core/dice'
 import type { SheetAction } from './actions'
 import type { SheetToggle } from './session'
+import type { SpellbookList } from './spellbook'
 import type { SheetResource } from '../utils/classResourceUtils'
 import type { SheetDamageDefense } from '../utils/sheetEffects'
 import type { ConditionId, ExhaustionLevel } from './condition'
@@ -264,6 +265,11 @@ export type PlaySheet = {
   toggles: SheetToggle[]
   /** As ações da ficha (`getSheetActions`): o momento, o custo e o que causam. */
   actions: SheetAction[]
+  /**
+   * O grimório (`getPlaySpellbook`): as magias por conjuração, com o status, os espaços que servem,
+   * o uso do talento e o ritual. A aba Magia lista daqui, e o `castSpell` confere por ele.
+   */
+  spellbook: SpellbookList[]
   /**
    * A armadura vestida sem proficiência, pelo nome (`getUnproficientArmor`): com ela não se conjura
    * (pág. 144, `getCastingBlockers`). É a da ficha até a onda `armadura`.

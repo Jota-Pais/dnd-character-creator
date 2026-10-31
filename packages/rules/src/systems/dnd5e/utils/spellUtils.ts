@@ -1,5 +1,6 @@
 import type { Spell, SpellClass, SpellChoices, SpellSchool } from '../types/spell'
 import type { GameClass, ClassSpellcasting } from '../types/class'
+import type { CastingTimeKind, RitualRule, SpellbookStatus } from '../types/spellbook'
 import type { AbilityScore } from '../types/race'
 import type { CharacterDraft, ClassEntry, FeatSelections } from '../types/character'
 import type { FeatureChoices } from '../types/effects'
@@ -778,22 +779,70 @@ export type CastingAids = {
 }
 
 /**
+ * Com quais magias a Conjuração de Ritual da classe vale (págs. 203-204, linhas 18174-18191, e a
+ * característica de cada classe): o mago, qualquer uma do grimório, mesmo sem prepará-la (pág. 96);
+ * o clérigo e o druida, as preparadas (págs. 65 e 73, pelo inglês: ver pt-BR × inglês no CLAUDE.md);
+ * o bardo, as que conhece (pág. 53). null para quem não tem a característica. Uma regra só: o texto
+ * da Revisão (`describeCastingAids`) e o grimório do jogo (`canCastAsRitual`) leem daqui.
+ */
+export function getRitualRule(spellcasting: ClassSpellcasting): RitualRule | null {
+  if (!spellcasting.ritualCasting) return null
+  return spellcasting.type === 'hybrid' ? 'spellbook' : spellcasting.type === 'prepared' ? 'prepared' : 'known'
+}
+
+const RITUAL_WHICH: Record<RitualRule, string> = {
+  spellbook: 'qualquer magia com o descritor ritual que esteja no grimório, mesmo sem prepará-la',
+  prepared: 'as magias com o descritor ritual que você tem preparadas',
+  known: 'as magias com o descritor ritual que você conhece',
+}
+
+/** O status do grimório que cada regra de ritual alcança. */
+const RITUAL_STATUS: Record<RitualRule, SpellbookStatus> = { spellbook: 'inSpellbook', prepared: 'prepared', known: 'known' }
+
+/**
+ * A magia vai como ritual (págs. 203-204): tem o descritor e a característica de quem a dá alcança
+ * o jeito como ela está no grimório — a do grimório do mago, a preparada do clérigo e do druida, a
+ * conhecida do bardo. Na multiclasse, a característica de uma classe vale só para as magias dela
+ * (pág. 166): por isso a pergunta é feita a cada conjuração. `grantedAsRitual`: a opção que ensinou
+ * a magia também a deixa ir como ritual (o Pacto da Corrente: convocar familiar, pág. 58).
+ */
+export function canCastAsRitual(
+  rule: RitualRule | null,
+  status: SpellbookStatus,
+  spell: Pick<Spell, 'ritual'>,
+  grantedAsRitual = false,
+): boolean {
+  if (!spell.ritual) return false
+  return grantedAsRitual || (rule !== null && RITUAL_STATUS[rule] === status)
+}
+
+/**
  * O foco substitui os componentes materiais que não têm custo indicado (p. 204) — é o que faz o
  * alaúde do bardo valer pela "lã" da Ilusão Menor. O ritual leva 10 minutos a mais e não gasta
- * espaço (p. 202); quais magias valem depende da classe: o mago usa qualquer uma do grimório, mesmo
- * sem prepará-la (p. 96); os demais, as que têm preparadas ou conhecem (p. 202).
+ * espaço (p. 202); quais magias valem depende da classe (`getRitualRule`).
  */
 export function describeCastingAids(spellcasting: ClassSpellcasting): CastingAids {
   const focus = spellcasting.focus
     ? `Foco de conjuração: ${spellcasting.focus} — substitui componentes materiais sem custo indicado.`
     : null
-  if (!spellcasting.ritualCasting) return { focus, ritual: null }
-  const which = spellcasting.type === 'hybrid'
-    ? 'qualquer magia com o descritor ritual que esteja no grimório, mesmo sem prepará-la'
-    : spellcasting.type === 'prepared'
-      ? 'as magias com o descritor ritual que você tem preparadas'
-      : 'as magias com o descritor ritual que você conhece'
-  return { focus, ritual: `Rituais: conjura como ritual ${which} (+10 minutos, sem gastar espaço).` }
+  const rule = getRitualRule(spellcasting)
+  if (!rule) return { focus, ritual: null }
+  return { focus, ritual: `Rituais: conjura como ritual ${RITUAL_WHICH[rule]} (+10 minutos, sem gastar espaço).` }
+}
+
+/**
+ * O tempo de conjuração no turno (pág. 204, linhas 18200-18228): a ação, a ação bônus, a reação ou
+ * mais que isso (minutos, horas: gasta a ação a cada turno e pede concentração enquanto se conjura,
+ * fora do checklist). Lido dos valores de `spells.json → castingTime` ("1 reação, que você faz
+ * quando…", com o gatilho). O único composto, "1 ação ou 8 horas" (ampliar plantas), fica com a
+ * ação, a forma que cabe no turno: a de 8 horas não marca nada, e o toque no checklist corrige.
+ */
+export function castingTimeKind(spell: Pick<Spell, 'castingTime'>): CastingTimeKind {
+  const time = spell.castingTime.trim()
+  if (/^1 ação bônus\b/.test(time)) return 'bonusAction'
+  if (/^1 reação\b/.test(time)) return 'reaction'
+  if (/^1 ação\b/.test(time)) return 'action'
+  return 'longer'
 }
 
 export function getMaxPreparedSpells(

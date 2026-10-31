@@ -45,6 +45,11 @@ export type ProgressionOption = {
    */
   grantsSpells?: string[]
   /**
+   * As magias que a opção ensina também vão como ritual, sem gastar espaço (o Pacto da Corrente:
+   * "pode conjurá-la como ritual", p. 58): o bruxo não tem Conjuração de Ritual na classe.
+   */
+  grantsSpellsAsRitual?: true
+  /**
    * Tipo de dano da opção (Ancestral Dracônico: fogo), que a Afinidade Elemental mostra (p. 80). O
    * nome e o dano por extenso saem de `damage-types.json`; nunca montados aqui.
    */
@@ -183,8 +188,11 @@ export function getUnmetPickRequirements(
   })
 }
 
-/** Magias que opções escolhidas ensinam, agrupadas pela opção ("Pacto da Corrente"). */
-export type GrantedSpellGroup = { label: string; spellIds: string[] }
+/**
+ * Magias que opções escolhidas ensinam, agrupadas pela opção ("Pacto da Corrente"); `asRitual`,
+ * quando a opção também as deixa ir como ritual (`grantsSpellsAsRitual`).
+ */
+export type GrantedSpellGroup = { label: string; spellIds: string[]; asRitual?: true }
 
 /**
  * As magias que as opções escolhidas pela classe ensinam (`grantsSpells`), nos slots que o nível
@@ -199,7 +207,7 @@ export function getGrantedSpellGroups(entry: ClassEntry): GrantedSpellGroup[] {
     return (progressionChoices[slot.id] ?? []).flatMap(id => {
       const option = options.find(o => o.id === id)
       if (!option?.grantsSpells?.length || getUnmetRequirement(classId, subclass, activePicks, option)) return []
-      return [{ label: option.name, spellIds: option.grantsSpells }]
+      return [{ label: option.name, spellIds: option.grantsSpells, ...(option.grantsSpellsAsRitual ? { asRitual: true as const } : {}) }]
     })
   })
 }

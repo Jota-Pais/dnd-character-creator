@@ -16,8 +16,8 @@ const SLOTS: { slot: TurnSlot; label: string; name: string }[] = [
 
 /**
  * O checklist leve do turno (decisão 10.2.10), numa linha no topo da aba Ações: a ação, a ação
- * bônus, o movimento (com o deslocamento do turno, a Disparada somada: `getTurnMovement`) e a
- * reação, mais o Novo turno. O "Usar" das ações marca a casa sozinho, e o toque na casa corrige
+ * bônus, o movimento (com o que resta do deslocamento do turno — a Disparada somada, o levantar-se
+ * descontado: `getTurnMovement`) e a reação, mais o Novo turno. O "Usar" das ações marca a casa sozinho, e o toque na casa corrige
  * (`markTurn`); nada aqui impede de jogar. O Novo turno (`newTurn`) zera as casas e encerra o que
  * dura até o início do seu turno — o aviso do pé da tela diz o que mudou, com o "Desfazer".
  *
@@ -26,7 +26,7 @@ const SLOTS: { slot: TurnSlot; label: string; name: string }[] = [
 export function TurnChecklist({ state, sheet, run }: PlayTabProps) {
   const { turn } = state
   const movement = formatMeters(getTurnMovement(state, sheet))
-  // A segunda linha da casa: o deslocamento do turno no movimento; nas outras, livre ou usada, e a
+  // A segunda linha da casa: o que resta do deslocamento do turno no movimento; nas outras, livre ou usada, e a
   // ação a mais do Surto de Ação na da ação. O nome acessível diz o mesmo por extenso.
   const shown = (slot: TurnSlot): string => {
     if (slot === 'movement') return movement

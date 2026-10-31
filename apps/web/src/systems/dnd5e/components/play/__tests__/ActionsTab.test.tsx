@@ -102,13 +102,16 @@ describe('ActionsTab — o que fazer em cada momento do turno', () => {
     expect(screen.getByRole('dialog')).toHaveAccessibleName('Furtividade')
   })
 
-  it('Levantar-se só Caído; usado, some e o foco vai ao título de Outras', () => {
+  it('Levantar-se só Caído; usado, some, o movimento mostra o que sobra e o foco vai ao título de Outras', () => {
     openActions()
     expect(screen.queryByTestId('action-stand-up')).toBeNull()
     act(() => { usePlayStore.getState().run((st, sh) => addCondition(st, sh, 'prone')) })
     fireEvent.click(screen.getByRole('button', { name: 'Usar: Levantar-se' }))
     expect(playState().conditions).toEqual([])
-    expect(playState().turn.movement).toBe(true)
+    // Custa metade dos 9 m: a casa não fica marcada e mostra os 4,5 m que restam.
+    const movement = within(screen.getByRole('group', { name: 'Neste turno' })).getByRole('button', { name: /^Movimento/ })
+    expect(movement).toHaveAttribute('aria-pressed', 'false')
+    expect(movement).toHaveAccessibleName('Movimento: 4,5 m')
     expect(screen.queryByTestId('action-stand-up')).toBeNull()
     expect(screen.getByRole('heading', { level: 2, name: /^Outras/ })).toHaveFocus()
   })

@@ -75,6 +75,11 @@ export type TurnState = {
   extraActions: number
   /** Disparadas neste turno: cada uma soma o deslocamento já modificado (p. 194). */
   dashes: number
+  /**
+   * Deslocamento já gasto no turno pelo que o app vê, em pés: levantar-se, metade dele (p. 192). O
+   * andar, não: é a casa `movement`, que o jogador marca.
+   */
+  movementSpent: number
   /** Você atacou no seu turno: Atacar e o ataque com a outra mão. */
   attacked: boolean
   /**

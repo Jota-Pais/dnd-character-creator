@@ -2174,7 +2174,7 @@ describe('o turno: o checklist, o Usar e o Novo turno', () => {
   // "A reação volta no início do seu próximo turno" (linhas 17130-17131).
   it('o Novo turno zera as quatro casas, a ação a mais e a uma vez por turno, com aviso', () => {
     const sh = fighter(2)
-    const busy = state({ turn: { action: true, bonusAction: true, movement: true, reaction: true, extraActions: 1, dashes: 1, attacked: true, afterTurn: false, beforeTurn: true, oncePerTurnUsed: ['action-surge'] } })
+    const busy = state({ turn: { action: true, bonusAction: true, movement: true, reaction: true, extraActions: 1, dashes: 1, movementSpent: 15, attacked: true, afterTurn: false, beforeTurn: true, oncePerTurnUsed: ['action-surge'] } })
     const r = newTurn(busy, sh)
     expect(r.state.turn).toEqual(emptyTurn())
     expect(r.notices).toEqual([{ kind: 'info', text: 'Novo turno: a ação, a ação bônus, o movimento e a reação estão de volta.' }])
@@ -2319,14 +2319,22 @@ describe('o turno: as ações em combate', () => {
     }])
   })
 
-  it('Levantar-se só aparece Caído: tira o Caído e marca o movimento; com o deslocamento em 0, recusa', () => {
+  // "Levantar-se [...] custa metade do seu deslocamento. Por exemplo, se seu deslocamento é 9
+  // metros, precisa gastar 4,5 metros para se levantar" (linhas 17223-17231).
+  it('Levantar-se só aparece Caído: tira o Caído e gasta metade do deslocamento, sem marcar a casa do movimento; com o deslocamento em 0, recusa', () => {
     expect(turnIds(state(), krusk)).not.toContain('stand-up')
     const prone = state({ conditions: ['prone'] })
     expect(turnIds(prone, krusk)).toContain('stand-up')
     const up = use(prone, krusk, 'stand-up')
     expect(up.state.conditions).toEqual([])
-    expect(up.state.turn).toEqual({ ...emptyTurn(), movement: true })
+    expect(up.state.turn).toEqual({ ...emptyTurn(), movementSpent: 15 })
+    expect(getTurnMovement(up.state, krusk)).toBe(15)
     expect(up.notices).toEqual([{ kind: 'info', text: 'Levantar-se custa metade do deslocamento (4,5 m) (pág. 192).' }])
+    // O "Levantar" do Caído gasta o mesmo; com a Disparada, sobram 13,5 m dos 18.
+    expect(standUp(prone, krusk).state.turn).toEqual(up.state.turn)
+    expect(getTurnMovement(use(up.state, krusk, 'dash').state, krusk)).toBe(45)
+    // O Novo turno devolve o deslocamento inteiro.
+    expect(getTurnMovement(newTurn(up.state, krusk).state, krusk)).toBe(30)
     const stuck = state({ conditions: ['prone', 'grappled'] })
     const refused = use(stuck, krusk, 'stand-up')
     expect(refused.state).toBe(stuck)

@@ -63,7 +63,7 @@ const ZERO_SAVES = { successes: 0, failures: 0 } as const
 export function emptyTurn(): TurnState {
   return {
     action: false, bonusAction: false, movement: false, reaction: false,
-    extraActions: 0, dashes: 0, attacked: false, afterTurn: false, beforeTurn: false, oncePerTurnUsed: [],
+    extraActions: 0, dashes: 0, movementSpent: 0, attacked: false, afterTurn: false, beforeTurn: false, oncePerTurnUsed: [],
   }
 }
 
@@ -1227,9 +1227,13 @@ export function deactivateToggle(state0: PlayState, sheet: PlaySheet, id: string
 
 // ── O turno ─────────────────────────────────────────────────────────────────
 
-/** A casa do checklist que cada momento marca; livre e especial não marcam nenhuma. */
+/**
+ * A casa do checklist que cada momento marca; livre e especial não marcam nenhuma. O movimento
+ * também não: o levantar-se gasta só metade do deslocamento (`standUp`), e a casa do movimento é
+ * o jogador que marca ao andar.
+ */
 const TURN_SLOT_OF: Partial<Record<ActionTiming, TurnSlot>> = {
-  action: 'action', bonusAction: 'bonusAction', movement: 'movement', reaction: 'reaction',
+  action: 'action', bonusAction: 'bonusAction', reaction: 'reaction',
 }
 
 /**
@@ -1275,12 +1279,13 @@ export function getTurnActions(state: PlayState, sheet: PlaySheet): SheetAction[
 }
 
 /**
- * O deslocamento do turno, em pés: o de agora (`getPlaySpeed`, com os efeitos e as condições) uma
- * vez mais por Disparada — o aumento é o deslocamento depois de qualquer modificador (pág. 194), e
- * com ele em 0 a Disparada dá 0.
+ * O deslocamento que resta no turno, em pés: o de agora (`getPlaySpeed`, com os efeitos e as
+ * condições) uma vez mais por Disparada — o aumento é o deslocamento depois de qualquer modificador
+ * (pág. 194), e com ele em 0 a Disparada dá 0 —, menos o que o app viu gastar (levantar-se, pág.
+ * 192). O andar o app não conta: é a casa do movimento.
  */
 export function getTurnMovement(state: PlayState, sheet: PlaySheet): number {
-  return getPlaySpeed(state, sheet) * (1 + state.turn.dashes)
+  return Math.max(0, getPlaySpeed(state, sheet) * (1 + state.turn.dashes) - state.turn.movementSpent)
 }
 
 /**
@@ -1439,16 +1444,20 @@ export function removeCondition(state: PlayState, id: ConditionId): PlayResult {
 }
 
 /**
- * Levantar-se (págs. 192-193): tira o Caído. Recusa com deslocamento efetivo 0 (o livro proíbe);
- * o custo de metade do deslocamento fica como aviso, porque o app não conta movimento.
+ * Levantar-se (págs. 192-193): tira o Caído e gasta metade do deslocamento do turno
+ * (`TurnState.movementSpent`, que `getTurnMovement` desconta), com o aviso do custo. Recusa com
+ * deslocamento efetivo 0 (o livro proíbe). O "Usar" da aba Ações e o "Levantar" do Caído passam
+ * por aqui.
  */
 export function standUp(state: PlayState, sheet: PlaySheet): PlayResult {
   if (!state.conditions.includes('prone')) return refuse(state, 'O personagem não está Caído.')
   const speed = getPlaySpeed(state, sheet)
   if (speed <= 0) return refuse(state, 'Com deslocamento 0 não é possível se levantar (pág. 193).')
+  const cost = halveSpeedOnGrid(speed)
+  const up = withoutCondition(state, 'prone')
   return done(
-    withoutCondition(state, 'prone'),
-    [note('info', `Levantar-se custa metade do deslocamento (${formatMeters(halveSpeedOnGrid(speed))}) (pág. 192).`)],
+    { ...up, turn: { ...up.turn, movementSpent: up.turn.movementSpent + cost } },
+    [note('info', `Levantar-se custa metade do deslocamento (${formatMeters(cost)}) (pág. 192).`)],
   )
 }
 
@@ -2028,6 +2037,7 @@ function sanitizeTurn(x: unknown): TurnState {
     reaction: x.reaction === true,
     extraActions: nonNegInt(x.extraActions),
     dashes: nonNegInt(x.dashes),
+    movementSpent: nonNegInt(x.movementSpent),
     attacked: x.attacked === true,
     afterTurn: x.afterTurn === true,
     beforeTurn: x.beforeTurn === true,

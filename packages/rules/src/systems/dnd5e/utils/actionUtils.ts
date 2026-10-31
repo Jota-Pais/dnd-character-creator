@@ -25,9 +25,10 @@ export const COMBAT_ACTIONS = combatActionsData as ActionDeclaration[]
 
 /**
  * As partes da tela para onde uma ação leva (`ActionDeclaration.links`), além das jogadas do guia:
- * os ataques (na própria aba Ações) e a aba Magia.
+ * os ataques (na própria aba Ações), a aba Magia e a Bolsa da aba Estado (Usar um Objeto: a poção, o
+ * ácido, o kit; onda `inventario`).
  */
-export const ACTION_DESTINATIONS = ['attacks', 'spellbook'] as const
+export const ACTION_DESTINATIONS = ['attacks', 'spellbook', 'bag'] as const
 
 /** A origem das ações em combate, onde a tela diria quem dá a ação. */
 const COMBAT_ACTIONS_SOURCE = 'Ações em combate'

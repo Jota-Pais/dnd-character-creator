@@ -11,6 +11,9 @@ import {
 } from './equipmentUtils'
 import { getStartingInventory } from './sheetModel'
 import { getCarryingCapacityMultiplier } from './sheetEffects'
+import { ABILITY_LABELS } from './abilityScoreUtils'
+import { getDamageTypeName } from './damageTypes'
+import { damageEntry, healEntry, type RollGuideEntry } from './guideEntries'
 
 /**
  * A bolsa do jogo (Fase 2, onda `inventario`; `docs/regras-equipamentos.md`, seção 6): as moedas, a
@@ -160,6 +163,53 @@ export function getBagCatalog(): BagItemInfo[] {
       return info && info.category !== 'background-item' ? [info] : []
     })
     .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
+}
+
+/**
+ * O que rolar ao usar um item (a folha do "Usar" da bolsa): a cura (a Poção de Cura, 2d4 + 2) e o
+ * dano, tocáveis como as jogadas da ficha, pelos mesmos montadores (`healEntry`, `damageEntry`); o
+ * crítico só no dano do acerto do ataque (`onHit`, pág. 196). `lines`: o TR do alvo e o ataque à
+ * distância do item arremessado, que a receita não monta — o bônus do ataque com arma improvisada
+ * fica com a mesa.
+ */
+export type ItemUseGuide = { heal: RollGuideEntry | null; damage: RollGuideEntry[]; lines: string[] }
+
+export function getItemUseGuide(itemId: string): ItemUseGuide | null {
+  const info = getBagItemInfo(itemId)
+  const use = info?.use
+  if (!info || !use) return null
+  let heal: RollGuideEntry | null = null
+  const damage: RollGuideEntry[] = []
+  const lines: string[] = []
+  for (const outcome of use.outcomes ?? []) {
+    if (outcome.kind === 'attack') {
+      lines.push('Um ataque à distância, tratando o item como arma improvisada (pág. 148): o bônus desse ataque o app ainda não calcula.')
+    } else if (outcome.kind === 'heal') {
+      const bonus = outcome.dice.bonus ?? 0
+      heal = healEntry({
+        id: `item:${itemId}:heal`,
+        label: `${info.name} — cura`,
+        dice: `${outcome.dice.count}d${outcome.dice.sides}`,
+        modifier: bonus,
+        breakdown: bonus ? [{ label: info.name, value: bonus }] : [],
+      })
+    } else if (outcome.kind === 'roll') {
+      const type = getDamageTypeName(outcome.damageType)
+      if (outcome.save) {
+        lines.push(`O alvo faz um teste de resistência de ${ABILITY_LABELS[outcome.save.ability].long} CD ${outcome.save.dc}: se falhar, sofre o dano.`)
+      }
+      damage.push(damageEntry({
+        id: `item:${itemId}:damage`,
+        label: `${info.name} — dano`,
+        parsed: { count: outcome.damage.count, sides: outcome.damage.sides, modifier: outcome.damage.bonus ?? 0, damageType: type },
+        damageType: type,
+        breakdown: [],
+        critical: outcome.onHit === true,
+        ...(outcome.when ? { notes: [`${outcome.when.charAt(0).toUpperCase()}${outcome.when.slice(1)}.`] } : {}),
+      }))
+    }
+  }
+  return { heal, damage, lines }
 }
 
 // ── Os itens: a ficha ────────────────────────────────────────────────────────

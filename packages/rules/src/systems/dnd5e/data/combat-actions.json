@@ -85,6 +85,7 @@
     "name": "Usar um Objeto",
     "timing": "action",
     "summary": "Para o objeto que exige a sua ação para ser usado, ou para interagir com mais de um objeto no turno.",
+    "links": ["bag"],
     "page": 195,
     "bookLines": [17464, 17470]
   },

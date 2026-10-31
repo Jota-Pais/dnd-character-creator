@@ -5,7 +5,7 @@ import { buildPlaySheet } from '../playSheet'
 import { createPlayState } from '../playState'
 import {
   formatBagQuantity, formatCoinPurse, formatKg, getBagItemInfo, getBagItems, getCarriedWeight, getCarryingCapacity, getCoins,
-  getSheetInventory, getStartingCoins, getWeaponAmmo, isBagAdjustable,
+  getItemUseGuide, getSheetInventory, getStartingCoins, getWeaponAmmo, isBagAdjustable,
 } from '../inventoryPlay'
 import { getFinalAbilityScores } from '../asiUtils'
 
@@ -145,5 +145,29 @@ describe('a bolsa agora', () => {
     ])
     expect(getWeaponAmmo(state, sheet, 'longbow')).toEqual({ ammoId: 'arrows', name: 'Flechas', quantity: 15, spent: 5, recoverable: 2 })
     expect(getWeaponAmmo(state, sheet, 'longsword')).toBeNull()
+  })
+})
+
+describe('o que rolar ao usar um item', () => {
+  it('a Poção de Cura: 2d4 + 2, a parcela com o nome da poção', () => {
+    const guide = getItemUseGuide('potion-of-healing')
+    expect(guide?.heal).toMatchObject({ kind: 'heal', formula: '2d4 + 2', notation: '2d4+2', breakdown: [{ label: 'Poção de Cura', value: 2 }] })
+    expect(guide?.damage).toEqual([])
+    expect(guide?.lines).toEqual([])
+  })
+
+  // Só o dano do acerto dobra no crítico (pág. 196): o ácido sim; o fogo alquímico queima no início
+  // dos turnos do alvo, e o veneno vem do TR falhado.
+  it('o dano com o tipo, o crítico só do acerto, a situação e o TR em linhas', () => {
+    const acid = getItemUseGuide('acid-vial')
+    expect(acid?.damage.map(d => [d.formula, d.crit?.formula])).toEqual([['2d6 ácido', '4d6 ácido']])
+    expect(acid?.lines).toEqual(['Um ataque à distância, tratando o item como arma improvisada (pág. 148): o bônus desse ataque o app ainda não calcula.'])
+    expect(getItemUseGuide('holy-water-flask')?.damage[0].notes).toEqual(['Se o alvo for um corruptor ou morto-vivo.'])
+    const fire = getItemUseGuide('alchemists-fire')?.damage[0]
+    expect([fire?.formula, fire?.crit, fire?.notes]).toEqual(['1d4 fogo', undefined, ['No início de cada turno do alvo, até ele apagar as chamas.']])
+    const poison = getItemUseGuide('basic-poison')
+    expect(poison?.lines).toEqual(['O alvo faz um teste de resistência de Constituição CD 10: se falhar, sofre o dano.'])
+    expect(poison?.damage[0].crit).toBeUndefined()
+    expect(getItemUseGuide('torch')).toBeNull()
   })
 })

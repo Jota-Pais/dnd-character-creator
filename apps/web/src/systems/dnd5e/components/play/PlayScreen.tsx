@@ -6,6 +6,7 @@ import { useTabSwipe } from './tabSwipe'
 import { PlaySettings } from './PlaySettings'
 import { formatPlaySubtitle, usePlayView, type PlayTabProps } from './usePlayView'
 import { findRollGuideEntry, type RollGuideEntry } from '@rpg/rules/systems/dnd5e/utils/rollGuide'
+import { findSpellGuideEntry } from '@rpg/rules/systems/dnd5e/utils/spellGuide'
 import { DeathSaves } from './DeathSaves'
 import { HP_PANEL_ID, HpPanel } from './HpPanel'
 import { NoticeToast, type NoticeToastHandle } from './NoticeToast'
@@ -212,15 +213,21 @@ export function PlayScreen() {
   const focusAfterSheet = () => {
     if (!toastRef.current?.focus()) focusOpenTab()
   }
-  const liveRecipe = recipe ? findRollGuideEntry(view.guide, recipe.entry.id) ?? recipe.entry : null
-  // Da folha de um ataque, o dano (e o dano a duas mãos) a um toque.
+  // A jogada de uma magia (a aba Magia, a folha da magia na aba Regras) se remonta pelo guia dela.
+  const sheetEntry = recipe ? findRollGuideEntry(view.guide, recipe.entry.id) : undefined
+  const spellMatch = recipe && !sheetEntry ? findSpellGuideEntry(view.draft, view.state, recipe.entry.id, view.guide) : null
+  const liveRecipe = recipe ? sheetEntry ?? spellMatch?.entry ?? recipe.entry : null
+  // Da folha de um ataque, o dano (e o dano a duas mãos) a um toque; do ataque de magia, o dano dela.
   const attackRow = liveRecipe ? view.guide.attacks.find(a => a.attack.id === liveRecipe.id) : undefined
+  const spellAttack = spellMatch && spellMatch.entry.id === spellMatch.guide.attack?.id ? spellMatch.guide : null
   const recipeLinks: RecipeLink[] = attackRow
     ? [
       ...(attackRow.damage ? [{ label: 'Dano', entry: attackRow.damage }] : []),
       ...(attackRow.versatile ? [{ label: 'Dano a duas mãos', entry: attackRow.versatile }] : []),
     ]
-    : []
+    : spellAttack
+      ? spellAttack.damage.map(entry => ({ label: spellAttack.instances ? `Dano por ${spellAttack.instances.noun}` : 'Dano', entry }))
+      : []
 
   // A tela inteira (cabeçalho, vitais, painel de PV, aviso do pé, folhas) deixa ao navegador só a
   // rolagem vertical e a pinça, não só a área das abas. A faixa de chips, que rola de lado, continua

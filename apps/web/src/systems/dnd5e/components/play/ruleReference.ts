@@ -20,9 +20,11 @@ import { ordinal } from './playFormat'
  * texto) ou o texto de uma característica, traço ou talento, com a escolha feita nele.
  * `chosenLabel` é o rótulo da escolha, como na Revisão e no PDF ("Tipo de dano" na Afinidade
  * Elemental); null = "Escolha". `notes` da magia: o que proíbe conjurá-la numa situação (em fúria).
+ * `casterKey` da magia: a conjuração de onde ela vem ('class:wizard', 'feat:<talento>'), a do
+ * ataque e da CD no guia dela (`getSpellGuide`); null fora dela (raça, subclasse, inatas).
  */
 export type RuleDetail =
-  | { kind: 'spell'; spell: Spell; source: string | null; notes: string[] }
+  | { kind: 'spell'; spell: Spell; source: string | null; notes: string[]; casterKey: string | null }
   | { kind: 'text'; kicker: string | null; text: string; chosen: string | null; chosenLabel: string | null }
 
 /** Uma linha tocável: o nome, uma pista curta ao lado e a regra completa na folha. */
@@ -61,19 +63,23 @@ function spellMeta(spell: Spell, extra: string | null): string {
 }
 
 /** `metaExtra`: a pista ao lado do nome, quando difere da origem que a folha mostra. */
-function spellEntry(key: string, spell: Spell, source: string | null, notes: string[], metaExtra = source): RuleEntry {
-  return { key, name: spell.name, meta: spellMeta(spell, metaExtra), detail: { kind: 'spell', spell, source, notes } }
+function spellEntry(
+  key: string, spell: Spell, source: string | null, notes: string[], casterKey: string | null, metaExtra = source,
+): RuleEntry {
+  return { key, name: spell.name, meta: spellMeta(spell, metaExtra), detail: { kind: 'spell', spell, source, notes, casterKey } }
 }
 
 /** Agrupa por nível de magia, truques primeiro, alfabético dentro de cada nível. */
-function groupByLevel(items: { spell: Spell; source: string | null }[], keyPrefix: string, notes: string[]): RuleGroup[] {
+function groupByLevel(
+  items: { spell: Spell; source: string | null }[], keyPrefix: string, notes: string[], casterKey: string | null,
+): RuleGroup[] {
   const levels = [...new Set(items.map(i => i.spell.level))].sort((a, b) => a - b)
   return levels.map(level => ({
     title: level === 0 ? 'Truques' : `${ordinal(level)} nível`,
     entries: items
       .filter(i => i.spell.level === level)
       .sort((a, b) => byName(a.spell, b.spell))
-      .map(i => spellEntry(`${keyPrefix}:${i.spell.id}`, i.spell, i.source, notes)),
+      .map(i => spellEntry(`${keyPrefix}:${i.spell.id}`, i.spell, i.source, notes, casterKey)),
   }))
 }
 
@@ -95,7 +101,7 @@ function spellSection(draft: CharacterDraft, session: SheetSession): RuleSection
     // Conjuração de subclasse (Cavaleiro/Trapaceiro Arcano) se identifica mesmo sem multiclasse.
     const showLabel = isMc || caster.casting.casterId !== caster.cls.id
     const items = spells.map(({ spell, group }) => ({ spell, source: group }))
-    return { label: showLabel ? caster.casting.label : null, groups: groupByLevel(items, caster.cls.id, notes) }
+    return { label: showLabel ? caster.casting.label : null, groups: groupByLevel(items, caster.cls.id, notes, `class:${caster.cls.id}`) }
   })
 
   // Talento que ensina magias (Iniciado em Magia, p. 170): um bloco por talento, como na Revisão e
@@ -104,7 +110,7 @@ function spellSection(draft: CharacterDraft, session: SheetSession): RuleSection
   for (const feat of known.feats) {
     const groups: RuleGroup[] = []
     const entries = (spells: Spell[], source: string) =>
-      [...spells].sort(byName).map(s => spellEntry(`feat:${feat.featId}:${s.id}`, s, source, notes, null))
+      [...spells].sort(byName).map(s => spellEntry(`feat:${feat.featId}:${s.id}`, s, source, notes, `feat:${feat.featId}`, null))
     if (feat.cantrips.length > 0) groups.push({ title: 'Truques', entries: entries(feat.cantrips, feat.label) })
     if (feat.spells.length > 0) {
       groups.push({ title: feat.spellsTitle, entries: entries(feat.spells, `${feat.label} · ${FEAT_SPELL_USAGE}`) })
@@ -122,7 +128,7 @@ function spellSection(draft: CharacterDraft, session: SheetSession): RuleSection
     })),
   ]
   if (others.length > 0) {
-    blocks.push({ label: 'Outras magias', groups: groupByLevel(others, 'other', notes) })
+    blocks.push({ label: 'Outras magias', groups: groupByLevel(others, 'other', notes, null) })
   }
 
   const filled = blocks.filter(b => b.groups.length > 0)

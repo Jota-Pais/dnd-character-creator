@@ -98,6 +98,50 @@ describe('RulesTab', () => {
     expect(missile).toHaveFocus()
   })
 
+  it('a folha do truque diz o que rolar; o dano abre a receita por cima, e o Esc fecha só ela', () => {
+    const panel = openRules(WIZARD_3)
+    const spells = within(panel).getByRole('region', { name: 'Magias' })
+    const bolt = within(spells).getByRole('button', { name: /^Raio de Fogo/ })
+    bolt.focus()
+    fireEvent.click(bolt)
+    const sheet = screen.getByRole('dialog', { name: 'Raio de Fogo' })
+    const recipe = within(sheet).getByRole('region', { name: 'O que rolar' })
+    // Mago 3 humano: proficiência +2, INT 16 (+3); o truque ainda no primeiro degrau.
+    expect(within(recipe).getByRole('button', { name: 'Raio de Fogo — ataque: 1d20 + 5' })).toBeInTheDocument()
+    const damageButton = within(recipe).getByRole('button', { name: 'Raio de Fogo — dano: 1d10 fogo' })
+    damageButton.focus()
+    fireEvent.click(damageButton)
+    expect(screen.getByRole('dialog', { name: 'Raio de Fogo — dano' })).toBeInTheDocument()
+    expect(screen.getAllByRole('dialog')).toHaveLength(2)
+
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(screen.queryByRole('dialog', { name: 'Raio de Fogo — dano' })).not.toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Raio de Fogo' })).toBeInTheDocument()
+    expect(damageButton).toHaveFocus()
+
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(bolt).toHaveFocus()
+  })
+
+  it('a magia sem receita (a Luz, só no texto; Mísseis Mágicos, de um lote que ainda não chegou) fica só com o texto', () => {
+    const panel = openRules(WIZARD_3)
+    const spells = within(panel).getByRole('region', { name: 'Magias' })
+    for (const name of [/^Luz/, /^Mísseis Mágicos/]) {
+      fireEvent.click(within(spells).getByRole('button', { name }))
+      expect(within(screen.getByRole('dialog')).queryByRole('region', { name: 'O que rolar' })).not.toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: 'Fechar' }))
+    }
+  })
+
+  it('bruxo do Tomo: a Chama Sagrada do Livro das Sombras usa a CD do bruxo', () => {
+    const panel = openRules(WARLOCK_TOME)
+    fireEvent.click(within(panel).getByRole('button', { name: /^Chama Sagrada/ }))
+    // CAR 8 do Krusk: CD 8 + 2 − 1.
+    expect(within(screen.getByRole('dialog')).getByRole('region', { name: 'O que rolar' }))
+      .toHaveTextContent('TR de Destreza do alvo (CD 9): no sucesso, nenhum dano.')
+  })
+
   it('concentração e ritual aparecem ao lado do nome e na duração', () => {
     const panel = openRules(WIZARD_3)
     expect(within(panel).getByRole('button', { name: /^Detectar Magia.*concentração · ritual/ })).toBeInTheDocument()

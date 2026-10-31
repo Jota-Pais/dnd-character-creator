@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import type { ResourceUnit } from '@rpg/rules/systems/dnd5e/types/effects'
 import { formatModifier } from '@rpg/rules/systems/dnd5e/utils/abilityScoreUtils'
 import {
@@ -8,9 +8,11 @@ import {
   getPactSlotsAvailable, getResourceAvailable, getSpellSlotsAvailable,
   recoverPactSlot, recoverResource, recoverSpellSlot, spendPactSlot, spendResource, spendSpellSlot,
 } from '@rpg/rules/systems/dnd5e/utils/playState'
+import { getCasterSpellGuides } from '@rpg/rules/systems/dnd5e/utils/spellGuide'
 import { spellSaveDcSource } from './numberSources'
 import { ordinal, rollButtonLabel } from './playFormat'
 import { RollMarks } from './RollMarks'
+import { SpellRecipe } from './SpellRecipe'
 import { RemainingTrack, UsesTrack } from './UsesTrack'
 import type { PlayTabProps } from './usePlayView'
 
@@ -72,13 +74,19 @@ function ResourceRow({ resource, view }: { resource: SheetResource; view: PlayTa
 
 /**
  * Aba "Magia": por classe conjuradora e por talento que ensina magias (Iniciado em Magia) a CD e
- * o ataque de magia (tocável), com a restrição de conjuração da ficha (Fúria) numa linha; os espaços
+ * o ataque de magia (tocável) e as magias dela com o que rolar (`getCasterSpellGuides`: o ataque, o
+ * dano e o TR de cada uma, a um toque), com a restrição de conjuração da ficha (Fúria) numa linha; os espaços
  * do pool e os de Magia de Pacto, à parte, como bolinhas que gastam e recuperam com um toque;
  * e os recursos da ficha (`sheet.resources`) com os usos e a recarga. Os Dados de Vida ficam nos
  * vitais fixos, junto do "Descanso".
  */
 export function MagicTab(view: PlayTabProps) {
-  const { state, sheet, guide, run, openRecipe, openSource } = view
+  const { draft, state, sheet, guide, run, openRecipe, openSource } = view
+  // As magias de cada conjuração com o que rolar, pelo guia que a tela já montou.
+  const spellGuides = useMemo(
+    () => new Map(getCasterSpellGuides(draft, state, guide).map(c => [c.casterKey, c.guides])),
+    [draft, state, guide],
+  )
   const slotsAvailable = getSpellSlotsAvailable(state, sheet)
   const slotLevels = sheet.spellSlots.map((max, i) => ({ level: i + 1, max })).filter(s => s.max > 0)
   const pact = sheet.pactSlots
@@ -124,6 +132,19 @@ export function MagicTab(view: PlayTabProps) {
                 <p className="mt-1 text-[11px] text-parchment-600">
                   A CD é o que os alvos das suas magias precisam tirar no teste de resistência.
                 </p>
+                {(spellGuides.get(sc.key)?.length ?? 0) > 0 && (
+                  <div className="mt-2.5 border-t border-parchment-900 pt-2">
+                    <h3 className="text-[11px] uppercase tracking-wider text-parchment-600">O que rolar nas magias</h3>
+                    <ul className="divide-y divide-parchment-900">
+                      {spellGuides.get(sc.key)!.map(g => (
+                        <li key={g.ref.spellId} className="py-2">
+                          <p className="text-sm text-parchment-100">{g.name}</p>
+                          <SpellRecipe guide={g} openRecipe={openRecipe} />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </li>
             ))}
           </ul>

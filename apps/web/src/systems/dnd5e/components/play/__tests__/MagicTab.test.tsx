@@ -92,6 +92,40 @@ describe('MagicTab', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument()
   })
 
+  describe('o que rolar nas magias (onda magias-base)', () => {
+    it('o truque de ataque: o ataque da conjuração abre a receita e leva ao dano, com o crítico', () => {
+      openMagic(BARBARIAN_WIZARD)
+      const card = screen.getByText('O que rolar nas magias').closest('li')!
+      // Só os revisados com algo a rolar: a Luz fica no texto, e as Mãos Mágicas não têm jogada.
+      expect(within(card).getByText('Raio de Fogo')).toBeInTheDocument()
+      expect(within(card).queryByText('Luz')).not.toBeInTheDocument()
+      expect(within(card).queryByText('Mãos Mágicas')).not.toBeInTheDocument()
+
+      // Bárbaro 2 / mago 1: nível de personagem 3, proficiência +2, INT +1.
+      fireEvent.click(within(card).getByRole('button', { name: 'Raio de Fogo — ataque: 1d20 + 3' }))
+      const attack = screen.getByRole('dialog', { name: 'Raio de Fogo — ataque' })
+      expect(attack).toHaveTextContent('Ataque à distância com magia.')
+      expect(attack).toHaveTextContent(RAGE)
+      fireEvent.click(within(attack).getByRole('button', { name: 'Dano: 1d10 fogo' }))
+      const damage = screen.getByRole('dialog', { name: 'Raio de Fogo — dano' })
+      expect(within(damage).getByTestId('recipe-formula')).toHaveTextContent('1d10 fogo')
+      expect(damage).toHaveTextContent('Acerto crítico: 2d10 fogo')
+    })
+
+    it('o truque de TR (Iniciado em Magia): o TR do alvo com a CD do talento, e o dano sem crítico', () => {
+      openMagic(FIGHTER_INITIATE)
+      const card = screen.getByText('O que rolar nas magias').closest('li')!
+      expect(within(card).getByText('Chama Sagrada')).toBeInTheDocument()
+      expect(within(card).queryByText('Orientação')).not.toBeInTheDocument()
+      expect(within(card).getByText('TR de Destreza do alvo (CD 10): no sucesso, nenhum dano.')).toBeInTheDocument()
+      // Guerreiro 4: nível de personagem 4, ainda no primeiro degrau do truque.
+      fireEvent.click(within(card).getByRole('button', { name: 'Chama Sagrada — dano: 1d8 radiante' }))
+      const damage = screen.getByRole('dialog', { name: 'Chama Sagrada — dano' })
+      expect(damage).not.toHaveTextContent('Acerto crítico')
+      expect(damage).toHaveTextContent('Truque: o dano cresce com o nível de personagem — 2d8 no 5º, 3d8 no 11º e 4d8 no 17º.')
+    })
+  })
+
   describe('guerreiro com Iniciado em Magia (sem conjuração de classe)', () => {
     it('a CD e o ataque do talento na Conjuração, tocáveis como os da classe', () => {
       openMagic(FIGHTER_INITIATE)

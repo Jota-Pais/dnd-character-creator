@@ -1,19 +1,27 @@
 import { useMemo, useState } from 'react'
+import { getSpellGuide, spellGuideRolls } from '@rpg/rules/systems/dnd5e/utils/spellGuide'
 import { RuleText } from '../common/RuleText'
 import { PlayDialog } from './PlayDialog'
 import {
   describeSpellDuration, describeSpellKind, getRuleReference, type RuleDetail, type RuleEntry,
 } from './ruleReference'
+import { SpellRecipe } from './SpellRecipe'
 import type { PlayTabProps } from './usePlayView'
 
 const HEADING = 'font-fantasy uppercase tracking-wider text-[11px] text-gold-500 mt-3 first:mt-0'
 
 /**
  * A folha de uma magia: o que se lê antes de conjurar — com o que proíbe conjurá-la numa situação
- * (em fúria) — e o texto inteiro. Sem conjurar (Fase 2).
+ * (em fúria) —, o que rolar nela (o guia da magia revisada, `getSpellGuide`: o ataque e o dano
+ * abrem a receita por cima da folha) e o texto inteiro. Sem conjurar (onda `grimorio`).
  */
-function SpellBody({ detail }: { detail: Extract<RuleDetail, { kind: 'spell' }> }) {
-  const { spell, source, notes } = detail
+function SpellBody({ detail, view }: { detail: Extract<RuleDetail, { kind: 'spell' }>; view: PlayTabProps }) {
+  const { spell, source, notes, casterKey } = detail
+  const { draft, state, guide: rollGuide, openRecipe } = view
+  const guide = useMemo(
+    () => getSpellGuide(draft, state, { casterKey, spellId: spell.id }, rollGuide),
+    [draft, state, casterKey, spell.id, rollGuide],
+  )
   const rows: [string, string][] = [
     ['Tempo de conjuração', spell.castingTime],
     ['Alcance', spell.range],
@@ -35,6 +43,12 @@ function SpellBody({ detail }: { detail: Extract<RuleDetail, { kind: 'spell' }> 
         ))}
       </dl>
       {notes.map((n, i) => <p key={i} className="mt-3 text-xs text-amber-200 leading-snug">{n}</p>)}
+      {guide && spellGuideRolls(guide).length > 0 && (
+        <section aria-labelledby="spell-recipe-title" className="mt-3 rounded-lg border border-parchment-900 px-3 py-2">
+          <h3 id="spell-recipe-title" className={HEADING}>O que rolar</h3>
+          <SpellRecipe guide={guide} openRecipe={openRecipe} />
+        </section>
+      )}
       <RuleText text={spell.description} className="mt-3 text-sm text-parchment-300 leading-relaxed" headingClassName={HEADING} />
     </>
   )
@@ -59,7 +73,8 @@ function TextBody({ detail }: { detail: Extract<RuleDetail, { kind: 'text' }> })
  * os traços raciais e os talentos, cada um com a regra completa numa folha a um toque. As listas
  * vêm de `getRuleReference` (as mesmas fontes da Revisão e da ficha imprimível).
  */
-export function RulesTab({ draft, session }: PlayTabProps) {
+export function RulesTab(view: PlayTabProps) {
+  const { draft, session } = view
   const sections = useMemo(() => getRuleReference(draft, session), [draft, session])
   const [open, setOpen] = useState<RuleEntry | null>(null)
 
@@ -114,7 +129,7 @@ export function RulesTab({ draft, session }: PlayTabProps) {
       {open && (
         <PlayDialog title={open.name} titleId="rule-sheet-title" onClose={() => setOpen(null)}>
           <div className="mt-1" data-testid="rule-sheet">
-            {open.detail.kind === 'spell' ? <SpellBody detail={open.detail} /> : <TextBody detail={open.detail} />}
+            {open.detail.kind === 'spell' ? <SpellBody detail={open.detail} view={view} /> : <TextBody detail={open.detail} />}
           </div>
         </PlayDialog>
       )}

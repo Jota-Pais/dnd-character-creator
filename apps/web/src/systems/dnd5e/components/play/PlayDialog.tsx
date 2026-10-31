@@ -6,6 +6,13 @@ import { useBackHandler } from '../../../../core/navigation/back'
 const FOCUSABLE = 'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
 /**
+ * As folhas abertas, da de baixo para a de cima. A receita de uma magia abre por cima da folha da
+ * magia (aba Regras): o Esc fecha só a de cima, como o voltar do Android, que fecha a camada mais
+ * recente (`useBackHandler`).
+ */
+const openSheets: object[] = []
+
+/**
  * A folha modal do modo de jogo: sobe do pé da tela no celular, centralizada no desktop. Fecha no
  * ✕, no fundo escuro, no Esc e no voltar do Android (antes de a tela voltar); o foco entra nela ao
  * abrir, circula dentro dela no Tab e volta para quem a abriu ao fechar — ou, se ele sumiu enquanto
@@ -25,18 +32,26 @@ export function PlayDialog({ title, titleId, onClose, onFocusAway, children }: {
   const dialogRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
   const focusAwayRef = useRef(onFocusAway)
+  const closeHandlerRef = useRef(onClose)
 
   useLayoutEffect(() => {
     focusAwayRef.current = onFocusAway
+    closeHandlerRef.current = onClose
   })
 
+  // O Esc fecha a folha de cima: com duas abertas, a de baixo fica.
   useEffect(() => {
+    const sheet = {}
+    openSheets.push(sheet)
     function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape' && openSheets[openSheets.length - 1] === sheet) closeHandlerRef.current()
     }
     window.addEventListener('keydown', handleKey)
-    return () => window.removeEventListener('keydown', handleKey)
-  }, [onClose])
+    return () => {
+      window.removeEventListener('keydown', handleKey)
+      openSheets.splice(openSheets.indexOf(sheet), 1)
+    }
+  }, [])
   useBackHandler(onClose, 'overlay')
 
   // Diálogo modal: o foco entra na folha ao abrir e volta para quem a abriu ao fechar. A limpeza

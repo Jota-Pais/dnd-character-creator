@@ -1,10 +1,10 @@
 import { useState, type ReactNode } from 'react'
-import { applyUpdate, useAppUpdateStore } from './core/pwa/serviceWorker'
-import { useNativeVersionStore } from './core/native/appVersion'
-import { sheetsPlace, shouldShowInstallHint } from './core/pwa/platform'
-import { isNativeApp } from './core/native/nativeApp'
-import { useDeviceStore } from './core/stores/deviceStore'
-import { BACKUP_SNOOZE_MS, shouldRemindBackup } from './core/utils/backupReminder'
+import { applyUpdate, useAppUpdateStore } from '../../core/pwa/serviceWorker'
+import { useNativeVersionStore } from '../../core/native/appVersion'
+import { sheetsPlace, shouldShowInstallHint } from '../../core/pwa/platform'
+import { isNativeApp } from '../../core/native/nativeApp'
+import { useDeviceStore } from '../../core/stores/deviceStore'
+import { BACKUP_SNOOZE_MS, shouldRemindBackup } from './backupReminder'
 
 /**
  * Os avisos discretos da galeria, do app instalável (docs/app-instalavel.md): a versão nova pronta,

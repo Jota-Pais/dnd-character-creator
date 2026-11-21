@@ -57,7 +57,7 @@ describe('cores do app', () => {
       '../systems/dnd5e/components/play/PlayScreen.tsx',
       '../systems/dnd5e/components/common/PendingStepsPanel.tsx',
       '../systems/ordem/components/steps/ReviewStep.tsx',
-      '../GlobalGallery.tsx',
+      '../features/gallery/GlobalGallery.tsx',
     ]) {
       expect(files, file).toContain(file)
     }

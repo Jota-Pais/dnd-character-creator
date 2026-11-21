@@ -9,11 +9,11 @@ import {
   type CharacterFile,
   type ImportedCharacter,
   type SavedCharacter as DndSaved,
-} from './systems/dnd5e/utils/storage'
-import { listPlayStateIds, loadPlayState } from './systems/dnd5e/utils/playStorage'
-import { loadLibrary as loadOrdemLibrary, type SavedCharacter as OrdemSaved } from './systems/ordem/utils/storage'
-import { saveJsonFile } from './core/utils/download'
-import { useDeviceStore } from './core/stores/deviceStore'
+} from '../../systems/dnd5e/utils/storage'
+import { listPlayStateIds, loadPlayState } from '../../systems/dnd5e/utils/playStorage'
+import { loadLibrary as loadOrdemLibrary, type SavedCharacter as OrdemSaved } from '../../systems/ordem/utils/storage'
+import { saveJsonFile } from '../../core/utils/download'
+import { useDeviceStore } from '../../core/stores/deviceStore'
 
 /**
  * A cópia de segurança de todas as fichas (docs/app-instalavel.md): um arquivo só, com as fichas

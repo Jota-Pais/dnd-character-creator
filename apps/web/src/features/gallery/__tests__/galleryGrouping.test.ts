@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { filterByName, groupGalleryCharacters, type GalleryEntry } from '../galleryGrouping'
-import type { GalleryFacets } from '../../types/system'
+import type { GalleryFacets } from '../../../core/types/system'
 
 function ordemFacets(overrides: Partial<GalleryFacets> = {}): GalleryFacets {
   return {

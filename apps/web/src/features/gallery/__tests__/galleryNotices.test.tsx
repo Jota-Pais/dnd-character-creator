@@ -1,16 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, fireEvent, cleanup, act, within, waitFor } from '@testing-library/react'
 import { Capacitor } from '@capacitor/core'
-import { saveTextFileNative } from '../core/native/nativeShell'
-import App from '../App'
-import { useAppStore } from '../core/stores/appStore'
-import { useCharacterStore } from '../systems/dnd5e/stores/characterStore'
-import { useOrdemStore } from '../systems/ordem/stores/characterStore'
-import { useAppUpdateStore } from '../core/pwa/serviceWorker'
-import { useNativeVersionStore } from '../core/native/appVersion'
-import { startNativeApp } from '../core/native/nativeApp'
-import { useDeviceStore } from '../core/stores/deviceStore'
-import { DEFAULT_DEVICE_STATE, loadDeviceState } from '../core/utils/deviceStorage'
+import { saveTextFileNative } from '../../../core/native/nativeShell'
+import App from '../../../App'
+import { useAppStore } from '../../../core/stores/appStore'
+import { useCharacterStore } from '../../../systems/dnd5e/stores/characterStore'
+import { useOrdemStore } from '../../../systems/ordem/stores/characterStore'
+import { useAppUpdateStore } from '../../../core/pwa/serviceWorker'
+import { useNativeVersionStore } from '../../../core/native/appVersion'
+import { startNativeApp } from '../../../core/native/nativeApp'
+import { useDeviceStore } from '../../../core/stores/deviceStore'
+import { DEFAULT_DEVICE_STATE, loadDeviceState } from '../../../core/utils/deviceStorage'
 import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
 
 const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1'
@@ -21,8 +21,8 @@ const BACKUP_REMINDER_AGAIN = /Sua última cópia das fichas é de \d\d\/\d\d\/\
 const APK_OUTDATED = 'Tem uma versão nova do app: peça o APK no grupo.'
 
 // O "Salvar como" da casca do APK, de mentira (no jsdom não há casca); no navegador nunca é chamado.
-vi.mock('../core/native/nativeShell', async importOriginal => ({
-  ...await importOriginal<typeof import('../core/native/nativeShell')>(),
+vi.mock('../../../core/native/nativeShell', async importOriginal => ({
+  ...await importOriginal<typeof import('../../../core/native/nativeShell')>(),
   saveTextFileNative: vi.fn(),
 }))
 

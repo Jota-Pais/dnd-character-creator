@@ -1,4 +1,4 @@
-import type { GalleryFacets } from '../types/system'
+import type { GalleryFacets } from '../../core/types/system'
 
 /** Critério de agrupamento dentro da seção de um sistema. 'system' = sem subdivisão. */
 export type GroupBy = 'system' | 'level' | 'class' | 'origin' | 'status'

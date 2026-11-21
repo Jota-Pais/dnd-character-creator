@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import { useAppStore } from './core/stores/appStore'
 import { SYSTEMS } from './core/systems/registry'
-import { GlobalGallery } from './GlobalGallery'
+import { GlobalGallery } from './features/gallery/GlobalGallery'
 import { Loading } from './core/ui/Loading'
 
 export default function App() {

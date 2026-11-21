@@ -1,14 +1,14 @@
 import { useMemo, useRef, useState } from 'react'
-import { exportCharacter as exportDnd, importCharacter as importDnd, type SavedCharacter as DndSaved } from './systems/dnd5e/utils/storage'
-import { exportCharacter as exportOrdem, importCharacter as importOrdem, type SavedCharacter as OrdemSaved } from './systems/ordem/utils/storage'
-import { loadPlayState } from './systems/dnd5e/utils/playStorage'
+import { exportCharacter as exportDnd, importCharacter as importDnd, type SavedCharacter as DndSaved } from '../../systems/dnd5e/utils/storage'
+import { exportCharacter as exportOrdem, importCharacter as importOrdem, type SavedCharacter as OrdemSaved } from '../../systems/ordem/utils/storage'
+import { loadPlayState } from '../../systems/dnd5e/utils/playStorage'
 import { exportAllCharacters, formatRestoreResult, getLatestChangeAt, isBackupFile, parseBackupFile, planRestore, type RestorePlan } from './libraryBackup'
 import { GalleryNotices } from './GalleryNotices'
-import { pickFile, readJsonFile } from './core/utils/download'
-import { useAppStore } from './core/stores/appStore'
-import { useBackHandler } from './core/navigation/back'
-import { isNativeApp } from './core/native/nativeApp'
-import { sheetsPlace } from './core/pwa/platform'
+import { pickFile, readJsonFile } from '../../core/utils/download'
+import { useAppStore } from '../../core/stores/appStore'
+import { useBackHandler } from '../../core/navigation/back'
+import { isNativeApp } from '../../core/native/nativeApp'
+import { sheetsPlace } from '../../core/pwa/platform'
 import {
   filterByName,
   groupGalleryCharacters,
@@ -17,12 +17,12 @@ import {
   type GalleryEntry,
   type GroupBy,
   type SortBy,
-} from './core/utils/galleryGrouping'
-import { useCharacterStore as useDndStore } from './systems/dnd5e/stores/characterStore'
-import { useOrdemStore } from './systems/ordem/stores/characterStore'
-import { SYSTEMS } from './core/systems/registry'
-import type { IRpgSystem } from './core/types/system'
-import simboloMaior from './systems/ordem/assets/simbolo-maior.webp'
+} from './galleryGrouping'
+import { useCharacterStore as useDndStore } from '../../systems/dnd5e/stores/characterStore'
+import { useOrdemStore } from '../../systems/ordem/stores/characterStore'
+import { SYSTEMS } from '../../core/systems/registry'
+import type { IRpgSystem } from '../../core/types/system'
+import simboloMaior from '../../systems/ordem/assets/simbolo-maior.webp'
 
 type UnifiedCharacter =
   | (DndSaved & { system: 'dnd5e' })

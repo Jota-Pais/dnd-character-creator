@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react'
-import App from '../App'
-import { useAppStore } from '../core/stores/appStore'
-import { useCharacterStore } from '../systems/dnd5e/stores/characterStore'
-import { useOrdemStore } from '../systems/ordem/stores/characterStore'
+import App from '../../../App'
+import { useAppStore } from '../../../core/stores/appStore'
+import { useCharacterStore } from '../../../systems/dnd5e/stores/characterStore'
+import { useOrdemStore } from '../../../systems/ordem/stores/characterStore'
 import {
   BACKUP_FILE_FORMAT,
   buildBackupFile,
@@ -14,10 +14,10 @@ import {
   planRestore,
   type BackupFile,
 } from '../libraryBackup'
-import { buildCharacterFile, CHARACTER_FILE_FORMAT, CHARACTER_FILE_VERSION, loadLibrary as loadDnd, type SavedCharacter as DndSaved } from '../systems/dnd5e/utils/storage'
-import { loadLibrary as loadOrdem, type SavedCharacter as OrdemSaved } from '../systems/ordem/utils/storage'
-import { loadPlayState, savePlayState } from '../systems/dnd5e/utils/playStorage'
-import { loadDeviceState } from '../core/utils/deviceStorage'
+import { buildCharacterFile, CHARACTER_FILE_FORMAT, CHARACTER_FILE_VERSION, loadLibrary as loadDnd, type SavedCharacter as DndSaved } from '../../../systems/dnd5e/utils/storage'
+import { loadLibrary as loadOrdem, type SavedCharacter as OrdemSaved } from '../../../systems/ordem/utils/storage'
+import { loadPlayState, savePlayState } from '../../../systems/dnd5e/utils/playStorage'
+import { loadDeviceState } from '../../../core/utils/deviceStorage'
 import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
 import { EMPTY_DRAFT as ORDEM_EMPTY } from '@rpg/rules/systems/ordem/types/character'
 import { applyDamage, createPlayState } from '@rpg/rules/systems/dnd5e/utils/playState'

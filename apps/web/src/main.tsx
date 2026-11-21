@@ -6,6 +6,7 @@ import { startServiceWorker } from './core/pwa/serviceWorker'
 import { refuseAutomaticInstallOffer } from './core/pwa/platform'
 import { isNativeApp, startNativeApp } from './core/native/nativeApp'
 import { preloadAfterOpening } from './core/utils/lazyScreen'
+import { startAccount } from './features/auth/account'
 
 const root = document.getElementById('root')!
 createRoot(root).render(
@@ -45,3 +46,8 @@ refuseAutomaticInstallOffer(window, isNativeApp())
 
 // O APK do Android (docs/app-android.md): o voltar do aparelho e o aviso de APK velho. No navegador, nada.
 void startNativeApp()
+
+// A conta (docs/servidor-e-sincronizacao.md): o App já decidiu entre a tela de entrar e a galeria
+// pelo que o aparelho lembra; aqui o servidor confirma a sessão em segundo plano e, confirmada, a
+// sincronização liga. Fica fora dos componentes: montar o app não fala com o servidor.
+startAccount()

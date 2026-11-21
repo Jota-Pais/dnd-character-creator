@@ -26,8 +26,11 @@ export default defineConfig({
         // os baixa se aparecer um nome em cirílico, com rede), fora do que se guarda.
         globIgnores: ['**/*-cyrillic-*', '**/*-vietnamese-*'],
         // O app tem uma página só: toda navegação (inclusive com ?fbclid de link do WhatsApp)
-        // abre o index.html guardado.
+        // abre o index.html guardado. Menos a de /api, que é do servidor: o service worker nunca
+        // responde por ela, nem com o index.html nem com cache (não há runtimeCaching, e o cliente
+        // pede com cache: 'no-store').
         navigateFallback: 'index.html',
+        navigateFallbackDenylist: [/^\/api\//],
         cleanupOutdatedCaches: true,
         // O padrão (2 MiB) deixaria de fora, só com um aviso no build, um JS que crescesse além
         // dele: o app abriria sem rede quebrado. O build de hoje tem o maior JS (o da abertura) em 1,9 MB.
@@ -35,6 +38,16 @@ export default defineConfig({
       },
     }),
   ],
+  server: {
+    // A API (apps/api) atende em /api na mesma origem do site: em produção, por um rewrite da Vercel
+    // para a Render; aqui, por este proxy (o `vite preview` o herda). O cookie de sessão fica de
+    // primeira parte e não há CORS. O Host do pedido segue sendo o da página (sem changeOrigin): é
+    // por ele que a API confere, em desenvolvimento, que o pedido veio do site, por localhost ou
+    // pelo IP da rede. Outra porta: API_PROXY_TARGET=http://localhost:4000 npm run dev.
+    proxy: {
+      '/api': { target: process.env.API_PROXY_TARGET ?? 'http://localhost:3333' },
+    },
+  },
   build: {
     // O aviso voltou em 2026-10-31 com o JS num arquivo só em 2.083 kB (578 kB comprimido). O Ordem e
     // as fichas imprimíveis passaram a descer sob demanda (src/core/utils/lazyScreen.ts), e o JS da

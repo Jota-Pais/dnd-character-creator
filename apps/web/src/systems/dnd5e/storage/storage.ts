@@ -1,11 +1,13 @@
 import type { CharacterDraft, WizardStep } from '@rpg/rules/systems/dnd5e/types/character'
-import { EMPTY_DRAFT } from '@rpg/rules/systems/dnd5e/types/character'
+import { EMPTY_DRAFT, WIZARD_STEPS } from '@rpg/rules/systems/dnd5e/types/character'
 import type { PlayState } from '@rpg/rules/systems/dnd5e/types/playState'
+import { canonicalJson } from '@rpg/rules/core/utils/canonicalJson'
 import { createId } from '@rpg/rules/core/utils/id'
 import { sanitizeImportedDraft } from '@rpg/rules/systems/dnd5e/utils/draftValidation'
 import { sanitizePlayState } from '@rpg/rules/systems/dnd5e/utils/playState'
 import { loadPlayState } from './playStorage'
 import { requestPersistentStorage } from '../../../core/pwa/persistentStorage'
+import { characterKey, markDocChanged, markDocDeleted } from '../../../core/sync/syncStorage'
 import { saveJsonFile } from '../../../core/utils/download'
 
 const SESSION_KEY = 'dnd-character-session'
@@ -13,6 +15,17 @@ const LIBRARY_KEY = 'dnd-character-library'
 // Bump this whenever CharacterDraft schema changes in a breaking way
 export const SESSION_VERSION = 4
 export const LIBRARY_VERSION = 1
+
+/** O nome do sistema nas chaves da sincronização e no servidor. */
+export const SYSTEM_ID = 'dnd5e'
+
+/**
+ * O número da forma do draft na sincronização. O aparelho que recebe do servidor uma ficha com
+ * número maior que o seu não a aplica nem a regrava, e pede a atualização do app: ele ainda não
+ * conhece os campos novos. Sobe quando o draft ganha um campo (o teste de `syncSchema.test.ts`
+ * prende a lista de campos a este número, para ninguém esquecer).
+ */
+export const DRAFT_SYNC_SCHEMA = 1
 
 /** Uma ficha salva na biblioteca (com o passo do wizard em que parou). */
 export type SavedCharacter = {
@@ -23,6 +36,8 @@ export type SavedCharacter = {
 }
 
 type Library = { version: number; characters: SavedCharacter[] }
+
+const isRecord = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x)
 
 /** Preenche campos ausentes de um draft carregado com os padrões (compat de schema). */
 function withDraftDefaults(partial: Partial<CharacterDraft> | undefined): CharacterDraft {
@@ -117,21 +132,75 @@ export function loadLibrary(): SavedCharacter[] {
   }
 }
 
-/** Insere ou atualiza uma ficha na biblioteca; devolve a lista atualizada. */
+/**
+ * Insere ou atualiza uma ficha na biblioteca; devolve a lista atualizada. Ficha nova, ou com o
+ * draft diferente do que estava salvo, fica marcada para subir ao servidor (o diário de
+ * `core/sync/syncStorage.ts`), aqui dentro: nenhum store ou componente precisa lembrar. Regravar o
+ * mesmo draft (navegar entre as etapas, abrir e voltar) não marca nada: a etapa e a data viajam
+ * junto na próxima alteração de verdade.
+ */
 export function saveCharacterEntry(entry: SavedCharacter): SavedCharacter[] {
   const characters = loadLibrary()
   const idx = characters.findIndex(c => c.id === entry.id)
+  const previous = idx >= 0 ? characters[idx] : undefined
+  // Antes de gravar a ficha: se a página cair entre as duas gravações, sobra um envio a mais.
+  if (!previous || canonicalJson(previous.draft) !== canonicalJson(entry.draft)) {
+    markDocChanged(characterKey(SYSTEM_ID, entry.id))
+  }
   if (idx >= 0) characters[idx] = entry
   else characters.push(entry)
   writeLibrary(characters)
   return characters
 }
 
-/** Remove uma ficha da biblioteca; devolve a lista atualizada. */
+/**
+ * Remove uma ficha da biblioteca; devolve a lista atualizada. É aqui, e só aqui, que nasce a
+ * exclusão que sobe ao servidor: ficha que some do aparelho por outro caminho nunca é apagada lá.
+ */
 export function deleteCharacterEntry(id: string): SavedCharacter[] {
-  const characters = loadLibrary().filter(c => c.id !== id)
+  const all = loadLibrary()
+  const characters = all.filter(c => c.id !== id)
+  if (characters.length !== all.length) markDocDeleted(characterKey(SYSTEM_ID, id))
   writeLibrary(characters)
   return characters
+}
+
+// ── O que só a sincronização usa ─────────────────────────────────────────────
+// Gravar e apagar SEM marcar nada no diário: é o que veio do servidor, e marcá-lo o mandaria de
+// volta. Só o adaptador de features/sync importa estas funções (um teste prende isso).
+
+/**
+ * A ficha que veio do servidor, como a biblioteca a guarda; null se não parece uma ficha (aí ela
+ * não é aplicada, e nada do aparelho é sobrescrito). O draft passa pelo mesmo tratamento do que se
+ * lê do aparelho (`withDraftDefaults`), e não pelo sanitizador de arquivo importado: quem o gravou
+ * foi este mesmo app, em outro aparelho, e a sincronização não pode mudar o conteúdo no caminho.
+ */
+export function readSyncedCharacter(raw: { id: string; step: string; draft: unknown; updatedAt: number }): SavedCharacter | null {
+  if (!isRecord(raw.draft) || typeof raw.draft.name !== 'string') return null
+  const step = (WIZARD_STEPS as readonly string[]).includes(raw.step) ? (raw.step as WizardStep) : 'name'
+  return { id: raw.id, updatedAt: raw.updatedAt, step, draft: withDraftDefaults(raw.draft as Partial<CharacterDraft>) }
+}
+
+/** Grava na biblioteca a ficha que veio do servidor. */
+export function putSyncedCharacter(entry: SavedCharacter): void {
+  const characters = loadLibrary()
+  const idx = characters.findIndex(c => c.id === entry.id)
+  if (idx >= 0) characters[idx] = entry
+  else characters.push(entry)
+  writeLibrary(characters)
+}
+
+/** Tira da biblioteca a ficha que foi apagada em outro aparelho. */
+export function removeSyncedCharacter(id: string): void {
+  const all = loadLibrary()
+  const characters = all.filter(c => c.id !== id)
+  if (characters.length !== all.length) writeLibrary(characters)
+}
+
+/** Apaga a biblioteca deste aparelho (ao sair da conta: as fichas continuam no servidor). */
+export function clearLibrary(): void {
+  localStorage.removeItem(LIBRARY_KEY)
+  localStorage.removeItem(SESSION_KEY)
 }
 
 /** Gera um id único para uma ficha (o gerador comum do núcleo). */
@@ -168,8 +237,6 @@ export type ImportedCharacter = { draft: CharacterDraft; playState: PlayState | 
 export function buildCharacterFile(draft: CharacterDraft, playState: PlayState | null): CharacterFile {
   return { format: CHARACTER_FILE_FORMAT, version: CHARACTER_FILE_VERSION, draft, playState }
 }
-
-const isRecord = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x)
 
 /**
  * Lê o JSON de um arquivo de ficha: o envelope atual ou o draft solto dos arquivos antigos (sem

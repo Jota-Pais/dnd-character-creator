@@ -1,6 +1,7 @@
 import type { PlayResult, PlaySheet, PlayState } from '@rpg/rules/systems/dnd5e/types/playState'
 import { createPlayState, reconcileLoadedPlayState, sanitizePlayState } from '@rpg/rules/systems/dnd5e/utils/playState'
 import { requestPersistentStorage } from '../../../core/pwa/persistentStorage'
+import { forgetDoc, markDocChanged, playKey, updateSyncMeta } from '../../../core/sync/syncStorage'
 
 /**
  * Persistência do estado de jogo — a camada que componentes e stores usam (nunca o localStorage
@@ -13,6 +14,14 @@ import { requestPersistentStorage } from '../../../core/pwa/persistentStorage'
 export const PLAY_STATES_KEY = 'dnd-play-states'
 /** Versão do contêiner. Subir quando o formato do contêiner mudar de um jeito incompatível. */
 export const PLAY_STORAGE_VERSION = 1
+
+/**
+ * O número da forma do estado de jogo na sincronização (ver `DRAFT_SYNC_SCHEMA`, no `storage.ts`).
+ * Aqui ele importa mais ainda: toda gravação passa pelo `sanitizePlayState`, que só mantém os
+ * campos que conhece, então um app mais velho apagaria o campo novo de um estado que veio do
+ * servidor. Sobe quando o estado de jogo ganha um campo (`syncSchema.test.ts`).
+ */
+export const PLAY_STATE_SYNC_SCHEMA = 1
 
 type PlayStore = { version: number; states: Record<string, unknown> }
 
@@ -60,21 +69,83 @@ export function loadPlayStateFor(characterId: string, sheet: PlaySheet, now = Da
   return reconcileLoadedPlayState(loadOrCreatePlayState(characterId, now), sheet)
 }
 
-/** Grava o estado, carimbando `updatedAt`; devolve o estado gravado. */
-export function savePlayState(state: PlayState, now = Date.now()): PlayState {
+export type SavePlayStateOptions = {
+  /**
+   * A gravação não é do jogador: é o que o app acerta sozinho ao abrir o jogo (o estado reconciliado
+   * com a ficha, o retrato dela). Não marca o estado para subir ao servidor: se marcasse, só abrir
+   * o jogo num aparelho desatualizado ganharia da sessão jogada em outro.
+   */
+  quiet?: boolean
+}
+
+/**
+ * Grava o estado, carimbando `updatedAt`; devolve o estado gravado. Fica marcado para subir ao
+ * servidor (o diário de `core/sync/syncStorage.ts`), salvo com `quiet`.
+ */
+export function savePlayState(state: PlayState, now = Date.now(), options: SavePlayStateOptions = {}): PlayState {
   const saved = { ...sanitizePlayState(state, state.characterId), updatedAt: now }
+  const states = readStore()
+  const key = playKey(saved.characterId)
+  if (!options.quiet) {
+    // Antes de gravar o estado: se a página cair entre as duas gravações, sobra um envio a mais.
+    markDocChanged(key)
+  } else if (!Object.prototype.hasOwnProperty.call(states, saved.characterId)) {
+    // O estado nasce agora, só de abrir o jogo: entra no diário como em dia, para não subir antes
+    // da primeira ação do jogador. (O que já existia sem entrada no diário é de antes da conta, e
+    // continua sem ela: a varredura da sincronização o manda ao servidor.)
+    updateSyncMeta(meta => {
+      if (key in meta.docs) return false
+      meta.docs[key] = { revision: 0, dirty: false }
+    })
+  }
+  states[saved.characterId] = saved
+  writeStore(states)
+  return saved
+}
+
+/**
+ * Apaga o estado de jogo de uma ficha (ex.: ficha removida, "recomeçar do zero"). No servidor ele
+ * não tem lápide própria: some com a ficha, e aqui o diário só o esquece.
+ */
+export function deletePlayState(characterId: string): void {
+  forgetDoc(playKey(characterId))
+  const states = readStore()
+  if (!Object.prototype.hasOwnProperty.call(states, characterId)) return
+  delete states[characterId]
+  writeStore(states)
+}
+
+// ── O que só a sincronização usa ─────────────────────────────────────────────
+// Gravar e apagar SEM marcar nada no diário (ver o `storage.ts`). Só o adaptador de features/sync
+// importa estas funções.
+
+/**
+ * Grava o estado de jogo que veio do servidor, sanitizado como todo estado que se lê do aparelho, e
+ * com a data que veio (não a de agora): é ela que diz qual versão é a mais nova.
+ */
+export function putSyncedPlayState(state: PlayState): PlayState {
+  const saved = { ...sanitizePlayState(state, state.characterId), updatedAt: state.updatedAt }
   const states = readStore()
   states[saved.characterId] = saved
   writeStore(states)
   return saved
 }
 
-/** Apaga o estado de jogo de uma ficha (ex.: ficha removida, "recomeçar do zero"). */
-export function deletePlayState(characterId: string): void {
+/** Tira o estado de jogo de uma ficha que foi apagada em outro aparelho. */
+export function removeSyncedPlayState(characterId: string): void {
   const states = readStore()
   if (!Object.prototype.hasOwnProperty.call(states, characterId)) return
   delete states[characterId]
   writeStore(states)
+}
+
+/**
+ * Apaga os estados de jogo deste aparelho e a marca da ficha aberta no jogo (ao sair da conta). As
+ * preferências do jogo ficam: são do aparelho, não da conta.
+ */
+export function clearPlayStorage(): void {
+  localStorage.removeItem(PLAY_STATES_KEY)
+  localStorage.removeItem(PLAY_OPEN_KEY)
 }
 
 /** Ids das fichas que têm estado de jogo salvo. */

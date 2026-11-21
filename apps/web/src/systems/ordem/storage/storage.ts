@@ -1,12 +1,23 @@
 import type { OrdemCharacterDraft, WizardStep } from '@rpg/rules/systems/ordem/types/character'
-import { EMPTY_DRAFT } from '@rpg/rules/systems/ordem/types/character'
+import { EMPTY_DRAFT, WIZARD_STEPS } from '@rpg/rules/systems/ordem/types/character'
+import { canonicalJson } from '@rpg/rules/core/utils/canonicalJson'
 import { createId } from '@rpg/rules/core/utils/id'
 import { sanitizeImportedDraft } from '@rpg/rules/systems/ordem/utils/draftValidation'
 import { requestPersistentStorage } from '../../../core/pwa/persistentStorage'
+import { characterKey, markDocChanged, markDocDeleted } from '../../../core/sync/syncStorage'
 import { saveJsonFile } from '../../../core/utils/download'
 
 const LIBRARY_KEY = 'ordem-character-library'
 export const LIBRARY_VERSION = 1
+
+/** O nome do sistema nas chaves da sincronização e no servidor. */
+export const SYSTEM_ID = 'ordem'
+
+/**
+ * O número da forma do draft na sincronização (ver o `storage.ts` do dnd5e): sobe quando o draft
+ * ganha um campo, e o teste de `syncSchema.test.ts` prende a lista de campos a ele.
+ */
+export const DRAFT_SYNC_SCHEMA = 1
 
 export type SavedCharacter = {
   id: string
@@ -50,19 +61,66 @@ export function loadLibrary(): SavedCharacter[] {
   }
 }
 
+/**
+ * Insere ou atualiza uma ficha; devolve a lista atualizada. Ficha nova, ou com o draft diferente do
+ * que estava salvo, fica marcada para subir ao servidor (o diário de `core/sync/syncStorage.ts`):
+ * regravar o mesmo draft, ao navegar entre as etapas, não marca nada.
+ */
 export function saveCharacterEntry(entry: SavedCharacter): SavedCharacter[] {
   const characters = loadLibrary()
   const idx = characters.findIndex(c => c.id === entry.id)
+  const previous = idx >= 0 ? characters[idx] : undefined
+  // Antes de gravar a ficha: se a página cair entre as duas gravações, sobra um envio a mais.
+  if (!previous || canonicalJson(previous.draft) !== canonicalJson(entry.draft)) {
+    markDocChanged(characterKey(SYSTEM_ID, entry.id))
+  }
   if (idx >= 0) characters[idx] = entry
   else characters.push(entry)
   writeLibrary(characters)
   return characters
 }
 
+/** Remove uma ficha; devolve a lista atualizada. Só aqui nasce a exclusão que sobe ao servidor. */
 export function deleteCharacterEntry(id: string): SavedCharacter[] {
-  const characters = loadLibrary().filter(c => c.id !== id)
+  const all = loadLibrary()
+  const characters = all.filter(c => c.id !== id)
+  if (characters.length !== all.length) markDocDeleted(characterKey(SYSTEM_ID, id))
   writeLibrary(characters)
   return characters
+}
+
+// ── O que só a sincronização usa ─────────────────────────────────────────────
+// Gravar e apagar SEM marcar nada no diário (ver o `storage.ts` do dnd5e). Só o adaptador de
+// features/sync importa estas funções.
+
+/** A ficha que veio do servidor, como a biblioteca a guarda; null se não parece uma ficha. */
+export function readSyncedCharacter(raw: { id: string; step: string; draft: unknown; updatedAt: number }): SavedCharacter | null {
+  const draft = raw.draft
+  if (typeof draft !== 'object' || draft === null || Array.isArray(draft)) return null
+  if (typeof (draft as { name?: unknown }).name !== 'string') return null
+  const step = (WIZARD_STEPS as readonly string[]).includes(raw.step) ? (raw.step as WizardStep) : 'name'
+  return { id: raw.id, updatedAt: raw.updatedAt, step, draft: withDraftDefaults(draft as Partial<OrdemCharacterDraft>) }
+}
+
+/** Grava na biblioteca a ficha que veio do servidor. */
+export function putSyncedCharacter(entry: SavedCharacter): void {
+  const characters = loadLibrary()
+  const idx = characters.findIndex(c => c.id === entry.id)
+  if (idx >= 0) characters[idx] = entry
+  else characters.push(entry)
+  writeLibrary(characters)
+}
+
+/** Tira da biblioteca a ficha que foi apagada em outro aparelho. */
+export function removeSyncedCharacter(id: string): void {
+  const all = loadLibrary()
+  const characters = all.filter(c => c.id !== id)
+  if (characters.length !== all.length) writeLibrary(characters)
+}
+
+/** Apaga a biblioteca deste aparelho (ao sair da conta: as fichas continuam no servidor). */
+export function clearLibrary(): void {
+  localStorage.removeItem(LIBRARY_KEY)
 }
 
 /** Gera um id único para uma ficha (o gerador comum do núcleo). */

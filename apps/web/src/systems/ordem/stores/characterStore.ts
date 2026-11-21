@@ -51,6 +51,11 @@ type CharacterStore = {
   importDraft: (draft: OrdemCharacterDraft) => void
   /** As fichas de uma cópia de segurança (libraryBackup): fichas novas, com a galeria aberta. */
   restoreCharacters: (drafts: OrdemCharacterDraft[]) => void
+  /**
+   * Relê a biblioteca do aparelho: a sincronização gravou nela o que veio do servidor. Não mexe na
+   * ficha aberta, na etapa nem na tela.
+   */
+  reloadLibrary: () => void
 }
 
 function persistCurrent(currentId: string | null, draft: OrdemCharacterDraft, step: WizardStep): { id: string; library: SavedCharacter[] } {
@@ -307,4 +312,6 @@ export const useOrdemStore = create<CharacterStore>((set, get) => ({
     }
     set({ library })
   },
+
+  reloadLibrary: () => set({ library: loadLibrary() }),
 }))

@@ -122,6 +122,12 @@ type CharacterStore = {
    * `importDraft`, mas a galeria continua aberta.
    */
   restoreCharacters: (characters: ImportedCharacter[]) => void
+  /**
+   * Relê a biblioteca do aparelho: a sincronização gravou nela o que veio do servidor. Não mexe na
+   * ficha aberta, na etapa nem na tela, e não agenda o salvamento automático (não é alteração do
+   * jogador: não passa pelo `editDraft`).
+   */
+  reloadLibrary: () => void
 }
 
 const BLANK_DRAFT = canonicalJson(EMPTY_DRAFT)
@@ -647,6 +653,8 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
     }
     set({ library })
   },
+
+  reloadLibrary: () => set({ library: loadLibrary() }),
 }))
 
 // Recarregou no meio do jogo: reabre o modo de jogo da mesma ficha (o estado está salvo; o

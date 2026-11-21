@@ -183,7 +183,7 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
     // grava, para o aviso da reconciliação aparecer uma vez só (e não em toda abertura até a
     // primeira ação). A primeira abertura grava o retrato, para a próxima ter com o que comparar.
     const state = !saved || canonicalJson(saved) !== canonicalJson(opened)
-      ? savePlayState(opened)
+      ? savePlayState(opened, undefined, { quiet: true })
       : opened
     set({
       ...CLOSED,
@@ -248,7 +248,7 @@ export const usePlayStore = create<PlayStoreState>((set, get) => ({
   dismissNotices: () => {
     const { state, sheetCorrection } = get()
     // Fora do desfazer, como o histórico: o retrato é da ficha, não da sessão.
-    const read = state && sheetCorrection ? { state: savePlayState({ ...state, sheetSnapshot: sheetCorrection.snapshot }) } : {}
+    const read = state && sheetCorrection ? { state: savePlayState({ ...state, sheetSnapshot: sheetCorrection.snapshot }, undefined, { quiet: true }) } : {}
     set({ ...read, notices: [], sheetCorrection: null })
   },
 

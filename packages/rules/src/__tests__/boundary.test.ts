@@ -50,6 +50,42 @@ describe('a fronteira do motor', () => {
     expect(await lint('export const a = 1\n', probePath.replace(/\.ts$/, '.tsx'))).toContain('no-restricted-syntax')
   }, 30_000)
 
+  /**
+   * As camadas do site (apps/web/src): core ← systems ← features ← app, e um sistema não importa o
+   * outro. A guarda é a mesma, o ESLint, então o arquivo de mentira de cada camada passa por aqui.
+   */
+  it('o ESLint recusa o import que sobe de camada no site, também por import() dinâmico', async () => {
+    const at = (file: string) => path.join(root, 'apps/web/src', file)
+    const core = at('core/ui/__probe__.ts')
+    expect(await lint("import { SYSTEMS } from '../../systems/registry'\nexport const a = SYSTEMS\n", core)).toContain('no-restricted-imports')
+    expect(await lint("import { GlobalGallery } from '../../features/gallery/GlobalGallery'\nexport const a = GlobalGallery\n", core)).toContain('no-restricted-imports')
+    expect(await lint("export const a = () => import('../../app/App')\n", core)).toContain('no-restricted-syntax')
+    expect(await lint("import { RACES } from '@rpg/rules/systems/dnd5e/utils/raceUtils'\nexport const a = RACES\n", core)).toContain('no-restricted-imports')
+    expect(await lint("import { roll } from '@rpg/rules/core/dice'\nimport { handleBack } from '../navigation/back'\nexport const a = [roll, handleBack]\n", core)).toEqual([])
+
+    const dnd = at('systems/dnd5e/play/__probe__.ts')
+    expect(await lint("import { GlobalGallery } from '../../../features/gallery/GlobalGallery'\nexport const a = GlobalGallery\n", dnd)).toContain('no-restricted-imports')
+    expect(await lint("import { loadLibrary } from '../../ordem/storage/storage'\nexport const a = loadLibrary\n", dnd)).toContain('no-restricted-imports')
+    expect(await lint("import type { OrdemCharacterDraft } from '@rpg/rules/systems/ordem/types/character'\nexport type A = OrdemCharacterDraft\n", dnd)).toContain('no-restricted-imports')
+    expect(await lint("export const a = () => import('../../ordem/OrdemApp')\n", dnd)).toContain('no-restricted-syntax')
+    expect(await lint("import { loadLibrary } from '../storage/storage'\nimport { handleBack } from '../../../core/navigation/back'\nexport const a = [loadLibrary, handleBack]\n", dnd)).toEqual([])
+
+    const ordem = at('systems/ordem/creator/__probe__.ts')
+    expect(await lint("import { loadLibrary } from '../../dnd5e/storage/storage'\nexport const a = loadLibrary\n", ordem)).toContain('no-restricted-imports')
+
+    const registry = at('systems/__probe__.ts')
+    expect(await lint("import { GlobalGallery } from '../features/gallery/GlobalGallery'\nexport const a = GlobalGallery\n", registry)).toContain('no-restricted-imports')
+    expect(await lint("import { dnd5eSystem } from './dnd5e'\nimport { ordemSystem } from './ordem'\nexport const a = [dnd5eSystem, ordemSystem]\n", registry)).toEqual([])
+
+    const feature = at('features/gallery/__probe__.ts')
+    expect(await lint("import App from '../../app/App'\nexport const a = App\n", feature)).toContain('no-restricted-imports')
+    expect(await lint("import { loadLibrary } from '../../systems/dnd5e/storage/storage'\nimport { loadLibrary as ordem } from '../../systems/ordem/storage/storage'\nexport const a = [loadLibrary, ordem]\n", feature)).toEqual([])
+
+    // Os testes montam o app inteiro de qualquer camada: ficam fora da regra.
+    const test = at('core/utils/__tests__/__probe__.test.ts')
+    expect(await lint("import App from '../../../app/App'\nexport const a = App\n", test)).toEqual([])
+  }, 60_000)
+
   it('o tsconfig do código não compila o que só o Vite (ou o navegador) tem', () => {
     expect(typeErrors('export const a = import.meta.env.DEV\n').join('\n')).toMatch(/'env' does not exist/)
     expect(typeErrors("import logo from './logo.svg'\nexport const a = logo\n").join('\n')).toMatch(/Cannot find module '.\/logo.svg'/)

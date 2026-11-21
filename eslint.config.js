@@ -5,6 +5,51 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
+// As camadas do site (apps/web/src), num sentido só: core ← systems ← features ← app. Cada camada
+// só importa as que estão à esquerda dela, e um sistema não importa o outro. A regra olha o caminho
+// relativo do import (e do import() dinâmico); os testes ficam de fora, porque montam o app inteiro.
+const WEB = 'apps/web/src'
+const WEB_TESTS = [`${WEB}/**/__tests__/**`, `${WEB}/**/*.test.{ts,tsx}`, `${WEB}/test/**`]
+/** O import relativo que passa por uma destas pastas: '../../features/gallery', './app/App'. */
+const through = folders => `^\\.{1,2}/(?:.*/)?(?:${folders})(?:/|$)`
+/** A mesma expressão para o seletor do import() dinâmico, onde a barra vai escapada. */
+const inSelector = regex => regex.replaceAll('/', '\\u002F')
+
+function webLayer(files, forbidden) {
+  return {
+    files,
+    ignores: WEB_TESTS,
+    rules: {
+      'no-restricted-imports': ['error', { patterns: forbidden.map(({ regex, message }) => ({ regex, message })) }],
+      'no-restricted-syntax': ['error', ...forbidden.map(({ regex, message }) => ({
+        selector: `ImportExpression[source.value=/${inSelector(regex)}/]`,
+        message,
+      }))],
+    },
+  }
+}
+
+const ABOVE_CORE = {
+  regex: through('systems|features|app'),
+  message: 'O núcleo (core) não importa sistema, fluxo nem a casca do app: é o contrário que vale.',
+}
+const SYSTEM_RULES_IN_CORE = {
+  regex: '^@rpg/rules/systems/',
+  message: 'O núcleo (core) é agnóstico: regra de um sistema entra pelo módulo dele, em systems/<sistema>.',
+}
+const ABOVE_SYSTEMS = {
+  regex: through('features|app'),
+  message: 'Um sistema não importa os fluxos do app (features) nem a casca (app).',
+}
+const otherSystem = name => ({
+  regex: `${through(name)}|^@rpg/rules/systems/${name}(?:/|$)`,
+  message: `Um sistema não importa o outro: o que os dois usam mora no núcleo (core). (${name})`,
+})
+const ABOVE_FEATURES = {
+  regex: through('app'),
+  message: 'Um fluxo (features) não importa a casca do app: é ela que monta os fluxos.',
+}
+
 export default defineConfig([
   // .claude/worktrees: cópias do repositório de sessões paralelas, cada uma com o próprio lint.
   // apps/mobile/android: o projeto nativo; o JS de lá é o do Capacitor, copiado pelo build.
@@ -49,6 +94,13 @@ export default defineConfig([
       }],
     },
   },
+  // As camadas do site. O sistema leva as duas regras num bloco só: no flat config, a regra do bloco
+  // mais específico substitui a do mais geral, não soma.
+  webLayer([`${WEB}/core/**/*.{ts,tsx}`], [ABOVE_CORE, SYSTEM_RULES_IN_CORE]),
+  webLayer([`${WEB}/systems/*.{ts,tsx}`], [ABOVE_SYSTEMS]),
+  webLayer([`${WEB}/systems/dnd5e/**/*.{ts,tsx}`], [ABOVE_SYSTEMS, otherSystem('ordem')]),
+  webLayer([`${WEB}/systems/ordem/**/*.{ts,tsx}`], [ABOVE_SYSTEMS, otherSystem('dnd5e')]),
+  webLayer([`${WEB}/features/**/*.{ts,tsx}`], [ABOVE_FEATURES]),
   {
     // Componente de tela (.tsx) não mora no motor.
     files: ['packages/rules/**/*.tsx'],

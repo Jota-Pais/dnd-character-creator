@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react'
-import App from '../../../App'
+import App from '../../../app/App'
 import { useAppStore } from '../../../core/stores/appStore'
 import { useCharacterStore } from '../../../systems/dnd5e/stores/characterStore'
 import { useOrdemStore } from '../../../systems/ordem/stores/characterStore'

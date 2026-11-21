@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import manifestRaw from '../../public/manifest.webmanifest?raw'
-import indexHtml from '../../index.html?raw'
+import manifestRaw from '../../../public/manifest.webmanifest?raw'
+import indexHtml from '../../../index.html?raw'
 
 /**
  * O app instalável (docs/app-instalavel.md): o manifesto tem o que o Chrome e o Android pedem para
@@ -22,8 +22,8 @@ const manifest = JSON.parse(manifestRaw) as {
 
 /** Os PNGs de public/, em data URL (base64), pelo caminho a partir de public/ ("/icons/x.png"). */
 const pngs = Object.fromEntries(
-  Object.entries(import.meta.glob<string>('../../public/**/*.png', { query: '?inline', import: 'default', eager: true }))
-    .map(([path, dataUrl]) => [path.replace('../../public', ''), dataUrl]),
+  Object.entries(import.meta.glob<string>('../../../public/**/*.png', { query: '?inline', import: 'default', eager: true }))
+    .map(([path, dataUrl]) => [path.replace('../../../public', ''), dataUrl]),
 )
 
 /** A largura e a altura de um PNG, lidas do cabeçalho IHDR; null se não há o arquivo. */

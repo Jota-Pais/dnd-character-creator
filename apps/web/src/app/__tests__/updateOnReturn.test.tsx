@@ -9,11 +9,11 @@ import {
   useAppUpdateStore,
   type SwContainer,
   type SwRegistration,
-} from '../core/pwa/serviceWorker'
-import { takeOwnTrip } from '../core/native/backgroundTrips'
-import { useAppStore } from '../core/stores/appStore'
-import { useCharacterStore } from '../systems/dnd5e/stores/characterStore'
-import { useOrdemStore } from '../systems/ordem/stores/characterStore'
+} from '../../core/pwa/serviceWorker'
+import { takeOwnTrip } from '../../core/native/backgroundTrips'
+import { useAppStore } from '../../core/stores/appStore'
+import { useCharacterStore } from '../../systems/dnd5e/stores/characterStore'
+import { useOrdemStore } from '../../systems/ordem/stores/characterStore'
 import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
 
 const HOUR = 60 * 60 * 1000

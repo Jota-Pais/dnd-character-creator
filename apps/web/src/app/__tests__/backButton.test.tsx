@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, cleanup, act } from '@testing-library/react'
 import App from '../App'
-import { handleBack } from '../core/navigation/back'
-import { useAppStore } from '../core/stores/appStore'
-import { useCharacterStore } from '../systems/dnd5e/stores/characterStore'
-import { useOrdemStore } from '../systems/ordem/stores/characterStore'
-import { openKrusk, resetPlay } from '../systems/dnd5e/play/__tests__/openPlay'
+import { handleBack } from '../../core/navigation/back'
+import { useAppStore } from '../../core/stores/appStore'
+import { useCharacterStore } from '../../systems/dnd5e/stores/characterStore'
+import { useOrdemStore } from '../../systems/ordem/stores/characterStore'
+import { openKrusk, resetPlay } from '../../systems/dnd5e/play/__tests__/openPlay'
 import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
 
 // O voltar do Android no APK (core/native/nativeApp.ts) chama o `handleBack`: aqui, cada tela real.

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { render, screen, fireEvent, cleanup } from '@testing-library/react'
 import { Capacitor } from '@capacitor/core'
-import App from '../../../App'
+import App from '../../../app/App'
 import { useAppStore } from '../../stores/appStore'
 import { useCharacterStore } from '../../../systems/dnd5e/stores/characterStore'
 import { useOrdemStore } from '../../../systems/ordem/stores/characterStore'

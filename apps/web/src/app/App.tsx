@@ -1,8 +1,8 @@
 import { Suspense } from 'react'
-import { useAppStore } from './core/stores/appStore'
-import { SYSTEMS } from './systems/registry'
-import { GlobalGallery } from './features/gallery/GlobalGallery'
-import { Loading } from './core/ui/Loading'
+import { useAppStore } from '../core/stores/appStore'
+import { SYSTEMS } from '../systems/registry'
+import { GlobalGallery } from '../features/gallery/GlobalGallery'
+import { Loading } from '../core/ui/Loading'
 
 export default function App() {
   const activeSystemId = useAppStore(state => state.activeSystemId)

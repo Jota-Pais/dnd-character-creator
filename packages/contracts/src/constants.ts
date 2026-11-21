@@ -49,7 +49,8 @@ export type ErrorCode = (typeof ERROR_CODES)[number]
 export const ACCOUNT_HEADER = 'x-account-id'
 
 export const PASSWORD_MIN_LENGTH = 8
-export const PASSWORD_MAX_LENGTH = 200
+/** O bcrypt só lê os primeiros 72 bytes da senha: aceitar mais seria fingir que eles contam. */
+export const PASSWORD_MAX_LENGTH = 72
 export const EMAIL_MAX_LENGTH = 254
 
 /** Tamanho máximo do corpo de um pedido (o draft ou o estado de jogo, em JSON). */

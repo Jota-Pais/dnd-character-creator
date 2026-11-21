@@ -67,7 +67,7 @@ export default defineConfig([
     },
   },
   {
-    // O motor de regras não sabe de tela: roda também no servidor que virá. O site importa o motor,
+    // O motor de regras não sabe de tela: roda também no servidor (apps/api). O site importa o motor,
     // nunca o contrário. (API do navegador ele já não compila: o tsconfig do pacote não tem DOM nem
     // os tipos do Vite.) Vale para toda extensão e também para o import() dinâmico.
     files: ['packages/rules/**/*.{ts,tsx,mts,cts}'],
@@ -91,6 +91,64 @@ export default defineConfig([
       'no-restricted-syntax': ['error', {
         selector: 'ImportExpression[source.value=/^(react|react-dom|zustand)(\\u002F|$)|^@capacitor\\u002F|^@rpg\\u002Fweb(\\u002F|$)|(^|\\u002F)apps\\u002F/]',
         message: 'O motor de regras não carrega tela, APK nem site, nem por import(): isso é do site (apps/web).',
+      }],
+    },
+  },
+  {
+    // A API roda no Node: os globais são os dele, não os do navegador. Ela não importa tela, APK
+    // nem o site; do repositório, só o contrato (@rpg/contracts) e o que o motor tem sem tela.
+    files: ['apps/api/**/*.{ts,mts,cts}'],
+    languageOptions: {
+      globals: globals.node,
+    },
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [
+          {
+            regex: '^(react|react-dom|zustand)(/|$)|^@capacitor/',
+            message: 'A API não tem tela nem APK: isso é do site (apps/web).',
+          },
+          {
+            regex: '^@rpg/(web|mobile)(/|$)|(^|/)apps/(web|mobile)(/|$)',
+            message: 'A API não importa o site nem o app: o que os dois lados trocam mora no contrato (@rpg/contracts).',
+          },
+        ],
+      }],
+    },
+  },
+  {
+    // O contrato é lido pelo navegador e pelo Node: só importa o Zod e os próprios arquivos.
+    files: ['packages/contracts/**/*.{ts,tsx,mts,cts}'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [{
+          regex: '^(?!\\.{1,2}/|zod(/|$))',
+          message: 'O contrato (@rpg/contracts) só depende do Zod: nada de React, Node, motor, site ou API.',
+        }],
+      }],
+    },
+  },
+  {
+    // O site não importa a API, e do contrato só leva os tipos: os schemas trazem o Zod, que é
+    // validação do servidor. Valor do contrato em tempo de execução vem de @rpg/contracts/constants.
+    files: [`${WEB}/**/*.{ts,tsx}`],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': ['error', {
+        patterns: [
+          {
+            regex: '^@rpg/api(/|$)|(^|/)apps/api(/|$)',
+            message: 'O site não importa a API: os dois falam por HTTP, pelo contrato (@rpg/contracts).',
+          },
+          {
+            regex: '^@rpg/contracts(/(?!constants$).*)?$',
+            allowTypeImports: true,
+            message: 'Do contrato o site só importa tipos (import type) e os valores de @rpg/contracts/constants: os schemas trazem o Zod.',
+          },
+          {
+            regex: '^zod(/|$)',
+            message: 'O Zod é a validação do servidor: o site não o carrega.',
+          },
+        ],
       }],
     },
   },

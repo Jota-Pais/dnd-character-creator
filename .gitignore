@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Variáveis de ambiente da API (apps/api): a URL do banco é segredo. Só o modelo é versionado.
+.env
+.env.*
+!.env.example
+
 # Extrações brutas de livros (cache local — texto de PDF, não editar/commitar; regenerar com pdf-parse se sumir)
 docs/_book-extracts/
 

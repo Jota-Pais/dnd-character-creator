@@ -3,7 +3,9 @@
   "references": [
     { "path": "./packages/rules" },
     { "path": "./packages/rules/tsconfig.test.json" },
+    { "path": "./packages/contracts" },
     { "path": "./apps/web" },
+    { "path": "./apps/api" },
     { "path": "./apps/mobile" },
     { "path": "./tsconfig.node.json" }
   ]

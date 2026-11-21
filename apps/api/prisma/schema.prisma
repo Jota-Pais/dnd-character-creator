@@ -1,0 +1,104 @@
+// O banco do Forja: as contas e o que cada uma guarda.
+//
+// Convenções:
+//  - tabela no plural e coluna em snake_case, via @@map / @map; o código usa camelCase;
+//  - o servidor não conhece regra de RPG: o draft da ficha e o estado de jogo são JSONB, e quem os
+//    entende é o cliente. `name` e `system` ficam em coluna só para o dono navegar pelo banco;
+//  - ficha apagada vira lápide (`deleted_at`) e nunca é expurgada: o banco guarda tudo que foi
+//    criado, e a exclusão precisa chegar aos outros aparelhos da conta;
+//  - `revision` é do documento (sobe a cada gravação aceita: é o que detecta conflito);
+//    `change_seq` é da conta (sai de `users.change_counter`, na mesma transação e com a linha da
+//    conta travada: é o cursor de `/api/sync/changes`, e nunca pula uma gravação).
+//
+// A URL do banco não mora aqui (Prisma 7): a CLI a lê do prisma.config.ts, e a aplicação abre a
+// conexão pelo driver adapter em src/shared/prisma.ts.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String   @id @default(uuid()) @db.Uuid
+  /// Sempre em minúsculas e sem espaço em volta: é assim que o contrato o entrega.
+  email         String   @unique @db.VarChar(254)
+  /// bcrypt. A senha não é legível: quem a esquece ganha uma nova por `npm run user:password`.
+  passwordHash  String   @map("password_hash") @db.VarChar(100)
+  /// Contador das gravações da conta: cada documento gravado leva o valor seguinte em `change_seq`.
+  changeCounter BigInt   @default(0) @map("change_counter")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  sessions   Session[]
+  characters Character[]
+  playStates PlayState[]
+
+  @@map("users")
+}
+
+/// Um aparelho conectado. O cookie leva um token aleatório; aqui fica só o SHA-256 dele.
+model Session {
+  id         String   @id @default(uuid()) @db.Uuid
+  tokenHash  String   @unique @map("token_hash") @db.Char(64)
+  userId     String   @map("user_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  lastSeenAt DateTime @default(now()) @map("last_seen_at") @db.Timestamptz(6)
+  expiresAt  DateTime @map("expires_at") @db.Timestamptz(6)
+  userAgent  String?  @map("user_agent") @db.VarChar(300)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+/// Uma ficha de qualquer sistema. O id é o que o aparelho gerou; só é único dentro da conta.
+model Character {
+  userId          String    @map("user_id") @db.Uuid
+  id              String    @db.VarChar(120)
+  /// 'dnd5e' ou 'ordem'.
+  system          String    @db.VarChar(20)
+  /// O nome da personagem, tirado do draft a cada gravação.
+  name            String    @default("") @db.VarChar(200)
+  /// A etapa do criador em que a ficha parou.
+  step            String    @db.VarChar(60)
+  draft           Json
+  /// O número da forma do draft, dito pelo cliente que o gravou.
+  schema          Int
+  /// O momento da última alteração no aparelho: decide quem ganha um conflito.
+  clientUpdatedAt DateTime  @map("client_updated_at") @db.Timestamptz(3)
+  revision        Int
+  changeSeq       BigInt    @map("change_seq")
+  deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(3)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  playState PlayState?
+
+  @@id([userId, id])
+  @@index([userId, changeSeq])
+  @@map("characters")
+}
+
+/// O estado de jogo de uma ficha (hoje só do D&D). Não tem lápide: some das respostas com a ficha.
+model PlayState {
+  userId          String   @map("user_id") @db.Uuid
+  characterId     String   @map("character_id") @db.VarChar(120)
+  state           Json
+  schema          Int
+  clientUpdatedAt DateTime @map("client_updated_at") @db.Timestamptz(3)
+  revision        Int
+  changeSeq       BigInt   @map("change_seq")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  character Character @relation(fields: [userId, characterId], references: [userId, id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([userId, characterId])
+  @@index([userId, changeSeq])
+  @@map("play_states")
+}

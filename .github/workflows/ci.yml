@@ -15,9 +15,12 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      # Tudo pela raiz do workspace: os testes do motor (node) e do site (jsdom), o lint dos dois e
-      # o build da Vercel (tsc -b com as referências + vite build do site).
+      # Tudo pela raiz do workspace: os testes do motor e da API (node) e do site (jsdom), o lint de
+      # todos, o build da Vercel (tsc -b com as referências + vite build do site) e o da Render (o
+      # arquivo único da API). O `npm ci` gera o cliente do Prisma no postinstall da API, sem banco:
+      # nenhum teste abre conexão (os da API rodam sobre repositórios em memória).
       - run: npm ci
       - run: npm run lint
       - run: npm test -- --run
       - run: npm run build
+      - run: npm run build:api

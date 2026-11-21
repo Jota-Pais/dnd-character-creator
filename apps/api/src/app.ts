@@ -7,14 +7,21 @@ import { createAuthService } from './modules/auth/auth.service'
 import { authentication } from './modules/auth/authentication'
 import { createLoginThrottle } from './modules/auth/login-throttle'
 import { createSessionCookie } from './modules/auth/session-cookie'
+import type { CharactersRepository } from './modules/characters/characters.repository'
+import { characterRoutes } from './modules/characters/characters.routes'
+import { createCharactersService } from './modules/characters/characters.service'
 import { healthRoutes } from './modules/health/health.routes'
+import { syncRoutes } from './modules/sync/sync.routes'
+import { createSyncService } from './modules/sync/sync.service'
 import { errorHandler, notFound } from './shared/middlewares/error-handler'
+import { requireAccount } from './shared/middlewares/require-auth'
 import { sameOrigin } from './shared/middlewares/same-origin'
 
 export type AppOptions = {
   /** O acesso ao banco de cada módulo: o do Prisma em produção, o em memória nos testes. */
   repositories: {
     auth: AuthRepository
+    characters: CharactersRepository
   }
   /** Vai no /health: development | test | production. */
   environment?: string
@@ -56,6 +63,8 @@ export function createApp({
     clock,
     passwordCost,
   })
+  const characters = createCharactersService({ repository: repositories.characters, clock })
+  const sync = createSyncService({ repository: repositories.characters })
 
   const app = express()
   // A Render (e, na frente dela, a Vercel) é um proxy: o protocolo e o IP de quem pediu vêm nos
@@ -80,6 +89,9 @@ export function createApp({
   app.use('/api', authentication(auth, cookie))
 
   app.use('/api/auth', authRoutes(auth, cookie))
+  // As fichas e a sincronização exigem sessão e que os dados do aparelho sejam da conta dela.
+  app.use('/api/characters', requireAccount, characterRoutes(characters))
+  app.use('/api/sync', requireAccount, syncRoutes(sync))
 
   app.use(notFound)
   app.use(errorHandler)

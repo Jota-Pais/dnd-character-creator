@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { createApp } from './app'
 import { loadEnv } from './env'
 import { createPrismaAuthRepository } from './modules/auth/auth.repository.prisma'
+import { createPrismaCharactersRepository } from './modules/characters/characters.repository.prisma'
 import { createPrisma } from './shared/prisma'
 
 const env = loadEnv()
@@ -13,7 +14,7 @@ const prisma = createPrisma(env.DATABASE_URL, { verbose: env.NODE_ENV === 'devel
 const authRepository = createPrismaAuthRepository(prisma)
 
 const app = createApp({
-  repositories: { auth: authRepository },
+  repositories: { auth: authRepository, characters: createPrismaCharactersRepository(prisma) },
   environment: env.NODE_ENV,
   version,
   appOrigins: env.APP_ORIGIN,

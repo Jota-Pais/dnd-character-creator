@@ -1,6 +1,10 @@
 import type { Express } from 'express'
 import { createApp, type AppOptions } from '../app'
 import { createMemoryAuthRepository, type MemoryAuthRepository } from '../modules/auth/auth.repository.memory'
+import {
+  createMemoryCharactersRepository,
+  type MemoryCharactersRepository,
+} from '../modules/characters/characters.repository.memory'
 
 /** O relógio dos testes: parado, e só anda quando o teste manda. */
 export type TestClock = {
@@ -28,7 +32,7 @@ export function only<T>(items: Iterable<T>): T {
 export type TestApp = {
   app: Express
   clock: TestClock
-  repositories: { auth: MemoryAuthRepository }
+  repositories: { auth: MemoryAuthRepository; characters: MemoryCharactersRepository }
 }
 
 /**
@@ -37,7 +41,7 @@ export type TestApp = {
  */
 export function createTestApp(options: Partial<Omit<AppOptions, 'repositories' | 'clock'>> = {}): TestApp {
   const clock = createTestClock()
-  const repositories = { auth: createMemoryAuthRepository() }
+  const repositories = { auth: createMemoryAuthRepository(), characters: createMemoryCharactersRepository() }
   const app = createApp({ environment: 'test', passwordCost: 4, ...options, repositories, clock: clock.now })
   return { app, clock, repositories }
 }

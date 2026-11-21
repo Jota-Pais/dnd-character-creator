@@ -5,7 +5,7 @@ import { lazyScreen } from '../../core/utils/lazyScreen';
 import { useCharacterStore } from './stores/characterStore';
 import { getRace, getSubrace } from '@rpg/rules/systems/dnd5e/utils/raceUtils';
 import { getClass } from '@rpg/rules/systems/dnd5e/utils/classUtils';
-import type { IRpgSystem } from '../../core/types/system';
+import type { IRpgSystem } from '../system';
 import type { CharacterDraft } from '@rpg/rules/systems/dnd5e/types/character';
 
 export const dnd5eSystem: IRpgSystem = {

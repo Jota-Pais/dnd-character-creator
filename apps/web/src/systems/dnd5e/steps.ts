@@ -1,6 +1,6 @@
 import { WIZARD_STEPS, STEP_LABELS } from '@rpg/rules/systems/dnd5e/types/character';
 import { isStepComplete } from '@rpg/rules/systems/dnd5e/utils/draftValidation';
-import type { StepConfig } from '../../core/types/system';
+import type { StepConfig } from '../system';
 import type { CharacterDraft } from '@rpg/rules/systems/dnd5e/types/character';
 import { NameStep } from './components/steps/NameStep';
 import { RaceStep } from './components/steps/RaceStep';

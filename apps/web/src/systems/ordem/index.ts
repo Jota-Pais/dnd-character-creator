@@ -3,7 +3,7 @@ import { getMissingSteps } from '@rpg/rules/systems/ordem/utils/draftValidation'
 import { getOrigin } from '@rpg/rules/systems/ordem/utils/originUtils'
 import { getOrdemClass } from '@rpg/rules/systems/ordem/utils/classUtils'
 import { lazyScreen } from '../../core/utils/lazyScreen'
-import type { IRpgSystem } from '../../core/types/system'
+import type { IRpgSystem } from '../system'
 import type { OrdemCharacterDraft } from '@rpg/rules/systems/ordem/types/character'
 
 export const ordemSystem: IRpgSystem = {

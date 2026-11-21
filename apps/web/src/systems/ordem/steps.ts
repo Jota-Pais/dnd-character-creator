@@ -1,6 +1,6 @@
 import { WIZARD_STEPS, STEP_LABELS } from '@rpg/rules/systems/ordem/types/character'
 import { isStepComplete } from '@rpg/rules/systems/ordem/utils/draftValidation'
-import type { StepConfig } from '../../core/types/system'
+import type { StepConfig } from '../system'
 import type { OrdemCharacterDraft } from '@rpg/rules/systems/ordem/types/character'
 import { NameStep } from './components/steps/NameStep'
 import { AttributesStep } from './components/steps/AttributesStep'

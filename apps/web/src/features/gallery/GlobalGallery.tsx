@@ -20,8 +20,8 @@ import {
 } from './galleryGrouping'
 import { useCharacterStore as useDndStore } from '../../systems/dnd5e/stores/characterStore'
 import { useOrdemStore } from '../../systems/ordem/stores/characterStore'
-import { SYSTEMS } from '../../core/systems/registry'
-import type { IRpgSystem } from '../../core/types/system'
+import { SYSTEMS } from '../../systems/registry'
+import type { IRpgSystem } from '../../systems/system'
 import simboloMaior from '../../systems/ordem/assets/simbolo-maior.webp'
 
 type UnifiedCharacter =

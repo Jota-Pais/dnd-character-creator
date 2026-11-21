@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import type { OrdemAttributes, OrdemCharacterDraft, ParanormalPowerChoice, ParanormalSourceKey, WizardStep } from '@rpg/rules/systems/ordem/types/character'
 import type { ParanormalElement } from '@rpg/rules/systems/ordem/types/ritual'
 import { WIZARD_STEPS, EMPTY_DRAFT } from '@rpg/rules/systems/ordem/types/character'
-import { loadLibrary, saveCharacterEntry, deleteCharacterEntry, newId, type SavedCharacter } from '../utils/storage'
+import { loadLibrary, saveCharacterEntry, deleteCharacterEntry, newId, type SavedCharacter } from '../storage/storage'
 import { getFirstIncompleteStep } from '@rpg/rules/systems/ordem/utils/draftValidation'
 import { useAppStore } from '../../../core/stores/appStore'
 

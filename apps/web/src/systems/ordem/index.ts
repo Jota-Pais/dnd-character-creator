@@ -12,7 +12,7 @@ export const ordemSystem: IRpgSystem = {
   subtitle: 'RPG de investigação paranormal',
   getEmptyDraft: () => ({ ...EMPTY_DRAFT }),
   // A ficha imprimível desce sob demanda, num pedaço à parte do criador (core/utils/lazyScreen.ts).
-  PrintableSheet: lazyScreen(() => import('./components/PrintableSheet').then(m => m.PrintableSheet)),
+  PrintableSheet: lazyScreen(() => import('./print/PrintableSheet').then(m => m.PrintableSheet)),
   formatDraftName: (draft: unknown) => {
     const d = draft as OrdemCharacterDraft
     const origin = d.origin ? getOrigin(d.origin) : undefined

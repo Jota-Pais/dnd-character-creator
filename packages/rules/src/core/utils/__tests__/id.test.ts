@@ -44,7 +44,7 @@ describe('fonte de aleatoriedade', () => {
     expect(paths.some(p => p.includes('/systems/ordem/'))).toBe(true)
     const site = paths.filter(p => p.includes('/apps/web/src/'))
     expect(site.some(p => p.includes('/systems/dnd5e/play/'))).toBe(true)
-    expect(site.some(p => p.includes('/systems/ordem/components/'))).toBe(true)
+    expect(site.some(p => p.includes('/systems/ordem/creator/'))).toBe(true)
   })
 
   it('só o cryptoRng chama o Math.random', () => {

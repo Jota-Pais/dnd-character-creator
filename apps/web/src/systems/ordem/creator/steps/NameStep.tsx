@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useOrdemStore } from '../../stores/characterStore'
-import { importCharacter } from '../../utils/storage'
+import { importCharacter } from '../../storage/storage'
 import { pickFile } from '../../../../core/utils/download'
 import { NEX_STEPS } from '@rpg/rules/systems/ordem/utils/progressionUtils'
 import { StepNav } from '../../../../core/ui/wizard/StepNav'

@@ -56,7 +56,7 @@ describe('cores do app', () => {
     for (const file of [
       '../systems/dnd5e/play/PlayScreen.tsx',
       '../systems/dnd5e/creator/common/PendingStepsPanel.tsx',
-      '../systems/ordem/components/steps/ReviewStep.tsx',
+      '../systems/ordem/creator/steps/ReviewStep.tsx',
       '../features/gallery/GlobalGallery.tsx',
     ]) {
       expect(files, file).toContain(file)

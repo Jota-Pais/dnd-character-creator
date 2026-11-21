@@ -6,7 +6,7 @@ import { StandardArrayPanel } from '../abilities/StandardArrayPanel'
 import { PointBuyPanel } from '../abilities/PointBuyPanel'
 import { RollPanel } from '../abilities/RollPanel'
 import { CustomPanel } from '../abilities/CustomPanel'
-import { StepNav } from '../../../../components/wizard/StepNav'
+import { StepNav } from '../../../../core/ui/wizard/StepNav'
 import { formatPendingHint, getStepPendingReasons } from '@rpg/rules/systems/dnd5e/utils/pendingReasons'
 
 const ACCENT = '#d4900a'

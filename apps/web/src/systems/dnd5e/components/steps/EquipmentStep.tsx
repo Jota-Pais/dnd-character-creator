@@ -11,7 +11,7 @@ import type { FixedItem, InventoryItem } from '@rpg/rules/systems/dnd5e/types/eq
 import type { Background, BackgroundChoiceSelections } from '@rpg/rules/systems/dnd5e/types/background'
 import { EquipmentMethodSelector } from '../equipment/EquipmentMethodSelector'
 import { EquipmentChoiceCard } from '../equipment/EquipmentChoiceCard'
-import { StepNav } from '../../../../components/wizard/StepNav'
+import { StepNav } from '../../../../core/ui/wizard/StepNav'
 import { formatPendingHint, getStepPendingReasons } from '@rpg/rules/systems/dnd5e/utils/pendingReasons'
 import { cryptoRoller, type DieRoller } from '@rpg/rules/core/dice'
 

@@ -22,7 +22,7 @@ import { BackgroundCard } from '../background/BackgroundCard'
 import { BackgroundChoicePanel } from '../background/BackgroundChoicePanel'
 import { SubstituteProficiencyPicker } from '../background/SubstituteProficiencyPicker'
 import { RepetitionsCausedNotes } from '../common/RepetitionsCausedNotes'
-import { StepNav } from '../../../../components/wizard/StepNav'
+import { StepNav } from '../../../../core/ui/wizard/StepNav'
 import { formatPendingHint, getStepPendingReasons } from '@rpg/rules/systems/dnd5e/utils/pendingReasons'
 
 export function BackgroundStep() {

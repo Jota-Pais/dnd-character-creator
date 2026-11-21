@@ -1,7 +1,7 @@
 import { useOrdemStore } from '../../stores/characterStore'
 import { STEP_LABELS } from '@rpg/rules/systems/ordem/types/character'
 import type { WizardStep } from '@rpg/rules/systems/ordem/types/character'
-import { formatMissingCount } from '../../../../components/wizard/pendingSteps'
+import { formatMissingCount } from '../../../../core/ui/wizard/pendingSteps'
 
 /**
  * Única trava do fluxo: a Revisão lista o que ficou pendente e leva direto a cada etapa.

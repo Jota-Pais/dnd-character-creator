@@ -13,7 +13,7 @@ import {
   type ParanormalInstance,
 } from '@rpg/rules/systems/ordem/utils/paranormalPowerUtils'
 import { isParanormalElement } from '@rpg/rules/systems/ordem/utils/paranormalPowerUtils'
-import { StepNav } from '../../../../components/wizard/StepNav'
+import { StepNav } from '../../../../core/ui/wizard/StepNav'
 import { AffinitySection } from '../paranormal/AffinitySection'
 import { ParanormalPowerCatalog } from '../paranormal/ParanormalPowerCatalog'
 import { ParanormalSubChoicePicker } from '../paranormal/ParanormalSubChoicePicker'

@@ -20,7 +20,7 @@ import { getFeatManeuvers, getTakenFightingStyles } from '@rpg/rules/systems/dnd
 import { ClassCard } from '../class/ClassCard'
 import { ClassChoicePanel } from '../class/ClassChoicePanel'
 import { MulticlassPanel } from '../class/MulticlassPanel'
-import { StepNav } from '../../../../components/wizard/StepNav'
+import { StepNav } from '../../../../core/ui/wizard/StepNav'
 import { formatPendingHint, getStepPendingReasons } from '@rpg/rules/systems/dnd5e/utils/pendingReasons'
 
 export function ClassStep() {

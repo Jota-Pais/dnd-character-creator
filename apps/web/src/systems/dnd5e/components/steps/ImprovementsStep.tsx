@@ -14,7 +14,7 @@ import {
 } from '@rpg/rules/systems/dnd5e/utils/asiUtils'
 import { getClass } from '@rpg/rules/systems/dnd5e/utils/classUtils'
 import { getPrimaryLevel } from '@rpg/rules/systems/dnd5e/utils/multiclassUtils'
-import { StepNav } from '../../../../components/wizard/StepNav'
+import { StepNav } from '../../../../core/ui/wizard/StepNav'
 import { FeatCatalog } from '../common/FeatCatalog'
 import { FeatChoiceSlots } from '../common/FeatChoiceSlots'
 import { formatPendingHint, getStepPendingReasons } from '@rpg/rules/systems/dnd5e/utils/pendingReasons'

@@ -1,5 +1,5 @@
 import { Suspense, useLayoutEffect, useState, type ComponentType } from 'react'
-import { printPage } from '../../core/utils/print'
+import { printPage } from '../utils/print'
 import { Loading } from './Loading'
 
 /**

@@ -3,7 +3,7 @@ import { useCharacterStore } from '../../stores/characterStore'
 import { getClass } from '@rpg/rules/systems/dnd5e/utils/classUtils'
 import { getPrimaryLevel } from '@rpg/rules/systems/dnd5e/utils/multiclassUtils'
 import { InfoTooltip } from '../common/InfoTooltip'
-import { StepNav } from '../../../../components/wizard/StepNav'
+import { StepNav } from '../../../../core/ui/wizard/StepNav'
 import { RuleText } from '../common/RuleText'
 import {
   getSpell,

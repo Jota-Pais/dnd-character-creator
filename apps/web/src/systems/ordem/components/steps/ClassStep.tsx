@@ -11,7 +11,7 @@ function statBreakdown(initial: number, perNex: number, attr: number, abbrev: st
   return tiers > 0 ? `${base} + ${tiers}×(${perNex} + ${attr} ${abbrev})` : base
 }
 import { isStepComplete } from '@rpg/rules/systems/ordem/utils/draftValidation'
-import { StepNav } from '../../../../components/wizard/StepNav'
+import { StepNav } from '../../../../core/ui/wizard/StepNav'
 import type { OrdemClass } from '@rpg/rules/systems/ordem/types/class'
 
 const CLASS_EMOJI: Record<string, string> = {

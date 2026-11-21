@@ -25,7 +25,7 @@ import { addsStrengthToDamage, formatWeaponSummary } from '@rpg/rules/systems/or
 import { getPatente, PATENTES } from '@rpg/rules/systems/ordem/utils/patenteUtils'
 import { getEffectiveCreditLimit, getUnproficientProtections } from '@rpg/rules/systems/ordem/utils/sheetEffects'
 import { isStepComplete } from '@rpg/rules/systems/ordem/utils/draftValidation'
-import { StepNav } from '../../../../components/wizard/StepNav'
+import { StepNav } from '../../../../core/ui/wizard/StepNav'
 
 const CAT_ROMAN = ['0', 'I', 'II', 'III', 'IV']
 

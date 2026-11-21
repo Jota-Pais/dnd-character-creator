@@ -2,7 +2,7 @@ import { useOrdemStore } from '../../stores/characterStore'
 import { ORIGINS, getOrigin } from '@rpg/rules/systems/ordem/utils/originUtils'
 import { SKILLS, getSkillName } from '@rpg/rules/systems/ordem/utils/skillUtils'
 import { isStepComplete } from '@rpg/rules/systems/ordem/utils/draftValidation'
-import { StepNav } from '../../../../components/wizard/StepNav'
+import { StepNav } from '../../../../core/ui/wizard/StepNav'
 import type { Origin } from '@rpg/rules/systems/ordem/types/origin'
 
 export function OriginStep() {

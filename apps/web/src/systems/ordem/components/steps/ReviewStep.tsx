@@ -42,9 +42,9 @@ import type { OrdemWeapon } from '@rpg/rules/systems/ordem/types/equipment'
 const CAT_ROMAN = ['0', 'I', 'II', 'III', 'IV']
 import { getReachedTrilhaSlots } from '@rpg/rules/systems/ordem/utils/progressionUtils'
 import { exportCharacter } from '../../utils/storage'
-import { StepNav } from '../../../../components/wizard/StepNav'
+import { StepNav } from '../../../../core/ui/wizard/StepNav'
 import { PendingStepsPanel } from '../common/PendingStepsPanel'
-import { formatMissingCount } from '../../../../components/wizard/pendingSteps'
+import { formatMissingCount } from '../../../../core/ui/wizard/pendingSteps'
 import { getMissingSteps } from '@rpg/rules/systems/ordem/utils/draftValidation'
 
 /** Sufixo com os bônus condicionais já somados no número da reação (ex.: ", já com +5 de Campo Protetor"). */

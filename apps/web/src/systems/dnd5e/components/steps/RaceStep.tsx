@@ -23,7 +23,7 @@ import { RaceCard } from '../race/RaceCard'
 import { SubraceCard } from '../race/SubraceCard'
 import { ChoicePanel } from '../race/ChoicePanel'
 import { RepetitionsCausedNotes } from '../common/RepetitionsCausedNotes'
-import { StepNav } from '../../../../components/wizard/StepNav'
+import { StepNav } from '../../../../core/ui/wizard/StepNav'
 import { formatPendingHint, getStepPendingReasons } from '@rpg/rules/systems/dnd5e/utils/pendingReasons'
 
 export function RaceStep() {

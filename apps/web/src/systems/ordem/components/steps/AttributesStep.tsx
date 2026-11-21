@@ -1,7 +1,7 @@
 import type { OrdemAttributes } from '@rpg/rules/systems/ordem/types/character'
 import { useOrdemStore } from '../../stores/characterStore'
 import { ATTRIBUTES, ATTRIBUTE_POINTS_TOTAL, ATTRIBUTE_MAX, getAttributeSum, isValidAttributes } from '@rpg/rules/systems/ordem/utils/attributeUtils'
-import { StepNav } from '../../../../components/wizard/StepNav'
+import { StepNav } from '../../../../core/ui/wizard/StepNav'
 
 export function AttributesStep() {
   const attributes = useOrdemStore(state => state.draft.attributes)

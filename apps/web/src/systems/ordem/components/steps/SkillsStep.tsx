@@ -14,7 +14,7 @@ import {
   EXPERT_SKILL_COUNT,
 } from '@rpg/rules/systems/ordem/utils/characterUtils'
 import { isStepComplete } from '@rpg/rules/systems/ordem/utils/draftValidation'
-import { StepNav } from '../../../../components/wizard/StepNav'
+import { StepNav } from '../../../../core/ui/wizard/StepNav'
 import { StepPrerequisite } from '../common/StepPrerequisite'
 
 export function SkillsStep() {

@@ -1,7 +1,7 @@
 import { useCharacterStore } from '../../stores/characterStore'
 import { STEP_LABELS } from '@rpg/rules/systems/dnd5e/types/character'
 import type { PendingStep } from '@rpg/rules/systems/dnd5e/utils/pendingReasons'
-import { formatMissingCount } from '../../../../components/wizard/pendingSteps'
+import { formatMissingCount } from '../../../../core/ui/wizard/pendingSteps'
 
 /**
  * Única trava do fluxo: a Revisão lista o que ficou pendente — etapa por etapa, com o que falta

@@ -7,13 +7,13 @@ import { getClass, subclassChangesSpellcasting } from '@rpg/rules/systems/dnd5e/
 import { getAdditionalLevelsUsed } from '@rpg/rules/systems/dnd5e/utils/multiclassUtils'
 import { EMPTY_EQUIPMENT_DRAFT } from '@rpg/rules/systems/dnd5e/types/equipment'
 import { EMPTY_SPELL_CHOICES } from '@rpg/rules/systems/dnd5e/types/spell'
-import { loadLibrary, saveCharacterEntry, deleteCharacterEntry, newId, type ImportedCharacter, type SavedCharacter } from '../utils/storage'
+import { loadLibrary, saveCharacterEntry, deleteCharacterEntry, newId, type ImportedCharacter, type SavedCharacter } from '../storage/storage'
 import { canPlayDraft, getFirstIncompleteStep } from '@rpg/rules/systems/dnd5e/utils/draftValidation'
 import { useAppStore } from '../../../core/stores/appStore'
 import { cryptoRoller, type DieRoller } from '@rpg/rules/core/dice'
 import { canonicalJson } from '@rpg/rules/core/utils/canonicalJson'
 import type { PlayState } from '@rpg/rules/systems/dnd5e/types/playState'
-import { deletePlayState, loadOpenPlayId, saveOpenPlayId, savePlayState } from '../utils/playStorage'
+import { deletePlayState, loadOpenPlayId, saveOpenPlayId, savePlayState } from '../storage/playStorage'
 import { usePlayStore } from './playStore'
 
 const initialLibrary = loadLibrary()

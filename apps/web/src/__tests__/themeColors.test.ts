@@ -54,8 +54,8 @@ describe('cores do app', () => {
   it('lê o código de todo o src, dos dois sistemas e do núcleo, sem os testes', () => {
     const files = Object.keys(sources)
     for (const file of [
-      '../systems/dnd5e/components/play/PlayScreen.tsx',
-      '../systems/dnd5e/components/common/PendingStepsPanel.tsx',
+      '../systems/dnd5e/play/PlayScreen.tsx',
+      '../systems/dnd5e/creator/common/PendingStepsPanel.tsx',
       '../systems/ordem/components/steps/ReviewStep.tsx',
       '../features/gallery/GlobalGallery.tsx',
     ]) {

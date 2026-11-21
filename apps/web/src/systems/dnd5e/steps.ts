@@ -2,15 +2,15 @@ import { WIZARD_STEPS, STEP_LABELS } from '@rpg/rules/systems/dnd5e/types/charac
 import { isStepComplete } from '@rpg/rules/systems/dnd5e/utils/draftValidation';
 import type { StepConfig } from '../system';
 import type { CharacterDraft } from '@rpg/rules/systems/dnd5e/types/character';
-import { NameStep } from './components/steps/NameStep';
-import { RaceStep } from './components/steps/RaceStep';
-import { ClassStep } from './components/steps/ClassStep';
-import { SpellStep } from './components/steps/SpellStep';
-import { AbilitiesStep } from './components/steps/AbilitiesStep';
-import { ImprovementsStep } from './components/steps/ImprovementsStep';
-import { BackgroundStep } from './components/steps/BackgroundStep';
-import { EquipmentStep } from './components/steps/EquipmentStep';
-import { ReviewStep } from './components/steps/ReviewStep';
+import { NameStep } from './creator/steps/NameStep';
+import { RaceStep } from './creator/steps/RaceStep';
+import { ClassStep } from './creator/steps/ClassStep';
+import { SpellStep } from './creator/steps/SpellStep';
+import { AbilitiesStep } from './creator/steps/AbilitiesStep';
+import { ImprovementsStep } from './creator/steps/ImprovementsStep';
+import { BackgroundStep } from './creator/steps/BackgroundStep';
+import { EquipmentStep } from './creator/steps/EquipmentStep';
+import { ReviewStep } from './creator/steps/ReviewStep';
 
 /**
  * As etapas do criador, com a tela de cada uma. Só o Dnd5eApp as usa: fora do contrato do sistema,

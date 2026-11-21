@@ -14,7 +14,7 @@ export const dnd5eSystem: IRpgSystem = {
   subtitle: 'PHB 2014',
   getEmptyDraft: () => ({ ...EMPTY_DRAFT }),
   // A ficha imprimível desce sob demanda (core/utils/lazyScreen.ts), com o que só ela usa.
-  PrintableSheet: lazyScreen(() => import('./components/PrintableSheet').then(m => m.PrintableSheet)),
+  PrintableSheet: lazyScreen(() => import('./print/PrintableSheet').then(m => m.PrintableSheet)),
   formatDraftName: (draft: unknown) => {
     const dndDraft = draft as CharacterDraft;
     const race = dndDraft.race ? getRace(dndDraft.race) : undefined;

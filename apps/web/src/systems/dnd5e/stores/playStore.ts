@@ -9,7 +9,7 @@ import { sameArmorSetup } from '@rpg/rules/systems/dnd5e/utils/wornArmor'
 import { syncSheetSnapshot, takeSheetSnapshot } from '@rpg/rules/systems/dnd5e/utils/sheetSnapshot'
 import {
   loadPlayPreferences, loadPlayState, loadPlayStateFor, savePlayPreferences, savePlayState, type PlayPreferences,
-} from '../utils/playStorage'
+} from '../storage/playStorage'
 
 /** Quantos estados anteriores o "desfazer" guarda: o bastante para uma rodada de combate. */
 export const UNDO_LIMIT = 30

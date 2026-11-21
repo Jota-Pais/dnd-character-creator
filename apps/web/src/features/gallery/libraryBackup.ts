@@ -9,8 +9,8 @@ import {
   type CharacterFile,
   type ImportedCharacter,
   type SavedCharacter as DndSaved,
-} from '../../systems/dnd5e/utils/storage'
-import { listPlayStateIds, loadPlayState } from '../../systems/dnd5e/utils/playStorage'
+} from '../../systems/dnd5e/storage/storage'
+import { listPlayStateIds, loadPlayState } from '../../systems/dnd5e/storage/playStorage'
 import { loadLibrary as loadOrdemLibrary, type SavedCharacter as OrdemSaved } from '../../systems/ordem/utils/storage'
 import { saveJsonFile } from '../../core/utils/download'
 import { useDeviceStore } from '../../core/stores/deviceStore'

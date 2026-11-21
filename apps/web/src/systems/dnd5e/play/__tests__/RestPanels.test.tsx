@@ -1,0 +1,387 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { act, render, screen, fireEvent, cleanup } from '@testing-library/react'
+import { PlayScreen } from '../PlayScreen'
+import { usePlayStore } from '../../stores/playStore'
+import { applyDamage, performAction, spendResource } from '@rpg/rules/systems/dnd5e/utils/playState'
+import { EMPTY_DRAFT } from '@rpg/rules/systems/dnd5e/types/character'
+import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
+import { liveRegions, openDraft, openKrusk, resetPlay } from './openPlay'
+
+beforeEach(resetPlay)
+afterEach(() => cleanup())
+
+const store = () => usePlayStore.getState()
+const playState = () => store().state!
+
+/** Krusk (14 PV, CON +2, 1d12) com 8 de dano e uma Fúria gasta, na aba Estado. */
+function openHurtKrusk() {
+  openKrusk()
+  store().run((st, sh) => applyDamage(st, sh, { amount: 8 }))
+  store().run((st, sh) => spendResource(st, sh, 'rage'))
+  render(<PlayScreen />)
+  fireEvent.click(screen.getByRole('tab', { name: 'Estado' }))
+}
+
+function spendDie(value: string) {
+  fireEvent.change(screen.getByLabelText('Quanto tirou no d12'), { target: { value } })
+  fireEvent.click(screen.getByRole('button', { name: 'Gastar d12' }))
+}
+
+describe('Descanso curto', () => {
+  it('gasta o Dado de Vida num rascunho e só grava ao concluir, num passo só do desfazer', () => {
+    openHurtKrusk()
+    fireEvent.click(screen.getByRole('button', { name: 'Descanso curto' }))
+    spendDie('3')
+    expect(screen.getByTestId('short-rest-draft')).toHaveTextContent('d12: 3 + 2 = 5.')
+    expect(screen.getByTestId('short-rest-draft')).toHaveTextContent('PV: 6 → 11 de 14')
+    // Nada gravado ainda.
+    expect(playState().hitDiceSpent).toEqual({})
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('6')
+
+    const undoBefore = store().undoStack.length
+    fireEvent.click(screen.getByRole('button', { name: 'Concluir descanso curto' }))
+    expect(playState().hitDiceSpent).toEqual({ 12: 1 })
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('11')
+    // A Fúria é de descanso longo: continua gasta.
+    expect(playState().resourcesSpent).toEqual({ rage: 1 })
+    expect(store().undoStack.length).toBe(undoBefore + 1)
+    // O aviso traz o resumo, não a conta de cada dado (que o rascunho já mostrou).
+    const toast = screen.getByRole('status')
+    expect(toast).toHaveTextContent('1 Dado de Vida: +5 PV (6 → 11).')
+    expect(toast).not.toHaveTextContent('d12: 3 + 2 = 5.')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Desfazer a última mudança' }))
+    expect(playState().hitDiceSpent).toEqual({})
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('6')
+  })
+
+  it('o leitor de tela ouve a conta do dado gasto e o PV parcial do rascunho', () => {
+    openHurtKrusk()
+    fireEvent.click(screen.getByRole('button', { name: 'Descanso curto' }))
+    const regions = liveRegions()
+    spendDie('3')
+    expect(regions.some(r => r.textContent === 'd12: 3 + 2 = 5. PV: 6 → 11 de 14.')).toBe(true)
+  })
+
+  it('face fora do dado apaga o botão e explica o que digitar', () => {
+    openHurtKrusk()
+    fireEvent.click(screen.getByRole('button', { name: 'Descanso curto' }))
+    const regions = liveRegions()
+    const field = screen.getByLabelText('Quanto tirou no d12')
+    fireEvent.change(field, { target: { value: '14' } })
+    const spend = screen.getByRole('button', { name: 'Gastar d12' })
+    expect(spend).toHaveAttribute('aria-disabled', 'true')
+    // Apagado, o envio não faz nada: nem a validação do navegador, que levaria o foco ao campo.
+    const invalid = vi.fn()
+    field.addEventListener('invalid', invalid)
+    fireEvent.click(spend)
+    expect(invalid).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('short-rest-draft')).toBeNull()
+    // O aviso sai numa região viva que já existia antes dele.
+    expect(regions.some(r => r.contains(screen.getByText(/Digite só o que saiu no d12 \(1 a 12\)/)))).toBe(true)
+  })
+
+  it('"desfazer o último dado" e cancelar descartam o rascunho', () => {
+    openHurtKrusk()
+    fireEvent.click(screen.getByRole('button', { name: 'Descanso curto' }))
+    spendDie('12')
+    fireEvent.click(screen.getByRole('button', { name: 'Desfazer o último dado' }))
+    expect(screen.queryByTestId('short-rest-draft')).toBeNull()
+    spendDie('4')
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(playState().hitDiceSpent).toEqual({})
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('6')
+  })
+
+  it('o rascunho sobrevive à troca de aba; cancelar e sair do jogo o descartam', () => {
+    openHurtKrusk()
+    fireEvent.click(screen.getByRole('button', { name: 'Descanso curto' }))
+    spendDie('9')
+    fireEvent.click(screen.getByRole('tab', { name: 'Testes' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Estado' }))
+    expect(screen.getByRole('button', { name: 'Descanso curto' })).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByTestId('short-rest-draft')).toHaveTextContent('d12: 9 + 2 = 11.')
+    expect(playState().hitDiceSpent).toEqual({})
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(store().shortRestDraft).toEqual([])
+    fireEvent.click(screen.getByRole('button', { name: 'Descanso curto' }))
+    expect(screen.queryByTestId('short-rest-draft')).toBeNull()
+
+    spendDie('5')
+    store().close()
+    expect(store()).toMatchObject({ restPanel: null, shortRestDraft: [] })
+  })
+
+  it('sem Dados de Vida disponíveis, o campo some', () => {
+    openHurtKrusk()
+    fireEvent.click(screen.getByRole('button', { name: 'Descanso curto' }))
+    spendDie('1')
+    expect(screen.queryByLabelText('Quanto tirou no d12')).toBeNull()
+  })
+
+  it('Recuperação Arcana com uso: o painel lembra o que dá para recuperar; sem uso, some', () => {
+    const wizard = structuredClone(COMPLETE_DRAFT)
+    wizard.class = 'wizard'
+    wizard.level = 4
+    openDraft(wizard)
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Estado' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Descanso curto' }))
+    expect(screen.getByTestId('slot-recovery')).toHaveTextContent(
+      'Recuperação Arcana: neste descanso curto, você pode recuperar espaços de magia gastos que somem até 2 níveis, nenhum de 6º nível ou superior (pág. 97).',
+    )
+    act(() => { store().run((st, sh) => spendResource(st, sh, 'arcane-recovery')) })
+    expect(screen.queryByTestId('slot-recovery')).toBeNull()
+  })
+
+  it('a 0 PV não deixa gastar Dados de Vida', () => {
+    openKrusk()
+    store().run((st, sh) => applyDamage(st, sh, { amount: 14 }))
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Estado' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Descanso curto' }))
+    expect(screen.getByText(/A 0 PV não dá para gastar Dados de Vida/)).toBeInTheDocument()
+    expect(screen.queryByLabelText('Quanto tirou no d12')).toBeNull()
+    // O resto do descanso vale (decisão de 2026-10-25): concluir não é recusado.
+    fireEvent.click(screen.getByRole('button', { name: 'Concluir descanso curto' }))
+    expect(store().notices.some(n => n.kind === 'refused')).toBe(false)
+    expect(screen.getByRole('status')).toHaveTextContent('Descanso curto concluído.')
+  })
+})
+
+describe('Descanso longo', () => {
+  it('mostra a prévia e confirma: PV cheio, Fúria e Dado de Vida de volta', () => {
+    openHurtKrusk()
+    fireEvent.click(screen.getByRole('button', { name: 'Descanso curto' }))
+    spendDie('2')
+    fireEvent.click(screen.getByRole('button', { name: 'Concluir descanso curto' }))
+    expect(playState().hitDiceSpent).toEqual({ 12: 1 })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Descanso longo' }))
+    const preview = screen.getByTestId('long-rest-preview')
+    expect(preview).toHaveTextContent('PV 10 → 14 (o máximo)')
+    expect(preview).toHaveTextContent('1 Dado de Vida')
+    expect(preview).toHaveTextContent('Fúria')
+    expect(screen.getByText(/Confirme só o descanso que terminou/)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar descanso longo' }))
+    expect(screen.getByTestId('hp-current')).toHaveTextContent('14')
+    expect(playState().hitDiceSpent).toEqual({})
+    expect(playState().resourcesSpent).toEqual({})
+  })
+
+  it('na multiclasse, a escolha dos tipos se ajusta depois de um desfazer', () => {
+    // Bruxo 3 / mago 2 (d8 e d6): o descanso longo devolve até 2 Dados de Vida.
+    openDraft({
+      ...structuredClone(COMPLETE_DRAFT),
+      race: 'human',
+      class: 'warlock',
+      level: 5,
+      additionalClasses: [{
+        classId: 'wizard', level: 2, classChoices: structuredClone(EMPTY_DRAFT.classChoices),
+        spellChoices: { cantrips: [], spells: [] }, asiChoices: [], hpRolls: [],
+      }],
+      multiclass: true,
+    })
+    store().run(st => ({ state: { ...st, hitDiceSpent: { 8: 2 } }, notices: [] }))
+    store().run(st => ({ state: { ...st, hitDiceSpent: { 8: 2, 6: 1 } }, notices: [] }))
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Estado' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Descanso longo' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Um d8 a menos' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Um d6 a mais' }))
+    expect(screen.getByText(/Dados de Vida que voltam: 2 de até 2/)).toBeInTheDocument()
+
+    // O desfazer devolve o d6 gasto: a escolha do d6 cai, sem recusa no confirmar.
+    fireEvent.click(screen.getByRole('button', { name: 'Desfazer a última mudança' }))
+    expect(screen.getByText(/Dados de Vida que voltam: 1 de até 2/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Um d6 a mais' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar descanso longo' }))
+    expect(store().notices.some(n => n.kind === 'refused')).toBe(false)
+    expect(playState().hitDiceSpent).toEqual({ 8: 1 })
+  })
+
+  it('na multiclasse, o "−" e o "+" que chegam ao limite ficam apagados com o foco neles', () => {
+    openDraft({
+      ...structuredClone(COMPLETE_DRAFT),
+      race: 'human',
+      class: 'warlock',
+      level: 5,
+      additionalClasses: [{
+        classId: 'wizard', level: 2, classChoices: structuredClone(EMPTY_DRAFT.classChoices),
+        spellChoices: { cantrips: [], spells: [] }, asiChoices: [], hpRolls: [],
+      }],
+      multiclass: true,
+    })
+    store().run(st => ({ state: { ...st, hitDiceSpent: { 8: 2, 6: 1 } }, notices: [] }))
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Estado' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Descanso longo' }))
+    // A sugestão: os dois d8. Um a menos, outro a menos: o "−" chega ao 0.
+    const lower = screen.getByRole('button', { name: 'Um d8 a menos' })
+    lower.focus()
+    fireEvent.click(lower)
+    fireEvent.click(lower)
+    expect(screen.getByText(/Dados de Vida que voltam: 0 de até 2/)).toBeInTheDocument()
+    expect(lower).toHaveAttribute('aria-disabled', 'true')
+    expect(lower).toHaveFocus()
+    // Apagado, o toque não faz nada.
+    fireEvent.click(lower)
+    expect(screen.getByText(/Dados de Vida que voltam: 0 de até 2/)).toBeInTheDocument()
+
+    const raise = screen.getByRole('button', { name: 'Um d6 a mais' })
+    raise.focus()
+    fireEvent.click(raise)
+    expect(raise).toHaveAttribute('aria-disabled', 'true')
+    expect(raise).toHaveFocus()
+    fireEvent.click(raise)
+    expect(screen.getByText(/Dados de Vida que voltam: 1 de até 2/)).toBeInTheDocument()
+  })
+
+  it('com exaustão, a caixa "comeu e bebeu" vem marcada e tira 1 nível', () => {
+    openHurtKrusk()
+    fireEvent.click(screen.getByRole('radio', { name: 'Exaustão 2' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Descanso longo' }))
+    const box = screen.getByLabelText(/Comeu e bebeu/)
+    expect(box).toBeChecked()
+    expect(screen.getByText('Exaustão 2 → 1')).toBeInTheDocument()
+    fireEvent.click(box)
+    expect(screen.getByText('Exaustão 2 → 2')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar descanso longo' }))
+    expect(playState().exhaustionLevel).toBe(2)
+  })
+})
+
+// A Fúria dura 1 minuto (pág. 48); o descanso curto, pelo menos 1 hora (pág. 188).
+describe('o descanso encerra a fúria', () => {
+  const ENDS = 'Fúria: acaba durante o descanso (pág. 48).'
+  const FRENZY = 'Frenesi: ao terminar, você sofre um nível de exaustão (0 → 1, pág. 292).'
+
+  /** Krusk Furioso 3, ferido, em fúria com o Frenesi, na aba Estado. */
+  function openRagingKrusk() {
+    const d = structuredClone(COMPLETE_DRAFT)
+    openDraft({ ...d, level: 3, classChoices: { ...d.classChoices, subclass: 'berserker' } })
+    store().run((st, sh) => applyDamage(st, sh, { amount: 8 }))
+    store().run((st, sh) => performAction(st, sh, 'rage-enter', { option: 'frenzy', now: 1 }))
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Estado' }))
+  }
+
+  it('descanso curto: o painel diz que a fúria acaba, e concluir a encerra com o Frenesi, num passo só', () => {
+    openRagingKrusk()
+    fireEvent.click(screen.getByRole('button', { name: 'Descanso curto' }))
+    expect(screen.getByTestId('rest-effects-ending').textContent).toBe(`${ENDS}${FRENZY}`)
+    const undoBefore = store().undoStack.length
+    spendDie('3')
+    fireEvent.click(screen.getByRole('button', { name: 'Concluir descanso curto' }))
+    expect(playState().activeEffects).toEqual([])
+    expect(playState().exhaustionLevel).toBe(1)
+    expect(playState().hitDiceSpent).toEqual({ 12: 1 })
+    expect(screen.queryByTestId('vitals-toggle-rage')).toBeNull()
+    // Os avisos na ordem do descanso: a fúria acaba no começo, os dados no fim.
+    expect(store().notices.map(n => n.text).slice(0, 3)).toEqual([ENDS, FRENZY, '1 Dado de Vida: +5 PV (24 → 29).'])
+    expect(store().undoStack.length).toBe(undoBefore + 1)
+  })
+
+  it('descanso longo: a exaustão do Frenesi entra antes do −1, e a prévia já mostra', () => {
+    openRagingKrusk()
+    fireEvent.click(screen.getByRole('button', { name: 'Descanso longo' }))
+    expect(screen.getByTestId('rest-effects-ending').textContent).toBe(`${ENDS}${FRENZY}`)
+    expect(screen.getByLabelText(/Comeu e bebeu/)).toBeChecked()
+    expect(screen.getByText('Exaustão 1 → 0')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar descanso longo' }))
+    expect(playState().activeEffects).toEqual([])
+    expect(playState().exhaustionLevel).toBe(0)
+    expect(playState().resourcesSpent).toEqual({})
+  })
+})
+
+// Controle que some (ou se desabilita) com a própria ação não larga o foco no body.
+describe('o foco nos descansos', () => {
+  /** Krusk no 2º nível (dois d12), com 10 de dano, na aba Estado com o descanso curto aberto. */
+  function openShortRest(level = 2) {
+    openDraft({ ...structuredClone(COMPLETE_DRAFT), level })
+    store().run((st, sh) => applyDamage(st, sh, { amount: 10 }))
+    render(<PlayScreen />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Estado' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Descanso curto' }))
+  }
+
+  /** A linha do tipo de dado ("d12: 2 disponíveis"), não a conta do rascunho ("d12: 3 + 2 = 5."). */
+  const dieLine = () => screen.getByText((_, el) => el?.tagName === 'P' && /^d12: \d+ disponíve/.test(el.textContent ?? ''))
+
+  function spendFocused(value: string) {
+    fireEvent.change(screen.getByLabelText('Quanto tirou no d12'), { target: { value } })
+    const spend = screen.getByRole('button', { name: 'Gastar d12' })
+    spend.focus()
+    fireEvent.click(spend)
+    return spend
+  }
+
+  it('"Gastar d12" com dado sobrando: o campo esvazia e o foco fica no botão, apagado', () => {
+    openShortRest()
+    const spend = spendFocused('3')
+    expect(screen.getByTestId('short-rest-draft')).toHaveTextContent('d12: 3 + 2 = 5.')
+    expect(spend).not.toBeDisabled()
+    expect(spend).toHaveAttribute('aria-disabled', 'true')
+    expect(spend).toHaveFocus()
+  })
+
+  it('"Gastar d12" no último dado: o campo some, e o foco vai à linha do dado', () => {
+    openShortRest(1)
+    spendFocused('3')
+    expect(screen.queryByRole('button', { name: 'Gastar d12' })).toBeNull()
+    const line = dieLine()
+    expect(line).toHaveTextContent('d12: 0 disponíveis')
+    expect(line).toHaveAttribute('tabindex', '-1')
+    expect(line).toHaveFocus()
+  })
+
+  it('"Desfazer o último dado": com outro no rascunho, o foco fica; no último, vai à linha do dado', () => {
+    openShortRest()
+    spendFocused('3')
+    spendFocused('4')
+    const undo = screen.getByRole('button', { name: 'Desfazer o último dado' })
+    undo.focus()
+    fireEvent.click(undo)
+    expect(undo).toHaveFocus()
+
+    fireEvent.click(undo)
+    expect(screen.queryByTestId('short-rest-draft')).toBeNull()
+    expect(dieLine()).toHaveTextContent('d12: 2 disponíveis')
+    expect(dieLine()).toHaveFocus()
+  })
+
+  it('"Concluir" e "Cancelar" fecham o painel, e o foco volta ao botão do descanso', () => {
+    openShortRest()
+    const toggle = screen.getByRole('button', { name: 'Descanso curto' })
+    const cancel = screen.getByRole('button', { name: 'Cancelar' })
+    cancel.focus()
+    fireEvent.click(cancel)
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    expect(toggle).toHaveFocus()
+
+    fireEvent.click(toggle)
+    spendFocused('3')
+    const done = screen.getByRole('button', { name: 'Concluir descanso curto' })
+    done.focus()
+    fireEvent.click(done)
+    expect(playState().hitDiceSpent).toEqual({ 12: 1 })
+    expect(toggle).toHaveFocus()
+
+    const longToggle = screen.getByRole('button', { name: 'Descanso longo' })
+    fireEvent.click(longToggle)
+    const confirm = screen.getByRole('button', { name: 'Confirmar descanso longo' })
+    confirm.focus()
+    fireEvent.click(confirm)
+    expect(playState().hitDiceSpent).toEqual({})
+    expect(longToggle).toHaveFocus()
+
+    fireEvent.click(longToggle)
+    const cancelLong = screen.getByRole('button', { name: 'Cancelar' })
+    cancelLong.focus()
+    fireEvent.click(cancelLong)
+    expect(longToggle).toHaveFocus()
+  })
+})

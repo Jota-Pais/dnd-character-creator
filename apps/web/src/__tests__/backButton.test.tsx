@@ -5,7 +5,7 @@ import { handleBack } from '../core/navigation/back'
 import { useAppStore } from '../core/stores/appStore'
 import { useCharacterStore } from '../systems/dnd5e/stores/characterStore'
 import { useOrdemStore } from '../systems/ordem/stores/characterStore'
-import { openKrusk, resetPlay } from '../systems/dnd5e/components/play/__tests__/openPlay'
+import { openKrusk, resetPlay } from '../systems/dnd5e/play/__tests__/openPlay'
 import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
 
 // O voltar do Android no APK (core/native/nativeApp.ts) chama o `handleBack`: aqui, cada tela real.

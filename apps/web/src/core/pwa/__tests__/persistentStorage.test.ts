@@ -84,7 +84,7 @@ describe('requestPersistentStorage: a primeira gravação de ficha da sessão', 
     const storage = fakeStorage({ grant: false })
     Object.defineProperty(navigator, 'storage', { value: storage, configurable: true })
     // Módulos novos: o "já pediu nesta sessão" começa zerado.
-    const { saveCharacterEntry, newId } = await import('../../../systems/dnd5e/utils/storage')
+    const { saveCharacterEntry, newId } = await import('../../../systems/dnd5e/storage/storage')
     const { loadDeviceState } = await import('../../utils/deviceStorage')
 
     expect(storage.persist).not.toHaveBeenCalled()
@@ -97,7 +97,7 @@ describe('requestPersistentStorage: a primeira gravação de ficha da sessão', 
   it('o estado de jogo gravado também pede (quem só joga fichas de antes)', async () => {
     const storage = fakeStorage()
     Object.defineProperty(navigator, 'storage', { value: storage, configurable: true })
-    const { savePlayState } = await import('../../../systems/dnd5e/utils/playStorage')
+    const { savePlayState } = await import('../../../systems/dnd5e/storage/playStorage')
     const { createPlayState } = await import('@rpg/rules/systems/dnd5e/utils/playState')
     savePlayState(createPlayState('char-1', 1))
     await vi.waitFor(() => expect(storage.persist).toHaveBeenCalledTimes(1))

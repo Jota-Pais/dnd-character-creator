@@ -9,7 +9,7 @@ import { getClass } from '@rpg/rules/systems/dnd5e/utils/classUtils'
 import { dnd5eSystem } from './index'
 import { getSteps } from './steps'
 import { D20Logo } from './assets/D20Logo'
-import { PlayScreen } from './components/play/PlayScreen'
+import { PlayScreen } from './play/PlayScreen'
 
 export function Dnd5eApp() {
   const setActiveSystem = useAppStore(state => state.setActiveSystem)

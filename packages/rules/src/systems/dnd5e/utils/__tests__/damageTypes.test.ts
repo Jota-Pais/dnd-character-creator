@@ -85,7 +85,7 @@ describe('fonte única do rótulo do tipo de dano', () => {
   it('o código lido cobre o motor e o site do D&D', () => {
     const paths = Object.keys(CODE)
     expect(paths).toContain('../damageTypes.ts')
-    expect(paths.some(p => p.includes('/apps/web/src/systems/dnd5e/components/'))).toBe(true)
+    expect(paths.some(p => p.includes('/apps/web/src/systems/dnd5e/play/'))).toBe(true)
   })
 
   it('nenhum código monta "dano de ${...}"', () => {

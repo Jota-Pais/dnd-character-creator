@@ -14,9 +14,9 @@ import {
   planRestore,
   type BackupFile,
 } from '../libraryBackup'
-import { buildCharacterFile, CHARACTER_FILE_FORMAT, CHARACTER_FILE_VERSION, loadLibrary as loadDnd, type SavedCharacter as DndSaved } from '../../../systems/dnd5e/utils/storage'
+import { buildCharacterFile, CHARACTER_FILE_FORMAT, CHARACTER_FILE_VERSION, loadLibrary as loadDnd, type SavedCharacter as DndSaved } from '../../../systems/dnd5e/storage/storage'
 import { loadLibrary as loadOrdem, type SavedCharacter as OrdemSaved } from '../../../systems/ordem/utils/storage'
-import { loadPlayState, savePlayState } from '../../../systems/dnd5e/utils/playStorage'
+import { loadPlayState, savePlayState } from '../../../systems/dnd5e/storage/playStorage'
 import { loadDeviceState } from '../../../core/utils/deviceStorage'
 import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
 import { EMPTY_DRAFT as ORDEM_EMPTY } from '@rpg/rules/systems/ordem/types/character'

@@ -6,7 +6,7 @@ import {
 } from '@rpg/rules/systems/dnd5e/utils/playState'
 import type { PlayOperation } from '../playStore'
 import type { WornArmor } from '@rpg/rules/systems/dnd5e/types/session'
-import { loadPlayPreferences, loadPlayState, savePlayState } from '../../utils/playStorage'
+import { loadPlayPreferences, loadPlayState, savePlayState } from '../../storage/playStorage'
 import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
 import { roll, sequenceRoller } from '@rpg/rules/core/dice'
 

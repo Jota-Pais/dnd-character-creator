@@ -60,9 +60,12 @@ packages/rules/src/   # @rpg/rules: o motor, puro (sem React, zustand nem API do
  ├─ systems/          # data, types e utils de cada sistema (dnd5e, ordem), com os testes
  └─ test/fixtures.ts
 apps/web/src/         # @rpg/web: o site (importa o motor como @rpg/rules/<caminho>)
- ├─ core/             # tipos do IRpgSystem, registro dos sistemas, AppStore, galleryGrouping
- ├─ components/       # Design System / UI Genérica (Componentes sem regras de negócios)
- └─ systems/          # components, stores e storage.ts / playStorage.ts (localStorage) de cada sistema
+ ├─ core/             # o núcleo agnóstico: ui (UI genérica, sem regra de negócio), pwa, native, navigation, stores, utils
+ ├─ systems/          # o contrato IRpgSystem, o registro e um módulo por sistema:
+ │                    #   creator (etapas), play (modo de jogo), print (ficha imprimível), stores, storage (localStorage)
+ ├─ features/         # fluxos do app que conhecem mais de um sistema (gallery: a galeria e a cópia de todas as fichas)
+ └─ app/              # a casca: App.tsx, index.css e os testes que montam o app inteiro
+                      # camadas num sentido só, cobrado pelo ESLint: core ← systems ← features ← app
 apps/mobile/          # @rpg/mobile: o APK do Android (Capacitor; android/, a página de erro em www/)
 docs/                 # Regras digitalizadas em markdown
 scripts/              # gravam nos dados do motor (packages/rules/src/systems/<sistema>/data)
@@ -87,7 +90,7 @@ Arquivo novo vai ao motor quando é regra e não precisa de tela; o que importa 
 
 ## Persistência
 
-- Toda leitura/escrita de ficha deve passar pela camada de storage do próprio sistema: `apps/web/src/systems/<sistema>/utils/storage.ts` (no site; o motor não conhece o navegador)
+- Toda leitura/escrita de ficha deve passar pela camada de storage do próprio sistema: `apps/web/src/systems/<sistema>/storage/storage.ts` (no site; o motor não conhece o navegador)
 - A V1 implementa essa camada usando localStorage
 - Componentes e stores **nunca** acessam localStorage diretamente
 - Isso permite migrar para IndexedDB no futuro sem refatorar a aplicação

@@ -3,6 +3,7 @@ import { createSyncEngine, type CycleOutcome, type SyncEngine } from '../../core
 import { createSyncScheduler, type SyncScheduler } from '../../core/sync/scheduler'
 import { loadSyncMeta, onLocalChange, updateSyncMeta } from '../../core/sync/syncStorage'
 import { useAppStore } from '../../core/stores/appStore'
+import { useDeviceStore } from '../../core/stores/deviceStore'
 import { ACCOUNT_KEY } from '../auth/accountStorage'
 import { api } from '../auth/api'
 import { useAuthStore } from '../auth/authStore'
@@ -27,6 +28,8 @@ let runtime: Runtime | null = null
 
 const isAtRest = () => useAppStore.getState().activeSystemId === null
 const isVisible = () => document.visibilityState !== 'hidden'
+// Sem a informação, vale tentar: quem decide é a resposta do servidor.
+const isOnline = () => navigator.onLine !== false
 
 function exclusive<T>(work: () => Promise<T>): Promise<T> {
   const locks = typeof navigator !== 'undefined' ? navigator.locks : undefined
@@ -50,14 +53,27 @@ function create(): Runtime {
       onRemoteApplied: reloadLibraries,
       now: () => Date.now(),
     },
-    onStatus: status => useSyncStore.setState({ status }),
-    onConflictCopies: count => useSyncStore.setState(state => ({ conflictCopies: state.conflictCopies + count })),
+    onStatus: () => publish(),
+    // Guardado no aparelho: o aviso espera a galeria, mesmo que a página recarregue antes.
+    onConflictCopies: count => {
+      const device = useDeviceStore.getState()
+      device.update({ unseenConflictCopies: device.unseenConflictCopies + count })
+    },
   })
+
+  /**
+   * Leva às telas o estado de agora. O motor só fala ao fim de cada passo de um ciclo, mas o que o
+   * jogador vê muda também fora dele: uma alteração nova conta como pendente na hora, e sem rede o
+   * ciclo nem começa (o motor fica "parado", e a tela precisa dizer "sem conexão").
+   */
+  function publish(): void {
+    const status = engine.status()
+    useSyncStore.setState({ status: status.phase === 'idle' && !isOnline() ? { ...status, phase: 'offline' } : status })
+  }
 
   const scheduler = createSyncScheduler({
     run: () => exclusive(() => engine.sync()),
-    // Sem a informação, vale tentar: quem decide é a resposta do servidor.
-    isOnline: () => navigator.onLine !== false,
+    isOnline,
     timers: {
       setTimeout: (callback, ms) => window.setTimeout(callback, ms),
       clearTimeout: handle => window.clearTimeout(handle as number),
@@ -65,9 +81,17 @@ function create(): Runtime {
     },
   })
 
-  const stopListening = onLocalChange(key => scheduler.notifyLocalChange(key))
+  const stopListening = onLocalChange(key => {
+    scheduler.notifyLocalChange(key)
+    // A marca do diário é gravada antes do aviso: a contagem já inclui esta alteração.
+    publish()
+  })
 
-  const onOnline = () => scheduler.notifyOnline()
+  const onOnline = () => {
+    publish()
+    scheduler.notifyOnline()
+  }
+  const onOffline = () => publish()
 
   const onVisibility = () => {
     if (!isVisible()) {
@@ -99,6 +123,7 @@ function create(): Runtime {
   })
 
   window.addEventListener('online', onOnline)
+  window.addEventListener('offline', onOffline)
   window.addEventListener('pagehide', onPageHide)
   window.addEventListener('storage', onStorage)
   document.addEventListener('visibilitychange', onVisibility)
@@ -110,6 +135,7 @@ function create(): Runtime {
       stopListening()
       stopWatchingScreen()
       window.removeEventListener('online', onOnline)
+      window.removeEventListener('offline', onOffline)
       window.removeEventListener('pagehide', onPageHide)
       window.removeEventListener('storage', onStorage)
       document.removeEventListener('visibilitychange', onVisibility)
@@ -137,7 +163,7 @@ export function stopSync(): void {
   runtime?.scheduler.stop()
   runtime?.detach()
   runtime = null
-  useSyncStore.setState({ status: IDLE_STATUS, conflictCopies: 0 })
+  useSyncStore.setState({ status: IDLE_STATUS })
 }
 
 /** Um ciclo agora, esperando o resultado (o "Sair" tenta mandar antes o que falta). */

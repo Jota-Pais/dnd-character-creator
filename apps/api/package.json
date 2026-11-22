@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "dev:local": "tsx scripts/dev-local.ts",
     "build": "tsup",
     "start": "node dist/server.js",
     "postinstall": "prisma generate",

@@ -13,6 +13,7 @@
   "scripts": {
     "dev": "npm run dev -w @rpg/web --",
     "dev:api": "npm run dev -w @rpg/api",
+    "dev:api:local": "npm run dev:local -w @rpg/api",
     "build": "tsc -b && npm run build -w @rpg/web",
     "build:api": "npm run build -w @rpg/api",
     "preview": "npm run preview -w @rpg/web --",

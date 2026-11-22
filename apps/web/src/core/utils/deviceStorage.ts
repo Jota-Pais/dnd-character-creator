@@ -1,7 +1,7 @@
 /**
  * O que o app guarda do aparelho, fora das fichas (docs/app-instalavel.md): a resposta do pedido de
  * armazenamento persistente e os avisos da galeria (a dica de instalar no iPhone, o lembrete de
- * cópia de segurança). É do aparelho, como as preferências do jogo. Perder isto só faz um aviso
+ * cópia de segurança, as cópias de conflito que a sincronização criou). É do aparelho, como as preferências do jogo. Perder isto só faz um aviso
  * voltar: tudo cai no padrão, e uma escrita que falha (cota, navegação privada) não vira erro.
  */
 
@@ -22,6 +22,13 @@ export type DeviceState = {
   lastBackupAt: number | null
   /** O "Agora não" do lembrete de cópia: até quando ele fica quieto. */
   backupSnoozedUntil: number | null
+  /**
+   * Cópias de conflito que a sincronização criou e a galeria ainda não mostrou (a mesma ficha mudou
+   * em dois aparelhos, e a versão que perdeu virou uma ficha à parte). Fica guardado, e não só na
+   * memória: o conflito pode ser resolvido com o jogo aberto, ou logo antes de a página recarregar,
+   * e o aviso tem de estar lá na próxima vez que a galeria abrir. Zera no "Entendi".
+   */
+  unseenConflictCopies: number
 }
 
 export const DEFAULT_DEVICE_STATE: DeviceState = {
@@ -29,6 +36,7 @@ export const DEFAULT_DEVICE_STATE: DeviceState = {
   installHintDismissedAt: null,
   lastBackupAt: null,
   backupSnoozedUntil: null,
+  unseenConflictCopies: 0,
 }
 
 const timeOrNull = (x: unknown): number | null => (typeof x === 'number' && Number.isFinite(x) ? x : null)
@@ -44,6 +52,7 @@ function toDeviceState(raw: unknown): DeviceState {
     installHintDismissedAt: timeOrNull(r.installHintDismissedAt),
     lastBackupAt: timeOrNull(r.lastBackupAt),
     backupSnoozedUntil: timeOrNull(r.backupSnoozedUntil),
+    unseenConflictCopies: typeof r.unseenConflictCopies === 'number' && Number.isInteger(r.unseenConflictCopies) && r.unseenConflictCopies > 0 ? r.unseenConflictCopies : 0,
   }
 }
 

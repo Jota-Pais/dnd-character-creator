@@ -16,6 +16,8 @@ import { createPrisma, type PrismaClient } from '../shared/prisma'
  * duas gravações ao mesmo tempo (a trava da conta) só um Postgres de verdade mostra.
  */
 export type TestDatabase = {
+  /** A URL do banco, para quem abre a própria conexão (o modo local da API). */
+  url: string
   prisma: PrismaClient
   /** Esvazia as tabelas, para cada teste começar do zero. */
   reset(): Promise<void>
@@ -45,9 +47,11 @@ export async function createTestDatabase(): Promise<TestDatabase> {
   await server.start()
 
   // Uma conexão só no pool: é o que o PGlite atende.
-  const prisma = createPrisma(`postgresql://postgres:postgres@127.0.0.1:${port}/postgres?sslmode=disable`, { maxConnections: 1 })
+  const url = `postgresql://postgres:postgres@127.0.0.1:${port}/postgres?sslmode=disable`
+  const prisma = createPrisma(url, { maxConnections: 1 })
 
   return {
+    url,
     prisma,
     async reset() {
       await database.exec('TRUNCATE play_states, characters, sessions, users')

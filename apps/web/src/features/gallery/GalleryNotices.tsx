@@ -30,7 +30,7 @@ export function GalleryNotices({ latestChangeAt, onExportAll }: {
   const user = useAuthStore(s => s.user)
   const sessionState = useAuthStore(s => s.session)
   const sync = useSyncStore(s => s.status)
-  const conflictCopies = useSyncStore(s => s.conflictCopies)
+  const conflictCopies = device.unseenConflictCopies
   // A folha de entrar de novo, aberta pelo aviso da sessão expirada.
   const [reauth, setReauth] = useState(false)
   // A hora de quando a galeria abriu: o lembrete não aparece nem some com o relógio andando.
@@ -75,7 +75,7 @@ export function GalleryNotices({ latestChangeAt, onExportAll }: {
           </Notice>
         )}
         {conflictCopies > 0 && (
-          <Notice actions={<NoticeButton onClick={() => useSyncStore.setState({ conflictCopies: 0 })}>Entendi</NoticeButton>}>
+          <Notice actions={<NoticeButton onClick={() => device.update({ unseenConflictCopies: 0 })}>Entendi</NoticeButton>}>
             {conflictCopies === 1 ? 'Uma ficha mudou' : 'Algumas fichas mudaram'} em dois aparelhos ao mesmo tempo. A versão que não ficou
             virou uma cópia, com “conflito” no nome: confira as duas e apague a que não quiser.
           </Notice>

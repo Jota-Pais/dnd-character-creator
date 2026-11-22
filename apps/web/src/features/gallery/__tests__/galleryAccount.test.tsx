@@ -7,7 +7,7 @@ import { handleBack, hasOpenLayer } from '../../../core/navigation/back'
 import { useAppStore } from '../../../core/stores/appStore'
 import { useDeviceStore } from '../../../core/stores/deviceStore'
 import type { SyncStatus } from '../../../core/sync/engine'
-import { DEFAULT_DEVICE_STATE } from '../../../core/utils/deviceStorage'
+import { DEFAULT_DEVICE_STATE, loadDeviceState } from '../../../core/utils/deviceStorage'
 import { AccountBar } from '../../auth/AccountBar'
 import { useAuthStore } from '../../auth/authStore'
 import type { SignOutResult } from '../../auth/session'
@@ -34,7 +34,7 @@ beforeEach(() => {
   useOrdemStore.setState({ library: [] })
   useAppStore.getState().setActiveSystem(null)
   useDeviceStore.setState(DEFAULT_DEVICE_STATE)
-  useSyncStore.setState({ status: IDLE_STATUS, conflictCopies: 0 })
+  useSyncStore.setState({ status: IDLE_STATUS })
 })
 
 afterEach(() => {
@@ -193,10 +193,10 @@ describe('os avisos da conta na galeria', () => {
     expect(screen.getByText('MEUS PERSONAGENS')).toBeInTheDocument()
   })
 
-  it('a cópia de conflito é avisada, e o "Entendi" a dá por vista', async () => {
+  it('a cópia de conflito é avisada (também depois de recarregar a página), e o "Entendi" a dá por vista', async () => {
     const user = userEvent.setup()
     render(<App />)
-    act(() => { useSyncStore.setState({ conflictCopies: 1 }) })
+    act(() => { useDeviceStore.getState().update({ unseenConflictCopies: 1 }) })
     expect(screen.getByText(/Uma ficha mudou em dois aparelhos ao mesmo tempo\. A versão que não ficou virou uma cópia, com “conflito” no nome/)).toBeInTheDocument()
 
     // O botão do próprio aviso: a região viva é a dos avisos da galeria, que já existia.
@@ -204,9 +204,9 @@ describe('os avisos da conta na galeria', () => {
     expect(notice.closest('[aria-live="polite"]')).not.toBeNull()
     await user.click(within(notice.parentElement!).getByRole('button', { name: 'Entendi' }))
     expect(screen.queryByText(/em dois aparelhos/)).toBeNull()
-    expect(useSyncStore.getState().conflictCopies).toBe(0)
+    expect(loadDeviceState().unseenConflictCopies).toBe(0)
 
-    act(() => { useSyncStore.setState({ conflictCopies: 3 }) })
+    act(() => { useDeviceStore.getState().update({ unseenConflictCopies: 3 }) })
     expect(screen.getByText(/Algumas fichas mudaram em dois aparelhos/)).toBeInTheDocument()
   })
 

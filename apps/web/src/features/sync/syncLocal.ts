@@ -3,6 +3,7 @@ import type { PlayState } from '@rpg/rules/systems/dnd5e/types/playState'
 import { sanitizePlayState } from '@rpg/rules/systems/dnd5e/utils/playState'
 import type { LocalDoc, RemoteDoc, SyncLocalPort } from '../../core/sync/engine'
 import { characterKey, clearSyncMeta, parseDocKey, playKey, type DocKey } from '../../core/sync/syncStorage'
+import { updateDeviceState } from '../../core/utils/deviceStorage'
 import * as dnd from '../../systems/dnd5e/storage/storage'
 import * as play from '../../systems/dnd5e/storage/playStorage'
 import { flushAutosave, useCharacterStore } from '../../systems/dnd5e/stores/characterStore'
@@ -202,12 +203,14 @@ export function countLocalSheets(): number {
 
 /**
  * Apaga do aparelho as fichas, os estados de jogo e o diário (ao sair da conta: tudo continua no
- * servidor). Ficam as preferências do jogo e o que é do aparelho (`app-device`).
+ * servidor). Ficam as preferências do jogo e o que é do aparelho (`app-device`), menos o aviso de
+ * cópias de conflito, que era das fichas que saíram.
  */
 export function wipeLocalSheets(): void {
   for (const storage of Object.values(SHEETS)) storage.clear()
   play.clearPlayStorage()
   clearSyncMeta()
+  updateDeviceState({ unseenConflictCopies: 0 })
 }
 
 /** As telas releem as bibliotecas: a sincronização gravou nelas o que veio do servidor. */

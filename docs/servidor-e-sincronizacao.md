@@ -151,7 +151,7 @@ Os testes da API não precisam de banco instalado: os de serviço e de rota roda
 
 A ordem importa: **o login obrigatório não pode chegar aos celulares antes de a API estar no ar.** Por isso o trabalho ficou no branch `arquitetura-front-back`, e a `main` (que publica sozinha) só o recebe no passo 5.
 
-1. **Neon.** Criar o projeto (região `aws-us-east-2`), com o branch `main` (produção) e um `dev`. Anotar, do branch `main`, a URL *pooled* (com `-pooler`) e a direta.
+1. **Neon.** *Feito em 2026-11-21:* o projeto `forja` (id `proud-pond-14780351`, região `aws-us-east-2`, Postgres 18), com o branch `main` (produção) e o `dev` (desenvolvimento), e a migration aplicada nos dois. As URLs do `dev` estão em `apps/api/.env`; as do `main` (a *pooled*, com `-pooler`, e a direta), no painel da Neon, em "Connect". Nenhuma das duas vai para o repositório.
 2. **Render.** "New > Blueprint", apontando para o repositório e o branch `arquitetura-front-back` (o `render.yaml` da raiz descreve o serviço). O painel pede `DATABASE_URL` (a pooled) e `DATABASE_URL_UNPOOLED` (a direta). O build aplica as migrations (`db:deploy`).
 3. **Conferir** `https://<nome>.onrender.com/health`: `{"status":"ok","environment":"production",…}`. Anotar a URL que a Render deu (nome em uso ganha um sufixo).
 4. **Vercel.** No `vercel.json` da raiz, acrescentar o rewrite com essa URL (e o cabeçalho que desliga o cache do rewrite):
@@ -192,5 +192,6 @@ O que os testes automáticos não alcançam:
 
 - **Testes**: 162 arquivos, 3.709 testes. Os da API cobrem as regras (sobre repositórios em memória) e o SQL de produção (sobre o PGlite, com a migration aplicada). Os do motor de sincronização rodam contra um servidor e aparelhos de mentira, incluindo dois roteiros aleatórios com semente em que os dois aparelhos terminam iguais ao servidor e nenhuma versão gravada se perde.
 - **No navegador (Edge, pelo playwright-core), contra a API local**: dois contextos (dois aparelhos) da mesma conta. A conta criada num aparelho que já tinha fichas; o segundo aparelho recebendo tudo, idêntico; criar e apagar chegando ao outro; jogar sem rede e sincronizar na volta; o conflito com a cópia e o aviso; sair e entrar de novo; cookie `HttpOnly`; console sem erros.
+- **Contra a Neon** (o branch `dev`, com a API rodando local): o que o Postgres embutido não mostra, por atender uma conexão só. Cinco gravações da mesma ficha ao mesmo tempo, da mesma base: só uma entra, e as outras quatro recebem a versão que ganhou; vinte fichas criadas ao mesmo tempo: todas entram, e o cursor sai sem buraco. O roteiro de dois aparelhos no navegador passou inteiro também assim, e os dois comandos do dono (listar contas, redefinir senha) foram exercitados.
 - **No build de produção, com o service worker**: sem rede o app abre direto na galeria com a conta lembrada; `/api` não é respondido pelo service worker; criar ficha e jogar funcionam; recarregar no meio do jogo volta ao jogo; tudo sobe quando a rede volta.
 - **A reorganização do front** foi movimento puro: os testes passaram sem mudar asserção, e o build saiu com os mesmos hashes de antes.

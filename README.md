@@ -22,20 +22,21 @@ Aplicativo web pra criar fichas de RPG de mesa em poucos minutos, mesmo sem conh
 
 React 19 + TypeScript estrito · Vite · Tailwind CSS v4 · Zustand · Vitest.
 
-SPA 100% front-end, sem backend, num repositório com workspaces npm: o motor de regras (`packages/rules`, TypeScript puro, sem tela, que roda no navegador e no Node por um bundler ou carregador de TS), o site (`apps/web`) e o APK do Android (`apps/mobile`, Capacitor, que abre o site publicado). A arquitetura é modular: o núcleo (`core/`) é agnóstico de regras, e cada sistema é um plugin em `systems/` — pronto pra receber outros RPGs.
+Front e back separados, num repositório com workspaces npm: o motor de regras (`packages/rules`, TypeScript puro, sem tela, que roda no navegador e no Node por um bundler ou carregador de TS), o site (`apps/web`), a API de conta e sincronização (`apps/api`, Express + Prisma + Postgres), o contrato entre os dois (`packages/contracts`) e o APK do Android (`apps/mobile`, Capacitor, que abre o site publicado). A ficha fica no aparelho e o app funciona sem internet; com conta, as fichas aparecem em qualquer aparelho (`docs/servidor-e-sincronizacao.md`). A arquitetura é modular: o núcleo (`core/`) é agnóstico de regras, e cada sistema é um plugin em `systems/` — pronto pra receber outros RPGs.
 
 ## 🚀 Como Executar
 
-Pré-requisitos: [Node.js](https://nodejs.org/) 20+ e npm.
+Pré-requisitos: [Node.js](https://nodejs.org/) 22+ e npm.
 
 ```bash
 git clone https://github.com/Jota-Pais/dnd-character-creator.git
 cd dnd-character-creator
 npm install
-npm run dev
+npm run dev:api:local   # a API, com um banco de teste na memória (num terminal)
+npm run dev             # o site (em outro)
 ```
 
-O app abre em `http://localhost:5173/`. Outros scripts, todos da raiz: `npm run build` (saída em `apps/web/dist`), `npm run test`, `npm run lint`, `npm run typecheck`.
+O app abre em `http://localhost:5173/`, na tela de criar conta. A API do modo local não precisa de banco instalado nem de internet, e esquece tudo ao ser encerrada; para usar um Postgres de verdade (Neon), veja `docs/servidor-e-sincronizacao.md`. Outros scripts, todos da raiz: `npm run build` (o site, saída em `apps/web/dist`), `npm run build:api`, `npm run test`, `npm run lint`, `npm run typecheck`.
 
 ## 📜 Notas Legais
 

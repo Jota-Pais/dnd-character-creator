@@ -16,11 +16,11 @@ Toda decisão de produto e design serve a esse objetivo: guiar o iniciante sem t
 
 ## Arquitetura
 
-- **SPA front-end pura**, sem backend
-- Persistência local no navegador (localStorage na V1, possivelmente IndexedDB no futuro)
+- **Front e back separados, com banco e login** (decisão do dono de 2026-11-21; `docs/servidor-e-sincronizacao.md`): o site (`apps/web`, SPA), a API (`apps/api`, Express + Prisma + Postgres) e o contrato entre os dois (`packages/contracts`)
+- A ficha continua no aparelho (localStorage) e tudo funciona sem rede; com rede, sincroniza com o servidor. Login obrigatório por e-mail e senha
 - **Sistemas Multi-RPG (Arquitetura Modular):** O núcleo da aplicação (`core/`) é completamente agnóstico de regras de negócio. Todos os dados, regras e telas específicas ficam isolados nos seus respectivos módulos de sistema (ex: `systems/dnd5e`) — as regras no motor (`packages/rules`), as telas no site (`apps/web`).
-- Deploy estático na Vercel (`vercel.json` na raiz), com CI de lint, testes e build no GitHub Actions
-- Sem servidor por enquanto: não sugerir API routes, server actions ou arquitetura com servidor próprio. O servidor (conta e sincronização) é plano do dono para depois, e o motor de regras já fica pronto para ele
+- O site na Vercel (`vercel.json`), a API na Render (`render.yaml`) e o banco na Neon, com CI de lint, testes e build dos dois no GitHub Actions. A API mora em `/api`, na mesma origem do site
+- O servidor não conhece regra de RPG: guarda o draft e o estado de jogo como JSON. Regra fica no motor e roda no aparelho; não mover cálculo de ficha para a API, nem sugerir server actions ou SSR
 - App instalável e sem rede (iPhone pela tela de início, Android pelo APK que abre o site publicado): service worker que guarda só o que é do site, versão nova na próxima abertura ou antes só na galeria (pelo toque; no APK, também sozinha na volta do segundo plano), nunca recarregando com ficha ou jogo aberto, margens de área segura no que fica fixo nas bordas. Ver `docs/app-instalavel.md`
 - APK do Android (`apps/mobile`, Capacitor 8): casca que abre o site publicado (origem fixa, as fichas moram nela); código do site só do APK em `apps/web/src/core/native` (`isNativeApp()`); o voltar do Android pelo `useBackHandler` (folha e menu na camada `overlay`); tela do Android que o app abre por cima de si (seletor de arquivo, "Salvar como", impressão) marca a ida com `markOwnTrip` (`pickFile` para `<input type="file">`), para a volta dela não aplicar a versão nova; no Android fora do APK, o Chrome não oferece sozinho instalar o site (`refuseAutomaticInstallOffer`); chave de assinatura nunca no repositório. Ver `docs/app-android.md`
 
@@ -59,11 +59,19 @@ packages/rules/src/   # @rpg/rules: o motor, puro (sem React, zustand nem API do
  ├─ core/             # dice (motor de dados), utils (id, canonicalJson)
  ├─ systems/          # data, types e utils de cada sistema (dnd5e, ordem), com os testes
  └─ test/fixtures.ts
+packages/contracts/src/ # @rpg/contracts: o contrato da API (schemas Zod, tipos, códigos de erro); só depende do Zod
+apps/api/             # @rpg/api: a API (Express 5 + Prisma 7 + Postgres)
+ ├─ prisma/           # schema.prisma e migrations
+ ├─ scripts/          # comandos do dono (listar contas, redefinir senha) e o modo local
+ └─ src/              # app.ts (createApp), server.ts, env.ts, shared/ e modules/<assunto>/
+                      #   *.routes.ts (HTTP) → *.service.ts (regra) → *.repository.ts (banco, atrás de interface)
 apps/web/src/         # @rpg/web: o site (importa o motor como @rpg/rules/<caminho>)
- ├─ core/             # o núcleo agnóstico: ui (UI genérica, sem regra de negócio), pwa, native, navigation, stores, utils
+ ├─ core/             # o núcleo agnóstico: ui, api (cliente HTTP), sync (diário e motor da sincronização),
+ │                    #   pwa, native, navigation, stores, utils
  ├─ systems/          # o contrato IRpgSystem, o registro e um módulo por sistema:
  │                    #   creator (etapas), play (modo de jogo), print (ficha imprimível), stores, storage (localStorage)
- ├─ features/         # fluxos do app que conhecem mais de um sistema (gallery: a galeria e a cópia de todas as fichas)
+ ├─ features/         # fluxos do app que não são de um sistema: gallery (a galeria), auth (a conta e a tela de
+ │                    #   entrar), sync (a sincronização ligada ao app e aos storages dos dois sistemas)
  └─ app/              # a casca: App.tsx, index.css e os testes que montam o app inteiro
                       # camadas num sentido só, cobrado pelo ESLint: core ← systems ← features ← app
 apps/mobile/          # @rpg/mobile: o APK do Android (Capacitor; android/, a página de erro em www/)
@@ -91,7 +99,9 @@ Arquivo novo vai ao motor quando é regra e não precisa de tela; o que importa 
 ## Persistência
 
 - Toda leitura/escrita de ficha deve passar pela camada de storage do próprio sistema: `apps/web/src/systems/<sistema>/storage/storage.ts` (no site; o motor não conhece o navegador)
-- A V1 implementa essa camada usando localStorage
+- A V1 implementa essa camada usando localStorage, e é dele que as telas leem; o servidor guarda a cópia da conta
+- As camadas de storage marcam no diário da sincronização (`core/sync/syncStorage.ts`) o que o jogador muda e apaga: store e componente não chamam o diário, e só `features/sync/syncLocal.ts` usa as funções que gravam sem marcar (`putSynced*`, `removeSynced*`, `clear*`)
+- Campo novo no draft ou no estado de jogo sobe o `schema` de sincronização do documento (o typecheck de `features/sync/__tests__/syncSchema.test.ts` cobra)
 - Componentes e stores **nunca** acessam localStorage diretamente
 - Isso permite migrar para IndexedDB no futuro sem refatorar a aplicação
 

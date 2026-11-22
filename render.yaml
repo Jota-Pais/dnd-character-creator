@@ -17,7 +17,10 @@ services:
     plan: free
     # A mesma região do banco na Neon (aws-us-east-2): menos latência por consulta.
     region: ohio
-    branch: main
+    # PROVISÓRIO, só até a publicação: a API sobe a partir do branch de trabalho, porque ela precisa
+    # estar no ar ANTES de o login obrigatório chegar à `main` (que publica o site sozinha). No merge
+    # para a `main`, esta linha volta a ser `branch: main` (docs/servidor-e-sincronizacao.md, seção 8).
+    branch: arquitetura-front-back
     # O repositório é um monorepo de workspaces npm: a instalação é da raiz, e os comandos escolhem o
     # workspace da API. `--include=dev` é obrigatório: com NODE_ENV=production o `npm ci` omitiria as
     # devDependencies, e o build precisa delas (o tsup, a CLI do Prisma). O postinstall da API gera o

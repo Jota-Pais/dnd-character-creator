@@ -152,7 +152,7 @@ Os testes da API não precisam de banco instalado: os de serviço e de rota roda
 A ordem importa: **o login obrigatório não pode chegar aos celulares antes de a API estar no ar.** Por isso o trabalho ficou no branch `arquitetura-front-back`, e a `main` (que publica sozinha) só o recebe no passo 5.
 
 1. **Neon.** *Feito em 2026-11-21:* o projeto `forja` (id `proud-pond-14780351`, região `aws-us-east-2`, Postgres 18), com o branch `main` (produção) e o `dev` (desenvolvimento), e a migration aplicada nos dois. As URLs do `dev` estão em `apps/api/.env`; as do `main` (a *pooled*, com `-pooler`, e a direta), no painel da Neon, em "Connect". Nenhuma das duas vai para o repositório.
-2. **Render.** "New > Blueprint", apontando para o repositório e o branch `arquitetura-front-back` (o `render.yaml` da raiz descreve o serviço). O painel pede `DATABASE_URL` (a pooled) e `DATABASE_URL_UNPOOLED` (a direta). O build aplica as migrations (`db:deploy`).
+2. **Render.** Com o branch `arquitetura-front-back` no GitHub: "New > Blueprint", apontando para o repositório e para esse branch (o `render.yaml` da raiz descreve o serviço, e por enquanto manda a API subir desse mesmo branch). O painel pede `DATABASE_URL` (a pooled) e `DATABASE_URL_UNPOOLED` (a direta), do branch `main` da Neon. O build aplica as migrations pendentes (`db:deploy`).
 3. **Conferir** `https://<nome>.onrender.com/health`: `{"status":"ok","environment":"production",…}`. Anotar a URL que a Render deu (nome em uso ganha um sufixo).
 4. **Vercel.** No `vercel.json` da raiz, acrescentar o rewrite com essa URL (e o cabeçalho que desliga o cache do rewrite):
 
@@ -165,7 +165,7 @@ A ordem importa: **o login obrigatório não pode chegar aos celulares antes de 
    ]
    ```
 
-5. **Merge na `main`** e push (a conta `Jota-Pais` no `gh`). A Vercel publica o site com o login; na Render, trocar o branch do serviço para `main`.
+5. **Merge na `main`** e push (a conta `Jota-Pais` no `gh`), com o `render.yaml` voltando a dizer `branch: main` no mesmo merge. A Vercel publica o site com o login, e a Render passa a acompanhar a `main` (conferir no painel do serviço que o branch mudou).
 6. **Conferir em produção**: `https://dnd-character-creator-gamma.vercel.app/api/auth/session` responde `{"user":null}`; criar a conta; ver a ficha num segundo aparelho.
 7. **Avisar a turma**: abrir o app **com internet** e criar a conta antes da próxima sessão. Sem conta e sem rede, o app não abre (decisão do dono); as fichas de cada aparelho continuam guardadas e sobem para a conta de quem entrar.
 

@@ -1,0 +1,51 @@
+# Blueprint da Render para a API do Forja (apps/api).
+#
+# O serviço é criado por "New > Blueprint" apontando para este repositório, em vez de preencher
+# campo a campo no painel. O passo a passo, com o que vem antes (o banco na Neon) e depois (o rewrite
+# da Vercel), está em docs/servidor-e-sincronizacao.md, "Publicar".
+#
+# As variáveis com sync: false são pedidas pelo painel na criação e nunca ficam neste arquivo. Num
+# serviço que já existe, variável nova com sync: false entra à mão no painel ANTES do merge que passa
+# a exigi-la: sem ela o boot cai (apps/api/src/env.ts valida o ambiente na largada).
+services:
+  - type: web
+    # A URL pública sai do nome (https://<nome>.onrender.com) e fica fixa no vercel.json, no rewrite
+    # de /api: se o nome mudar aqui, tem de mudar lá. Nome já em uso na Render nasce com um sufixo
+    # aleatório: confira a URL que o painel mostrar antes de escrever o rewrite.
+    name: forja-api
+    runtime: node
+    plan: free
+    # A mesma região do banco na Neon (aws-us-east-2): menos latência por consulta.
+    region: ohio
+    branch: main
+    # O repositório é um monorepo de workspaces npm: a instalação é da raiz, e os comandos escolhem o
+    # workspace da API. `--include=dev` é obrigatório: com NODE_ENV=production o `npm ci` omitiria as
+    # devDependencies, e o build precisa delas (o tsup, a CLI do Prisma). O postinstall da API gera o
+    # cliente do Prisma. `db:deploy` aplica só as migrations pendentes: nunca `migrate dev` aqui.
+    buildCommand: npm ci --include=dev && npm run build:api && npm run db:deploy -w @rpg/api
+    startCommand: npm start -w @rpg/api
+    healthCheckPath: /health
+    # Só o que a API usa dispara um deploy dela: mexer no site (apps/web) não reinicia o servidor.
+    buildFilter:
+      paths:
+        - apps/api/**
+        - packages/contracts/**
+        - packages/rules/src/core/**
+        - package.json
+        - package-lock.json
+        - render.yaml
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      # A origem do site: só dela vale pedido que grava (apps/api/src/shared/middlewares/same-origin.ts).
+      # É o endereço fixo do app (as fichas dos aparelhos e o APK dependem dele).
+      - key: APP_ORIGIN
+        value: https://dnd-character-creator-gamma.vercel.app
+      # Pooled (com -pooler): a aplicação, pelo driver adapter.
+      - key: DATABASE_URL
+        sync: false
+      # Direta (sem -pooler): a CLI do Prisma no build (migrate deploy).
+      - key: DATABASE_URL_UNPOOLED
+        sync: false

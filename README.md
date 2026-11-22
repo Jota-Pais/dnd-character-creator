@@ -1,4 +1,4 @@
-# ⚒️ Forja de Heróis — Criador de Fichas de RPG
+# ⚒️ Criador de Ficha — fichas de RPG de mesa
 
 Aplicativo web pra criar fichas de RPG de mesa em poucos minutos, mesmo sem conhecer as regras: um assistente guiado conduz cada escolha, calcula tudo sozinho e entrega uma ficha pronta pra imprimir e levar pra mesa.
 

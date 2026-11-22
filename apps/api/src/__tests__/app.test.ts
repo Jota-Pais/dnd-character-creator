@@ -3,7 +3,7 @@ import request from 'supertest'
 import { MAX_DOCUMENT_BYTES } from '@rpg/contracts'
 import { createTestApp } from '../testing/test-app'
 
-const SITE = 'https://forja.example'
+const SITE = 'https://ficha.example'
 
 describe('a fundação da API', () => {
   it('o /health responde sem banco, com o ambiente e a versão', async () => {

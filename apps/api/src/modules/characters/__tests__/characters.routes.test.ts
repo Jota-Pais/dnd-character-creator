@@ -8,7 +8,7 @@ const T0 = Date.UTC(2026, 10, 21, 12, 0, 0)
 const SHEET = { system: 'dnd5e', step: 'name', draft: { name: 'Krusk', level: 3 }, schema: 1, clientUpdatedAt: T0, baseRevision: 0 }
 
 /** Um navegador com conta: o agente guarda o cookie, e `as` põe o cabeçalho da conta. */
-async function signUp(app: Express, email = 'ana@forja.dev') {
+async function signUp(app: Express, email = 'ana@ficha.dev') {
   const browser = request.agent(app)
   const response = await browser.post('/api/auth/register').send({ email, password: 'dado-de-vinte' })
   const user = response.body.user as User
@@ -32,7 +32,7 @@ describe('as rotas de ficha exigem a conta', () => {
   it('com sessão mas sem o cabeçalho da conta, ou com o de outra conta, é 403', async () => {
     const { app, repositories } = createTestApp()
     const ana = await signUp(app)
-    const bia = await signUp(app, 'bia@forja.dev')
+    const bia = await signUp(app, 'bia@ficha.dev')
 
     const missing = await ana.browser.put('/api/characters/k1').send(SHEET)
     expect(missing.status).toBe(403)
@@ -52,7 +52,7 @@ describe('o ciclo de uma ficha pela API', () => {
     const computer = await signUp(app)
     // O celular: outro navegador, a mesma conta.
     const phone = request.agent(app)
-    await phone.post('/api/auth/login').send({ email: 'ana@forja.dev', password: 'dado-de-vinte' })
+    await phone.post('/api/auth/login').send({ email: 'ana@ficha.dev', password: 'dado-de-vinte' })
 
     const created = await computer.browser.put('/api/characters/k1').set(computer.account).send(SHEET)
     expect(created.status).toBe(200)

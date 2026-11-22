@@ -131,7 +131,7 @@ describe('no APK do Android', () => {
     render(<App />)
     fireEvent.click(screen.getByText('Exportar todas'))
     await waitFor(() => expect(saveTextFileNative).toHaveBeenCalledTimes(1))
-    expect(vi.mocked(saveTextFileNative).mock.calls[0][0]).toMatch(/^forja-de-herois-fichas-\d{4}-\d\d-\d\d\.json$/)
+    expect(vi.mocked(saveTextFileNative).mock.calls[0][0]).toMatch(/^criador-de-ficha-\d{4}-\d\d-\d\d\.json$/)
     expect(click).not.toHaveBeenCalled()
     await act(() => Promise.resolve())
     expect(loadDeviceState().lastBackupAt).toBeNull()

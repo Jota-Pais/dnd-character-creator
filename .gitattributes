@@ -1,0 +1,7 @@
+# As migrations do Prisma são conferidas por checksum contra o que já foi aplicado no banco: o
+# arquivo tem de ter os mesmos bytes em toda máquina (Windows aqui, Linux na Render). Sem isto, o
+# git do Windows trocaria LF por CRLF ao baixar o repositório, e o Prisma diria que a migration
+# mudou depois de aplicada.
+apps/api/prisma/migrations/**/*.sql text eol=lf
+apps/api/prisma/migrations/migration_lock.toml text eol=lf
+apps/api/prisma/schema.prisma text eol=lf

@@ -11,7 +11,7 @@ import { useAuthStore } from '../features/auth/authStore'
 beforeAll(() => preloadLazyScreens())
 
 /** A conta com que os testes do site rodam. */
-export const TEST_USER = { id: 'user-teste', email: 'teste@forja.dev' }
+export const TEST_USER = { id: 'user-teste', email: 'teste@ficha.dev' }
 
 // Sem conta ninguém usa o app: o `App` mostra a tela de entrar. Os testes que montam o app querem a
 // galeria, o criador e o jogo, então cada um começa com uma conta conectada e a sessão confirmada.

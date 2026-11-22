@@ -64,12 +64,12 @@ async function codeOf(promise: Promise<unknown>): Promise<string> {
 describe('conta, no Postgres', () => {
   it('o ciclo inteiro: criar, entrar, renovar, sair, redefinir a senha', async () => {
     const { auth, clock } = setup()
-    const created = await auth.register({ email: 'ana@forja.dev', password: 'dado-de-vinte' }, DEVICE)
+    const created = await auth.register({ email: 'ana@ficha.dev', password: 'dado-de-vinte' }, DEVICE)
     expect(created.user.id).toMatch(/^[0-9a-f-]{36}$/)
 
-    const phone = await auth.login({ email: 'ana@forja.dev', password: 'dado-de-vinte' }, { userAgent: 'celular' })
+    const phone = await auth.login({ email: 'ana@ficha.dev', password: 'dado-de-vinte' }, { userAgent: 'celular' })
     expect((await auth.authenticate(phone.token))?.user).toEqual(created.user)
-    expect(await codeOf(auth.login({ email: 'ana@forja.dev', password: 'senha-errada' }, DEVICE))).toBe('INVALID_CREDENTIALS')
+    expect(await codeOf(auth.login({ email: 'ana@ficha.dev', password: 'senha-errada' }, DEVICE))).toBe('INVALID_CREDENTIALS')
 
     clock.advance(SESSION_RENEW_AFTER_MS)
     const renewed = await auth.authenticate(phone.token)
@@ -79,22 +79,22 @@ describe('conta, no Postgres', () => {
     expect(await auth.authenticate(phone.token)).toBeNull()
     expect(await auth.authenticate(created.token)).not.toBeNull()
 
-    expect(await auth.resetPassword('ana@forja.dev', 'senha-nova-da-ana')).toBe(true)
+    expect(await auth.resetPassword('ana@ficha.dev', 'senha-nova-da-ana')).toBe(true)
     expect(await auth.authenticate(created.token)).toBeNull()
-    expect((await auth.login({ email: 'ana@forja.dev', password: 'senha-nova-da-ana' }, DEVICE)).user).toEqual(created.user)
+    expect((await auth.login({ email: 'ana@ficha.dev', password: 'senha-nova-da-ana' }, DEVICE)).user).toEqual(created.user)
   })
 
   it('o e-mail é único no banco', async () => {
     const { auth } = setup()
-    await auth.register({ email: 'ana@forja.dev', password: 'dado-de-vinte' }, DEVICE)
-    expect(await codeOf(auth.register({ email: 'ana@forja.dev', password: 'outra-senha-aqui' }, DEVICE))).toBe('EMAIL_TAKEN')
+    await auth.register({ email: 'ana@ficha.dev', password: 'dado-de-vinte' }, DEVICE)
+    expect(await codeOf(auth.register({ email: 'ana@ficha.dev', password: 'outra-senha-aqui' }, DEVICE))).toBe('EMAIL_TAKEN')
   })
 
   it('a faxina apaga só as sessões vencidas', async () => {
     const { auth, clock } = setup()
-    const old = await auth.register({ email: 'ana@forja.dev', password: 'dado-de-vinte' }, DEVICE)
+    const old = await auth.register({ email: 'ana@ficha.dev', password: 'dado-de-vinte' }, DEVICE)
     clock.advance(SESSION_TTL_MS - 1000)
-    const fresh = await auth.login({ email: 'ana@forja.dev', password: 'dado-de-vinte' }, DEVICE)
+    const fresh = await auth.login({ email: 'ana@ficha.dev', password: 'dado-de-vinte' }, DEVICE)
     clock.advance(1000)
     expect(await auth.sweepExpiredSessions()).toBe(1)
     expect(await auth.authenticate(old.token)).toBeNull()
@@ -103,15 +103,15 @@ describe('conta, no Postgres', () => {
 
   it('a listagem do dono conta as fichas vivas e diz o último uso', async () => {
     const { auth, authRepository, characters, clock } = setup()
-    const ana = await auth.register({ email: 'ana@forja.dev', password: 'dado-de-vinte' }, DEVICE)
+    const ana = await auth.register({ email: 'ana@ficha.dev', password: 'dado-de-vinte' }, DEVICE)
     clock.advance(60_000)
-    await auth.register({ email: 'bia@forja.dev', password: 'dado-de-vinte' }, DEVICE)
+    await auth.register({ email: 'bia@ficha.dev', password: 'dado-de-vinte' }, DEVICE)
     await characters.putCharacter(ana.user.id, 'k1', sheet())
     await characters.putCharacter(ana.user.id, 'k2', sheet())
     await characters.deleteCharacter(ana.user.id, 'k2', 1)
 
     const users = await authRepository.listUsers()
-    expect(users.map(u => [u.email, u.characters])).toEqual([['ana@forja.dev', 1], ['bia@forja.dev', 0]])
+    expect(users.map(u => [u.email, u.characters])).toEqual([['ana@ficha.dev', 1], ['bia@ficha.dev', 0]])
     expect(users[0]?.lastSeenAt).toBeInstanceOf(Date)
   })
 })
@@ -119,7 +119,7 @@ describe('conta, no Postgres', () => {
 describe('fichas, no Postgres', () => {
   async function account() {
     const services = setup()
-    const { user } = await services.auth.register({ email: 'ana@forja.dev', password: 'dado-de-vinte' }, DEVICE)
+    const { user } = await services.auth.register({ email: 'ana@ficha.dev', password: 'dado-de-vinte' }, DEVICE)
     return { ...services, ana: user.id }
   }
 
@@ -185,7 +185,7 @@ describe('fichas, no Postgres', () => {
 
   it('a leitura das mudanças pagina sem pular nada e não mistura contas', async () => {
     const { ana, auth, characters, sync } = await account()
-    const bia = (await auth.register({ email: 'bia@forja.dev', password: 'dado-de-vinte' }, DEVICE)).user.id
+    const bia = (await auth.register({ email: 'bia@ficha.dev', password: 'dado-de-vinte' }, DEVICE)).user.id
     const ids = ['a', 'b', 'c', 'd', 'e']
     for (const id of ids) {
       await characters.putCharacter(ana, id, sheet({ draft: { name: id } }))

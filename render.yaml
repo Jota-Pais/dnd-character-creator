@@ -1,4 +1,4 @@
-# Blueprint da Render para a API do Forja (apps/api).
+# Blueprint da Render para a API do Criador de Ficha (apps/api).
 #
 # O serviço é criado por "New > Blueprint" apontando para este repositório, em vez de preencher
 # campo a campo no painel. O passo a passo, com o que vem antes (o banco na Neon) e depois (o rewrite
@@ -12,7 +12,7 @@ services:
     # A URL pública sai do nome (https://<nome>.onrender.com) e fica fixa no vercel.json, no rewrite
     # de /api: se o nome mudar aqui, tem de mudar lá. Nome já em uso na Render nasce com um sufixo
     # aleatório: confira a URL que o painel mostrar antes de escrever o rewrite.
-    name: forja-api
+    name: criador-de-ficha-api
     runtime: node
     plan: free
     # A mesma região do banco na Neon (aws-us-east-2): menos latência por consulta.

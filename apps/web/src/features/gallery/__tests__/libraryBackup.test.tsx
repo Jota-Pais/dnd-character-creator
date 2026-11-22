@@ -131,7 +131,7 @@ describe('exportar todas', () => {
     vi.spyOn(URL, 'createObjectURL').mockImplementation(b => { blob = b as Blob; return 'blob:x' })
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
-      expect(this.download).toBe('forja-de-herois-fichas-2026-10-29.json')
+      expect(this.download).toBe('criador-de-ficha-2026-10-29.json')
     })
 
     exportAllCharacters(new Date(2026, 9, 29, 21, 0).getTime())

@@ -153,7 +153,7 @@ export function WizardShell({
           </button>
           {/* Assinatura do projeto: vivia no rodapé do wizard do D&D, que a sidebar substituiu. */}
           <p className="mt-3 text-[10px] font-fantasy tracking-wider text-parchment-600">
-            Forjado por Jota ·{' '}
+            Feito por Jota ·{' '}
             <a
               href="https://github.com/Jota-Pais/dnd-character-creator"
               target="_blank"

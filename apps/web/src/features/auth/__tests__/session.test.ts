@@ -6,9 +6,9 @@ import { ACCOUNT_KEY, emptyAccount, loadAccount, saveAccount } from '../accountS
 import { useAuthStore } from '../authStore'
 import { NO_CONNECTION, createSession } from '../session'
 
-const ANA = { id: 'conta-da-ana', email: 'ana@forja.dev' }
-const BIA = { id: 'conta-da-bia', email: 'bia@forja.dev' }
-const LOGIN = { email: 'ana@forja.dev', password: 'dado-de-vinte' }
+const ANA = { id: 'conta-da-ana', email: 'ana@ficha.dev' }
+const BIA = { id: 'conta-da-bia', email: 'bia@ficha.dev' }
+const LOGIN = { email: 'ana@ficha.dev', password: 'dado-de-vinte' }
 
 const ok = <T>(data: T): ApiResult<T> => ({ ok: true, data })
 const offline: ApiResult<never> = { ok: false, error: { kind: 'network', message: 'sem rede' } }

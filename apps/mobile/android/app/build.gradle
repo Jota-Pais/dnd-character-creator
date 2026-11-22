@@ -69,7 +69,7 @@ android {
             // A variante de teste se instala ao lado do APK da turma, com o próprio nome.
             applicationIdSuffix = '.teste'
             versionNameSuffix = '-teste'
-            resValue 'string', 'title_activity_main', 'Forja (teste)'
+            resValue 'string', 'title_activity_main', 'Fichas (teste)'
         }
         release {
             minifyEnabled = false

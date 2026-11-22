@@ -1,4 +1,4 @@
--- A primeira forma do banco do Forja: as contas (users), os aparelhos conectados (sessions), as
+-- A primeira forma do banco do Criador de Ficha: as contas (users), os aparelhos conectados (sessions), as
 -- fichas de qualquer sistema (characters) e o estado de jogo de cada uma (play_states).
 --
 -- O porquê de cada coluna está no cabeçalho e nos comentários de prisma/schema.prisma. O SQL abaixo

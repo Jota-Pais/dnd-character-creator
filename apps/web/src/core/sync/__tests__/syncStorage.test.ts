@@ -41,14 +41,14 @@ describe('o diário salvo', () => {
 
   it('vai e volta', () => {
     updateSyncMeta(meta => {
-      meta.owner = { id: 'u1', email: 'ana@forja.dev' }
+      meta.owner = { id: 'u1', email: 'ana@ficha.dev' }
       meta.cursor = '42'
       meta.docs[KRUSK] = { revision: 3, dirty: false }
       meta.docs[playKey('k1')] = { revision: 1, dirty: true, blocked: true }
     })
     expect(loadSyncMeta()).toEqual({
       version: 1,
-      owner: { id: 'u1', email: 'ana@forja.dev' },
+      owner: { id: 'u1', email: 'ana@ficha.dev' },
       cursor: '42',
       docs: { [KRUSK]: { revision: 3, dirty: false }, [playKey('k1')]: { revision: 1, dirty: true, blocked: true } },
     })

@@ -1,6 +1,6 @@
 # Servidor, conta e sincronização
 
-Desde 2026-11-21 o Forja tem back-end, banco e login: a mesma pessoa vê as suas fichas em qualquer aparelho, e o dono tem um banco com as fichas criadas. Este documento é a referência: o que existe, como funciona, o que o dono faz e como publicar.
+Desde 2026-11-21 o Criador de Ficha tem back-end, banco e login: a mesma pessoa vê as suas fichas em qualquer aparelho, e o dono tem um banco com as fichas criadas. Este documento é a referência: o que existe, como funciona, o que o dono faz e como publicar.
 
 ## 1. As decisões do dono (2026-11-21)
 
@@ -151,7 +151,7 @@ Os testes da API não precisam de banco instalado: os de serviço e de rota roda
 
 A ordem importa: **o login obrigatório não pode chegar aos celulares antes de a API estar no ar.** Por isso o trabalho ficou no branch `arquitetura-front-back`, e a `main` (que publica sozinha) só o recebe no passo 5.
 
-1. **Neon.** *Feito em 2026-11-21:* o projeto `forja` (id `proud-pond-14780351`, região `aws-us-east-2`, Postgres 18), com o branch `main` (produção) e o `dev` (desenvolvimento), e a migration aplicada nos dois. As URLs do `dev` estão em `apps/api/.env`; as do `main` (a *pooled*, com `-pooler`, e a direta), no painel da Neon, em "Connect". Nenhuma das duas vai para o repositório.
+1. **Neon.** *Feito em 2026-11-21:* o projeto `criador-de-ficha` (id `proud-pond-14780351`, região `aws-us-east-2`, Postgres 18), com o branch `main` (produção) e o `dev` (desenvolvimento), e a migration aplicada nos dois. As URLs do `dev` estão em `apps/api/.env`; as do `main` (a *pooled*, com `-pooler`, e a direta), no painel da Neon, em "Connect". Nenhuma das duas vai para o repositório.
 2. **Render.** Com o branch `arquitetura-front-back` no GitHub: "New > Blueprint", apontando para o repositório e para esse branch (o `render.yaml` da raiz descreve o serviço, e por enquanto manda a API subir desse mesmo branch). O painel pede `DATABASE_URL` (a pooled) e `DATABASE_URL_UNPOOLED` (a direta), do branch `main` da Neon. O build aplica as migrations pendentes (`db:deploy`).
 3. **Conferir** `https://<nome>.onrender.com/health`: `{"status":"ok","environment":"production",…}`. Anotar a URL que a Render deu (nome em uso ganha um sufixo).
 4. **Vercel.** No `vercel.json` da raiz, acrescentar o rewrite com essa URL (e o cabeçalho que desliga o cache do rewrite):

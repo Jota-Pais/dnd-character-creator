@@ -43,7 +43,7 @@ export function startServer({ env, maxConnections }: StartOptions): RunningServe
   })
 
   const server = app.listen(env.PORT, () => {
-    console.log(`Forja API ouvindo em http://localhost:${env.PORT} [${env.NODE_ENV}]`)
+    console.log(`API do Criador de Ficha ouvindo em http://localhost:${env.PORT} [${env.NODE_ENV}]`)
   })
 
   // A faxina das sessões vencidas: na largada e uma vez por dia. Sessão vencida já não vale (a

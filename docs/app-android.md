@@ -29,7 +29,7 @@ O site e o service worker são os do app instalável: `docs/app-instalavel.md`. 
 - **Tela acesa**: a mesma preferência e o mesmo `useWakeLock` do site. A Screen Wake Lock funciona no WebView do Android: conferido em 2026-10-30, ela liga e solta o `KEEP_SCREEN_ON` da janela (`adb shell dumpsys window`). Nenhum plugin.
 - **Girar a tela** não recria a tela (`configChanges` no manifesto): o jogo continua onde estava. A orientação é a do aparelho.
 - **WebView encerrado pelo Android** (falta de memória, no segundo plano): a tela é recriada em vez de o app fechar com erro, e o site reabre o jogo aberto. Se cair de novo em menos de 10 s, o app fecha (sem repetir para sempre).
-- **Nome e ícone** do PWA: "Forja de Heróis" nas configurações, "Forja" embaixo do ícone; o ícone adaptável e a abertura usam o d20 do favicon (`node scripts/make-icons.mjs android` desenha de novo).
+- **Nome e ícone** do PWA: "Criador de Ficha" nas configurações, "Fichas" embaixo do ícone; o ícone adaptável e a abertura usam o d20 do favicon (`node scripts/make-icons.mjs android` desenha de novo).
 - **Pacote** `io.github.jotapais.forja`. Trocar é publicar outro app, sem as fichas deste.
 
 ## 3. Gerar o APK
@@ -41,7 +41,7 @@ npm run apk:release -w @rpg/mobile   # o da turma: assinado, copiado com o nome 
 npm run apk:debug -w @rpg/mobile     # o de teste
 ```
 
-O script roda o `cap sync android` (a página de erro e o `capacitor.config.json` vão para o projeto; ambos ficam fora do git), o Gradle e, no release, copia para `../dnd-character-creator-apk/forja-de-herois-<versionName>.apk` (ou `FORJA_APK_DIR`). Pelo Android Studio também dá: `npx cap sync android` em `apps/mobile` e abrir `apps/mobile/android`.
+O script roda o `cap sync android` (a página de erro e o `capacitor.config.json` vão para o projeto; ambos ficam fora do git), o Gradle e, no release, copia para `../dnd-character-creator-apk/criador-de-ficha-<versionName>.apk` (ou `FORJA_APK_DIR`). Pelo Android Studio também dá: `npx cap sync android` em `apps/mobile` e abrir `apps/mobile/android`.
 
 ## 4. Assinar
 
@@ -56,13 +56,13 @@ O APK da turma é assinado sempre com a mesma chave. **O Android só instala uma
 
 1. Mudou só o site? **Não suba nada**: o push na `main` já chega a todos.
 2. Mudou a parte nativa (plugin, ícone, nome, Capacitor, `apps/mobile/android`)? Em `apps/mobile/android/app/build.gradle`, some 1 ao `forjaVersionCode` (o Android só instala por cima um número maior) e suba o `forjaVersionName` (semver: `0.1.1` para correção, `0.2.0` para algo novo).
-3. Gere o release (`npm run apk:release -w @rpg/mobile`) e mande o `forja-de-herois-<versão>.apk` no grupo.
+3. Gere o release (`npm run apk:release -w @rpg/mobile`) e mande o `criador-de-ficha-<versão>.apk` no grupo.
 4. Se o site passou a **depender** do APK novo (chama um plugin que o velho não tem), suba `android.minVersionCode` em `apps/web/public/app-version.json` para o versionCode novo, no mesmo push ou depois de distribuir o APK. O APK mais velho que ele mostra na galeria "Tem uma versão nova do app: peça o APK no grupo." O arquivo é lido sempre da rede (fora do cache do service worker); no navegador, nada aparece. O teste do `apps/mobile` recusa um mínimo acima do versionCode de agora.
 5. Atualizar o Capacitor de major é parte nativa: o `@capacitor/core` e o `@capacitor/app` do site e os do `apps/mobile` andam juntos, no mesmo major, e o APK novo sobe o mínimo.
 
 ## 6. Testar com o site local
 
-A variante de teste (`npm run apk:debug`) se instala ao lado da da turma (`io.github.jotapais.forja.teste`, "Forja (teste)"), com as fichas à parte. Com `FORJA_DEV_URL` na hora do build, ela abre esse endereço em vez do site publicado; só o debug muda (`ForjaDevServerConfig` no `app/build.gradle`), o release sempre abre o publicado.
+A variante de teste (`npm run apk:debug`) se instala ao lado da da turma (`io.github.jotapais.forja.teste`, "Fichas (teste)"), com as fichas à parte. Com `FORJA_DEV_URL` na hora do build, ela abre esse endereço em vez do site publicado; só o debug muda (`ForjaDevServerConfig` no `app/build.gradle`), o release sempre abre o publicado.
 
 ```bash
 npm run build && npm run preview -- --port 5263 --strictPort        # o build, com o service worker
@@ -75,7 +75,7 @@ Use `localhost` com o `adb reverse` (pelo cabo, também num celular de verdade):
 
 ## 7. Distribuir e instalar
 
-- Mande o arquivo `forja-de-herois-<versão>.apk` no grupo do WhatsApp.
+- Mande o arquivo `criador-de-ficha-<versão>.apk` no grupo do WhatsApp.
 - No celular: tocar no arquivo; o Android pede para **permitir instalar apps desta fonte** (o WhatsApp ou o app de arquivos); permitir e voltar; "Instalar". O Play Protect pode avisar de app desconhecido: "Instalar assim mesmo" (ele não vem da loja).
 - APK novo instala **por cima**, sem desinstalar: as fichas ficam. Desinstalar apaga as fichas do app (ou exporte antes: galeria → "Exportar todas" → "Salvar", com o APK 0.1.1 ou mais novo).
 - O app precisa do Android 7 ou mais novo, com o "Android System WebView" 111 ou mais novo (vem atualizado pela Play Store).
@@ -84,7 +84,7 @@ Use `localhost` com o `adb reverse` (pelo cabo, também num celular de verdade):
 
 - O APK de release abre o site publicado: **ele só mostra mudança depois do push** na `main` (e da publicação na Vercel). Para testar antes, a variante de teste com o site local.
 - As fichas do APK e as do Chrome (e do app que o Chrome instala, que guarda junto com ele) são separadas. Para levar de um ao outro: "Exportar todas" num e "Importar" no outro; a galeria vazia do APK diz isso.
-- Por isso o site, no Chrome do Android, não deixa o Chrome oferecer sozinho a instalação (`refuseAutomaticInstallOffer`, `core/pwa/platform.ts`; 2026-10-30): o app da turma é o APK, e o do Chrome seria um segundo "Forja", com as fichas do Chrome. O "Instalar app" do menu do Chrome continua; a página não tem como tirá-lo. No modo computador do Chrome (o padrão nos tablets grandes, e o "Site para computador" do celular), ele se apresenta como Linux de mesa, sem "Android": o site o reconhece pela tela de toque, como faz com o iPad que se diz Mac (`isAndroid`). Ainda não conferido num tablet de verdade (roteiro abaixo, passo 7); o Linux de mesa com tela de toque também fica sem a oferta automática.
+- Por isso o site, no Chrome do Android, não deixa o Chrome oferecer sozinho a instalação (`refuseAutomaticInstallOffer`, `core/pwa/platform.ts`; 2026-10-30): o app da turma é o APK, e o do Chrome seria um segundo app, com as fichas do Chrome. O "Instalar app" do menu do Chrome continua; a página não tem como tirá-lo. No modo computador do Chrome (o padrão nos tablets grandes, e o "Site para computador" do celular), ele se apresenta como Linux de mesa, sem "Android": o site o reconhece pela tela de toque, como faz com o iPad que se diz Mac (`isAndroid`). Ainda não conferido num tablet de verdade (roteiro abaixo, passo 7); o Linux de mesa com tela de toque também fica sem a oferta automática.
 - O "Tentar de novo" da página de erro usa o `navigator.onLine` para dizer "Ainda sem internet" sem sair da página; em alguns aparelhos ele diz que há rede sem haver, e aí a página de erro só aparece de novo.
 - Sem notificação, sem trabalho em segundo plano e sem atualização automática do APK (é o aviso da galeria e o grupo).
 
@@ -100,12 +100,12 @@ Pixel 6 do Android Studio (Android 13, WebView 109), a variante de teste no `vit
 - O WebView encerrado (`kill` do processo dele): a tela recriada, de volta ao jogo aberto.
 - O aviso de APK velho com o mínimo em 2 no build servido, e sem ele com o 1.
 - Console da página limpo (só o registro das chamadas de plugin que o Capacitor faz na variante de teste).
-- O release: assinado, abre a página que pede o WebView novo (o emulador tem o 109); o ícone e o nome "Forja" na lista de apps, e a abertura com o d20.
+- O release: assinado, abre a página que pede o WebView novo (o emulador tem o 109); o ícone e o nome "Fichas" na lista de apps, e a abertura com o d20.
 - O "Sem conexão" da página de erro foi conferido no Edge (o emulador mostra a variante do WebView velho).
 
 O 0.1.1 (2026-10-30), a variante de teste no build servido pelo `adb reverse`, com toques de verdade:
 
-- "Exportar todas" do lembrete abre o "Salvar como" do Android com `forja-de-herois-fichas-AAAA-MM-DD.json` em Downloads; cancelado, a data da cópia não entra e o lembrete fica; salvo, o arquivo aparece em `/sdcard/Download` (a cópia inteira, com a ficha) e o lembrete some. O "↓" de uma ficha salva `Krusk-dnd5e.json`.
+- "Exportar todas" do lembrete abre o "Salvar como" do Android com `criador-de-ficha-AAAA-MM-DD.json` em Downloads; cancelado, a data da cópia não entra e o lembrete fica; salvo, o arquivo aparece em `/sdcard/Download` (a cópia inteira, com a ficha) e o lembrete some. O "↓" de uma ficha salva `Krusk-dnd5e.json`.
 - "Imprimir / Salvar PDF" abre a impressão do Android com a ficha (3 páginas, sem os botões da tela); "Salvar como PDF" grava `Krusk — D&D 5e.pdf`.
 - Voltar: "Abrir" (Revisão) → voltar → galeria; impressão → ficha → galeria; no jogo, o painel de descanso e a engrenagem abertos fecham antes de sair.
 - A galeria vazia diz "Nenhuma ficha salva neste app" e como trazer as fichas do navegador.
@@ -113,7 +113,7 @@ O 0.1.1 (2026-10-30), a variante de teste no build servido pelo `adb reverse`, c
 
 **Fica para o celular de verdade** (o emulador tem o WebView 109, abaixo do mínimo, e não tem Play Store para atualizá-lo): o release abrindo o site publicado, as margens de ponta a ponta do WebView 140+ (entalhe e barra de gestos), e as cores do Tailwind 4. Roteiro no Android da turma:
 
-1. Instalar o APK pelo WhatsApp (seção 7); o ícone e o nome "Forja".
+1. Instalar o APK pelo WhatsApp (seção 7); o ícone e o nome "Fichas".
 2. Abrir com internet: a galeria; criar uma ficha, "Jogar".
 3. Na galeria, "Exportar todas" → "Salvar": o arquivo em Downloads (Arquivos). Numa ficha, "Imprimir / Salvar PDF" → "Salvar como PDF".
 4. No jogo: a barra de status e a de gestos não cobrem nada; o celular deitado; a tela não apaga sozinha; o voltar fecha a folha aberta, volta à galeria e, nela, sai para a tela de início.

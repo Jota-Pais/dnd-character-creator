@@ -1,4 +1,4 @@
-// O banco do Forja: as contas e o que cada uma guarda.
+// O banco do Criador de Ficha: as contas e o que cada uma guarda.
 //
 // Convenções:
 //  - tabela no plural e coluna em snake_case, via @@map / @map; o código usa camelCase;

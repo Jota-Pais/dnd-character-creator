@@ -1,4 +1,4 @@
-// O "esqueci a senha" do Forja: grava uma senha nova para uma conta e desconecta os aparelhos dela.
+// O "esqueci a senha" do Criador de Ficha: grava uma senha nova para uma conta e desconecta os aparelhos dela.
 //
 //   npm run user:password -w @rpg/api -- ana@exemplo.com              (gera uma senha e a mostra)
 //   npm run user:password -w @rpg/api -- ana@exemplo.com "senha nova" (grava a que você escolher)

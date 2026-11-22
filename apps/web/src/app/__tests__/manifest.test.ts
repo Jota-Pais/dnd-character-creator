@@ -37,7 +37,7 @@ function pngSize(src: string): string | null {
 
 describe('manifesto do app instalável', () => {
   it('tem nome, início, escopo e modo de tela cheia', () => {
-    expect(manifest.name).toBe('Forja de Heróis')
+    expect(manifest.name).toBe('Criador de Ficha')
     expect(manifest.short_name.length).toBeGreaterThan(0)
     // O iPhone e o Android cortam o rótulo da tela de início por volta de 12 caracteres.
     expect(manifest.short_name.length).toBeLessThanOrEqual(12)

@@ -2,7 +2,7 @@
   "name": "@rpg/api",
   "private": true,
   "version": "0.1.0",
-  "description": "A API do Forja: contas e sincronização das fichas",
+  "description": "A API do Criador de Ficha: contas e sincronização das fichas",
   "type": "module",
   "engines": {
     "node": ">=22"

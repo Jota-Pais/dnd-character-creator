@@ -3,7 +3,7 @@ import request from 'supertest'
 import { createTestApp } from '../../../testing/test-app'
 import { SESSION_COOKIE, SESSION_RENEW_AFTER_MS, SESSION_TTL_MS } from '../session-cookie'
 
-const ANA = { email: 'ana@forja.dev', password: 'dado-de-vinte' }
+const ANA = { email: 'ana@ficha.dev', password: 'dado-de-vinte' }
 
 /** O Set-Cookie da sessão numa resposta, ou undefined. */
 function sessionCookie(response: request.Response): string | undefined {
@@ -17,7 +17,7 @@ describe('POST /api/auth/register', () => {
     const response = await request(app).post('/api/auth/register').send(ANA)
 
     expect(response.status).toBe(201)
-    expect(response.body).toEqual({ user: { id: expect.any(String), email: 'ana@forja.dev' } })
+    expect(response.body).toEqual({ user: { id: expect.any(String), email: 'ana@ficha.dev' } })
     const cookie = sessionCookie(response)
     expect(cookie).toMatch(/HttpOnly/i)
     expect(cookie).toMatch(/SameSite=Lax/i)
@@ -36,9 +36,9 @@ describe('POST /api/auth/register', () => {
 
   it('guarda o e-mail em minúsculas e sem espaço em volta', async () => {
     const { app } = createTestApp()
-    const response = await request(app).post('/api/auth/register').send({ email: '  Ana@Forja.DEV ', password: ANA.password })
-    expect(response.body.user.email).toBe('ana@forja.dev')
-    const again = await request(app).post('/api/auth/register').send({ email: 'ANA@forja.dev', password: ANA.password })
+    const response = await request(app).post('/api/auth/register').send({ email: '  Ana@Ficha.DEV ', password: ANA.password })
+    expect(response.body.user.email).toBe('ana@ficha.dev')
+    const again = await request(app).post('/api/auth/register').send({ email: 'ANA@ficha.dev', password: ANA.password })
     expect(again.status).toBe(409)
     expect(again.body.error.code).toBe('EMAIL_TAKEN')
     expect(again.body.error.fields.email).toBeTruthy()
@@ -89,7 +89,7 @@ describe('entrar, consultar a sessão e sair', () => {
     const { app } = createTestApp()
     await request(app).post('/api/auth/register').send(ANA)
     const wrong = await request(app).post('/api/auth/login').send({ ...ANA, password: 'senha-errada' })
-    const unknown = await request(app).post('/api/auth/login').send({ email: 'ninguem@forja.dev', password: 'senha-errada' })
+    const unknown = await request(app).post('/api/auth/login').send({ email: 'ninguem@ficha.dev', password: 'senha-errada' })
     expect(wrong.status).toBe(401)
     expect(wrong.body).toEqual({ error: { code: 'INVALID_CREDENTIALS', message: 'E-mail ou senha incorretos.' } })
     expect(unknown.body).toEqual(wrong.body)

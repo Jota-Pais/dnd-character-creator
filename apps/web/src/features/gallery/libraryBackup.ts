@@ -165,7 +165,7 @@ function localDate(ms: number): string {
  */
 export function exportAllCharacters(now = Date.now()): void {
   const file = buildBackupFile(loadDndLibrary(), loadOrdemLibrary(), loadPlayState, now)
-  saveJsonFile(`forja-de-herois-fichas-${localDate(now)}.json`, file, () => {
+  saveJsonFile(`criador-de-ficha-${localDate(now)}.json`, file, () => {
     useDeviceStore.getState().update({ lastBackupAt: now })
   })
 }

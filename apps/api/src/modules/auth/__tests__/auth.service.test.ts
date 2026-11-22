@@ -7,7 +7,7 @@ import { LOGIN_MAX_FAILURES, LOGIN_WINDOW_MS, createLoginThrottle } from '../log
 import { SESSION_RENEW_AFTER_MS, SESSION_TTL_MS, hashSessionToken } from '../session-cookie'
 
 const DEVICE = { userAgent: 'vitest' }
-const ANA = { email: 'ana@forja.dev', password: 'dado-de-vinte' }
+const ANA = { email: 'ana@ficha.dev', password: 'dado-de-vinte' }
 
 function setup() {
   const clock = createTestClock()
@@ -28,7 +28,7 @@ describe('criar conta', () => {
     const { repository, service } = setup()
     const session = await service.register(ANA, DEVICE)
 
-    expect(session.user.email).toBe('ana@forja.dev')
+    expect(session.user.email).toBe('ana@ficha.dev')
     const user = only(repository.users.values())
     expect(user.passwordHash).not.toContain(ANA.password)
     expect(user.passwordHash).toMatch(/^\$2[aby]\$/)
@@ -60,7 +60,7 @@ describe('entrar', () => {
     const { service } = setup()
     await service.register(ANA, DEVICE)
     expect(await codeOf(service.login({ ...ANA, password: 'senha-errada' }, DEVICE))).toBe('INVALID_CREDENTIALS')
-    expect(await codeOf(service.login({ email: 'ninguem@forja.dev', password: 'qualquer-coisa' }, DEVICE))).toBe('INVALID_CREDENTIALS')
+    expect(await codeOf(service.login({ email: 'ninguem@ficha.dev', password: 'qualquer-coisa' }, DEVICE))).toBe('INVALID_CREDENTIALS')
   })
 
   it('trava depois de errar a senha vezes demais, mesmo com a senha certa, até a janela passar', async () => {
@@ -168,6 +168,6 @@ describe('redefinir a senha (o comando do dono)', () => {
 
   it('diz que não achou quando o e-mail não tem conta', async () => {
     const { service } = setup()
-    expect(await service.resetPassword('ninguem@forja.dev', 'qualquer-senha')).toBe(false)
+    expect(await service.resetPassword('ninguem@ficha.dev', 'qualquer-senha')).toBe(false)
   })
 })

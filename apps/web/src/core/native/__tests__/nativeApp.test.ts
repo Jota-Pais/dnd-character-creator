@@ -18,7 +18,7 @@ function fakeApp(build = '1') {
       return { remove: async () => {} }
     }),
     minimizeApp: vi.fn(async () => {}),
-    getInfo: vi.fn(async () => ({ name: 'Forja de Heróis', id: 'io.github.jotapais.forja', build, version: '0.1.0' })),
+    getInfo: vi.fn(async () => ({ name: 'Criador de Ficha', id: 'io.github.jotapais.forja', build, version: '0.1.0' })),
   }
   return { app: app as unknown as NativeAppPlugin & typeof app, pressBack: () => backListener?.() }
 }

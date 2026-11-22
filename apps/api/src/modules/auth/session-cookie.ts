@@ -2,7 +2,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import type { Request, Response } from 'express'
 
 /** O nome do cookie de sessão. Uma fonte só, para a rota e a autenticação não divergirem. */
-export const SESSION_COOKIE = 'forja_session'
+export const SESSION_COOKIE = 'ficha_session'
 
 /**
  * Quanto dura uma sessão sem uso. O app é para ficar conectado no aparelho (ele abre sem rede e

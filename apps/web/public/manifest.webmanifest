@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "Forja de Heróis",
-  "short_name": "Forja",
+  "name": "Criador de Ficha",
+  "short_name": "Fichas",
   "description": "Crie e jogue fichas de D&D 5e e Ordem Paranormal, também sem rede.",
   "lang": "pt-BR",
   "dir": "ltr",

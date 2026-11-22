@@ -22,7 +22,7 @@ const K1 = characterKey('dnd5e', 'k1')
 const O1 = characterKey('ordem', 'o1')
 const P1 = playKey('k1')
 const NOW = new Date(2026, 10, 21, 14, 32).getTime()
-const USER = { id: 'conta-da-ana', email: 'ana@forja.dev' }
+const USER = { id: 'conta-da-ana', email: 'ana@ficha.dev' }
 
 const krusk = (over: Record<string, unknown> = {}) => ({ ...structuredClone(COMPLETE_DRAFT), ...over })
 const agent = (over: Record<string, unknown> = {}) => ({ ...structuredClone(ORDEM_EMPTY), name: 'Agente Lia', ...over })

@@ -17,7 +17,7 @@ export const MIN_WEBVIEW_VERSION = 111
 const config: CapacitorConfig = {
   // O pacote do app no Android: trocar depois é publicar outro app, sem as fichas deste.
   appId: 'io.github.jotapais.forja',
-  appName: 'Forja de Heróis',
+  appName: 'Criador de Ficha',
   // Só a página de erro: com o server.url, nada mais desta pasta é aberto.
   webDir: 'www',
   server: {

@@ -206,7 +206,7 @@ export type FakeDevice = {
   onFlush: (() => void) | null
 }
 
-const USER = { id: 'conta-da-ana', email: 'ana@forja.dev' }
+const USER = { id: 'conta-da-ana', email: 'ana@ficha.dev' }
 
 export function createFakeDevice(server: FakeServer, options: { owner?: { id: string; email: string } | null; account?: string | null } = {}): FakeDevice {
   const docs = new Map<DocKey, LocalDoc>()

@@ -62,7 +62,7 @@ export function shouldShowInstallHint(win: WindowLike, dismissedAt: number | nul
 
 /**
  * No Android, o app é o APK (docs/app-android.md). Sozinho, o Chrome ofereceria instalar o site (a
- * barrinha de instalar, pelo `beforeinstallprompt`), e o que ele instala é um segundo "Forja", que
+ * barrinha de instalar, pelo `beforeinstallprompt`), e o que ele instala é um segundo app, que
  * guarda as fichas à parte das do APK: a turma se confundiria. Recusar o evento tira a oferta
  * automática, também no Chrome em modo computador do tablet (`isAndroid`). O "Instalar app" do menu
  * do Chrome continua, como escolha de quem o procura: a página não tem como tirá-lo. No computador e

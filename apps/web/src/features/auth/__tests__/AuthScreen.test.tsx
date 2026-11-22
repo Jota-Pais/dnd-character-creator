@@ -44,10 +44,10 @@ describe('entrar', () => {
     render(<AuthScreen session={session} onDone={onDone} />)
 
     expect(screen.getByRole('heading', { name: 'Entrar' })).toBeInTheDocument()
-    await fill(user, '  Ana@Forja.DEV ', ' Dado de Vinte ')
+    await fill(user, '  Ana@Ficha.DEV ', ' Dado de Vinte ')
     await user.click(submit())
 
-    expect(session.signIn).toHaveBeenCalledWith({ email: 'ana@forja.dev', password: ' Dado de Vinte ' })
+    expect(session.signIn).toHaveBeenCalledWith({ email: 'ana@ficha.dev', password: ' Dado de Vinte ' })
     expect(session.signUp).not.toHaveBeenCalled()
     expect(onDone).toHaveBeenCalledTimes(1)
   })
@@ -117,7 +117,7 @@ describe('o que falta ou está errado', () => {
     const user = userEvent.setup()
     const session = fakeSession({ ok: false, kind: 'message', message: 'E-mail ou senha incorretos.', offline: false })
     render(<AuthScreen session={session} />)
-    await fill(user, 'ana@forja.dev', 'senha-errada')
+    await fill(user, 'ana@ficha.dev', 'senha-errada')
     await user.click(submit())
 
     expect(liveRegions()[2]).toBe('E-mail ou senha incorretos.')
@@ -133,7 +133,7 @@ describe('o que falta ou está errado', () => {
     const session = fakeSession({ ok: false, kind: 'fields', message: 'Já existe uma conta com esse e-mail.', fields: { email: 'Já existe uma conta com esse e-mail. Entre com ela.' } })
     render(<AuthScreen session={session} />)
     await user.click(screen.getByRole('button', { name: 'Criar conta' }))
-    await fill(user, 'ana@forja.dev', 'dado-de-vinte')
+    await fill(user, 'ana@ficha.dev', 'dado-de-vinte')
     await user.click(submit())
     expect(liveRegions()[0]).toBe('Já existe uma conta com esse e-mail. Entre com ela.')
     expect(liveRegions()[2]).toBe('')
@@ -152,14 +152,14 @@ describe('criar conta', () => {
     expect(screen.getByText(/Pelo menos 8 caracteres/)).toBeInTheDocument()
     expect(screen.queryByText(/Esqueceu a senha/)).not.toBeInTheDocument()
 
-    await fill(user, 'ana@forja.dev', 'curta')
+    await fill(user, 'ana@ficha.dev', 'curta')
     await user.click(submit())
     expect(liveRegions()[1]).toBe('A senha precisa de pelo menos 8 caracteres.')
     expect(session.signUp).not.toHaveBeenCalled()
 
     await user.type(password(), '-mais-longa')
     await user.click(submit())
-    expect(session.signUp).toHaveBeenCalledWith({ email: 'ana@forja.dev', password: 'curta-mais-longa' })
+    expect(session.signUp).toHaveBeenCalledWith({ email: 'ana@ficha.dev', password: 'curta-mais-longa' })
   })
 
   it('o voltar do Android leva de "Criar conta" a "Entrar"; em "Entrar" não há para onde voltar', async () => {
@@ -181,7 +181,7 @@ describe('enquanto espera o servidor', () => {
     let finish: (result: SignResult) => void = () => {}
     const session = fakeSession(() => new Promise<SignResult>(resolve => { finish = resolve }))
     render(<AuthScreen session={session} />)
-    fireEvent.change(email(), { target: { value: 'ana@forja.dev' } })
+    fireEvent.change(email(), { target: { value: 'ana@ficha.dev' } })
     fireEvent.change(password(), { target: { value: 'dado-de-vinte' } })
     fireEvent.submit(document.querySelector('form')!)
 
@@ -211,20 +211,20 @@ describe('as fichas que o aparelho já tinha', () => {
 
   it('com dono (alguém já entrou aqui), não promete nada', () => {
     saveCharacterEntry({ id: 'k1', updatedAt: 1, step: 'review', draft: structuredClone(COMPLETE_DRAFT) })
-    updateSyncMeta(meta => { meta.owner = { id: 'conta-da-bia', email: 'bia@forja.dev' } })
+    updateSyncMeta(meta => { meta.owner = { id: 'conta-da-bia', email: 'bia@ficha.dev' } })
     render(<AuthScreen session={fakeSession()} />)
     expect(screen.queryByText(/vão para a conta em que você entrar/)).not.toBeInTheDocument()
   })
 })
 
 describe('o aparelho guarda alterações de outra conta', () => {
-  const other = { owner: { id: 'conta-da-bia', email: 'bia@forja.dev' }, unsent: 3 }
+  const other = { owner: { id: 'conta-da-bia', email: 'bia@ficha.dev' }, unsent: 3 }
 
   async function blocked() {
     const user = userEvent.setup()
     const session = fakeSession({ ok: false, kind: 'otherAccount', other })
     render(<AuthScreen session={session} />)
-    await fill(user, 'ana@forja.dev', 'dado-de-vinte')
+    await fill(user, 'ana@ficha.dev', 'dado-de-vinte')
     await user.click(submit())
     return { user, session }
   }
@@ -233,16 +233,16 @@ describe('o aparelho guarda alterações de outra conta', () => {
     await blocked()
     const panel = within(document.querySelectorAll('[aria-live]')[3] as HTMLElement)
     expect(panel.getByText(/Este aparelho guarda 3 alterações de/)).toBeInTheDocument()
-    expect(panel.getByText('bia@forja.dev')).toBeInTheDocument()
-    expect(panel.getByRole('button', { name: 'Entrar como bia@forja.dev' })).toBeInTheDocument()
+    expect(panel.getByText('bia@ficha.dev')).toBeInTheDocument()
+    expect(panel.getByRole('button', { name: 'Entrar como bia@ficha.dev' })).toBeInTheDocument()
     expect(panel.getByRole('button', { name: 'Exportar as fichas deste aparelho' })).toBeInTheDocument()
     expect(panel.getByRole('button', { name: 'Descartar e entrar com outra conta' })).toBeInTheDocument()
   })
 
   it('"Entrar como" preenche e trava o e-mail da dona, e esvazia a senha', async () => {
     const { user } = await blocked()
-    await user.click(screen.getByRole('button', { name: 'Entrar como bia@forja.dev' }))
-    expect(email()).toHaveValue('bia@forja.dev')
+    await user.click(screen.getByRole('button', { name: 'Entrar como bia@ficha.dev' }))
+    expect(email()).toHaveValue('bia@ficha.dev')
     expect(email()).toHaveAttribute('readonly')
     expect(password()).toHaveValue('')
     expect(screen.queryByText(/Este aparelho guarda/)).not.toBeInTheDocument()
@@ -263,7 +263,7 @@ describe('o aparelho guarda alterações de outra conta', () => {
 
     await user.click(screen.getByRole('button', { name: 'Descartar e entrar com outra conta' }))
     await user.click(screen.getByRole('button', { name: 'Apagar e entrar' }))
-    expect(session.discardAndSignIn).toHaveBeenCalledWith({ email: 'ana@forja.dev', password: 'dado-de-vinte' })
+    expect(session.discardAndSignIn).toHaveBeenCalledWith({ email: 'ana@ficha.dev', password: 'dado-de-vinte' })
   })
 })
 
@@ -273,24 +273,24 @@ describe('entrar de novo (a sessão expirou)', () => {
     const session = fakeSession()
     const onCancel = vi.fn()
     const onDone = vi.fn()
-    render(<AuthScreen reauthEmail="ana@forja.dev" session={session} onCancel={onCancel} onDone={onDone} />)
+    render(<AuthScreen reauthEmail="ana@ficha.dev" session={session} onCancel={onCancel} onDone={onDone} />)
 
     expect(screen.getByRole('dialog', { name: 'Entrar de novo' })).toBeInTheDocument()
     expect(screen.getByText(/Sua sessão expirou\. As fichas continuam neste aparelho/)).toBeInTheDocument()
-    expect(email()).toHaveValue('ana@forja.dev')
+    expect(email()).toHaveValue('ana@ficha.dev')
     expect(email()).toHaveAttribute('readonly')
     expect(screen.queryByRole('button', { name: 'Criar conta' })).not.toBeInTheDocument()
 
     await user.type(password(), 'dado-de-vinte')
     await user.click(submit())
-    expect(session.signIn).toHaveBeenCalledWith({ email: 'ana@forja.dev', password: 'dado-de-vinte' })
+    expect(session.signIn).toHaveBeenCalledWith({ email: 'ana@ficha.dev', password: 'dado-de-vinte' })
     expect(onDone).toHaveBeenCalledTimes(1)
   })
 
   it('o "Agora não" e o voltar do Android fecham a folha', async () => {
     const user = userEvent.setup()
     const onCancel = vi.fn()
-    render(<AuthScreen reauthEmail="ana@forja.dev" session={fakeSession()} onCancel={onCancel} />)
+    render(<AuthScreen reauthEmail="ana@ficha.dev" session={fakeSession()} onCancel={onCancel} />)
     await user.click(screen.getByRole('button', { name: 'Agora não' }))
     act(() => { handleBack() })
     expect(onCancel).toHaveBeenCalledTimes(2)

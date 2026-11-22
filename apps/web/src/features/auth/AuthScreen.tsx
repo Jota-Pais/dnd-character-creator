@@ -144,7 +144,7 @@ export function AuthScreen({ reauthEmail, onCancel, onDone, session = appSession
     >
       <div className="max-w-sm mx-auto">
         <header className="mb-6 text-center">
-          <p className="font-fantasy font-bold text-2xl" style={{ color: COLORS.title, letterSpacing: '.04em' }}>FORJA DE HERÓIS</p>
+          <p className="font-fantasy font-bold text-2xl" style={{ color: COLORS.title, letterSpacing: '.04em' }}>CRIADOR DE FICHA</p>
           <h1 className="font-fantasy text-lg mt-3" style={{ color: COLORS.soft }}>{title}</h1>
           <p className="text-[13px] mt-1 leading-relaxed" style={{ color: COLORS.muted }}>
             {reauth

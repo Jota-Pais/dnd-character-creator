@@ -17,7 +17,7 @@ import { IDLE_STATUS, useSyncStore } from './syncStore'
  */
 
 /** Só uma aba da mesma origem roda um ciclo por vez (Web Locks; sem a API, a aba roda sozinha). */
-const SYNC_LOCK = 'forja-sync'
+const SYNC_LOCK = 'ficha-sync'
 
 /** Voltando à vista, só roda um ciclo se o último tem mais que isto. */
 const STALE_AFTER_MS = 30_000

@@ -1,4 +1,4 @@
-// As contas do Forja: quem tem conta, desde quando, quantas fichas e quando usou por último.
+// As contas do Criador de Ficha: quem tem conta, desde quando, quantas fichas e quando usou por último.
 //
 //   npm run user:list -w @rpg/api
 //

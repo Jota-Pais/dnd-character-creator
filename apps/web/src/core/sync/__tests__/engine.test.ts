@@ -507,7 +507,7 @@ describe('de quem são os dados do aparelho', () => {
 
   it('dados de outra conta (ou de ninguém) nunca sobem para a conta conectada', async () => {
     const server = createFakeServer()
-    for (const owner of [null, { id: 'conta-da-bia', email: 'bia@forja.dev' }]) {
+    for (const owner of [null, { id: 'conta-da-bia', email: 'bia@ficha.dev' }]) {
       const device = createFakeDevice(server, { owner })
       device.save('k1', { name: 'Da Bia' })
       expect(await device.engine.sync()).toBe('stopped')

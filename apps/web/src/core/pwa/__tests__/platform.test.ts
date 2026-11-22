@@ -83,7 +83,7 @@ describe('isAndroid', () => {
   })
 })
 
-// O Chrome instalaria um segundo "Forja", com as fichas à parte das do APK.
+// O Chrome instalaria um segundo app, com as fichas à parte das do APK.
 describe('refuseAutomaticInstallOffer: a oferta automática do Chrome', () => {
   /** A janela de mentira, e a oferta que o Chrome faria nela: true quando a página a recusou. */
   function page(userAgent: string, maxTouchPoints = 0) {

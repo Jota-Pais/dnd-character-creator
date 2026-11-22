@@ -6,7 +6,7 @@
 // 2. O Gradle, com um JDK 21 ou mais novo (o Capacitor 8 pede): FORJA_JAVA_HOME, o JAVA_HOME, ou
 //    o JDK que vem com o Android Studio.
 // 3. O release vai para FORJA_APK_DIR (padrão: a pasta dnd-character-creator-apk ao lado do
-//    repositório) como forja-de-herois-<versionName>.apk.
+//    repositório) como criador-de-ficha-<versionName>.apk.
 import { spawnSync } from 'child_process'
 import fs from 'fs'
 import os from 'os'
@@ -85,6 +85,6 @@ if (variant === 'debug') {
 
 const apkDir = process.env.FORJA_APK_DIR || path.resolve(repoDir, '..', 'dnd-character-creator-apk')
 fs.mkdirSync(apkDir, { recursive: true })
-const target = path.join(apkDir, `forja-de-herois-${versionName}.apk`)
+const target = path.join(apkDir, `criador-de-ficha-${versionName}.apk`)
 fs.copyFileSync(built, target)
 console.log(`\nAPK ${versionName} (versionCode ${versionCode}), assinado: ${target}`)

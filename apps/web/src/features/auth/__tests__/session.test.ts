@@ -228,10 +228,11 @@ describe('a abertura do app', () => {
     await session.start()
     expect(calls).toEqual(['GET /api/auth/session'])
     expect(useAuthStore.getState().session).toBe('valid')
-    expect(sync.started).toBe(1)
+    // Liga na abertura, e pede um ciclo de novo quando o servidor confirma.
+    expect(sync.started).toBe(2)
   })
 
-  it('com conta lembrada e sem rede: o que o aparelho lembra continua valendo', async () => {
+  it('com conta lembrada e sem rede: o que o aparelho lembra continua valendo, e a sincronização já liga', async () => {
     const { session, responses, sync } = setup()
     ownedBy(ANA)
     saveAccount({ user: ANA })
@@ -240,7 +241,9 @@ describe('a abertura do app', () => {
 
     await session.start()
     expect(useAuthStore.getState()).toEqual({ user: ANA, session: 'unknown' })
-    expect(sync.started).toBe(0)
+    // Sem esperar o servidor: aberto sem rede, o app conta o que o jogador muda (a linha de conta
+    // diz quantas alterações estão guardadas só no aparelho) e envia quando a rede voltar.
+    expect(sync.started).toBe(1)
   })
 
   it('o servidor diz que não há sessão (ou que é de outra pessoa): expirou, sem mexer nas fichas', async () => {
@@ -253,7 +256,8 @@ describe('a abertura do app', () => {
 
       await session.start()
       expect(useAuthStore.getState()).toEqual({ user: ANA, session: 'expired' })
-      expect(sync.started).toBe(0)
+      // Ligou na abertura, e não foi pedida de novo: o ciclo dela para no 401.
+      expect(sync.started).toBe(1)
       expect(local.wiped).toBe(0)
     }
   })

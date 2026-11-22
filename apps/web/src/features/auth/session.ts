@@ -219,6 +219,12 @@ export function createSession(deps: SessionDeps) {
         return
       }
 
+      // Para quem o aparelho lembra, a sincronização liga já, sem esperar o servidor confirmar a
+      // sessão: aberto sem rede, o app precisa contar o que o jogador muda (a linha de conta diz
+      // quantas alterações estão guardadas só aqui) e enviar assim que a rede voltar. Se a sessão
+      // não valer mais, quem descobre é o primeiro ciclo (o 401 a marca como expirada).
+      if (account.user) sync.start()
+
       await checkSession()
     },
   }

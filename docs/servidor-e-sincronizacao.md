@@ -152,20 +152,11 @@ Os testes da API não precisam de banco instalado: os de serviço e de rota roda
 A ordem importa: **o login obrigatório não pode chegar aos celulares antes de a API estar no ar.** Por isso o trabalho ficou no branch `arquitetura-front-back`, e a `main` (que publica sozinha) só o recebe no passo 5.
 
 1. **Neon.** *Feito em 2026-11-21:* o projeto `criador-de-ficha` (id `proud-pond-14780351`, região `aws-us-east-2`, Postgres 18), com o branch `main` (produção) e o `dev` (desenvolvimento), e a migration aplicada nos dois. As URLs do `dev` estão em `apps/api/.env`; as do `main` (a *pooled*, com `-pooler`, e a direta), no painel da Neon, em "Connect". Nenhuma das duas vai para o repositório.
-2. **Render.** Com o branch `arquitetura-front-back` no GitHub: "New > Blueprint", apontando para o repositório e para esse branch (o `render.yaml` da raiz descreve o serviço, e por enquanto manda a API subir desse mesmo branch). O painel pede `DATABASE_URL` (a pooled) e `DATABASE_URL_UNPOOLED` (a direta), do branch `main` da Neon. O build aplica as migrations pendentes (`db:deploy`).
-3. **Conferir** `https://<nome>.onrender.com/health`: `{"status":"ok","environment":"production",…}`. Anotar a URL que a Render deu (nome em uso ganha um sufixo).
-4. **Vercel.** No `vercel.json` da raiz, acrescentar o rewrite com essa URL (e o cabeçalho que desliga o cache do rewrite):
+2. **Render.** *Feito em 2026-11-22:* o serviço `criador-de-ficha-api` (id `srv-dc14nmff3r2c73bk7mi0`), criado por "New > Blueprint" com o branch `arquitetura-front-back` (o `render.yaml` da raiz descreve o serviço, e por enquanto manda a API subir desse mesmo branch). O painel pediu `DATABASE_URL` (a pooled) e `DATABASE_URL_UNPOOLED` (a direta), do branch `main` da Neon. O build aplica as migrations pendentes (`db:deploy`).
+3. **Conferir.** *Feito em 2026-11-22:* `https://criador-de-ficha-api.onrender.com/health` responde `{"status":"ok","environment":"production",…}`; o login lê o banco (conta que não existe: 401), o pedido que grava vindo de outra origem é recusado (403) e a sincronização sem sessão também (401). A URL pública é a que o painel da Render mostra no topo da página do serviço; ela sai do `name` do `render.yaml`.
+4. **Vercel.** *Feito em 2026-11-22:* o `vercel.json` da raiz repassa `/api/:path*` para `https://criador-de-ficha-api.onrender.com/api/:path*`, com o cabeçalho `x-vercel-enable-rewrite-caching: 0` (a API também responde `Cache-Control: no-store`). `app/__tests__/viteConfig.test.ts` prende os dois. As prévias da Vercel ficam atrás do login da Vercel e têm outra origem: lá, o que grava é recusado pela API (`APP_ORIGIN`), e só a produção conversa com ela.
 
-   ```json
-   "rewrites": [
-     { "source": "/api/:path*", "destination": "https://<nome>.onrender.com/api/:path*" }
-   ],
-   "headers": [
-     { "source": "/api/:path*", "headers": [{ "key": "x-vercel-enable-rewrite-caching", "value": "0" }] }
-   ]
-   ```
-
-5. **Merge na `main`** e push (a conta `Jota-Pais` no `gh`), com o `render.yaml` voltando a dizer `branch: main` no mesmo merge. A Vercel publica o site com o login, e a Render passa a acompanhar a `main` (conferir no painel do serviço que o branch mudou).
+5. **Merge na `main`** e push (a conta `Jota-Pais` no `gh`), com o `render.yaml` voltando a dizer `branch: main` no mesmo merge, e o mesmo commit enviado aos dois branches de uma vez (`git push origin main arquitetura-front-back`): o Blueprint lê o `render.yaml` do branch a que foi ligado (`arquitetura-front-back`), e é por lá que o serviço fica sabendo que passa a acompanhar a `main`. A Vercel publica o site com o login. Depois, no painel da Render, ligar o próprio Blueprint à `main` (Blueprints › o do serviço › Settings › branch), para o branch de trabalho poder ser apagado; conferir na página do serviço que o branch dele é a `main`.
 6. **Conferir em produção**: `https://dnd-character-creator-gamma.vercel.app/api/auth/session` responde `{"user":null}`; criar a conta; ver a ficha num segundo aparelho.
 7. **Avisar a turma**: abrir o app **com internet** e criar a conta antes da próxima sessão. Sem conta e sem rede, o app não abre (decisão do dono); as fichas de cada aparelho continuam guardadas e sobem para a conta de quem entrar.
 

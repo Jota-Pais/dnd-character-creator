@@ -4,6 +4,7 @@ import { exportCharacter as exportOrdem, importCharacter as importOrdem, type Sa
 import { loadPlayState } from '../../systems/dnd5e/storage/playStorage'
 import { exportAllCharacters, formatRestoreResult, getLatestChangeAt, isBackupFile, parseBackupFile, planRestore, type RestorePlan } from './libraryBackup'
 import { GalleryNotices } from './GalleryNotices'
+import { AccountBar } from '../auth/AccountBar'
 import { pickFile, readJsonFile } from '../../core/utils/download'
 import { useAppStore } from '../../core/stores/appStore'
 import { useBackHandler } from '../../core/navigation/back'
@@ -281,6 +282,9 @@ export function GlobalGallery() {
           <input ref={fileInputRef} type="file" accept="application/json,.json" onChange={handleImport} className="hidden" />
         </header>
 
+        {/* Quem está conectado, o estado da sincronização e o "Sair" (features/auth/AccountBar.tsx). */}
+        <AccountBar />
+
         {importError && (
           <p className="text-sm mb-4" style={{ color: '#ef4444' }}>Arquivo inválido — não parece uma ficha exportada compatível.</p>
         )}
@@ -295,11 +299,11 @@ export function GlobalGallery() {
           <div className="rounded-xl p-10 text-center" style={{ border: '2px dashed #3a332b' }}>
             <div className="text-5xl mb-3">📜</div>
             <p style={{ color: '#a39685' }}>Você ainda não tem personagens salvos.</p>
-            {/* O APK guarda à parte do navegador (docs/app-android.md): quem já jogava pelo site
-                abre o app vazio, e só o arquivo leva as fichas de um ao outro. */}
+            {/* O APK guarda à parte do navegador (docs/app-android.md): quem já jogava pelo site abre
+                o app vazio. As fichas chegam pela conta: entrando com a mesma nos dois, elas aparecem. */}
             {native && (
               <p className="mt-3 text-[13px] leading-relaxed" style={{ color: '#a39685' }}>
-                Já criou fichas pelo navegador do celular? Elas ficam lá: no navegador, toque em Exportar todas e, aqui, em Importar.
+                Já criou fichas pelo navegador do celular? Entre lá com esta mesma conta: elas aparecem aqui.
               </p>
             )}
           </div>

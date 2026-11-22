@@ -15,7 +15,7 @@ import { COMPLETE_DRAFT } from '@rpg/rules/test/fixtures'
 
 const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1'
 const INSTALL_HINT = /Adicionar à Tela de Início/
-const SHEETS_STAY_IN_BROWSER = /As fichas deste navegador não passam sozinhas para o app/
+const SHEETS_COME_WITH_ACCOUNT = /No app instalado, entre com esta mesma conta: as fichas aparecem lá\./
 const BACKUP_REMINDER = /Guarde uma cópia em arquivo/
 const BACKUP_REMINDER_AGAIN = /Sua última cópia das fichas é de \d\d\/\d\d\/\d{4}\. Guarde uma nova\./
 const APK_OUTDATED = 'Tem uma versão nova do app: peça o APK no grupo.'
@@ -96,7 +96,7 @@ describe('no APK do Android', () => {
     pretendNative()
     render(<App />)
     expect(screen.getByText('Nenhuma ficha salva neste app')).toBeInTheDocument()
-    expect(screen.getByText(/Já criou fichas pelo navegador do celular\? Elas ficam lá: no navegador, toque em Exportar todas e, aqui, em Importar\./)).toBeInTheDocument()
+    expect(screen.getByText(/Já criou fichas pelo navegador do celular\? Entre lá com esta mesma conta: elas aparecem aqui\./)).toBeInTheDocument()
   })
 
   it('com fichas, a dica sai, e o lembrete de cópia diz "neste app"', () => {
@@ -174,27 +174,17 @@ describe('dica de instalar no iPhone', () => {
     expect(screen.queryByText(INSTALL_HINT)).toBeNull()
   })
 
-  it('com fichas aqui, avisa que elas não vão sozinhas para o app e oferece a cópia', () => {
+  // O app da tela de início guarda à parte do Safari e começa vazio: as fichas chegam pela conta.
+  it('diz que no app instalado as fichas vêm pela conta, com ou sem ficha aqui, e não oferece arquivo', () => {
     pretend({ userAgent: IPHONE, standalone: false })
-    withSheet()
-    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:x')
-    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
-    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
-    render(<App />)
-    const hint = screen.getByText(INSTALL_HINT)
-    expect(hint).toHaveTextContent(SHEETS_STAY_IN_BROWSER)
-    fireEvent.click(within(hint.parentElement!).getByText('Exportar todas'))
-    expect(click).toHaveBeenCalledTimes(1)
-    expect(loadDeviceState().lastBackupAt).not.toBeNull()
-    // A cópia não dispensa a dica: falta instalar.
-    expect(screen.getByText(INSTALL_HINT)).toBeInTheDocument()
-  })
+    const { unmount } = render(<App />)
+    expect(screen.getByText(INSTALL_HINT)).toHaveTextContent(SHEETS_COME_WITH_ACCOUNT)
+    unmount()
 
-  it('sem ficha, a dica não fala de cópia', () => {
-    pretend({ userAgent: IPHONE, standalone: false })
+    withSheet()
     render(<App />)
     const hint = screen.getByText(INSTALL_HINT)
-    expect(hint).not.toHaveTextContent(SHEETS_STAY_IN_BROWSER)
+    expect(hint).toHaveTextContent(SHEETS_COME_WITH_ACCOUNT)
     expect(within(hint.parentElement!).queryByText('Exportar todas')).toBeNull()
   })
 })

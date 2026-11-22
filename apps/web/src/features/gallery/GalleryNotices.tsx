@@ -4,15 +4,20 @@ import { useNativeVersionStore } from '../../core/native/appVersion'
 import { sheetsPlace, shouldShowInstallHint } from '../../core/pwa/platform'
 import { isNativeApp } from '../../core/native/nativeApp'
 import { useDeviceStore } from '../../core/stores/deviceStore'
+import { AuthScreen } from '../auth/AuthScreen'
+import { useAuthStore } from '../auth/authStore'
+import { useSyncStore } from '../sync/syncStore'
+import { isSynced } from '../sync/syncText'
 import { BACKUP_SNOOZE_MS, shouldRemindBackup } from './backupReminder'
 
 /**
- * Os avisos discretos da galeria, do app instalável (docs/app-instalavel.md): a versão nova pronta,
+ * Os avisos discretos da galeria. Do app instalável (docs/app-instalavel.md): a versão nova pronta,
  * o APK velho demais (só no APK do Android; docs/app-android.md), a dica de instalar no iPhone e o
- * lembrete de cópia de segurança. Moram só na galeria, onde não há
- * jogo aberto. A dica e o lembrete não aparecem juntos: a dica (que também fala de guardar as
- * fichas e, com ficha aqui, oferece a cópia para levá-las ao app) vem primeiro, e o lembrete espera
- * ela ser dispensada.
+ * lembrete de cópia de segurança. Da conta e da sincronização (docs/servidor-e-sincronizacao.md): a
+ * sessão que expirou, a cópia que um conflito criou, e a ficha que não pôde subir. Moram só na
+ * galeria, onde não há jogo aberto. A dica e o lembrete não aparecem juntos: a dica vem primeiro, e
+ * o lembrete espera ela ser dispensada. Com a sincronização em dia, o lembrete de cópia não
+ * aparece: as fichas já estão guardadas fora do aparelho.
  */
 export function GalleryNotices({ latestChangeAt, onExportAll }: {
   /** A última mudança nas fichas e nos estados de jogo deste navegador; null sem ficha. */
@@ -22,14 +27,20 @@ export function GalleryNotices({ latestChangeAt, onExportAll }: {
   const updateReady = useAppUpdateStore(s => s.updateReady)
   const nativeOutdated = useNativeVersionStore(s => s.outdated)
   const device = useDeviceStore()
+  const user = useAuthStore(s => s.user)
+  const sessionState = useAuthStore(s => s.session)
+  const sync = useSyncStore(s => s.status)
+  const conflictCopies = useSyncStore(s => s.conflictCopies)
+  // A folha de entrar de novo, aberta pelo aviso da sessão expirada.
+  const [reauth, setReauth] = useState(false)
   // A hora de quando a galeria abriu: o lembrete não aparece nem some com o relógio andando.
   const [now] = useState(() => Date.now())
 
-  const hasSheets = latestChangeAt !== null
   const native = isNativeApp()
   const place = sheetsPlace(window, native)
   const installHint = shouldShowInstallHint(window, device.installHintDismissedAt)
-  const backupReminder = !installHint && shouldRemindBackup({
+  const expired = sessionState === 'expired'
+  const backupReminder = !installHint && !isSynced(sync, sessionState) && shouldRemindBackup({
     latestChangeAt,
     lastBackupAt: device.lastBackupAt,
     snoozedUntil: device.backupSnoozedUntil,
@@ -55,21 +66,45 @@ export function GalleryNotices({ latestChangeAt, onExportAll }: {
         )}
         {/* O APK só muda com a parte nativa, e quem o distribui é o grupo: o app não baixa nada. */}
         {nativeOutdated && <Notice>Tem uma versão nova do app: peça o APK no grupo.</Notice>}
+
+        {/* A sessão expira no servidor com a galeria aberta, e os avisos da sincronização chegam
+            ao fim de um ciclo: a mesma região viva. */}
+        {expired && (
+          <Notice actions={<NoticeButton onClick={() => setReauth(true)}>Entrar de novo</NoticeButton>}>
+            Sua sessão expirou. As fichas continuam neste aparelho; entre de novo para voltar a sincronizar.
+          </Notice>
+        )}
+        {conflictCopies > 0 && (
+          <Notice actions={<NoticeButton onClick={() => useSyncStore.setState({ conflictCopies: 0 })}>Entendi</NoticeButton>}>
+            {conflictCopies === 1 ? 'Uma ficha mudou' : 'Algumas fichas mudaram'} em dois aparelhos ao mesmo tempo. A versão que não ficou
+            virou uma cópia, com “conflito” no nome: confira as duas e apague a que não quiser.
+          </Notice>
+        )}
+        {sync.outdated > 0 && (
+          <Notice>
+            {sync.outdated === 1 ? 'Uma ficha foi alterada' : 'Algumas fichas foram alteradas'} numa versão mais nova do app. Atualize o app neste
+            aparelho para {sync.outdated === 1 ? 'vê-la' : 'vê-las'} e voltar a sincronizá-{sync.outdated === 1 ? 'la' : 'las'}.
+          </Notice>
+        )}
+        {sync.refused > 0 && (
+          <Notice actions={<NoticeButton onClick={onExportAll}>Exportar todas</NoticeButton>}>
+            {sync.refused === 1 ? 'Uma ficha não pôde ser enviada ao servidor' : 'Algumas fichas não puderam ser enviadas ao servidor'}: {sync.refused === 1 ? 'ela continua' : 'elas continuam'} só
+            neste aparelho. Guarde uma cópia em arquivo.
+          </Notice>
+        )}
       </div>
 
+      {reauth && user && (
+        <AuthScreen reauthEmail={user.email} onCancel={() => setReauth(false)} onDone={() => setReauth(false)} />
+      )}
+
       {installHint && (
-        <Notice
-          actions={
-            <>
-              {hasSheets && <NoticeButton onClick={onExportAll}>Exportar todas</NoticeButton>}
-              <NoticeButton subtle={hasSheets} onClick={() => device.update({ installHintDismissedAt: Date.now() })}>Entendi</NoticeButton>
-            </>
-          }
-        >
+        <Notice actions={<NoticeButton onClick={() => device.update({ installHintDismissedAt: Date.now() })}>Entendi</NoticeButton>}>
           <strong className="font-semibold" style={{ color: '#ede2d6' }}>Instale no iPhone:</strong> toque em Compartilhar e
           em “Adicionar à Tela de Início”. Instalado, o app abre sem internet e guarda as fichas com mais segurança.
-          {/* No iPhone, o app da tela de início guarda à parte do navegador: começa sem as fichas daqui. */}
-          {hasSheets && ' As fichas deste navegador não passam sozinhas para o app: antes de instalar, toque em Exportar todas e, no app, em Importar.'}
+          {/* No iPhone, o app da tela de início guarda à parte do navegador e começa vazio: as fichas
+              chegam pela conta, não pelo aparelho. */}
+          {' No app instalado, entre com esta mesma conta: as fichas aparecem lá.'}
         </Notice>
       )}
 
